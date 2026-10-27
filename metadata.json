@@ -1,0 +1,6 @@
+{
+  "name": "TrainPilot",
+  "description": "Prémium natív Android edzéstervező, naplózó és regeneráció-követő UI/UX prototípus (Kezdőlap, Edzés, Napló, Fejlődés, Egészség) 32 színpalettával és 4 nyelvvel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

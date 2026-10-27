@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">TrainPilot</string>
+    <string name="demo_badge">DEMO</string>
+    <string name="cd_theme_picker">Színpaletta és megjelenés</string>
+    <string name="cd_language_picker">Nyelv választása</string>
+    <string name="cd_watch_status">Wear OS óra kapcsolat</string>
+    <string name="cd_profile_settings">Profil és edző beállítások</string>
+</resources>
