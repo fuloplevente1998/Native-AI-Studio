@@ -1603,53 +1603,64 @@ fun ProgressTabScreen(
                                 Spacer(modifier = Modifier.height(10.dp))
                                 val lineGold = palette.primary
                                 val gridCol = palette.cardBorder
-                                val rawValues = if (session1RmHistory.size >= 2) {
-                                    session1RmHistory.map { it.second }
-                                } else if (best1RmKg > 0f) {
-                                    listOf(best1RmKg * 0.88f, best1RmKg * 0.92f, best1RmKg * 0.96f, best1RmKg)
+                                val rawValues = session1RmHistory.map { it.second }
+
+                                if (rawValues.isEmpty()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(80.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "Még nincs rögzített súlyzós sorozat ehhez a gyakorlathoz.",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = palette.textSecondary
+                                        )
+                                    }
                                 } else {
-                                    listOf(0f, 0f, 0f, 0f)
-                                }
-                                val minV = (rawValues.minOrNull() ?: 0f) * 0.9f
-                                val maxV = ((rawValues.maxOrNull() ?: 1f) * 1.05f).coerceAtLeast(minV + 1f)
-                                Canvas(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(100.dp)
-                                ) {
-                                    val w = size.width
-                                    val h = size.height
-                                    for (i in 0..3) {
-                                        val y = h * i / 3f
-                                        drawLine(gridCol, Offset(0f, y), Offset(w, y), strokeWidth = 1.dp.toPx())
+                                    val minV = (rawValues.minOrNull() ?: 0f) * 0.9f
+                                    val maxV = ((rawValues.maxOrNull() ?: 1f) * 1.05f).coerceAtLeast(minV + 1f)
+                                    Canvas(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(100.dp)
+                                    ) {
+                                        val w = size.width
+                                        val h = size.height
+                                        for (i in 0..3) {
+                                            val y = h * i / 3f
+                                            drawLine(gridCol, Offset(0f, y), Offset(w, y), strokeWidth = 1.dp.toPx())
+                                        }
+                                        if (rawValues.size > 1) {
+                                            val path = Path()
+                                            rawValues.forEachIndexed { idx, v ->
+                                                val x = w * (idx / (rawValues.size - 1f))
+                                                val norm = ((v - minV) / (maxV - minV)).coerceIn(0.08f, 0.92f)
+                                                val y = h * (1f - norm)
+                                                if (idx == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                                            }
+                                            drawPath(
+                                                path = path,
+                                                color = lineGold,
+                                                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+                                            )
+                                        }
+                                        rawValues.forEachIndexed { idx, v ->
+                                            val x = if (rawValues.size > 1) w * (idx / (rawValues.size - 1f)) else w / 2f
+                                            val norm = ((v - minV) / (maxV - minV)).coerceIn(0.08f, 0.92f)
+                                            val y = h * (1f - norm)
+                                            drawCircle(color = lineGold, radius = 5.dp.toPx(), center = Offset(x, y))
+                                        }
                                     }
-                                    val path = Path()
-                                    rawValues.forEachIndexed { idx, v ->
-                                        val x = if (rawValues.size > 1) w * (idx / (rawValues.size - 1f)) else w / 2f
-                                        val norm = ((v - minV) / (maxV - minV)).coerceIn(0.08f, 0.92f)
-                                        val y = h * (1f - norm)
-                                        if (idx == 0) path.moveTo(x, y) else path.lineTo(x, y)
-                                    }
-                                    drawPath(
-                                        path = path,
-                                        color = lineGold,
-                                        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-                                    )
-                                    rawValues.forEachIndexed { idx, v ->
-                                        val x = if (rawValues.size > 1) w * (idx / (rawValues.size - 1f)) else w / 2f
-                                        val norm = ((v - minV) / (maxV - minV)).coerceIn(0.08f, 0.92f)
-                                        val y = h * (1f - norm)
-                                        drawCircle(color = lineGold, radius = 4.dp.toPx(), center = Offset(x, y))
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    if (session1RmHistory.size >= 2) {
-                                        Text(session1RmHistory.first().first.take(10), style = MaterialTheme.typography.labelSmall, color = palette.textMuted)
-                                        Text(session1RmHistory.last().first.take(10), style = MaterialTheme.typography.labelSmall, color = palette.textMuted)
-                                    } else {
-                                        Text("Korábbi", style = MaterialTheme.typography.labelSmall, color = palette.textMuted)
-                                        Text("Jelenlegi", style = MaterialTheme.typography.labelSmall, color = palette.textMuted)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        if (session1RmHistory.size >= 2) {
+                                            Text(session1RmHistory.first().first.take(10), style = MaterialTheme.typography.labelSmall, color = palette.textMuted)
+                                            Text(session1RmHistory.last().first.take(10), style = MaterialTheme.typography.labelSmall, color = palette.textMuted)
+                                        } else if (session1RmHistory.size == 1) {
+                                            Text(session1RmHistory.first().first.take(10), style = MaterialTheme.typography.labelSmall, color = palette.textMuted)
+                                        }
                                     }
                                 }
                             }

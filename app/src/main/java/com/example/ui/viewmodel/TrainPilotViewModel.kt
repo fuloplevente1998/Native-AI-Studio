@@ -432,8 +432,6 @@ class TrainPilotViewModel : ViewModel() {
         val nowMs = System.currentTimeMillis()
         scope.launch(Dispatchers.IO) {
             runCatching {
-                val programEntities = mutableListOf<ProgramEntity>()
-                val dayEntities = mutableListOf<ProgramDayEntity>()
                 currentPrograms.forEachIndexed { pIdx, prog ->
                     val rawProgJson = JSONObject().apply {
                         put("id", prog.id)
@@ -443,28 +441,26 @@ class TrainPilotViewModel : ViewModel() {
                         put("isActive", prog.isActive)
                         put("isCustom", prog.isCustom)
                     }
-                    programEntities.add(
-                        ProgramEntity(
-                            id = prog.id,
-                            nameHu = prog.nameHu,
-                            nameEn = prog.nameEn,
-                            nameDe = prog.nameHu,
-                            nameRo = prog.nameHu,
-                            location = prog.tagsHu.firstOrNull() ?: "Otthon / Edzőterem",
-                            level = prog.tagsHu.getOrNull(1) ?: "Kezdő",
-                            description = prog.subtitleHu,
-                            builtin = !prog.isCustom,
-                            generated = prog.id.startsWith("custom_plan_"),
-                            sourceType = if (prog.isCustom) "user" else "builtin",
-                            sourceTemplateId = null,
-                            templateVersion = 1,
-                            accentHex = "#D8B36A",
-                            sortOrder = pIdx,
-                            updatedAt = nowMs,
-                            rawJson = rawProgJson.toString()
-                        )
+                    val progEntity = ProgramEntity(
+                        id = prog.id,
+                        nameHu = prog.nameHu,
+                        nameEn = prog.nameEn,
+                        nameDe = prog.nameHu,
+                        nameRo = prog.nameHu,
+                        location = prog.tagsHu.firstOrNull() ?: "Otthon / Edzőterem",
+                        level = prog.tagsHu.getOrNull(1) ?: "Kezdő",
+                        description = prog.subtitleHu,
+                        builtin = !prog.isCustom,
+                        generated = prog.id.startsWith("custom_plan_"),
+                        sourceType = if (prog.isCustom) "user" else "builtin",
+                        sourceTemplateId = null,
+                        templateVersion = 1,
+                        accentHex = "#D8B36A",
+                        sortOrder = pIdx,
+                        updatedAt = nowMs,
+                        rawJson = rawProgJson.toString()
                     )
-                    prog.days.forEachIndexed { dIdx, day ->
+                    val progDays = prog.days.mapIndexed { dIdx, day ->
                         val dayKey = day.id.substringAfter("${prog.id}:").ifBlank { "day_${dIdx + 1}" }
                         val compositeId = if (day.id.contains(":")) day.id else "${prog.id}:$dayKey"
                         val exArr = JSONArray()
@@ -479,23 +475,20 @@ class TrainPilotViewModel : ViewModel() {
                                 }
                             )
                         }
-                        dayEntities.add(
-                            ProgramDayEntity(
-                                compositeId = compositeId,
-                                programId = prog.id,
-                                dayId = dayKey,
-                                nameHu = day.titleHu,
-                                nameEn = day.titleEn,
-                                nameDe = day.titleHu,
-                                nameRo = day.titleHu,
-                                sortOrder = dIdx,
-                                exercisesJson = exArr.toString()
-                            )
+                        ProgramDayEntity(
+                            compositeId = compositeId,
+                            programId = prog.id,
+                            dayId = dayKey,
+                            nameHu = day.titleHu,
+                            nameEn = day.titleEn,
+                            nameDe = day.titleHu,
+                            nameRo = day.titleHu,
+                            sortOrder = dIdx,
+                            exercisesJson = exArr.toString()
                         )
                     }
+                    db.programDao().saveProgramWithDays(progEntity, progDays)
                 }
-                db.programDao().upsertPrograms(programEntities)
-                db.programDao().upsertProgramDays(dayEntities)
             }
         }
     }
@@ -544,7 +537,6 @@ class TrainPilotViewModel : ViewModel() {
                         rawJson = rawEv.toString()
                     )
                 }
-                db.calendarScheduleDao().deleteAllEntries()
                 if (scheduleEntities.isNotEmpty()) {
                     db.calendarScheduleDao().upsertEntries(scheduleEntities)
                 }
@@ -914,6 +906,17 @@ class TrainPilotViewModel : ViewModel() {
                 latestWeightKg = latestByDayKey ?: weightSummary.currentKg?.toFloat() ?: 0f
             } catch (_: Throwable) {}
 
+            var loadedWeeklyGoal = 0
+            var loadedStepsGoal = 0
+            try {
+                val goalsDoc = database.keyValueDocumentDao().getDocument("native:userGoals")
+                if (goalsDoc != null && goalsDoc.json.isNotBlank()) {
+                    val gObj = JSONObject(goalsDoc.json)
+                    loadedWeeklyGoal = gObj.optInt("weeklyGoalTarget", 0)
+                    loadedStepsGoal = gObj.optInt("stepsGoal", 0)
+                }
+            } catch (_: Throwable) {}
+
             // 4b. Read persisted calendar schedule & undo stack from Room
             var loadedCalendarEvents = emptyList<CalendarDayEvent>()
             var loadedCalendarUndo = emptyList<List<CalendarDayEvent>>()
@@ -1134,6 +1137,8 @@ class TrainPilotViewModel : ViewModel() {
                         loggedWorkouts = mappedWorkouts,
                         prRecords = computedPrs,
                         weeklyGoalCompleted = mappedWorkouts.size,
+                        weeklyGoalTarget = if (loadedWeeklyGoal > 0) loadedWeeklyGoal else st.weeklyGoalTarget,
+                        stepsGoal = if (loadedStepsGoal > 0) loadedStepsGoal else st.stepsGoal,
                         currentBodyWeightKg = if (latestWeightKg > 0f) latestWeightKg else st.currentBodyWeightKg,
                         bodyWeightLogs = loadedWeightLogs,
                         dailySteps = if (stepsVal > 0) stepsVal else st.dailySteps,
@@ -1318,13 +1323,31 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun updateGoals(weeklyTarget: Int, stepsTarget: Int) {
+        val cleanWeekly = weeklyTarget.coerceIn(1, 30)
+        val cleanSteps = stepsTarget.coerceIn(2000, 30000)
+        val db = nativeDatabase
+        val scope = nativeScope
         _uiState.update {
             it.copy(
-                weeklyGoalTarget = weeklyTarget.coerceIn(1, 30),
-                stepsGoal = stepsTarget.coerceIn(2000, 30000),
+                weeklyGoalTarget = cleanWeekly,
+                stepsGoal = cleanSteps,
                 showGoalsDialog = false,
-                statusBannerMessage = "Célok elmentve: $weeklyTarget edzés, $stepsTarget lépés"
+                statusBannerMessage = "Célok elmentve: $cleanWeekly edzés, $cleanSteps lépés"
             )
+        }
+        if (db == null || scope == null) return
+        scope.launch(Dispatchers.IO) {
+            try {
+                val json = JSONObject().apply {
+                    put("weeklyGoalTarget", cleanWeekly)
+                    put("stepsGoal", cleanSteps)
+                }.toString()
+                db.keyValueDocumentDao().putDocument(
+                    com.repforge.app.data.db.KeyValueDocumentEntity("native:userGoals", json, System.currentTimeMillis())
+                )
+            } catch (e: Throwable) {
+                android.util.Log.e("TrainPilotViewModel", "Failed to persist user goals to Room", e)
+            }
         }
     }
 
@@ -2981,6 +3004,41 @@ class TrainPilotViewModel : ViewModel() {
                         it.copy(statusBannerMessage = "Nem sikerült elmenteni a testsúlymérést: ${e.localizedMessage ?: "adatbázishiba"}")
                     }
                 }
+            }
+        }
+    }
+
+    fun deleteBodyWeightLog(id: String) {
+        val db = nativeDatabase
+        val scope = nativeScope
+        _uiState.update { state ->
+            val updated = state.bodyWeightLogs.filterNot { it.id == id }
+            val newCurrent = updated.lastOrNull()?.kg ?: 0f
+            state.copy(
+                bodyWeightLogs = updated,
+                currentBodyWeightKg = newCurrent
+            )
+        }
+        if (db == null || scope == null) return
+        scope.launch(Dispatchers.IO) {
+            try {
+                db.bodyWeightDao().deleteWeightById(id)
+                db.bodyWeightDao().deleteByDateOrId(id)
+                val allWeights = db.bodyWeightDao().getAllWeights()
+                val mappedLogs = mapBodyWeightEntitiesToLogItems(allWeights)
+                val summary = db.bodyWeightDao().getWeightJournalSummary()
+                val latestKg = mappedLogs.lastOrNull()?.kg ?: summary.currentKg?.toFloat() ?: 0f
+                withContext(Dispatchers.Main) {
+                    _uiState.update {
+                        it.copy(
+                            bodyWeightLogs = mappedLogs,
+                            currentBodyWeightKg = latestKg,
+                            statusBannerMessage = "Testsúlymérés törölve."
+                        )
+                    }
+                }
+            } catch (e: Throwable) {
+                android.util.Log.e("TrainPilotViewModel", "Failed to delete body weight log from Room", e)
             }
         }
     }

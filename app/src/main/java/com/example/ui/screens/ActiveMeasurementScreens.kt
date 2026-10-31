@@ -3072,9 +3072,8 @@ fun ActiveOutdoorGpsScreen(
                     if (prev != null) {
                         val delta = prev.distanceTo(location)
                         if (delta in 1.0f..100f) {
-                            // Only update if DistanceTrackingService hasn't already updated it higher
                             val srvDist = com.repforge.app.DistanceTrackingService.snapshot(context).optDouble("distanceMeters", 0.0).toFloat()
-                            distanceMeters = maxOf(distanceMeters + delta, srvDist)
+                            distanceMeters = maxOf(distanceMeters, srvDist)
                             realGpsFixesCount++
                             hasServiceFix = true
                             gpsAccuracyMeters = location.accuracy

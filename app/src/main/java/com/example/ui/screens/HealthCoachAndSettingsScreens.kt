@@ -140,7 +140,8 @@ fun HealthTabScreen(
     onTriggerHealthSync: () -> Unit,
     onNavigateToSubScreen: (SubScreen) -> Unit,
     onOpenPalettePicker: () -> Unit,
-    onOpenGoalsDialog: () -> Unit = {}
+    onOpenGoalsDialog: () -> Unit = {},
+    onDeleteWeightLog: (String) -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val today = remember { java.time.LocalDate.now() }
@@ -172,19 +173,7 @@ fun HealthTabScreen(
                 }.sortedByDescending { it.parsedDate }
             )
         } else {
-            val baseWeight = if (uiState.currentBodyWeightKg > 20f) uiState.currentBodyWeightKg else 74.5f
-            val d1 = today.minusDays(18)
-            val d2 = today.minusDays(12)
-            val d3 = today.minusDays(6)
-            val d4 = today
-            mutableStateOf(
-                listOf(
-                    WeightMeasurementEntry("w_1", "${"%.1f".format(baseWeight + 1.2f).replace('.', ',')} kg", baseWeight + 1.2f, d1.format(dotFormatter), d1),
-                    WeightMeasurementEntry("w_2", "${"%.1f".format(baseWeight + 0.7f).replace('.', ',')} kg", baseWeight + 0.7f, d2.format(dotFormatter), d2),
-                    WeightMeasurementEntry("w_3", "${"%.1f".format(baseWeight + 0.3f).replace('.', ',')} kg", baseWeight + 0.3f, d3.format(dotFormatter), d3),
-                    WeightMeasurementEntry("w_4", "${"%.1f".format(baseWeight).replace('.', ',')} kg", baseWeight, d4.format(dotFormatter), d4)
-                ).sortedByDescending { it.parsedDate }
-            )
+            mutableStateOf(emptyList<WeightMeasurementEntry>())
         }
     }
     // Always sorted chronologically (oldest -> newest) by the user-entered date for the chart!
@@ -1063,39 +1052,50 @@ fun HealthTabScreen(
                             ) {
                                 Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                                     val lineColor = palette.primary
-                                    val pts = if (chronologicalMeasurements.isNotEmpty()) {
-                                        chronologicalMeasurements.map { it.weightValue }
+                                    if (chronologicalMeasurements.isEmpty()) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(48.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "Még nincs rögzített testsúlymérés.",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = palette.textSecondary
+                                            )
+                                        }
                                     } else {
-                                        listOf(75.5f, 75.0f, 74.6f, 74.2f)
-                                    }
-                                    Canvas(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(48.dp)
-                                    ) {
-                                        val minW = (pts.minOrNull() ?: 0f) - 0.5f
-                                        val maxW = (pts.maxOrNull() ?: 1f) + 0.5f
-                                        val offsets = pts.mapIndexed { idx, w ->
-                                            val x = if (pts.size > 1) {
-                                                (idx.toFloat() / (pts.size - 1).coerceAtLeast(1)) * size.width
-                                            } else {
-                                                size.width / 2f
+                                        val pts = chronologicalMeasurements.map { it.weightValue }
+                                        Canvas(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(48.dp)
+                                        ) {
+                                            val minW = (pts.minOrNull() ?: 0f) - 0.5f
+                                            val maxW = (pts.maxOrNull() ?: 1f) + 0.5f
+                                            val offsets = pts.mapIndexed { idx, w ->
+                                                val x = if (pts.size > 1) {
+                                                    (idx.toFloat() / (pts.size - 1).coerceAtLeast(1)) * size.width
+                                                } else {
+                                                    size.width / 2f
+                                                }
+                                                val y = size.height - ((w - minW) / (maxW - minW).coerceAtLeast(0.1f)) * size.height
+                                                Offset(x, y)
                                             }
-                                            val y = size.height - ((w - minW) / (maxW - minW).coerceAtLeast(0.1f)) * size.height
-                                            Offset(x, y)
-                                        }
-                                        val path = Path()
-                                        offsets.forEachIndexed { i, pt ->
-                                            if (i == 0) path.moveTo(pt.x, pt.y)
-                                            else {
-                                                val prev = offsets[i - 1]
-                                                val cx = (prev.x + pt.x) / 2f
-                                                path.cubicTo(cx, prev.y, cx, pt.y, pt.x, pt.y)
+                                            val path = Path()
+                                            offsets.forEachIndexed { i, pt ->
+                                                if (i == 0) path.moveTo(pt.x, pt.y)
+                                                else {
+                                                    val prev = offsets[i - 1]
+                                                    val cx = (prev.x + pt.x) / 2f
+                                                    path.cubicTo(cx, prev.y, cx, pt.y, pt.x, pt.y)
+                                                }
                                             }
-                                        }
-                                        drawPath(path, lineColor, style = Stroke(width = 2.6.dp.toPx(), cap = StrokeCap.Round))
-                                        offsets.forEach { pt ->
-                                            drawCircle(color = lineColor, radius = 3.5.dp.toPx(), center = pt)
+                                            drawPath(path, lineColor, style = Stroke(width = 2.6.dp.toPx(), cap = StrokeCap.Round))
+                                            offsets.forEach { pt ->
+                                                drawCircle(color = lineColor, radius = 3.5.dp.toPx(), center = pt)
+                                            }
                                         }
                                     }
                                     if (chronologicalMeasurements.isNotEmpty()) {
@@ -1339,6 +1339,7 @@ fun HealthTabScreen(
                                                                 .clip(RoundedCornerShape(10.dp))
                                                                 .clickable {
                                                                     recentMeasurements = recentMeasurements.filterNot { it.id == entry.id }
+                                                                    onDeleteWeightLog(entry.id)
                                                                 }
                                                         ) {
                                                             Text(
@@ -2260,7 +2261,7 @@ fun SettingsMainScreen(
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
-                            onClick = { onShowBanner("Google Drive és Naptár szinkronizálva") },
+                            onClick = { onShowBanner("Google Drive szinkronizáció nincs beállítva. Használd a helyi JSON / ZIP mentést.") },
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1f)
                         ) {
