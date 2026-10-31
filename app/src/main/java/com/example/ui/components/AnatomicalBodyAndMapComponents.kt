@@ -54,8 +54,11 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.localization.LocalTrainPilotStrings
 import com.example.ui.theme.LocalTrainPilotPalette
 
 data class MuscleLoadItem(
@@ -83,101 +86,28 @@ fun AnatomicalMuscleHeatmapCard(
     title: String = "Izomcsoport-terhelés",
     subtitle: String = "A színek és arányok az időszak legterheltebb izomcsoportjához viszonyítanak, nem fáradtságot mérnek.",
     highlightedMuscleId: String? = null,
+    realMuscleLoads: List<MuscleLoadItem> = emptyList(),
+    onPeriodSelected: ((Int) -> Unit)? = null,
     onOpenExerciseDetail: ((String) -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     val periodOptions = remember { listOf("3 hó", "30 nap", "7 nap", "1 nap") }
+    val periodDays = remember { listOf(90, 30, 7, 1) }
     var selectedPeriodIdx by remember { mutableIntStateOf(0) }
 
-    val muscleLoads = remember(selectedPeriodIdx) {
-        val factor = when (selectedPeriodIdx) {
-            1 -> 0.85f
-            2 -> 0.65f
-            3 -> 0.45f
-            else -> 1.0f
-        }
-        listOf(
-            MuscleLoadItem(
-                id = "chest",
-                nameHu = "Mell",
-                setsText = "31,2 sorozat",
-                percentage = (45 * factor).toInt().coerceAtLeast(15),
-                ratio = (0.45f * factor).coerceIn(0.15f, 1f),
-                levelLabelHu = "Közepes terhelés",
-                topExercisesHu = listOf(
-                    "Fekvenyomás" to "19,2 sorozat • PR 100 kg",
-                    "Fekvőtámasz" to "12 sorozat • PR 15 ism."
-                ),
-                exerciseIdToOpen = "bench_press"
-            ),
-            MuscleLoadItem(
-                id = "back",
-                nameHu = "Hát",
-                setsText = "92,2 sorozat",
-                percentage = (66 * factor).toInt().coerceAtLeast(25),
-                ratio = (0.66f * factor).coerceIn(0.25f, 1f),
-                levelLabelHu = "Közepes–magas terhelés",
-                topExercisesHu = listOf(
-                    "Döntött törzsű evezés – kétkezes rúddal" to "42 sorozat • PR 65 kg",
-                    "Húzódzkodás" to "28 sorozat • Saját testsúly",
-                    "Evezés gumiszalaggal" to "22,2 sorozat • 14 kg"
-                ),
-                exerciseIdToOpen = "barbell_row"
-            ),
-            MuscleLoadItem(
-                id = "shoulders",
-                nameHu = "Váll",
-                setsText = "46,5 sorozat",
-                percentage = (59 * factor).toInt().coerceAtLeast(20),
-                ratio = (0.59f * factor).coerceIn(0.20f, 1f),
-                levelLabelHu = "Közepes terhelés",
-                topExercisesHu = listOf(
-                    "Vállból nyomás" to "28,5 sorozat • 42,5 kg",
-                    "Oldalemelés" to "18 sorozat • 10 kg"
-                ),
-                exerciseIdToOpen = "bench_press"
-            ),
-            MuscleLoadItem(
-                id = "legs",
-                nameHu = "Láb",
-                setsText = "82,9 sorozat",
-                percentage = (75 * factor).toInt().coerceAtLeast(35),
-                ratio = (0.75f * factor).coerceIn(0.35f, 1f),
-                levelLabelHu = "Nagyobb terhelés",
-                topExercisesHu = listOf(
-                    "Goblet guggolás" to "38 sorozat • PR 16 kg × 12",
-                    "Bolgár guggolás" to "26,9 sorozat • PR 15 ism.",
-                    "Kitörés" to "18 sorozat • Saját testsúly / Súlyzó"
-                ),
-                exerciseIdToOpen = "goblet_squat"
-            ),
-            MuscleLoadItem(
-                id = "arms",
-                nameHu = "Kar",
-                setsText = "45,7 sorozat",
-                percentage = if (selectedPeriodIdx == 0) 100 else (90 * factor).toInt().coerceAtLeast(45),
-                ratio = if (selectedPeriodIdx == 0) 1.0f else (0.90f * factor).coerceIn(0.45f, 1f),
-                levelLabelHu = "Legterheltebb izomcsoport (100%)",
-                topExercisesHu = listOf(
-                    "Tricepsz fej fölött" to "24,7 sorozat • PR 5,5 kg",
-                    "Bicepsz hajlítás" to "21 sorozat • 12 kg"
-                ),
-                exerciseIdToOpen = "push_up"
-            ),
-            MuscleLoadItem(
-                id = "core",
-                nameHu = "Core",
-                setsText = "18,5 sorozat",
-                percentage = (61 * factor).toInt().coerceAtLeast(20),
-                ratio = (0.61f * factor).coerceIn(0.20f, 1f),
-                levelLabelHu = "Közepes terhelés",
-                topExercisesHu = listOf(
-                    "Plank" to "11,5 sorozat • 45 mp",
-                    "Oldalsó plank" to "7 sorozat • 25 mp / oldal"
-                ),
-                exerciseIdToOpen = "plank"
+    val muscleLoads = remember(realMuscleLoads, selectedPeriodIdx) {
+        if (realMuscleLoads.isNotEmpty()) {
+            realMuscleLoads
+        } else {
+            listOf(
+                MuscleLoadItem("chest", "Mell", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), "bench_press"),
+                MuscleLoadItem("back", "Hát", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), "barbell_row"),
+                MuscleLoadItem("shoulders", "Váll", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), "bench_press"),
+                MuscleLoadItem("legs", "Láb", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), "goblet_squat"),
+                MuscleLoadItem("arms", "Kar", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), "biceps_curl"),
+                MuscleLoadItem("core", "Törzs", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), "plank")
             )
-        )
+        }
     }
 
     var selectedMuscleId by remember(highlightedMuscleId) {
@@ -215,20 +145,26 @@ fun AnatomicalMuscleHeatmapCard(
                     shape = RoundedCornerShape(12.dp),
                     color = palette.surfaceElevated,
                     modifier = Modifier
+                        .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                         .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                         .clip(RoundedCornerShape(12.dp))
                         .clickable {
                             selectedPeriodIdx = (selectedPeriodIdx + 1) % periodOptions.size
+                            onPeriodSelected?.invoke(periodDays[selectedPeriodIdx])
                         }
                         .testTag("muscle_heatmap_period_pill")
                 ) {
-                    Text(
-                        text = periodOptions[selectedPeriodIdx],
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = palette.textSecondary,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
-                    )
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = periodOptions[selectedPeriodIdx],
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = palette.textSecondary
+                        )
+                    }
                 }
             }
 
@@ -256,48 +192,26 @@ fun AnatomicalMuscleHeatmapCard(
 
                 Box(
                     modifier = Modifier
-                        .weight(0.45f)
-                        .height(156.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable {
-                            // Cycle through muscles or reset to all on body tap
-                            val ids = listOf("all", "arms", "legs", "back", "shoulders", "core", "chest")
-                            val nextIdx = (ids.indexOf(selectedMuscleId) + 1) % ids.size
-                            selectedMuscleId = ids[nextIdx]
-                        }
+                        .weight(0.48f)
+                        .height(160.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val w = size.width
-                        val h = size.height
-
-                        drawAnatomicalFigure(
-                            cx = w * 0.27f,
-                            h = h,
-                            isFront = true,
-                            baseColor = baseSilhouette,
-                            outlineColor = outlineCol,
-                            chestColor = colorForMuscle("chest", mediumHeatColor),
-                            shoulderColor = colorForMuscle("shoulders", mediumHeatColor),
-                            armColor = colorForMuscle("arms", highHeatColor),
-                            coreColor = colorForMuscle("core", mediumHeatColor),
-                            legColor = colorForMuscle("legs", highHeatColor),
-                            backColor = colorForMuscle("back", mediumHeatColor)
-                        )
-
-                        drawAnatomicalFigure(
-                            cx = w * 0.75f,
-                            h = h,
-                            isFront = false,
-                            baseColor = baseSilhouette,
-                            outlineColor = outlineCol,
-                            chestColor = colorForMuscle("chest", mediumHeatColor),
-                            shoulderColor = colorForMuscle("shoulders", mediumHeatColor),
-                            armColor = colorForMuscle("arms", highHeatColor),
-                            coreColor = colorForMuscle("core", mediumHeatColor),
-                            legColor = colorForMuscle("legs", highHeatColor),
-                            backColor = colorForMuscle("back", mediumHeatColor)
-                        )
+                    val nativeLoads = remember(muscleLoads) {
+                        muscleLoads.map {
+                            com.repforge.app.ui.progress.MuscleLoadUiModel(
+                                muscleKey = it.id,
+                                label = it.nameHu,
+                                setsCount = it.percentage,
+                                loadPercentage = it.ratio
+                            )
+                        }
                     }
+                    com.repforge.app.ui.progress.NativeMuscleLoadVisual(
+                        loads = nativeLoads,
+                        language = "hu",
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
 
                 // Right half: 6 Compact Muscle Progress Bars (Mell, Hát, Váll, Láb, Kar, Core)
@@ -837,6 +751,7 @@ fun MargitszigetDetailedMapBox(
         )
 
         if (interactiveControls) {
+            val strings = LocalTrainPilotStrings.current
             // Zoom & Recenter floating controls (bottom-right matching Mockup 3/4 #3)
             Column(
                 modifier = Modifier
@@ -848,39 +763,39 @@ fun MargitszigetDetailedMapBox(
                     shape = CircleShape,
                     color = Color(0xFF1F2937).copy(alpha = 0.9f),
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .border(1.dp, palette.cardBorder, CircleShape)
                         .clip(CircleShape)
                         .clickable { zoomScale = (zoomScale + 0.2f).coerceAtMost(1.6f) }
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(imageVector = Icons.Default.Add, contentDescription = "Zoom in", tint = Color.White, modifier = Modifier.size(18.dp))
+                        Icon(imageVector = Icons.Default.Add, contentDescription = strings.zoomInDesc, tint = Color.White, modifier = Modifier.size(18.dp))
                     }
                 }
                 Surface(
                     shape = CircleShape,
                     color = Color(0xFF1F2937).copy(alpha = 0.9f),
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .border(1.dp, palette.cardBorder, CircleShape)
                         .clip(CircleShape)
                         .clickable { zoomScale = (zoomScale - 0.2f).coerceAtLeast(0.8f) }
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(imageVector = Icons.Default.Remove, contentDescription = "Zoom out", tint = Color.White, modifier = Modifier.size(18.dp))
+                        Icon(imageVector = Icons.Default.Remove, contentDescription = strings.zoomOutDesc, tint = Color.White, modifier = Modifier.size(18.dp))
                     }
                 }
                 Surface(
                     shape = CircleShape,
                     color = Color(0xFF1F2937).copy(alpha = 0.9f),
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(48.dp)
                         .border(1.dp, palette.primary.copy(alpha = 0.6f), CircleShape)
                         .clip(CircleShape)
                         .clickable { zoomScale = 1.0f }
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(imageVector = Icons.Default.MyLocation, contentDescription = "Recenter", tint = Color.White, modifier = Modifier.size(20.dp))
+                        Icon(imageVector = Icons.Default.MyLocation, contentDescription = strings.recenterMapDesc, tint = Color.White, modifier = Modifier.size(20.dp))
                     }
                 }
             }

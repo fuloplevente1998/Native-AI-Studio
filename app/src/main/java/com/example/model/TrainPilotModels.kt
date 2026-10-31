@@ -9,10 +9,13 @@ enum class AppLanguage(val code: String, val label: String, val flag: String) {
 
 enum class MainTab {
     HOME,
+    PROGRAMS,
     WORKOUT,
-    LOG,
+    CALENDAR,
     PROGRESS,
-    HEALTH
+    COACH,
+    HEALTH,
+    LOG
 }
 
 /**

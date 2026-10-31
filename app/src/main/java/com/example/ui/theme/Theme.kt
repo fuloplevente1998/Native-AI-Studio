@@ -64,7 +64,7 @@ fun TrainPilotTheme(
     val currentDensity = LocalDensity.current
     val scaledDensity = Density(
         density = currentDensity.density,
-        fontScale = (currentDensity.fontScale * fontScaleMultiplier).coerceIn(0.85f, 1.6f)
+        fontScale = (currentDensity.fontScale * fontScaleMultiplier).coerceIn(0.85f, 2.5f)
     )
 
     CompositionLocalProvider(

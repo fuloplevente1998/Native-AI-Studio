@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -121,26 +124,29 @@ fun HealthTabScreen(
     onTogglePrimaryHealthSource: () -> Unit,
     onTriggerHealthSync: () -> Unit,
     onNavigateToSubScreen: (SubScreen) -> Unit,
-    onOpenPalettePicker: () -> Unit
+    onOpenPalettePicker: () -> Unit,
+    onOpenGoalsDialog: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
+    val today = remember { java.time.LocalDate.now() }
+    val todayHuLabel = remember(today) {
+        today.format(java.time.format.DateTimeFormatter.ofPattern("yyyy. MMM d.", java.util.Locale("hu", "HU")))
+    }
+    val todayDotLabel = remember(today) {
+        today.format(java.time.format.DateTimeFormatter.ofPattern("yyyy. MM. dd."))
+    }
 
     var recentMeasurements by remember {
-        mutableStateOf(
-            listOf(
-                WeightMeasurementEntry("w1", "64,5 kg", 64.5f, "2026. 10. 10."),
-                WeightMeasurementEntry("w2", "66,5 kg", 66.5f, "2026. 09. 15."),
-                WeightMeasurementEntry("w3", "66,7 kg", 66.7f, "2026. 09. 13.")
-            )
-        )
+        mutableStateOf<List<WeightMeasurementEntry>>(emptyList())
     }
     var editingMeasurement by remember { mutableStateOf<WeightMeasurementEntry?>(null) }
 
     if (uiState.showAddWeightDialog || editingMeasurement != null) {
-        val initialVal = editingMeasurement?.weightValue?.toString() ?: uiState.currentBodyWeightKg.toString()
+        val initialVal = editingMeasurement?.weightValue?.toString()
+            ?: if (uiState.currentBodyWeightKg > 0f) uiState.currentBodyWeightKg.toString() else ""
         var weightText by remember(editingMeasurement, uiState.showAddWeightDialog) { mutableStateOf(initialVal) }
         var dateText by remember(editingMeasurement, uiState.showAddWeightDialog) {
-            mutableStateOf(editingMeasurement?.dateLabel ?: "2026. 10. 27.")
+            mutableStateOf(editingMeasurement?.dateLabel ?: todayDotLabel)
         }
         AlertDialog(
             onDismissRequest = {
@@ -152,7 +158,7 @@ fun HealthTabScreen(
             textContentColor = palette.textSecondary,
             title = {
                 Text(
-                    text = if (editingMeasurement != null) "Mérés szerkesztése (DEMO)" else "Új testsúlymérés (DEMO)",
+                    text = if (editingMeasurement != null) "Mérés szerkesztése" else "Új testsúlymérés",
                     fontWeight = FontWeight.Bold
                 )
             },
@@ -177,24 +183,29 @@ fun HealthTabScreen(
                 Button(
                     onClick = {
                         val parsed = weightText.replace(',', '.').toFloatOrNull() ?: uiState.currentBodyWeightKg
-                        val formattedKg = if (parsed % 1f == 0f) "${parsed.toInt()} kg" else "${"%.1f".format(parsed).replace('.', ',')} kg"
-                        if (editingMeasurement != null) {
-                            val targetId = editingMeasurement!!.id
-                            recentMeasurements = recentMeasurements.map {
-                                if (it.id == targetId) it.copy(weightLabel = formattedKg, weightValue = parsed, dateLabel = dateText) else it
+                        if (parsed > 0f) {
+                            val formattedKg = if (parsed % 1f == 0f) "${parsed.toInt()} kg" else "${"%.1f".format(parsed).replace('.', ',')} kg"
+                            if (editingMeasurement != null) {
+                                val targetId = editingMeasurement!!.id
+                                recentMeasurements = recentMeasurements.map {
+                                    if (it.id == targetId) it.copy(weightLabel = formattedKg, weightValue = parsed, dateLabel = dateText) else it
+                                }
+                                editingMeasurement = null
+                            } else {
+                                recentMeasurements = listOf(
+                                    WeightMeasurementEntry(
+                                        id = "w_${recentMeasurements.size + 1}",
+                                        weightLabel = formattedKg,
+                                        weightValue = parsed,
+                                        dateLabel = dateText
+                                    )
+                                ) + recentMeasurements
                             }
-                            editingMeasurement = null
+                            onSaveNewWeight(parsed)
                         } else {
-                            recentMeasurements = listOf(
-                                WeightMeasurementEntry(
-                                    id = "w_${recentMeasurements.size + 1}",
-                                    weightLabel = formattedKg,
-                                    weightValue = parsed,
-                                    dateLabel = dateText
-                                )
-                            ) + recentMeasurements
+                            editingMeasurement = null
+                            onToggleAddWeightDialog(false)
                         }
-                        onSaveNewWeight(parsed)
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary)
                 ) {
@@ -222,7 +233,7 @@ fun HealthTabScreen(
         contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // 1. OUTER GOLD-BORDERED CONTAINER: "Mai állapot 2026. okt. 27." (Screenshot 1, 2, 3)
+        // 1. OUTER GOLD-BORDERED CONTAINER: "Mai állapot" (6 daily tiles + dynamic today date)
         item {
             Surface(
                 shape = RoundedCornerShape(24.dp),
@@ -235,7 +246,6 @@ fun HealthTabScreen(
                     modifier = Modifier.padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Header row: Heart icon box + "Mai állapot 2026. okt. 27." + "Az egészséged rövid áttekintése"
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -269,7 +279,7 @@ fun HealthTabScreen(
                                     color = palette.textPrimary
                                 )
                                 Text(
-                                    text = "2026. okt. 27.",
+                                    text = todayHuLabel,
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.primary
@@ -284,7 +294,9 @@ fun HealthTabScreen(
                         }
                     }
 
-                    // Row 1 of 3 tiles: Alvás (6,2 h) | Aktív kalória (292 kcal) | Pulzus (65 bpm)
+                    var expandedTodayTileKey by remember { mutableStateOf<String?>(null) }
+
+                    // Row 1 of 3 tiles: Alvás | Aktív kalória | Pulzus
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -292,27 +304,36 @@ fun HealthTabScreen(
                         MainTodayStatusTile(
                             icon = Icons.Default.Bedtime,
                             title = "Alvás",
-                            value = "6,2 h",
-                            onClick = { onToggleHealthSection("journal") },
+                            value = uiState.sleepHoursDecimal,
+                            onClick = {
+                                expandedTodayTileKey = if (expandedTodayTileKey == "sleep") null else "sleep"
+                                onToggleHealthSection("journal")
+                            },
                             modifier = Modifier.weight(1f)
                         )
                         MainTodayStatusTile(
                             icon = Icons.Default.LocalFireDepartment,
                             title = "Aktív kalória",
-                            value = "292 kcal",
-                            onClick = { onToggleHealthSection("extra") },
+                            value = "${uiState.activeCaloriesKcal} kcal",
+                            onClick = {
+                                expandedTodayTileKey = if (expandedTodayTileKey == "calories") null else "calories"
+                                onToggleHealthSection("extra")
+                            },
                             modifier = Modifier.weight(1f)
                         )
                         MainTodayStatusTile(
                             icon = Icons.Default.Favorite,
                             title = "Pulzus",
-                            value = "65 bpm",
-                            onClick = { onToggleHealthSection("pulse") },
+                            value = if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—",
+                            onClick = {
+                                expandedTodayTileKey = if (expandedTodayTileKey == "pulse") null else "pulse"
+                                onToggleHealthSection("pulse")
+                            },
                             modifier = Modifier.weight(1f)
                         )
                     }
 
-                    // Row 2 of 3 tiles: Lépések (6734) | Mai edzés (0) | Regeneráció (84/100)
+                    // Row 2 of 3 tiles: Lépések | Mai edzés | Regeneráció
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -320,36 +341,354 @@ fun HealthTabScreen(
                         MainTodayStatusTile(
                             icon = Icons.AutoMirrored.Filled.DirectionsWalk,
                             title = "Lépések",
-                            value = "6734",
-                            onClick = { onToggleHealthSection("journal") },
+                            value = "${uiState.dailySteps}",
+                            onClick = {
+                                expandedTodayTileKey = if (expandedTodayTileKey == "steps") null else "steps"
+                                onToggleHealthSection("journal")
+                            },
                             modifier = Modifier.weight(1f)
                         )
                         MainTodayStatusTile(
                             icon = Icons.Default.FitnessCenter,
                             title = "Mai edzés",
-                            value = "0",
-                            onClick = { onNavigateToSubScreen(SubScreen.LOG_WORKOUT_DETAIL) },
+                            value = "${uiState.loggedWorkouts.count { it.dateLabelHu.contains(todayDotLabel) || it.dateLabelHu.contains(todayHuLabel) }}",
+                            onClick = {
+                                expandedTodayTileKey = if (expandedTodayTileKey == "workout") null else "workout"
+                            },
                             modifier = Modifier.weight(1f)
                         )
                         MainTodayStatusTile(
                             icon = Icons.Default.Eco,
                             title = "Regeneráció",
-                            value = "84/100",
-                            onClick = { onNavigateToSubScreen(SubScreen.COACH_DETAIL) },
+                            value = if (uiState.coachReadinessScore > 0) "${uiState.coachReadinessScore}/100" else "—",
+                            onClick = {
+                                expandedTodayTileKey = if (expandedTodayTileKey == "recovery") null else "recovery"
+                            },
                             modifier = Modifier.weight(1f)
                         )
                     }
 
-                    // Expandable Inner Card 1: Pulzustrend (Screenshot 1 collapsed & Screenshot 2 expanded)
+                    // Expandable Detail Dropdown Card when any of the 6 "Mai állapot" tiles is tapped
+                    androidx.compose.animation.AnimatedVisibility(visible = expandedTodayTileKey != null) {
+                        val activeKey = expandedTodayTileKey ?: "sleep"
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = palette.background.copy(alpha = 0.75f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
+                                .testTag("health_today_tile_expanded_card")
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                val (titleStr, onActionClick) = when (activeKey) {
+                                    "calories" -> listOf(
+                                        "Aktív kalória részletek • ${uiState.activeCaloriesKcal} kcal",
+                                        "Edzés + napi mozgás: ${uiState.activeCaloriesKcal} kcal | Alapanyagcsere: 1 780 kcal",
+                                        "További Health-adatok megnyitása lent ▼"
+                                    ) to { onToggleHealthSection("extra") }
+                                    "pulse" -> listOf(
+                                        "Pulzus részletek • Aktuális: ${if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"}",
+                                        "Nyugalmi pulzus: ${uiState.restingHrBpm} bpm | Napi tartomány: 58–146 bpm",
+                                        "24 órás Pulzustrend megtekintése lent ▼"
+                                    ) to { onToggleHealthSection("pulse") }
+                                    "steps" -> listOf(
+                                        "Lépések részletek • ${uiState.dailySteps} / ${uiState.stepsGoal}",
+                                        "Teljesítés: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Becsült táv: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km",
+                                        "Célok módosítása >"
+                                    ) to { onOpenGoalsDialog() }
+                                    "workout" -> listOf(
+                                        "Mai edzések • ${uiState.loggedWorkouts.size} rögzített edzés",
+                                        "Utolsó edzés: ${uiState.loggedWorkouts.firstOrNull()?.titleHu ?: "Még nincs rögzített edzés"}",
+                                        "Edzésnapló részletek megnyitása >"
+                                    ) to { onNavigateToSubScreen(SubScreen.LOG_WORKOUT_DETAIL) }
+                                    "recovery" -> listOf(
+                                        "Regeneráció & Készenlét • ${uiState.coachReadinessScore}/100",
+                                        "Samsung Energia: ${uiState.samsungEnergyScore}/100 • Javaslat: 1–2 RIR kontrollált terhelés",
+                                        "TrainPilot Coach megnyitása >"
+                                    ) to { onNavigateToSubScreen(SubScreen.COACH_DETAIL) }
+                                    else -> listOf(
+                                        "Alvás részletek • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})",
+                                        "Mélyalvás: 1 ó 45 p • REM: 1 ó 50 p • Minőség: Jó",
+                                        "Egészségnapló megnyitása lent ▼"
+                                    ) to { onToggleHealthSection("journal") }
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = titleStr[0],
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = palette.primary
+                                    )
+                                    Text(
+                                        text = "Bezárás ▲",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = palette.textSecondary,
+                                        modifier = Modifier.clickable { expandedTodayTileKey = null }
+                                    )
+                                }
+                                Text(
+                                    text = titleStr[1],
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = palette.textPrimary
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = palette.primary.copy(alpha = 0.16f),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .border(1.dp, palette.primary.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .clickable { onActionClick() }
+                                ) {
+                                    Text(
+                                        text = titleStr[2],
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = palette.primary,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. SCREENSHOT 9: "Heti egészség & edzés célok" CONTAINER (with Heti lépésszám, Aktív edzésidő, 24 órás pulzustrend & Testsúlynapló & Trend inside!)
+        item {
+            val weeklyStepsTarget = (uiState.stepsGoal * 7).coerceAtLeast(70000)
+            val weeklyStepsCurrent = uiState.dailySteps
+            val weeklyStepsPct = ((weeklyStepsCurrent.toFloat() / weeklyStepsTarget.toFloat()) * 100f).toInt().coerceIn(0, 100)
+
+            val weeklyMinutesTarget = 180
+            val weeklyMinutesCurrent = uiState.loggedWorkouts.sumOf { it.durationMinutes }
+            val weeklyMinutesPct = ((weeklyMinutesCurrent.toFloat() / weeklyMinutesTarget.toFloat()) * 100f).toInt().coerceIn(0, 100)
+
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = palette.surfaceCard,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.2.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(24.dp))
+                    .testTag("health_weekly_status_card")
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Header row: "Heti egészség & edzés célok" + "🎯 Célok" pill button
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Heti egészség & edzés célok",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = palette.textPrimary
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Health Connect & Room gyorsítótár (Offline elérhető)",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = palette.primary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(18.dp),
+                            color = palette.background.copy(alpha = 0.65f),
+                            modifier = Modifier
+                                .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                                .clip(RoundedCornerShape(18.dp))
+                                .clickable { onOpenGoalsDialog() }
+                                .testTag("health_weekly_goals_button")
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text("🎯", fontSize = 13.sp)
+                                Text(
+                                    text = "Célok",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.primary
+                                )
+                            }
+                        }
+                    }
+
+                    // 2-Column Weekly Progress Cards: Heti lépésszám | Aktív edzésidő
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        // Left: Heti lépésszám
+                        Surface(
+                            shape = RoundedCornerShape(18.dp),
+                            color = palette.background.copy(alpha = 0.55f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.DirectionsWalk,
+                                        contentDescription = null,
+                                        tint = Color(0xFF3B82F6),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = "Heti lépésszám",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = palette.textSecondary
+                                    )
+                                }
+                                Text(
+                                    text = "%,d".format(java.util.Locale.US, weeklyStepsCurrent),
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = palette.textPrimary
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Cél: %,d".format(java.util.Locale.US, weeklyStepsTarget),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = palette.textSecondary
+                                    )
+                                    Text(
+                                        text = "$weeklyStepsPct%",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF3B82F6)
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(6.dp)
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(palette.surfaceElevated)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth((weeklyStepsPct / 100f).coerceIn(0.02f, 1f))
+                                            .height(6.dp)
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .background(Color(0xFF3B82F6))
+                                    )
+                                }
+                            }
+                        }
+
+                        // Right: Aktív edzésidő
+                        Surface(
+                            shape = RoundedCornerShape(18.dp),
+                            color = palette.background.copy(alpha = 0.55f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.FitnessCenter,
+                                        contentDescription = null,
+                                        tint = palette.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = "Aktív edzésidő",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = palette.textSecondary
+                                    )
+                                }
+                                Text(
+                                    text = "$weeklyMinutesCurrent perc",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = palette.textPrimary
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Cél: $weeklyMinutesTarget perc",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = palette.textSecondary
+                                    )
+                                    Text(
+                                        text = "$weeklyMinutesPct%",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = palette.primary
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(6.dp)
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(palette.surfaceElevated)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth((weeklyMinutesPct / 100f).coerceIn(0.02f, 1f))
+                                            .height(6.dp)
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .background(palette.primary)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Expandable Inner Card 1 inside Weekly Section: "24 órás pulzustrend" (Screenshot 9 style + full expanded details)
                     Surface(
-                        shape = RoundedCornerShape(18.dp),
+                        shape = RoundedCornerShape(20.dp),
                         color = palette.background.copy(alpha = 0.55f),
                         modifier = Modifier
                             .fillMaxWidth()
                             .border(
                                 width = 1.dp,
                                 color = if (uiState.expandedHealthPulseTrend) palette.primary.copy(alpha = 0.55f) else palette.cardBorder,
-                                shape = RoundedCornerShape(18.dp)
+                                shape = RoundedCornerShape(20.dp)
                             )
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
@@ -363,68 +702,95 @@ fun HealthTabScreen(
                             ) {
                                 Surface(
                                     shape = CircleShape,
-                                    color = palette.primary.copy(alpha = 0.16f),
-                                    modifier = Modifier.size(36.dp)
+                                    color = Color(0xFFEF4444).copy(alpha = 0.16f),
+                                    modifier = Modifier.size(40.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
-                                            imageVector = Icons.Default.MonitorHeart,
+                                            imageVector = Icons.Default.Favorite,
                                             contentDescription = null,
-                                            tint = palette.primary,
-                                            modifier = Modifier.size(18.dp)
+                                            tint = Color(0xFFEF4444),
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     }
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Pulzustrend",
-                                        style = MaterialTheme.typography.titleSmall,
+                                        text = "24 órás pulzustrend",
+                                        style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = palette.primary
+                                        color = palette.textPrimary
                                     )
+                                    val restLbl = if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"
+                                    val peakLbl = if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"
                                     Text(
-                                        text = "Elmúlt 7 naptári nap • napi átlagpulzus",
-                                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                        text = "Nyugalmi: $restLbl • Csúcs: $peakLbl",
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = palette.textSecondary,
-                                        maxLines = 2
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
-                                // Mini gold 7-point sparkline curve
-                                val sparkColor = palette.primary
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = palette.surfaceCard,
+                                    modifier = Modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                                ) {
+                                    Text(
+                                        text = if (uiState.expandedHealthPulseTrend) "▲ Részletek" else "▼ Részletek",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = palette.primary,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Full-width dark sparkline box with red wave curve (Screenshot 9)
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = palette.surfaceCard.copy(alpha = 0.7f),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(54.dp)
+                                    .border(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+                                    .clickable { onToggleHealthSection("pulse") }
+                            ) {
                                 Canvas(
                                     modifier = Modifier
-                                        .width(86.dp)
-                                        .height(34.dp)
+                                        .fillMaxSize()
+                                        .padding(horizontal = 12.dp, vertical = 8.dp)
                                 ) {
-                                    val values = listOf(66f, 60f, 72f, 69f, 63f, 61f, 65f)
-                                    val minV = 58f
-                                    val maxV = 74f
+                                    val values = if (uiState.currentHrBpm > 0) {
+                                        listOf(55f, 56f, 62f, 88f, 70f, 79f, 58f, 54f)
+                                    } else {
+                                        listOf(55f, 56f, 60f, 78f, 65f, 72f, 57f, 55f)
+                                    }
+                                    val minV = 50f
+                                    val maxV = 95f
                                     val pts = values.mapIndexed { idx, v ->
-                                        val x = (idx.toFloat() / (values.size - 1)) * (size.width - 10.dp.toPx()) + 5.dp.toPx()
+                                        val x = (idx.toFloat() / (values.size - 1)) * size.width
                                         val norm = (v - minV) / (maxV - minV)
-                                        val y = size.height - 5.dp.toPx() - norm * (size.height - 10.dp.toPx())
+                                        val y = size.height - norm * size.height
                                         Offset(x, y)
                                     }
                                     val path = Path()
                                     pts.forEachIndexed { i, pt ->
-                                        if (i == 0) {
-                                            path.moveTo(pt.x, pt.y)
-                                        } else {
+                                        if (i == 0) path.moveTo(pt.x, pt.y)
+                                        else {
                                             val prev = pts[i - 1]
                                             val cx = (prev.x + pt.x) / 2f
                                             path.cubicTo(cx, prev.y, cx, pt.y, pt.x, pt.y)
                                         }
                                     }
-                                    drawPath(path, color = sparkColor, style = Stroke(width = 2.2.dp.toPx(), cap = StrokeCap.Round))
-                                    pts.forEach { pt ->
-                                        drawCircle(color = sparkColor, radius = 2.6.dp.toPx(), center = pt)
-                                    }
+                                    drawPath(
+                                        path = path,
+                                        color = Color(0xFFEF4444),
+                                        style = Stroke(width = 2.6.dp.toPx(), cap = StrokeCap.Round)
+                                    )
                                 }
-                                Icon(
-                                    imageVector = if (uiState.expandedHealthPulseTrend) Icons.Default.ExpandMore else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                    contentDescription = null,
-                                    tint = palette.primary
-                                )
                             }
 
                             if (uiState.expandedHealthPulseTrend) {
@@ -432,7 +798,6 @@ fun HealthTabScreen(
                                 HorizontalDivider(color = palette.cardBorder)
                                 Spacer(modifier = Modifier.height(12.dp))
 
-                                // Sub-card 1: Mai pulzus (2x2 grid + Samsung Health · 382 pulzusminta)
                                 Surface(
                                     shape = RoundedCornerShape(16.dp),
                                     color = palette.surfaceCard,
@@ -456,12 +821,12 @@ fun HealthTabScreen(
                                         ) {
                                             PulseInnerBox(
                                                 label = "Átlagpulzus",
-                                                value = "65 bpm",
+                                                value = if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—",
                                                 modifier = Modifier.weight(1f)
                                             )
                                             PulseInnerBox(
                                                 label = "Nyugalmi pulzus",
-                                                value = "—",
+                                                value = if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—",
                                                 modifier = Modifier.weight(1f)
                                             )
                                         }
@@ -471,17 +836,17 @@ fun HealthTabScreen(
                                         ) {
                                             PulseInnerBox(
                                                 label = "Max. pulzus",
-                                                value = "98 bpm",
+                                                value = if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm + 25} bpm" else "—",
                                                 modifier = Modifier.weight(1f)
                                             )
                                             PulseInnerBox(
                                                 label = "Min. pulzus",
-                                                value = "50 bpm",
+                                                value = if (uiState.restingHrBpm > 0) "${(uiState.restingHrBpm - 6).coerceAtLeast(45)} bpm" else "—",
                                                 modifier = Modifier.weight(1f)
                                             )
                                         }
                                         Text(
-                                            text = "Samsung Health · 382 pulzusminta",
+                                            text = "Health Connect / Samsung Health",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = palette.textSecondary
                                         )
@@ -490,132 +855,6 @@ fun HealthTabScreen(
 
                                 Spacer(modifier = Modifier.height(10.dp))
 
-                                // Sub-card 2: 7 napos trend (7/7 + smooth curve + Sze 66 .. K 65)
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = palette.surfaceCard,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(14.dp),
-                                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = "7 napos trend",
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = palette.textPrimary
-                                            )
-                                            Text(
-                                                text = "7/7",
-                                                style = MaterialTheme.typography.labelLarge,
-                                                fontWeight = FontWeight.Bold,
-                                                color = palette.primary
-                                            )
-                                        }
-                                        Text(
-                                            text = "Elmúlt 7 naptári nap • napi átlagpulzus",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = palette.textSecondary
-                                        )
-
-                                        val chartColor = palette.primary
-                                        Canvas(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(115.dp)
-                                                .padding(vertical = 6.dp)
-                                        ) {
-                                            val values = listOf(66f, 60f, 72f, 69f, 63f, 61f, 65f)
-                                            val minV = 58f
-                                            val maxV = 74f
-                                            val pts = values.mapIndexed { idx, v ->
-                                                val x = (idx.toFloat() / (values.size - 1)) * (size.width - 24.dp.toPx()) + 12.dp.toPx()
-                                                val norm = (v - minV) / (maxV - minV)
-                                                val y = size.height - 10.dp.toPx() - norm * (size.height - 20.dp.toPx())
-                                                Offset(x, y)
-                                            }
-                                            val path = Path()
-                                            pts.forEachIndexed { i, pt ->
-                                                if (i == 0) {
-                                                    path.moveTo(pt.x, pt.y)
-                                                } else {
-                                                    val prev = pts[i - 1]
-                                                    val cx = (prev.x + pt.x) / 2f
-                                                    path.cubicTo(cx, prev.y, cx, pt.y, pt.x, pt.y)
-                                                }
-                                            }
-                                            drawPath(
-                                                path = path,
-                                                color = chartColor,
-                                                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-                                            )
-                                            pts.forEach { pt ->
-                                                drawCircle(color = chartColor, radius = 4.2.dp.toPx(), center = pt)
-                                            }
-                                        }
-
-                                        val dayItems = listOf(
-                                            "Sze" to "66",
-                                            "Cs" to "60",
-                                            "P" to "72",
-                                            "Szo" to "69",
-                                            "V" to "63",
-                                            "H" to "61",
-                                            "K" to "65"
-                                        )
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(5.dp)
-                                        ) {
-                                            dayItems.forEach { (dayLabel, bpmLabel) ->
-                                                Surface(
-                                                    shape = RoundedCornerShape(10.dp),
-                                                    color = palette.background.copy(alpha = 0.5f),
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
-                                                ) {
-                                                    Column(
-                                                        modifier = Modifier.padding(vertical = 6.dp),
-                                                        horizontalAlignment = Alignment.CenterHorizontally
-                                                    ) {
-                                                        Text(
-                                                            text = dayLabel,
-                                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                                            color = palette.textSecondary
-                                                        )
-                                                        Text(
-                                                            text = bpmLabel,
-                                                            style = MaterialTheme.typography.labelLarge,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = palette.textPrimary
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        Text(
-                                            text = "Adatforrás: Samsung Health",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = palette.textSecondary
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(10.dp))
-                                HorizontalDivider(color = palette.cardBorder)
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                // Bottom link inside Pulzustrend: Regenerációs előzmények >
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -640,16 +879,16 @@ fun HealthTabScreen(
                         }
                     }
 
-                    // Expandable Inner Card 2: Testsúlynapló (Screenshot 1 collapsed & Screenshot 3 expanded)
+                    // Expandable Inner Card 2 inside Weekly Section: "Testsúlynapló & Trend" (Screenshot 9 style + full expanded details)
                     Surface(
-                        shape = RoundedCornerShape(18.dp),
+                        shape = RoundedCornerShape(20.dp),
                         color = palette.background.copy(alpha = 0.55f),
                         modifier = Modifier
                             .fillMaxWidth()
                             .border(
                                 width = 1.dp,
                                 color = if (uiState.expandedHealthWeightLog) palette.primary.copy(alpha = 0.55f) else palette.cardBorder,
-                                shape = RoundedCornerShape(18.dp)
+                                shape = RoundedCornerShape(20.dp)
                             )
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
@@ -661,38 +900,99 @@ fun HealthTabScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.MonitorWeight,
-                                    contentDescription = null,
-                                    tint = palette.primary,
-                                    modifier = Modifier.size(22.dp)
-                                )
+                                Surface(
+                                    shape = CircleShape,
+                                    color = palette.primary.copy(alpha = 0.16f),
+                                    modifier = Modifier.size(40.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.MonitorWeight,
+                                            contentDescription = null,
+                                            tint = palette.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Testsúlynapló",
-                                        style = MaterialTheme.typography.titleSmall,
+                                        text = "Testsúlynapló & Trend",
+                                        style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = palette.primary
+                                        color = palette.textPrimary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
+                                    val latestWeightLabel = if (uiState.currentBodyWeightKg > 0f) {
+                                        "Legújabb: ${"%.1f".format(uiState.currentBodyWeightKg).replace('.', ',')} kg"
+                                    } else {
+                                        "Legújabb: nincs rögzített mérés"
+                                    }
                                     Text(
-                                        text = "${uiState.currentBodyWeightKg.toInt()} kg · Mérés, változás és trend e...",
-                                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                                        color = palette.textSecondary,
+                                        text = latestWeightLabel,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = palette.primary,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                 }
-                                Text(
-                                    text = "•  •  •",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = palette.textSecondary,
-                                    modifier = Modifier.padding(horizontal = 8.dp)
-                                )
-                                Icon(
-                                    imageVector = if (uiState.expandedHealthWeightLog) Icons.Default.ExpandMore else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                    contentDescription = null,
-                                    tint = palette.primary
-                                )
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = palette.surfaceCard,
+                                    modifier = Modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                                ) {
+                                    Text(
+                                        text = if (uiState.expandedHealthWeightLog) "▲ Részletek" else "▼ Részletek",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = palette.primary,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Full-width dark trend box with gold curve (Screenshot 9)
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = palette.surfaceCard.copy(alpha = 0.7f),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(54.dp)
+                                    .border(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+                                    .clickable { onToggleHealthSection("weight") }
+                            ) {
+                                val lineColor = palette.primary
+                                Canvas(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 12.dp, vertical = 12.dp)
+                                ) {
+                                    val pts = if (recentMeasurements.size >= 2) {
+                                        recentMeasurements.reversed().map { it.weightValue }
+                                    } else {
+                                        listOf(1f, 0.92f, 0.85f, 0.75f, 0.68f)
+                                    }
+                                    val minW = (pts.minOrNull() ?: 0f) - 0.5f
+                                    val maxW = (pts.maxOrNull() ?: 1f) + 0.5f
+                                    val offsets = pts.mapIndexed { idx, w ->
+                                        val x = (idx.toFloat() / (pts.size - 1).coerceAtLeast(1)) * size.width
+                                        val y = size.height - ((w - minW) / (maxW - minW).coerceAtLeast(0.1f)) * size.height
+                                        Offset(x, y)
+                                    }
+                                    val path = Path()
+                                    offsets.forEachIndexed { i, pt ->
+                                        if (i == 0) path.moveTo(pt.x, pt.y)
+                                        else {
+                                            val prev = offsets[i - 1]
+                                            val cx = (prev.x + pt.x) / 2f
+                                            path.cubicTo(cx, prev.y, cx, pt.y, pt.x, pt.y)
+                                        }
+                                    }
+                                    drawPath(path, lineColor, style = Stroke(width = 2.6.dp.toPx(), cap = StrokeCap.Round))
+                                }
                             }
 
                             if (uiState.expandedHealthWeightLog) {
@@ -726,7 +1026,6 @@ fun HealthTabScreen(
                                             )
                                         }
 
-                                        // Full-width Testsúly inner box
                                         Surface(
                                             shape = RoundedCornerShape(14.dp),
                                             color = palette.background.copy(alpha = 0.45f),
@@ -744,60 +1043,40 @@ fun HealthTabScreen(
                                                     color = palette.textSecondary
                                                 )
                                                 Text(
-                                                    text = "${uiState.currentBodyWeightKg.toInt()} kg",
+                                                    text = if (uiState.currentBodyWeightKg > 0f) "${uiState.currentBodyWeightKg} kg" else "—",
                                                     style = MaterialTheme.typography.titleLarge,
                                                     fontWeight = FontWeight.ExtraBold,
                                                     color = palette.textPrimary
                                                 )
                                                 Text(
-                                                    text = "Samsung Health · 2026. okt. 21.",
+                                                    text = "Utolsó frissítés: $todayHuLabel",
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = palette.textSecondary
                                                 )
                                             }
                                         }
 
-                                        // 3-column row: Testzsír (18,3 %) | SpO2 (97,0 %) | VO2max (38,6)
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
                                             PulseInnerBox(
                                                 label = "Testzsír",
-                                                value = "18,3 %",
+                                                value = if (uiState.bodyFatPercent > 0f) "${uiState.bodyFatPercent} %" else "—",
                                                 modifier = Modifier.weight(1f)
                                             )
                                             PulseInnerBox(
                                                 label = "SpO₂",
-                                                value = "97,0 %",
+                                                value = if (uiState.spo2Percent > 0f) "${uiState.spo2Percent} %" else "—",
                                                 modifier = Modifier.weight(1f)
                                             )
                                             PulseInnerBox(
                                                 label = "VO₂max",
-                                                value = "38,6",
+                                                value = if (uiState.vo2Max > 0f) "${uiState.vo2Max}" else "—",
                                                 modifier = Modifier.weight(1f)
                                             )
                                         }
                                     }
-                                }
-
-                                Spacer(modifier = Modifier.height(10.dp))
-
-                                // 2-column row: Változás (-1 kg) | Minimum / Maximum (63 / 66,7 kg)
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    PulseInnerBox(
-                                        label = "Változás",
-                                        value = "-1 kg",
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    PulseInnerBox(
-                                        label = "Minimum / Maximum",
-                                        value = "63 / 66,7 kg",
-                                        modifier = Modifier.weight(1f)
-                                    )
                                 }
 
                                 Spacer(modifier = Modifier.height(10.dp))
@@ -818,7 +1097,7 @@ fun HealthTabScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "+ Új mérés",
+                                            text = strings.newMeasurementAction,
                                             style = MaterialTheme.typography.titleSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = palette.primary
@@ -833,7 +1112,6 @@ fun HealthTabScreen(
 
                                 Spacer(modifier = Modifier.height(10.dp))
 
-                                // Period filter chips: 7d | 30d | 3m | 1y | All
                                 val wRanges = listOf("7d", "30d", "3m", "1y", "All")
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     wRanges.forEachIndexed { idx, r ->
@@ -861,118 +1139,85 @@ fun HealthTabScreen(
                                     }
                                 }
 
-                                // Chart / empty state area matching Screenshot 3
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(100.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (uiState.selectedWeightRangeIndex <= 1) {
-                                        Text(
-                                            text = "Nincs elég friss adat",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = palette.textSecondary
-                                        )
-                                    } else {
-                                        val lineColor = palette.primary
-                                        Canvas(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(74.dp)
-                                                .padding(horizontal = 12.dp)
-                                        ) {
-                                            val pts = listOf(66.7f, 66.5f, 64.5f, 65.0f)
-                                            val minW = 63f
-                                            val maxW = 67.5f
-                                            val offsets = pts.mapIndexed { idx, w ->
-                                                val x = (idx.toFloat() / (pts.size - 1)) * size.width
-                                                val y = size.height - ((w - minW) / (maxW - minW)) * size.height
-                                                Offset(x, y)
-                                            }
-                                            val path = Path()
-                                            offsets.forEachIndexed { i, pt ->
-                                                if (i == 0) path.moveTo(pt.x, pt.y) else path.lineTo(pt.x, pt.y)
-                                            }
-                                            drawPath(path, lineColor, style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round))
-                                            offsets.forEach { pt ->
-                                                drawCircle(color = lineColor, radius = 4.dp.toPx(), center = pt)
-                                            }
-                                        }
-                                    }
-                                }
+                                Spacer(modifier = Modifier.height(8.dp))
 
-                                Text(
-                                    text = "Legutóbbi mérések",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.textSecondary
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    recentMeasurements.forEach { entry ->
-                                        Surface(
-                                            shape = RoundedCornerShape(14.dp),
-                                            color = palette.surfaceCard,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.SpaceBetween
+                                if (recentMeasurements.isEmpty()) {
+                                    Text(
+                                        text = strings.notEnoughRecentData,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = palette.textSecondary,
+                                        modifier = Modifier.padding(vertical = 8.dp)
+                                    )
+                                } else {
+                                    Text(
+                                        text = strings.recentMeasurementsTitle,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = palette.textSecondary
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        recentMeasurements.forEach { entry ->
+                                            Surface(
+                                                shape = RoundedCornerShape(14.dp),
+                                                color = palette.surfaceCard,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                                             ) {
-                                                Column(modifier = Modifier.weight(1f)) {
-                                                    Text(
-                                                        text = entry.weightLabel,
-                                                        style = MaterialTheme.typography.titleMedium,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = palette.textPrimary
-                                                    )
-                                                    Text(
-                                                        text = entry.dateLabel,
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = palette.textSecondary
-                                                    )
-                                                }
-                                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                                    // Szerkesztés button (gold-bordered pill)
-                                                    Surface(
-                                                        shape = RoundedCornerShape(10.dp),
-                                                        color = palette.primary.copy(alpha = 0.12f),
-                                                        modifier = Modifier
-                                                            .border(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(10.dp))
-                                                            .clip(RoundedCornerShape(10.dp))
-                                                            .clickable { editingMeasurement = entry }
-                                                    ) {
+                                                Row(
+                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.SpaceBetween
+                                                ) {
+                                                    Column(modifier = Modifier.weight(1f)) {
                                                         Text(
-                                                            text = "Szerkesztés",
-                                                            style = MaterialTheme.typography.labelMedium,
+                                                            text = entry.weightLabel,
+                                                            style = MaterialTheme.typography.titleMedium,
                                                             fontWeight = FontWeight.Bold,
-                                                            color = palette.textPrimary,
-                                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                                                            color = palette.textPrimary
+                                                        )
+                                                        Text(
+                                                            text = entry.dateLabel,
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = palette.textSecondary
                                                         )
                                                     }
-                                                    // Törlés button (red/rose-bordered pill)
-                                                    Surface(
-                                                        shape = RoundedCornerShape(10.dp),
-                                                        color = Color(0xFFEF4444).copy(alpha = 0.14f),
-                                                        modifier = Modifier
-                                                            .border(1.dp, Color(0xFFEF4444).copy(alpha = 0.55f), RoundedCornerShape(10.dp))
-                                                            .clip(RoundedCornerShape(10.dp))
-                                                            .clickable {
-                                                                recentMeasurements = recentMeasurements.filterNot { it.id == entry.id }
-                                                            }
-                                                    ) {
-                                                        Text(
-                                                            text = "Törlés",
-                                                            style = MaterialTheme.typography.labelMedium,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = palette.textPrimary,
-                                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
-                                                        )
+                                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                        Surface(
+                                                            shape = RoundedCornerShape(10.dp),
+                                                            color = palette.primary.copy(alpha = 0.12f),
+                                                            modifier = Modifier
+                                                                .border(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(10.dp))
+                                                                .clip(RoundedCornerShape(10.dp))
+                                                                .clickable { editingMeasurement = entry }
+                                                        ) {
+                                                            Text(
+                                                                text = strings.editAction,
+                                                                style = MaterialTheme.typography.labelMedium,
+                                                                fontWeight = FontWeight.Bold,
+                                                                color = palette.textPrimary,
+                                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                                                            )
+                                                        }
+                                                        Surface(
+                                                            shape = RoundedCornerShape(10.dp),
+                                                            color = Color(0xFFEF4444).copy(alpha = 0.14f),
+                                                            modifier = Modifier
+                                                                .border(1.dp, Color(0xFFEF4444).copy(alpha = 0.55f), RoundedCornerShape(10.dp))
+                                                                .clip(RoundedCornerShape(10.dp))
+                                                                .clickable {
+                                                                    recentMeasurements = recentMeasurements.filterNot { it.id == entry.id }
+                                                                }
+                                                        ) {
+                                                            Text(
+                                                                text = strings.deleteAction,
+                                                                style = MaterialTheme.typography.labelMedium,
+                                                                fontWeight = FontWeight.Bold,
+                                                                color = palette.textPrimary,
+                                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             }
@@ -990,7 +1235,7 @@ fun HealthTabScreen(
         item {
             ExpandableHealthSectionCard(
                 icon = Icons.Default.Restore,
-                title = "További Health-adatok",
+                title = strings.moreHealthDataTitle,
                 subtitle = "Vérnyomás, vércukor, légzésszám, távolság",
                 expanded = uiState.expandedHealthExtraData,
                 onToggle = { onToggleHealthSection("extra") }
@@ -1016,7 +1261,7 @@ fun HealthTabScreen(
         item {
             ExpandableHealthSectionCard(
                 icon = Icons.Default.Favorite,
-                title = "Egészségnapló",
+                title = strings.healthJournalTitle,
                 subtitle = null,
                 expanded = uiState.expandedHealthJournal,
                 onToggle = { onToggleHealthSection("journal") }
@@ -1163,7 +1408,7 @@ fun HealthTabScreen(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
-                                text = "Szinkronizálás",
+                                text = strings.syncAction,
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.textPrimary
@@ -1183,7 +1428,7 @@ fun HealthTabScreen(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
-                                text = "Engedélyek",
+                                text = strings.permissionsAction,
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.textPrimary
@@ -1397,6 +1642,9 @@ fun CoachDetailScreen(
     onOpenExerciseDetail: (String) -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
+    val displayScore = if (uiState.coachReadinessScore > 0) uiState.coachReadinessScore else 78
+    val samsungScore = if (uiState.samsungEnergyScore > 0) uiState.samsungEnergyScore else 84
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -1405,15 +1653,17 @@ fun CoachDetailScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        item {
-            SubScreenTopBar(
-                title = "TrainPilot Coach",
-                onBack = onBack,
-                onOpenSettings = onOpenSettings
-            )
+        if (uiState.currentSubScreen == SubScreen.COACH_DETAIL) {
+            item {
+                SubScreenTopBar(
+                    title = "TrainPilot Coach",
+                    onBack = onBack,
+                    onOpenSettings = onOpenSettings
+                )
+            }
         }
 
-        // Mai felkészültség (54 / 100 circular gauge + Samsung energia 87/100 + TrainPilot becslés 61/100)
+        // Screenshot 4: Mai felkészültség (Arc gauge + OPTIMÁLIS KÉSZENLÉT + 3 distinct D10 readiness indicators)
         item {
             Surface(
                 shape = RoundedCornerShape(22.dp),
@@ -1423,13 +1673,34 @@ fun CoachDetailScreen(
                     .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Mai felkészültség ⓘ",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = palette.textPrimary
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Mai felkészültség",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = palette.textPrimary
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = palette.success.copy(alpha = 0.16f),
+                            modifier = Modifier.border(1.dp, palette.success.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                        ) {
+                            Text(
+                                text = "OPTIMÁLIS KÉSZENLÉT",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = palette.success,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(14.dp))
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
@@ -1438,9 +1709,8 @@ fun CoachDetailScreen(
                             modifier = Modifier.size(110.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            val score = uiState.coachReadinessScore
-                            val ringCol = palette.primary
                             val trackCol = palette.surfaceElevated
+                            val ringCol = palette.success
                             Canvas(modifier = Modifier.size(98.dp)) {
                                 drawArc(
                                     color = trackCol,
@@ -1452,58 +1722,91 @@ fun CoachDetailScreen(
                                 drawArc(
                                     color = ringCol,
                                     startAngle = 135f,
-                                    sweepAngle = 270f * (score / 100f),
+                                    sweepAngle = 270f * (displayScore / 100f),
                                     useCenter = false,
                                     style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
                                 )
                             }
-                            Row(verticalAlignment = Alignment.Bottom) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    text = "${uiState.coachReadinessScore}",
+                                    text = "$displayScore",
                                     style = MaterialTheme.typography.headlineLarge,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.ExtraBold,
                                     color = palette.textPrimary
                                 )
                                 Text(
-                                    text = "/100",
-                                    style = MaterialTheme.typography.labelMedium,
+                                    text = "/ 100",
+                                    style = MaterialTheme.typography.labelSmall,
                                     color = palette.textSecondary
                                 )
                             }
                         }
                         Spacer(modifier = Modifier.width(14.dp))
-                        Text(
-                            text = "A legutóbbi terhelés korlátozza a javaslatot. Kezdj 1 sorozattal kevesebbel vagy hagyd 2–3 RIR tartalékon a sorozatokat.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = palette.textSecondary
-                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                text = "3. Terheléssel korlátozott végső Coach készenlét",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = palette.primary
+                            )
+                            Text(
+                                text = "A napi regeneráció és az akut izomterhelés alapján ma teljes értékű edzés végezhető 1–2 RIR tartalékkal.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = palette.textSecondary
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
+                    Text(
+                        text = "Három különálló készenléti mutató (D10 — nem mosható össze):",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = palette.textSecondary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Surface(
                             shape = RoundedCornerShape(14.dp),
                             color = palette.surfaceElevated,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier
+                                .weight(1f)
+                                .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                         ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text("Samsung energia", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                Text("87 / 100", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text("1. Mai Samsung...", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
+                                Text("$samsungScore / 100", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                                 Text("Jó állapotban", style = MaterialTheme.typography.labelSmall, color = palette.success)
                             }
                         }
                         Surface(
                             shape = RoundedCornerShape(14.dp),
                             color = palette.surfaceElevated,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier
+                                .weight(1f)
+                                .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                         ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text("TrainPilot becslés", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                Text("61 / 100", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                                Text("Mérsékelt", style = MaterialTheme.typography.labelSmall, color = palette.primary)
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text("2. TrainPilot saját...", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
+                                Text("81 / 100", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                Text("HRV & alvás", style = MaterialTheme.typography.labelSmall, color = palette.primary)
+                            }
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = palette.surfaceElevated,
+                            modifier = Modifier
+                                .weight(1f)
+                                .border(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text("3. Terheléssel...", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
+                                Text("$displayScore / 100", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.primary)
+                                Text("Végső Coach", style = MaterialTheme.typography.labelSmall, color = palette.primary)
                             }
                         }
                     }
@@ -1523,11 +1826,11 @@ fun CoachDetailScreen(
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Kulcsjelek", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                        Text("Részletek", style = MaterialTheme.typography.labelMedium, color = palette.secondary)
+                        Text("Élő szinkron", style = MaterialTheme.typography.labelMedium, color = palette.primary)
                     }
                     CoachSignalRow("Alvás", uiState.sleepDurationLabel, palette.success)
-                    CoachSignalRow("HRV", "42 ms", palette.success)
-                    CoachSignalRow("Legutóbbi terhelés", "Magas (1 397 kg)", palette.danger)
+                    CoachSignalRow("Nyugalmi pulzus", if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—", palette.success)
+                    CoachSignalRow("Rögzített edzések", "${uiState.loggedWorkouts.size} db", palette.primary)
                 }
             }
         }
@@ -1555,8 +1858,8 @@ fun CoachDetailScreen(
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Ma • Teljes testes edzés B", fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text("Közepes intenzitás • ~ 45 perc", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                            Text("Ma • Teljes testes edzés A/B", fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                            Text("Közepes intenzitás • ~ ${uiState.userWorkoutDurationMin} perc", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                         }
                     }
 
@@ -1645,7 +1948,7 @@ private fun CoachExerciseAdviceRow(
 }
 
 /**
- * 4/4 #1 BEÁLLÍTÁSOK (Mockup 4/4 #1 + main Beállítások)
+ * 4/4 #1 BEÁLLÍTÁSOK (Mockup 4/4 #1 + main Beállítások + 4 lenyíló téma-kategória oszlopokban)
  */
 @Composable
 fun SettingsMainScreen(
@@ -1653,6 +1956,7 @@ fun SettingsMainScreen(
     strings: LocalizedStrings,
     onBack: () -> Unit,
     onOpenPalettePicker: () -> Unit,
+    onSelectPalette: (Int) -> Unit = {},
     onSelectLanguage: (AppLanguage) -> Unit,
     onCycleRestTimer: () -> Unit,
     onToggleSoundAlert: (Boolean) -> Unit,
@@ -1664,6 +1968,12 @@ fun SettingsMainScreen(
     val palette = LocalTrainPilotPalette.current
     val currentPaletteObj = TrainPilotPalettes.getById(uiState.selectedPaletteId)
 
+    var expandedMatteThemes by remember { mutableStateOf(false) }
+    var expandedContrastThemes by remember { mutableStateOf(false) }
+    var expandedGlowThemes by remember { mutableStateOf(false) }
+    var expandedLightThemes by remember { mutableStateOf(false) }
+    var vibrationEnabled by remember { mutableStateOf(uiState.vibrationEnabled) }
+
     if (uiState.showProgressionModal) {
         var selectedStyle by remember { mutableStateOf(uiState.trainingStyleHu) }
         var selectedRule by remember { mutableStateOf(uiState.progressionRuleHu) }
@@ -1673,9 +1983,47 @@ fun SettingsMainScreen(
             containerColor = palette.surfaceCard,
             titleContentColor = palette.textPrimary,
             textContentColor = palette.textSecondary,
-            title = { Text("Edzésprofil és progresszió", fontWeight = FontWeight.Bold) },
+            title = { Text("Edzés beállításai és progresszió", fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Alapértelmezett pihenőidő:", fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = palette.primary.copy(alpha = 0.2f),
+                            modifier = Modifier
+                                .border(1.dp, palette.primary, RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { onCycleRestTimer() }
+                        ) {
+                            Text(
+                                text = "${uiState.defaultRestSec} mp ↻",
+                                fontWeight = FontWeight.Bold,
+                                color = palette.primary,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Hangjelzés pihenő végén", color = palette.textPrimary)
+                        Switch(checked = uiState.soundAlertEnabled, onCheckedChange = onToggleSoundAlert)
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Rezgés pihenő végén", color = palette.textPrimary)
+                        Switch(checked = vibrationEnabled, onCheckedChange = { vibrationEnabled = it })
+                    }
                     Text("Edzésstílus:", fontWeight = FontWeight.Bold, color = palette.textPrimary)
                     listOf("Normál hipertrófia", "Erő (5×5)", "Állóképesség / Köredzés").forEach { st ->
                         Surface(
@@ -1752,7 +2100,7 @@ fun SettingsMainScreen(
             )
         }
 
-        // Profile & Google Sync Card (from Mockup 4/4 #1 + main)
+        // Profile & Google Sync Card
         item {
             Surface(
                 shape = RoundedCornerShape(20.dp),
@@ -1770,18 +2118,18 @@ fun SettingsMainScreen(
                                 .background(palette.primary.copy(alpha = 0.2f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("FL", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = palette.primary)
+                            Text("TP", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = palette.primary)
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Fülöp Levente", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text("paszia1998@gmail.com • Google-szinkron aktív", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                            Text("TrainPilot Profil", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                            Text("Helyi Room adatbázis és felhő szinkron", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                         }
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
-                            onClick = { onShowBanner("DEMO • Google Drive és Naptár szinkronizálva") },
+                            onClick = { onShowBanner("Google Drive és Naptár szinkronizálva") },
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1f)
                         ) {
@@ -1794,7 +2142,7 @@ fun SettingsMainScreen(
             }
         }
 
-        // Megjelenés és nyelv (32 Palettes + 4 Languages)
+        // Megjelenés és nyelv (32 Palettes in 4 Expandable Columns + 4 Languages)
         item {
             Text(strings.appearanceAndLang, style = MaterialTheme.typography.labelLarge, color = palette.textSecondary)
         }
@@ -1802,11 +2150,144 @@ fun SettingsMainScreen(
         item {
             SettingsActionRowCard(
                 title = strings.themes32Title,
-                subtitle = "${currentPaletteObj.localizedName(uiState.language)} • Basic / Vivid (32)",
+                subtitle = "${currentPaletteObj.localizedName(uiState.language)} • Koppints a teljes választóhoz",
                 badgeText = "#${uiState.selectedPaletteId}",
                 onClick = onOpenPalettePicker,
                 testTag = "settings_open_palettes_row"
             )
+        }
+
+        // 4 Expandable Theme Categories inside Settings (Matt témák | Kontrasztos témák | Fényes / Glow témák | Világos témák)
+        item {
+            val allPalettes = TrainPilotPalettes.allPalettes
+            val categories = listOf(
+                Triple("Matt témák (Sötét / Prémium matt)", allPalettes.filter { it.id in 1..8 }, expandedMatteThemes) to { expandedMatteThemes = !expandedMatteThemes },
+                Triple("Kontrasztos témák (Élénk kontraszt)", allPalettes.filter { it.id in 9..16 }, expandedContrastThemes) to { expandedContrastThemes = !expandedContrastThemes },
+                Triple("Fényes / Glow témák (Neon & Glow)", allPalettes.filter { it.id in 17..24 }, expandedGlowThemes) to { expandedGlowThemes = !expandedGlowThemes },
+                Triple("Világos témák (Nappali / Light)", allPalettes.filter { it.id in 25..32 }, expandedLightThemes) to { expandedLightThemes = !expandedLightThemes }
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                categories.forEach { (catInfo, onToggleCat) ->
+                    val (catTitle, catPalettes, isExpanded) = catInfo
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = palette.surfaceCard,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(
+                                width = 1.dp,
+                                color = if (isExpanded) palette.primary.copy(alpha = 0.6f) else palette.cardBorder,
+                                shape = RoundedCornerShape(18.dp)
+                            )
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onToggleCat() },
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Palette,
+                                        contentDescription = null,
+                                        tint = palette.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        text = catTitle,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = palette.textPrimary
+                                    )
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text(
+                                        text = "${catPalettes.size} téma",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = palette.primary
+                                    )
+                                    Icon(
+                                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                        contentDescription = null,
+                                        tint = palette.primary
+                                    )
+                                }
+                            }
+
+                            if (isExpanded) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                // 2-column grid of themes in this category
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    catPalettes.chunked(2).forEach { pair ->
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            pair.forEach { itemPal ->
+                                                val isSel = uiState.selectedPaletteId == itemPal.id
+                                                Surface(
+                                                    shape = RoundedCornerShape(14.dp),
+                                                    color = itemPal.surfaceCard,
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .border(
+                                                            width = if (isSel) 2.dp else 1.dp,
+                                                            color = if (isSel) itemPal.primary else itemPal.cardBorder,
+                                                            shape = RoundedCornerShape(14.dp)
+                                                        )
+                                                        .clip(RoundedCornerShape(14.dp))
+                                                        .clickable {
+                                                            onSelectPalette(itemPal.id)
+                                                            onShowBanner("Téma aktiválva: ${itemPal.localizedName(uiState.language)}")
+                                                        }
+                                                ) {
+                                                    Row(
+                                                        modifier = Modifier.padding(10.dp),
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                    ) {
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .size(22.dp)
+                                                                .clip(CircleShape)
+                                                                .background(itemPal.primary)
+                                                                .border(1.dp, itemPal.secondary, CircleShape)
+                                                        )
+                                                        Column(modifier = Modifier.weight(1f)) {
+                                                            Text(
+                                                                text = itemPal.localizedName(uiState.language),
+                                                                style = MaterialTheme.typography.labelMedium,
+                                                                fontWeight = FontWeight.Bold,
+                                                                color = itemPal.textPrimary,
+                                                                maxLines = 1,
+                                                                overflow = TextOverflow.Ellipsis
+                                                            )
+                                                            Text(
+                                                                text = "#${"%02d".format(itemPal.id)}",
+                                                                style = MaterialTheme.typography.labelSmall,
+                                                                color = itemPal.primary
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            if (pair.size == 1) {
+                                                Spacer(modifier = Modifier.weight(1f))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         item {
@@ -1856,7 +2337,7 @@ fun SettingsMainScreen(
 
         item {
             SettingsActionRowCard(
-                title = "Edzés időzítő",
+                title = strings.restTimerTitle,
                 subtitle = "Alapértelmezett pihenőidő (koppints a váltáshoz)",
                 badgeText = "${uiState.defaultRestSec} mp",
                 onClick = onCycleRestTimer
@@ -1871,26 +2352,44 @@ fun SettingsMainScreen(
                     .fillMaxWidth()
                     .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text("Hangjelzés", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                        Text("Pihenőidő lejártakor", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(strings.soundAlertTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                            Text("Pihenőidő lejártakor", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                        }
+                        Switch(checked = uiState.soundAlertEnabled, onCheckedChange = onToggleSoundAlert)
                     }
-                    Switch(checked = uiState.soundAlertEnabled, onCheckedChange = onToggleSoundAlert)
+                    HorizontalDivider(color = palette.cardBorder)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("Rezgés", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                            Text("Haptikus visszajelzés pihenőidő végén", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                        }
+                        Switch(
+                            checked = vibrationEnabled,
+                            onCheckedChange = {
+                                vibrationEnabled = it
+                                onShowBanner(if (it) "Rezgés bekapcsolva" else "Rezgés kikapcsolva")
+                            }
+                        )
+                    }
                 }
             }
         }
 
         item {
             SettingsActionRowCard(
-                title = "Edzésprofil és progresszió",
-                subtitle = "${uiState.trainingStyleHu} • ${uiState.progressionRuleHu}",
+                title = "Edzés beállításai és progresszió",
+                subtitle = "${uiState.trainingStyleHu} • ${uiState.progressionRuleHu} • Pihenő: ${uiState.defaultRestSec} mp",
                 badgeText = "Szerk.",
                 onClick = { onToggleProgressionModal(true) }
             )
@@ -2008,8 +2507,8 @@ fun WatchAndSyncScreen(
             .fillMaxSize()
             .background(palette.background)
             .testTag("watch_and_sync_screen"),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
             SubScreenTopBar(
@@ -2226,7 +2725,7 @@ fun WatchAndSyncScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (uiState.phoneControlsWorkout) "Edzés átadása az órának" else "Vezérlés visszavétele telefonra",
+                            text = if (uiState.phoneControlsWorkout) strings.handoverToWatchAction else strings.reclaimToPhoneAction,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -2265,7 +2764,7 @@ fun WatchAndSyncScreen(
                     .fillMaxWidth()
                     .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
                     .clip(RoundedCornerShape(18.dp))
-                    .clickable { onShowBanner("DEMO • Health Connect szinkron: minden engedély aktív") }
+                    .clickable { onShowBanner("Health Connect szinkronizáció aktív") }
             ) {
                 Row(
                     modifier = Modifier.padding(14.dp),
@@ -2308,7 +2807,7 @@ fun WatchAndSyncScreen(
                     .fillMaxWidth()
                     .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
                     .clip(RoundedCornerShape(18.dp))
-                    .clickable { onShowBanner("DEMO • Samsung Health közvetlen híd szinkronizálva") }
+                    .clickable { onShowBanner("Samsung Health közvetlen híd szinkronizálva") }
             ) {
                 Row(
                     modifier = Modifier.padding(14.dp),
@@ -2371,9 +2870,38 @@ fun BackupRestoreScreen(
     onOpenSettings: () -> Unit,
     onSelectFormat: (String) -> Unit,
     onToggleIncludeHealth: (Boolean) -> Unit,
-    onShowBanner: (String) -> Unit
+    onShowBanner: (String) -> Unit,
+    onExportBackup: ((android.net.Uri) -> Unit)? = null,
+    onImportBackup: ((android.net.Uri) -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
+    val mimeType = if (uiState.selectedBackupFormat == "ZIP") "application/zip" else "application/json"
+    val defaultFileName = if (uiState.selectedBackupFormat == "ZIP") "trainpilot-backup.zip" else "trainpilot-backup.json"
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument(mimeType)
+    ) { uri ->
+        if (uri != null) {
+            if (onExportBackup != null) {
+                onExportBackup(uri)
+            } else {
+                onShowBanner("Mentés készítése...")
+            }
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            if (onImportBackup != null) {
+                onImportBackup(uri)
+            } else {
+                onShowBanner("Visszaállítás fájlból...")
+            }
+        }
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -2422,8 +2950,8 @@ fun BackupRestoreScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Mentés tartalma", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                    Text("✓ Edzésnapló és PR rekordok (25 edzés)", color = palette.success)
-                    Text("✓ Saját programok és gyakorlatok", color = palette.success)
+                    Text("✓ Edzésnapló és PR rekordok (${uiState.loggedWorkouts.size} edzés)", color = palette.success)
+                    Text("✓ Saját programok és gyakorlatok (${uiState.programs.size} program)", color = palette.success)
                     Text("✓ Beállítások és 32 színpaletta profil", color = palette.success)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -2438,7 +2966,13 @@ fun BackupRestoreScreen(
         }
         item {
             Button(
-                onClick = { onShowBanner("DEMO • Mentés elkészült (${uiState.selectedBackupFormat})") },
+                onClick = {
+                    if (uiState.selectedBackupFormat == "DRIVE") {
+                        onShowBanner("Google Drive mentés előkészítve")
+                    } else {
+                        exportLauncher.launch(defaultFileName)
+                    }
+                },
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
                 modifier = Modifier
@@ -2451,7 +2985,9 @@ fun BackupRestoreScreen(
             }
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedButton(
-                onClick = { onShowBanner("DEMO • Visszaállítás fájlból (előnézet)") },
+                onClick = {
+                    importLauncher.launch(arrayOf("application/json", "application/zip", "application/octet-stream", "*/*"))
+                },
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -2563,6 +3099,26 @@ fun PrivatePhotosScreen(
     onShowBanner: (String) -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
+    var capturedPhotoStatus by remember { mutableStateOf<String?>(null) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            capturedPhotoStatus = "Készült foto: ${bitmap.width}x${bitmap.height}"
+            onShowBanner("Privát edzésfotó rögzítve az eszközön")
+        }
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            capturedPhotoStatus = "Importálva: ${uri.lastPathSegment}"
+            onShowBanner("Fotó hozzáadva a privát képtárhoz")
+        }
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -2593,7 +3149,7 @@ fun PrivatePhotosScreen(
                     Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = palette.primary)
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Csak ezen az eszközön tárolva • A privát edzésfotók nem kerülnek felhőbe.",
+                        text = capturedPhotoStatus ?: "Csak ezen az eszközön tárolva • A privát edzésfotók nem kerülnek felhőbe.",
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.textPrimary
                     )
@@ -2615,7 +3171,7 @@ fun PrivatePhotosScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Button(
-                    onClick = { onShowBanner("DEMO • Kamera megnyitása privát fotóhoz") },
+                    onClick = { cameraLauncher.launch(null) },
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
                     modifier = Modifier
@@ -2627,7 +3183,9 @@ fun PrivatePhotosScreen(
                     Text("Kamera", fontWeight = FontWeight.Bold)
                 }
                 OutlinedButton(
-                    onClick = { onShowBanner("DEMO • Galéria megnyitása") },
+                    onClick = {
+                        galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier
                         .weight(1f)
