@@ -2393,9 +2393,11 @@ fun ExerciseYouTubeVideoModalDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "YouTube • ID: $youtubeVideoId",
+                                text = "Oktatóvideó • $exerciseTitle",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Color.White.copy(alpha = 0.9f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f)
                             )
                             Surface(

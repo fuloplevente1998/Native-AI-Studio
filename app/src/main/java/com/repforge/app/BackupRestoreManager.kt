@@ -411,76 +411,85 @@ class BackupRestoreManager(context: Context) {
                 if (raw == null) throw IOException("Cannot read selected archive.")
                 ArchiveIO.extract(raw, incoming, JSON_LIMIT, PHOTO_LIMIT, ARCHIVE_LIMIT, MAX_ENTRIES)
             }
-            // Support legacy RepForge ZIPs where the JSON file might be named repforge-backup.json or similar
             val backupFile = File(incoming, "backup.json")
-            if (!backupFile.isFile) {
-                val altJson = incoming.walkTopDown().firstOrNull {
-                    it.isFile && it.extension.equals("json", ignoreCase = true) && !it.name.equals("manifest.json", ignoreCase = true)
-                } ?: throw IOException("A ZIP archívumban nem található biztonsági mentés JSON fájl.")
-                val normalized = normalizeLegacyRepForgePayload(
-                    JSONObject(String(readLimited(altJson, JSON_LIMIT), StandardCharsets.UTF_8))
-                )
-                writeSynced(backupFile, normalized.toString().toByteArray(StandardCharsets.UTF_8))
-            } else {
-                val rawParsed = JSONObject(String(readLimited(backupFile, JSON_LIMIT), StandardCharsets.UTF_8))
-                val normalized = normalizeLegacyRepForgePayload(rawParsed)
-                writeSynced(backupFile, normalized.toString().toByteArray(StandardCharsets.UTF_8))
-            }
-
-            val data = JSONObject(String(readLimited(backupFile, JSON_LIMIT), StandardCharsets.UTF_8))
             val manifestFile = File(incoming, "manifest.json")
-            if (!manifestFile.isFile) {
-                // Legacy RepForge ZIP without manifest.json: synthesize verified manifest so atomic 2-phase restore works
-                val hashes = JSONObject().put("backup.json", FileInputStream(backupFile).use { ArchiveIO.hash(it) })
-                for (id in photoIds(data)) {
-                    val pFile = File(incoming, "photos/$id.jpg")
-                    if (pFile.isFile) {
-                        hashes.put("photos/$id.jpg", FileInputStream(pFile).use { ArchiveIO.hash(it) })
+
+            if (manifestFile.isFile) {
+                // 1. Strict verification of original untouched archive files against manifest.json BEFORE any normalization
+                if (!backupFile.isFile) {
+                    throw IOException("Missing archive file: backup.json")
+                }
+                val rawManifest = JSONObject(String(readLimited(manifestFile, JSON_LIMIT), StandardCharsets.UTF_8))
+                val fmt = rawManifest.optString("format")
+                if (fmt != "TrainPilotArchive" && fmt != "RepForgeArchive") {
+                    throw IOException("Unknown archive format.")
+                }
+                if (rawManifest.optInt("version") != 1) {
+                    throw IOException("Unknown archive version.")
+                }
+                val checks = rawManifest.getJSONObject("sha256")
+                val rawBackupJson = JSONObject(String(readLimited(backupFile, JSON_LIMIT), StandardCharsets.UTF_8))
+                val normalizedData = normalizeLegacyRepForgePayload(rawBackupJson)
+                val expected = HashSet<String>().apply {
+                    add("backup.json")
+                    add("manifest.json")
+                    for (id in photoIds(normalizedData)) {
+                        add("photos/$id.jpg")
                     }
+                }
+                val hashes = HashMap<String, String>()
+                val keys = checks.keys()
+                while (keys.hasNext()) {
+                    val k = keys.next()
+                    hashes[k] = checks.getString(k)
+                }
+                // Verify untouched extracted files against original manifest hashes and exact file set
+                ArchiveIO.verify(incoming, names, expected, hashes)
+
+                // 2. Only after original cryptographic integrity passes, stage normalized payload if needed
+                if (normalizedData.toString() != rawBackupJson.toString() || fmt != "TrainPilotArchive") {
+                    val normalizedBytes = normalizedData.toString().toByteArray(StandardCharsets.UTF_8)
+                    writeSynced(backupFile, normalizedBytes)
+                    checks.put("backup.json", ArchiveIO.hash(ByteArrayInputStream(normalizedBytes)))
+                    rawManifest.put("format", "TrainPilotArchive")
+                    rawManifest.put("version", 1)
+                    rawManifest.put("sha256", checks)
+                    writeSynced(manifestFile, rawManifest.toString().toByteArray(StandardCharsets.UTF_8))
+                }
+            } else {
+                // Legacy RepForge ZIP without manifest.json: locate JSON, normalize in staging, and validate photo set
+                val sourceJsonFile = if (backupFile.isFile) {
+                    backupFile
+                } else {
+                    incoming.walkTopDown().firstOrNull {
+                        it.isFile && it.extension.equals("json", ignoreCase = true)
+                    } ?: throw IOException("A ZIP archívumban nem található biztonsági mentés JSON fájl.")
+                }
+                val rawParsed = JSONObject(String(readLimited(sourceJsonFile, JSON_LIMIT), StandardCharsets.UTF_8))
+                val normalizedData = normalizeLegacyRepForgePayload(rawParsed)
+                if (sourceJsonFile != backupFile && sourceJsonFile.exists()) {
+                    sourceJsonFile.delete()
+                }
+                writeSynced(backupFile, normalizedData.toString().toByteArray(StandardCharsets.UTF_8))
+
+                val hashes = JSONObject().put("backup.json", FileInputStream(backupFile).use { ArchiveIO.hash(it) })
+                for (id in photoIds(normalizedData)) {
+                    val pFile = File(incoming, "photos/$id.jpg")
+                    if (!pFile.isFile) throw IOException("Missing archive file: photos/$id.jpg")
+                    hashes.put("photos/$id.jpg", FileInputStream(pFile).use { ArchiveIO.hash(it) })
                 }
                 val synthManifest = JSONObject()
                     .put("format", "TrainPilotArchive")
                     .put("version", 1)
+                    .put("legacyUnmanifested", true)
                     .put("sha256", hashes)
                 writeSynced(manifestFile, synthManifest.toString().toByteArray(StandardCharsets.UTF_8))
-            } else {
-                val rawManifest = JSONObject(String(readLimited(manifestFile, JSON_LIMIT), StandardCharsets.UTF_8))
-                val fmt = rawManifest.optString("format")
-                if (fmt == "RepForgeArchive" || fmt == "RepForgeBackup" || fmt.isBlank()) {
-                    rawManifest.put("format", "TrainPilotArchive")
-                    if (rawManifest.optInt("version", 0) <= 0) rawManifest.put("version", 1)
-                    // Update backup.json hash after normalization
-                    val shaObj = rawManifest.optJSONObject("sha256") ?: JSONObject()
-                    shaObj.put("backup.json", FileInputStream(backupFile).use { ArchiveIO.hash(it) })
-                    rawManifest.put("sha256", shaObj)
-                    writeSynced(manifestFile, rawManifest.toString().toByteArray(StandardCharsets.UTF_8))
-                }
-            }
 
-            val manifest = JSONObject(String(readLimited(manifestFile, JSON_LIMIT), StandardCharsets.UTF_8))
-            if ("TrainPilotArchive" != manifest.optString("format") || manifest.optInt("version") != 1) {
-                throw IOException("Unknown archive format.")
+                val actualFiles = incoming.walkTopDown().filter { it.isFile }.map { it.relativeTo(incoming).invariantSeparatorsPath }.toSet()
+                val expected = setOf("backup.json", "manifest.json") + photoIds(normalizedData).map { "photos/$it.jpg" }
+                val hashMap = hashes.keys().asSequence().associateWith { hashes.getString(it) }
+                ArchiveIO.verify(incoming, actualFiles, expected, hashMap)
             }
-            val checks = manifest.getJSONObject("sha256")
-            // Ensure backup.json checksum matches normalized backup.json
-            checks.put("backup.json", FileInputStream(backupFile).use { ArchiveIO.hash(it) })
-            writeSynced(manifestFile, manifest.toString().toByteArray(StandardCharsets.UTF_8))
-
-            val actualFiles = incoming.walkTopDown().filter { it.isFile }.map { it.relativeTo(incoming).invariantSeparatorsPath }.toSet()
-            val expected = HashSet<String>().apply {
-                add("backup.json")
-                add("manifest.json")
-                for (id in photoIds(data)) {
-                    if ("photos/$id.jpg" in actualFiles) add("photos/$id.jpg")
-                }
-            }
-            val hashes = HashMap<String, String>()
-            val keys = checks.keys()
-            while (keys.hasNext()) {
-                val k = keys.next()
-                if (k in expected) hashes[k] = checks.getString(k)
-            }
-            ArchiveIO.verify(incoming, expected, expected, hashes)
 
             val operation: suspend () -> Unit = { completeReplacement(NativeReplacementJournal.Entry("zip", token, false)) }
             if (recoverInterrupted) NativeDataReplacement.recover(appContext, operation)

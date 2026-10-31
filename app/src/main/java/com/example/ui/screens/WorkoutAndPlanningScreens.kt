@@ -2536,6 +2536,8 @@ fun ExerciseLibraryScreen(
         val matchesCategory = state.selectedExerciseCategory == ExerciseCategory.ALL || ex.category == state.selectedExerciseCategory
         val matchesSearch = state.exerciseSearchQuery.isBlank() ||
             ex.nameHu.contains(state.exerciseSearchQuery, ignoreCase = true) ||
+            ex.nameEn.contains(state.exerciseSearchQuery, ignoreCase = true) ||
+            ex.primaryMusclesHu.contains(state.exerciseSearchQuery, ignoreCase = true) ||
             ex.equipmentHu.contains(state.exerciseSearchQuery, ignoreCase = true)
         matchesCategory && matchesSearch
     }
@@ -2546,16 +2548,16 @@ fun ExerciseLibraryScreen(
             .verticalScroll(rememberScrollState())
             .padding(bottom = 24.dp)
     ) {
-        // Matches Mockup 1/4 #5 "Gyakorlatok"
+        // Matches Mockup 1/4 #5 "Gyakorlatok" (106-os gyakorlat-adatbázis kategóriák szerint)
         SubScreenTopBar(
-            title = strings.exercisePickerTitle,
+            title = "${strings.exercisePickerTitle} (${state.exercises.size})",
             onBack = onBack,
             onOpenSettings = onOpenSettings
         )
 
         Column(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(horizontal = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             OutlinedTextField(
                 value = state.exerciseSearchQuery,
@@ -2569,38 +2571,45 @@ fun ExerciseLibraryScreen(
                     )
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Horizontal category chips: Összes | Láb | Mell | Hát | Váll | Kar | Core
+            // Compact Horizontal Category Chips with exact counts: Összes (106) | Láb | Mell | Hát | Váll | Kar | Core
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 ExerciseCategory.entries.forEach { cat ->
                     val selected = state.selectedExerciseCategory == cat
+                    val catCount = if (cat == ExerciseCategory.ALL) {
+                        state.exercises.size
+                    } else {
+                        state.exercises.count { it.category == cat }
+                    }
                     Surface(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(16.dp),
                         color = if (selected) palette.primary else palette.surface,
                         modifier = Modifier
-                            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                            .heightIn(min = 36.dp)
                             .border(
                                 1.dp,
                                 if (selected) palette.primary else palette.cardBorder,
-                                RoundedCornerShape(20.dp)
+                                RoundedCornerShape(16.dp)
                             )
+                            .clip(RoundedCornerShape(16.dp))
                             .clickable { onSelectCategory(cat) }
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text(
-                                text = cat.localized(state.language),
-                                style = MaterialTheme.typography.labelLarge,
+                                text = "${cat.localized(state.language)} ($catCount)",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (selected) palette.onPrimary else palette.textPrimary
                             )
                         }
@@ -2614,33 +2623,34 @@ fun ExerciseLibraryScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${state.exercises.size} (${filtered.size})",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = palette.textPrimary
+                    text = "${filtered.size} / ${state.exercises.size} gyakorlat",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = palette.textSecondary
                 )
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = palette.primary.copy(alpha = 0.16f),
+                    shape = RoundedCornerShape(10.dp),
+                    color = palette.primary.copy(alpha = 0.15f),
                     modifier = Modifier
-                        .border(1.dp, palette.primary, RoundedCornerShape(12.dp))
-                        .clip(RoundedCornerShape(12.dp))
+                        .border(1.dp, palette.primary, RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(10.dp))
                         .clickable { onOpenAddCustomExercise() }
                         .testTag("exercise_library_add_custom_button")
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = null,
                             tint = palette.primary,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = "Új egyedi gyakorlat (pl. Kör futás)",
-                            style = MaterialTheme.typography.labelMedium,
+                            text = "Új egyedi gyakorlat",
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = palette.primary
                         )
@@ -2650,23 +2660,23 @@ fun ExerciseLibraryScreen(
 
             if (state.quickWorkoutQueue.isNotEmpty()) {
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(14.dp),
                     color = palette.primary.copy(alpha = 0.14f),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
+                        .border(1.5.dp, palette.primary, RoundedCornerShape(14.dp))
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Edzésre összeállítva (${state.quickWorkoutQueue.size} gyakorlat)",
-                                style = MaterialTheme.typography.titleSmall,
+                                style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.primary
                             )
@@ -2674,130 +2684,143 @@ fun ExerciseLibraryScreen(
                                 text = state.quickWorkoutQueue.joinToString(", ") { it.nameHu },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.textSecondary,
-                                maxLines = 1
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
                             onClick = onStartQueuedWorkout,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = palette.primary,
                                 contentColor = palette.onPrimary
                             ),
                             modifier = Modifier
-                                .heightIn(min = 42.dp)
+                                .heightIn(min = 36.dp)
                                 .testTag("exercise_library_start_queued_workout_button")
                         ) {
-                            Text("▶ Edzés indítása", fontWeight = FontWeight.ExtraBold)
+                            Text("▶ Indítás", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold)
                         }
                     }
                 }
             }
 
+            // Compact Exercise Cards (single-row layout, clean Hungarian labels, popup video button)
             filtered.forEach { ex ->
                 val inQueue = state.quickWorkoutQueue.any { it.id == ex.id }
                 Surface(
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(14.dp),
                     color = palette.surface,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 48.dp)
                         .border(
                             if (inQueue) 1.5.dp else 1.dp,
                             if (inQueue) palette.primary else palette.cardBorder,
-                            RoundedCornerShape(18.dp)
+                            RoundedCornerShape(14.dp)
                         )
+                        .clip(RoundedCornerShape(14.dp))
                         .clickable { onSelectExercise(ex.id) }
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            ExercisePostureMiniIllustration(
-                                exerciseName = ex.nameHu,
-                                size = 56.dp
-                            )
-                            Spacer(modifier = Modifier.width(14.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        ExercisePostureMiniIllustration(
+                            exerciseName = ex.nameHu,
+                            size = 38.dp
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = ex.localizedName(state.language),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.textPrimary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false)
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = palette.primary.copy(alpha = 0.16f)
                                 ) {
                                     Text(
-                                        text = ex.localizedName(state.language),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = palette.textPrimary
+                                        text = ex.category.localized(state.language),
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = palette.primary,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
                                     )
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = palette.primary.copy(alpha = 0.18f),
-                                        modifier = Modifier.border(
-                                            1.dp,
-                                            palette.primary.copy(alpha = 0.5f),
-                                            RoundedCornerShape(10.dp)
-                                        )
-                                    ) {
-                                        Text(
-                                            text = ex.category.localized(state.language),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = palette.primary,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                        )
-                                    }
                                 }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = ex.equipmentHu,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = palette.textSecondary
-                                )
                             }
-                            SmallExerciseVideoButton(exerciseName = ex.localizedName(state.language))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = null,
-                                tint = palette.textSecondary
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "${ex.primaryMusclesHu} • ${ex.equipmentHu} • ${ex.defaultSets}×${ex.defaultReps}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = palette.textSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        // Video popup button (opens modal dialog ONLY when clicked)
+                        SmallExerciseVideoButton(
+                            exerciseName = ex.localizedName(state.language),
+                            compactIconOnly = true
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        // Compact Add to workout queue button (+)
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (inQueue) palette.primary else palette.surfaceElevated,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .border(
+                                    1.dp,
+                                    if (inQueue) palette.primary else palette.cardBorder,
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onAddExerciseToQueue(ex) }
+                                .testTag("exercise_library_add_to_queue_${ex.id}")
                         ) {
-                            OutlinedButton(
-                                onClick = { onAddExerciseToQueue(ex) },
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .heightIn(min = 38.dp)
-                                    .testTag("exercise_library_add_to_queue_${ex.id}")
-                            ) {
+                            Box(contentAlignment = Alignment.Center) {
                                 Text(
-                                    text = if (inQueue) "✓ Edzésben (${state.quickWorkoutQueue.size})" else "+ Edzéshez adás",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (inQueue) palette.primary else palette.textPrimary
+                                    text = if (inQueue) "✓" else "+",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = if (inQueue) palette.onPrimary else palette.primary
                                 )
                             }
-                            Button(
-                                onClick = { onStartExerciseNow(ex) },
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = palette.primary,
-                                    contentColor = palette.onPrimary
-                                ),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .heightIn(min = 38.dp)
-                                    .testTag("exercise_library_start_now_${ex.id}")
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        // Compact Immediate Start button (▶)
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = palette.primary,
+                            modifier = Modifier
+                                .height(32.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onStartExerciseNow(ex) }
+                                .testTag("exercise_library_start_now_${ex.id}")
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.padding(horizontal = 8.dp)
                             ) {
                                 Text(
-                                    text = "▶ Edzés indítása ezzel",
+                                    text = "▶",
                                     style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = palette.onPrimary
                                 )
                             }
                         }
@@ -2978,7 +3001,7 @@ fun ExerciseDetailScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Anatómiai kivitelezés • Videó ID: $youtubeVideoId",
+                            text = "Anatómiai kivitelezés • ${exercise.primaryMusclesHu}",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.White,
                             fontWeight = FontWeight.SemiBold

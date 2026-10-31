@@ -499,7 +499,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onSelectExercise = { exId -> viewModel.openExerciseDetail(exId) },
                             onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true) },
                             onStartExerciseNow = { ex ->
-                                if (ex.isTimed) {
+                                if (ex.isBilateral || ex.isTimed || ex.nameHu.contains("oldalsó plank", ignoreCase = true)) {
                                     viewModel.startQuickTimedWithExercise(ex)
                                 } else {
                                     viewModel.startQuickStrengthWithExercise(ex)
@@ -528,7 +528,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             },
                             onStartDemoWithExercise = {
                                 if (currentDetailExercise != null) {
-                                    if (currentDetailExercise.isTimed) {
+                                    if (currentDetailExercise.isBilateral || currentDetailExercise.isTimed || currentDetailExercise.nameHu.contains("oldalsó plank", ignoreCase = true)) {
                                         viewModel.startQuickTimedWithExercise(currentDetailExercise)
                                     } else {
                                         viewModel.startQuickStrengthWithExercise(currentDetailExercise)
@@ -589,7 +589,23 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             strings = strings,
                             onBack = { viewModel.navigateBack() },
                             onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
-                            onSelectMeasurementMode = { mode -> viewModel.navigateToSubScreen(mode, MainTab.WORKOUT) }
+                            onSelectMeasurementMode = { mode -> viewModel.navigateToSubScreen(mode, MainTab.WORKOUT) },
+                            onRecordBilateralSide = { isLeft, measuredSec, targetSetNum ->
+                                viewModel.recordBilateralSideStop(isLeft, measuredSec, targetSetNum)
+                            },
+                            onUpdateBilateralSetExact = { setNum, lSec, rSec, rir ->
+                                viewModel.updateBilateralSetExact(setNum, lSec, rSec, rir)
+                            },
+                            onToggleSetCompleted = { setNum -> viewModel.toggleSetCompleted(setNum) },
+                            onAddSet = { viewModel.addSet() },
+                            onDeleteSet = { setNum -> viewModel.deleteSet(setNum) },
+                            onAdjustRestTimer = { delta -> viewModel.adjustRestTimer(delta) },
+                            onToggleRestRunning = { viewModel.toggleRestTimerRunning() },
+                            onSkipRest = { viewModel.skipRestTimer() },
+                            onPreviousExercise = { viewModel.previousActiveExercise() },
+                            onNextExercise = { viewModel.nextActiveExercise() },
+                            onSwitchExercise = { ex -> viewModel.switchCurrentActiveExercise(ex) },
+                            onOpenExerciseLibrary = { viewModel.navigateToSubScreen(SubScreen.EXERCISE_LIBRARY) }
                         )
                     }
 

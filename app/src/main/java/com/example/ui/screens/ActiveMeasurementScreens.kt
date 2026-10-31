@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -64,6 +65,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -1964,7 +1966,7 @@ fun ActiveTimedWorkoutScreen(
 }
 
 /**
- * 3. KÉTOLDALI MÉRÉS (2 STOPPER OLDALANKÉNT: Bal és Jobb oldal külön-külön stopperrel)
+ * 3. KÉTOLDALI MÉRÉS (2 STOPPER OLDALANKÉNT: Bal és Jobb oldal külön-külön stopperrel + oldalankénti sorozat-adatrögzítő)
  */
 @Composable
 fun ActiveBilateralWorkoutScreen(
@@ -1972,19 +1974,50 @@ fun ActiveBilateralWorkoutScreen(
     strings: LocalizedStrings,
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
-    onSelectMeasurementMode: (SubScreen) -> Unit
+    onSelectMeasurementMode: (SubScreen) -> Unit,
+    onRecordBilateralSide: (Boolean, Int, Int?) -> Unit = { _, _, _ -> },
+    onUpdateBilateralSetExact: (Int, Int, Int, Int) -> Unit = { _, _, _, _ -> },
+    onToggleSetCompleted: (Int) -> Unit = {},
+    onAddSet: () -> Unit = {},
+    onDeleteSet: (Int) -> Unit = {},
+    onAdjustRestTimer: (Int) -> Unit = {},
+    onToggleRestRunning: () -> Unit = {},
+    onSkipRest: () -> Unit = {},
+    onPreviousExercise: () -> Unit = onBack,
+    onNextExercise: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
+    onSwitchExercise: (com.example.model.ExerciseItem) -> Unit = {},
+    onOpenExerciseLibrary: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
 
+    val workoutExercises = uiState.activeWorkoutExercises.ifEmpty { uiState.exercises.take(6) }
+    val currentExercise = workoutExercises.getOrNull(uiState.activeExerciseIndex)
+        ?: uiState.exercises.find { it.id == uiState.selectedExerciseId }
+        ?: uiState.exercises.firstOrNull { it.isBilateral || it.nameHu.contains("oldalsó plank", ignoreCase = true) }
+
+    val exerciseTitle = currentExercise?.nameHu ?: "Oldalsó plank"
+    val defaultTargetSec = currentExercise?.targetSeconds ?: 30
+
+    // Determine target set for stopwatch recording (defaults to first uncompleted set)
+    val firstUncompletedSetNum = uiState.activeSets.firstOrNull { !it.completed }?.setNumber
+        ?: uiState.activeSets.lastOrNull()?.setNumber
+        ?: 1
+    var selectedTargetSetNumber by remember(firstUncompletedSetNum, uiState.activeSets.size) {
+        mutableIntStateOf(firstUncompletedSetNum)
+    }
+
     // Left side stopwatch state
-    var leftSec by remember { mutableIntStateOf(uiState.bilateralLeftSec) }
-    var leftRunning by remember { mutableStateOf(false) }
-    var leftCompleted by remember { mutableStateOf(false) }
+    var leftSec by remember(currentExercise?.id) { mutableIntStateOf(0) }
+    var leftRunning by remember(currentExercise?.id) { mutableStateOf(false) }
 
     // Right side stopwatch state
-    var rightSec by remember { mutableIntStateOf(uiState.bilateralRightSec) }
-    var rightRunning by remember { mutableStateOf(false) }
-    var rightCompleted by remember { mutableStateOf(false) }
+    var rightSec by remember(currentExercise?.id) { mutableIntStateOf(0) }
+    var rightRunning by remember(currentExercise?.id) { mutableStateOf(false) }
+
+    // Modal dialog for manual bilateral set editing
+    var editingBilateralSet by remember { mutableStateOf<com.example.model.ExerciseSetItem?>(null) }
+    var showExerciseDropdown by remember { mutableStateOf(false) }
+    var restTimerLargeMode by remember { mutableStateOf(false) }
 
     // Ticking coroutine for Left Side Stopwatch
     LaunchedEffect(leftRunning) {
@@ -2002,6 +2035,115 @@ fun ActiveBilateralWorkoutScreen(
         }
     }
 
+    // Dedicated Bilateral Set Editor Modal ("külön ablak adat rögzítésre")
+    editingBilateralSet?.let { setToEdit ->
+        var editLeftText by remember(setToEdit) { mutableStateOf(setToEdit.leftSec.toString()) }
+        var editRightText by remember(setToEdit) { mutableStateOf(setToEdit.rightSec.toString()) }
+        var editRirText by remember(setToEdit) { mutableStateOf(setToEdit.rir.toString()) }
+
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { editingBilateralSet = null },
+            containerColor = palette.surfaceElevated,
+            title = {
+                Text(
+                    text = "${setToEdit.setNumber}. sorozat • Kétoldali adatrögzítés",
+                    color = palette.textPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "$exerciseTitle – állítsd be külön a Bal és Jobb oldal másodperceit:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = palette.textSecondary
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        androidx.compose.material3.OutlinedTextField(
+                            value = editLeftText,
+                            onValueChange = { editLeftText = it.filter { ch -> ch.isDigit() } },
+                            label = { Text("Bal oldal (mp)") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        androidx.compose.material3.OutlinedTextField(
+                            value = editRightText,
+                            onValueChange = { editRightText = it.filter { ch -> ch.isDigit() } },
+                            label = { Text("Jobb oldal (mp)") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        SmallAdjustChip("Bal -5mp") {
+                            val v = (editLeftText.toIntOrNull() ?: 30) - 5
+                            editLeftText = v.coerceAtLeast(1).toString()
+                        }
+                        SmallAdjustChip("Bal +5mp") {
+                            val v = (editLeftText.toIntOrNull() ?: 30) + 5
+                            editLeftText = v.coerceAtMost(600).toString()
+                        }
+                        SmallAdjustChip("Jobb -5mp") {
+                            val v = (editRightText.toIntOrNull() ?: 30) - 5
+                            editRightText = v.coerceAtLeast(1).toString()
+                        }
+                        SmallAdjustChip("Jobb +5mp") {
+                            val v = (editRightText.toIntOrNull() ?: 30) + 5
+                            editRightText = v.coerceAtMost(600).toString()
+                        }
+                    }
+                    androidx.compose.material3.OutlinedTextField(
+                        value = editRirText,
+                        onValueChange = { editRirText = it.filter { ch -> ch.isDigit() } },
+                        label = { Text("RIR (Tartalék: 0–10)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (uiState.activeSets.size > 1) {
+                        androidx.compose.material3.TextButton(
+                            onClick = {
+                                onDeleteSet(setToEdit.setNumber)
+                                editingBilateralSet = null
+                            }
+                        ) {
+                            Icon(Icons.Default.DeleteOutline, contentDescription = null, tint = palette.danger, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Sorozat törlése", color = palette.danger, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val lSec = editLeftText.toIntOrNull() ?: setToEdit.leftSec
+                        val rSec = editRightText.toIntOrNull() ?: setToEdit.rightSec
+                        val rirVal = editRirText.toIntOrNull() ?: setToEdit.rir
+                        onUpdateBilateralSetExact(setToEdit.setNumber, lSec, rSec, rirVal)
+                        editingBilateralSet = null
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = palette.primary,
+                        contentColor = palette.onPrimary
+                    )
+                ) {
+                    Text("Mentés és rögzítés", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { editingBilateralSet = null }) {
+                    Text(strings.cancelBtn, color = palette.textSecondary)
+                }
+            }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -2013,398 +2155,817 @@ fun ActiveBilateralWorkoutScreen(
                 .weight(1f)
                 .fillMaxWidth(),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
-            SubScreenTopBar(
-                title = "Oldalsó plank • Kétoldali stopper",
-                onBack = onBack,
-                onOpenSettings = onOpenSettings
-            )
-        }
+                SubScreenTopBar(
+                    title = "$exerciseTitle • Kétoldali stopper",
+                    onBack = onBack,
+                    onOpenSettings = onOpenSettings
+                )
+            }
 
-        // Header Card
-        item {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            // Header Card + Exercise Switcher
+            item {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = palette.surfaceCard,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
                 ) {
-                    ExercisePostureMiniIllustration(
-                        exerciseName = "Oldalsó plank",
-                        size = 50.dp
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Oldalsó plank",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = palette.textPrimary
+                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            ExercisePostureMiniIllustration(
+                                exerciseName = exerciseTitle,
+                                size = 50.dp
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = exerciseTitle,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.textPrimary
+                                )
+                                Text(
+                                    text = "2 külön stopper oldalanként • A „Leállítás és rögzítés” gomb a kiválasztott (${selectedTargetSetNumber}.) sorozatba menti az időt",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = palette.textSecondary
+                                )
+                            }
+                            SmallExerciseVideoButton(exerciseName = exerciseTitle)
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = palette.primary.copy(alpha = 0.16f)
+                            ) {
+                                Text(
+                                    text = "${uiState.activeExerciseIndex + 1} / ${workoutExercises.size.coerceAtLeast(1)} gyakorlat • Aktív cél: ${selectedTargetSetNumber}. sorozat",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.primary,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+
+                            Box {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = palette.surfaceElevated,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable { showExerciseDropdown = true }
+                                        .border(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
+                                ) {
+                                    Text(
+                                        text = "Gyakorlat váltása ▾",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = palette.textPrimary,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = showExerciseDropdown,
+                                    onDismissRequest = { showExerciseDropdown = false },
+                                    modifier = Modifier
+                                        .background(palette.surfaceElevated)
+                                        .heightIn(max = 300.dp)
+                                ) {
+                                    workoutExercises.forEachIndexed { idx, ex ->
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    text = "${idx + 1}. ${ex.nameHu}",
+                                                    color = if (idx == uiState.activeExerciseIndex) palette.primary else palette.textPrimary,
+                                                    fontWeight = if (idx == uiState.activeExerciseIndex) FontWeight.Bold else FontWeight.Normal
+                                                )
+                                            },
+                                            onClick = {
+                                                showExerciseDropdown = false
+                                                onSwitchExercise(ex)
+                                            }
+                                        )
+                                    }
+                                    HorizontalDivider(color = palette.cardBorder)
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = "📚 Gyakorlatkönyvtár megnyitása...",
+                                                color = palette.primary,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        },
+                                        onClick = {
+                                            showExerciseDropdown = false
+                                            onOpenExerciseLibrary()
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 1. BAL OLDAL STOPPER (Left Side Stopwatch)
+            item {
+                val targetSetObj = uiState.activeSets.find { it.setNumber == selectedTargetSetNumber }
+                val isLeftRecordedInTarget = targetSetObj?.leftRecorded == true || targetSetObj?.completed == true
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = palette.surfaceCard,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(
+                            width = if (leftRunning) 2.dp else 1.dp,
+                            color = if (leftRunning) palette.primary else palette.cardBorder,
+                            shape = RoundedCornerShape(20.dp)
                         )
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = if (leftRunning) palette.primary else palette.surfaceElevated,
+                                    modifier = Modifier.size(30.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(
+                                            text = "B",
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (leftRunning) palette.onPrimary else palette.textPrimary,
+                                            style = MaterialTheme.typography.labelMedium
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = "Bal oldal stopper",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = palette.textPrimary
+                                    )
+                                    Text(
+                                        text = when {
+                                            leftRunning -> "Mérés folyamatban (${selectedTargetSetNumber}. sorozat - Bal) ●"
+                                            isLeftRecordedInTarget -> "${selectedTargetSetNumber}. sorozat Bal oldal rögzítve (${targetSetObj?.leftSec ?: defaultTargetSec} mp) ✓"
+                                            else -> "Cél: ${selectedTargetSetNumber}. sorozat Bal oldal (${defaultTargetSec} mp)"
+                                        },
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = when {
+                                            leftRunning -> palette.primary
+                                            isLeftRecordedInTarget -> palette.success
+                                            else -> palette.textSecondary
+                                        }
+                                    )
+                                }
+                            }
+
+                            // Digital display
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = palette.surfaceElevated,
+                                modifier = Modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                            ) {
+                                Text(
+                                    text = String.format("%02d:%02d", leftSec / 60, leftSec % 60),
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (leftRunning) palette.primary else palette.textPrimary,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Left stopwatch controls
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = { leftRunning = !leftRunning },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (leftRunning) palette.warning else palette.success,
+                                    contentColor = palette.onPrimary
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(44.dp)
+                                    .testTag("bilateral_left_start_pause_btn")
+                            ) {
+                                Icon(
+                                    imageVector = if (leftRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(if (leftRunning) "Szünet" else "Indítás", fontWeight = FontWeight.Bold)
+                            }
+
+                            // Leállítás és rögzítés button -> writes directly into selectedTargetSetNumber's Left slot!
+                            Button(
+                                onClick = {
+                                    leftRunning = false
+                                    val secToRecord = if (leftSec > 0) leftSec else (targetSetObj?.leftSec ?: defaultTargetSec)
+                                    onRecordBilateralSide(true, secToRecord, selectedTargetSetNumber)
+                                    leftSec = 0
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = palette.primary,
+                                    contentColor = palette.onPrimary
+                                ),
+                                modifier = Modifier
+                                    .weight(1.45f)
+                                    .height(44.dp)
+                                    .testTag("bilateral_left_stop_record_btn")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Leállítás és rögzítés",
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            SmallAdjustChip("Nulláz") {
+                                leftRunning = false
+                                leftSec = 0
+                            }
+                            SmallAdjustChip("+5 mp") { leftSec += 5 }
+                            SmallAdjustChip("+15 mp") { leftSec += 15 }
+                        }
+                    }
+                }
+            }
+
+            // 2. JOBB OLDAL STOPPER (Right Side Stopwatch)
+            item {
+                val targetSetObj = uiState.activeSets.find { it.setNumber == selectedTargetSetNumber }
+                val isRightRecordedInTarget = targetSetObj?.rightRecorded == true || targetSetObj?.completed == true
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = palette.surfaceCard,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(
+                            width = if (rightRunning) 2.dp else 1.dp,
+                            color = if (rightRunning) palette.primary else palette.cardBorder,
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = if (rightRunning) palette.primary else palette.surfaceElevated,
+                                    modifier = Modifier.size(30.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(
+                                            text = "J",
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (rightRunning) palette.onPrimary else palette.textPrimary,
+                                            style = MaterialTheme.typography.labelMedium
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = "Jobb oldal stopper",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = palette.textPrimary
+                                    )
+                                    Text(
+                                        text = when {
+                                            rightRunning -> "Mérés folyamatban (${selectedTargetSetNumber}. sorozat - Jobb) ●"
+                                            isRightRecordedInTarget -> "${selectedTargetSetNumber}. sorozat Jobb oldal rögzítve (${targetSetObj?.rightSec ?: defaultTargetSec} mp) ✓"
+                                            else -> "Cél: ${selectedTargetSetNumber}. sorozat Jobb oldal (${defaultTargetSec} mp)"
+                                        },
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = when {
+                                            rightRunning -> palette.primary
+                                            isRightRecordedInTarget -> palette.success
+                                            else -> palette.textSecondary
+                                        }
+                                    )
+                                }
+                            }
+
+                            // Digital display
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = palette.surfaceElevated,
+                                modifier = Modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                            ) {
+                                Text(
+                                    text = String.format("%02d:%02d", rightSec / 60, rightSec % 60),
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (rightRunning) palette.primary else palette.textPrimary,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Right stopwatch controls
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = { rightRunning = !rightRunning },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (rightRunning) palette.warning else palette.success,
+                                    contentColor = palette.onPrimary
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(44.dp)
+                                    .testTag("bilateral_right_start_pause_btn")
+                            ) {
+                                Icon(
+                                    imageVector = if (rightRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(if (rightRunning) "Szünet" else "Indítás", fontWeight = FontWeight.Bold)
+                            }
+
+                            // Leállítás és rögzítés button -> writes directly into selectedTargetSetNumber's Right slot!
+                            Button(
+                                onClick = {
+                                    rightRunning = false
+                                    val secToRecord = if (rightSec > 0) rightSec else (targetSetObj?.rightSec ?: defaultTargetSec)
+                                    onRecordBilateralSide(false, secToRecord, selectedTargetSetNumber)
+                                    rightSec = 0
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = palette.primary,
+                                    contentColor = palette.onPrimary
+                                ),
+                                modifier = Modifier
+                                    .weight(1.45f)
+                                    .height(44.dp)
+                                    .testTag("bilateral_right_stop_record_btn")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Leállítás és rögzítés",
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            SmallAdjustChip("Nulláz") {
+                                rightRunning = false
+                                rightSec = 0
+                            }
+                            SmallAdjustChip("+5 mp") { rightSec += 5 }
+                            SmallAdjustChip("+15 mp") { rightSec += 15 }
+                        }
+                    }
+                }
+            }
+
+            // 3. SOROZATOK – KÉTOLDALI ADATRÖGZÍTŐ ABLAK (Sets table with separate Left & Right recording windows)
+            item {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = palette.surfaceCard,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Sorozatok • Oldalankénti adatrögzítés",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.textPrimary
+                                )
+                                Text(
+                                    text = "Koppints egy sorozatra a cél-kijelöléshez, vagy az oldal mezőre a kézi szerkesztéshez",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = palette.textSecondary
+                                )
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = palette.primary.copy(alpha = 0.16f),
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { onAddSet() }
+                            ) {
+                                Text(
+                                    text = "+ Sorozat",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.primary,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+
+                        uiState.activeSets.forEach { setItem ->
+                            val isSelectedTarget = setItem.setNumber == selectedTargetSetNumber
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = when {
+                                    setItem.completed -> palette.success.copy(alpha = 0.10f)
+                                    isSelectedTarget -> palette.primary.copy(alpha = 0.10f)
+                                    else -> palette.surfaceElevated
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .clickable { selectedTargetSetNumber = setItem.setNumber }
+                                    .border(
+                                        width = if (isSelectedTarget) 1.5.dp else 1.dp,
+                                        color = when {
+                                            setItem.completed -> palette.success.copy(alpha = 0.5f)
+                                            isSelectedTarget -> palette.primary
+                                            else -> palette.cardBorder
+                                        },
+                                        shape = RoundedCornerShape(14.dp)
+                                    )
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    // Set number + Target indicator
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier = Modifier.width(44.dp)
+                                    ) {
+                                        Text(
+                                            text = "${setItem.setNumber}.",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = if (isSelectedTarget) palette.primary else palette.textPrimary
+                                        )
+                                        if (isSelectedTarget && !setItem.completed) {
+                                            Text(
+                                                text = "CÉL",
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                                fontWeight = FontWeight.Bold,
+                                                color = palette.primary
+                                            )
+                                        }
+                                    }
+
+                                    // BAL OLDAL RÖGZÍTŐ ABLAK
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = if (setItem.leftRecorded || setItem.completed) palette.success.copy(alpha = 0.16f) else palette.surfaceCard,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .clickable {
+                                                selectedTargetSetNumber = setItem.setNumber
+                                                editingBilateralSet = setItem
+                                            }
+                                            .border(
+                                                1.dp,
+                                                if (setItem.leftRecorded || setItem.completed) palette.success else palette.cardBorder,
+                                                RoundedCornerShape(10.dp)
+                                            )
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = if (setItem.leftRecorded || setItem.completed) "Bal oldal ✓" else "Bal oldal",
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                color = if (setItem.leftRecorded || setItem.completed) palette.success else palette.textSecondary,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            Text(
+                                                text = "${setItem.leftSec} mp",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = palette.textPrimary
+                                            )
+                                        }
+                                    }
+
+                                    // JOBB OLDAL RÖGZÍTŐ ABLAK
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = if (setItem.rightRecorded || setItem.completed) palette.success.copy(alpha = 0.16f) else palette.surfaceCard,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .clickable {
+                                                selectedTargetSetNumber = setItem.setNumber
+                                                editingBilateralSet = setItem
+                                            }
+                                            .border(
+                                                1.dp,
+                                                if (setItem.rightRecorded || setItem.completed) palette.success else palette.cardBorder,
+                                                RoundedCornerShape(10.dp)
+                                            )
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = if (setItem.rightRecorded || setItem.completed) "Jobb oldal ✓" else "Jobb oldal",
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                color = if (setItem.rightRecorded || setItem.completed) palette.success else palette.textSecondary,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            Text(
+                                                text = "${setItem.rightSec} mp",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = palette.textPrimary
+                                            )
+                                        }
+                                    }
+
+                                    // RIR badge (tap to edit)
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = palette.surfaceCard,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable { editingBilateralSet = setItem }
+                                            .border(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
+                                    ) {
+                                        Text(
+                                            text = "RIR ${setItem.rir}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = palette.textSecondary,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp)
+                                        )
+                                    }
+
+                                    // Complete toggle button
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = if (setItem.completed) palette.success else palette.surfaceCard,
+                                        modifier = Modifier
+                                            .size(38.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .clickable { onToggleSetCompleted(setItem.setNumber) }
+                                            .border(
+                                                1.dp,
+                                                if (setItem.completed) palette.success else palette.cardBorder,
+                                                RoundedCornerShape(10.dp)
+                                            )
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "Sorozat kész",
+                                                tint = if (setItem.completed) palette.onPrimary else palette.textSecondary,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 4. EGYENSÚLY ÉS SZIMMETRIA ELEMZÉS (Side balance comparison based on active target set or live stopwatches)
+            item {
+                val targetSetObj = uiState.activeSets.find { it.setNumber == selectedTargetSetNumber }
+                val compareLeft = if (leftSec > 0) leftSec else (targetSetObj?.leftSec ?: 0)
+                val compareRight = if (rightSec > 0) rightSec else (targetSetObj?.rightSec ?: 0)
+                val diff = kotlin.math.abs(compareLeft - compareRight)
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = palette.surfaceCard,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                ) {
+                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Oldalak egyensúlya (${selectedTargetSetNumber}. sorozat)",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = palette.textPrimary
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = if (diff <= 3) palette.success.copy(alpha = 0.2f) else palette.primary.copy(alpha = 0.2f)
+                            ) {
+                                Text(
+                                    text = if (diff == 0) "Különbség: 0 mp" else "Eltérés: $diff mp",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (diff <= 3) palette.success else palette.primary,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
                         Text(
-                            text = "2 külön stopper oldalanként • Bal és Jobb oldal",
+                            text = when {
+                                compareLeft == 0 && compareRight == 0 -> "Indítsd el a stoppereket a bal és jobb oldal méréséhez."
+                                diff == 0 -> "Tökéletes szimmetria a bal ($compareLeft mp) és jobb ($compareRight mp) oldal között!"
+                                diff <= 5 -> "Kiváló stabilitási egyensúly (Bal: $compareLeft mp • Jobb: $compareRight mp)."
+                                else -> "Figyelem: $diff másodperc különbség (Bal: $compareLeft mp • Jobb: $compareRight mp)."
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.textSecondary
                         )
                     }
-                    SmallExerciseVideoButton(exerciseName = "Oldalsó plank")
                 }
             }
         }
 
-        // 1. BAL OLDAL STOPPER (Left Side Stopwatch)
-        item {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(
-                        width = if (leftRunning) 2.dp else 1.dp,
-                        color = if (leftRunning) palette.primary else palette.cardBorder,
-                        shape = RoundedCornerShape(20.dp)
-                    )
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Surface(
-                                shape = CircleShape,
-                                color = if (leftRunning) palette.primary else palette.surfaceElevated,
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = "B",
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (leftRunning) palette.onPrimary else palette.textPrimary,
-                                        style = MaterialTheme.typography.labelMedium
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "Bal oldal stopper",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.textPrimary
-                                )
-                                Text(
-                                    text = if (leftRunning) "Időmérés folyamatban ●" else if (leftCompleted) "Befejezve ✓" else "Készenlétben",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (leftRunning) palette.primary else if (leftCompleted) palette.success else palette.textSecondary
-                                )
-                            }
-                        }
-
-                        // Digital display
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = palette.surfaceElevated,
-                            modifier = Modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
-                        ) {
-                            Text(
-                                text = String.format("%02d:%02d", leftSec / 60, leftSec % 60),
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (leftRunning) palette.primary else palette.textPrimary,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Left stopwatch controls
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = { leftRunning = !leftRunning },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (leftRunning) palette.primary else palette.success,
-                                contentColor = palette.onPrimary
-                            ),
-                            modifier = Modifier.weight(1.3f).height(44.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (leftRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(if (leftRunning) "Szünet" else "Indítás", fontWeight = FontWeight.Bold)
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                leftRunning = false
-                                leftSec = 0
-                                leftCompleted = false
-                            },
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(0.9f).height(44.dp)
-                        ) {
-                            Text("Nulláz", color = palette.textPrimary)
-                        }
-
-                        SmallAdjustChip("+5 mp") { leftSec += 5 }
-
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (leftCompleted) palette.success.copy(alpha = 0.2f) else palette.surfaceElevated,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    leftRunning = false
-                                    leftCompleted = true
-                                }
-                        ) {
-                            Box(
-                                modifier = Modifier.height(44.dp).padding(horizontal = 10.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = if (leftCompleted) "Kész ✓" else "Rögzít",
-                                    color = if (leftCompleted) palette.success else palette.primary,
-                                    fontWeight = FontWeight.Bold,
-                                    style = MaterialTheme.typography.labelMedium
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 2. JOBB OLDAL STOPPER (Right Side Stopwatch)
-        item {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(
-                        width = if (rightRunning) 2.dp else 1.dp,
-                        color = if (rightRunning) palette.primary else palette.cardBorder,
-                        shape = RoundedCornerShape(20.dp)
-                    )
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Surface(
-                                shape = CircleShape,
-                                color = if (rightRunning) palette.primary else palette.surfaceElevated,
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = "J",
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (rightRunning) palette.onPrimary else palette.textPrimary,
-                                        style = MaterialTheme.typography.labelMedium
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "Jobb oldal stopper",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.textPrimary
-                                )
-                                Text(
-                                    text = if (rightRunning) "Időmérés folyamatban ●" else if (rightCompleted) "Befejezve ✓" else "Készenlétben",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (rightRunning) palette.primary else if (rightCompleted) palette.success else palette.textSecondary
-                                )
-                            }
-                        }
-
-                        // Digital display
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = palette.surfaceElevated,
-                            modifier = Modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
-                        ) {
-                            Text(
-                                text = String.format("%02d:%02d", rightSec / 60, rightSec % 60),
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (rightRunning) palette.primary else palette.textPrimary,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Right stopwatch controls
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = { rightRunning = !rightRunning },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (rightRunning) palette.primary else palette.success,
-                                contentColor = palette.onPrimary
-                            ),
-                            modifier = Modifier.weight(1.3f).height(44.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (rightRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(if (rightRunning) "Szünet" else "Indítás", fontWeight = FontWeight.Bold)
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                rightRunning = false
-                                rightSec = 0
-                                rightCompleted = false
-                            },
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(0.9f).height(44.dp)
-                        ) {
-                            Text("Nulláz", color = palette.textPrimary)
-                        }
-
-                        SmallAdjustChip("+5 mp") { rightSec += 5 }
-
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (rightCompleted) palette.success.copy(alpha = 0.2f) else palette.surfaceElevated,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    rightRunning = false
-                                    rightCompleted = true
-                                }
-                        ) {
-                            Box(
-                                modifier = Modifier.height(44.dp).padding(horizontal = 10.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = if (rightCompleted) "Kész ✓" else "Rögzít",
-                                    color = if (rightCompleted) palette.success else palette.primary,
-                                    fontWeight = FontWeight.Bold,
-                                    style = MaterialTheme.typography.labelMedium
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 3. EGYENSÚLY ÉS SZIMMETRIA ELEMZÉS (Side balance comparison)
-        item {
-            val diff = kotlin.math.abs(leftSec - rightSec)
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Oldalak egyensúlya",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = palette.textPrimary
-                        )
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = if (diff <= 3) palette.success.copy(alpha = 0.2f) else palette.primary.copy(alpha = 0.2f)
-                        ) {
-                            Text(
-                                text = if (diff == 0) "Különbség: 0 mp" else "Eltérés: $diff mp",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = if (diff <= 3) palette.success else palette.primary,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-                    Text(
-                        text = when {
-                            leftSec == 0 && rightSec == 0 -> "Indítsd el a stoppereket a bal és jobb oldal méréséhez."
-                            diff == 0 -> "Tökéletes szimmetria a bal és jobb oldal között! 🎯"
-                            diff <= 5 -> "Kiváló stabilitási egyensúly mindkét oldalon! 👍"
-                            else -> "Figyelem: $diff másodperc különbség. Cél a gyengébb oldal fejlesztése!"
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.textSecondary
-                    )
-                }
-            }
-        }
-
-        }
-
-        // Fixed Sticky Bottom Navigation Row
+        // Fixed Sticky Bottom Area: Rest Timer Dock + Előző / Következő Navigation
         Surface(
             color = palette.surfaceElevated,
             modifier = Modifier
                 .fillMaxWidth()
                 .border(1.dp, palette.cardBorder, RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedButton(
-                    onClick = onBack,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.weight(1f).height(48.dp)
+                // Sticky compact/expandable Rest Timer strip
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = palette.surfaceCard,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(
+                            1.dp,
+                            if (uiState.restTimerRunning) palette.primary else palette.cardBorder,
+                            RoundedCornerShape(12.dp)
+                        )
+                        .pointerInput(Unit) {
+                            detectVerticalDragGestures { _, dragAmount ->
+                                if (dragAmount > 12f) restTimerLargeMode = true
+                                else if (dragAmount < -12f) restTimerLargeMode = false
+                            }
+                        }
+                        .clickable { restTimerLargeMode = !restTimerLargeMode }
                 ) {
-                    Text("< Előző", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Timer,
+                                    contentDescription = null,
+                                    tint = if (uiState.restTimerRunning) palette.primary else palette.textSecondary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Pihenő: " + String.format("%02d:%02d", uiState.restTimerRemainingSec / 60, uiState.restTimerRemainingSec % 60),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = if (uiState.restTimerRunning) palette.primary else palette.textPrimary
+                                )
+                            }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                SmallAdjustChip("-15") { onAdjustRestTimer(-15) }
+                                SmallAdjustChip("+15") { onAdjustRestTimer(15) }
+                                SmallAdjustChip(if (uiState.restTimerRunning) "Szünet" else "Indít") { onToggleRestRunning() }
+                                if (uiState.restTimerRunning || uiState.restTimerRemainingSec < uiState.defaultRestSec) {
+                                    SmallAdjustChip("Átugrás") { onSkipRest() }
+                                }
+                            }
+                        }
+                        if (restTimerLargeMode) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "Húzd felfelé a kompakt módhoz • Mindkét oldal rögzítése után a pihenő automatikusan elindul.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = palette.textSecondary
+                            )
+                        }
+                    }
                 }
-                Button(
-                    onClick = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = palette.primary,
-                        contentColor = palette.onPrimary
-                    ),
-                    modifier = Modifier.weight(1.3f).height(48.dp)
+
+                val hasNextExercise = uiState.activeExerciseIndex + 1 < workoutExercises.size
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Következő >", fontWeight = FontWeight.Bold)
+                    OutlinedButton(
+                        onClick = onPreviousExercise,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .testTag("bilateral_prev_exercise_btn")
+                    ) {
+                        Text("< Előző", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
+                    }
+                    Button(
+                        onClick = onNextExercise,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = palette.primary,
+                            contentColor = palette.onPrimary
+                        ),
+                        modifier = Modifier
+                            .weight(1.3f)
+                            .height(48.dp)
+                            .testTag("bilateral_next_exercise_btn")
+                    ) {
+                        Text(
+                            text = if (hasNextExercise) "Következő (${uiState.activeExerciseIndex + 2}/${workoutExercises.size}) >" else "Edzés befejezése ✓",
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                    }
                 }
             }
         }
@@ -2412,7 +2973,8 @@ fun ActiveBilateralWorkoutScreen(
 }
 
 /**
- * 4. KÜLTÉRI MÉRÉS (Mockup 2/4 #4 - Futás GPS)
+ * 4. KÜLTÉRI MÉRÉS (Mockup 2/4 #4 - Futás GPS - Valós DistanceTrackingService & LocationManager,
+ * szimulált +2,75 m/mp és képletes pulzus NÉLKÜL)
  */
 @SuppressLint("MissingPermission")
 @Composable
@@ -2426,58 +2988,114 @@ fun ActiveOutdoorGpsScreen(
 ) {
     val palette = LocalTrainPilotPalette.current
     val context = LocalContext.current
-    var gpsActive by remember { mutableStateOf(true) }
-    var isStarted by remember { mutableStateOf(false) }
-    var isPaused by remember { mutableStateOf(false) }
-    var elapsedSec by remember { mutableIntStateOf(0) }
-    var distanceMeters by remember { mutableFloatStateOf(uiState.outdoorDistanceKm * 1000f) }
-    var realGpsFixesCount by remember { mutableIntStateOf(0) }
+
+    // Observe canonical DistanceTrackingService state flow
+    val serviceState by com.repforge.app.DistanceTrackingService.gpsStateFlow.collectAsState()
+    val initialSnap = remember { com.repforge.app.DistanceTrackingService.snapshot(context) }
+    val activeSnap = if (serviceState.length() > 0) serviceState else initialSnap
+
+    var gpsActive by remember { mutableStateOf(uiState.outdoorGpsEnabled) }
+    var isStarted by remember { mutableStateOf(activeSnap.optBoolean("active", false)) }
+    var isPaused by remember { mutableStateOf(activeSnap.optBoolean("paused", false)) }
+    var elapsedSec by remember { mutableIntStateOf(activeSnap.optLong("elapsedSeconds", 0L).toInt()) }
+    var distanceMeters by remember { mutableFloatStateOf(activeSnap.optDouble("distanceMeters", 0.0).toFloat()) }
+    var realGpsFixesCount by remember { mutableIntStateOf(activeSnap.optInt("routePointCount", 0)) }
+    var hasServiceFix by remember { mutableStateOf(activeSnap.optBoolean("hasFix", false)) }
+    var gpsAccuracyMeters by remember { mutableFloatStateOf(activeSnap.optDouble("accuracyMeters", 0.0).toFloat()) }
+    var serviceErrorMsg by remember { mutableStateOf(activeSnap.optString("error", "")) }
     var lastGpsLocation by remember { mutableStateOf<Location?>(null) }
     var lapCount by remember { mutableIntStateOf(1) }
     var lapSplits by remember { mutableStateOf(listOf<String>()) }
+    val routeOwnerKey = remember { "outdoor_run_${System.currentTimeMillis()}" }
 
     var hasLocationPermission by remember {
         mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
         )
+    }
+
+    // Sync from DistanceTrackingService whenever its state updates
+    LaunchedEffect(serviceState) {
+        if (serviceState.length() > 0) {
+            val srvActive = serviceState.optBoolean("active", false)
+            if (srvActive) {
+                isStarted = true
+                isPaused = serviceState.optBoolean("paused", false)
+            }
+            val srvDist = serviceState.optDouble("distanceMeters", Double.NaN)
+            if (srvDist.isFinite() && srvDist >= 0.0) {
+                distanceMeters = srvDist.toFloat()
+            }
+            val srvElapsed = serviceState.optLong("elapsedSeconds", -1L)
+            if (srvElapsed >= 0L && srvElapsed.toInt() > elapsedSec) {
+                elapsedSec = srvElapsed.toInt()
+            }
+            realGpsFixesCount = serviceState.optInt("routePointCount", realGpsFixesCount)
+            hasServiceFix = serviceState.optBoolean("hasFix", false)
+            gpsAccuracyMeters = serviceState.optDouble("accuracyMeters", 0.0).toFloat()
+            serviceErrorMsg = serviceState.optString("error", "")
+        }
+    }
+
+    val startNativeGpsTracking = {
+        val intent = android.content.Intent(context, com.repforge.app.DistanceTrackingService::class.java)
+            .setAction(com.repforge.app.DistanceTrackingService.START)
+            .putExtra("key", routeOwnerKey)
+            .putExtra("language", uiState.language.code.lowercase())
+            .putExtra("name", "Futás")
+        runCatching {
+            ContextCompat.startForegroundService(context, intent)
+        }
+        isStarted = true
+        isPaused = false
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { result ->
-        hasLocationPermission = result[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-            result[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        val grantedFine = result[Manifest.permission.ACCESS_FINE_LOCATION] == true
+        hasLocationPermission = grantedFine
+        if (grantedFine && gpsActive) {
+            startNativeGpsTracking()
+        } else if (!grantedFine && gpsActive) {
+            serviceErrorMsg = "A GPS-méréshez pontos helymeghatározási engedély szükséges. Engedély nélkül 0 m kerül rögzítésre."
+        }
     }
 
-    // Real Android LocationManager listener for phone GPS testing
+    // Direct LocationManager fallback listener for real physical GPS fixes (never fabricates distance)
     DisposableEffect(isStarted, isPaused, gpsActive, hasLocationPermission) {
         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
         val listener = object : LocationListener {
             override fun onLocationChanged(location: Location) {
-                if (isStarted && !isPaused && gpsActive) {
+                if (isStarted && !isPaused && gpsActive && location.hasAccuracy() && location.accuracy <= 35f) {
                     val prev = lastGpsLocation
                     if (prev != null) {
                         val delta = prev.distanceTo(location)
-                        if (delta in 0.5f..120f) {
-                            distanceMeters += delta
+                        if (delta in 1.0f..100f) {
+                            // Only update if DistanceTrackingService hasn't already updated it higher
+                            val srvDist = com.repforge.app.DistanceTrackingService.snapshot(context).optDouble("distanceMeters", 0.0).toFloat()
+                            distanceMeters = maxOf(distanceMeters + delta, srvDist)
                             realGpsFixesCount++
+                            hasServiceFix = true
+                            gpsAccuracyMeters = location.accuracy
                         }
+                    } else {
+                        hasServiceFix = true
+                        gpsAccuracyMeters = location.accuracy
                     }
                     lastGpsLocation = location
                 }
             }
             override fun onProviderEnabled(provider: String) {}
-            override fun onProviderDisabled(provider: String) {}
+            override fun onProviderDisabled(provider: String) {
+                hasServiceFix = false
+            }
         }
 
         if (isStarted && !isPaused && gpsActive && hasLocationPermission && locationManager != null) {
             runCatching {
                 if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 1f, listener)
-                }
-                if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000L, 2f, listener)
+                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000L, 2f, listener)
                 }
             }
         }
@@ -2486,23 +3104,30 @@ fun ActiveOutdoorGpsScreen(
         }
     }
 
-    // Live 1-second stopwatch & metric calculation loop
+    // Live 1-second stopwatch loop — STRICTLY NO FAKE DISTANCE OR FAKE HEART RATE
     LaunchedEffect(isStarted, isPaused) {
         while (isStarted && !isPaused) {
             delay(1000L)
             elapsedSec += 1
-            // If no real physical GPS movement has arrived in the last tick (e.g. testing indoors), advance smoothly when GPS mode is active
-            if (gpsActive && realGpsFixesCount == 0) {
-                distanceMeters += 2.75f // ~10 km/h running pace (6:00 /km)
+            val snap = com.repforge.app.DistanceTrackingService.snapshot(context)
+            if (snap.optBoolean("active", false)) {
+                val srvMeters = snap.optDouble("distanceMeters", 0.0).toFloat()
+                if (srvMeters > distanceMeters) {
+                    distanceMeters = srvMeters
+                }
+                realGpsFixesCount = maxOf(realGpsFixesCount, snap.optInt("routePointCount", 0))
+                hasServiceFix = snap.optBoolean("hasFix", hasServiceFix)
             }
             val min = elapsedSec / 60
             val sec = elapsedSec % 60
             val formattedTime = String.format("%02d:%02d", min, sec)
             val distKm = distanceMeters / 1000f
-            val paceSecPerKm = if (distKm > 0.02f) (elapsedSec / distKm).toInt() else 360
-            val paceMin = (paceSecPerKm / 60).coerceIn(2, 20)
-            val paceRemSec = (paceSecPerKm % 60).coerceIn(0, 59)
-            val formattedPace = String.format("%d:%02d", paceMin, paceRemSec)
+            val formattedPace = if (distKm >= 0.01f && elapsedSec > 0) {
+                val paceSecPerKm = (elapsedSec / distKm).toInt()
+                String.format("%d:%02d", (paceSecPerKm / 60).coerceIn(1, 59), (paceSecPerKm % 60).coerceIn(0, 59))
+            } else {
+                "—"
+            }
             onUpdateOutdoorMetrics(formattedTime, distKm, formattedPace)
         }
     }
@@ -2510,14 +3135,20 @@ fun ActiveOutdoorGpsScreen(
     val formattedElapsed = String.format("%02d:%02d", elapsedSec / 60, elapsedSec % 60)
     val distanceKm = distanceMeters / 1000f
     val formattedDistance = String.format(java.util.Locale("hu", "HU"), "%.2f km", distanceKm)
-    val paceSecPerKm = if (distanceKm > 0.02f && elapsedSec > 0) (elapsedSec / distanceKm).toInt() else 360
-    val formattedPace = if (elapsedSec > 0) {
-        String.format("%d:%02d /km", (paceSecPerKm / 60).coerceIn(2, 20), (paceSecPerKm % 60).coerceIn(0, 59))
+    val formattedPace = if (distanceKm >= 0.01f && elapsedSec > 0) {
+        val paceSecPerKm = (elapsedSec / distanceKm).toInt()
+        String.format("%d:%02d /km", (paceSecPerKm / 60).coerceIn(1, 59), (paceSecPerKm % 60).coerceIn(0, 59))
     } else {
-        "0:00 /km"
+        "— /km"
     }
-    val burnedKcal = ((distanceKm * 68f) + (elapsedSec * 0.14f)).toInt()
-    val liveHrBpm = if (isStarted && !isPaused) (132 + (elapsedSec % 18)).coerceAtMost(168) else 84
+
+    // Real sensor HR only (from WearLiveHealthStore or Health sync) — never fabricated
+    val wearLiveHr = remember(elapsedSec) {
+        com.repforge.app.WearLiveHealthStore.current(context)?.optInt("heartRate", 0) ?: 0
+    }
+    val realHrBpm = if (wearLiveHr > 0) wearLiveHr else uiState.currentHrBpm
+    val hrLabel = if (realHrBpm > 0) "♥ $realHrBpm bpm" else "♥ — bpm (nincs szenzor)"
+    val caloriesLabel = if (uiState.activeCaloriesKcal > 0) "${uiState.activeCaloriesKcal} kcal" else if (distanceKm > 0f) "~${(distanceKm * 65f).toInt()} kcal (becsült)" else "— kcal"
 
     LazyColumn(
         modifier = Modifier
@@ -2577,20 +3208,28 @@ fun ActiveOutdoorGpsScreen(
                                     .background(
                                         when {
                                             !gpsActive -> palette.textMuted
-                                            isStarted && !isPaused -> palette.success
+                                            isStarted && !isPaused && hasServiceFix -> palette.success
+                                            isStarted && !isPaused -> palette.warning
                                             else -> palette.primary
                                         }
                                     )
                             )
                             Text(
                                 text = when {
-                                    !gpsActive -> "GPS rögzítés kikapcsolva"
-                                    isStarted && !isPaused -> if (realGpsFixesCount > 0) "Élő telefonos GPS mérés fut ($realGpsFixesCount pont)" else "GPS mérés és számláló fut ●"
+                                    !gpsActive -> "Beltéri időmérés (GPS rögzítés kikapcsolva)"
+                                    !hasLocationPermission -> "Helymeghatározási engedély szükséges (0 m)"
+                                    isStarted && !isPaused && hasServiceFix -> "Élő GPS-jel aktív ($realGpsFixesCount pont • ±${gpsAccuracyMeters.toInt()} m)"
+                                    isStarted && !isPaused -> "GPS-jelre vár... (0 m rögzítve)"
                                     isStarted && isPaused -> "GPS mérés szüneteltetve"
                                     else -> "GPS készenlétben • Indításra vár"
                                 },
                                 style = MaterialTheme.typography.labelMedium,
-                                color = if (gpsActive && isStarted && !isPaused) palette.success else palette.primary,
+                                color = when {
+                                    !gpsActive -> palette.textSecondary
+                                    isStarted && !isPaused && hasServiceFix -> palette.success
+                                    isStarted && !isPaused -> palette.warning
+                                    else -> palette.primary
+                                },
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -2606,7 +3245,27 @@ fun ActiveOutdoorGpsScreen(
             }
         }
 
-        // 1. GPS Route Mini Map Card
+        if (serviceErrorMsg.isNotBlank()) {
+            item {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = palette.danger.copy(alpha = 0.14f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, palette.danger, RoundedCornerShape(14.dp))
+                ) {
+                    Text(
+                        text = serviceErrorMsg,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = palette.danger,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+            }
+        }
+
+        // 1. GPS Route Card
         item {
             Surface(
                 shape = RoundedCornerShape(22.dp),
@@ -2641,13 +3300,19 @@ fun ActiveOutdoorGpsScreen(
                             }
                             Column {
                                 Text(
-                                    text = "GPS útvonal",
+                                    text = "Privát GPS útvonal (GpsRouteStore)",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary
                                 )
                                 Text(
-                                    text = if (hasLocationPermission) "Valós GPS + élő térkép követés" else "Helymeghatározás engedélyezése telefonos GPS-hez",
+                                    text = if (!gpsActive) {
+                                        "GPS kikapcsolva – csak időmérés"
+                                    } else if (realGpsFixesCount > 0) {
+                                        "Rögzített pontok: $realGpsFixesCount db • Távolság: $formattedDistance"
+                                    } else {
+                                        "Nincs rögzített GPS-pont (GPS-fixre vár)"
+                                    },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textSecondary
                                 )
@@ -2664,7 +3329,12 @@ fun ActiveOutdoorGpsScreen(
                             )
                             Switch(
                                 checked = gpsActive,
-                                onCheckedChange = { gpsActive = it },
+                                onCheckedChange = { enabled ->
+                                    gpsActive = enabled
+                                    if (!enabled && isStarted) {
+                                        com.repforge.app.DistanceTrackingService.stop(context)
+                                    }
+                                },
                                 colors = SwitchDefaults.colors(
                                     checkedThumbColor = palette.onPrimary,
                                     checkedTrackColor = palette.primary
@@ -2701,7 +3371,8 @@ fun ActiveOutdoorGpsScreen(
                         text = when {
                             !isStarted -> "KÉSZENLÉTBEN – NYOMJ AZ INDÍTÁSRA"
                             isPaused -> "SZÜNETELTETVE"
-                            else -> "ELTELT IDŐ (ÉLŐ MÉRÉS)"
+                            gpsActive && !hasServiceFix -> "IDŐMÉRÉS FUT • GPS-JELRE VÁR (0 M)"
+                            else -> "ELTELT IDŐ (VALÓS GPS MÉRÉS)"
                         },
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
@@ -2727,21 +3398,21 @@ fun ActiveOutdoorGpsScreen(
                         OutdoorMetricTile(
                             label = strings.distanceLabel,
                             value = formattedDistance,
-                            subValue = "Cél: 5,00 km",
+                            subValue = if (realGpsFixesCount > 0) "$realGpsFixesCount GPS-pont" else "GPS-fixre vár",
                             highlighted = true,
                             modifier = Modifier.weight(1f)
                         )
                         OutdoorMetricTile(
                             label = strings.avgPaceLabel,
                             value = formattedPace,
-                            subValue = if (isStarted && !isPaused) "Élő tempó" else "Átlagtempó",
+                            subValue = if (distanceKm >= 0.01f) "Mért tempó" else "Nincs táv",
                             highlighted = false,
                             modifier = Modifier.weight(1f)
                         )
                         OutdoorMetricTile(
                             label = "Kalória & Pulzus",
-                            value = "$burnedKcal kcal",
-                            subValue = "♥ $liveHrBpm bpm",
+                            value = caloriesLabel,
+                            subValue = hrLabel,
                             highlighted = false,
                             modifier = Modifier.weight(1f)
                         )
@@ -2788,16 +3459,28 @@ fun ActiveOutdoorGpsScreen(
                     if (!isStarted) {
                         Button(
                             onClick = {
-                                if (!hasLocationPermission) {
-                                    permissionLauncher.launch(
-                                        arrayOf(
-                                            Manifest.permission.ACCESS_FINE_LOCATION,
-                                            Manifest.permission.ACCESS_COARSE_LOCATION
+                                serviceErrorMsg = ""
+                                if (gpsActive) {
+                                    val fineGranted = ContextCompat.checkSelfPermission(
+                                        context,
+                                        Manifest.permission.ACCESS_FINE_LOCATION
+                                    ) == PackageManager.PERMISSION_GRANTED
+                                    hasLocationPermission = fineGranted
+                                    if (!fineGranted) {
+                                        permissionLauncher.launch(
+                                            arrayOf(
+                                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                                Manifest.permission.ACCESS_COARSE_LOCATION
+                                            )
                                         )
-                                    )
+                                    } else {
+                                        startNativeGpsTracking()
+                                    }
+                                } else {
+                                    // Beltéri időmérés GPS nélkül
+                                    isStarted = true
+                                    isPaused = false
                                 }
-                                isStarted = true
-                                isPaused = false
                             },
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
@@ -2816,7 +3499,7 @@ fun ActiveOutdoorGpsScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "▶ GPS edzés és számláló indítása",
+                                text = if (gpsActive) "▶ Valós GPS mérés indítása" else "▶ Beltéri időmérés indítása (GPS nélkül)",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -2827,7 +3510,13 @@ fun ActiveOutdoorGpsScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             OutlinedButton(
-                                onClick = { isPaused = !isPaused },
+                                onClick = {
+                                    val nextPaused = !isPaused
+                                    isPaused = nextPaused
+                                    if (gpsActive) {
+                                        com.repforge.app.DistanceTrackingService.pauseOwned(context, routeOwnerKey, nextPaused)
+                                    }
+                                },
                                 shape = RoundedCornerShape(14.dp),
                                 modifier = Modifier
                                     .weight(1f)
@@ -2866,6 +3555,9 @@ fun ActiveOutdoorGpsScreen(
                             Button(
                                 onClick = {
                                     isPaused = true
+                                    if (gpsActive) {
+                                        com.repforge.app.DistanceTrackingService.stop(context)
+                                    }
                                     onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY)
                                 },
                                 shape = RoundedCornerShape(14.dp),

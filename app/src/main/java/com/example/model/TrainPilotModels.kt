@@ -73,7 +73,11 @@ data class ExerciseSetItem(
     val weightKg: Float,
     val reps: Int,
     val rir: Int,
-    val completed: Boolean
+    val completed: Boolean,
+    val leftSec: Int = 30,
+    val rightSec: Int = 30,
+    val leftRecorded: Boolean = false,
+    val rightRecorded: Boolean = false
 )
 
 data class ExerciseItem(

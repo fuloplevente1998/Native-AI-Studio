@@ -133,6 +133,8 @@ data class TrainPilotUiState(
 
     // Active Workout & Measurement State (Mockup 2/4 #1..#6)
     val isWorkoutSessionActive: Boolean = false,
+    val activeWorkoutId: String = "",
+    val workoutStartedEpochMs: Long = 0L,
     val activeWorkoutSubScreen: SubScreen = SubScreen.ACTIVE_STRENGTH,
     val activeWorkoutTitleHu: String = "Otthoni A/B – Alap • A nap",
     val activeWorkoutExercises: List<ExerciseItem> = emptyList(),
@@ -232,16 +234,92 @@ class TrainPilotViewModel : ViewModel() {
     private var nativeDatabase: TrainPilotDatabase? = null
     private var nativeScope: CoroutineScope? = null
 
+    private fun translateMuscleTokenHu(token: String): String {
+        return when (token.trim().lowercase()) {
+            "chest", "mell", "mellkas", "push" -> "Mell"
+            "back", "hát", "lats", "pull" -> "Hát"
+            "shoulders", "váll", "delts" -> "Váll"
+            "biceps", "bicepsz" -> "Bicepsz"
+            "triceps", "tricepsz" -> "Tricepsz"
+            "arms", "kar", "forearms" -> "Kar"
+            "legs", "quads", "láb", "comb" -> "Láb"
+            "hamstrings", "combhajlító" -> "Combhajlító"
+            "glutes", "far", "farizom" -> "Farizom"
+            "calves", "vádli" -> "Vádli"
+            "core", "abs", "has", "törzs" -> "Törzs / Has"
+            "cardio", "kardió" -> "Kardió"
+            "full", "full_body", "teljes test" -> "Teljes test"
+            else -> token.trim().replaceFirstChar { it.uppercase() }
+        }
+    }
+
+    private fun translateLoadTypeOrEquipmentHu(rawEquip: String, loadType: String): String {
+        val cleanEquip = rawEquip.trim()
+        val technicalTokens = setOf(
+            "per_hand", "single_dumbbell", "bodyweight", "total", "weight",
+            "dumbbell", "barbell", "machine", "cable", "band", "kettlebell"
+        )
+        if (cleanEquip.isNotBlank() && cleanEquip.lowercase() !in technicalTokens) {
+            return cleanEquip.replaceFirstChar { it.uppercase() }
+        }
+        return when (cleanEquip.ifBlank { loadType }.trim().lowercase()) {
+            "per_hand", "dumbbell" -> "2 kézisúlyzó"
+            "single_dumbbell" -> "1 kézisúlyzó"
+            "bodyweight" -> "Saját testsúly"
+            "barbell" -> "Kétkezes rúd"
+            "machine" -> "Edzőtermi gép"
+            "cable" -> "Csigás gép"
+            "band" -> "Gumiszalag"
+            "kettlebell" -> "Kettlebell"
+            "total", "weight" -> "Szabadsúly / Gép"
+            else -> "Súlyzó / Eszköz"
+        }
+    }
+
     private fun mapExerciseEntity(entity: com.repforge.app.data.db.ExerciseLibraryEntity): ExerciseItem {
-        val cat = when (entity.primaryMuscle.lowercase()) {
+        val rawObj = runCatching { JSONObject(entity.rawJson) }.getOrNull()
+        val rawEquip = rawObj?.optString("equipment").orEmpty()
+        val rawTarget = rawObj?.optString("target").orEmpty()
+        val parsedMuscleList = runCatching {
+            val arr = JSONArray(entity.muscleGroupsJson)
+            (0 until arr.length()).mapNotNull { idx ->
+                arr.optString(idx)?.takeIf { it.isNotBlank() }?.let { translateMuscleTokenHu(it) }
+            }.distinct()
+        }.getOrDefault(emptyList())
+
+        val primaryKey = entity.primaryMuscle.lowercase()
+        val cat = when (primaryKey) {
             "chest", "mell", "mellkas", "push" -> ExerciseCategory.CHEST
             "back", "hát", "pull" -> ExerciseCategory.BACK
             "shoulders", "váll" -> ExerciseCategory.SHOULDERS
             "arms", "biceps", "triceps", "bicepsz", "tricepsz", "kar" -> ExerciseCategory.ARMS
-            "legs", "quads", "hamstrings", "calves", "glutes", "comb", "láb", "far" -> ExerciseCategory.LEGS
+            "legs", "quads", "hamstrings", "calves", "glutes", "comb", "láb", "far", "cardio" -> ExerciseCategory.LEGS
             "core", "abs", "has", "törzs" -> ExerciseCategory.CORE
             else -> ExerciseCategory.CHEST
         }
+
+        val cleanPrimaryHu = if (rawTarget.isNotBlank() && !rawTarget.startsWith("[")) {
+            rawTarget.replaceFirstChar { it.uppercase() }
+        } else {
+            parsedMuscleList.firstOrNull() ?: translateMuscleTokenHu(entity.primaryMuscle.ifBlank { "Mell" })
+        }
+
+        val secondaryList = parsedMuscleList.filterNot {
+            it.equals(cleanPrimaryHu, ignoreCase = true)
+        }
+        val cleanSecondaryHu = if (secondaryList.isNotEmpty()) {
+            secondaryList.joinToString(", ")
+        } else if (parsedMuscleList.size > 1) {
+            parsedMuscleList.drop(1).joinToString(", ")
+        } else {
+            "Stabilizáló izmok"
+        }
+
+        val cleanEquipmentHu = translateLoadTypeOrEquipmentHu(rawEquip, entity.loadType)
+        val parsedReps = Regex("\\d+").findAll(entity.defaultReps).lastOrNull()?.value?.toIntOrNull()
+            ?: entity.defaultReps.toIntOrNull()
+            ?: 10
+
         val parsedSteps = entity.notesHu
             .split(Regex("(?<=\\.)\\s+|\\n+"))
             .map { it.trim() }
@@ -249,22 +327,32 @@ class TrainPilotViewModel : ViewModel() {
             .ifEmpty {
                 listOf("Helyes kivitelezés: ügyelj az egyenes hátra és a kontrollált mozgástartományra.")
             }
+        val isTimedFlag = entity.measurementType.contains("time", ignoreCase = true) ||
+            entity.repUnit.contains("mp", ignoreCase = true) ||
+            entity.repUnit.contains("sec", ignoreCase = true)
+        val isBilateralFlag = entity.id.contains("side-plank", ignoreCase = true) ||
+            entity.nameHu.contains("oldalsó plank", ignoreCase = true) ||
+            entity.measurementType.contains("bilateral", ignoreCase = true) ||
+            entity.measurementType.contains("side", ignoreCase = true) ||
+            entity.repUnit.contains("oldal", ignoreCase = true)
+        val defaultTargetSec = if (isTimedFlag || isBilateralFlag) parsedReps.coerceIn(10, 300) else 45
         return ExerciseItem(
             id = entity.id,
-            nameHu = entity.nameHu.ifBlank { entity.nameEn }.ifBlank { entity.id },
-            nameEn = entity.nameEn.ifBlank { entity.nameHu }.ifBlank { entity.id },
+            nameHu = entity.nameHu.ifBlank { entity.nameEn }.ifBlank { "Gyakorlat" },
+            nameEn = entity.nameEn.ifBlank { entity.nameHu }.ifBlank { "Exercise" },
             nameDe = entity.nameDe.ifBlank { entity.nameHu },
             nameRo = entity.nameRo.ifBlank { entity.nameHu },
             category = cat,
-            equipmentHu = entity.loadType.ifBlank { "Súlyzó" },
-            primaryMusclesHu = entity.primaryMuscle.ifBlank { "Mellkas" },
-            secondaryMusclesHu = entity.muscleGroupsJson,
+            equipmentHu = cleanEquipmentHu,
+            primaryMusclesHu = cleanPrimaryHu,
+            secondaryMusclesHu = cleanSecondaryHu,
             defaultSets = entity.defaultSets.coerceAtLeast(1),
-            defaultReps = entity.defaultReps.toIntOrNull() ?: 10,
+            defaultReps = parsedReps.coerceAtLeast(1),
             defaultWeightKg = entity.defaultWeight.toFloat(),
             defaultRestSec = entity.defaultRestSeconds.coerceAtLeast(30),
-            isTimed = entity.measurementType.contains("time", ignoreCase = true) || entity.repUnit.contains("sec", ignoreCase = true),
-            isBilateral = entity.measurementType.contains("bilateral", ignoreCase = true) || entity.measurementType.contains("side", ignoreCase = true),
+            isTimed = isTimedFlag || isBilateralFlag,
+            isBilateral = isBilateralFlag,
+            targetSeconds = defaultTargetSec,
             stepsHu = parsedSteps,
             coachStatusHu = "Normál terhelés",
             coachHintHu = parsedSteps.firstOrNull() ?: "Kezdj könnyebben; ma ne erőltesd a progressziót."
@@ -295,13 +383,16 @@ class TrainPilotViewModel : ViewModel() {
                         exercises = dayExercises
                     )
                 }
+                val locHu = prog.location.ifBlank { "Otthon / Edzőterem" }
+                val lvlHu = prog.level.ifBlank { "Kezdő" }
+                val builtSubtitleHu = prog.description.ifBlank { "$locHu • $lvlHu • ${progDays.size} edzésnap" }
                 TrainingProgramModel(
                     id = prog.id,
                     nameHu = prog.nameHu.ifBlank { prog.nameEn }.ifBlank { "Edzésterv ${pIdx + 1}" },
                     nameEn = prog.nameEn.ifBlank { prog.nameHu }.ifBlank { "Program ${pIdx + 1}" },
-                    subtitleHu = prog.description.ifBlank { "Beépített alap edzésterv" },
-                    subtitleEn = prog.description.ifBlank { "Built-in training program" },
-                    tagsHu = listOf("Alap program", prog.level.ifBlank { "Kezdő" }),
+                    subtitleHu = builtSubtitleHu,
+                    subtitleEn = prog.description.ifBlank { "${progDays.size} workout days" },
+                    tagsHu = listOf(locHu, lvlHu),
                     isCustom = !prog.builtin,
                     isActive = (pIdx == 0),
                     days = progDays
@@ -310,16 +401,129 @@ class TrainPilotViewModel : ViewModel() {
         } catch (_: Throwable) { DemoDataProvider.defaultPrograms }
     }
 
+    private fun targetSubScreenForExercise(ex: ExerciseItem?): SubScreen {
+        if (ex == null) return SubScreen.ACTIVE_STRENGTH
+        val isBi = ex.isBilateral ||
+            ex.id.contains("side-plank", ignoreCase = true) ||
+            ex.nameHu.contains("oldalsó plank", ignoreCase = true)
+        return when {
+            isBi -> SubScreen.ACTIVE_BILATERAL
+            ex.isTimed -> SubScreen.ACTIVE_TIMED
+            else -> SubScreen.ACTIVE_STRENGTH
+        }
+    }
+
     private fun buildDefaultSetsForExercise(ex: ExerciseItem): List<ExerciseSetItem> {
         val count = ex.defaultSets.coerceIn(1, 6)
+        val defaultSideSec = if (ex.isBilateral || ex.isTimed) ex.targetSeconds.coerceAtLeast(15) else 30
         return (1..count).map { setNum ->
             ExerciseSetItem(
                 setNumber = setNum,
                 weightKg = ex.defaultWeightKg,
                 reps = ex.defaultReps.coerceAtLeast(1),
                 rir = 2,
-                completed = false
+                completed = false,
+                leftSec = defaultSideSec,
+                rightSec = defaultSideSec,
+                leftRecorded = false,
+                rightRecorded = false
             )
+        }
+    }
+
+    private fun buildCanonicalSessionJsonFromState(state: TrainPilotUiState): JSONObject {
+        val wId = state.activeWorkoutId.ifBlank { UUID.randomUUID().toString() }
+        val startedMs = if (state.workoutStartedEpochMs > 0L) state.workoutStartedEpochMs else System.currentTimeMillis()
+        val startedIso = Instant.ofEpochMilli(startedMs).toString()
+        val workoutExs = state.activeWorkoutExercises
+        val currentEx = workoutExs.getOrNull(state.activeExerciseIndex)
+        val allSetsMap = state.activeSetsByExerciseId.toMutableMap()
+        if (currentEx != null) {
+            allSetsMap[currentEx.id] = state.activeSets
+        }
+
+        val exercisesArray = JSONArray()
+        workoutExs.forEachIndexed { exIdx, exItem ->
+            val setsForEx = allSetsMap[exItem.id] ?: buildDefaultSetsForExercise(exItem)
+            val setsArray = JSONArray()
+            setsForEx.forEachIndexed { idx, s ->
+                setsArray.put(JSONObject().apply {
+                    put("setId", "${exItem.id}_set_${s.setNumber}")
+                    put("set", idx + 1)
+                    put("setNumber", s.setNumber)
+                    put("weight", s.weightKg.toDouble())
+                    put("reps", s.reps.toString())
+                    put("done", s.completed)
+                    put("actualRir", s.rir)
+                    put("leftSec", s.leftSec)
+                    put("rightSec", s.rightSec)
+                    put("leftRecorded", s.leftRecorded)
+                    put("rightRecorded", s.rightRecorded)
+                })
+            }
+            exercisesArray.put(JSONObject().apply {
+                put("id", exItem.id)
+                put("exerciseId", exItem.id)
+                put("name", exItem.nameHu)
+                put("nameHu", exItem.nameHu)
+                put("nameEn", exItem.nameEn)
+                put("loadType", if (exItem.defaultWeightKg <= 0f) "bodyweight" else "weight")
+                put("repUnit", when {
+                    exItem.isBilateral -> "mp/oldal"
+                    exItem.isTimed -> "sec"
+                    else -> "reps"
+                })
+                put("measurementType", when {
+                    exItem.isBilateral -> "bilateral_time"
+                    exItem.isTimed -> "time"
+                    else -> "reps"
+                })
+                put("orderIndex", exIdx)
+                put("sets", setsArray)
+            })
+        }
+
+        val title = state.activeWorkoutTitleHu.ifBlank { "Edzés" }
+        return JSONObject().apply {
+            put("schema", 1)
+            put("active", state.isWorkoutSessionActive)
+            put("id", wId)
+            put("workoutId", wId)
+            put("workoutKey", wId)
+            put("syncId", wId)
+            put("started", startedIso)
+            put("startedEpochMs", startedMs)
+            put("activeIntervals", JSONArray().put(JSONObject().put("start", startedIso).put("end", JSONObject.NULL)))
+            put("programId", state.editingProgramId.ifBlank { "program_custom" })
+            put("programName", title)
+            put("dayId", "session")
+            put("dayName", title)
+            put("workout", title)
+            put("currentExercise", state.activeExerciseIndex.coerceAtLeast(0))
+            put("timerOwner", if (state.phoneControlsWorkout) "phone" else "watch")
+            put("originDevice", "phone")
+            put("workoutPaused", false)
+            put("restSeconds", state.defaultRestSec)
+            put("exercises", exercisesArray)
+        }
+    }
+
+    private fun persistCanonicalActiveSessionAsync(installNew: Boolean = false) {
+        val ctx = nativeContext ?: return
+        val scope = nativeScope ?: return
+        val currentState = _uiState.value
+        if (!currentState.isWorkoutSessionActive) return
+        val snapshotJson = buildCanonicalSessionJsonFromState(currentState)
+        scope.launch(Dispatchers.IO) {
+            runCatching {
+                if (installNew) {
+                    withContext(Dispatchers.Main.immediate) {
+                        NativeWorkoutSession.installPrepared(ctx, snapshotJson)
+                    }
+                } else {
+                    ActiveWorkoutStore.saveOwned(ctx, snapshotJson)
+                }
+            }
         }
     }
 
@@ -424,13 +628,15 @@ class TrainPilotViewModel : ViewModel() {
                                 exercises = dayExercises
                             )
                         }
+                        val locHu = prog.location.ifBlank { "Otthon / Edzőterem" }
+                        val lvlHu = prog.level.ifBlank { "Kezdő" }
                         TrainingProgramModel(
                             id = prog.id,
                             nameHu = prog.nameHu.ifBlank { prog.nameEn }.ifBlank { "Edzésterv ${pIdx + 1}" },
                             nameEn = prog.nameEn.ifBlank { prog.nameHu }.ifBlank { "Program ${pIdx + 1}" },
-                            subtitleHu = prog.description.ifBlank { "Alap beépített edzésterv" },
-                            subtitleEn = prog.description.ifBlank { "Built-in training program" },
-                            tagsHu = listOf("Alap program", prog.level.ifBlank { "Kezdő" }),
+                            subtitleHu = prog.description.ifBlank { "$locHu • $lvlHu • ${days.size} edzésnap" },
+                            subtitleEn = prog.description.ifBlank { "${days.size} workout days" },
+                            tagsHu = listOf(locHu, lvlHu),
                             isCustom = !prog.builtin,
                             isActive = (pIdx == 0),
                             days = days
@@ -447,32 +653,56 @@ class TrainPilotViewModel : ViewModel() {
                 }
             } catch (_: Throwable) {}
 
-            // 5. Read persisted workouts from Room
+            // 5. Read persisted workouts from Room (with real durations and exerciseDetails)
             val mappedWorkouts = try {
                 val dbWorkouts = database.workoutHistoryDao().getAllWorkoutsWithDetails()
                 dbWorkouts.map { detail ->
                     val w = detail.workout
                     val exerciseNames = detail.exercises.joinToString(", ") { exWithSets ->
                         val ex = exWithSets.exercise
-                        ex.nameHu.ifBlank { ex.exerciseId }
+                        ex.nameHu.ifBlank { exercisesMap[ex.exerciseId]?.nameHu.orEmpty() }.ifBlank { "Gyakorlat" }
                     }
                     val allSets = detail.exercises.flatMap { it.sets }
+                    val completedDbSets = allSets.filter { it.done }
                     val isOutdoor = detail.exercises.any {
                         val ex = it.exercise
                         ex.measurementType == "distance" || ex.repUnit == "km"
+                    }
+                    val elapsedMs = (w.finishedEpochMs - w.startedEpochMs).coerceAtLeast(0L)
+                    val realDurationMin = if (elapsedMs > 0L) ((elapsedMs + 59_999L) / 60_000L).toInt().coerceAtLeast(1) else 0
+                    val elapsedSec = (elapsedMs / 1000L).toInt()
+                    val realWorkLabel = if (elapsedSec > 0) String.format("%02d:%02d", elapsedSec / 60, elapsedSec % 60) else "—"
+                    val mappedDetails = detail.exercises.map { exWithSets ->
+                        val ex = exWithSets.exercise
+                        val exName = ex.nameHu.ifBlank { exercisesMap[ex.exerciseId]?.nameHu.orEmpty() }.ifBlank { "Gyakorlat" }
+                        val mappedSets = exWithSets.sets.mapIndexed { sIdx, sEntity ->
+                            ExerciseSetItem(
+                                setNumber = if (sEntity.setNumber > 0) sEntity.setNumber else (sIdx + 1),
+                                weightKg = (sEntity.weight ?: 0.0).toFloat(),
+                                reps = sEntity.reps.toIntOrNull() ?: 0,
+                                rir = sEntity.actualRir ?: 2,
+                                completed = sEntity.done
+                            )
+                        }
+                        com.example.model.LoggedExerciseDetail(
+                            nameHu = exName,
+                            summaryPrescription = "${mappedSets.count { it.completed }}/${mappedSets.size} sorozat",
+                            sets = mappedSets
+                        )
                     }
                     LoggedWorkoutEntry(
                         id = w.id,
                         dateLabelHu = w.started.take(16).replace('T', ' '),
                         titleHu = w.programName.ifBlank { w.dayName }.ifBlank { "Edzés" },
-                        durationMinutes = if (w.finishedEpochMs > w.startedEpochMs) ((w.finishedEpochMs - w.startedEpochMs) / 60000).toInt() else 45,
-                        workTimeLabel = "30:00",
-                        restTimeLabel = "15:00",
-                        totalSets = if (w.completedSetsCount > 0) w.completedSetsCount else allSets.size,
-                        totalVolumeKg = if (w.totalVolumeKg > 0.0) w.totalVolumeKg.toInt() else allSets.sumOf { ((it.weight ?: 0.0) * (it.reps.toIntOrNull() ?: 0)).toInt() },
+                        durationMinutes = realDurationMin,
+                        workTimeLabel = realWorkLabel,
+                        restTimeLabel = "—",
+                        totalSets = if (w.completedSetsCount > 0) w.completedSetsCount else completedDbSets.size,
+                        totalVolumeKg = if (w.totalVolumeKg > 0.0) w.totalVolumeKg.roundToInt() else completedDbSets.sumOf { (it.weight ?: 0.0) * (it.reps.toDoubleOrNull() ?: 0.0) }.roundToInt(),
                         summaryExercisesHu = exerciseNames.ifBlank { "Rögzített gyakorlatok" },
                         hasPr = w.hasPr226,
-                        isOutdoorRun = isOutdoor
+                        isOutdoorRun = isOutdoor,
+                        exerciseDetails = mappedDetails
                     )
                 }
             } catch (_: Throwable) { emptyList() }
@@ -508,24 +738,90 @@ class TrainPilotViewModel : ViewModel() {
                 }
             } catch (_: Throwable) {}
 
+            // Restore active workout session from ActiveWorkoutStore on cold start if present
+            val restoredActiveSnap = runCatching {
+                ActiveWorkoutStore.current(context)?.takeIf { it.optBoolean("active", false) }
+                    ?: PhoneWorkoutExecution.store(context).snapshot()?.takeIf { it.optBoolean("active", false) }
+            }.getOrNull()
+
             withContext(Dispatchers.Main) {
                 _uiState.update { st ->
                     val activeProg = mappedPrograms.firstOrNull { it.isActive } ?: mappedPrograms.firstOrNull()
                     val firstDay = activeProg?.days?.firstOrNull()
-                    val initialWorkoutExs = if (st.activeWorkoutExercises.isNotEmpty()) {
-                        st.activeWorkoutExercises
-                    } else {
-                        firstDay?.exercises?.ifEmpty { mappedExercises.take(6) } ?: mappedExercises.take(6)
+                    var restoredExercises = emptyList<ExerciseItem>()
+                    val restoredSetsMap = mutableMapOf<String, List<ExerciseSetItem>>()
+                    if (restoredActiveSnap != null) {
+                        val exArr = restoredActiveSnap.optJSONArray("exercises")
+                        if (exArr != null && exArr.length() > 0) {
+                            val list = mutableListOf<ExerciseItem>()
+                            for (i in 0 until exArr.length()) {
+                                val exObj = exArr.optJSONObject(i) ?: continue
+                                val exId = exObj.optString("id").ifBlank { exObj.optString("exerciseId") }
+                                val catalogEx = exercisesMap[exId] ?: ExerciseItem(
+                                    id = exId.ifBlank { "restored_$i" },
+                                    nameHu = exObj.optString("nameHu").ifBlank { exObj.optString("name").ifBlank { "Gyakorlat" } },
+                                    isTimed = exObj.optString("measurementType").contains("time"),
+                                    isBilateral = exObj.optString("measurementType").contains("bilateral") || exObj.optString("repUnit").contains("oldal")
+                                )
+                                list.add(catalogEx)
+                                val setsArr = exObj.optJSONArray("sets")
+                                if (setsArr != null && setsArr.length() > 0) {
+                                    val sList = (0 until setsArr.length()).mapNotNull { sIdx ->
+                                        val sObj = setsArr.optJSONObject(sIdx) ?: return@mapNotNull null
+                                        val doneFlag = sObj.optBoolean("done", false)
+                                        val lSec = sObj.optInt("leftSec", 30)
+                                        val rSec = sObj.optInt("rightSec", 30)
+                                        ExerciseSetItem(
+                                            setNumber = sObj.optInt("setNumber", sObj.optInt("set", sIdx + 1)),
+                                            weightKg = sObj.optDouble("weight", catalogEx.defaultWeightKg.toDouble()).toFloat(),
+                                            reps = sObj.optString("reps").toIntOrNull() ?: catalogEx.defaultReps,
+                                            rir = sObj.optInt("actualRir", 2),
+                                            completed = doneFlag,
+                                            leftSec = lSec,
+                                            rightSec = rSec,
+                                            leftRecorded = sObj.optBoolean("leftRecorded", doneFlag),
+                                            rightRecorded = sObj.optBoolean("rightRecorded", doneFlag)
+                                        )
+                                    }
+                                    if (sList.isNotEmpty()) {
+                                        restoredSetsMap[catalogEx.id] = sList
+                                    }
+                                }
+                            }
+                            restoredExercises = list
+                        }
                     }
-                    val firstEx = initialWorkoutExs.firstOrNull() ?: mappedExercises.firstOrNull()
+
+                    val initialWorkoutExs = when {
+                        restoredExercises.isNotEmpty() -> restoredExercises
+                        st.activeWorkoutExercises.isNotEmpty() -> st.activeWorkoutExercises
+                        else -> firstDay?.exercises?.ifEmpty { mappedExercises.take(6) } ?: mappedExercises.take(6)
+                    }
+                    val restoredIdx = if (restoredActiveSnap != null && initialWorkoutExs.isNotEmpty()) {
+                        restoredActiveSnap.optInt("currentExercise", 0).coerceIn(0, initialWorkoutExs.lastIndex)
+                    } else st.activeExerciseIndex.coerceIn(0, (initialWorkoutExs.size - 1).coerceAtLeast(0))
+                    val currentActiveEx = initialWorkoutExs.getOrNull(restoredIdx) ?: mappedExercises.firstOrNull()
+                    val activeSetsForCurrent = if (currentActiveEx != null) {
+                        restoredSetsMap[currentActiveEx.id]
+                            ?: st.activeSetsByExerciseId[currentActiveEx.id]
+                            ?: buildDefaultSetsForExercise(currentActiveEx)
+                    } else st.activeSets
+
                     st.copy(
                         exercises = mappedExercises,
-                        selectedExerciseId = firstEx?.id ?: st.selectedExerciseId,
+                        selectedExerciseId = currentActiveEx?.id ?: st.selectedExerciseId,
                         programs = mappedPrograms,
                         editingProgramId = activeProg?.id ?: st.editingProgramId,
-                        activeWorkoutTitleHu = if (activeProg != null) "${activeProg.nameHu} • ${firstDay?.dayCode ?: "A nap"}" else st.activeWorkoutTitleHu,
+                        isWorkoutSessionActive = restoredActiveSnap != null || st.isWorkoutSessionActive,
+                        activeWorkoutId = restoredActiveSnap?.optString("workoutId")?.takeIf { it.isNotBlank() } ?: st.activeWorkoutId,
+                        workoutStartedEpochMs = restoredActiveSnap?.optLong("startedEpochMs", 0L)?.takeIf { it > 0L } ?: st.workoutStartedEpochMs,
+                        activeWorkoutSubScreen = if (restoredActiveSnap != null) targetSubScreenForExercise(currentActiveEx) else st.activeWorkoutSubScreen,
+                        activeWorkoutTitleHu = restoredActiveSnap?.optString("programName")?.takeIf { it.isNotBlank() }
+                            ?: if (activeProg != null) "${activeProg.nameHu} • ${firstDay?.dayCode ?: "A nap"}" else st.activeWorkoutTitleHu,
                         activeWorkoutExercises = initialWorkoutExs,
-                        activeSets = if (firstEx != null && st.activeSetsByExerciseId.isEmpty()) buildDefaultSetsForExercise(firstEx) else st.activeSets,
+                        activeExerciseIndex = restoredIdx,
+                        activeSets = activeSetsForCurrent,
+                        activeSetsByExerciseId = if (restoredSetsMap.isNotEmpty()) restoredSetsMap else st.activeSetsByExerciseId,
                         loggedWorkouts = mappedWorkouts,
                         weeklyGoalCompleted = mappedWorkouts.size,
                         dailySteps = if (stepsVal > 0) stepsVal else st.dailySteps,
@@ -590,7 +886,18 @@ class TrainPilotViewModel : ViewModel() {
 
     fun stopActiveWorkoutSession() {
         _uiState.update { state ->
-            state.copy(isWorkoutSessionActive = false)
+            state.copy(
+                isWorkoutSessionActive = false,
+                activeWorkoutId = "",
+                workoutStartedEpochMs = 0L
+            )
+        }
+        val ctx = nativeContext
+        val scope = nativeScope
+        if (ctx != null && scope != null) {
+            scope.launch(Dispatchers.IO) {
+                runCatching { ActiveWorkoutStore.clear(ctx) }
+            }
         }
     }
 
@@ -1242,18 +1549,24 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    // Active Workout Actions
+    // Active Workout Actions (persisted canonically to ActiveWorkoutStore)
     fun toggleSetCompleted(setNumber: Int) {
         _uiState.update { state ->
             val updated = state.activeSets.map { s ->
                 if (s.setNumber == setNumber) s.copy(completed = !s.completed) else s
             }
+            val currentExId = state.selectedExerciseId
+            val updatedMap = if (currentExId.isNotBlank()) {
+                state.activeSetsByExerciseId + (currentExId to updated)
+            } else state.activeSetsByExerciseId
             state.copy(
                 activeSets = updated,
+                activeSetsByExerciseId = updatedMap,
                 restTimerRemainingSec = state.defaultRestSec,
                 restTimerRunning = true
             )
         }
+        persistCanonicalActiveSessionAsync()
     }
 
     fun adjustSetValues(setNumber: Int, deltaWeight: Float, deltaReps: Int, deltaRir: Int) {
@@ -1267,8 +1580,16 @@ class TrainPilotViewModel : ViewModel() {
                     )
                 } else s
             }
-            state.copy(activeSets = updated)
+            val currentExId = state.selectedExerciseId
+            val updatedMap = if (currentExId.isNotBlank()) {
+                state.activeSetsByExerciseId + (currentExId to updated)
+            } else state.activeSetsByExerciseId
+            state.copy(
+                activeSets = updated,
+                activeSetsByExerciseId = updatedMap
+            )
         }
+        persistCanonicalActiveSessionAsync()
     }
 
     fun updateSetValuesExact(setNumber: Int, weightKg: Float, reps: Int, rir: Int) {
@@ -1282,8 +1603,111 @@ class TrainPilotViewModel : ViewModel() {
                     )
                 } else s
             }
-            state.copy(activeSets = updated)
+            val currentExId = state.selectedExerciseId
+            val updatedMap = if (currentExId.isNotBlank()) {
+                state.activeSetsByExerciseId + (currentExId to updated)
+            } else state.activeSetsByExerciseId
+            state.copy(
+                activeSets = updated,
+                activeSetsByExerciseId = updatedMap
+            )
         }
+        persistCanonicalActiveSessionAsync()
+    }
+
+    fun updateBilateralSetExact(setNumber: Int, leftSec: Int, rightSec: Int, rir: Int) {
+        _uiState.update { state ->
+            val cleanLeft = leftSec.coerceIn(1, 600)
+            val cleanRight = rightSec.coerceIn(1, 600)
+            val cleanRir = rir.coerceIn(0, 10)
+            val updated = state.activeSets.map { s ->
+                if (s.setNumber == setNumber) {
+                    s.copy(
+                        leftSec = cleanLeft,
+                        rightSec = cleanRight,
+                        reps = maxOf(cleanLeft, cleanRight),
+                        rir = cleanRir,
+                        leftRecorded = true,
+                        rightRecorded = true
+                    )
+                } else s
+            }
+            val currentExId = state.selectedExerciseId
+            val updatedMap = if (currentExId.isNotBlank()) {
+                state.activeSetsByExerciseId + (currentExId to updated)
+            } else state.activeSetsByExerciseId
+            state.copy(
+                activeSets = updated,
+                activeSetsByExerciseId = updatedMap,
+                statusBannerMessage = "$setNumber. sorozat frissítve (Bal: ${cleanLeft} mp • Jobb: ${cleanRight} mp)"
+            )
+        }
+        persistCanonicalActiveSessionAsync()
+    }
+
+    fun recordBilateralSideStop(isLeftSide: Boolean, measuredSec: Int, targetSetNumber: Int? = null) {
+        _uiState.update { state ->
+            val recordedSec = measuredSec.coerceAtLeast(1)
+            val sets = state.activeSets
+            val targetSet = when {
+                targetSetNumber != null && sets.any { it.setNumber == targetSetNumber } ->
+                    sets.first { it.setNumber == targetSetNumber }
+                isLeftSide ->
+                    sets.firstOrNull { !it.leftRecorded && !it.completed }
+                        ?: sets.firstOrNull { !it.completed }
+                        ?: sets.lastOrNull()
+                else ->
+                    sets.firstOrNull { !it.rightRecorded && !it.completed }
+                        ?: sets.firstOrNull { !it.completed }
+                        ?: sets.lastOrNull()
+            } ?: return@update state
+
+            var bothSidesNowDone = false
+            val updatedSets = sets.map { s ->
+                if (s.setNumber == targetSet.setNumber) {
+                    val newLeft = if (isLeftSide) recordedSec else s.leftSec
+                    val newRight = if (!isLeftSide) recordedSec else s.rightSec
+                    val newLeftRec = if (isLeftSide) true else s.leftRecorded
+                    val newRightRec = if (!isLeftSide) true else s.rightRecorded
+                    val nowCompleted = s.completed || (newLeftRec && newRightRec)
+                    if (nowCompleted && !s.completed) {
+                        bothSidesNowDone = true
+                    }
+                    s.copy(
+                        leftSec = newLeft,
+                        rightSec = newRight,
+                        reps = maxOf(newLeft, newRight),
+                        leftRecorded = newLeftRec,
+                        rightRecorded = newRightRec,
+                        completed = nowCompleted
+                    )
+                } else s
+            }
+
+            val currentExId = state.selectedExerciseId
+            val updatedMap = if (currentExId.isNotBlank()) {
+                state.activeSetsByExerciseId + (currentExId to updatedSets)
+            } else state.activeSetsByExerciseId
+
+            val sideLabel = if (isLeftSide) "Bal oldal" else "Jobb oldal"
+            val updatedRow = updatedSets.first { it.setNumber == targetSet.setNumber }
+            val msg = if (bothSidesNowDone) {
+                "✓ ${targetSet.setNumber}. sorozat kész! (Bal: ${updatedRow.leftSec} mp | Jobb: ${updatedRow.rightSec} mp) • Pihenő indul"
+            } else {
+                "✓ ${targetSet.setNumber}. sorozat • $sideLabel rögzítve: $recordedSec mp"
+            }
+
+            state.copy(
+                activeSets = updatedSets,
+                activeSetsByExerciseId = updatedMap,
+                bilateralLeftSec = if (isLeftSide) recordedSec else state.bilateralLeftSec,
+                bilateralRightSec = if (!isLeftSide) recordedSec else state.bilateralRightSec,
+                restTimerRemainingSec = if (bothSidesNowDone) state.defaultRestSec else state.restTimerRemainingSec,
+                restTimerRunning = if (bothSidesNowDone) true else state.restTimerRunning,
+                statusBannerMessage = msg
+            )
+        }
+        persistCanonicalActiveSessionAsync()
     }
 
     fun toggleAutoMode(enabled: Boolean) {
@@ -1296,11 +1720,17 @@ class TrainPilotViewModel : ViewModel() {
             val renumbered = remaining.mapIndexed { idx, item ->
                 item.copy(setNumber = idx + 1)
             }
+            val currentExId = state.selectedExerciseId
+            val updatedMap = if (currentExId.isNotBlank()) {
+                state.activeSetsByExerciseId + (currentExId to renumbered)
+            } else state.activeSetsByExerciseId
             state.copy(
                 activeSets = renumbered,
+                activeSetsByExerciseId = updatedMap,
                 statusBannerMessage = "$setNumber. sorozat törölve"
             )
         }
+        persistCanonicalActiveSessionAsync()
     }
 
     fun addSet() {
@@ -1311,14 +1741,25 @@ class TrainPilotViewModel : ViewModel() {
                 setNumber = nextNumber,
                 weightKg = lastSet?.weightKg ?: 5.5f,
                 reps = lastSet?.reps ?: 20,
-                rir = lastSet?.rir ?: 0,
-                completed = false
+                rir = lastSet?.rir ?: 2,
+                completed = false,
+                leftSec = lastSet?.leftSec ?: 30,
+                rightSec = lastSet?.rightSec ?: 30,
+                leftRecorded = false,
+                rightRecorded = false
             )
+            val updatedSets = state.activeSets + newSet
+            val currentExId = state.selectedExerciseId
+            val updatedMap = if (currentExId.isNotBlank()) {
+                state.activeSetsByExerciseId + (currentExId to updatedSets)
+            } else state.activeSetsByExerciseId
             state.copy(
-                activeSets = state.activeSets + newSet,
+                activeSets = updatedSets,
+                activeSetsByExerciseId = updatedMap,
                 statusBannerMessage = "$nextNumber. sorozat hozzáadva"
             )
         }
+        persistCanonicalActiveSessionAsync()
     }
 
     fun saveInitialProfileAndPlan(
@@ -1401,14 +1842,21 @@ class TrainPilotViewModel : ViewModel() {
             val lastCompleted = state.activeSets.lastOrNull { it.completed }
             if (lastCompleted == null) state
             else {
+                val updated = state.activeSets.map {
+                    if (it.setNumber == lastCompleted.setNumber) it.copy(completed = false) else it
+                }
+                val currentExId = state.selectedExerciseId
+                val updatedMap = if (currentExId.isNotBlank()) {
+                    state.activeSetsByExerciseId + (currentExId to updated)
+                } else state.activeSetsByExerciseId
                 state.copy(
-                    activeSets = state.activeSets.map {
-                        if (it.setNumber == lastCompleted.setNumber) it.copy(completed = false) else it
-                    },
+                    activeSets = updated,
+                    activeSetsByExerciseId = updatedMap,
                     statusBannerMessage = "${lastCompleted.setNumber}. sorozat visszavonva"
                 )
             }
         }
+        persistCanonicalActiveSessionAsync()
     }
 
     fun adjustRestTimer(deltaSec: Int) {
@@ -1448,6 +1896,8 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun startPlannedWorkout(programId: String? = null, dayIndex: Int = 0) {
+        val nowMs = System.currentTimeMillis()
+        val newWorkoutId = UUID.randomUUID().toString()
         _uiState.update { state ->
             val prog = if (programId != null) {
                 state.programs.find { it.id == programId }
@@ -1459,10 +1909,12 @@ class TrainPilotViewModel : ViewModel() {
             val firstEx = dayExercises.firstOrNull()
             val setsMap = dayExercises.associate { ex -> ex.id to buildDefaultSetsForExercise(ex) }
             val firstSets = if (firstEx != null) setsMap[firstEx.id] ?: buildDefaultSetsForExercise(firstEx) else state.activeSets
-            val targetSub = if (firstEx?.isTimed == true) SubScreen.ACTIVE_TIMED else SubScreen.ACTIVE_STRENGTH
+            val targetSub = targetSubScreenForExercise(firstEx)
             val back = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16)
             state.copy(
                 isWorkoutSessionActive = true,
+                activeWorkoutId = newWorkoutId,
+                workoutStartedEpochMs = nowMs,
                 activeWorkoutSubScreen = targetSub,
                 activeWorkoutTitleHu = if (prog != null && day != null) "${prog.nameHu} • ${day.dayCode}" else "Tervezett edzés",
                 activeWorkoutExercises = dayExercises,
@@ -1477,18 +1929,23 @@ class TrainPilotViewModel : ViewModel() {
                 statusBannerMessage = "Tervezett edzés elindítva: ${dayExercises.size} gyakorlat a sorban"
             )
         }
+        persistCanonicalActiveSessionAsync(installNew = true)
     }
 
     fun startWorkoutWithExercises(exercisesToRun: List<ExerciseItem>, titleHu: String = "Gyors edzés") {
         if (exercisesToRun.isEmpty()) return
+        val nowMs = System.currentTimeMillis()
+        val newWorkoutId = UUID.randomUUID().toString()
         _uiState.update { state ->
             val firstEx = exercisesToRun.first()
             val setsMap = exercisesToRun.associate { ex -> ex.id to buildDefaultSetsForExercise(ex) }
             val firstSets = setsMap[firstEx.id] ?: buildDefaultSetsForExercise(firstEx)
-            val targetSub = if (firstEx.isTimed) SubScreen.ACTIVE_TIMED else SubScreen.ACTIVE_STRENGTH
+            val targetSub = targetSubScreenForExercise(firstEx)
             val back = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16)
             state.copy(
                 isWorkoutSessionActive = true,
+                activeWorkoutId = newWorkoutId,
+                workoutStartedEpochMs = nowMs,
                 activeWorkoutSubScreen = targetSub,
                 activeWorkoutTitleHu = titleHu,
                 activeWorkoutExercises = exercisesToRun,
@@ -1503,6 +1960,7 @@ class TrainPilotViewModel : ViewModel() {
                 statusBannerMessage = "$titleHu elindítva: ${firstEx.nameHu} (1 / ${exercisesToRun.size})"
             )
         }
+        persistCanonicalActiveSessionAsync(installNew = true)
     }
 
     fun startQuickStrengthWithExercise(exercise: ExerciseItem) {
@@ -1518,23 +1976,39 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun startQuickTimedWithExercise(exercise: ExerciseItem) {
-        val timedEx = if (exercise.isTimed) exercise else exercise.copy(isTimed = true, targetSeconds = 45)
+        val nowMs = System.currentTimeMillis()
+        val newWorkoutId = UUID.randomUUID().toString()
+        val isBi = exercise.isBilateral ||
+            exercise.id.contains("side-plank", ignoreCase = true) ||
+            exercise.nameHu.contains("oldalsó plank", ignoreCase = true)
+        val timedEx = if (exercise.isTimed || isBi) {
+            exercise.copy(isTimed = true, isBilateral = isBi)
+        } else {
+            exercise.copy(isTimed = true, targetSeconds = 45)
+        }
+        val targetSub = targetSubScreenForExercise(timedEx)
+        val defaultSets = buildDefaultSetsForExercise(timedEx)
         _uiState.update { state ->
             val back = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16)
             state.copy(
                 isWorkoutSessionActive = true,
-                activeWorkoutSubScreen = SubScreen.ACTIVE_TIMED,
-                activeWorkoutTitleHu = "Időalapú edzés • ${timedEx.nameHu}",
+                activeWorkoutId = newWorkoutId,
+                workoutStartedEpochMs = nowMs,
+                activeWorkoutSubScreen = targetSub,
+                activeWorkoutTitleHu = if (isBi) "Kétoldali mérés • ${timedEx.nameHu}" else "Időalapú edzés • ${timedEx.nameHu}",
                 activeWorkoutExercises = listOf(timedEx),
                 activeExerciseIndex = 0,
                 selectedExerciseId = timedEx.id,
+                activeSets = defaultSets,
+                activeSetsByExerciseId = state.activeSetsByExerciseId + (timedEx.id to defaultSets),
                 timedCurrentSec = 0,
-                currentSubScreen = SubScreen.ACTIVE_TIMED,
+                currentSubScreen = targetSub,
                 backStack = back,
                 showQuickWorkoutSheet = false,
-                statusBannerMessage = "Időalapú edzés elindítva: ${timedEx.nameHu}"
+                statusBannerMessage = "${timedEx.nameHu} elindítva (${if (isBi) "Kétoldali stopper" else "Időalapú mérés"})"
             )
         }
+        persistCanonicalActiveSessionAsync(installNew = true)
     }
 
     fun addExerciseToWorkoutQueue(exercise: ExerciseItem) {
@@ -1600,6 +2074,7 @@ class TrainPilotViewModel : ViewModel() {
             }
             val nextSets = savedSetsMap[exercise.id] ?: buildDefaultSetsForExercise(exercise)
             savedSetsMap[exercise.id] = nextSets
+            val targetSub = targetSubScreenForExercise(exercise)
             state.copy(
                 activeWorkoutExercises = currentList,
                 activeExerciseIndex = newIndex,
@@ -1607,9 +2082,12 @@ class TrainPilotViewModel : ViewModel() {
                 activeSets = nextSets,
                 activeSetsByExerciseId = savedSetsMap,
                 timedCurrentSec = 0,
+                currentSubScreen = targetSub,
+                activeWorkoutSubScreen = targetSub,
                 statusBannerMessage = "Aktuális gyakorlat: ${exercise.nameHu} (${newIndex + 1} / ${currentList.size})"
             )
         }
+        persistCanonicalActiveSessionAsync()
     }
 
     fun nextActiveExercise() {
@@ -1626,7 +2104,7 @@ class TrainPilotViewModel : ViewModel() {
             val nextEx = workoutExs[nextIdx]
             val nextSets = updatedSetsMap[nextEx.id] ?: buildDefaultSetsForExercise(nextEx)
             updatedSetsMap[nextEx.id] = nextSets
-            val targetSub = if (nextEx.isTimed) SubScreen.ACTIVE_TIMED else SubScreen.ACTIVE_STRENGTH
+            val targetSub = targetSubScreenForExercise(nextEx)
             _uiState.update {
                 it.copy(
                     activeWorkoutExercises = workoutExs,
@@ -1636,17 +2114,20 @@ class TrainPilotViewModel : ViewModel() {
                     activeSetsByExerciseId = updatedSetsMap,
                     timedCurrentSec = 0,
                     currentSubScreen = targetSub,
+                    activeWorkoutSubScreen = targetSub,
                     statusBannerMessage = "Következő gyakorlat (${nextIdx + 1}/${workoutExs.size}): ${nextEx.nameHu}"
                 )
             }
+            persistCanonicalActiveSessionAsync()
         } else {
             _uiState.update {
                 it.copy(
                     activeSetsByExerciseId = updatedSetsMap,
                     currentSubScreen = SubScreen.WORKOUT_SUMMARY,
-                    statusBannerMessage = "Minden gyakorlat teljesítve (${workoutExs.size}/${workoutExs.size})! Összegzés."
+                    statusBannerMessage = "Minden gyakorlat áttekintve (${workoutExs.size}/${workoutExs.size})! Összegzés."
                 )
             }
+            persistCanonicalActiveSessionAsync()
         }
     }
 
@@ -1663,7 +2144,7 @@ class TrainPilotViewModel : ViewModel() {
             val prevIdx = state.activeExerciseIndex - 1
             val prevEx = workoutExs[prevIdx]
             val prevSets = updatedSetsMap[prevEx.id] ?: buildDefaultSetsForExercise(prevEx)
-            val targetSub = if (prevEx.isTimed) SubScreen.ACTIVE_TIMED else SubScreen.ACTIVE_STRENGTH
+            val targetSub = targetSubScreenForExercise(prevEx)
             _uiState.update {
                 it.copy(
                     activeExerciseIndex = prevIdx,
@@ -1671,9 +2152,11 @@ class TrainPilotViewModel : ViewModel() {
                     activeSets = prevSets,
                     activeSetsByExerciseId = updatedSetsMap,
                     currentSubScreen = targetSub,
+                    activeWorkoutSubScreen = targetSub,
                     statusBannerMessage = "Előző gyakorlat (${prevIdx + 1}/${workoutExs.size}): ${prevEx.nameHu}"
                 )
             }
+            persistCanonicalActiveSessionAsync()
         } else {
             navigateBack()
         }
@@ -1693,7 +2176,7 @@ class TrainPilotViewModel : ViewModel() {
         val state = _uiState.value
         val now = Instant.now()
         val nowMs = System.currentTimeMillis()
-        val workoutId = UUID.randomUUID().toString()
+        val workoutId = state.activeWorkoutId.ifBlank { UUID.randomUUID().toString() }
         val workoutExs = state.activeWorkoutExercises.ifEmpty {
             listOfNotNull(state.exercises.getOrNull(state.activeExerciseIndex) ?: state.exercises.firstOrNull())
         }
@@ -1703,35 +2186,57 @@ class TrainPilotViewModel : ViewModel() {
             allSetsMap[currentEx.id] = state.activeSets
         }
 
-        var totalSetsSaved = 0
-        var totalVolume = 0
+        var totalCompletedSets = 0
+        var totalSetsCount = 0
+        var totalVolumeDouble = 0.0
+        val completedExerciseNames = mutableListOf<String>()
         val exercisesArray = JSONArray()
+
         workoutExs.forEachIndexed { exIdx, exItem ->
             val setsForEx = allSetsMap[exItem.id] ?: buildDefaultSetsForExercise(exItem)
             val completedSets = setsForEx.filter { it.completed }
-            val setsToSave = if (completedSets.isNotEmpty()) completedSets else setsForEx
-            totalSetsSaved += setsToSave.size
-            totalVolume += setsToSave.sumOf { (it.weightKg * it.reps).toInt() }
+            // P0-02: Only completed sets count as done; never fabricate completion for uncompleted sets
+            if (completedSets.isNotEmpty()) {
+                completedExerciseNames.add(exItem.nameHu)
+            }
+            totalCompletedSets += completedSets.size
+            totalSetsCount += setsForEx.size
+            totalVolumeDouble += completedSets.sumOf { s ->
+                if (exItem.isTimed || exItem.isBilateral) 0.0 else (s.weightKg.toDouble() * s.reps.toDouble())
+            }
 
             val exObj = JSONObject().apply {
                 put("id", exItem.id)
                 put("exerciseId", exItem.id)
+                put("name", exItem.nameHu)
                 put("nameHu", exItem.nameHu)
                 put("nameEn", exItem.nameEn)
-                put("loadType", "weight")
-                put("repUnit", if (exItem.isTimed) "sec" else "reps")
-                put("measurementType", if (exItem.isTimed) "time" else "reps")
+                put("loadType", if (exItem.defaultWeightKg <= 0f) "bodyweight" else "weight")
+                put("repUnit", when {
+                    exItem.isBilateral -> "mp/oldal"
+                    exItem.isTimed -> "sec"
+                    else -> "reps"
+                })
+                put("measurementType", when {
+                    exItem.isBilateral -> "bilateral_time"
+                    exItem.isTimed -> "time"
+                    else -> "reps"
+                })
                 put("orderIndex", exIdx)
                 val setsArray = JSONArray()
-                setsToSave.forEachIndexed { idx, s ->
+                setsForEx.forEachIndexed { idx, s ->
                     setsArray.put(JSONObject().apply {
-                        put("setId", UUID.randomUUID().toString())
+                        put("setId", "${exItem.id}_set_${s.setNumber}")
                         put("set", idx + 1)
                         put("setNumber", s.setNumber)
                         put("weight", s.weightKg.toDouble())
-                        put("reps", s.reps.toString())
+                        put("reps", if (exItem.isBilateral) "${s.leftSec}/${s.rightSec}" else s.reps.toString())
                         put("done", s.completed)
-                        put("actualRir", s.rir)
+                        if (s.completed) {
+                            put("actualRir", s.rir)
+                        }
+                        put("leftSec", s.leftSec)
+                        put("rightSec", s.rightSec)
                     })
                 }
                 put("sets", setsArray)
@@ -1739,9 +2244,13 @@ class TrainPilotViewModel : ViewModel() {
             exercisesArray.put(exObj)
         }
 
-        val summaryNames = workoutExs.joinToString(", ") { it.nameHu }.ifBlank { "Edzés" }
-        val workoutTitle = state.activeWorkoutTitleHu.ifBlank { workoutExs.firstOrNull()?.nameHu ?: "Edzés" }
-        val durationMins = maxOf(15, state.timedCurrentSec / 60)
+        val isOutdoorSession = state.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS || state.outdoorDistanceKm > 0f
+        if (totalCompletedSets == 0 && !isOutdoorSession) {
+            _uiState.update {
+                it.copy(statusBannerMessage = "Nincs teljesített (✓) sorozat! Jelölj késznek legalább 1 sorozatot az edzés mentéséhez.")
+            }
+            return
+        }
 
         val ctx = nativeContext
         val db = nativeDatabase
@@ -1753,9 +2262,18 @@ class TrainPilotViewModel : ViewModel() {
             return
         }
 
+        val workoutTitle = state.activeWorkoutTitleHu.ifBlank { workoutExs.firstOrNull()?.nameHu ?: "Edzés" }
+
         scope.launch(Dispatchers.IO) {
             try {
-                val startedMs = nowMs - (durationMins * 60 * 1000L)
+                val existingActive = ActiveWorkoutStore.current(ctx)
+                val startedMs = when {
+                    state.workoutStartedEpochMs > 0L -> state.workoutStartedEpochMs
+                    existingActive != null && existingActive.optLong("startedEpochMs", 0L) > 0L -> existingActive.optLong("startedEpochMs")
+                    state.timedCurrentSec > 0 -> nowMs - (state.timedCurrentSec * 1000L)
+                    else -> nowMs - 60_000L
+                }.coerceAtMost(nowMs - 1000L)
+
                 val candidateJson = JSONObject().apply {
                     put("schema", 1)
                     put("active", true)
@@ -1772,9 +2290,9 @@ class TrainPilotViewModel : ViewModel() {
                     put("dayId", "session")
                     put("dayName", workoutTitle)
                     put("workout", workoutTitle)
-                    put("totalVolumeKg", totalVolume.toDouble())
-                    put("completedSetsCount", totalSetsSaved)
-                    put("totalSetsCount", totalSetsSaved)
+                    put("totalVolumeKg", totalVolumeDouble)
+                    put("completedSetsCount", totalCompletedSets)
+                    put("totalSetsCount", totalSetsCount)
                     put("timerOwner", "phone")
                     put("originDevice", "phone")
                     put("workoutPaused", false)
@@ -1794,15 +2312,19 @@ class TrainPilotViewModel : ViewModel() {
                     }
                 }
 
-                // Check or install session in ActiveWorkoutStore & PhoneWorkoutExecution
-                val existingActive = ActiveWorkoutStore.current(ctx)
+                // Always synchronize latest exercises & completed sets into the active session before finalization
                 val activeToFinalize = if (existingActive?.optBoolean("active") == true && existingActive.optString("timerOwner", "phone") == "phone") {
                     existingActive.put("finished", now.toString())
                     existingActive.put("finishedEpochMs", nowMs)
+                    existingActive.put("startedEpochMs", startedMs)
+                    existingActive.put("programName", workoutTitle)
+                    existingActive.put("dayName", workoutTitle)
+                    existingActive.put("workout", workoutTitle)
+                    existingActive.put("totalVolumeKg", totalVolumeDouble)
+                    existingActive.put("completedSetsCount", totalCompletedSets)
+                    existingActive.put("totalSetsCount", totalSetsCount)
+                    existingActive.put("exercises", exercisesArray)
                     if (candidateJson.has("feedback")) existingActive.put("feedback", candidateJson.getJSONObject("feedback"))
-                    if (!existingActive.has("exercises") || existingActive.getJSONArray("exercises").length() == 0) {
-                        existingActive.put("exercises", exercisesArray)
-                    }
                     existingActive
                 } else {
                     withContext(Dispatchers.Main.immediate) {
@@ -1813,7 +2335,7 @@ class TrainPilotViewModel : ViewModel() {
                 val finalizer = TrainPilotWorkoutFinalization(ctx, db)
                 val saved = finalizer.finishWorkout(activeToFinalize)
 
-                // Verify persistence by querying Room directly
+                // Verify persistence by querying Room directly and build LoggedWorkoutEntry from Room truth
                 val finalWorkoutId = saved.history.optString("workoutId", workoutId)
                 val savedInDb = db.workoutHistoryDao().getWorkoutWithDetails(finalWorkoutId)
                 if (savedInDb != null) {
@@ -1821,30 +2343,62 @@ class TrainPilotViewModel : ViewModel() {
                     runCatching { WearSyncRepository.refreshWatchHomeAsync(ctx) }
                     runCatching { WearSyncRepository.publishWatchHomeSnapshot(ctx) }
 
+                    val dbW = savedInDb.workout
+                    val realElapsedMs = (dbW.finishedEpochMs - dbW.startedEpochMs).coerceAtLeast(1000L)
+                    val realElapsedSec = (realElapsedMs / 1000L).toInt()
+                    val realDurationMins = ((realElapsedMs + 59_999L) / 60_000L).toInt().coerceAtLeast(1)
+                    val realWorkTimeLabel = String.format("%02d:%02d", realElapsedSec / 60, realElapsedSec % 60)
+
+                    val dbDetails = savedInDb.exercises.map { exWithSets ->
+                        val ex = exWithSets.exercise
+                        val mappedSets = exWithSets.sets.mapIndexed { sIdx, sEntity ->
+                            ExerciseSetItem(
+                                setNumber = if (sEntity.setNumber > 0) sEntity.setNumber else (sIdx + 1),
+                                weightKg = (sEntity.weight ?: 0.0).toFloat(),
+                                reps = sEntity.reps.toIntOrNull() ?: 0,
+                                rir = sEntity.actualRir ?: 2,
+                                completed = sEntity.done
+                            )
+                        }
+                        com.example.model.LoggedExerciseDetail(
+                            nameHu = ex.nameHu.ifBlank { "Gyakorlat" },
+                            summaryPrescription = "${mappedSets.count { it.completed }}/${mappedSets.size} sorozat",
+                            sets = mappedSets
+                        )
+                    }
+                    val summaryNamesFromDb = completedExerciseNames.ifEmpty {
+                        savedInDb.exercises.map { it.exercise.nameHu }
+                    }.joinToString(", ").ifBlank { workoutTitle }
+
                     val newEntry = LoggedWorkoutEntry(
                         id = finalWorkoutId,
                         dateLabelHu = DateTimeFormatter.ofPattern("MMM d., E • HH:mm", Locale.getDefault()).format(java.time.LocalDateTime.now()),
-                        titleHu = workoutTitle,
-                        durationMinutes = durationMins,
-                        workTimeLabel = String.format("%02d:%02d", durationMins, 0),
-                        restTimeLabel = "00:00",
-                        totalSets = totalSetsSaved,
-                        totalVolumeKg = totalVolume,
-                        summaryExercisesHu = summaryNames,
-                        hasPr = savedInDb.workout.hasPr226,
-                        isOutdoorRun = false
+                        titleHu = dbW.programName.ifBlank { workoutTitle },
+                        durationMinutes = realDurationMins,
+                        workTimeLabel = realWorkTimeLabel,
+                        restTimeLabel = "—",
+                        totalSets = if (dbW.completedSetsCount > 0) dbW.completedSetsCount else totalCompletedSets,
+                        totalVolumeKg = if (dbW.totalVolumeKg > 0.0) dbW.totalVolumeKg.roundToInt() else totalVolumeDouble.roundToInt(),
+                        summaryExercisesHu = summaryNamesFromDb,
+                        hasPr = dbW.hasPr226,
+                        isOutdoorRun = isOutdoorSession,
+                        distanceKm = state.outdoorDistanceKm,
+                        paceLabel = state.outdoorPaceLabel,
+                        exerciseDetails = dbDetails
                     )
 
                     withContext(Dispatchers.Main) {
                         _uiState.update { st ->
                             st.copy(
                                 isWorkoutSessionActive = false,
-                                loggedWorkouts = listOf(newEntry) + st.loggedWorkouts,
+                                activeWorkoutId = "",
+                                workoutStartedEpochMs = 0L,
+                                loggedWorkouts = listOf(newEntry) + st.loggedWorkouts.filterNot { it.id == finalWorkoutId },
                                 weeklyGoalCompleted = st.weeklyGoalCompleted + 1,
                                 quickWorkoutQueue = emptyList(),
                                 currentTab = MainTab.LOG,
                                 currentSubScreen = SubScreen.NONE,
-                                statusBannerMessage = "Edzés sikeresen lezárva és mentve a Room adatbázisba!"
+                                statusBannerMessage = "Edzés sikeresen lezárva és mentve ($totalCompletedSets kész sorozat • $realWorkTimeLabel)!"
                             )
                         }
                     }
@@ -2102,7 +2656,7 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    // Watch, Settings, Backup & Permissions Actions
+    // Watch, Settings, Backup & Permissions Actions (P0-04: real Wear OS node & ACK check)
     fun toggleWatchControlMode() {
         val ctx = nativeContext
         val scope = nativeScope
@@ -2131,20 +2685,61 @@ class TrainPilotViewModel : ViewModel() {
                         _uiState.update {
                             it.copy(
                                 watchControlPending = true,
-                                statusBannerMessage = "Átadási kérelem elküldve az órának... Várakozás a nyugtázásra."
+                                statusBannerMessage = "Csatlakoztatott Wear OS óra és ACK ellenőrzése..."
                             )
                         }
                     }
+                    // Check real connected Wear OS nodes via Wearable NodeClient
+                    val connectedNodes = runCatching {
+                        com.google.android.gms.tasks.Tasks.await(
+                            com.google.android.gms.wearable.Wearable.getNodeClient(ctx).connectedNodes,
+                            3,
+                            java.util.concurrent.TimeUnit.SECONDS
+                        )
+                    }.getOrNull().orEmpty()
+
+                    if (connectedNodes.isEmpty()) {
+                        withContext(Dispatchers.Main) {
+                            _uiState.update {
+                                it.copy(
+                                    watchConnected = false,
+                                    phoneControlsWorkout = true,
+                                    watchControlPending = false,
+                                    lastWatchSyncLabel = "Nincs óra kapcsolat",
+                                    statusBannerMessage = "Nincs csatlakoztatott Wear OS óra (nincs ACK). Az edzésvezérlés a telefonon marad."
+                                )
+                            }
+                        }
+                        return@launch
+                    }
+
+                    WearSyncRepository.publishActiveWorkoutSnapshot(ctx, active)
                     WearSyncRepository.publishWatchHomeSnapshot(ctx)
-                    kotlinx.coroutines.delay(600)
+
+                    // Verify if watch actually acknowledged and took ownership in ActiveWorkoutStore
+                    val refreshed = ActiveWorkoutStore.current(ctx)
+                    val ackedByWatch = refreshed?.optString("timerOwner") == "watch"
                     withContext(Dispatchers.Main) {
                         _uiState.update {
-                            it.copy(
-                                phoneControlsWorkout = false,
-                                watchControlPending = false,
-                                lastWatchSyncLabel = "Átadva az órára",
-                                statusBannerMessage = "Az edzésvezérlés sikeresen átadva az órának."
-                            )
+                            if (ackedByWatch) {
+                                it.copy(
+                                    watchConnected = true,
+                                    watchName = connectedNodes.first().displayName.ifBlank { it.watchName },
+                                    phoneControlsWorkout = false,
+                                    watchControlPending = false,
+                                    lastWatchSyncLabel = "Átadva az órára (ACK ✓)",
+                                    statusBannerMessage = "Az óra visszaigazolta (ACK) az átadást."
+                                )
+                            } else {
+                                it.copy(
+                                    watchConnected = true,
+                                    watchName = connectedNodes.first().displayName.ifBlank { it.watchName },
+                                    phoneControlsWorkout = true,
+                                    watchControlPending = false,
+                                    lastWatchSyncLabel = "Várakozás óra ACK-ra",
+                                    statusBannerMessage = "Snapshot elküldve (${connectedNodes.first().displayName}), de még nem érkezett óra ACK – a telefon marad a vezérlő."
+                                )
+                            }
                         }
                     }
                 } else {
@@ -2163,13 +2758,15 @@ class TrainPilotViewModel : ViewModel() {
                         val epoch = resume.optJSONObject("snapshot")?.optLong("ownerEpoch193") ?: 0L
                         PhoneOwnership193.installResume(ctx, reqId, epoch)
                     }
+                    val afterResume = ActiveWorkoutStore.current(ctx)
+                    val phoneOwnedNow = afterResume == null || afterResume.optString("timerOwner", "phone") == "phone"
                     withContext(Dispatchers.Main) {
                         _uiState.update {
                             it.copy(
-                                phoneControlsWorkout = true,
+                                phoneControlsWorkout = phoneOwnedNow,
                                 watchControlPending = false,
-                                lastWatchSyncLabel = "Telefon vezérel",
-                                statusBannerMessage = "Edzésvezérlés visszavéve a telefonra."
+                                lastWatchSyncLabel = if (phoneOwnedNow) "Telefon vezérel" else "Óra vezérel",
+                                statusBannerMessage = if (phoneOwnedNow) "Edzésvezérlés visszavéve a telefonra." else "Nem sikerült visszavenni a vezérlést az óráról."
                             )
                         }
                     }
