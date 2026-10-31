@@ -2424,7 +2424,18 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun startOutdoorWorkout(titleHu: String = "Kültéri futás") {
-        val nowMs = System.currentTimeMillis()
+        val currentSub = _uiState.value.activeWorkoutSubScreen
+        if (_uiState.value.isWorkoutSessionActive && currentSub != SubScreen.ACTIVE_OUTDOOR_GPS) {
+            _uiState.update { state ->
+                state.copy(
+                    currentSubScreen = SubScreen.ACTIVE_OUTDOOR_GPS,
+                    currentTab = MainTab.WORKOUT,
+                    showQuickWorkoutSheet = false
+                )
+            }
+            return
+        }
+
         val newWorkoutId = UUID.randomUUID().toString()
         val outdoorEx = ExerciseItem(
             id = "outdoor_run_ex",
@@ -2435,14 +2446,14 @@ class TrainPilotViewModel : ViewModel() {
             isTimed = true
         )
         val defaultSets = listOf(
-            ExerciseSetItem(setNumber = 1, weightKg = 0f, reps = 1, rir = 0, completed = true)
+            ExerciseSetItem(setNumber = 1, weightKg = 0f, reps = 0, rir = 0, completed = false)
         )
         _uiState.update { state ->
             val back = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16)
             state.copy(
-                isWorkoutSessionActive = true,
+                isWorkoutSessionActive = false,
                 activeWorkoutId = newWorkoutId,
-                workoutStartedEpochMs = nowMs,
+                workoutStartedEpochMs = 0L,
                 activeWorkoutSubScreen = SubScreen.ACTIVE_OUTDOOR_GPS,
                 activeWorkoutTitleHu = titleHu,
                 activeWorkoutExercises = listOf(outdoorEx),
@@ -2456,11 +2467,62 @@ class TrainPilotViewModel : ViewModel() {
                 currentSubScreen = SubScreen.ACTIVE_OUTDOOR_GPS,
                 currentTab = MainTab.WORKOUT,
                 backStack = back,
-                showQuickWorkoutSheet = false,
-                statusBannerMessage = "$titleHu elindítva GPS méréssel"
+                showQuickWorkoutSheet = false
+            )
+        }
+    }
+
+    fun startGpsTrackingSession(activityName: String = "Kültéri futás") {
+        val nowMs = System.currentTimeMillis()
+        _uiState.update { state ->
+            val currentTitle = activityName.ifBlank { state.activeWorkoutTitleHu.ifBlank { "Kültéri futás" } }
+            val outdoorEx = ExerciseItem(
+                id = "outdoor_run_ex",
+                nameHu = currentTitle,
+                category = ExerciseCategory.CORE,
+                primaryMusclesHu = "Kardió, Láb",
+                equipmentHu = "GPS / Szabadban",
+                isTimed = true
+            )
+            val defaultSets = listOf(
+                ExerciseSetItem(setNumber = 1, weightKg = 0f, reps = 0, rir = 0, completed = false)
+            )
+            state.copy(
+                isWorkoutSessionActive = true,
+                activeWorkoutId = if (state.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS && state.activeWorkoutId.isNotBlank()) state.activeWorkoutId else UUID.randomUUID().toString(),
+                workoutStartedEpochMs = if (state.workoutStartedEpochMs > 0L) state.workoutStartedEpochMs else nowMs,
+                activeWorkoutSubScreen = SubScreen.ACTIVE_OUTDOOR_GPS,
+                activeWorkoutTitleHu = currentTitle,
+                activeWorkoutExercises = listOf(outdoorEx),
+                activeExerciseIndex = 0,
+                selectedExerciseId = outdoorEx.id,
+                activeSets = defaultSets,
+                activeSetsByExerciseId = mapOf(outdoorEx.id to defaultSets),
+                statusBannerMessage = "$currentTitle GPS mérés elindítva."
             )
         }
         persistCanonicalActiveSessionAsync(installNew = true)
+    }
+
+    fun selectOutdoorActivityType(activityName: String) {
+        val outdoorEx = ExerciseItem(
+            id = "outdoor_run_ex",
+            nameHu = activityName,
+            category = ExerciseCategory.CORE,
+            primaryMusclesHu = "Kardió, Láb",
+            equipmentHu = "GPS / Szabadban",
+            isTimed = true
+        )
+        _uiState.update { state ->
+            val updatedExs = state.activeWorkoutExercises.map { ex ->
+                if (ex.id == "outdoor_run_ex") ex.copy(nameHu = activityName) else ex
+            }
+            state.copy(
+                activeWorkoutTitleHu = activityName,
+                activeWorkoutExercises = if (updatedExs.isNotEmpty()) updatedExs else listOf(outdoorEx),
+                activeWorkoutSubScreen = SubScreen.ACTIVE_OUTDOOR_GPS
+            )
+        }
     }
 
     fun addExerciseToWorkoutQueue(exercise: ExerciseItem) {
@@ -2697,6 +2759,18 @@ class TrainPilotViewModel : ViewModel() {
         }
 
         val isOutdoorSession = state.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS || state.outdoorDistanceKm > 0f
+
+        val hasElapsedSec = state.outdoorElapsedLabel.isNotBlank() && state.outdoorElapsedLabel != "00:00"
+        val hasDistance = state.outdoorDistanceKm > 0f
+        val isTimerStarted = state.workoutStartedEpochMs > 0L
+
+        if (isOutdoorSession && !hasElapsedSec && !hasDistance && !isTimerStarted) {
+            _uiState.update {
+                it.copy(statusBannerMessage = "A GPS-mérés nem indult el, vagy az edzés időtartama 0! Nincs menthető edzés.")
+            }
+            return
+        }
+
         if (totalCompletedSets == 0 && !isOutdoorSession) {
             _uiState.update {
                 it.copy(statusBannerMessage = "Nincs teljesített (✓) sorozat! Jelölj késznek legalább 1 sorozatot az edzés mentéséhez.")
@@ -2705,7 +2779,7 @@ class TrainPilotViewModel : ViewModel() {
         }
 
         if (isOutdoorSession) {
-            totalCompletedSets = maxOf(totalCompletedSets, 1)
+            totalCompletedSets = if (totalCompletedSets > 0) totalCompletedSets else 1
             totalSetsCount = maxOf(totalSetsCount, 1)
         }
 

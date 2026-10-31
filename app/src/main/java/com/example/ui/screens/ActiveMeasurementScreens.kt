@@ -60,6 +60,10 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
@@ -2976,6 +2980,7 @@ fun ActiveBilateralWorkoutScreen(
  * 4. KÜLTÉRI MÉRÉS (Mockup 2/4 #4 - Futás GPS - Valós DistanceTrackingService & LocationManager,
  * szimulált +2,75 m/mp és képletes pulzus NÉLKÜL)
  */
+@OptIn(ExperimentalLayoutApi::class)
 @SuppressLint("MissingPermission")
 @Composable
 fun ActiveOutdoorGpsScreen(
@@ -2984,7 +2989,9 @@ fun ActiveOutdoorGpsScreen(
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
     onSelectMeasurementMode: (SubScreen) -> Unit,
-    onUpdateOutdoorMetrics: (String, Float, String) -> Unit = { _, _, _ -> }
+    onUpdateOutdoorMetrics: (String, Float, String) -> Unit = { _, _, _ -> },
+    onSelectOutdoorActivity: (String) -> Unit = {},
+    onStartGpsTracking: (String) -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val context = LocalContext.current
@@ -3006,6 +3013,7 @@ fun ActiveOutdoorGpsScreen(
     var lastGpsLocation by remember { mutableStateOf<Location?>(null) }
     var lapCount by remember { mutableIntStateOf(1) }
     var lapSplits by remember { mutableStateOf(listOf<String>()) }
+    var isFullscreenMapOpen by remember { mutableStateOf(false) }
     val routeOwnerKey = remember { "outdoor_run_${System.currentTimeMillis()}" }
 
     var hasLocationPermission by remember {
@@ -3038,16 +3046,22 @@ fun ActiveOutdoorGpsScreen(
     }
 
     val startNativeGpsTracking = {
+        val activityName = uiState.activeWorkoutTitleHu.ifBlank { "Kültéri futás" }
         val intent = android.content.Intent(context, com.repforge.app.DistanceTrackingService::class.java)
             .setAction(com.repforge.app.DistanceTrackingService.START)
             .putExtra("key", routeOwnerKey)
             .putExtra("language", uiState.language.code.lowercase())
-            .putExtra("name", "Futás")
-        runCatching {
+            .putExtra("name", activityName)
+        val startedOk = runCatching {
             ContextCompat.startForegroundService(context, intent)
+        }.isSuccess
+        if (startedOk) {
+            isStarted = true
+            isPaused = false
+            onStartGpsTracking(activityName)
+        } else {
+            serviceErrorMsg = "A GPS-szolgáltatás nem tudott elindulni."
         }
-        isStarted = true
-        isPaused = false
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -3191,10 +3205,12 @@ fun ActiveOutdoorGpsScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "Futás • Kültéri GPS mérés",
-                            style = MaterialTheme.typography.titleLarge,
+                            text = "${uiState.activeWorkoutTitleHu.ifBlank { "Kültéri futás" }} • Kültéri GPS mérés",
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = palette.textPrimary
+                            color = palette.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -3202,7 +3218,7 @@ fun ActiveOutdoorGpsScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(8.dp)
+                                    .size(7.dp)
                                     .clip(CircleShape)
                                     .background(
                                         when {
@@ -3215,14 +3231,14 @@ fun ActiveOutdoorGpsScreen(
                             )
                             Text(
                                 text = when {
-                                    !gpsActive -> "Beltéri időmérés (GPS rögzítés kikapcsolva)"
-                                    !hasLocationPermission -> "Helymeghatározási engedély szükséges (0 m)"
-                                    isStarted && !isPaused && hasServiceFix -> "Élő GPS-jel aktív ($realGpsFixesCount pont • ±${gpsAccuracyMeters.toInt()} m)"
+                                    !gpsActive -> "Beltéri időmérés (GPS kikapcsolva)"
+                                    !hasLocationPermission -> "Helymeghatározás szükséges (0 m)"
+                                    isStarted && !isPaused && hasServiceFix -> "Élő GPS-jel ($realGpsFixesCount pont • ±${gpsAccuracyMeters.toInt()} m)"
                                     isStarted && !isPaused -> "GPS-jelre vár... (0 m rögzítve)"
-                                    isStarted && isPaused -> "GPS mérés szüneteltetve"
+                                    isStarted && isPaused -> "GPS szüneteltetve"
                                     else -> "GPS készenlétben • Indításra vár"
                                 },
-                                style = MaterialTheme.typography.labelMedium,
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                                 color = when {
                                     !gpsActive -> palette.textSecondary
                                     isStarted && !isPaused && hasServiceFix -> palette.success
@@ -3240,6 +3256,71 @@ fun ActiveOutdoorGpsScreen(
                         contentDescription = strings.settingsTitle,
                         tint = palette.textSecondary
                     )
+                }
+            }
+        }
+
+        // Outdoor activity type selector card
+        item {
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = palette.surfaceCard,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "Kültéri aktivitás kiválasztása",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = palette.textSecondary
+                    )
+                    val activities = listOf(
+                        "🏃 Futás" to "Kültéri futás",
+                        "🚶 Séta" to "Kültéri séta",
+                        "🚴 Kerékpár" to "Kerékpározás",
+                        "🛼 Görkorcsolya" to "Görkorcsolyázás",
+                        "🥾 Túrázás" to "Kültéri túrázás",
+                        "⚡ Egyéb" to "Egyéb kültéri edzés"
+                    )
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        activities.forEach { (chipLabel, fullName) ->
+                            val currentTitle = uiState.activeWorkoutTitleHu.ifBlank { "Kültéri futás" }
+                            val isSelected = currentTitle.equals(fullName, ignoreCase = true) ||
+                                    (chipLabel.contains("Futás") && currentTitle.contains("Futás", ignoreCase = true)) ||
+                                    (chipLabel.contains("Séta") && currentTitle.contains("Séta", ignoreCase = true)) ||
+                                    (chipLabel.contains("Kerékpár") && currentTitle.contains("Kerékpár", ignoreCase = true)) ||
+                                    (chipLabel.contains("Görkorcsolya") && currentTitle.contains("Görkorcsolya", ignoreCase = true)) ||
+                                    (chipLabel.contains("Túrázás") && currentTitle.contains("Túrázás", ignoreCase = true))
+
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSelected) palette.primary else palette.surfaceElevated,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable(enabled = !isStarted) {
+                                        onSelectOutdoorActivity(fullName)
+                                    }
+                                    .testTag("outdoor_chip_${fullName.lowercase()}")
+                            ) {
+                                Text(
+                                    text = chipLabel,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSelected) palette.onPrimary else palette.textPrimary,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -3343,12 +3424,46 @@ fun ActiveOutdoorGpsScreen(
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
-                    MargitszigetDetailedMapBox(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(205.dp),
-                        interactiveControls = true
-                    )
+                            .height(140.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                    ) {
+                        MargitszigetDetailedMapBox(
+                            modifier = Modifier.fillMaxSize(),
+                            interactiveControls = true
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = palette.surfaceCard.copy(alpha = 0.92f),
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { isFullscreenMapOpen = true }
+                                .testTag("expand_map_fullscreen_btn")
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Fullscreen,
+                                    contentDescription = "Teljes képernyő",
+                                    tint = palette.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Teljes képernyő",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.textPrimary
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -3383,12 +3498,12 @@ fun ActiveOutdoorGpsScreen(
                     )
                     Text(
                         text = formattedElapsed,
-                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 52.sp),
+                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 36.sp),
                         fontWeight = FontWeight.ExtraBold,
                         color = palette.textPrimary,
                         modifier = Modifier.testTag("gps_elapsed_timer_text")
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -3498,7 +3613,7 @@ fun ActiveOutdoorGpsScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (gpsActive) "▶ Valós GPS mérés indítása" else "▶ Beltéri időmérés indítása (GPS nélkül)",
+                                text = if (gpsActive) "Valós GPS mérés indítása" else "Beltéri időmérés indítása (GPS nélkül)",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -3576,6 +3691,236 @@ fun ActiveOutdoorGpsScreen(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(strings.finishWorkoutAction, fontWeight = FontWeight.Bold, maxLines = 1)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (isFullscreenMapOpen) {
+        Dialog(
+            onDismissRequest = { isFullscreenMapOpen = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(palette.background)
+                    .testTag("fullscreen_map_overlay")
+            ) {
+                // 1. Fullscreen Map Canvas
+                MargitszigetDetailedMapBox(
+                    modifier = Modifier.fillMaxSize(),
+                    interactiveControls = true
+                )
+
+                // 2. Floating Top Header
+                Surface(
+                    color = palette.surfaceCard.copy(alpha = 0.92f),
+                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .align(Alignment.TopCenter)
+                        .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            IconButton(
+                                onClick = { isFullscreenMapOpen = false },
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(palette.surfaceElevated)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Bezárás",
+                                    tint = palette.textPrimary
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "${uiState.activeWorkoutTitleHu.ifBlank { "Kültéri futás" }} • GPS térkép",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.textPrimary
+                                )
+                                Text(
+                                    text = if (realGpsFixesCount > 0) "$realGpsFixesCount pont • Táv: $formattedDistance" else "GPS-jelre vár...",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = palette.success
+                                )
+                            }
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = palette.primary.copy(alpha = 0.16f)
+                        ) {
+                            Text(
+                                text = formattedElapsed,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = palette.primary,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                }
+
+                // 3. Floating Bottom Overlay Panel with Live Metrics & Tracking Controls
+                Surface(
+                    color = palette.surfaceCard.copy(alpha = 0.94f),
+                    shape = RoundedCornerShape(24.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .align(Alignment.BottomCenter)
+                        .border(1.dp, palette.primary.copy(alpha = 0.4f), RoundedCornerShape(24.dp))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutdoorMetricTile(
+                                label = strings.distanceLabel,
+                                value = formattedDistance,
+                                subValue = if (realGpsFixesCount > 0) "$realGpsFixesCount GPS-pont" else "GPS-fixre vár",
+                                highlighted = true,
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutdoorMetricTile(
+                                label = strings.avgPaceLabel,
+                                value = formattedPace,
+                                subValue = if (distanceKm >= 0.01f) "Mért tempó" else "Nincs táv",
+                                highlighted = false,
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutdoorMetricTile(
+                                label = "Kalória & Pulzus",
+                                value = caloriesLabel,
+                                subValue = hrLabel,
+                                highlighted = false,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        if (!isStarted) {
+                            Button(
+                                onClick = {
+                                    serviceErrorMsg = ""
+                                    if (gpsActive) {
+                                        val fineGranted = ContextCompat.checkSelfPermission(
+                                            context,
+                                            Manifest.permission.ACCESS_FINE_LOCATION
+                                        ) == PackageManager.PERMISSION_GRANTED
+                                        hasLocationPermission = fineGranted
+                                        if (!fineGranted) {
+                                            permissionLauncher.launch(
+                                                arrayOf(
+                                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                                )
+                                            )
+                                        } else {
+                                            startNativeGpsTracking()
+                                        }
+                                    } else {
+                                        isStarted = true
+                                        isPaused = false
+                                    }
+                                },
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = palette.success,
+                                    contentColor = palette.onPrimary
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp)
+                            ) {
+                                Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Valós GPS mérés indítása", fontWeight = FontWeight.Bold)
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = {
+                                        val nextPaused = !isPaused
+                                        isPaused = nextPaused
+                                        if (gpsActive) {
+                                            com.repforge.app.DistanceTrackingService.pauseOwned(context, routeOwnerKey, nextPaused)
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(14.dp),
+                                    modifier = Modifier.weight(1f).height(46.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
+                                        contentDescription = null,
+                                        tint = palette.textPrimary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (isPaused) strings.continueBtn else strings.pauseAction,
+                                        color = palette.textPrimary,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                OutlinedButton(
+                                    onClick = {
+                                        lapSplits = lapSplits + "${lapCount}. kör: $formattedElapsed ($formattedDistance)"
+                                        lapCount += 1
+                                    },
+                                    shape = RoundedCornerShape(14.dp),
+                                    modifier = Modifier.weight(0.95f).height(46.dp)
+                                ) {
+                                    Text(
+                                        text = "+ Kör ($lapCount)",
+                                        color = palette.primary,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Button(
+                                    onClick = {
+                                        isPaused = true
+                                        if (gpsActive) {
+                                            com.repforge.app.DistanceTrackingService.stop(context)
+                                        }
+                                        isFullscreenMapOpen = false
+                                        onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY)
+                                    },
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = palette.primary,
+                                        contentColor = palette.onPrimary
+                                    ),
+                                    modifier = Modifier.weight(1.2f).height(46.dp)
+                                ) {
+                                    Icon(imageVector = Icons.Default.Stop, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(strings.finishWorkoutAction, fontWeight = FontWeight.Bold, maxLines = 1)
+                                }
                             }
                         }
                     }

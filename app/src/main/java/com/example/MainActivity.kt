@@ -618,6 +618,12 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onSelectMeasurementMode = { mode -> viewModel.navigateToSubScreen(mode, MainTab.WORKOUT) },
                             onUpdateOutdoorMetrics = { elapsed, dist, pace ->
                                 viewModel.updateOutdoorWorkoutMetrics(elapsed, dist, pace)
+                            },
+                            onSelectOutdoorActivity = { activityName ->
+                                viewModel.selectOutdoorActivityType(activityName)
+                            },
+                            onStartGpsTracking = { activityName ->
+                                viewModel.startGpsTrackingSession(activityName)
                             }
                         )
                     }
@@ -933,7 +939,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onTriggerHealthSync = { viewModel.triggerHealthSyncNow() },
                                     onNavigateToSubScreen = { viewModel.navigateToSubScreen(it) },
                                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
-                                    onOpenGoalsDialog = { viewModel.toggleGoalsDialog(true) }
+                                    onOpenGoalsDialog = { viewModel.toggleGoalsDialog(true) },
+                                    onDeleteWeightLog = { id -> viewModel.deleteBodyWeightLog(id) }
                                 )
                             }
                         }

@@ -285,6 +285,7 @@ class DistanceTrackingService : Service(), LocationListener {
                 throw IllegalStateException("locationDisabled")
             }
             active = true
+            acquireWakeLock()
             startForeground(NOTIFICATION, notification())
             locations?.requestLocationUpdates(LocationManager.GPS_PROVIDER, 3000L, 3f, this, Looper.getMainLooper())
             save()
@@ -430,6 +431,21 @@ class DistanceTrackingService : Service(), LocationListener {
         getSystemService(NotificationManager::class.java).notify(NOTIFICATION, notification())
     }
 
+    private var wakeLock: android.os.PowerManager.WakeLock? = null
+
+    private fun acquireWakeLock() {
+        if (wakeLock == null) {
+            val pm = getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+            wakeLock = pm?.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "TrainPilot:DistanceGpsWakeLock")
+        }
+        wakeLock?.run { if (!isHeld) acquire(3 * 60 * 60 * 1000L) }
+    }
+
+    private fun releaseWakeLock() {
+        wakeLock?.run { if (isHeld) release() }
+        wakeLock = null
+    }
+
     private fun stopMeasurement(explicit: Boolean = false) {
         if (active) {
             capture.breakSegment()
@@ -447,6 +463,7 @@ class DistanceTrackingService : Service(), LocationListener {
             stopReason = "error"
             save()
         }
+        releaseWakeLock()
         stopForeground(STOP_FOREGROUND_REMOVE)
     }
 
