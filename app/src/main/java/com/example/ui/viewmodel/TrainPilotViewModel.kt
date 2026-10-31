@@ -1892,6 +1892,8 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun deleteCalendarEvent(eventId: String) {
+        val db = nativeDatabase
+        val scope = nativeScope
         _uiState.update { state ->
             val updated = state.calendarEvents.filterNot { it.id == eventId }
             state.copy(
@@ -1899,6 +1901,13 @@ class TrainPilotViewModel : ViewModel() {
                 calendarEvents = updated,
                 statusBannerMessage = "Tervezett edzés törölve (Visszavonható)"
             )
+        }
+        if (db != null && scope != null) {
+            scope.launch(Dispatchers.IO) {
+                runCatching {
+                    db.calendarScheduleDao().deleteEntry(eventId)
+                }
+            }
         }
         persistCalendarStateToRoomAsync()
     }
@@ -2308,6 +2317,12 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun startPlannedWorkout(programId: String? = null, dayIndex: Int = 0) {
+        val currentState = _uiState.value
+        if (currentState.isWorkoutSessionActive && currentState.workoutStartedEpochMs > 0L) {
+            returnToActiveWorkout()
+            _uiState.update { it.copy(statusBannerMessage = "Már van egy futó edzésed! Szüneteltesd vagy fejezd be a váltás előtt.") }
+            return
+        }
         val nowMs = System.currentTimeMillis()
         val newWorkoutId = UUID.randomUUID().toString()
         _uiState.update { state ->
@@ -2352,6 +2367,12 @@ class TrainPilotViewModel : ViewModel() {
 
     fun startWorkoutWithExercises(exercisesToRun: List<ExerciseItem>, titleHu: String = "Gyors edzés") {
         if (exercisesToRun.isEmpty()) return
+        val currentState = _uiState.value
+        if (currentState.isWorkoutSessionActive && currentState.workoutStartedEpochMs > 0L) {
+            returnToActiveWorkout()
+            _uiState.update { it.copy(statusBannerMessage = "Már van egy futó edzésed! Szüneteltesd vagy fejezd be a váltás előtt.") }
+            return
+        }
         val nowMs = System.currentTimeMillis()
         val newWorkoutId = UUID.randomUUID().toString()
         _uiState.update { state ->

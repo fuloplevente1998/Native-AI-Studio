@@ -36,6 +36,8 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -1135,10 +1137,11 @@ fun PersonalPlannerModalDialog(
                             modifier = Modifier.weight(1f)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (isOpen) "▲" else "▼",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = palette.primary
+                        Icon(
+                            imageVector = if (isOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null,
+                            tint = palette.primary,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
@@ -1470,10 +1473,11 @@ fun PersonalPlannerModalDialog(
                                             fontWeight = FontWeight.Bold,
                                             color = Color(0xFFFF6E6E)
                                         )
-                                        Text(
-                                            text = if (isMusclesOpen) "▲" else "▼",
-                                            color = Color(0xFFFF6E6E),
-                                            fontSize = 12.sp
+                                        Icon(
+                                            imageVector = if (isMusclesOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                            contentDescription = null,
+                                            tint = Color(0xFFFF6E6E),
+                                            modifier = Modifier.size(18.dp)
                                         )
                                     }
                                     Text(
@@ -1572,10 +1576,11 @@ fun PersonalPlannerModalDialog(
                                             fontWeight = FontWeight.Bold,
                                             color = Color(0xFFFF6E6E)
                                         )
-                                        Text(
-                                            text = if (isExercisesOpen) "▲" else "▼",
-                                            color = Color(0xFFFF6E6E),
-                                            fontSize = 12.sp
+                                        Icon(
+                                            imageVector = if (isExercisesOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                            contentDescription = null,
+                                            tint = Color(0xFFFF6E6E),
+                                            modifier = Modifier.size(18.dp)
                                         )
                                     }
                                     Text(
@@ -1880,7 +1885,18 @@ fun QuickWorkoutSheet(
                                     color = palette.textPrimary,
                                     modifier = Modifier.weight(1f)
                                 )
-                                Text("▼ Váltás", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = palette.primary)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Text("Váltás", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = palette.primary)
+                                    Icon(
+                                        imageVector = if (strengthDropdownOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                        contentDescription = null,
+                                        tint = palette.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
                             }
                         }
 
@@ -1998,7 +2014,18 @@ fun QuickWorkoutSheet(
                                     color = palette.textPrimary,
                                     modifier = Modifier.weight(1f)
                                 )
-                                Text("▼ Váltás", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = palette.primary)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Text("Váltás", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = palette.primary)
+                                    Icon(
+                                        imageVector = if (timedDropdownOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                        contentDescription = null,
+                                        tint = palette.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
                             }
                         }
 

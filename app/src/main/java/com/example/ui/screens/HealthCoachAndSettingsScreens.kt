@@ -472,12 +472,12 @@ fun HealthTabScreen(
                                     "calories" -> listOf(
                                         "Aktív kalória részletek • ${uiState.activeCaloriesKcal} kcal",
                                         "Edzés + napi mozgás: ${uiState.activeCaloriesKcal} kcal | Alapanyagcsere: 1 780 kcal",
-                                        "További Health-adatok megnyitása lent ▼"
+                                        "További Health-adatok megnyitása lent"
                                     ) to { onToggleHealthSection("extra") }
                                     "pulse" -> listOf(
                                         "Pulzus részletek • Aktuális: ${if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"}",
                                         "Nyugalmi pulzus: ${uiState.restingHrBpm} bpm | Napi tartomány: 58–146 bpm",
-                                        "24 órás Pulzustrend megtekintése lent ▼"
+                                        "24 órás Pulzustrend megtekintése lent"
                                     ) to { onToggleHealthSection("pulse") }
                                     "steps" -> listOf(
                                         "Lépések részletek • ${uiState.dailySteps} / ${uiState.stepsGoal}",
@@ -497,7 +497,7 @@ fun HealthTabScreen(
                                     else -> listOf(
                                         "Alvás részletek • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})",
                                         "Mélyalvás: 1 ó 45 p • REM: 1 ó 50 p • Minőség: Jó",
-                                        "Egészségnapló megnyitása lent ▼"
+                                        "Egészségnapló megnyitása lent"
                                     ) to { onToggleHealthSection("journal") }
                                 }
 
@@ -512,13 +512,24 @@ fun HealthTabScreen(
                                         fontWeight = FontWeight.Bold,
                                         color = palette.primary
                                     )
-                                    Text(
-                                        text = "Bezárás ▲",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = palette.textSecondary,
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(2.dp),
                                         modifier = Modifier.clickable { expandedTodayTileKey = null }
-                                    )
+                                    ) {
+                                        Text(
+                                            text = "Bezárás",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = palette.textSecondary
+                                        )
+                                        Icon(
+                                            imageVector = Icons.Default.ExpandLess,
+                                            contentDescription = null,
+                                            tint = palette.textSecondary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
                                 }
                                 Text(
                                     text = titleStr[1],
@@ -821,13 +832,24 @@ fun HealthTabScreen(
                                     color = palette.surfaceCard,
                                     modifier = Modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                                 ) {
-                                    Text(
-                                        text = if (uiState.expandedHealthPulseTrend) "▲ Részletek" else "▼ Részletek",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = palette.primary,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                    )
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Text(
+                                            text = "Részletek",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = palette.primary
+                                        )
+                                        Icon(
+                                            imageVector = if (uiState.expandedHealthPulseTrend) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                            contentDescription = null,
+                                            tint = palette.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
                                 }
                             }
 
@@ -1029,13 +1051,24 @@ fun HealthTabScreen(
                                     color = palette.surfaceCard,
                                     modifier = Modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                                 ) {
-                                    Text(
-                                        text = if (uiState.expandedHealthWeightLog) "▲ Részletek" else "▼ Részletek",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = palette.primary,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                    )
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Text(
+                                            text = "Részletek",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = palette.primary
+                                        )
+                                        Icon(
+                                            imageVector = if (uiState.expandedHealthWeightLog) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                            contentDescription = null,
+                                            tint = palette.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
                                 }
                             }
 
@@ -1731,7 +1764,7 @@ private fun ExpandableHealthSectionCard(
                     }
                 }
                 Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandMore else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                     contentDescription = null,
                     tint = palette.primary
                 )
@@ -2284,9 +2317,10 @@ fun SettingsMainScreen(
             SettingsActionRowCard(
                 title = strings.themes32Title,
                 subtitle = "${currentPaletteObj.localizedName(uiState.language)} • Koppints a 4 téma stílus ${if (expandedMainThemesSection) "becsukásához" else "kinyitásához"}",
-                badgeText = "#${uiState.selectedPaletteId} ${if (expandedMainThemesSection) "▲" else "▼"}",
+                badgeText = "#${uiState.selectedPaletteId}",
                 onClick = { expandedMainThemesSection = !expandedMainThemesSection },
-                testTag = "settings_open_palettes_row"
+                testTag = "settings_open_palettes_row",
+                isExpanded = expandedMainThemesSection
             )
         }
 
@@ -2583,7 +2617,8 @@ private fun SettingsActionRowCard(
     subtitle: String,
     badgeText: String,
     onClick: () -> Unit,
-    testTag: String = ""
+    testTag: String = "",
+    isExpanded: Boolean? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     Surface(
@@ -2606,20 +2641,27 @@ private fun SettingsActionRowCard(
                 Text(subtitle, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = palette.primary.copy(alpha = 0.18f)
-            ) {
-                Text(
-                    text = badgeText,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = palette.primary,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
+            if (badgeText.isNotEmpty()) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = palette.primary.copy(alpha = 0.18f)
+                ) {
+                    Text(
+                        text = badgeText,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = palette.primary,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(4.dp))
             }
-            Spacer(modifier = Modifier.width(4.dp))
-            Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = palette.textSecondary)
+            val trailingVector = when (isExpanded) {
+                true -> Icons.Default.ExpandLess
+                false -> Icons.Default.ExpandMore
+                null -> Icons.AutoMirrored.Filled.KeyboardArrowRight
+            }
+            Icon(imageVector = trailingVector, contentDescription = null, tint = palette.textSecondary)
         }
     }
 }

@@ -35,6 +35,8 @@ import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.NotificationsActive
@@ -984,10 +986,11 @@ fun ActiveStrengthWorkoutScreen(
                                         fontWeight = FontWeight.Bold,
                                         color = palette.textPrimary
                                     )
-                                    Text(
-                                        text = if (modeDropdownOpen) "▲" else "▼",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = palette.primary
+                                    Icon(
+                                        imageVector = if (modeDropdownOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                        contentDescription = null,
+                                        tint = palette.primary,
+                                        modifier = Modifier.size(16.dp)
                                     )
                                 }
                             }

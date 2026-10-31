@@ -2245,7 +2245,14 @@ private fun MainProgressVolumeAndMuscleSection(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text("PR rekordok ($prCountValue)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                                Text("Bezárás ▲", style = MaterialTheme.typography.labelSmall, color = palette.primary, modifier = Modifier.clickable { onSelectExpandedStatsCard(0) })
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                    modifier = Modifier.clickable { onSelectExpandedStatsCard(0) }
+                                ) {
+                                    Text("Bezárás", style = MaterialTheme.typography.labelSmall, color = palette.primary)
+                                    Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
+                                }
                             }
                             if (uiState.prRecords.isEmpty()) {
                                 Text(
@@ -2282,7 +2289,14 @@ private fun MainProgressVolumeAndMuscleSection(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text("Edzések száma ($workoutCountValue)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                                Text("Bezárás ▲", style = MaterialTheme.typography.labelSmall, color = palette.primary, modifier = Modifier.clickable { onSelectExpandedStatsCard(1) })
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                    modifier = Modifier.clickable { onSelectExpandedStatsCard(1) }
+                                ) {
+                                    Text("Bezárás", style = MaterialTheme.typography.labelSmall, color = palette.primary)
+                                    Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
+                                }
                             }
                             if (uiState.loggedWorkouts.isEmpty()) {
                                 Text(
@@ -2314,7 +2328,14 @@ private fun MainProgressVolumeAndMuscleSection(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text("Átlagos volumen • $avgVolumeValue", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                                Text("Bezárás ▲", style = MaterialTheme.typography.labelSmall, color = palette.primary, modifier = Modifier.clickable { onSelectExpandedStatsCard(2) })
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                    modifier = Modifier.clickable { onSelectExpandedStatsCard(2) }
+                                ) {
+                                    Text("Bezárás", style = MaterialTheme.typography.labelSmall, color = palette.primary)
+                                    Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
+                                }
                             }
                             if (uiState.loggedWorkouts.isEmpty()) {
                                 Text("Még nincs rögzített súlyzós volumen.", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
@@ -2342,7 +2363,14 @@ private fun MainProgressVolumeAndMuscleSection(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text("Átlagos edzésidő • $avgDurationValue", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                                Text("Bezárás ▲", style = MaterialTheme.typography.labelSmall, color = palette.primary, modifier = Modifier.clickable { onSelectExpandedStatsCard(3) })
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                    modifier = Modifier.clickable { onSelectExpandedStatsCard(3) }
+                                ) {
+                                    Text("Bezárás", style = MaterialTheme.typography.labelSmall, color = palette.primary)
+                                    Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
+                                }
                             }
                             if (uiState.loggedWorkouts.isEmpty()) {
                                 Text("Még nincs rögzített edzésidő.", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)

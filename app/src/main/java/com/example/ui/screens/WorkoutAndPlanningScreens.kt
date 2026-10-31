@@ -35,8 +35,12 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Psychology
@@ -3252,7 +3256,11 @@ fun AddCustomExerciseModalDialog(
                                 Text("Izomcsoport / Kategória", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
                                 Text(selectedCategory.labelHu, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                             }
-                            Text("▼", color = palette.primary, fontWeight = FontWeight.Bold)
+                            Icon(
+                                imageVector = if (categoryDropdownOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null,
+                                tint = palette.primary
+                            )
                         }
                     }
                     DropdownMenu(
@@ -3298,7 +3306,11 @@ fun AddCustomExerciseModalDialog(
                                 Text("Eszköz / Mérés jellege", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
                                 Text(selectedEquipment, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                             }
-                            Text("▼", color = palette.primary, fontWeight = FontWeight.Bold)
+                            Icon(
+                                imageVector = if (equipmentDropdownOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null,
+                                tint = palette.primary
+                            )
                         }
                     }
                     DropdownMenu(

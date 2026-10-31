@@ -116,6 +116,8 @@ dependencies {
   implementation(libs.kotlinx.coroutines.play.services)
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.play.services.wearable)
+  implementation(libs.play.services.maps)
+  implementation("com.google.maps.android:maps-compose:4.3.0")
   implementation(libs.play.services.auth)
   implementation(libs.androidx.wear.remote.interactions)
   implementation(libs.guava)

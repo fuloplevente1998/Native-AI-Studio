@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.LocalFireDepartment
@@ -587,13 +588,24 @@ fun HomeScreen(
                             fontWeight = FontWeight.ExtraBold,
                             color = accentColor
                         )
-                        Text(
-                            text = "Bezárás ▲",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = palette.primary,
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
                             modifier = Modifier.clickable { expandedHomeVitalKey = null }
-                        )
+                        ) {
+                            Text(
+                                text = "Bezárás",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = palette.primary
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ExpandLess,
+                                contentDescription = null,
+                                tint = palette.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
 
                     summaryRows.forEach { (label, value) ->
