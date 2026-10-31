@@ -2435,7 +2435,7 @@ class TrainPilotViewModel : ViewModel() {
             isTimed = true
         )
         val defaultSets = listOf(
-            ExerciseSetItem(setNumber = 1, weightKg = 0f, reps = 1, rir = 0, completed = true)
+            ExerciseSetItem(setNumber = 1, weightKg = 0f, reps = 1, rir = 0, completed = false)
         )
         _uiState.update { state ->
             val back = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16)
@@ -2461,6 +2461,16 @@ class TrainPilotViewModel : ViewModel() {
             )
         }
         persistCanonicalActiveSessionAsync(installNew = true)
+    }
+
+    /** Starts the recorded outdoor session clock only when the user actually starts tracking. */
+    fun markOutdoorTrackingStarted() {
+        val state = _uiState.value
+        if (!state.isWorkoutSessionActive || state.activeWorkoutSubScreen != SubScreen.ACTIVE_OUTDOOR_GPS) return
+        // The navigation screen opens before tracking starts; do not count that preparation time.
+        if (state.outdoorElapsedLabel != "00:00" || state.outdoorDistanceKm > 0f) return
+        _uiState.update { it.copy(workoutStartedEpochMs = System.currentTimeMillis()) }
+        persistCanonicalActiveSessionAsync()
     }
 
     fun addExerciseToWorkoutQueue(exercise: ExerciseItem) {
@@ -2697,6 +2707,15 @@ class TrainPilotViewModel : ViewModel() {
         }
 
         val isOutdoorSession = state.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS || state.outdoorDistanceKm > 0f
+        // Opening the GPS screen alone must never create a completed zero-length workout.
+        if (isOutdoorSession && state.outdoorDistanceKm <= 0f &&
+            (state.outdoorElapsedLabel.isBlank() || state.outdoorElapsedLabel == "00:00")
+        ) {
+            _uiState.update {
+                it.copy(statusBannerMessage = "Előbb indítsd el a mérést! 0 másodperces kültéri edzés nem menthető.")
+            }
+            return
+        }
         if (totalCompletedSets == 0 && !isOutdoorSession) {
             _uiState.update {
                 it.copy(statusBannerMessage = "Nincs teljesített (✓) sorozat! Jelölj késznek legalább 1 sorozatot az edzés mentéséhez.")
