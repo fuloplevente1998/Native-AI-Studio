@@ -1176,6 +1176,12 @@ class TrainPilotViewModel : ViewModel() {
             subScreen == SubScreen.ACTIVE_TIMED ||
             subScreen == SubScreen.ACTIVE_BILATERAL ||
             subScreen == SubScreen.ACTIVE_OUTDOOR_GPS
+
+        if (subScreen == SubScreen.ACTIVE_OUTDOOR_GPS && _uiState.value.activeWorkoutSubScreen != SubScreen.ACTIVE_OUTDOOR_GPS) {
+            startOutdoorWorkout("Kültéri futás")
+            return
+        }
+
         _uiState.update { state ->
             val updatedStack = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16)
             state.copy(
@@ -2417,6 +2423,46 @@ class TrainPilotViewModel : ViewModel() {
         persistCanonicalActiveSessionAsync(installNew = true)
     }
 
+    fun startOutdoorWorkout(titleHu: String = "Kültéri futás") {
+        val nowMs = System.currentTimeMillis()
+        val newWorkoutId = UUID.randomUUID().toString()
+        val outdoorEx = ExerciseItem(
+            id = "outdoor_run_ex",
+            nameHu = titleHu,
+            category = ExerciseCategory.CORE,
+            primaryMusclesHu = "Kardió, Láb",
+            equipmentHu = "GPS / Szabadban",
+            isTimed = true
+        )
+        val defaultSets = listOf(
+            ExerciseSetItem(setNumber = 1, weightKg = 0f, reps = 1, rir = 0, completed = true)
+        )
+        _uiState.update { state ->
+            val back = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16)
+            state.copy(
+                isWorkoutSessionActive = true,
+                activeWorkoutId = newWorkoutId,
+                workoutStartedEpochMs = nowMs,
+                activeWorkoutSubScreen = SubScreen.ACTIVE_OUTDOOR_GPS,
+                activeWorkoutTitleHu = titleHu,
+                activeWorkoutExercises = listOf(outdoorEx),
+                activeExerciseIndex = 0,
+                selectedExerciseId = outdoorEx.id,
+                activeSets = defaultSets,
+                activeSetsByExerciseId = mapOf(outdoorEx.id to defaultSets),
+                outdoorDistanceKm = 0f,
+                outdoorElapsedLabel = "00:00",
+                outdoorPaceLabel = "0:00",
+                currentSubScreen = SubScreen.ACTIVE_OUTDOOR_GPS,
+                currentTab = MainTab.WORKOUT,
+                backStack = back,
+                showQuickWorkoutSheet = false,
+                statusBannerMessage = "$titleHu elindítva GPS méréssel"
+            )
+        }
+        persistCanonicalActiveSessionAsync(installNew = true)
+    }
+
     fun addExerciseToWorkoutQueue(exercise: ExerciseItem) {
         _uiState.update { state ->
             val updatedQueue = if (state.quickWorkoutQueue.any { it.id == exercise.id }) {
@@ -2658,6 +2704,11 @@ class TrainPilotViewModel : ViewModel() {
             return
         }
 
+        if (isOutdoorSession) {
+            totalCompletedSets = maxOf(totalCompletedSets, 1)
+            totalSetsCount = maxOf(totalSetsCount, 1)
+        }
+
         val ctx = nativeContext
         val db = nativeDatabase
         val store = nativeSettingsStore
@@ -2668,7 +2719,48 @@ class TrainPilotViewModel : ViewModel() {
             return
         }
 
-        val workoutTitle = state.activeWorkoutTitleHu.ifBlank { workoutExs.firstOrNull()?.nameHu ?: "Edzés" }
+        val workoutTitle = if (isOutdoorSession) {
+            if (state.activeWorkoutTitleHu.contains("Kültéri", ignoreCase = true) || state.activeWorkoutTitleHu.contains("Futás", ignoreCase = true)) {
+                state.activeWorkoutTitleHu
+            } else {
+                "Kültéri futás"
+            }
+        } else {
+            state.activeWorkoutTitleHu.ifBlank { workoutExs.firstOrNull()?.nameHu ?: "Edzés" }
+        }
+
+        val finalExercisesArray = if (isOutdoorSession && (state.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS || exercisesArray.length() == 0)) {
+            JSONArray().apply {
+                put(JSONObject().apply {
+                    put("id", "outdoor_run_ex")
+                    put("exerciseId", "outdoor_run_ex")
+                    put("name", workoutTitle)
+                    put("nameHu", workoutTitle)
+                    put("nameEn", "Outdoor Running")
+                    put("loadType", "cardio_gps")
+                    put("repUnit", "km")
+                    put("measurementType", "distance_time")
+                    put("orderIndex", 0)
+                    put("distanceKm", state.outdoorDistanceKm.toDouble())
+                    put("elapsedLabel", state.outdoorElapsedLabel)
+                    put("paceLabel", state.outdoorPaceLabel)
+                    put("sets", JSONArray().apply {
+                        put(JSONObject().apply {
+                            put("setId", "outdoor_run_set_1")
+                            put("set", 1)
+                            put("setNumber", 1)
+                            put("weight", 0.0)
+                            put("reps", String.format(Locale.US, "%.2f km", state.outdoorDistanceKm))
+                            put("done", true)
+                            put("distanceKm", state.outdoorDistanceKm.toDouble())
+                            put("elapsedLabel", state.outdoorElapsedLabel)
+                        })
+                    })
+                })
+            }
+        } else {
+            exercisesArray
+        }
 
         scope.launch(Dispatchers.IO) {
             try {
@@ -2691,7 +2783,7 @@ class TrainPilotViewModel : ViewModel() {
                     put("finished", now.toString())
                     put("startedEpochMs", startedMs)
                     put("finishedEpochMs", nowMs)
-                    put("programId", state.editingProgramId.ifBlank { "program_custom" })
+                    put("programId", if (isOutdoorSession) "outdoor_gps_program" else state.editingProgramId.ifBlank { "program_custom" })
                     put("programName", workoutTitle)
                     put("dayId", "session")
                     put("dayName", workoutTitle)
@@ -2702,7 +2794,7 @@ class TrainPilotViewModel : ViewModel() {
                     put("timerOwner", "phone")
                     put("originDevice", "phone")
                     put("workoutPaused", false)
-                    put("exercises", exercisesArray)
+                    put("exercises", finalExercisesArray)
                     if (state.workoutSummaryNote.isNotBlank() || state.workoutSummaryMoodIndex >= 0) {
                         put("feedback", JSONObject().apply {
                             put("effort", when (state.workoutSummaryMoodIndex) {
@@ -2729,7 +2821,7 @@ class TrainPilotViewModel : ViewModel() {
                     existingActive.put("totalVolumeKg", totalVolumeDouble)
                     existingActive.put("completedSetsCount", totalCompletedSets)
                     existingActive.put("totalSetsCount", totalSetsCount)
-                    existingActive.put("exercises", exercisesArray)
+                    existingActive.put("exercises", finalExercisesArray)
                     if (candidateJson.has("feedback")) existingActive.put("feedback", candidateJson.getJSONObject("feedback"))
                     existingActive
                 } else {

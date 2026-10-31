@@ -3824,6 +3824,68 @@ fun WorkoutSummaryScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        val isOutdoor = uiState.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS || uiState.outdoorDistanceKm > 0f
+
+        val summarySubtitle = if (isOutdoor) {
+            val distLabel = if (uiState.outdoorDistanceKm > 0f) {
+                String.format(java.util.Locale("hu", "HU"), "%.2f km", uiState.outdoorDistanceKm)
+            } else {
+                uiState.outdoorElapsedLabel.ifBlank { "00:00" }
+            }
+            val titleLabel = if (uiState.activeWorkoutTitleHu.contains("Kültéri", ignoreCase = true) || uiState.activeWorkoutTitleHu.contains("Futás", ignoreCase = true)) {
+                uiState.activeWorkoutTitleHu
+            } else {
+                "Kültéri futás"
+            }
+            "$titleLabel • $distLabel"
+        } else {
+            val completedExsCount = uiState.activeWorkoutExercises.count { ex ->
+                (uiState.activeSetsByExerciseId[ex.id] ?: emptyList()).any { it.completed }
+            }
+            val totalExsCount = uiState.activeWorkoutExercises.size.coerceAtLeast(1)
+            val displayTitle = uiState.activeWorkoutTitleHu.ifBlank { "Tervezett edzés" }
+            "$displayTitle • $completedExsCount / $totalExsCount gyakorlat"
+        }
+
+        val elapsedMs = if (uiState.workoutStartedEpochMs > 0L) {
+            (System.currentTimeMillis() - uiState.workoutStartedEpochMs).coerceAtLeast(0L)
+        } else 0L
+        val elapsedSec = (elapsedMs / 1000L).toInt()
+        val durationLabel = if (isOutdoor) {
+            uiState.outdoorElapsedLabel.ifBlank { "00:00" }
+        } else if (elapsedSec > 0) {
+            String.format("%02d:%02d", elapsedSec / 60, elapsedSec % 60)
+        } else {
+            "00:00"
+        }
+
+        val volumeOrDistLabel: String
+        val volumeOrDistHeader: String
+        if (isOutdoor) {
+            volumeOrDistHeader = "Távolság"
+            volumeOrDistLabel = String.format(java.util.Locale("hu", "HU"), "%.2f km", uiState.outdoorDistanceKm)
+        } else {
+            val totalVolKg = uiState.activeSetsByExerciseId.values.flatten().filter { it.completed }.sumOf { (it.weightKg * it.reps).toDouble() }
+            val totalReps = uiState.activeSetsByExerciseId.values.flatten().filter { it.completed }.sumOf { it.reps }
+            if (totalVolKg > 0.0) {
+                volumeOrDistHeader = "Volumen"
+                volumeOrDistLabel = "${totalVolKg.toInt()} kg"
+            } else {
+                volumeOrDistHeader = "Ismétlések"
+                volumeOrDistLabel = "$totalReps ism."
+            }
+        }
+
+        val caloriesLabel = if (uiState.activeCaloriesKcal > 0) {
+            "${uiState.activeCaloriesKcal} kcal"
+        } else if (isOutdoor && uiState.outdoorDistanceKm > 0f) {
+            "~${(uiState.outdoorDistanceKm * 65f).toInt()} kcal"
+        } else if (elapsedSec > 0) {
+            "~${((elapsedSec / 60) * 6).coerceAtLeast(10)} kcal"
+        } else {
+            "0 kcal"
+        }
+
         item {
             Text(
                 text = strings.workoutSummaryTitle,
@@ -3832,21 +3894,20 @@ fun WorkoutSummaryScreen(
                 color = palette.textPrimary
             )
             Text(
-                text = "Teljes test A • 8 / 8 gyakorlat",
+                text = summarySubtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = palette.textSecondary
             )
         }
 
-        // 3 stat boxes: 38:24, 420 ism., 312 kcal
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                SummaryStatTile("Időtartam", "38:24", Modifier.weight(1f))
-                SummaryStatTile("Volumen", "420 ism.", Modifier.weight(1f))
-                SummaryStatTile("Kalória", "312 kcal", Modifier.weight(1f))
+                SummaryStatTile("Időtartam", durationLabel, Modifier.weight(1f))
+                SummaryStatTile(volumeOrDistHeader, volumeOrDistLabel, Modifier.weight(1f))
+                SummaryStatTile("Kalória", caloriesLabel, Modifier.weight(1f))
             }
         }
 
