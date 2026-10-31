@@ -2317,7 +2317,11 @@ class TrainPilotViewModel : ViewModel() {
                 state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
             }
             val day = prog?.days?.getOrNull(dayIndex) ?: prog?.days?.firstOrNull()
-            val dayExercises = day?.exercises?.ifEmpty { state.exercises.take(6) } ?: state.exercises.take(6)
+            // Filter out outdoor run pseudo-exercise if starting a planned gym program day
+            val rawDayExs = day?.exercises?.ifEmpty { state.exercises.filter { !it.isTimed && it.id != "outdoor_run_ex" }.take(6) }
+                ?: state.exercises.filter { !it.isTimed && it.id != "outdoor_run_ex" }.take(6)
+            val dayExercises = rawDayExs.filter { it.id != "outdoor_run_ex" }
+                .ifEmpty { state.exercises.filter { !it.isTimed }.take(6) }
             val firstEx = dayExercises.firstOrNull()
             val setsMap = dayExercises.associate { ex -> ex.id to buildDefaultSetsForExercise(ex) }
             val firstSets = if (firstEx != null) setsMap[firstEx.id] ?: buildDefaultSetsForExercise(firstEx) else state.activeSets
@@ -2334,6 +2338,8 @@ class TrainPilotViewModel : ViewModel() {
                 selectedExerciseId = firstEx?.id ?: state.selectedExerciseId,
                 activeSets = firstSets,
                 activeSetsByExerciseId = setsMap,
+                outdoorDistanceKm = 0f,
+                outdoorElapsedLabel = "00:00",
                 timedCurrentSec = 0,
                 currentSubScreen = targetSub,
                 backStack = back,

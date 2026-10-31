@@ -2100,6 +2100,7 @@ fun SettingsMainScreen(
     val palette = LocalTrainPilotPalette.current
     val currentPaletteObj = TrainPilotPalettes.getById(uiState.selectedPaletteId)
 
+    var expandedMainThemesSection by remember { mutableStateOf(true) }
     var expandedMatteThemes by remember { mutableStateOf(false) }
     var expandedContrastThemes by remember { mutableStateOf(false) }
     var expandedGlowThemes by remember { mutableStateOf(false) }
@@ -2282,22 +2283,23 @@ fun SettingsMainScreen(
         item {
             SettingsActionRowCard(
                 title = strings.themes32Title,
-                subtitle = "${currentPaletteObj.localizedName(uiState.language)} • Koppints a teljes választóhoz",
-                badgeText = "#${uiState.selectedPaletteId}",
-                onClick = onOpenPalettePicker,
+                subtitle = "${currentPaletteObj.localizedName(uiState.language)} • Koppints a 4 téma stílus ${if (expandedMainThemesSection) "becsukásához" else "kinyitásához"}",
+                badgeText = "#${uiState.selectedPaletteId} ${if (expandedMainThemesSection) "▲" else "▼"}",
+                onClick = { expandedMainThemesSection = !expandedMainThemesSection },
                 testTag = "settings_open_palettes_row"
             )
         }
 
         // 4 Expandable Theme Categories inside Settings (Matt témák | Kontrasztos témák | Fényes / Glow témák | Világos témák)
-        item {
-            val allPalettes = TrainPilotPalettes.allPalettes
-            val categories = listOf(
-                Triple("Matt témák (Sötét / Prémium matt)", allPalettes.filter { it.id in 1..8 }, expandedMatteThemes) to { expandedMatteThemes = !expandedMatteThemes },
-                Triple("Kontrasztos témák (Élénk kontraszt)", allPalettes.filter { it.id in 9..16 }, expandedContrastThemes) to { expandedContrastThemes = !expandedContrastThemes },
-                Triple("Fényes / Glow témák (Neon & Glow)", allPalettes.filter { it.id in 17..24 }, expandedGlowThemes) to { expandedGlowThemes = !expandedGlowThemes },
-                Triple("Világos témák (Nappali / Light)", allPalettes.filter { it.id in 25..32 }, expandedLightThemes) to { expandedLightThemes = !expandedLightThemes }
-            )
+        if (expandedMainThemesSection) {
+            item {
+                val allPalettes = TrainPilotPalettes.allPalettes
+                val categories = listOf(
+                    Triple("Matt témák (Sötét / Prémium matt)", allPalettes.filter { it.id in 1..8 }, expandedMatteThemes) to { expandedMatteThemes = !expandedMatteThemes },
+                    Triple("Kontrasztos témák (Élénk kontraszt)", allPalettes.filter { it.id in 9..16 }, expandedContrastThemes) to { expandedContrastThemes = !expandedContrastThemes },
+                    Triple("Fényes / Glow témák (Neon & Glow)", allPalettes.filter { it.id in 17..24 }, expandedGlowThemes) to { expandedGlowThemes = !expandedGlowThemes },
+                    Triple("Világos témák (Nappali / Light)", allPalettes.filter { it.id in 25..32 }, expandedLightThemes) to { expandedLightThemes = !expandedLightThemes }
+                )
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 categories.forEach { (catInfo, onToggleCat) ->
@@ -2420,6 +2422,7 @@ fun SettingsMainScreen(
                     }
                 }
             }
+        }
         }
 
         item {

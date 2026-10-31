@@ -775,7 +775,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                                     onCycleDemoMode = { mode -> viewModel.cycleHomeDemoMode(mode) },
                                     onStartOrContinueWorkout = {
-                                        if (uiState.isWorkoutSessionActive) {
+                                        if (uiState.isWorkoutSessionActive && uiState.workoutStartedEpochMs > 0L && uiState.activeWorkoutSubScreen != SubScreen.ACTIVE_OUTDOOR_GPS) {
                                             viewModel.returnToActiveWorkout()
                                         } else {
                                             viewModel.startPlannedWorkout()
