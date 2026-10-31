@@ -32,14 +32,14 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android API 36 SDK
+      - name: Install Android API 36 SDK from hosted runner
         shell: bash
         run: |
+          echo "ANDROID_HOME=${ANDROID_HOME}"
+          sdkmanager --version
+          yes | sdkmanager --licenses > /dev/null || true
           sdkmanager --install 'platforms;android-36' 'build-tools;36.0.0'
-          # AGP 9.1 uses compileSdk 36.1 when available.
+          # AGP 9.1 requests compileSdk 36.1; install it when listed.
           sdkmanager --install 'platforms;android-36.1' || true
 
       - name: Set up Gradle 9.3.1 (repo has no gradlew launcher)
