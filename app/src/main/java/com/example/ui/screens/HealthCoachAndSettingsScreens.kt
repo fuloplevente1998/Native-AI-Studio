@@ -157,20 +157,35 @@ fun HealthTabScreen(
         java.time.format.DateTimeFormatter.ofPattern("MM.dd.")
     }
 
-    var recentMeasurements by remember {
-        val baseWeight = if (uiState.currentBodyWeightKg > 20f) uiState.currentBodyWeightKg else 74.5f
-        val d1 = today.minusDays(18)
-        val d2 = today.minusDays(12)
-        val d3 = today.minusDays(6)
-        val d4 = today
-        mutableStateOf(
-            listOf(
-                WeightMeasurementEntry("w_1", "${"%.1f".format(baseWeight + 1.2f).replace('.', ',')} kg", baseWeight + 1.2f, d1.format(dotFormatter), d1),
-                WeightMeasurementEntry("w_2", "${"%.1f".format(baseWeight + 0.7f).replace('.', ',')} kg", baseWeight + 0.7f, d2.format(dotFormatter), d2),
-                WeightMeasurementEntry("w_3", "${"%.1f".format(baseWeight + 0.3f).replace('.', ',')} kg", baseWeight + 0.3f, d3.format(dotFormatter), d3),
-                WeightMeasurementEntry("w_4", "${"%.1f".format(baseWeight).replace('.', ',')} kg", baseWeight, d4.format(dotFormatter), d4)
-            ).sortedByDescending { it.parsedDate }
-        )
+    var recentMeasurements by remember(uiState.bodyWeightLogs) {
+        if (uiState.bodyWeightLogs.isNotEmpty()) {
+            mutableStateOf(
+                uiState.bodyWeightLogs.map { item ->
+                    val parsed = runCatching { java.time.LocalDate.parse(item.dayKey.take(10)) }.getOrElse { today }
+                    WeightMeasurementEntry(
+                        id = item.id,
+                        weightLabel = "${"%.1f".format(item.kg).replace('.', ',')} kg",
+                        weightValue = item.kg,
+                        dateLabel = item.dateLabelHu,
+                        parsedDate = parsed
+                    )
+                }.sortedByDescending { it.parsedDate }
+            )
+        } else {
+            val baseWeight = if (uiState.currentBodyWeightKg > 20f) uiState.currentBodyWeightKg else 74.5f
+            val d1 = today.minusDays(18)
+            val d2 = today.minusDays(12)
+            val d3 = today.minusDays(6)
+            val d4 = today
+            mutableStateOf(
+                listOf(
+                    WeightMeasurementEntry("w_1", "${"%.1f".format(baseWeight + 1.2f).replace('.', ',')} kg", baseWeight + 1.2f, d1.format(dotFormatter), d1),
+                    WeightMeasurementEntry("w_2", "${"%.1f".format(baseWeight + 0.7f).replace('.', ',')} kg", baseWeight + 0.7f, d2.format(dotFormatter), d2),
+                    WeightMeasurementEntry("w_3", "${"%.1f".format(baseWeight + 0.3f).replace('.', ',')} kg", baseWeight + 0.3f, d3.format(dotFormatter), d3),
+                    WeightMeasurementEntry("w_4", "${"%.1f".format(baseWeight).replace('.', ',')} kg", baseWeight, d4.format(dotFormatter), d4)
+                ).sortedByDescending { it.parsedDate }
+            )
+        }
     }
     // Always sorted chronologically (oldest -> newest) by the user-entered date for the chart!
     val chronologicalMeasurements = remember(recentMeasurements, uiState.selectedWeightRangeIndex) {

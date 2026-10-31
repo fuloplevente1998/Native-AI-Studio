@@ -1339,8 +1339,8 @@ fun ProgressTabScreen(
     onOpenRouteMap: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
-    // 3 oldalas bontás: 1. Statisztika (Volumen & Kardióstatisztika egybeolvasztva), 2. Erő & 1RM, 3. Napló
-    val sections = listOf("📊 ${strings.statsTabLabel}", "🏋️ ${strings.strength1RmTab}", "📖 ${strings.navLog}")
+    // 3 al-oldal a Fejlődés oldalon belül: 1. 📈 Fejlődés | 2. 📄 Napló | 3. 🏋️ Erő & 1RM
+    val sections = listOf("📈 ${strings.navProgress}", "📄 ${strings.navLog}", "🏋️ ${strings.strength1RmTab}")
 
     Column(
         modifier = Modifier
@@ -1348,7 +1348,7 @@ fun ProgressTabScreen(
             .background(palette.background)
             .testTag("progress_tab_screen")
     ) {
-        // Compact Top Sub-Tab Bar: Statisztika | Erő & 1RM | Napló
+        // Compact Top Sub-Tab Bar: 📈 Fejlődés | 📄 Napló | 🏋️ Erő & 1RM
         Surface(
             shape = RoundedCornerShape(14.dp),
             color = palette.surfaceCard,
@@ -1398,7 +1398,7 @@ fun ProgressTabScreen(
         }
 
         when (uiState.progressMainSection) {
-            // 1. OLDAL: EGYBEOLVASZTOTT STATISZTIKA (Volumen, Anatómiai izomterhelés, Heti edzésösszegzés és Kardióstatisztika)
+            // 1. AL-OLDAL (0): 📈 FEJLŐDÉS (Összes volumen, 4 lenyíló statisztika ablak, Izomcsoport-terhelés, Rekordok & Kardió)
             0 -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -1424,15 +1424,102 @@ fun ProgressTabScreen(
                 }
             }
 
-            // 2. OLDAL: ERŐ & 1RM (1RM becslések, trend görbe, gyakorlatválasztó, PR rekordok)
+            // 2. AL-OLDAL (1): 📄 NAPLÓ (Teljes edzésnapló keresővel, alapból csukott intervallum-naptárral, edzésrészletekkel)
             1 -> {
+                LogTabScreen(
+                    uiState = uiState,
+                    strings = strings,
+                    onSearchChange = onSearchChange,
+                    onOpenWorkoutDetail = onOpenWorkoutDetail,
+                    onOpenRouteMap = onOpenRouteMap,
+                    onOpenSettings = onOpenSettings,
+                    onOpenPalettePicker = onOpenPalettePicker
+                )
+            }
+
+            // 3. AL-OLDAL (2): 🏋️ ERŐ & 1RM (Valós Epley 1RM számítás a naplózott sorozatokból + gyakorlatválasztó + PR rekordok)
+            else -> {
+                val loggedExerciseNames = remember(uiState.loggedWorkouts) {
+                    uiState.loggedWorkouts
+                        .flatMap { it.exerciseDetails }
+                        .filter { det -> det.sets.any { s -> s.completed && s.weightKg > 0f } }
+                        .map { it.nameHu }
+                        .distinct()
+                }
+                val catalogStrengthNames = remember(uiState.exercises) {
+                    uiState.exercises
+                        .filter { !it.isTimed && !it.isBilateral && it.defaultWeightKg > 0f }
+                        .map { it.nameHu }
+                        .take(8)
+                }
+                val exerciseOptions = remember(loggedExerciseNames, catalogStrengthNames) {
+                    (loggedExerciseNames + listOf("Fekvenyomás", "Goblet guggolás", "Döntött törzsű evezés") + catalogStrengthNames)
+                        .distinct()
+                        .take(8)
+                }
+
+                // Gather real completed sets for selectedProgressExercise from Room-backed loggedWorkouts
+                val matchingWorkoutSets = remember(uiState.loggedWorkouts, uiState.selectedProgressExercise) {
+                    uiState.loggedWorkouts.reversed().mapNotNull { w ->
+                        val exDetail = w.exerciseDetails.firstOrNull {
+                            it.nameHu.equals(uiState.selectedProgressExercise, ignoreCase = true) ||
+                                it.nameHu.contains(uiState.selectedProgressExercise, ignoreCase = true)
+                        }
+                        val doneSets = exDetail?.sets?.filter { it.completed && it.weightKg > 0f && it.reps > 0 }.orEmpty()
+                        if (doneSets.isEmpty()) null else Triple(w.dateLabelHu, w.id, doneSets)
+                    }
+                }
+
+                val catalogEx = remember(uiState.exercises, uiState.selectedProgressExercise) {
+                    uiState.exercises.firstOrNull {
+                        it.nameHu.equals(uiState.selectedProgressExercise, ignoreCase = true) ||
+                            it.nameHu.contains(uiState.selectedProgressExercise, ignoreCase = true)
+                    }
+                }
+
+                // Calculate Epley 1RM: weight * (1 + reps / 30.0)
+                val session1RmHistory = remember(matchingWorkoutSets) {
+                    matchingWorkoutSets.map { (dateLbl, _, sets) ->
+                        val max1RmInSession = sets.maxOf { s ->
+                            s.weightKg * (1f + (s.reps.coerceAtLeast(1) / 30f))
+                        }
+                        dateLbl to max1RmInSession
+                    }
+                }
+
+                val best1RmKg = remember(session1RmHistory, catalogEx) {
+                    session1RmHistory.maxOfOrNull { it.second }
+                        ?: catalogEx?.let { ex ->
+                            val baseW = if (ex.prWeightKg > 0f) ex.prWeightKg else ex.defaultWeightKg
+                            val baseR = if (ex.prReps > 0) ex.prReps else ex.defaultReps
+                            if (baseW > 0f) baseW * (1f + (baseR.coerceAtLeast(1) / 30f)) else 0f
+                        } ?: 0f
+                }
+
+                val delta1RmKg = remember(session1RmHistory) {
+                    if (session1RmHistory.size >= 2) {
+                        session1RmHistory.last().second - session1RmHistory.first().second
+                    } else 0f
+                }
+
+                val bestWeightSetPair = remember(matchingWorkoutSets) {
+                    matchingWorkoutSets.flatMap { (dateLbl, _, sets) ->
+                        sets.map { s -> dateLbl to s }
+                    }.maxByOrNull { (_, s) -> s.weightKg * (1f + s.reps / 30f) }
+                }
+
+                val heaviestWeightPair = remember(matchingWorkoutSets) {
+                    matchingWorkoutSets.flatMap { (dateLbl, _, sets) ->
+                        sets.map { s -> dateLbl to s }
+                    }.maxByOrNull { (_, s) -> s.weightKg }
+                }
+
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 2.dp, bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     item {
-                        val exerciseOptions = listOf("Fekvenyomás", "Goblet guggolás", "Döntött törzsű evezés")
                         Surface(
                             shape = RoundedCornerShape(18.dp),
                             color = palette.surfaceCard,
@@ -1446,7 +1533,7 @@ fun ProgressTabScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Gyakorlat (1RM becslés)", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                    Text("Gyakorlat (Epley 1RM becslés)", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
                                     SmallExerciseVideoButton(exerciseName = uiState.selectedProgressExercise)
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
@@ -1479,10 +1566,12 @@ fun ProgressTabScreen(
 
                     // 1RM becslés (kg) Line Chart Card
                     item {
-                        val est1Rm = when (uiState.selectedProgressExercise) {
-                            "Goblet guggolás" -> "24 kg"
-                            "Döntött törzsű evezés" -> "68 kg"
-                            else -> "82 kg"
+                        val est1RmLabel = if (best1RmKg > 0f) "${"%.1f".format(best1RmKg).replace('.', ',')} kg" else "— kg"
+                        val deltaLabel = when {
+                            session1RmHistory.size >= 2 && delta1RmKg >= 0f -> "+ ${"%.1f".format(delta1RmKg).replace('.', ',')} kg"
+                            session1RmHistory.size >= 2 && delta1RmKg < 0f -> "${"%.1f".format(delta1RmKg).replace('.', ',')} kg"
+                            matchingWorkoutSets.isNotEmpty() -> "${matchingWorkoutSets.size} naplózott edzés"
+                            else -> "Alapértelmezett referencia"
                         }
                         Surface(
                             shape = RoundedCornerShape(18.dp),
@@ -1492,20 +1581,20 @@ fun ProgressTabScreen(
                                 .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
                         ) {
                             Column(modifier = Modifier.padding(14.dp)) {
-                                Text("1RM becslés (kg) ⓘ", style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
+                                Text("1RM becslés (kg) • Epley-képlet ⓘ", style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.Bottom
                                 ) {
                                     Text(
-                                        text = est1Rm,
+                                        text = est1RmLabel,
                                         style = MaterialTheme.typography.headlineLarge,
                                         fontWeight = FontWeight.Bold,
                                         color = palette.textPrimary
                                     )
                                     Text(
-                                        text = "+ 12 kg (3 hó)",
+                                        text = deltaLabel,
                                         style = MaterialTheme.typography.labelLarge,
                                         fontWeight = FontWeight.Bold,
                                         color = palette.success
@@ -1514,6 +1603,15 @@ fun ProgressTabScreen(
                                 Spacer(modifier = Modifier.height(10.dp))
                                 val lineGold = palette.primary
                                 val gridCol = palette.cardBorder
+                                val rawValues = if (session1RmHistory.size >= 2) {
+                                    session1RmHistory.map { it.second }
+                                } else if (best1RmKg > 0f) {
+                                    listOf(best1RmKg * 0.88f, best1RmKg * 0.92f, best1RmKg * 0.96f, best1RmKg)
+                                } else {
+                                    listOf(0f, 0f, 0f, 0f)
+                                }
+                                val minV = (rawValues.minOrNull() ?: 0f) * 0.9f
+                                val maxV = ((rawValues.maxOrNull() ?: 1f) * 1.05f).coerceAtLeast(minV + 1f)
                                 Canvas(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -1525,11 +1623,11 @@ fun ProgressTabScreen(
                                         val y = h * i / 3f
                                         drawLine(gridCol, Offset(0f, y), Offset(w, y), strokeWidth = 1.dp.toPx())
                                     }
-                                    val pts = listOf(0.75f, 0.68f, 0.60f, 0.52f, 0.45f, 0.34f, 0.26f, 0.18f)
                                     val path = Path()
-                                    pts.forEachIndexed { idx, normY ->
-                                        val x = w * (idx / (pts.size - 1f))
-                                        val y = h * normY
+                                    rawValues.forEachIndexed { idx, v ->
+                                        val x = if (rawValues.size > 1) w * (idx / (rawValues.size - 1f)) else w / 2f
+                                        val norm = ((v - minV) / (maxV - minV)).coerceIn(0.08f, 0.92f)
+                                        val y = h * (1f - norm)
                                         if (idx == 0) path.moveTo(x, y) else path.lineTo(x, y)
                                     }
                                     drawPath(
@@ -1537,24 +1635,39 @@ fun ProgressTabScreen(
                                         color = lineGold,
                                         style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
                                     )
-                                    pts.forEachIndexed { idx, normY ->
-                                        val x = w * (idx / (pts.size - 1f))
-                                        val y = h * normY
+                                    rawValues.forEachIndexed { idx, v ->
+                                        val x = if (rawValues.size > 1) w * (idx / (rawValues.size - 1f)) else w / 2f
+                                        val norm = ((v - minV) / (maxV - minV)).coerceIn(0.08f, 0.92f)
+                                        val y = h * (1f - norm)
                                         drawCircle(color = lineGold, radius = 4.dp.toPx(), center = Offset(x, y))
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text("júl.", style = MaterialTheme.typography.labelSmall, color = palette.textMuted)
-                                    Text("aug.", style = MaterialTheme.typography.labelSmall, color = palette.textMuted)
-                                    Text("szept.", style = MaterialTheme.typography.labelSmall, color = palette.textMuted)
-                                    Text("okt.", style = MaterialTheme.typography.labelSmall, color = palette.textMuted)
+                                    if (session1RmHistory.size >= 2) {
+                                        Text(session1RmHistory.first().first.take(10), style = MaterialTheme.typography.labelSmall, color = palette.textMuted)
+                                        Text(session1RmHistory.last().first.take(10), style = MaterialTheme.typography.labelSmall, color = palette.textMuted)
+                                    } else {
+                                        Text("Korábbi", style = MaterialTheme.typography.labelSmall, color = palette.textMuted)
+                                        Text("Jelenlegi", style = MaterialTheme.typography.labelSmall, color = palette.textMuted)
+                                    }
                                 }
                             }
                         }
                     }
 
                     item {
+                        val prWeightStr = heaviestWeightPair?.let { "🏆 ${"%.1f".format(it.second.weightKg).replace(".0", "")} kg" }
+                            ?: catalogEx?.defaultWeightKg?.takeIf { it > 0f }?.let { "🏆 ${"%.1f".format(it).replace(".0", "")} kg" }
+                            ?: "—"
+                        val prDateStr = heaviestWeightPair?.first ?: "Rögzített referencia"
+                        val bestSetStr = bestWeightSetPair?.let {
+                            "${"%.1f".format(it.second.weightKg).replace(".0", "")} kg × ${it.second.reps}"
+                        } ?: catalogEx?.let {
+                            "${"%.1f".format(it.defaultWeightKg).replace(".0", "")} kg × ${it.defaultReps}"
+                        } ?: "—"
+                        val bestSetDateStr = bestWeightSetPair?.first ?: "Alapértelmezett"
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1568,8 +1681,8 @@ fun ProgressTabScreen(
                             ) {
                                 Column(modifier = Modifier.padding(12.dp)) {
                                     Text("Személyes rekord", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                    Text("🏆 100 kg", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.primary)
-                                    Text("2026. szept. 14.", style = MaterialTheme.typography.labelSmall, color = palette.textMuted)
+                                    Text(prWeightStr, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.primary)
+                                    Text(prDateStr, style = MaterialTheme.typography.labelSmall, color = palette.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                             }
                             Surface(
@@ -1581,26 +1694,13 @@ fun ProgressTabScreen(
                             ) {
                                 Column(modifier = Modifier.padding(12.dp)) {
                                     Text("Legjobb sorozat", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                    Text("80 kg × 8", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                                    Text("2026. okt. 11.", style = MaterialTheme.typography.labelSmall, color = palette.textMuted)
+                                    Text(bestSetStr, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                    Text(bestSetDateStr, style = MaterialTheme.typography.labelSmall, color = palette.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                             }
                         }
                     }
                 }
-            }
-
-            // 3. OLDAL: NAPLÓ (A teljes edzésnapló keresővel, dátum- és hónapszűrővel, edzésrészletekkel)
-            else -> {
-                LogTabScreen(
-                    uiState = uiState,
-                    strings = strings,
-                    onSearchChange = onSearchChange,
-                    onOpenWorkoutDetail = onOpenWorkoutDetail,
-                    onOpenRouteMap = onOpenRouteMap,
-                    onOpenSettings = onOpenSettings,
-                    onOpenPalettePicker = onOpenPalettePicker
-                )
             }
         }
     }
@@ -2133,26 +2233,34 @@ private fun MainProgressVolumeAndMuscleSection(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("PR rekordok (45)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                Text("PR rekordok ($prCountValue)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                                 Text("Bezárás ▲", style = MaterialTheme.typography.labelSmall, color = palette.primary, modifier = Modifier.clickable { onSelectExpandedStatsCard(0) })
                             }
-                            uiState.prRecords.take(4).forEach { pr ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(palette.surfaceElevated)
-                                        .padding(8.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(pr.exerciseNameHu, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                                        Text(pr.typeLabelHu, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                            if (uiState.prRecords.isEmpty()) {
+                                Text(
+                                    text = "Még nincs rögzített PR rekord. Fejezz be egy edzést a PR-ek számításához!",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = palette.textSecondary
+                                )
+                            } else {
+                                uiState.prRecords.take(4).forEach { pr ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(palette.surfaceElevated)
+                                            .padding(8.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(pr.exerciseNameHu, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                            Text(pr.typeLabelHu, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                        }
+                                        SmallExerciseVideoButton(exerciseName = pr.exerciseNameHu, compactIconOnly = true)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("${pr.previousLabel} → ${pr.newLabel}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = palette.primary)
                                     }
-                                    SmallExerciseVideoButton(exerciseName = pr.exerciseNameHu, compactIconOnly = true)
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("${pr.previousLabel} → ${pr.newLabel}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = palette.primary)
                                 }
                             }
                         }
@@ -2162,21 +2270,29 @@ private fun MainProgressVolumeAndMuscleSection(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Edzések száma (25)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                Text("Edzések száma ($workoutCountValue)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                                 Text("Bezárás ▲", style = MaterialTheme.typography.labelSmall, color = palette.primary, modifier = Modifier.clickable { onSelectExpandedStatsCard(1) })
                             }
-                            uiState.loggedWorkouts.take(4).forEach { w ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(palette.surfaceElevated)
-                                        .clickable { onOpenWorkoutDetail(w.id) }
-                                        .padding(8.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text("${w.dateLabelHu} • ${w.titleHu}", style = MaterialTheme.typography.bodySmall, color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
-                                    Text("${w.durationMinutes} min >", style = MaterialTheme.typography.labelSmall, color = palette.primary, fontWeight = FontWeight.Bold)
+                            if (uiState.loggedWorkouts.isEmpty()) {
+                                Text(
+                                    text = "Még nincs naplózott edzés.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = palette.textSecondary
+                                )
+                            } else {
+                                uiState.loggedWorkouts.take(4).forEach { w ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(palette.surfaceElevated)
+                                            .clickable { onOpenWorkoutDetail(w.id) }
+                                            .padding(8.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("${w.dateLabelHu} • ${w.titleHu}", style = MaterialTheme.typography.bodySmall, color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
+                                        Text("${w.durationMinutes} min >", style = MaterialTheme.typography.labelSmall, color = palette.primary, fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
                         }
@@ -2186,22 +2302,25 @@ private fun MainProgressVolumeAndMuscleSection(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Átlagos volumen • 904,3 kg", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                Text("Átlagos volumen • $avgVolumeValue", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                                 Text("Bezárás ▲", style = MaterialTheme.typography.labelSmall, color = palette.primary, modifier = Modifier.clickable { onSelectExpandedStatsCard(2) })
                             }
-                            val volRows = listOf("2026. okt. 26." to "852 kg", "2026. okt. 24." to "1 430 kg", "2026. okt. 19." to "1 397 kg", "2026. okt. 14." to "980 kg")
-                            volRows.forEach { (d, v) ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(palette.surfaceElevated)
-                                        .clickable { onOpenWorkoutDetail("log_4") }
-                                        .padding(8.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(d, style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
-                                    Text("$v >", style = MaterialTheme.typography.labelMedium, color = palette.primary, fontWeight = FontWeight.Bold)
+                            if (uiState.loggedWorkouts.isEmpty()) {
+                                Text("Még nincs rögzített súlyzós volumen.", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                            } else {
+                                uiState.loggedWorkouts.take(4).forEach { w ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(palette.surfaceElevated)
+                                            .clickable { onOpenWorkoutDetail(w.id) }
+                                            .padding(8.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("${w.dateLabelHu} • ${w.titleHu}", style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
+                                        Text("${w.totalVolumeKg} kg >", style = MaterialTheme.typography.labelMedium, color = palette.primary, fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
                         }
@@ -2211,22 +2330,25 @@ private fun MainProgressVolumeAndMuscleSection(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Átlagos edzésidő • 45 min", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                Text("Átlagos edzésidő • $avgDurationValue", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                                 Text("Bezárás ▲", style = MaterialTheme.typography.labelSmall, color = palette.primary, modifier = Modifier.clickable { onSelectExpandedStatsCard(3) })
                             }
-                            val durRows = listOf("2026. okt. 26." to "51 min", "2026. okt. 24." to "35 min", "2026. okt. 24. (2)" to "29 min", "2026. okt. 19." to "70 min")
-                            durRows.forEach { (d, dur) ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(palette.surfaceElevated)
-                                        .clickable { onOpenWorkoutDetail("log_4") }
-                                        .padding(8.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(d, style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
-                                    Text("$dur >", style = MaterialTheme.typography.labelMedium, color = palette.primary, fontWeight = FontWeight.Bold)
+                            if (uiState.loggedWorkouts.isEmpty()) {
+                                Text("Még nincs rögzített edzésidő.", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                            } else {
+                                uiState.loggedWorkouts.take(4).forEach { w ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(palette.surfaceElevated)
+                                            .clickable { onOpenWorkoutDetail(w.id) }
+                                            .padding(8.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("${w.dateLabelHu} • ${w.titleHu}", style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
+                                        Text("${w.durationMinutes} min >", style = MaterialTheme.typography.labelMedium, color = palette.primary, fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
                         }

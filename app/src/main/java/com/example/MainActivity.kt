@@ -885,7 +885,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
 
                             MainTab.LOG -> {
                                 ProgressTabScreen(
-                                    uiState = uiState.copy(progressMainSection = 2),
+                                    uiState = uiState.copy(progressMainSection = 1),
                                     strings = strings,
                                     onSelectMainSection = { viewModel.selectProgressMainSection(it) },
                                     onSelectExercise = { viewModel.selectProgressExercise(it) },

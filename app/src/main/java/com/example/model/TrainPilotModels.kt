@@ -101,7 +101,9 @@ data class ExerciseItem(
     val prWeightKg: Float = 0f,
     val prReps: Int = 0,
     val coachStatusHu: String = "Normál terhelés",
-    val coachHintHu: String = "Stabil technika, 1–2 RIR tartalékkal."
+    val coachHintHu: String = "Stabil technika, 1–2 RIR tartalékkal.",
+    val videoUrl: String = "",
+    val isCustom: Boolean = false
 ) {
     fun localizedName(lang: AppLanguage): String = when (lang) {
         AppLanguage.HU -> nameHu
@@ -190,4 +192,11 @@ data class PrRecordEntry(
     val dateLabel: String,
     val previousLabel: String,
     val newLabel: String
+)
+
+data class BodyWeightLogItem(
+    val id: String,
+    val kg: Float,
+    val dayKey: String, // YYYY-MM-DD (user-entered measurement date)
+    val dateLabelHu: String // YYYY. MM. DD.
 )
