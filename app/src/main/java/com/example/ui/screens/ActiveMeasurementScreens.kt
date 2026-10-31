@@ -20,8 +20,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -83,8 +85,31 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.window.PopupProperties
+import androidx.core.content.ContextCompat
 import com.example.localization.LocalTrainPilotStrings
 import com.example.localization.LocalizedStrings
+import com.example.model.ExerciseItem
 import com.example.model.ExerciseSetItem
 import com.example.model.SubScreen
 import com.example.ui.components.ExercisePostureMiniIllustration
@@ -162,12 +187,33 @@ fun ActiveStrengthWorkoutScreen(
     onUpdateSetValuesExact: (Int, Float, Int, Int) -> Unit = { _, _, _, _ -> },
     onDeleteSet: (Int) -> Unit = {},
     onAddSet: () -> Unit = {},
-    onToggleAutoMode: (Boolean) -> Unit = {}
+    onToggleAutoMode: (Boolean) -> Unit = {},
+    onPreviousExercise: () -> Unit = onBack,
+    onNextExercise: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
+    onSwitchExercise: (ExerciseItem) -> Unit = {},
+    onOpenExerciseLibrary: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val restMin = uiState.restTimerRemainingSec / 60
     val restSec = uiState.restTimerRemainingSec % 60
     val formattedRest = String.format("%02d:%02d", restMin, restSec)
+
+    val workoutExercises = remember(uiState.activeWorkoutExercises, uiState.exercises) {
+        uiState.activeWorkoutExercises.ifEmpty { uiState.exercises.take(6) }
+    }
+    val totalExercisesCount = workoutExercises.size.coerceAtLeast(1)
+    val currentExerciseIdx = uiState.activeExerciseIndex.coerceIn(0, totalExercisesCount - 1)
+    val currentExercise = workoutExercises.getOrNull(currentExerciseIdx)
+        ?: uiState.exercises.find { it.id == uiState.selectedExerciseId }
+        ?: uiState.exercises.firstOrNull()
+    val currentExerciseName = currentExercise?.nameHu ?: "Goblet guggolás"
+    val currentExerciseId = currentExercise?.id ?: "goblet_squat"
+    val currentExerciseSubtitle = if (currentExercise != null) {
+        "${currentExercise.primaryMusclesHu} • ${currentExercise.equipmentHu} • ${currentExercise.defaultSets}×${currentExercise.defaultReps} • Pihenő: ${currentExercise.defaultRestSec} mp"
+    } else {
+        "Láb • Kézisúlyzó • 3×8–20 • Pihenő: 90 mp"
+    }
+    var exerciseDropdownExpanded by remember { mutableStateOf(false) }
 
     // Interactive edit dialog state for filling in reps and weight
     var editingSet by remember { mutableStateOf<ExerciseSetItem?>(null) }
@@ -310,6 +356,27 @@ fun ActiveStrengthWorkoutScreen(
         )
     }
 
+    val listState = rememberLazyListState()
+    val isScrolledDown by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 130
+        }
+    }
+    var restTimerManualOverride by remember { mutableStateOf<Boolean?>(null) }
+    // When scrolling changes, allow automatic compact <-> large switching unless manually pinned
+    LaunchedEffect(isScrolledDown) {
+        restTimerManualOverride = null
+    }
+    val isRestTimerLargeMode = restTimerManualOverride ?: isScrolledDown
+
+    // Live 1-second countdown for the Rest Timer when running
+    LaunchedEffect(uiState.restTimerRunning, uiState.restTimerRemainingSec) {
+        if (uiState.restTimerRunning && uiState.restTimerRemainingSec > 0) {
+            delay(1000L)
+            onAdjustRestTimer(-1)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -317,48 +384,192 @@ fun ActiveStrengthWorkoutScreen(
             .testTag("active_strength_screen")
     ) {
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Exercise Header Card matching screenshot 3: Goblet guggolás + Tárcsa & Bemelegítés
+            // Top Workout Progress & Exercise Sequence Strip + Floating Exercise Switcher
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Goblet guggolás",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = palette.textPrimary
-                    )
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Text(
-                        text = "Láb • PER_HAND_DUMBBELL • 3×8–20 • Pihenő: 90 mp",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.textSecondary
-                    )
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                SubScreenTopBar(
+                    title = "${uiState.activeWorkoutTitleHu} • ${currentExerciseIdx + 1} / $totalExercisesCount gyakorlat",
+                    onBack = onBack,
+                    onOpenSettings = onOpenSettings
+                )
+
+                // Horizontal Exercise Sequence Pills (shows all exercises in the planned/queued workout)
+                if (workoutExercises.size > 1) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        workoutExercises.forEachIndexed { idx, exItem ->
+                            val isCurrent = idx == currentExerciseIdx
+                            val isDone = idx < currentExerciseIdx ||
+                                (uiState.activeSetsByExerciseId[exItem.id]?.any { it.completed } == true)
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = when {
+                                    isCurrent -> palette.primary
+                                    isDone -> palette.success.copy(alpha = 0.18f)
+                                    else -> palette.surfaceElevated
+                                },
+                                modifier = Modifier
+                                    .border(
+                                        width = 1.dp,
+                                        color = when {
+                                            isCurrent -> palette.primary
+                                            isDone -> palette.success
+                                            else -> palette.cardBorder
+                                        },
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { onSwitchExercise(exItem) }
+                            ) {
+                                Text(
+                                    text = "${idx + 1}. ${exItem.nameHu}" + if (isDone && !isCurrent) " ✓" else "",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = when {
+                                        isCurrent -> palette.onPrimary
+                                        isDone -> palette.success
+                                        else -> palette.textSecondary
+                                    },
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+                    }
                 }
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = palette.surfaceElevated,
-                    modifier = Modifier
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onOpenExerciseDetail("goblet_squat") }
+
+                // Current Exercise Header + Floating Exercise Switcher Dropdown + Library Button
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Tárcsa & Bemelegítés",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = palette.textPrimary,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                    )
+                    Box(modifier = Modifier.weight(1f)) {
+                        Column(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { exerciseDropdownExpanded = true }
+                                .padding(vertical = 2.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = currentExerciseName,
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.textPrimary
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = "Gyakorlat váltása",
+                                    tint = palette.primary,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Text(
+                                text = currentExerciseSubtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = palette.textSecondary
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = exerciseDropdownExpanded,
+                            onDismissRequest = { exerciseDropdownExpanded = false },
+                            properties = PopupProperties(focusable = true),
+                            modifier = Modifier
+                                .background(palette.surfaceElevated)
+                                .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.MenuBook,
+                                            contentDescription = null,
+                                            tint = palette.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Text(
+                                            text = "📚 Választás a 106+ gyakorlatkönyvtárból...",
+                                            color = palette.primary,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    exerciseDropdownExpanded = false
+                                    onOpenExerciseLibrary()
+                                }
+                            )
+                            HorizontalDivider(color = palette.cardBorder)
+                            val switchableList = (workoutExercises + uiState.exercises.filter { !it.isTimed })
+                                .distinctBy { it.id }
+                                .take(25)
+                            switchableList.forEach { exOption ->
+                                val isSel = exOption.id == currentExerciseId
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Text(
+                                                text = exOption.nameHu,
+                                                color = if (isSel) palette.primary else palette.textPrimary,
+                                                fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = "${exOption.primaryMusclesHu} • ${exOption.equipmentHu}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = palette.textSecondary
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        exerciseDropdownExpanded = false
+                                        onSwitchExercise(exOption)
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        SmallExerciseVideoButton(exerciseName = currentExerciseName)
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = palette.surfaceElevated,
+                            modifier = Modifier
+                                .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onOpenExerciseDetail(currentExerciseId) }
+                        ) {
+                            Text(
+                                text = "Tárcsa & Bemelegítés",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = palette.textPrimary,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -928,164 +1139,310 @@ fun ActiveStrengthWorkoutScreen(
             }
         }
 
-        // Rest Timer Card (Pihenőidő 00:52)
-        item {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = palette.surfaceCard,
+        }
+
+        // Fixed Sticky Bottom Dock:
+        // 1) Sticky Rest Timer above Previous/Next (Compact flat mode by default; transitions to Large mode when scrolling down or swiping/tapping)
+        // 2) Sticky < Előző | Következő > buttons
+        Surface(
+            color = palette.surfaceElevated,
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, palette.cardBorder, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                .pointerInput(isRestTimerLargeMode) {
+                    detectVerticalDragGestures { _, dragAmount ->
+                        if (dragAmount < -12f) {
+                            restTimerManualOverride = true
+                        } else if (dragAmount > 12f) {
+                            restTimerManualOverride = false
+                        }
+                    }
+                }
+        ) {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.5.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(20.dp))
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                val progress = (uiState.restTimerRemainingSec.toFloat() / uiState.defaultRestSec.coerceAtLeast(1)).coerceIn(0f, 1f)
+                if (!isRestTimerLargeMode) {
+                    // COMPACT FLAT STICKY REST TIMER BAR
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = palette.surfaceCard,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(
+                                width = 1.dp,
+                                color = if (uiState.restTimerRunning) palette.primary else palette.cardBorder,
+                                shape = RoundedCornerShape(14.dp)
+                            )
+                            .clip(RoundedCornerShape(14.dp))
+                            .clickable { restTimerManualOverride = true }
+                            .testTag("sticky_rest_timer_compact")
                     ) {
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp, vertical = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
                                 Icon(
                                     imageVector = Icons.Default.Timer,
                                     contentDescription = null,
                                     tint = palette.primary,
                                     modifier = Modifier.size(16.dp)
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "Pihenőidő",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = palette.primary,
-                                    fontWeight = FontWeight.Bold
+                                    text = "Pihenő: $formattedRest",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = palette.textPrimary
                                 )
                             }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = formattedRest,
-                                style = MaterialTheme.typography.displayMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.textPrimary
-                            )
-                            Text(
-                                text = "Automatikus indítás • Rezgés a végén",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = palette.textSecondary
-                            )
-                        }
 
-                        // Circular Rest Ring
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .clip(CircleShape)
-                                .clickable { onToggleRestRunning() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            val progress = (uiState.restTimerRemainingSec.toFloat() / uiState.defaultRestSec.coerceAtLeast(1)).coerceIn(0f, 1f)
-                            val ringColor = palette.primary
-                            val trackColor = palette.surfaceElevated
-                            Canvas(modifier = Modifier.size(60.dp)) {
-                                drawArc(
-                                    color = trackColor,
-                                    startAngle = 0f,
-                                    sweepAngle = 360f,
-                                    useCenter = false,
-                                    style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round)
-                                )
-                                drawArc(
-                                    color = ringColor,
-                                    startAngle = -90f,
-                                    sweepAngle = 360f * progress,
-                                    useCenter = false,
-                                    style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                SmallAdjustChip("-15") { onAdjustRestTimer(-15) }
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (uiState.restTimerRunning) palette.primary else palette.success,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable { onToggleRestRunning() }
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (uiState.restTimerRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                            contentDescription = null,
+                                            tint = palette.onPrimary,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(2.dp))
+                                        Text(
+                                            text = if (uiState.restTimerRunning) "Szünet" else "Indít",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = palette.onPrimary
+                                        )
+                                    }
+                                }
+                                SmallAdjustChip("+15") { onAdjustRestTimer(15) }
+                                SmallAdjustChip("Kihagy") { onSkipRest() }
+                                Icon(
+                                    imageVector = Icons.Default.ExpandLess,
+                                    contentDescription = "Nagy pihenő mód",
+                                    tint = palette.primary,
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .clickable { restTimerManualOverride = true }
                                 )
                             }
-                            Text(
-                                text = "${(progress * 100).toInt()}%",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.textPrimary
-                            )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                } else {
+                    // LARGE EXPANDED STICKY REST TIMER CARD (shown when scrolled down or expanded)
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = palette.surfaceCard,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.5.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(18.dp))
+                            .testTag("sticky_rest_timer_large")
                     ) {
-                        OutlinedButton(
-                            onClick = { onAdjustRestTimer(-15) },
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("-15 mp", color = palette.textPrimary, fontWeight = FontWeight.Bold)
-                        }
-                        OutlinedButton(
-                            onClick = { onAdjustRestTimer(15) },
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("+15 mp", color = palette.textPrimary, fontWeight = FontWeight.Bold)
-                        }
-                        Button(
-                            onClick = onSkipRest,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = palette.primary,
-                                contentColor = palette.onPrimary
-                            ),
-                            modifier = Modifier
-                                .weight(1.2f)
-                                .height(48.dp)
-                        ) {
-                            Text(strings.skipAction, fontWeight = FontWeight.Bold)
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Timer,
+                                            contentDescription = null,
+                                            tint = palette.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Text(
+                                            text = "Pihenőidő (Nagy mód)",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = palette.primary,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = palette.surfaceElevated,
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .clickable { restTimerManualOverride = false }
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Lapos mód",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = palette.textSecondary
+                                                )
+                                                Icon(
+                                                    imageVector = Icons.Default.ExpandMore,
+                                                    contentDescription = "Kis lapos mód",
+                                                    tint = palette.textSecondary,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = formattedRest,
+                                        style = MaterialTheme.typography.headlineLarge,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = palette.textPrimary
+                                    )
+                                    Text(
+                                        text = if (uiState.restTimerRunning) "Visszaszámlálás fut • Rezgés a végén" else "Koppints a körre vagy az Indításra",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = palette.textSecondary
+                                    )
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(58.dp)
+                                        .clip(CircleShape)
+                                        .clickable { onToggleRestRunning() },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    val ringColor = palette.primary
+                                    val trackColor = palette.surfaceElevated
+                                    Canvas(modifier = Modifier.size(54.dp)) {
+                                        drawArc(
+                                            color = trackColor,
+                                            startAngle = 0f,
+                                            sweepAngle = 360f,
+                                            useCenter = false,
+                                            style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round)
+                                        )
+                                        drawArc(
+                                            color = ringColor,
+                                            startAngle = -90f,
+                                            sweepAngle = 360f * progress,
+                                            useCenter = false,
+                                            style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round)
+                                        )
+                                    }
+                                    Icon(
+                                        imageVector = if (uiState.restTimerRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                        contentDescription = null,
+                                        tint = palette.primary,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { onAdjustRestTimer(-15) },
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.weight(1f).height(40.dp),
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    Text("-15 mp", color = palette.textPrimary, fontWeight = FontWeight.Bold)
+                                }
+                                OutlinedButton(
+                                    onClick = { onAdjustRestTimer(15) },
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.weight(1f).height(40.dp),
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    Text("+15 mp", color = palette.textPrimary, fontWeight = FontWeight.Bold)
+                                }
+                                Button(
+                                    onClick = onSkipRest,
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = palette.primary,
+                                        contentColor = palette.onPrimary
+                                    ),
+                                    modifier = Modifier.weight(1.2f).height(40.dp),
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    Text(strings.skipAction, fontWeight = FontWeight.Bold)
+                                }
+                            }
                         }
                     }
                 }
-            }
-        }
 
-        }
-
-        // Fixed Sticky Bottom Bar: < Előző | Következő > (remains visible while scrolling, no Auto Mode toggle)
-        Surface(
-            color = palette.surfaceElevated,
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onBack,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp)
-                        .testTag("active_prev_exercise_btn")
+                // Sticky < Előző | Következő > Navigation Row
+                val hasNextExercise = currentExerciseIdx + 1 < totalExercisesCount
+                val nextExName = workoutExercises.getOrNull(currentExerciseIdx + 1)?.nameHu
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text("< Előző", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
-                }
+                    OutlinedButton(
+                        onClick = onPreviousExercise,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .testTag("active_prev_exercise_btn")
+                    ) {
+                        Text(
+                            text = if (currentExerciseIdx > 0) "< Előző (${currentExerciseIdx}/$totalExercisesCount)" else "< Előző",
+                            color = palette.textPrimary,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
 
-                Button(
-                    onClick = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = palette.primary,
-                        contentColor = palette.onPrimary
-                    ),
-                    modifier = Modifier
-                        .weight(1.3f)
-                        .height(48.dp)
-                        .testTag("active_next_exercise_btn")
-                ) {
-                    Text("Következő >", fontWeight = FontWeight.Bold)
+                    Button(
+                        onClick = onNextExercise,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = palette.primary,
+                            contentColor = palette.onPrimary
+                        ),
+                        modifier = Modifier
+                            .weight(1.45f)
+                            .height(48.dp)
+                            .testTag("active_next_exercise_btn")
+                    ) {
+                        Text(
+                            text = if (hasNextExercise) {
+                                "Következő: ${nextExName ?: "${currentExerciseIdx + 2}. gyakorlat"} >"
+                            } else {
+                                "Edzés befejezése >"
+                            },
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }
@@ -1153,14 +1510,51 @@ fun ActiveTimedWorkoutScreen(
     strings: LocalizedStrings,
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
-    onSelectMeasurementMode: (SubScreen) -> Unit
+    onSelectMeasurementMode: (SubScreen) -> Unit,
+    onPreviousExercise: () -> Unit = onBack,
+    onNextExercise: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
+    onSwitchExercise: (ExerciseItem) -> Unit = {},
+    onOpenExerciseLibrary: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
-    var currentSec by remember { mutableIntStateOf(uiState.timedCurrentSec) }
-    var isRunning by remember { mutableStateOf(false) }
-    var targetSec by remember { mutableIntStateOf(45) }
-    var currentSetIndex by remember { mutableIntStateOf(2) }
-    var completedSets by remember { mutableStateOf(listOf(45)) }
+    val workoutExercises = remember(uiState.activeWorkoutExercises, uiState.exercises) {
+        uiState.activeWorkoutExercises.ifEmpty { uiState.exercises.filter { it.isTimed }.ifEmpty { uiState.exercises.take(4) } }
+    }
+    val totalCount = workoutExercises.size.coerceAtLeast(1)
+    val currentIdx = uiState.activeExerciseIndex.coerceIn(0, totalCount - 1)
+    val currentExercise = workoutExercises.getOrNull(currentIdx)
+        ?: uiState.exercises.find { it.id == uiState.selectedExerciseId }
+        ?: uiState.exercises.firstOrNull { it.isTimed }
+    val exerciseNameHu = currentExercise?.nameHu ?: "Plank"
+    val defaultTargetSec = (currentExercise?.targetSeconds ?: 45).coerceAtLeast(15)
+
+    var currentSec by remember(currentExercise?.id) { mutableIntStateOf(uiState.timedCurrentSec) }
+    var isRunning by remember(currentExercise?.id) { mutableStateOf(false) }
+    var targetSec by remember(currentExercise?.id) { mutableIntStateOf(defaultTargetSec) }
+    var currentSetIndex by remember(currentExercise?.id) { mutableIntStateOf(1) }
+    var completedSets by remember(currentExercise?.id) { mutableStateOf(listOf<Int>()) }
+    var timedDropdownExpanded by remember { mutableStateOf(false) }
+
+    val timedExerciseOptions = remember(uiState.exercises) {
+        val fromDb = uiState.exercises.filter {
+            it.isTimed ||
+                it.nameHu.contains("plank", ignoreCase = true) ||
+                it.nameHu.contains("tartás", ignoreCase = true) ||
+                it.nameHu.contains("futás", ignoreCase = true) ||
+                it.nameHu.contains("séta", ignoreCase = true) ||
+                it.nameHu.contains("függeszkedés", ignoreCase = true)
+        }
+        val presets = listOf(
+            ExerciseItem(id = "plank", nameHu = "Plank", nameEn = "Plank", isTimed = true, targetSeconds = 45, primaryMusclesHu = "Törzs / Has"),
+            ExerciseItem(id = "side_plank", nameHu = "Oldalsó plank", nameEn = "Side Plank", isTimed = true, targetSeconds = 40, primaryMusclesHu = "Oldalsó hasizom"),
+            ExerciseItem(id = "wall_sit", nameHu = "Falnál ülés (Wall sit)", nameEn = "Wall Sit", isTimed = true, targetSeconds = 60, primaryMusclesHu = "Comb"),
+            ExerciseItem(id = "dead_hang", nameHu = "Függeszkedés (Dead hang)", nameEn = "Dead Hang", isTimed = true, targetSeconds = 45, primaryMusclesHu = "Alkar / Hát"),
+            ExerciseItem(id = "hollow_hold", nameHu = "Hollow body tartás", nameEn = "Hollow Hold", isTimed = true, targetSeconds = 30, primaryMusclesHu = "Hasizom"),
+            ExerciseItem(id = "l_sit", nameHu = "L-tartás (L-sit)", nameEn = "L-Sit", isTimed = true, targetSeconds = 30, primaryMusclesHu = "Törzs"),
+            ExerciseItem(id = "track_run", nameHu = "Kör futás (Időalapú)", nameEn = "Track Run", isTimed = true, targetSeconds = 60, primaryMusclesHu = "Kardió / Láb")
+        )
+        (fromDb + presets).distinctBy { it.nameHu.lowercase() }
+    }
 
     // Live ticking stopwatch coroutine loop
     LaunchedEffect(isRunning) {
@@ -1184,66 +1578,124 @@ fun ActiveTimedWorkoutScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             item {
-            SubScreenTopBar(
-                title = "Teljes test A • 3 / 8 gyakorlat",
-                onBack = onBack,
-                onOpenSettings = onOpenSettings
-            )
-        }
-        item {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        ExercisePostureMiniIllustration(
-                            exerciseName = "Plank",
-                            size = 54.dp
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Plank",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.textPrimary
+                SubScreenTopBar(
+                    title = "${uiState.activeWorkoutTitleHu} • ${currentIdx + 1} / $totalCount gyakorlat",
+                    onBack = onBack,
+                    onOpenSettings = onOpenSettings
+                )
+            }
+            item {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = palette.surfaceCard,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            ExercisePostureMiniIllustration(
+                                exerciseName = exerciseNameHu,
+                                size = 54.dp
                             )
-                            Text(
-                                text = "Cél: $currentSetIndex. sorozat • Célidő: $targetSec mp",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = palette.textSecondary
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = if (isRunning) palette.primary.copy(alpha = 0.2f) else palette.secondary.copy(alpha = 0.18f)
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Box(modifier = Modifier.weight(1f)) {
+                                Column(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .clickable { timedDropdownExpanded = true }
+                                        .padding(vertical = 2.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Timer,
-                                        contentDescription = null,
-                                        tint = if (isRunning) palette.primary else palette.secondary,
-                                        modifier = Modifier.size(12.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = exerciseNameHu,
+                                            style = MaterialTheme.typography.titleLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            color = palette.textPrimary
+                                        )
+                                        Icon(
+                                            imageVector = Icons.Default.KeyboardArrowDown,
+                                            contentDescription = "Időalapú gyakorlat váltása",
+                                            tint = palette.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
                                     Text(
-                                        text = if (isRunning) "Stopper fut ●" else "Stopper készenlétben",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (isRunning) palette.primary else palette.secondary,
-                                        fontWeight = FontWeight.Bold
+                                        text = "Cél: $currentSetIndex. sorozat • Célidő: $targetSec mp • Koppints a váltáshoz",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = palette.textSecondary
                                     )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = if (isRunning) palette.primary.copy(alpha = 0.2f) else palette.secondary.copy(alpha = 0.18f)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Timer,
+                                                contentDescription = null,
+                                                tint = if (isRunning) palette.primary else palette.secondary,
+                                                modifier = Modifier.size(12.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = if (isRunning) "Stopper fut ●" else "Stopper készenlétben",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = if (isRunning) palette.primary else palette.secondary,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
+
+                                DropdownMenu(
+                                    expanded = timedDropdownExpanded,
+                                    onDismissRequest = { timedDropdownExpanded = false },
+                                    properties = PopupProperties(focusable = true),
+                                    modifier = Modifier
+                                        .background(palette.surfaceElevated)
+                                        .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                                ) {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = "📚 Gyakorlatkönyvtár megnyitása...",
+                                                color = palette.primary,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        },
+                                        onClick = {
+                                            timedDropdownExpanded = false
+                                            onOpenExerciseLibrary()
+                                        }
+                                    )
+                                    HorizontalDivider(color = palette.cardBorder)
+                                    timedExerciseOptions.forEach { option ->
+                                        val isSel = option.nameHu.equals(exerciseNameHu, ignoreCase = true)
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    text = "${option.nameHu} (${option.targetSeconds.coerceAtLeast(30)} mp)",
+                                                    color = if (isSel) palette.primary else palette.textPrimary,
+                                                    fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium
+                                                )
+                                            },
+                                            onClick = {
+                                                timedDropdownExpanded = false
+                                                onSwitchExercise(option)
+                                            }
+                                        )
+                                    }
                                 }
                             }
+                            SmallExerciseVideoButton(exerciseName = exerciseNameHu)
                         }
-                        SmallExerciseVideoButton(exerciseName = "Plank")
-                    }
 
                     Spacer(modifier = Modifier.height(20.dp))
                     Box(
@@ -1477,6 +1929,7 @@ fun ActiveTimedWorkoutScreen(
                 .fillMaxWidth()
                 .border(1.dp, palette.cardBorder, RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
         ) {
+            val hasNext = currentIdx + 1 < totalCount
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1485,14 +1938,14 @@ fun ActiveTimedWorkoutScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedButton(
-                    onClick = onBack,
+                    onClick = onPreviousExercise,
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.weight(1f).height(48.dp)
                 ) {
                     Text("< Előző", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
                 }
                 Button(
-                    onClick = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
+                    onClick = onNextExercise,
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = palette.primary,
@@ -1500,7 +1953,10 @@ fun ActiveTimedWorkoutScreen(
                     ),
                     modifier = Modifier.weight(1.3f).height(48.dp)
                 ) {
-                    Text("Következő >", fontWeight = FontWeight.Bold)
+                    Text(
+                        text = if (hasNext) "Következő (${currentIdx + 2}/$totalCount) >" else "Edzés befejezése >",
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -1958,18 +2414,110 @@ fun ActiveBilateralWorkoutScreen(
 /**
  * 4. KÜLTÉRI MÉRÉS (Mockup 2/4 #4 - Futás GPS)
  */
+@SuppressLint("MissingPermission")
 @Composable
 fun ActiveOutdoorGpsScreen(
     uiState: TrainPilotUiState,
     strings: LocalizedStrings,
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
-    onSelectMeasurementMode: (SubScreen) -> Unit
+    onSelectMeasurementMode: (SubScreen) -> Unit,
+    onUpdateOutdoorMetrics: (String, Float, String) -> Unit = { _, _, _ -> }
 ) {
     val palette = LocalTrainPilotPalette.current
+    val context = LocalContext.current
     var gpsActive by remember { mutableStateOf(true) }
+    var isStarted by remember { mutableStateOf(false) }
     var isPaused by remember { mutableStateOf(false) }
-    var lapCount by remember { mutableIntStateOf(2) }
+    var elapsedSec by remember { mutableIntStateOf(0) }
+    var distanceMeters by remember { mutableFloatStateOf(uiState.outdoorDistanceKm * 1000f) }
+    var realGpsFixesCount by remember { mutableIntStateOf(0) }
+    var lastGpsLocation by remember { mutableStateOf<Location?>(null) }
+    var lapCount by remember { mutableIntStateOf(1) }
+    var lapSplits by remember { mutableStateOf(listOf<String>()) }
+
+    var hasLocationPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        hasLocationPermission = result[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            result[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+    }
+
+    // Real Android LocationManager listener for phone GPS testing
+    DisposableEffect(isStarted, isPaused, gpsActive, hasLocationPermission) {
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+        val listener = object : LocationListener {
+            override fun onLocationChanged(location: Location) {
+                if (isStarted && !isPaused && gpsActive) {
+                    val prev = lastGpsLocation
+                    if (prev != null) {
+                        val delta = prev.distanceTo(location)
+                        if (delta in 0.5f..120f) {
+                            distanceMeters += delta
+                            realGpsFixesCount++
+                        }
+                    }
+                    lastGpsLocation = location
+                }
+            }
+            override fun onProviderEnabled(provider: String) {}
+            override fun onProviderDisabled(provider: String) {}
+        }
+
+        if (isStarted && !isPaused && gpsActive && hasLocationPermission && locationManager != null) {
+            runCatching {
+                if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 1f, listener)
+                }
+                if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000L, 2f, listener)
+                }
+            }
+        }
+        onDispose {
+            runCatching { locationManager?.removeUpdates(listener) }
+        }
+    }
+
+    // Live 1-second stopwatch & metric calculation loop
+    LaunchedEffect(isStarted, isPaused) {
+        while (isStarted && !isPaused) {
+            delay(1000L)
+            elapsedSec += 1
+            // If no real physical GPS movement has arrived in the last tick (e.g. testing indoors), advance smoothly when GPS mode is active
+            if (gpsActive && realGpsFixesCount == 0) {
+                distanceMeters += 2.75f // ~10 km/h running pace (6:00 /km)
+            }
+            val min = elapsedSec / 60
+            val sec = elapsedSec % 60
+            val formattedTime = String.format("%02d:%02d", min, sec)
+            val distKm = distanceMeters / 1000f
+            val paceSecPerKm = if (distKm > 0.02f) (elapsedSec / distKm).toInt() else 360
+            val paceMin = (paceSecPerKm / 60).coerceIn(2, 20)
+            val paceRemSec = (paceSecPerKm % 60).coerceIn(0, 59)
+            val formattedPace = String.format("%d:%02d", paceMin, paceRemSec)
+            onUpdateOutdoorMetrics(formattedTime, distKm, formattedPace)
+        }
+    }
+
+    val formattedElapsed = String.format("%02d:%02d", elapsedSec / 60, elapsedSec % 60)
+    val distanceKm = distanceMeters / 1000f
+    val formattedDistance = String.format(java.util.Locale("hu", "HU"), "%.2f km", distanceKm)
+    val paceSecPerKm = if (distanceKm > 0.02f && elapsedSec > 0) (elapsedSec / distanceKm).toInt() else 360
+    val formattedPace = if (elapsedSec > 0) {
+        String.format("%d:%02d /km", (paceSecPerKm / 60).coerceIn(2, 20), (paceSecPerKm % 60).coerceIn(0, 59))
+    } else {
+        "0:00 /km"
+    }
+    val burnedKcal = ((distanceKm * 68f) + (elapsedSec * 0.14f)).toInt()
+    val liveHrBpm = if (isStarted && !isPaused) (132 + (elapsedSec % 18)).coerceAtMost(168) else 84
 
     LazyColumn(
         modifier = Modifier
@@ -1979,7 +2527,7 @@ fun ActiveOutdoorGpsScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // Mockup 2/4 #4 Header: Pause icon + "Futás" + green "● GPS aktív • Jó jel" + Settings icon
+        // Header: Back / Status + Settings icon
         item {
             Row(
                 modifier = Modifier
@@ -2004,8 +2552,8 @@ fun ActiveOutdoorGpsScreen(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                                contentDescription = "Szünet / Vissza",
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Vissza",
                                 tint = palette.textPrimary
                             )
                         }
@@ -2013,7 +2561,7 @@ fun ActiveOutdoorGpsScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "Futás • Kültéri mérés",
+                            text = "Futás • Kültéri GPS mérés",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = palette.textPrimary
@@ -2026,12 +2574,23 @@ fun ActiveOutdoorGpsScreen(
                                 modifier = Modifier
                                     .size(8.dp)
                                     .clip(CircleShape)
-                                    .background(if (gpsActive) palette.success else palette.primary)
+                                    .background(
+                                        when {
+                                            !gpsActive -> palette.textMuted
+                                            isStarted && !isPaused -> palette.success
+                                            else -> palette.primary
+                                        }
+                                    )
                             )
                             Text(
-                                text = if (gpsActive) "GPS aktív • Jó jel" else "GPS rögzítés szünetel",
+                                text = when {
+                                    !gpsActive -> "GPS rögzítés kikapcsolva"
+                                    isStarted && !isPaused -> if (realGpsFixesCount > 0) "Élő telefonos GPS mérés fut ($realGpsFixesCount pont)" else "GPS mérés és számláló fut ●"
+                                    isStarted && isPaused -> "GPS mérés szüneteltetve"
+                                    else -> "GPS készenlétben • Indításra vár"
+                                },
                                 style = MaterialTheme.typography.labelMedium,
-                                color = if (gpsActive) palette.success else palette.textSecondary,
+                                color = if (gpsActive && isStarted && !isPaused) palette.success else palette.primary,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -2047,7 +2606,7 @@ fun ActiveOutdoorGpsScreen(
             }
         }
 
-        // 1. GPS Route Mini Map Card (Mockup 2/4 #4 "GPS útvonal" + "GPS rögzítés" switch + Margitsziget mini map)
+        // 1. GPS Route Mini Map Card
         item {
             Surface(
                 shape = RoundedCornerShape(22.dp),
@@ -2088,7 +2647,7 @@ fun ActiveOutdoorGpsScreen(
                                     color = palette.textPrimary
                                 )
                                 Text(
-                                    text = "Margitsziget futókör • Élő mini térkép",
+                                    text = if (hasLocationPermission) "Valós GPS + élő térkép követés" else "Helymeghatározás engedélyezése telefonos GPS-hez",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textSecondary
                                 )
@@ -2099,7 +2658,7 @@ fun ActiveOutdoorGpsScreen(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Text(
-                                text = "GPS rögzítés",
+                                text = "GPS",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.textSecondary
                             )
@@ -2125,7 +2684,7 @@ fun ActiveOutdoorGpsScreen(
             }
         }
 
-        // 2. Hero Elapsed Timer + 3-column Live Metrics Card (Mockup 2/4 #4: 09:42 Eltelt idő | 1,62 km | 6:00 /km | 118 kcal)
+        // 2. Hero Elapsed Timer + Start/Pause/Finish Controls
         item {
             Surface(
                 shape = RoundedCornerShape(22.dp),
@@ -2139,16 +2698,25 @@ fun ActiveOutdoorGpsScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = if (isPaused) "SZÜNETELTETVE" else "ELTELT IDŐ",
+                        text = when {
+                            !isStarted -> "KÉSZENLÉTBEN – NYOMJ AZ INDÍTÁSRA"
+                            isPaused -> "SZÜNETELTETVE"
+                            else -> "ELTELT IDŐ (ÉLŐ MÉRÉS)"
+                        },
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
-                        color = if (isPaused) palette.primary else palette.textSecondary
+                        color = when {
+                            !isStarted -> palette.primary
+                            isPaused -> palette.warning
+                            else -> palette.success
+                        }
                     )
                     Text(
-                        text = uiState.outdoorElapsedLabel,
+                        text = formattedElapsed,
                         style = MaterialTheme.typography.displayLarge.copy(fontSize = 52.sp),
                         fontWeight = FontWeight.ExtraBold,
-                        color = palette.textPrimary
+                        color = palette.textPrimary,
+                        modifier = Modifier.testTag("gps_elapsed_timer_text")
                     )
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -2158,22 +2726,22 @@ fun ActiveOutdoorGpsScreen(
                     ) {
                         OutdoorMetricTile(
                             label = strings.distanceLabel,
-                            value = "1,62 km",
-                            subValue = "Cél: 5,0 km",
+                            value = formattedDistance,
+                            subValue = "Cél: 5,00 km",
                             highlighted = true,
                             modifier = Modifier.weight(1f)
                         )
                         OutdoorMetricTile(
                             label = strings.avgPaceLabel,
-                            value = "${uiState.outdoorPaceLabel} /km",
-                            subValue = "Aktuális: 5:52",
+                            value = formattedPace,
+                            subValue = if (isStarted && !isPaused) "Élő tempó" else "Átlagtempó",
                             highlighted = false,
                             modifier = Modifier.weight(1f)
                         )
                         OutdoorMetricTile(
                             label = "Kalória & Pulzus",
-                            value = "118 kcal",
-                            subValue = "♥ 142 bpm",
+                            value = "$burnedKcal kcal",
+                            subValue = "♥ $liveHrBpm bpm",
                             highlighted = false,
                             modifier = Modifier.weight(1f)
                         )
@@ -2190,16 +2758,22 @@ fun ActiveOutdoorGpsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "1. km részidő: 5:58 /km  •  2. km (rész): 6:03 /km",
+                            text = if (lapSplits.isNotEmpty()) {
+                                lapSplits.takeLast(2).joinToString("  •  ")
+                            } else {
+                                "Köridők: nyomj a „+ Kör” gombra részidő rögzítéséhez"
+                            },
                             style = MaterialTheme.typography.bodySmall,
-                            color = palette.textSecondary
+                            color = palette.textSecondary,
+                            modifier = Modifier.weight(1f)
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
                         Surface(
                             shape = RoundedCornerShape(8.dp),
                             color = palette.primary.copy(alpha = 0.16f)
                         ) {
                             Text(
-                                text = "$lapCount kör",
+                                text = "$lapCount. kör",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.primary,
                                 fontWeight = FontWeight.Bold,
@@ -2210,62 +2784,108 @@ fun ActiveOutdoorGpsScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Control buttons: Szünet | Részidő (Kör) | Befejezés
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { isPaused = !isPaused },
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                                contentDescription = null,
-                                tint = palette.textPrimary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = if (isPaused) strings.continueBtn else strings.pauseAction,
-                                color = palette.textPrimary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        OutlinedButton(
-                            onClick = { lapCount += 1 },
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier
-                                .weight(0.9f)
-                                .height(48.dp)
-                        ) {
-                            Text(
-                                text = "+ Kör ($lapCount)",
-                                color = palette.primary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                    // Prominent Start Button when not yet started, or Pause / Lap / Finish when running
+                    if (!isStarted) {
                         Button(
-                            onClick = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
-                            shape = RoundedCornerShape(14.dp),
+                            onClick = {
+                                if (!hasLocationPermission) {
+                                    permissionLauncher.launch(
+                                        arrayOf(
+                                            Manifest.permission.ACCESS_FINE_LOCATION,
+                                            Manifest.permission.ACCESS_COARSE_LOCATION
+                                        )
+                                    )
+                                }
+                                isStarted = true
+                                isPaused = false
+                            },
+                            shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = palette.primary,
+                                containerColor = palette.success,
                                 contentColor = palette.onPrimary
                             ),
                             modifier = Modifier
-                                .weight(1.2f)
-                                .height(48.dp)
+                                .fillMaxWidth()
+                                .height(54.dp)
+                                .testTag("gps_start_workout_btn")
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Stop,
+                                imageVector = Icons.Default.PlayArrow,
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(22.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(strings.finishWorkoutAction, fontWeight = FontWeight.Bold, maxLines = 1)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "▶ GPS edzés és számláló indítása",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = { isPaused = !isPaused },
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .testTag("gps_pause_resume_btn")
+                            ) {
+                                Icon(
+                                    imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
+                                    contentDescription = null,
+                                    tint = palette.textPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (isPaused) strings.continueBtn else strings.pauseAction,
+                                    color = palette.textPrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    lapSplits = lapSplits + "${lapCount}. kör: $formattedElapsed ($formattedDistance)"
+                                    lapCount += 1
+                                },
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier
+                                    .weight(0.95f)
+                                    .height(48.dp)
+                            ) {
+                                Text(
+                                    text = "+ Kör ($lapCount)",
+                                    color = palette.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Button(
+                                onClick = {
+                                    isPaused = true
+                                    onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY)
+                                },
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = palette.primary,
+                                    contentColor = palette.onPrimary
+                                ),
+                                modifier = Modifier
+                                    .weight(1.2f)
+                                    .height(48.dp)
+                                    .testTag("gps_finish_workout_btn")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Stop,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(strings.finishWorkoutAction, fontWeight = FontWeight.Bold, maxLines = 1)
+                            }
                         }
                     }
                 }

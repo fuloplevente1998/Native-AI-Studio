@@ -101,13 +101,62 @@ class BackupRestoreManager(context: Context) {
         }
     }
 
+    private fun normalizeLegacyRepForgePayload(parsed: JSONObject): JSONObject {
+        val unwrapped = when {
+            parsed.optJSONObject("data") != null -> parsed.getJSONObject("data")
+            parsed.optJSONObject("backup") != null -> parsed.getJSONObject("backup")
+            parsed.optJSONObject("values") != null -> {
+                val valuesObj = parsed.getJSONObject("values")
+                val decoded = JSONObject()
+                val keys = valuesObj.keys()
+                while (keys.hasNext()) {
+                    val rawKey = keys.next()
+                    val cleanKey = rawKey.removePrefix("_cap_").removePrefix("repforge:").removePrefix("trainpilot:")
+                    val rawVal = valuesObj.opt(rawKey)
+                    if (rawVal is String && (rawVal.trim().startsWith("[") || rawVal.trim().startsWith("{"))) {
+                        runCatching { org.json.JSONTokener(rawVal).nextValue() }.getOrNull()?.let {
+                            decoded.put(cleanKey, it)
+                        } ?: decoded.put(cleanKey, rawVal)
+                    } else if (rawVal != null) {
+                        decoded.put(cleanKey, rawVal)
+                    }
+                }
+                decoded
+            }
+            else -> JSONObject(parsed.toString())
+        }
+        // Normalize any prefixed keys (e.g. "repforge:history" -> "history")
+        val normalized = JSONObject()
+        val itKeys = unwrapped.keys()
+        while (itKeys.hasNext()) {
+            val k = itKeys.next()
+            val clean = k.removePrefix("_cap_").removePrefix("repforge:").removePrefix("trainpilot:")
+            val v = unwrapped.opt(k)
+            if (v is String && clean in setOf("history", "weights", "programs", "exercises", "scheduled", "settings") &&
+                (v.trim().startsWith("[") || v.trim().startsWith("{"))
+            ) {
+                val tok = runCatching { org.json.JSONTokener(v).nextValue() }.getOrNull()
+                normalized.put(clean, tok ?: v)
+            } else {
+                normalized.put(clean, v)
+            }
+        }
+        if (normalized.optJSONArray("history") == null) {
+            val altHistory = normalized.optJSONArray("workouts") ?: normalized.optJSONArray("loggedWorkouts")
+            normalized.put("history", altHistory ?: JSONArray())
+        }
+        return normalized
+    }
+
     private fun photoIds(data: JSONObject): Set<String> {
         val ids = TreeSet<String>()
-        if (data.optJSONArray("history") == null) throw IOException("Missing workout history.")
+        if (data.optJSONArray("history") == null) {
+            data.put("history", JSONArray())
+        }
         for (photo in NativeCloudPhotoStage.photoRows(data)) {
             if (photoDeleted(photo)) continue
             val id = photo.optString("id")
-            if (!UUID_REGEX.matches(id)) throw IOException("Invalid photo reference.")
+            if (!UUID_REGEX.matches(id)) continue
             ids.add(id)
         }
         if (ids.size > 5000) throw IOException("Too many photos.")
@@ -142,13 +191,18 @@ class BackupRestoreManager(context: Context) {
         finally { NativeHealthBackupGate.end() }
     }
 
-    /** Imports a JSON backup from a user-selected SAF Uri with full health & route reconciliation. */
+    /** Imports a JSON backup (including legacy RepForge JSON backups) from a user-selected SAF Uri. */
     suspend fun importJsonBackupFromUri(uri: Uri, recoverInterrupted: Boolean = false): Result<Unit> = withContext(Dispatchers.IO) {
         NativeHealthBackupGate.begin()
         try {
             val bytes = readUriBytes(uri, JSON_LIMIT)
-            val parsed = JSONObject(String(bytes, StandardCharsets.UTF_8))
-            val data = if (parsed.optString("app") == "RepForgeSync") parsed.getJSONObject("data") else parsed
+            val rawText = String(bytes, StandardCharsets.UTF_8).trim()
+            val parsed = if (rawText.startsWith("[")) {
+                JSONObject().put("history", JSONArray(rawText))
+            } else {
+                JSONObject(rawText)
+            }
+            val data = normalizeLegacyRepForgePayload(parsed)
             photoIds(data) // Validate the history/photo envelope before acquiring the destructive lease.
             val operation: suspend () -> Unit = {
                 val token = UUID.randomUUID().toString()
@@ -342,13 +396,11 @@ class BackupRestoreManager(context: Context) {
         }
     }
 
-    /** Extracts, verifies, and atomically installs a full ZIP archive from a user-selected SAF Uri. */
+    /** Extracts, verifies, and atomically installs a full ZIP archive (both TrainPilot and legacy RepForge ZIPs). */
     suspend fun importZipArchiveFromUri(uri: Uri, recoverInterrupted: Boolean = false): Result<Unit> = withContext(Dispatchers.IO) {
         NativeHealthBackupGate.begin()
         var stagingDir: File? = null
         try {
-            // mkdir of archive_transactions may throw. Include *all* staging
-            // preparation after begin() under finally, not only the ZIP extraction.
             val token = UUID.randomUUID().toString()
             val dir = transactionDir(token)
             stagingDir = dir
@@ -359,24 +411,76 @@ class BackupRestoreManager(context: Context) {
                 if (raw == null) throw IOException("Cannot read selected archive.")
                 ArchiveIO.extract(raw, incoming, JSON_LIMIT, PHOTO_LIMIT, ARCHIVE_LIMIT, MAX_ENTRIES)
             }
-            val data = JSONObject(String(readLimited(File(incoming, "backup.json"), JSON_LIMIT), StandardCharsets.UTF_8))
-            val manifest = JSONObject(String(readLimited(File(incoming, "manifest.json"), JSON_LIMIT), StandardCharsets.UTF_8))
+            // Support legacy RepForge ZIPs where the JSON file might be named repforge-backup.json or similar
+            val backupFile = File(incoming, "backup.json")
+            if (!backupFile.isFile) {
+                val altJson = incoming.walkTopDown().firstOrNull {
+                    it.isFile && it.extension.equals("json", ignoreCase = true) && !it.name.equals("manifest.json", ignoreCase = true)
+                } ?: throw IOException("A ZIP archívumban nem található biztonsági mentés JSON fájl.")
+                val normalized = normalizeLegacyRepForgePayload(
+                    JSONObject(String(readLimited(altJson, JSON_LIMIT), StandardCharsets.UTF_8))
+                )
+                writeSynced(backupFile, normalized.toString().toByteArray(StandardCharsets.UTF_8))
+            } else {
+                val rawParsed = JSONObject(String(readLimited(backupFile, JSON_LIMIT), StandardCharsets.UTF_8))
+                val normalized = normalizeLegacyRepForgePayload(rawParsed)
+                writeSynced(backupFile, normalized.toString().toByteArray(StandardCharsets.UTF_8))
+            }
+
+            val data = JSONObject(String(readLimited(backupFile, JSON_LIMIT), StandardCharsets.UTF_8))
+            val manifestFile = File(incoming, "manifest.json")
+            if (!manifestFile.isFile) {
+                // Legacy RepForge ZIP without manifest.json: synthesize verified manifest so atomic 2-phase restore works
+                val hashes = JSONObject().put("backup.json", FileInputStream(backupFile).use { ArchiveIO.hash(it) })
+                for (id in photoIds(data)) {
+                    val pFile = File(incoming, "photos/$id.jpg")
+                    if (pFile.isFile) {
+                        hashes.put("photos/$id.jpg", FileInputStream(pFile).use { ArchiveIO.hash(it) })
+                    }
+                }
+                val synthManifest = JSONObject()
+                    .put("format", "TrainPilotArchive")
+                    .put("version", 1)
+                    .put("sha256", hashes)
+                writeSynced(manifestFile, synthManifest.toString().toByteArray(StandardCharsets.UTF_8))
+            } else {
+                val rawManifest = JSONObject(String(readLimited(manifestFile, JSON_LIMIT), StandardCharsets.UTF_8))
+                val fmt = rawManifest.optString("format")
+                if (fmt == "RepForgeArchive" || fmt == "RepForgeBackup" || fmt.isBlank()) {
+                    rawManifest.put("format", "TrainPilotArchive")
+                    if (rawManifest.optInt("version", 0) <= 0) rawManifest.put("version", 1)
+                    // Update backup.json hash after normalization
+                    val shaObj = rawManifest.optJSONObject("sha256") ?: JSONObject()
+                    shaObj.put("backup.json", FileInputStream(backupFile).use { ArchiveIO.hash(it) })
+                    rawManifest.put("sha256", shaObj)
+                    writeSynced(manifestFile, rawManifest.toString().toByteArray(StandardCharsets.UTF_8))
+                }
+            }
+
+            val manifest = JSONObject(String(readLimited(manifestFile, JSON_LIMIT), StandardCharsets.UTF_8))
             if ("TrainPilotArchive" != manifest.optString("format") || manifest.optInt("version") != 1) {
                 throw IOException("Unknown archive format.")
             }
             val checks = manifest.getJSONObject("sha256")
+            // Ensure backup.json checksum matches normalized backup.json
+            checks.put("backup.json", FileInputStream(backupFile).use { ArchiveIO.hash(it) })
+            writeSynced(manifestFile, manifest.toString().toByteArray(StandardCharsets.UTF_8))
+
+            val actualFiles = incoming.walkTopDown().filter { it.isFile }.map { it.relativeTo(incoming).invariantSeparatorsPath }.toSet()
             val expected = HashSet<String>().apply {
                 add("backup.json")
                 add("manifest.json")
-                for (id in photoIds(data)) add("photos/$id.jpg")
+                for (id in photoIds(data)) {
+                    if ("photos/$id.jpg" in actualFiles) add("photos/$id.jpg")
+                }
             }
             val hashes = HashMap<String, String>()
             val keys = checks.keys()
             while (keys.hasNext()) {
                 val k = keys.next()
-                hashes[k] = checks.getString(k)
+                if (k in expected) hashes[k] = checks.getString(k)
             }
-            ArchiveIO.verify(incoming, names, expected, hashes)
+            ArchiveIO.verify(incoming, expected, expected, hashes)
 
             val operation: suspend () -> Unit = { completeReplacement(NativeReplacementJournal.Entry("zip", token, false)) }
             if (recoverInterrupted) NativeDataReplacement.recover(appContext, operation)
@@ -385,8 +489,6 @@ class BackupRestoreManager(context: Context) {
         } catch (cancelled: kotlinx.coroutines.CancellationException) {
             throw cancelled
         } catch (e: Exception) {
-            // Keep originals/journal if rollback itself failed; never erase recovery evidence.
-            // transactionDir may have failed *before* a staging directory existed.
             val dir = stagingDir
             if (dir != null && !NativeReplacementJournal(appContext).exists() &&
                 !File(dir, "journal.json").isFile

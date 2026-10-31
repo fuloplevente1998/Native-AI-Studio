@@ -110,7 +110,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.example.localization.LocalTrainPilotStrings
+import com.example.model.ExerciseItem
 import com.example.model.SubScreen
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
 
 @Composable
 fun TrainPilotMountainLogo(
@@ -366,13 +369,26 @@ private fun TopNavPillItem(
     testTag: String = ""
 ) {
     val palette = LocalTrainPilotPalette.current
+    val glowModifier = if (selected && palette.hasGlow) {
+        Modifier.drawBehind {
+            drawRoundRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(palette.primary.copy(alpha = 0.42f), Color.Transparent),
+                    radius = size.maxDimension * 0.85f
+                ),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(14.dp.toPx(), 14.dp.toPx())
+            )
+        }
+    } else Modifier
+
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = if (selected) palette.primary.copy(alpha = 0.22f) else palette.surface,
+        color = if (selected) palette.primary.copy(alpha = if (palette.isDark) 0.22f else 0.16f) else palette.surface,
         modifier = modifier
+            .then(glowModifier)
             .heightIn(min = 48.dp)
             .border(
-                width = if (selected) 1.5.dp else 1.dp,
+                width = if (selected) 2.dp else 1.dp,
                 color = if (selected) palette.primary else palette.cardBorder,
                 shape = RoundedCornerShape(12.dp)
             )
@@ -575,8 +591,12 @@ fun PalettePickerBottomSheet(
     val strings = LocalTrainPilotStrings.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val filteredPalettes = remember(selectedCategory) {
-        if (selectedCategory == null) TrainPilotPalettes.allPalettes
-        else TrainPilotPalettes.allPalettes.filter { it.category == selectedCategory }
+        when (selectedCategory) {
+            null, PaletteCategory.ALL -> TrainPilotPalettes.allPalettes
+            PaletteCategory.MATTE, PaletteCategory.CONTRAST, PaletteCategory.GLOW, PaletteCategory.LIGHT ->
+                TrainPilotPalettes.allPalettes.filter { it.subGroup == selectedCategory }
+            else -> TrainPilotPalettes.allPalettes.filter { it.category == selectedCategory }
+        }
     }
 
     ModalBottomSheet(
@@ -714,7 +734,7 @@ fun PalettePickerBottomSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Category Filter: Összes (32) | Basic (16) | Vivid (16)
+            // Category Filter: Összes (32) | Matt (8) | Kontrasztos (8) | Fényes/Glow (8) | Világos (8)
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -722,8 +742,10 @@ fun PalettePickerBottomSheet(
             ) {
                 val cats = listOf(
                     null to "${strings.viewAllAction} (32)",
-                    PaletteCategory.BASIC to "Basic (16)",
-                    PaletteCategory.VIVID to "Vivid (16)"
+                    PaletteCategory.MATTE to "🌑 Matt (8)",
+                    PaletteCategory.CONTRAST to "⚡ Kontrasztos (8)",
+                    PaletteCategory.GLOW to "✨ Fényes / Glow (8)",
+                    PaletteCategory.LIGHT to "☀️ Világos (8)"
                 )
                 cats.forEach { (cat, label) ->
                     val active = selectedCategory == cat
@@ -731,12 +753,17 @@ fun PalettePickerBottomSheet(
                         shape = RoundedCornerShape(20.dp),
                         color = if (active) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
-                            .heightIn(min = 48.dp)
+                            .heightIn(min = 42.dp)
+                            .border(
+                                width = 1.dp,
+                                color = if (active) palette.primary else palette.cardBorder,
+                                shape = RoundedCornerShape(20.dp)
+                            )
                             .clickable { onSelectCategory(cat) }
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
-                            modifier = Modifier.padding(vertical = 10.dp, horizontal = 14.dp)
+                            modifier = Modifier.padding(vertical = 8.dp, horizontal = 12.dp)
                         ) {
                             Text(
                                 text = label,
@@ -777,15 +804,34 @@ private fun PaletteRowCard(
     langCode: String,
     onClick: () -> Unit
 ) {
+    val familyBadge = when (item.subGroup) {
+        PaletteCategory.MATTE -> "Matt sötét felület • Bársonyos színek"
+        PaletteCategory.CONTRAST -> "Magas kontraszt • Mélyfekete & éles keret"
+        PaletteCategory.GLOW -> "✨ Fényes / Neon Glow effekt"
+        PaletteCategory.LIGHT -> "☀️ Világos háttér • Színes keretek"
+        else -> "Prémium téma"
+    }
+    val glowMod = if (item.hasGlow) {
+        Modifier.drawBehind {
+            drawRoundRect(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(item.primary.copy(alpha = 0.25f), item.secondary.copy(alpha = 0.18f))
+                ),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(14.dp.toPx(), 14.dp.toPx())
+            )
+        }
+    } else Modifier
+
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = item.surface,
         modifier = Modifier
             .fillMaxWidth()
+            .then(glowMod)
             .heightIn(min = 48.dp)
             .border(
-                width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) item.primary else item.cardBorder,
+                width = if (isSelected || item.hasGlow) 2.dp else 1.dp,
+                color = if (isSelected) item.primary else if (item.hasGlow) item.primary.copy(alpha = 0.7f) else item.cardBorder,
                 shape = RoundedCornerShape(14.dp)
             )
             .clickable { onClick() }
@@ -802,14 +848,13 @@ private fun PaletteRowCard(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
-                // Swatch circles showing Background, Surface, Primary, and Secondary
                 Row(horizontalArrangement = Arrangement.spacedBy((-6).dp)) {
                     Box(
                         modifier = Modifier
                             .size(26.dp)
                             .clip(CircleShape)
                             .background(item.background)
-                            .border(1.dp, item.cardBorder, CircleShape)
+                            .border(1.5.dp, item.cardBorder, CircleShape)
                     )
                     Box(
                         modifier = Modifier
@@ -831,12 +876,13 @@ private fun PaletteRowCard(
                     Text(
                         text = item.localizedName(langCode),
                         style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
                         color = item.textPrimary
                     )
                     Text(
-                        text = if (item.category == PaletteCategory.BASIC) "Basic • WCAG AA" else "Vivid / Neon • WCAG AA",
+                        text = familyBadge,
                         style = MaterialTheme.typography.bodySmall,
-                        color = item.textSecondary
+                        color = if (item.hasGlow) item.primary else item.textSecondary
                     )
                 }
             }
@@ -1640,14 +1686,49 @@ fun PersonalPlannerModalDialog(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuickWorkoutSheet(
+    exercises: List<ExerciseItem> = emptyList(),
+    queuedExercises: List<ExerciseItem> = emptyList(),
     onStartStrengthQuick: () -> Unit,
+    onStartStrengthWithExercise: (ExerciseItem) -> Unit = { onStartStrengthQuick() },
     onStartTimedQuick: () -> Unit,
+    onStartTimedWithExercise: (ExerciseItem) -> Unit = { onStartTimedQuick() },
+    onStartQueuedWorkout: () -> Unit = { onStartStrengthQuick() },
     onStartOutdoorGps: () -> Unit,
     onBrowseExercises: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
+
+    val strengthList = remember(exercises) {
+        exercises.filter { !it.isTimed }.ifEmpty { exercises }
+    }
+    val timedList = remember(exercises) {
+        val fromCat = exercises.filter { it.isTimed }
+        val extraTimed = listOf(
+            ExerciseItem(id = "timed_plank", nameHu = "Plank (Alkartámasz)", nameEn = "Plank", category = com.example.model.ExerciseCategory.CORE, equipmentHu = "Saját testsúly", primaryMusclesHu = "Törzs / Has", secondaryMusclesHu = "Váll", defaultSets = 3, defaultReps = 1, defaultWeightKg = 0f, defaultRestSec = 60, isTimed = true, targetSeconds = 45),
+            ExerciseItem(id = "timed_side_plank", nameHu = "Oldalsó plank", nameEn = "Side Plank", category = com.example.model.ExerciseCategory.CORE, equipmentHu = "Saját testsúly", primaryMusclesHu = "Oldalsó hasizom", secondaryMusclesHu = "Törzs", defaultSets = 3, defaultReps = 1, defaultWeightKg = 0f, defaultRestSec = 60, isTimed = true, targetSeconds = 40, isBilateral = true),
+            ExerciseItem(id = "timed_wall_sit", nameHu = "Falnál ülés (Wall Sit)", nameEn = "Wall Sit", category = com.example.model.ExerciseCategory.LEGS, equipmentHu = "Saját testsúly", primaryMusclesHu = "Combfeszítő", secondaryMusclesHu = "Farizom", defaultSets = 3, defaultReps = 1, defaultWeightKg = 0f, defaultRestSec = 60, isTimed = true, targetSeconds = 60),
+            ExerciseItem(id = "timed_dead_hang", nameHu = "Függeszkedés rúdon (Dead Hang)", nameEn = "Dead Hang", category = com.example.model.ExerciseCategory.BACK, equipmentHu = "Húzódzkodó rúd", primaryMusclesHu = "Alkar & Hát", secondaryMusclesHu = "Váll", defaultSets = 3, defaultReps = 1, defaultWeightKg = 0f, defaultRestSec = 60, isTimed = true, targetSeconds = 45),
+            ExerciseItem(id = "timed_hollow_hold", nameHu = "Hollow Body tartás", nameEn = "Hollow Hold", category = com.example.model.ExerciseCategory.CORE, equipmentHu = "Saját testsúly", primaryMusclesHu = "Mély hasizom", secondaryMusclesHu = "Csípőhajlító", defaultSets = 3, defaultReps = 1, defaultWeightKg = 0f, defaultRestSec = 60, isTimed = true, targetSeconds = 40),
+            ExerciseItem(id = "timed_lap_run", nameHu = "Kör futás / Intervallum futás", nameEn = "Lap Run", category = com.example.model.ExerciseCategory.LEGS, equipmentHu = "Szabadtér / Futópálya", primaryMusclesHu = "Láb & Kardió", secondaryMusclesHu = "Törzs", defaultSets = 4, defaultReps = 1, defaultWeightKg = 0f, defaultRestSec = 60, isTimed = true, targetSeconds = 90)
+        )
+        (fromCat + extraTimed).distinctBy { it.nameHu }
+    }
+
+    var selectedStrengthEx by remember(strengthList) {
+        mutableStateOf(
+            strengthList.firstOrNull { it.nameHu.contains("Fekvenyomás", ignoreCase = true) }
+                ?: strengthList.firstOrNull()
+        )
+    }
+    var strengthDropdownOpen by remember { mutableStateOf(false) }
+
+    var selectedTimedEx by remember(timedList) {
+        mutableStateOf(timedList.firstOrNull())
+    }
+    var timedDropdownOpen by remember { mutableStateOf(false) }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = palette.surface,
@@ -1670,43 +1751,310 @@ fun QuickWorkoutSheet(
                     Text(
                         text = strings.quickWorkoutTitle,
                         style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
                         color = palette.textPrimary
                     )
                     Text(
-                        text = strings.quickWorkoutSub,
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = "Válassz gyakorlatot a listából vagy nyisd meg a teljes Gyakorlatkönyvtárat!",
+                        style = MaterialTheme.typography.bodySmall,
                         color = palette.textSecondary
                     )
                 }
                 TrainPilotRedCloseButton(onClick = onDismiss)
             }
 
+            // If user added exercises from ExerciseLibraryScreen, show immediate launch card at the top!
+            if (queuedExercises.isNotEmpty()) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = palette.primary.copy(alpha = 0.16f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "Kiválasztott edzésterv / gyakorlatok (${queuedExercises.size} db):",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = palette.primary
+                        )
+                        Text(
+                            text = queuedExercises.joinToString(" → ") { it.nameHu },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = palette.textPrimary
+                        )
+                        Button(
+                            onClick = onStartQueuedWorkout,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = palette.primary,
+                                contentColor = palette.onPrimary
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("▶ Kiválasztott gyakorlatok indítása most", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            // 1. Browse Full Exercise Library (106+ exercises) — placed prominently first!
             QuickOptionRow(
-                icon = Icons.Default.FitnessCenter,
-                title = strings.modeStrengthLabel,
-                subtitle = "Goblet guggolás, Fekvőtámasz, Evezés",
-                demoExerciseForVideo = "Goblet guggolás",
-                onClick = onStartStrengthQuick
+                icon = Icons.AutoMirrored.Filled.DirectionsRun,
+                title = "${strings.exercisePickerTitle} (${exercises.size.coerceAtLeast(106)} gyakorlat)",
+                subtitle = "Bármely gyakorlat kiválasztása, hozzáadása és azonnali indítása",
+                onClick = onBrowseExercises
             )
-            QuickOptionRow(
-                icon = Icons.Default.Timer,
-                title = "${strings.modeTimedLabel} / ${strings.modeIntervalsLabel}",
-                subtitle = "Plank, Oldalsó plank",
-                demoExerciseForVideo = "Plank",
-                onClick = onStartTimedQuick
-            )
+
+            HorizontalDivider(color = palette.cardBorder)
+
+            // 2. Súlyzós gyors edzés with floating exercise selector dropdown
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = palette.surfaceElevated,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            ExercisePostureMiniIllustration(
+                                exerciseName = selectedStrengthEx?.nameHu ?: "Fekvenyomás",
+                                size = 42.dp
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = strings.modeStrengthLabel,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.textPrimary
+                                )
+                                Text(
+                                    text = "Válaszd ki az indítandó gyakorlatot:",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = palette.textSecondary
+                                )
+                            }
+                        }
+                        SmallExerciseVideoButton(
+                            exerciseName = selectedStrengthEx?.nameHu ?: "Fekvenyomás"
+                        )
+                    }
+
+                    // Floating Dropdown to pick any strength exercise
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = palette.surface,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { strengthDropdownOpen = true }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = selectedStrengthEx?.let { "${it.nameHu} (${it.category.labelHu})" } ?: "Válassz gyakorlatot...",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.textPrimary,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Text("▼ Váltás", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = palette.primary)
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = strengthDropdownOpen,
+                            onDismissRequest = { strengthDropdownOpen = false },
+                            containerColor = palette.surface,
+                            modifier = Modifier
+                                .widthIn(min = 260.dp, max = 340.dp)
+                                .heightIn(max = 280.dp)
+                        ) {
+                            strengthList.take(40).forEach { ex ->
+                                val isSel = ex.id == selectedStrengthEx?.id
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = "${ex.nameHu} • ${ex.category.labelHu}",
+                                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (isSel) palette.primary else palette.textPrimary
+                                        )
+                                    },
+                                    onClick = {
+                                        selectedStrengthEx = ex
+                                        strengthDropdownOpen = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Button(
+                        onClick = {
+                            val chosen = selectedStrengthEx
+                            if (chosen != null) onStartStrengthWithExercise(chosen) else onStartStrengthQuick()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = palette.primary,
+                            contentColor = palette.onPrimary
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "▶ Indítás: ${selectedStrengthEx?.nameHu ?: strings.modeStrengthLabel}",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            // 3. Időalapú / Intervallum gyors edzés with floating timed exercise selector dropdown
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = palette.surfaceElevated,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            ExercisePostureMiniIllustration(
+                                exerciseName = selectedTimedEx?.nameHu ?: "Plank",
+                                size = 42.dp
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "${strings.modeTimedLabel} / ${strings.modeIntervalsLabel}",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.textPrimary
+                                )
+                                Text(
+                                    text = "Válassz időalapú gyakorlatot (nem csak Plank):",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = palette.textSecondary
+                                )
+                            }
+                        }
+                        SmallExerciseVideoButton(
+                            exerciseName = selectedTimedEx?.nameHu ?: "Plank"
+                        )
+                    }
+
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = palette.surface,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { timedDropdownOpen = true }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = selectedTimedEx?.let { "${it.nameHu} (${it.targetSeconds} mp)" } ?: "Plank",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.textPrimary,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Text("▼ Váltás", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = palette.primary)
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = timedDropdownOpen,
+                            onDismissRequest = { timedDropdownOpen = false },
+                            containerColor = palette.surface,
+                            modifier = Modifier
+                                .widthIn(min = 260.dp, max = 340.dp)
+                                .heightIn(max = 260.dp)
+                        ) {
+                            timedList.forEach { ex ->
+                                val isSel = ex.id == selectedTimedEx?.id
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = "${ex.nameHu} (${ex.targetSeconds} mp)",
+                                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (isSel) palette.primary else palette.textPrimary
+                                        )
+                                    },
+                                    onClick = {
+                                        selectedTimedEx = ex
+                                        timedDropdownOpen = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Button(
+                        onClick = {
+                            val chosen = selectedTimedEx
+                            if (chosen != null) onStartTimedWithExercise(chosen) else onStartTimedQuick()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = palette.primary,
+                            contentColor = palette.onPrimary
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "▶ Indítás: ${selectedTimedEx?.nameHu ?: "Időalapú edzés"}",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            // 4. Szabadtéri GPS edzés
             QuickOptionRow(
                 icon = Icons.Default.Park,
                 title = strings.outdoorWorkoutTitle,
                 subtitle = strings.outdoorWorkoutSub,
                 onClick = onStartOutdoorGps
-            )
-            HorizontalDivider(color = palette.cardBorder)
-            QuickOptionRow(
-                icon = Icons.AutoMirrored.Filled.DirectionsRun,
-                title = strings.exercisePickerTitle,
-                subtitle = strings.exercisePickerSub,
-                onClick = onBrowseExercises
             )
         }
     }
