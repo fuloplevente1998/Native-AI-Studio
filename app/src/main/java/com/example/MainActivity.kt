@@ -618,7 +618,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onSelectMeasurementMode = { mode -> viewModel.navigateToSubScreen(mode, MainTab.WORKOUT) },
                             onUpdateOutdoorMetrics = { elapsed, dist, pace ->
                                 viewModel.updateOutdoorWorkoutMetrics(elapsed, dist, pace)
-                            }
+                            },
+                            onTrackingStarted = { viewModel.markOutdoorTrackingStarted() }
                         )
                     }
 
