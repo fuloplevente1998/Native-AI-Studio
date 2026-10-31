@@ -2984,7 +2984,8 @@ fun ActiveOutdoorGpsScreen(
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
     onSelectMeasurementMode: (SubScreen) -> Unit,
-    onUpdateOutdoorMetrics: (String, Float, String) -> Unit = { _, _, _ -> }
+    onUpdateOutdoorMetrics: (String, Float, String) -> Unit = { _, _, _ -> },
+    onTrackingStarted: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val context = LocalContext.current
@@ -3043,11 +3044,16 @@ fun ActiveOutdoorGpsScreen(
             .putExtra("key", routeOwnerKey)
             .putExtra("language", uiState.language.code.lowercase())
             .putExtra("name", "Futás")
-        runCatching {
+        val result = runCatching {
             ContextCompat.startForegroundService(context, intent)
         }
-        isStarted = true
-        isPaused = false
+        if (result.isSuccess) {
+            onTrackingStarted()
+            isStarted = true
+            isPaused = false
+        } else {
+            serviceErrorMsg = "A GPS-szolgáltatás nem indult: ${result.exceptionOrNull()?.localizedMessage ?: "ismeretlen hiba"}"
+        }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -3477,6 +3483,7 @@ fun ActiveOutdoorGpsScreen(
                                     }
                                 } else {
                                     // Beltéri időmérés GPS nélkül
+                                    onTrackingStarted()
                                     isStarted = true
                                     isPaused = false
                                 }
