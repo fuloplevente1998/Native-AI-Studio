@@ -933,7 +933,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onTriggerHealthSync = { viewModel.triggerHealthSyncNow() },
                                     onNavigateToSubScreen = { viewModel.navigateToSubScreen(it) },
                                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
-                                    onOpenGoalsDialog = { viewModel.toggleGoalsDialog(true) }
+                                    onOpenGoalsDialog = { viewModel.toggleGoalsDialog(true) },
+                                    onDeleteWeightLog = { id -> viewModel.deleteBodyWeightLog(id) }
                                 )
                             }
                         }
