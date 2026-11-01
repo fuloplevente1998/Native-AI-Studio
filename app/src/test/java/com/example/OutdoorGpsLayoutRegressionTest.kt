@@ -71,7 +71,7 @@ class OutdoorGpsLayoutRegressionTest {
             assertTrue("$tag right edge", bounds.right <= viewport.right)
             assertTrue("$tag top edge", bounds.top >= viewport.top)
             assertTrue("$tag bottom edge", bounds.bottom <= viewport.bottom - bottomInset.dp)
-            assertTrue("$tag touch height", bounds.height >= 48.dp)
+            assertTrue("$tag touch height", bounds.bottom - bounds.top >= 48.dp)
         }
     }
 

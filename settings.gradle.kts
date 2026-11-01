@@ -24,4 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "TrainPilot"
 
-include(":app")
+include(":app", ":shared", ":wear")

@@ -688,7 +688,7 @@ object WearSyncRepository {
     /**
      * Opens the watch app remotely to start sensor measurement for the active phone workout.
      */
-    suspend fun startWatchMeasurementRemotely(activity: Activity, workoutId: String): Result<Boolean> =
+    suspend fun startWatchMeasurementRemotely(activity: Activity, workoutId: String, requestOwnership: Boolean = false): Result<Boolean> =
         withContext(Dispatchers.Main) {
             val requestedAt = SystemClock.elapsedRealtime()
             try {
@@ -716,6 +716,7 @@ object WearSyncRepository {
                     .path("/start-measurement")
                     .appendQueryParameter("workoutId", workoutId)
                     .appendQueryParameter("revision", current.optLong("revision", 0L).toString())
+                    .apply { if (requestOwnership) appendQueryParameter("ownership", "watch") }
                     .build()
                 val intent = Intent(Intent.ACTION_VIEW).setData(uri).addCategory(Intent.CATEGORY_BROWSABLE)
                 val task = RemoteActivityHelper(activity, ContextCompat.getMainExecutor(activity))

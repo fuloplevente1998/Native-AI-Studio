@@ -30,6 +30,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.launch
 import android.content.Context
 import androidx.compose.ui.graphics.toArgb
@@ -108,6 +110,7 @@ data class TrainPilotUiState(
     // Watch & Sync State (Mockup 4/4 #2 + main)
     val watchName: String = "Wear OS óra",
     val watchConnected: Boolean = false,
+    val watchAppAvailable: Boolean = false,
     val watchBatteryPercent: Int = -1,
     val phoneControlsWorkout: Boolean = true,
     val watchControlPending: Boolean = false,
@@ -895,7 +898,10 @@ class TrainPilotViewModel : ViewModel() {
                         }
                     }
                     val selected = state.activeWorkoutExercises.getOrNull(state.activeExerciseIndex)?.id
-                    state.copy(activeSetsByExerciseId = state.activeSetsByExerciseId + nativeSets,
+                    state.copy(phoneControlsWorkout = frame.optString("timerOwner", "phone") == "phone" &&
+                            !com.repforge.shared.WorkoutOwnership193.pending(frame),
+                        watchControlPending = com.repforge.shared.WorkoutOwnership193.pending(frame),
+                        activeSetsByExerciseId = state.activeSetsByExerciseId + nativeSets,
                         activeSets = nativeSets[selected] ?: state.activeSets)
                 }
             }
@@ -3316,129 +3322,66 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     // Watch, Settings, Backup & Permissions Actions (P0-04: real Wear OS node & ACK check)
-    fun toggleWatchControlMode() {
-        val ctx = nativeContext
-        val scope = nativeScope
-        if (ctx == null || scope == null) {
-            _uiState.update { it.copy(statusBannerMessage = "A Wear OS szolgáltatás jelenleg nem elérhető.") }
-            return
-        }
-        scope.launch(Dispatchers.IO) {
+    fun toggleWatchControlMode(activity: android.app.Activity? = null) {
+        val ctx = nativeContext ?: return
+        val scope = nativeScope ?: return
+        if (_uiState.value.watchControlPending || _uiState.value.isSavingWorkout) return
+        scope.launch(Dispatchers.Main.immediate) {
+            val active = ActiveWorkoutStore.current(ctx)?.takeIf { it.optBoolean("active") }
+            if (active == null) { showBannerMessage("Nincs átadható aktív edzés."); return@launch }
+            val id = active.optString("workoutId")
+            _uiState.update { it.copy(watchControlPending = true, statusBannerMessage = "Óra kapcsolat és tulajdonosi ACK ellenőrzése…") }
             try {
-                val active = ActiveWorkoutStore.current(ctx)
-                if (active == null || !active.optBoolean("active", false)) {
-                    withContext(Dispatchers.Main) {
-                        _uiState.update {
-                            it.copy(
-                                phoneControlsWorkout = true,
-                                watchControlPending = false,
-                                statusBannerMessage = "Nincs aktív edzés folyamatban az órára történő átadáshoz."
-                            )
-                        }
-                    }
-                    return@launch
+                val nodes = kotlinx.coroutines.withTimeout(5_000) {
+                    com.google.android.gms.wearable.Wearable.getNodeClient(ctx).connectedNodes.await()
                 }
-                val currentOwner = active.optString("timerOwner", "phone")
-                if (currentOwner == "phone") {
-                    withContext(Dispatchers.Main) {
-                        _uiState.update {
-                            it.copy(
-                                watchControlPending = true,
-                                statusBannerMessage = "Csatlakoztatott Wear OS óra és ACK ellenőrzése..."
-                            )
-                        }
+                check(nodes.size == 1) { if (nodes.isEmpty()) "Nincs csatlakoztatott óra; a tulajdonos változatlan." else "Több óra csatlakozik; nem egyértelmű az átadás célja." }
+                check(kotlinx.coroutines.withTimeout(5_000) {
+                    com.repforge.app.NativeWearCompanion.reachable(ctx, nodes.single().id)
+                }) { "A TrainPilot Wear OS alkalmazás nem érhető el. Telepítsd a telefonos APK-val párosított óraalkalmazást." }
+                if (active.optString("timerOwner", "phone") == "phone") {
+                    check(!com.repforge.app.DistanceTrackingService.snapshot(ctx).optBoolean("active")) {
+                        "Aktív GPS-mérés közben nem adható át a vezérlés. Előbb fejezd be a GPS-mérést."
                     }
-                    // Check real connected Wear OS nodes via Wearable NodeClient
-                    val connectedNodes = runCatching {
-                        com.google.android.gms.tasks.Tasks.await(
-                            com.google.android.gms.wearable.Wearable.getNodeClient(ctx).connectedNodes,
-                            3,
-                            java.util.concurrent.TimeUnit.SECONDS
-                        )
-                    }.getOrNull().orEmpty()
-
-                    if (connectedNodes.isEmpty()) {
-                        withContext(Dispatchers.Main) {
-                            _uiState.update {
-                                it.copy(
-                                    watchConnected = false,
-                                    phoneControlsWorkout = true,
-                                    watchControlPending = false,
-                                    lastWatchSyncLabel = "Nincs óra kapcsolat",
-                                    statusBannerMessage = "Nincs csatlakoztatott Wear OS óra (nincs ACK). Az edzésvezérlés a telefonon marad."
-                                )
-                            }
-                        }
-                        return@launch
+                    checkNotNull(activity) { "Az óra indításához látható telefonos felület szükséges." }
+                    kotlinx.coroutines.withTimeout(15_000) {
+                        WearSyncRepository.startWatchMeasurementRemotely(activity, id, requestOwnership = true).getOrThrow()
                     }
-
-                    WearSyncRepository.publishActiveWorkoutSnapshot(ctx, active)
-                    WearSyncRepository.publishWatchHomeSnapshot(ctx)
-
-                    // Verify if watch actually acknowledged and took ownership in ActiveWorkoutStore
-                    val refreshed = ActiveWorkoutStore.current(ctx)
-                    val ackedByWatch = refreshed?.optString("timerOwner") == "watch"
-                    withContext(Dispatchers.Main) {
-                        _uiState.update {
-                            if (ackedByWatch) {
-                                it.copy(
-                                    watchConnected = true,
-                                    watchName = connectedNodes.first().displayName.ifBlank { it.watchName },
-                                    phoneControlsWorkout = false,
-                                    watchControlPending = false,
-                                    lastWatchSyncLabel = "Átadva az órára (ACK ✓)",
-                                    statusBannerMessage = "Az óra visszaigazolta (ACK) az átadást."
-                                )
-                            } else {
-                                it.copy(
-                                    watchConnected = true,
-                                    watchName = connectedNodes.first().displayName.ifBlank { it.watchName },
-                                    phoneControlsWorkout = true,
-                                    watchControlPending = false,
-                                    lastWatchSyncLabel = "Várakozás óra ACK-ra",
-                                    statusBannerMessage = "Snapshot elküldve (${connectedNodes.first().displayName}), de még nem érkezett óra ACK – a telefon marad a vezérlő."
-                                )
-                            }
-                        }
+                    // Remote activity launch is a request, not an ownership receipt.
+                    kotlinx.coroutines.withTimeout(32_000) {
+                        ActiveWorkoutStore.snapshotFlow.first { frame -> frame?.optString("workoutId") == id &&
+                            frame.optString("timerOwner") == "watch" && !com.repforge.shared.WorkoutOwnership193.pending(frame) }
                     }
                 } else {
-                    withContext(Dispatchers.Main) {
-                        _uiState.update {
-                            it.copy(
-                                watchControlPending = true,
-                                statusBannerMessage = "Edzésvezérlés visszakérése a telefonra..."
-                            )
-                        }
+                    val local = com.google.android.gms.wearable.Wearable.getNodeClient(ctx).localNode.await()
+                    val journal = PhoneOwnership193.journal(ctx)
+                    journal.recover()
+                    journal.request(local.id, nodes.single().id, System.currentTimeMillis())
+                    com.repforge.shared.OwnershipTransport193.send(ctx, journal)
+                    kotlinx.coroutines.withTimeout(32_000) {
+                        ActiveWorkoutStore.snapshotFlow.first { frame -> frame?.optString("workoutId") == id &&
+                            frame.optString("timerOwner") == "phone" && !com.repforge.shared.WorkoutOwnership193.pending(frame) }
                     }
-                    runCatching {
-                        PhoneOwnership193.journal(ctx).recover()
-                        val resume = PhoneOwnership193.prepareResume(ctx)
-                        val reqId = resume.optJSONObject("snapshot")?.optJSONObject("ownershipImport193")?.optString("id") ?: ""
-                        val epoch = resume.optJSONObject("snapshot")?.optLong("ownerEpoch193") ?: 0L
-                        PhoneOwnership193.installResume(ctx, reqId, epoch)
-                    }
-                    val afterResume = ActiveWorkoutStore.current(ctx)
-                    val phoneOwnedNow = afterResume == null || afterResume.optString("timerOwner", "phone") == "phone"
-                    withContext(Dispatchers.Main) {
-                        _uiState.update {
-                            it.copy(
-                                phoneControlsWorkout = phoneOwnedNow,
-                                watchControlPending = false,
-                                lastWatchSyncLabel = if (phoneOwnedNow) "Telefon vezérel" else "Óra vezérel",
-                                statusBannerMessage = if (phoneOwnedNow) "Edzésvezérlés visszavéve a telefonra." else "Nem sikerült visszavenni a vezérlést az óráról."
-                            )
-                        }
-                    }
+                    val resume = PhoneOwnership193.prepareResume(ctx)
+                    val returned = resume.getJSONObject("snapshot")
+                    PhoneOwnership193.installResume(ctx, returned.getJSONObject("ownershipImport193").getString("id"),
+                        returned.getLong("ownerEpoch193"))
                 }
-            } catch (e: Throwable) {
-                withContext(Dispatchers.Main) {
-                    _uiState.update {
-                        it.copy(
-                            watchControlPending = false,
-                            statusBannerMessage = "Hiba az óra átadásakor: ${e.localizedMessage ?: "kapcsolati hiba"}"
-                        )
-                    }
-                }
+                val current = checkNotNull(ActiveWorkoutStore.current(ctx))
+                check(current.optString("workoutId") == id && !com.repforge.shared.WorkoutOwnership193.pending(current))
+                _uiState.update { it.copy(watchConnected = true, watchName = nodes.single().displayName,
+                    phoneControlsWorkout = current.optString("timerOwner", "phone") == "phone",
+                    lastWatchSyncLabel = "Tulajdonosi ACK igazolva", statusBannerMessage = "Az edzésvezérlés átadása visszaigazolva; az edzés szünetel, explicit Folytatás szükséges.") }
+            } catch (error: Exception) {
+                if (error is kotlinx.coroutines.CancellationException && error !is kotlinx.coroutines.TimeoutCancellationException) throw error
+                runCatching { PhoneOwnership193.journal(ctx).recover() }
+                showBannerMessage(error.message ?: "Nem érkezett igazolt tulajdonosi ACK.")
+            } finally {
+                val current = ActiveWorkoutStore.current(ctx)
+                val pending = current != null && com.repforge.shared.WorkoutOwnership193.pending(current)
+                _uiState.update { it.copy(watchControlPending = pending,
+                    phoneControlsWorkout = current?.optString("timerOwner", "phone") == "phone" && !pending,
+                    lastWatchSyncLabel = if (pending) "Átadás függőben; vezérlés zárolva" else it.lastWatchSyncLabel) }
             }
         }
     }
@@ -3610,11 +3553,12 @@ class TrainPilotViewModel : ViewModel() {
         _uiState.update { it.copy(includeHealthInBackup = include) }
     }
 
-    fun updatePlatformAccess(access: JSONObject, watchNames: List<String>) {
+    fun updatePlatformAccess(access: JSONObject, watchNames: List<String>, companionAvailable: Boolean = false) {
         _uiState.update { it.copy(permissionGpsEnabled = access.optBoolean("gps"),
             permissionCentralLocEnabled = access.optBoolean("location"), permissionNotificationsEnabled = access.optBoolean("notifications"),
             permissionHealthConnectEnabled = access.optInt("healthGranted") > 0,
             healthGrantedCount = access.optInt("healthGranted"), healthPermissionCount = access.optInt("healthTotal"),
+            watchAppAvailable = companionAvailable && watchNames.size == 1,
             watchConnected = watchNames.isNotEmpty(), watchName = watchNames.firstOrNull() ?: "Nincs csatlakoztatott Wear OS óra",
             watchBatteryPercent = -1,
             lastWatchSyncLabel = if (watchNames.isEmpty()) "Nincs órakapcsolat"

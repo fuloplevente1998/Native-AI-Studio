@@ -2724,7 +2724,7 @@ fun WatchAndSyncScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        if (uiState.watchConnected) MockupWatchGraphicBadge(size = 64.dp)
+                        if (uiState.watchAppAvailable) MockupWatchGraphicBadge(size = 64.dp)
                         else Icon(Icons.Default.Watch, contentDescription = null, tint = palette.textSecondary, modifier = Modifier.size(64.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
@@ -2734,15 +2734,16 @@ fun WatchAndSyncScreen(
                                 color = palette.textPrimary
                             )
                             Spacer(modifier = Modifier.height(2.dp))
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(
-                                    text = if (uiState.watchConnected) "● Wear OS adatkapcsolat elérhető" else "Nincs órakapcsolat",
+                                    text = when {
+                                        uiState.watchAppAvailable -> "● TrainPilot Wear elérhető"
+                                        uiState.watchConnected -> "Wear OS elérhető • TrainPilot Wear még nem igazolt"
+                                        else -> "Nincs órakapcsolat"
+                                    },
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (uiState.watchConnected) palette.success else palette.textSecondary
+                                    color = if (uiState.watchAppAvailable) palette.success else if (uiState.watchConnected) palette.warning else palette.textSecondary
                                 )
                                 Text(
                                     text = "Akkumulátor: " + if (uiState.watchBatteryPercent >= 0) "${uiState.watchBatteryPercent}%" else "—",
@@ -2787,7 +2788,7 @@ fun WatchAndSyncScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        val phoneSelected = uiState.phoneControlsWorkout
+                        val phoneSelected = uiState.phoneControlsWorkout && !uiState.watchControlPending
                         Surface(
                             shape = RoundedCornerShape(16.dp),
                             color = if (phoneSelected) palette.primary.copy(alpha = 0.16f) else palette.surfaceElevated,
@@ -2800,7 +2801,7 @@ fun WatchAndSyncScreen(
                                 )
                                 .clip(RoundedCornerShape(16.dp))
                                 .clickable {
-                                    if (!phoneSelected) onToggleControlMode()
+                                    if (!phoneSelected && !uiState.watchControlPending) onToggleControlMode()
                                 }
                                 .testTag("watch_mode_phone_card")
                         ) {
@@ -2836,7 +2837,7 @@ fun WatchAndSyncScreen(
                             }
                         }
 
-                        val watchSelected = !uiState.phoneControlsWorkout
+                        val watchSelected = !uiState.phoneControlsWorkout && !uiState.watchControlPending
                         Surface(
                             shape = RoundedCornerShape(16.dp),
                             color = if (watchSelected) palette.primary.copy(alpha = 0.16f) else palette.surfaceElevated,
@@ -2849,7 +2850,7 @@ fun WatchAndSyncScreen(
                                 )
                                 .clip(RoundedCornerShape(16.dp))
                                 .clickable {
-                                    if (!watchSelected) onToggleControlMode()
+                                    if (!watchSelected && !uiState.watchControlPending) onToggleControlMode()
                                 }
                                 .testTag("watch_mode_watch_card")
                         ) {
@@ -2888,6 +2889,7 @@ fun WatchAndSyncScreen(
 
                     Button(
                         onClick = onToggleControlMode,
+                        enabled = uiState.watchAppAvailable && !uiState.watchControlPending && !uiState.isSavingWorkout,
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = palette.primary,
@@ -2905,12 +2907,16 @@ fun WatchAndSyncScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (uiState.phoneControlsWorkout) strings.handoverToWatchAction else strings.reclaimToPhoneAction,
+                            text = if (uiState.watchControlPending) "Óra ACK-ra vár…"
+                                else if (uiState.phoneControlsWorkout) strings.handoverToWatchAction else strings.reclaimToPhoneAction,
                             fontWeight = FontWeight.Bold
                         )
                     }
 
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if (!uiState.watchAppAvailable) Text(
+                            "Az órára a párosított TrainPilot Wear OS alkalmazást telepítsd; a Galaxy Wearable önmagában nem elég.",
+                            style = MaterialTheme.typography.bodySmall, color = palette.warning)
                         Text(
                             text = "• A pulzus és edzésadatok szinkronja órakapcsolatot és külön visszaigazolást igényel",
                             style = MaterialTheme.typography.bodySmall,

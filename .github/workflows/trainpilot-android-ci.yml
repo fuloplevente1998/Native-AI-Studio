@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'app/**'
+      - 'wear/**'
+      - 'shared/**'
       - 'gradle/**'
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
@@ -25,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
+      TRAINPILOT_REQUIRE_WEAR_PAIR: "true"
       TRAINPILOT_MAPS_API_KEY: ${{ secrets.TRAINPILOT_MAPS_API_KEY || secrets.MAPS_API_KEY }}
     steps:
       - name: Checkout
@@ -62,7 +65,7 @@ jobs:
 
       - name: Build debug APK and run JVM tests
         shell: bash
-        run: gradle --no-daemon --stacktrace --continue :app:assembleDebug :app:testDebugUnitTest
+        run: gradle --no-daemon --stacktrace --continue :app:assembleDebug :app:testDebugUnitTest :wear:assembleDebug :wear:testDebugUnitTest :shared:testDebugUnitTest
 
       - name: Report Maps configuration and APK signer without exposing the key
         if: always()
@@ -87,6 +90,15 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+      - name: Upload paired Wear debug APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trainpilot-wear-debug-ci-apk
+          path: wear/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Upload unit test reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -95,5 +107,9 @@ jobs:
           path: |
             app/build/reports/tests/
             app/build/test-results/
+            wear/build/reports/tests/
+            wear/build/test-results/
+            shared/build/reports/tests/
+            shared/build/test-results/
           if-no-files-found: ignore
           retention-days: 7

@@ -56,7 +56,13 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                 if (error is CancellationException && error !is TimeoutCancellationException) throw error
                 emptyList()
             }
-        model.updatePlatformAccess(StudioPlatformAccess.snapshot(context), nodes.map { it.displayName })
+        val companion = if (nodes.size == 1) runCatching {
+            withTimeout(3_000) { com.repforge.app.NativeWearCompanion.reachable(context, nodes.single().id) }
+        }.getOrElse { error ->
+            if (error is CancellationException && error !is TimeoutCancellationException) throw error
+            false
+        } else false
+        model.updatePlatformAccess(StudioPlatformAccess.snapshot(context), nodes.map { it.displayName }, companion)
     }
     suspend fun refreshSamsung() {
         if (!SamsungHealthRepository.isInstalled(context) || !SamsungHealthRepository.isSdkAvailable()) {
