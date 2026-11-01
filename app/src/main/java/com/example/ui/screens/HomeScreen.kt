@@ -417,7 +417,8 @@ fun HomeScreen(
                     )
                     Text(
                         text = if (state.watchConnected) {
-                            strings.connectedWithBattery(state.watchBatteryPercent)
+                            if (state.watchBatteryPercent in 0..100) strings.connectedWithBattery(state.watchBatteryPercent)
+                            else "Csatlakoztatva • töltöttség nem érhető el"
                         } else {
                             "Offline"
                         },
@@ -450,7 +451,7 @@ fun HomeScreen(
                 iconTint = palette.sleepAccent,
                 title = strings.sleepTitle,
                 mainValue = state.sleepDurationLabel,
-                statusText = strings.sleepQualityGood,
+                statusText = if (state.sleepDurationLabel == "—") "Nincs alvásadat" else "Rögzített alvásidő",
                 statusColor = palette.success,
                 onClick = {
                     expandedHomeVitalKey = if (expandedHomeVitalKey == "sleep") null else "sleep"
@@ -465,8 +466,8 @@ fun HomeScreen(
                 icon = Icons.Default.Favorite,
                 iconTint = palette.heartAccent,
                 title = strings.restingHrTitle,
-                mainValue = "${state.restingHrBpm} bpm",
-                statusText = strings.restingHrNormal,
+                mainValue = if (state.restingHrBpm > 0) "${state.restingHrBpm} bpm" else "— bpm",
+                statusText = if (state.restingHrBpm > 0) "Rögzített pulzusérték" else "Nincs mérés",
                 statusColor = palette.success,
                 onClick = {
                     expandedHomeVitalKey = if (expandedHomeVitalKey == "hr") null else "hr"
@@ -506,12 +507,12 @@ fun HomeScreen(
                 icon = Icons.Default.Eco,
                 iconTint = palette.energyAccent,
                 title = strings.samsungEnergyTitle,
-                mainValue = "${state.samsungEnergyScore} / 100",
-                statusText = strings.energyGoodState,
+                mainValue = if (state.samsungEnergyScore > 0) "${state.samsungEnergyScore} / 100" else "— / 100",
+                statusText = if (state.samsungEnergyScore > 0) "Rögzített energiaérték" else "Nincs elérhető adat",
                 statusColor = if (state.samsungEnergyScore >= 75) palette.success else palette.warning,
                 progressFraction = energyProgress,
                 progressColor = palette.energyAccent,
-                footerCaption = strings.sourceSamsungHealth,
+                footerCaption = if (state.samsungEnergyScore > 0) strings.sourceSamsungHealth else "Forrásadat nem érhető el",
                 onClick = {
                     expandedHomeVitalKey = if (expandedHomeVitalKey == "energy") null else "energy"
                 }
@@ -535,12 +536,12 @@ fun HomeScreen(
                 ) {
                     val (headerTitle, accentColor, summaryRows, targetActionLabel, onJumpTarget) = when (activeKey) {
                         "hr" -> Quintuple(
-                            "Nyugalmi & napi pulzus • ${state.restingHrBpm} bpm",
+                            "Nyugalmi & napi pulzus • ${if (state.restingHrBpm > 0) "${state.restingHrBpm} bpm" else "—"}",
                             palette.heartAccent,
                             listOf(
-                                "Mai nyugalmi pulzus" to "${state.restingHrBpm} bpm (Normális)",
-                                "Aktuális / utolsó mérés" to "${if (state.currentHrBpm > 0) state.currentHrBpm else state.restingHrBpm + 8} bpm",
-                                "7 napos tartomány" to "58 – 146 bpm (Galaxy Watch7)"
+                                "Mai nyugalmi pulzus" to if (state.restingHrBpm > 0) "${state.restingHrBpm} bpm" else "Nincs mérés",
+                                "Aktuális / utolsó mérés" to if (state.currentHrBpm > 0) "${state.currentHrBpm} bpm" else "Nincs mérés",
+                                "7 napos tartomány" to "Nincs ellenőrzött 7 napos összesítés"
                             ),
                             "Ugrás a 24 órás Pulzustrendhez >",
                             onOpenHealthHeart
@@ -550,19 +551,21 @@ fun HomeScreen(
                             palette.stepsAccent,
                             listOf(
                                 "Mai teljesítés" to "${formatThousand(state.dailySteps)} / ${formatThousand(state.stepsGoal)} (${(stepsProgress * 100).toInt()}%)",
-                                "Becsült távolság & kalória" to "${"%.1f".format(state.dailySteps * 0.00075f)} km • ${(state.dailySteps * 0.04f).toInt()} kcal",
-                                "Adatforrás" to "Health Connect + Galaxy Watch7"
+                                "Távolság és kalória" to "Edzéshez kötött mérés nem érhető el",
+                                "Adatforrás" to "Az Egészségnaplóban ellenőrizhető"
                             ),
                             "Ugrás az Egészségnapló lépéseihez >",
                             onOpenHealthSteps
                         )
                         "energy" -> Quintuple(
-                            "Samsung Energia & Készenlét • ${state.samsungEnergyScore}/100",
+                            "Samsung Energia & Készenlét • ${if (state.samsungEnergyScore > 0) "${state.samsungEnergyScore}/100" else "Nincs adat"}",
                             palette.energyAccent,
                             listOf(
-                                "Energia pontszám" to "${state.samsungEnergyScore} / 100 (Jó állapot)",
-                                "TrainPilot Coach készenlét" to "${state.coachReadinessScore} / 100",
-                                "Javasolt mai terhelés" to if (state.samsungEnergyScore >= 70) "Teljes terhelés • 1–2 RIR" else "Könnyített regeneráló nap"
+                                "Energia pontszám" to if (state.samsungEnergyScore > 0) "${state.samsungEnergyScore} / 100" else "Nincs mérés",
+                                "TrainPilot Coach készenlét" to if (state.coachReadinessScore > 0) "${state.coachReadinessScore} / 100" else "Nincs adat",
+                                "Javasolt mai terhelés" to if (state.samsungEnergyScore > 0) {
+                                    if (state.samsungEnergyScore >= 70) "Teljes terhelés • 1–2 RIR" else "Könnyített regeneráló nap"
+                                } else "Nincs megbízható mérés"
                             ),
                             "Ugrás a TrainPilot Coach elemzéshez >",
                             onOpenCoachReadiness
@@ -572,8 +575,8 @@ fun HomeScreen(
                             palette.sleepAccent,
                             listOf(
                                 "Mai alvásidő" to "${state.sleepDurationLabel} (${state.sleepHoursDecimal})",
-                                "Mélyalvás & REM arány" to "Mély: 1 ó 45 p • REM: 1 ó 50 p",
-                                "Éjszakai regeneráció" to "Jó minőség • Nyugalmi HR: ${state.restingHrBpm} bpm"
+                                "Mélyalvás & REM arány" to "Nincs ellenőrzött alvásfázis-adat",
+                                "Éjszakai regeneráció" to if (state.restingHrBpm > 0) "Nyugalmi pulzus: ${state.restingHrBpm} bpm" else "Nincs mérés"
                             ),
                             "Ugrás az Egészség alvásnaplóhoz >",
                             onOpenHealthSleep

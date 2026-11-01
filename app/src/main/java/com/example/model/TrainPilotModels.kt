@@ -77,7 +77,8 @@ data class ExerciseSetItem(
     val leftSec: Int = 30,
     val rightSec: Int = 30,
     val leftRecorded: Boolean = false,
-    val rightRecorded: Boolean = false
+    val rightRecorded: Boolean = false,
+    val distanceMeters: Double? = null
 )
 
 data class ExerciseItem(
@@ -178,13 +179,18 @@ data class LoggedWorkoutEntry(
     val sourceWatch: Boolean = false,
     val sourceHealthConnect: Boolean = false,
     val routeKeys: List<String> = emptyList(),
-    val exerciseDetails: List<LoggedExerciseDetail> = emptyList()
+    val exerciseDetails: List<LoggedExerciseDetail> = emptyList(),
+    val originDevice: String = "phone",
+    val savedStartIso: String = "",
+    val savedFinishIso: String = ""
 )
 
 data class LoggedExerciseDetail(
     val nameHu: String,
     val summaryPrescription: String,
-    val sets: List<ExerciseSetItem>
+    val sets: List<ExerciseSetItem>,
+    val measurementType: String = "",
+    val repUnit: String = ""
 )
 
 data class PrRecordEntry(

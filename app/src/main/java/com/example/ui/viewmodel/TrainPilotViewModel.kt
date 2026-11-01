@@ -1093,10 +1093,10 @@ class TrainPilotViewModel : ViewModel() {
                     val isOutdoor = detail.exercises.any {
                         val ex = it.exercise
                         ex.measurementType == "distance" || ex.repUnit == "km"
-                    }
-                    val elapsedMs = (w.finishedEpochMs - w.startedEpochMs).coerceAtLeast(0L)
-                    val realDurationMin = if (elapsedMs > 0L) ((elapsedMs + 59_999L) / 60_000L).toInt().coerceAtLeast(1) else 0
-                    val elapsedSec = (elapsedMs / 1000L).toInt()
+                    } || runCatching { JSONObject(w.rawJson).has(com.repforge.app.NativeGpsMeasurement.FIELD) }.getOrDefault(false)
+                    // Long pauses are already excluded from the canonical Room duration.
+                    val elapsedSec = w.durationSeconds.coerceAtLeast(0)
+                    val realDurationMin = if (elapsedSec > 0) (elapsedSec + 59) / 60 else 0
                     val realWorkLabel = if (elapsedSec > 0) String.format("%02d:%02d", elapsedSec / 60, elapsedSec % 60) else "—"
                     val mappedDetails = detail.exercises.map { exWithSets ->
                         val ex = exWithSets.exercise
@@ -1107,13 +1107,16 @@ class TrainPilotViewModel : ViewModel() {
                                 weightKg = (sEntity.weight ?: 0.0).toFloat(),
                                 reps = sEntity.reps.toIntOrNull() ?: 0,
                                 rir = sEntity.actualRir ?: 2,
-                                completed = sEntity.done
+                                completed = sEntity.done,
+                                distanceMeters = sEntity.distanceMeters
                             )
                         }
                         com.example.model.LoggedExerciseDetail(
                             nameHu = exName,
-                            summaryPrescription = "${mappedSets.count { it.completed }}/${mappedSets.size} sorozat",
-                            sets = mappedSets
+                            summaryPrescription = if (isOutdoor || ex.measurementType == "distance") "Kültéri aktivitás" else "${mappedSets.count { it.completed }}/${mappedSets.size} sorozat",
+                            sets = mappedSets,
+                            measurementType = ex.measurementType,
+                            repUnit = ex.repUnit
                         )
                     }
                     LoggedWorkoutEntry(
@@ -1125,13 +1128,22 @@ class TrainPilotViewModel : ViewModel() {
                         restTimeLabel = "—",
                         totalSets = if (w.completedSetsCount > 0) w.completedSetsCount else completedDbSets.size,
                         totalVolumeKg = if (w.totalVolumeKg > 0.0) w.totalVolumeKg.roundToInt() else completedDbSets.sumOf { (it.weight ?: 0.0) * (it.reps.toDoubleOrNull() ?: 0.0) }.roundToInt(),
-                        summaryExercisesHu = exerciseNames.ifBlank { "Rögzített gyakorlatok" },
+                        summaryExercisesHu = if (isOutdoor) w.programName.ifBlank { "Kültéri aktivitás" } else exerciseNames.ifBlank { "Rögzített gyakorlatok" },
                         hasPr = w.hasPr226,
                         isOutdoorRun = isOutdoor,
                         routeKeys = detail.exercises.flatMap { it.sets }.flatMap {
                             listOfNotNull(it.gpsRouteKey163, it.gpsRouteKey193)
                         }.filter(String::isNotBlank).distinct(),
                         sourceWatch = !w.wearMetricsJson.isNullOrBlank(), sourceHealthConnect = !w.health240Json.isNullOrBlank(),
+                        distanceKm = (completedDbSets.sumOf { it.distanceMeters ?: 0.0 } / 1000.0).toFloat(),
+                        paceLabel = completedDbSets.sumOf { it.distanceMeters ?: 0.0 }.takeIf { it > 0 && elapsedSec > 0 }?.let { meters ->
+                            val secondsPerKm = (elapsedSec / (meters / 1000.0)).toInt()
+                            "%d:%02d /km".format(secondsPerKm / 60, secondsPerKm % 60)
+                        } ?: "—",
+                        originDevice = w.originDevice,
+                        savedStartIso = w.started,
+                        savedFinishIso = w.finished,
+                        photoCount = detail.photos.size,
                         exerciseDetails = mappedDetails
                     )
                 }
@@ -2951,13 +2963,16 @@ class TrainPilotViewModel : ViewModel() {
                                 weightKg = (sEntity.weight ?: 0.0).toFloat(),
                                 reps = sEntity.reps.toIntOrNull() ?: 0,
                                 rir = sEntity.actualRir ?: 2,
-                                completed = sEntity.done
+                                completed = sEntity.done,
+                                distanceMeters = sEntity.distanceMeters
                             )
                         }
                         com.example.model.LoggedExerciseDetail(
                             nameHu = ex.nameHu.ifBlank { "Gyakorlat" },
-                            summaryPrescription = "${mappedSets.count { it.completed }}/${mappedSets.size} sorozat",
-                            sets = mappedSets
+                            summaryPrescription = if (isOutdoorSession || ex.measurementType == "distance") "Kültéri aktivitás" else "${mappedSets.count { it.completed }}/${mappedSets.size} sorozat",
+                            sets = mappedSets,
+                            measurementType = ex.measurementType,
+                            repUnit = ex.repUnit
                         )
                     }
                     val summaryNamesFromDb = savedInDb.exercises.filter { ex -> ex.sets.any { it.done } }
@@ -2965,7 +2980,7 @@ class TrainPilotViewModel : ViewModel() {
 
                     val newEntry = LoggedWorkoutEntry(
                         id = finalWorkoutId,
-                        dateLabelHu = DateTimeFormatter.ofPattern("MMM d., E • HH:mm", Locale.getDefault()).format(java.time.LocalDateTime.now()),
+                        dateLabelHu = dbW.started.take(16).replace('T', ' '),
                         titleHu = dbW.programName.ifBlank { workoutTitle },
                         durationMinutes = realDurationMins,
                         workTimeLabel = realWorkTimeLabel,
@@ -2979,6 +2994,10 @@ class TrainPilotViewModel : ViewModel() {
                             listOfNotNull(it.gpsRouteKey163, it.gpsRouteKey193)
                         }.filter(String::isNotBlank).distinct(),
                         sourceWatch = !dbW.wearMetricsJson.isNullOrBlank(), sourceHealthConnect = !dbW.health240Json.isNullOrBlank(),
+                        originDevice = dbW.originDevice,
+                        savedStartIso = dbW.started,
+                        savedFinishIso = dbW.finished,
+                        photoCount = savedInDb.photos.size,
                         distanceKm = (savedInDb.exercises.flatMap { it.sets }.filter { it.done }
                             .sumOf { it.distanceMeters ?: 0.0 } / 1000.0).toFloat(),
                         paceLabel = savedInDb.exercises.flatMap { it.sets }.filter { it.done }.sumOf { it.distanceMeters ?: 0.0 }
