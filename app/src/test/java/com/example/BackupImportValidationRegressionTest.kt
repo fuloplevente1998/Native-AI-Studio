@@ -7,6 +7,8 @@ import androidx.test.core.app.ApplicationProvider
 import com.repforge.app.BackupRestoreManager
 import com.repforge.app.NativeDataReplacement
 import com.repforge.app.NativeReplacementJournal
+import com.repforge.app.HealthJournalStore
+import com.repforge.app.NativeHealthBackupGate
 import com.repforge.app.data.db.TrainPilotDatabase
 import com.repforge.app.data.db.BodyWeightEntryEntity
 import com.repforge.app.data.migration.LegacyWebViewMigrator
@@ -23,6 +25,8 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import java.io.File
+import java.util.concurrent.ExecutionException
+import java.util.zip.ZipFile
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -56,7 +60,159 @@ class BackupImportValidationRegressionTest {
         awaitNative {
             TrainPilotDatabase.getInstance(context).clearAllTables()
             TrainPilotSettingsStore(context).resetAllSettingsForEraseLocal()
+            HealthJournalStore.get(context).erase()
         }
+    }
+
+    private val photoId = "12345678-1234-1234-1234-123456789abc"
+    private val photoBytes = byteArrayOf(0xff.toByte(), 0xd8.toByte(), 1, 2, 3, 0xff.toByte(), 0xd9.toByte())
+    private val oldPhotoBytes = byteArrayOf(9, 8, 7)
+    private val photoFile get() = File(context.filesDir, "workout_photos/$photoId.jpg")
+
+    private fun healthRecord(id: String, value: Int): JSONObject {
+        val time = 1793527200000L
+        return JSONObject().put("channel", HealthJournalStore.HC).put("source", "com.example.fixture")
+            .put("type", "StepsRecord").put("recordId", id).put("lastModifiedMs", time)
+            .put("startMs", time).put("endMs", time + 1000).put("day", HealthJournalStore.day(time))
+            .put("data", JSONObject().put("value", value))
+    }
+
+    private fun seedPhotoHealthArchive(): File {
+        val db = TrainPilotDatabase.getInstance(context)
+        val settings = TrainPilotSettingsStore(context)
+        awaitNative {
+            settings.setHealthBackupConsent(true)
+            LegacyWebViewMigrator(context, db, settings).saveWorkoutJsonToRoom(JSONObject()
+                .put("id", "photo-health-workout").put("key", "photo-health-workout")
+                .put("started", "2026-11-01T10:00:00Z").put("finished", "2026-11-01T10:45:00Z")
+                .put("exercises", JSONArray()).put("photos", JSONArray().put(JSONObject()
+                    .put("id", photoId).put("label", "test fixture").put("createdAt", 123L)
+                    .put("updatedAt", 123L).put("width", 1).put("height", 1).put("bytes", photoBytes.size))))
+            val health = HealthJournalStore.get(context)
+            health.importRecords(JSONArray().put(healthRecord("restored-health", 123)), health.generation())
+        }
+        photoFile.parentFile!!.mkdirs()
+        photoFile.writeBytes(photoBytes)
+        val archive = File(context.cacheDir, "photo-health-archive")
+        val exported = awaitNative { BackupRestoreManager(context).exportZipArchiveToUri(Uri.fromFile(archive)) }
+        assertTrue(exported.exceptionOrNull()?.message ?: "archive export failed", exported.isSuccess)
+        return archive
+    }
+
+    private fun replaceLiveDatasetBeforeRestore() {
+        awaitNative {
+            val db = TrainPilotDatabase.getInstance(context)
+            db.workoutHistoryDao().deleteAllWorkouts()
+            LegacyWebViewMigrator(context, db, TrainPilotSettingsStore(context)).saveWorkoutJsonToRoom(JSONObject()
+                .put("id", "old-live-workout").put("started", "2026-10-31T10:00:00Z")
+                .put("finished", "2026-10-31T10:05:00Z").put("exercises", JSONArray()))
+            val health = HealthJournalStore.get(context)
+            health.erase()
+            health.importRecords(JSONArray().put(healthRecord("old-live-health", 7)), health.generation())
+        }
+        photoFile.writeBytes(oldPhotoBytes)
+    }
+
+    private fun assertPhotoHealthRestored() {
+        val workout = awaitNative {
+            TrainPilotDatabase.getInstance(context).workoutHistoryDao().getWorkoutWithDetails("photo-health-workout")
+        }
+        assertNotNull(workout)
+        assertEquals(photoId, workout!!.photos.single().id)
+        assertArrayEquals(photoBytes, photoFile.readBytes())
+        // A second SQLite helper verifies persisted journal data independently of the manager.
+        val snapshot = awaitNative {
+            val reopened = HealthJournalStore(context)
+            try {
+                assertEquals("", reopened.pendingRestore())
+                reopened.exportSnapshot()
+            } finally { reopened.close() }
+        }
+        val records = snapshot.getJSONArray("records")
+        assertEquals(1, records.length())
+        assertEquals("restored-health", records.getJSONObject(0).getString("recordId"))
+        assertEquals(123, records.getJSONObject(0).getJSONObject("data").getInt("value"))
+        assertFalse(NativeReplacementJournal(context).exists())
+        assertFalse(NativeDataReplacement.blocked(context))
+        assertTrue(NativeHealthBackupGate.available())
+    }
+
+    @Test fun zipRestoresPhotoBytesAndConsentedHealthJournal() {
+        val archive = seedPhotoHealthArchive()
+        val bytes = archive.readBytes()
+        replaceLiveDatasetBeforeRestore()
+        val result = awaitNative { BackupRestoreManager(context).importBackupFromUri(Uri.fromFile(archive)) }
+        assertTrue(result.exceptionOrNull()?.message ?: "restore failed", result.isSuccess)
+        assertPhotoHealthRestored()
+        assertArrayEquals(bytes, archive.readBytes())
+    }
+
+    private class SimulatedProcessDeath(val checkpoint: String) : Error(checkpoint)
+
+    @Test fun durableReceiptReplaysAfterEachPhotoHealthAndRoomCheckpoint() {
+        val checkpoints = listOf("receipt-prepared", "photo-installed:$photoId", "photos-installed",
+            "health-prepared", "health-installed", "room-settings-imported", "health-committed",
+            "data-imported", "receipt-committed")
+        for (checkpoint in checkpoints) {
+            resetIsolatedTestDataset()
+            val archive = seedPhotoHealthArchive()
+            val bytes = archive.readBytes()
+            replaceLiveDatasetBeforeRestore()
+            val interrupted = BackupRestoreManager(context).apply {
+                restoreCheckpoint = { point -> if (point == checkpoint) throw SimulatedProcessDeath(point) }
+            }
+            val error = assertThrows(ExecutionException::class.java) {
+                awaitNative { interrupted.importBackupFromUri(Uri.fromFile(archive)) }
+            }
+            assertTrue("Expected fault at $checkpoint, got ${error.cause}", error.cause is SimulatedProcessDeath)
+            assertTrue(NativeReplacementJournal(context).exists())
+            assertTrue(NativeDataReplacement.blocked(context))
+            val recovered = awaitNative { BackupRestoreManager(context).resumeInterruptedReplacement() }
+            assertTrue("$checkpoint: ${recovered.exceptionOrNull()}", recovered.isSuccess)
+            assertPhotoHealthRestored()
+            assertArrayEquals(bytes, archive.readBytes())
+        }
+    }
+
+    @Test fun checksumFailureLeavesCurrentPhotoHealthAndRoomUntouched() {
+        val source = seedPhotoHealthArchive()
+        replaceLiveDatasetBeforeRestore()
+        val tampered = File(context.cacheDir, "tampered-archive")
+        ZipFile(source).use { input ->
+            ZipOutputStream(tampered.outputStream()).use { output ->
+                for (entry in input.entries().asSequence()) {
+                    output.putNextEntry(ZipEntry(entry.name))
+                    output.write(if (entry.name == "photos/$photoId.jpg") byteArrayOf(0)
+                        else input.getInputStream(entry).use { it.readBytes() })
+                    output.closeEntry()
+                }
+            }
+        }
+        val result = awaitNative { BackupRestoreManager(context).importBackupFromUri(Uri.fromFile(tampered)) }
+        assertTrue(result.isFailure)
+        assertNotNull(awaitNative {
+            TrainPilotDatabase.getInstance(context).workoutHistoryDao().getWorkoutWithDetails("old-live-workout")
+        })
+        assertArrayEquals(oldPhotoBytes, photoFile.readBytes())
+        val records = awaitNative { HealthJournalStore.get(context).exportSnapshot().getJSONArray("records") }
+        assertEquals("old-live-health", records.getJSONObject(0).getString("recordId"))
+        assertFalse(NativeReplacementJournal(context).exists())
+        assertFalse(NativeDataReplacement.blocked(context))
+        assertTrue(NativeHealthBackupGate.available())
+    }
+
+    @Test fun healthJournalIsOmittedWithoutBackupConsent() {
+        awaitNative {
+            val health = HealthJournalStore.get(context)
+            health.importRecords(JSONArray().put(healthRecord("private-health", 99)), health.generation())
+            TrainPilotSettingsStore(context).setHealthBackupConsent(false)
+        }
+        val file = File(context.cacheDir, "no-health-consent.json")
+        val result = awaitNative { BackupRestoreManager(context).exportJsonBackupToUri(Uri.fromFile(file)) }
+        assertTrue(result.exceptionOrNull()?.message ?: "export failed", result.isSuccess)
+        assertFalse(JSONObject(file.readText()).has("nativeHealthJournal"))
+        val records = awaitNative { HealthJournalStore.get(context).exportSnapshot().getJSONArray("records") }
+        assertEquals("private-health", records.getJSONObject(0).getString("recordId"))
     }
 
     @Test fun canonicalJsonExportAndRestorePreserveWorkoutWeightAndSettings() = roundTrip(false)
