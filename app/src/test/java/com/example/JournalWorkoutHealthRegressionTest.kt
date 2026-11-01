@@ -4,6 +4,8 @@ import android.content.Context
 import android.os.Looper
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -119,6 +121,37 @@ class JournalWorkoutHealthRegressionTest {
         val restored = seed("restored", data)
         assertTrue(NativeWorkoutHealth.matchesWindow(JSONObject(restored.workout.health240Json!!), restored.workout))
         assertEquals(data.toString(), JSONObject(restored.workout.health240Json!!).toString())
+    }
+
+    @Test fun samsungSnapshotPersistsAlongsideHealthConnectAndProviderChipsSwitchActualValues() {
+        val before = seed(health = response().put("windowStart", start).put("windowEnd", end))
+        val native = NativeWorkoutHealth(context, db)
+        val request = awaitNative { native.prepare(before.workout) }
+        awaitNative { native.attach(request, response().put("averageHeartRate", 155), HealthJournalStore.SAMSUNG) }
+        val saved = awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById("fresh")!! }
+        val health = JSONObject(saved.workout.health240Json!!)
+        assertEquals(120.0, NativeWorkoutHealthSource.snapshot(health, HealthJournalStore.HC)!!.getDouble("averageHeartRate"), .01)
+        assertEquals(155.0, NativeWorkoutHealthSource.snapshot(health, HealthJournalStore.SAMSUNG)!!.getDouble("averageHeartRate"), .01)
+        assertEquals(before.workout.wearMetricsJson, saved.workout.wearMetricsJson)
+        compose.setContent {
+            var provider by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(HealthJournalStore.HC) }
+            TrainPilotTheme {
+                androidx.compose.foundation.lazy.LazyColumn(Modifier.testTag("provider_list")) {
+                    item {
+                        JournalHealthPanel(saved, nativeResources(context, "hu"), "hu", false, null, true,
+                            provider = provider, selectProvider = { provider = it }) { }
+                    }
+                }
+            }
+        }
+        val list = compose.onNodeWithTag("provider_list")
+        list.performScrollToNode(hasTestTag("journal_hc_averageHeartRate_value"))
+        compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertTextEquals("120 bpm")
+        list.performScrollToNode(hasTestTag("journal_provider_samsung_health"))
+        compose.onNodeWithTag("journal_provider_samsung_health").performClick()
+        list.performScrollToNode(hasTestTag("journal_samsung_averageHeartRate_value"))
+        compose.onNodeWithTag("journal_samsung_averageHeartRate_value").assertTextEquals("155 bpm")
+        compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertDoesNotExist()
     }
 
     @Test fun sameOuterDatesDoNotValidateHealthThatIncludesThePause() {

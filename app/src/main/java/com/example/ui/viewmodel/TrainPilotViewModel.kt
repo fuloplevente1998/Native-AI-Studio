@@ -1269,6 +1269,8 @@ class TrainPilotViewModel : ViewModel() {
                     } else st.activeSets
 
                     val computedPrs = computePrRecordsFromWorkouts(mappedWorkouts)
+                    val sameHealthSource = HealthJournalStore.get(context).generation() == healthGenerationAtBind &&
+                        HealthJournalStore.get(context).preferences().optString("provider", HealthJournalStore.HC) == healthProviderAtBind
                     st.copy(
                         exercises = mappedExercises,
                         profileComplete = com.example.model.StudioProfileCompletion.complete(savedProfile),
@@ -1313,12 +1315,12 @@ class TrainPilotViewModel : ViewModel() {
                         stepsGoal = if (loadedStepsGoal > 0) loadedStepsGoal else st.stepsGoal,
                         currentBodyWeightKg = if (latestWeightKg > 0f) latestWeightKg else st.currentBodyWeightKg,
                         bodyWeightLogs = loadedWeightLogs,
-                        dailySteps = if (HealthJournalStore.get(context).generation() == healthGenerationAtBind && HealthJournalStore.get(context).preferences().optString("provider", HealthJournalStore.HC) == healthProviderAtBind) stepsVal else st.dailySteps,
-                        restingHrBpm = restingHrVal,
-                        currentHrBpm = currentHrVal,
-                        activeCaloriesKcal = activeCalVal,
-                        sleepDurationLabel = sleepStr,
-                        sleepHoursDecimal = sleepDecimal
+                        dailySteps = if (sameHealthSource) stepsVal else st.dailySteps,
+                        restingHrBpm = if (sameHealthSource) restingHrVal else st.restingHrBpm,
+                        currentHrBpm = if (sameHealthSource) currentHrVal else st.currentHrBpm,
+                        activeCaloriesKcal = if (sameHealthSource) activeCalVal else st.activeCaloriesKcal,
+                        sleepDurationLabel = if (sameHealthSource) sleepStr else st.sleepDurationLabel,
+                        sleepHoursDecimal = if (sameHealthSource) sleepDecimal else st.sleepHoursDecimal
                     )
                 }
             }

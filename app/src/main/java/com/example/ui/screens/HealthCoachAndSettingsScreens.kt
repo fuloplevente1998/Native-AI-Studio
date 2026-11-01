@@ -1410,18 +1410,18 @@ fun HealthTabScreen(
                 onToggle = { onToggleHealthSection("extra") }
             ) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SummarySmallPill("Vérnyomás", "118/76 Hgmm", Modifier.weight(1f))
-                    SummarySmallPill("Vércukor", "5,1 mmol/L", Modifier.weight(1f))
+                    SummarySmallPill("Vérnyomás", "—", Modifier.weight(1f))
+                    SummarySmallPill("Vércukor", "—", Modifier.weight(1f))
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SummarySmallPill("Légzésszám", "14,2 /perc", Modifier.weight(1f))
-                    SummarySmallPill("Távolság (ma)", "5,24 km", Modifier.weight(1f))
+                    SummarySmallPill("Légzésszám", "—", Modifier.weight(1f))
+                    SummarySmallPill("Távolság (ma)", "—", Modifier.weight(1f))
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SummarySmallPill("Véroxigén (SpO₂)", "97,0 %", Modifier.weight(1f))
-                    SummarySmallPill("Testhőmérséklet", "36,5 °C", Modifier.weight(1f))
+                    SummarySmallPill("Véroxigén (SpO₂)", if (uiState.spo2Percent > 0) "${uiState.spo2Percent} %" else "—", Modifier.weight(1f))
+                    SummarySmallPill("Testhőmérséklet", "—", Modifier.weight(1f))
                 }
             }
         }
@@ -1436,9 +1436,11 @@ fun HealthTabScreen(
                 onToggle = { onToggleHealthSection("journal") }
             ) {
                 val journalDays = listOf(
-                    "2026. okt. 27." to "Alvás: 6,2 h • Pulzus: 65 bpm • Lépések: 6 734 • 292 kcal",
-                    "2026. okt. 26." to "Alvás: 9,4 h • Pulzus: 61 bpm • Lépések: 6 036 • 235 kcal",
-                    "2026. okt. 25." to "Alvás: 4,2 h • Pulzus: 63 bpm • Lépések: 9 919 • 392 kcal"
+                    today.toString() to ("${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} • " +
+                        "Alvás: ${uiState.sleepDurationLabel} • " +
+                        "Pulzus: ${if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"} • " +
+                        "Lépések: ${if (uiState.dailySteps > 0) uiState.dailySteps.toString() else "—"} • " +
+                        "Kalória: ${if (uiState.activeCaloriesKcal > 0) "${uiState.activeCaloriesKcal} kcal" else "—"}")
                 )
                 journalDays.forEach { (d, summary) ->
                     Surface(
