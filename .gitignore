@@ -16,3 +16,8 @@
 local.properties
 .env
 debug.keystore
+
+# Local Android Maps credentials
+secrets.properties
+
+__pycache__/

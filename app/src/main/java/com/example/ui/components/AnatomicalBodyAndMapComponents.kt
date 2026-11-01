@@ -32,6 +32,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -568,31 +569,60 @@ fun NativeWorkoutRouteMapBox(
                     .map { com.google.android.gms.maps.model.LatLng(it.first, it.second) } }
         }
     }
-    val configured = remember(context) {
-        runCatching { context.packageManager.getApplicationInfo(context.packageName,
-            android.content.pm.PackageManager.GET_META_DATA).metaData
-            ?.getString("com.google.android.geo.API_KEY").orEmpty().isNotBlank() }.getOrDefault(false)
+    val configured = remember(context) { com.repforge.app.NativeMapsConfiguration.configured(context) }
+    val playServicesAvailable = remember(context) {
+        runCatching { com.google.android.gms.common.GoogleApiAvailability.getInstance()
+            .isGooglePlayServicesAvailable(context) == com.google.android.gms.common.ConnectionResult.SUCCESS }.getOrDefault(false)
     }
     val points = segments.flatten()
+    var loaded by remember { mutableStateOf(false) }
+    var timedOut by remember { mutableStateOf(false) }
+    var retry by remember { mutableIntStateOf(0) }
+    androidx.compose.runtime.LaunchedEffect(configured, playServicesAvailable, retry) {
+        loaded = false
+        timedOut = false
+        if (configured && playServicesAvailable) {
+            kotlinx.coroutines.delay(15_000)
+            if (!loaded) timedOut = true
+        }
+    }
     Box(modifier.clip(RoundedCornerShape(24.dp)).background(palette.background)
         .border(1.dp, palette.cardBorder, RoundedCornerShape(24.dp)), contentAlignment = Alignment.Center) {
-        if (!configured || points.isEmpty()) {
-            Text(if (!configured) "A Google Maps kulcs nincs konfigurálva. Az útvonal helyben megmarad."
-                else "Még nincs rögzített GPS-útvonal.", color = palette.textSecondary,
-                modifier = Modifier.padding(16.dp))
+        if (!configured || !playServicesAvailable) {
+            Text(if (!configured) "Google Maps nincs beállítva. Az útvonal helyben megmarad."
+                else "A térképhez Google Play-szolgáltatások szükségesek. Az útvonal helyben megmarad.",
+                style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
+                modifier = Modifier.padding(12.dp))
         } else {
-            val camera = com.google.maps.android.compose.rememberCameraPositionState {
-                position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(points.first(), 16f)
+            androidx.compose.runtime.key(retry) {
+                val camera = com.google.maps.android.compose.rememberCameraPositionState()
+                // Only actual recorded coordinates move the camera. No synthetic GPS location.
+                androidx.compose.runtime.LaunchedEffect(loaded, points.firstOrNull()) {
+                    if (loaded) points.firstOrNull()?.let { point ->
+                        camera.move(com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(point, 16f))
+                    }
+                }
+                com.google.maps.android.compose.GoogleMap(
+                    modifier = Modifier.fillMaxSize(), cameraPositionState = camera,
+                    onMapLoaded = { loaded = true; timedOut = false },
+                    uiSettings = com.google.maps.android.compose.MapUiSettings(
+                        zoomControlsEnabled = interactiveControls, scrollGesturesEnabled = interactiveControls,
+                        zoomGesturesEnabled = interactiveControls, rotationGesturesEnabled = interactiveControls)
+                ) {
+                    // A paused/ownership gap must remain a gap in the displayed path.
+                    segments.filter { it.size > 1 }.forEach { segment ->
+                        com.google.maps.android.compose.Polyline(points = segment, color = palette.primary, width = 8f)
+                    }
+                }
             }
-            com.google.maps.android.compose.GoogleMap(
-                modifier = Modifier.fillMaxSize(), cameraPositionState = camera,
-                uiSettings = com.google.maps.android.compose.MapUiSettings(
-                    zoomControlsEnabled = interactiveControls, scrollGesturesEnabled = interactiveControls,
-                    zoomGesturesEnabled = interactiveControls, rotationGesturesEnabled = interactiveControls)
-            ) {
-                // Never bridge a paused/ownership gap with an invented straight route.
-                segments.filter { it.size > 1 }.forEach { segment ->
-                    com.google.maps.android.compose.Polyline(points = segment, color = palette.primary, width = 8f)
+            if (!loaded) {
+                Surface(color = palette.surfaceCard.copy(alpha = 0.94f), shape = RoundedCornerShape(12.dp)) {
+                    Column(Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(if (timedOut) "A térkép nem töltődött be. Ellenőrizd az internetet és a Maps-kulcs engedélyezését."
+                            else "Google Maps betöltése…", style = MaterialTheme.typography.bodySmall,
+                            color = palette.textSecondary)
+                        if (timedOut) TextButton(onClick = { retry += 1 }) { Text("Újrapróbálás") }
+                    }
                 }
             }
         }
