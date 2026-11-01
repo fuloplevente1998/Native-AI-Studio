@@ -53,6 +53,23 @@ Android process kill: a Kotlin finally blokkok lefutnak. A fotóteszt bináris
 megőrzést, nem képdekódolást vizsgál. A Robolectric fixture a saját korábbi Room/
 Health kapcsolatát lezárja, hogy az új context fájlját nyissa meg; ez nem appadat-törlés.
 
+### Készüléken jelentett nagy mentés memóriahibája
+
+A felhasználó JSON/ZIP és RepForge importnál 37 748 744 bájtos allokációs hibát
+jelentett, 256 MB-os Android heap mellett. A `BackupJsonIO` folyamatosan olvas/ír:
+nincs teljes dokumentumos byte-array + String + újraparszolt normalizációs másolat.
+A ZIP eredeti manifest/hash ellenőrzése továbbra is az átírás előtt történik.
+A szinkron staging lokális JSON-fái nem maradnak meg a felfüggeszthető replay keretében.
+A Health redo/rollback JSON közvetlenül darabolt SQLite sorokba kerül, olvasása is
+streamelt; a régi egymezős pending snapshot továbbra is olvasható.
+A Health teljes naplója nem duplikálódik `legacy:nativeHealthJournal` Room TEXT sorba.
+A 20 MB-os JSON, 18 MB-os Health és fotó/archívum korlátok megmaradnak.
+
+A regressziók nagy Unicode-dokumentumot, dokumentumos `toString()` nélküli Health
+staging/install/rollback/reopen folyamatot, és több megabájtos Health JSON/canonical
+ZIP/manifest nélküli RepForge ZIP importot ellenőriznek. Ezek JVM/Robolectric tesztek;
+a konkrét felhasználói mentés és 256 MB-os készülékes heap még külön ellenőrzendő.
+
 ### Kültéri képernyő és Google Maps
 
 Az `OutdoorGpsDashboard.kt` a meglévő natív callbackeket használja. A térkép kapja
@@ -96,6 +113,16 @@ A telefonról órára adás csak az `installed` ACK után, a forrás journal `se
 állapotában kész. Visszavételnél egyező céloldali `installed` receipt és natív
 resume-import szükséges, Main looperen. Handoff ID, workout ID és epoch egyezzen.
 
+A felhasználó készülékén a telefonról órára adás sikerült, a visszaadáskor az óra
+„telefon szinkronra vár” állapotot jelzett, a telefonos mentés pedig natív foglaltságot.
+A `NativePhoneReturnInstallation` az igazolt visszaadást Main looperen készíti elő,
+szükség esetén ARM-olja a foreground timer service-t az új generációra, telepíti a
+szünetelő időzítőt, majd a natív szerkesztő kanonikus projekcióját publikálja.
+A `nativeEditorProjection` helyi telepítéskor kerül vissza; a Wear encoder nem küldi.
+ARM-hiba után a zár megmarad, újrapróbálás ugyanazt a generációt használja.
+A telefonos mentés csak igazolt visszaadást fejezhet be, órás tulajdont nem kerülhet meg.
+A fizikai visszaadás + mentés új APK-val még készüléken visszaellenőrzendő.
+
 Az ajánlott/elfogadott/committed natív átadás és sérült journal nem oldható fel puszta
 időtúllépéssel. Csak a protokoll szerint lejárt, még nem ajánlott kérés próbálható újra.
 Átadás után explicit Folytatás kell; háttér-receiver nem indít automatikusan szenzort.
@@ -117,7 +144,8 @@ CI: Gradle 9.3.1, JDK 17, Android compileSdk 36.1.
 
 Az önálló #9 kör 37/37 tesztet igazolt; a Wear-integráció és natív session-javítás
 külön köre 46 telefonos + 169 Wear = 215 tesztet igazolt. A #8-cal közös átadási kapu
-**50 telefonos + 169 Wear = 219 teszt**, nulla failure/error/skip; a végleges futás
+**50 telefonos + 169 Wear = 219 teszt** volt a memória/visszavételi javítások előtti baseline.
+A további regressziók végleges eredménye a közös CI-ben ellenőrzendő; a végleges futás
 és nyers XML a PR #10 átadási leírásában található. A shared tasknak nincs önálló
 tesztforrása; közös kódját a telefonos/órás protokolltesztek is használják.
 
@@ -146,7 +174,7 @@ R8/resource-shrinking beállításokat örökli, de kifejezetten a telefon teszt
 APK megmarad hibakereséshez; készülékes páros teszthez az optimalizált Wear artifactot
 és az azonos futás telefonos APK-ját válaszd. A metadata az optimalizált fájlon ellenőrzi
 az app/signer-egyezést, tényleges méretcsökkenést és a companion capability erőforrás
-megmaradását. A valós órás működés/optimalizált képernyő továbbra is készülékes próba.
+megmaradását. Az ellenőrzött `824b663` körben 4 636 867 bájt lett (a debug 39 262 700 bájt). A valós órás működés/optimalizált képernyő továbbra is készülékes próba.
 
 ## Nyitott feladatok, prioritási sorrendben
 

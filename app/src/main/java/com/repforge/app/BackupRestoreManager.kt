@@ -15,7 +15,6 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedOutputStream
-import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
@@ -25,7 +24,6 @@ import java.io.InputStream
 import java.nio.charset.StandardCharsets
 import java.security.DigestInputStream
 import java.security.MessageDigest
-import java.util.Arrays
 import java.util.Locale
 import java.util.TreeSet
 import java.util.UUID
@@ -182,20 +180,22 @@ class BackupRestoreManager(context: Context) {
                 HealthJournalStore.get(appContext).exportSnapshot()
             } else null
             val jsonObj = migrator.exportBackupJson(settings.healthBackupConsent, healthSnapshot)
-            val expectedBytes = jsonObj.toString().toByteArray(StandardCharsets.UTF_8)
-            if (expectedBytes.isEmpty() || expectedBytes.size > JSON_LIMIT) {
-                throw IOException("Érvénytelen vagy túl nagy mentés.")
-            }
-            appContext.contentResolver.openOutputStream(uri, "w").use { out ->
-                if (out == null) throw IOException("Nem nyitható meg írásra.")
-                out.write(expectedBytes)
-                out.flush()
-            }
-            val actualBytes = readUriBytes(uri, JSON_LIMIT)
-            if (actualBytes.isEmpty() || !Arrays.equals(expectedBytes, actualBytes)) {
-                throw IOException("A visszaolvasott fájl eltér vagy üres.")
-            }
-            Result.success(resolveDisplayName(uri, "repforge-backup.json") to actualBytes.size)
+            val staged = File.createTempFile("trainpilot-json-", ".json", appContext.cacheDir)
+            try {
+                BackupJsonIO.writeFile(staged, jsonObj, JSON_LIMIT)
+                appContext.contentResolver.openOutputStream(uri, "w").use { out ->
+                    if (out == null) throw IOException("Nem nyitható meg írásra.")
+                    FileInputStream(staged).use { ArchiveIO.copy(it, out, JSON_LIMIT.toLong()) }
+                    out.flush()
+                }
+                val expectedHash = FileInputStream(staged).use { ArchiveIO.hash(it) }
+                val actualHash = appContext.contentResolver.openInputStream(uri).use { input ->
+                    if (input == null) throw IOException("Nem nyitható meg olvasásra.")
+                    ArchiveIO.hash(input)
+                }
+                check(expectedHash == actualHash) { "A visszaolvasott fájl eltér vagy üres." }
+                Result.success(resolveDisplayName(uri, "repforge-backup.json") to staged.length().toInt())
+            } finally { staged.delete() }
         } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (e: Exception) { Result.failure(e) }
         finally { NativeHealthBackupGate.end() }
@@ -272,18 +272,16 @@ class BackupRestoreManager(context: Context) {
         val token = UUID.randomUUID().toString()
         val dir = transactionDir(token); mkdir(dir)
         try {
-            val bytes = data.toString().toByteArray(StandardCharsets.UTF_8)
-            if (bytes.isEmpty() || bytes.size > JSON_LIMIT) throw IOException("Invalid cloud backup size.")
             if (stagedPhotos == null) {
-                writeSynced(File(dir, "backup.json"), bytes)
+                BackupJsonIO.writeFile(File(dir, "backup.json"), data, JSON_LIMIT)
                 completeReplacement(NativeReplacementJournal.Entry("json", token, false))
             } else {
                 stagedPhotos.requireUnchanged()
                 val incoming = File(dir, "incoming"); mkdir(incoming)
                 val photos = File(incoming, "photos"); mkdir(photos)
-                writeSynced(File(incoming, "backup.json"), bytes)
+                BackupJsonIO.writeFile(File(incoming, "backup.json"), data, JSON_LIMIT)
                 val hashes = JSONObject().put("backup.json", FileInputStream(File(incoming, "backup.json")).use { ArchiveIO.hash(it) })
-                var total = bytes.size.toLong()
+                var total = File(incoming, "backup.json").length()
                 for (id in ids) {
                     val target = File(photos, "$id.jpg")
                     FileInputStream(File(stagedPhotos.photos, "$id.jpg")).use { input -> FileOutputStream(target).use { out ->
@@ -390,28 +388,28 @@ class BackupRestoreManager(context: Context) {
     suspend fun exportZipArchiveToUri(uri: Uri): Result<Pair<String, Long>> = withContext(Dispatchers.IO) {
         NativeHealthBackupGate.begin()
         var tmp: File? = null
+        var stagedJson: File? = null
         try {
             val settings = settingsStore.current()
             val healthSnapshot = if (settings.healthBackupConsent) {
                 HealthJournalStore.get(appContext).exportSnapshot()
             } else null
             val data = migrator.exportBackupJson(settings.healthBackupConsent, healthSnapshot)
-            val jsonBytes = data.toString().toByteArray(StandardCharsets.UTF_8)
-            if (jsonBytes.isEmpty() || jsonBytes.size > JSON_LIMIT) {
-                throw IOException("Invalid backup size.")
-            }
+            val jsonFile = File.createTempFile("trainpilot-payload-", ".json", appContext.cacheDir)
+            stagedJson = jsonFile
+            BackupJsonIO.writeFile(jsonFile, data, JSON_LIMIT)
             val manifest = JSONObject()
                 .put("format", "TrainPilotArchive")
                 .put("version", 1)
             val checks = JSONObject()
             tmp = File.createTempFile("trainpilot-", ".zip", appContext.cacheDir)
-            var total = jsonBytes.size.toLong()
+            var total = jsonFile.length()
 
             ZipOutputStream(BufferedOutputStream(FileOutputStream(tmp))).use { zip ->
                 zip.putNextEntry(ZipEntry("backup.json"))
-                zip.write(jsonBytes)
+                FileInputStream(jsonFile).use { ArchiveIO.copy(it, zip, JSON_LIMIT.toLong()) }
                 zip.closeEntry()
-                checks.put("backup.json", ArchiveIO.hash(ByteArrayInputStream(jsonBytes)))
+                checks.put("backup.json", FileInputStream(jsonFile).use { ArchiveIO.hash(it) })
 
                 for (id in photoIds(data)) {
                     val photo = File(photosDir(), "$id.jpg")
@@ -464,6 +462,7 @@ class BackupRestoreManager(context: Context) {
         } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (e: Exception) { Result.failure(e) }
         finally {
+            stagedJson?.delete()
             tmp?.delete()
             NativeHealthBackupGate.end()
         }
@@ -542,7 +541,7 @@ class BackupRestoreManager(context: Context) {
                 ArchiveIO.verify(incoming, names, expected, hashes)
 
                 // 2. Only after original cryptographic integrity passes, stage normalized payload if needed
-                if (true) { // Re-stage only after the untouched archive passed checksum verification.
+                run { // Re-stage only after the untouched archive passed checksum verification.
                     BackupJsonIO.writeFile(backupFile, normalizedData, JSON_LIMIT)
                     checks.put("backup.json", FileInputStream(backupFile).use { ArchiveIO.hash(it) })
                     rawManifest.put("format", "TrainPilotArchive")
@@ -807,22 +806,6 @@ class BackupRestoreManager(context: Context) {
             journal.write(entry.copy(committed = true))
         }
         journal.clear()
-    }
-
-    private fun readUriBytes(uri: Uri, limit: Int): ByteArray {
-        appContext.contentResolver.openInputStream(uri).use { input ->
-            if (input == null) throw IOException("Nem nyitható meg olvasásra.")
-            ByteArrayOutputStream().use { out ->
-                val buffer = ByteArray(8192)
-                while (true) {
-                    val n = input.read(buffer)
-                    if (n == -1) break
-                    if (out.size() + n > limit) throw IOException("Maximum 20 MB.")
-                    out.write(buffer, 0, n)
-                }
-                return out.toByteArray()
-            }
-        }
     }
 
     private fun resolveDisplayName(uri: Uri, fallback: String): String {

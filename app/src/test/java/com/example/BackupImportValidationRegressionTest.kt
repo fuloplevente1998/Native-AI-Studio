@@ -342,4 +342,42 @@ class BackupImportValidationRegressionTest {
         assertEquals("Missing backup history.", result.exceptionOrNull()?.message)
         assertFalse(NativeDataReplacement.blocked(context))
     }
+    @Test fun largeHealthJournalRestoresThroughJsonCanonicalZipAndLegacyRepForgeZip() {
+        val original = seedPhotoHealthArchive()
+        val data = ZipFile(original).use { zip ->
+            com.repforge.app.BackupJsonIO.read(zip.getInputStream(zip.getEntry("backup.json")).reader()) as JSONObject
+        }
+        val records = JSONArray()
+        val notes = "árvíztűrő 🏋️ ".repeat(500)
+        repeat(600) { index -> records.put(healthRecord("large-$index", index).apply {
+            getJSONObject("data").put("notes", notes)
+        }) }
+        data.getJSONObject("nativeHealthJournal").put("records", records)
+        val payload = File(context.cacheDir, "large-backup.json")
+        com.repforge.app.BackupJsonIO.writeFile(payload, data, BackupRestoreManager.JSON_LIMIT)
+        assertTrue(payload.length() > 3 * 1024 * 1024)
+        for (format in listOf("json", "canonical-zip", "repforge-zip")) {
+            val selected = if (format == "json") payload else File(context.cacheDir, "$format.zip").also { archive ->
+                ZipOutputStream(archive.outputStream()).use { zip ->
+                    zip.putNextEntry(ZipEntry("backup.json")); payload.inputStream().use { it.copyTo(zip) }; zip.closeEntry()
+                    zip.putNextEntry(ZipEntry("photos/$photoId.jpg")); zip.write(photoBytes); zip.closeEntry()
+                    if (format == "canonical-zip") {
+                        val hashes = JSONObject().put("backup.json", payload.inputStream().use { com.repforge.app.ArchiveIO.hash(it) })
+                            .put("photos/$photoId.jpg", photoBytes.inputStream().use { com.repforge.app.ArchiveIO.hash(it) })
+                        val manifest = JSONObject().put("format", "TrainPilotArchive").put("version", 1).put("sha256", hashes)
+                        zip.putNextEntry(ZipEntry("manifest.json")); zip.write(manifest.toString().toByteArray()); zip.closeEntry()
+                    }
+                }
+            }
+            val result = awaitNative { BackupRestoreManager(context).importBackupFromUri(Uri.fromFile(selected)) }
+            assertTrue("$format: ${result.exceptionOrNull()}", result.isSuccess)
+            val restored = HealthJournalStore.get(context).exportSnapshot().getJSONArray("records")
+            assertEquals("$format record count", 600, restored.length())
+            assertEquals(notes, restored.getJSONObject(599).getJSONObject("data").getString("notes"))
+            assertNotNull(awaitNative { TrainPilotDatabase.getInstance(context).workoutHistoryDao().getWorkoutWithDetails("photo-health-workout") })
+            assertNull(awaitNative { TrainPilotDatabase.getInstance(context).keyValueDocumentDao().getDocument("legacy:nativeHealthJournal") })
+            assertFalse(NativeReplacementJournal(context).exists())
+        }
+    }
+
 }
