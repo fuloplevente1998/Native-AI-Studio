@@ -724,7 +724,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             strings = strings,
                             onBack = { viewModel.navigateBack() },
                             onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
-                            onToggleControlMode = { viewModel.toggleWatchControlMode() },
+                            onToggleControlMode = { viewModel.toggleWatchControlMode(context as? android.app.Activity) },
                             onShowBanner = { viewModel.showBannerMessage(it) }
                         )
                     }

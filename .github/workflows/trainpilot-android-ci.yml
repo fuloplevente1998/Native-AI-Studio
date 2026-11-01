@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'app/**'
+      - 'shared/**'
+      - 'wear/**'
       - 'gradle/**'
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
@@ -59,7 +61,7 @@ jobs:
 
       - name: Build debug APK and run JVM tests
         shell: bash
-        run: gradle --no-daemon --stacktrace --continue :app:assembleDebug :app:testDebugUnitTest
+        run: gradle --no-daemon --stacktrace --continue :app:assembleDebug :app:testDebugUnitTest :shared:testDebugUnitTest :wear:assembleDebug :wear:testDebugUnitTest
 
       - name: Upload debug APK if produced
         if: always()
@@ -67,6 +69,15 @@ jobs:
         with:
           name: trainpilot-debug-ci-apk
           path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload Wear debug APK if produced
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trainpilot-wear-debug-ci-apk
+          path: wear/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
           retention-days: 7
 
@@ -78,5 +89,9 @@ jobs:
           path: |
             app/build/reports/tests/
             app/build/test-results/
+            shared/build/reports/tests/
+            shared/build/test-results/
+            wear/build/reports/tests/
+            wear/build/test-results/
           if-no-files-found: ignore
           retention-days: 7
