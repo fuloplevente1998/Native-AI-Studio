@@ -156,7 +156,13 @@ class BackupRestoreManager(context: Context) {
 
     private fun photoIds(data: JSONObject): Set<String> {
         val ids = TreeSet<String>()
-        if (data.optJSONArray("history") == null) throw IOException("Missing or invalid backup history.")
+        val history = data.optJSONArray("history") ?: throw IOException("Missing or invalid backup history.")
+        for (index in 0 until history.length()) {
+            val workout = history.optJSONObject(index) ?: throw IOException("Invalid workout in backup history.")
+            // The existing Room mapper skips rows without started. Reject before replaceAll can
+            // delete the current journal and silently drop those incoming rows.
+            if (workout.optString("started").trim().isEmpty()) throw IOException("Invalid workout in backup history.")
+        }
         for (photo in NativeCloudPhotoStage.photoRows(data)) {
             if (photoDeleted(photo)) continue
             val id = photo.optString("id")

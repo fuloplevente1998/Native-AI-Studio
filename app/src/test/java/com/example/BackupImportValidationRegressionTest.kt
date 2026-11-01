@@ -60,8 +60,8 @@ class BackupImportValidationRegressionTest {
         val original = awaitNative { db.workoutHistoryDao().getAllWorkoutsWithDetails() }
         assertEquals(1, original.size)
         for (payload in listOf("{}", "{\"settings\":{}}", "{\"history\":null}",
-            "{\"history\":{},\"workouts\":[]}", "{\"history\":\"broken\"}",
-            "{\"history\":[{\"photos\":[{\"id\":\"invalid-photo\"}]}]}")) {
+            "{\"history\":{},\"workouts\":[]}", "{\"history\":\"broken\"}", "{\"history\":[{}]}", "{\"history\":[null]}",
+            "{\"history\":[{\"started\":\"2026-11-01T10:00:00Z\",\"photos\":[{\"id\":\"invalid-photo\"}]}]}")) {
             val file = File(context.cacheDir, "selected-backup.json").apply { writeText(payload) }
             val result = awaitNative { BackupRestoreManager(context).importBackupFromUri(Uri.fromFile(file)) }
             assertTrue("Must reject $payload", result.isFailure)
