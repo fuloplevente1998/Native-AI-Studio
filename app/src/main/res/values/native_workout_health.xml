@@ -22,4 +22,5 @@
     <string name="journal_health_average_speed">Átlagsebesség</string>
     <string name="journal_health_max_speed">Maximális sebesség</string>
     <string name="journal_health_separate_energy">Az órán mért összes energia és a Health Connect aktív energiája külön adat. Nem adjuk őket össze.</string>
+    <string name="journal_health_permissions">Health Connect-engedélyek</string>
 </resources>

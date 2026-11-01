@@ -22,4 +22,5 @@
     <string name="journal_health_average_speed">Viteză medie</string>
     <string name="journal_health_max_speed">Viteză maximă</string>
     <string name="journal_health_separate_energy">Energia totală măsurată de ceas și energia activă din Health Connect sunt măsurători separate. Nu sunt adunate.</string>
+    <string name="journal_health_permissions">Permisiuni Health Connect</string>
 </resources>

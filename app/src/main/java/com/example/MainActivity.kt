@@ -665,6 +665,12 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     }
 
                     SubScreen.LOG_WORKOUT_DETAIL -> {
+                        val workoutHealth = com.example.ui.components.studioWorkoutHealthContent(
+                            workoutId = uiState.selectedLogWorkoutId,
+                            language = uiState.language.name.lowercase(),
+                            requestPermissions = { requestPlatformPermission("hc") },
+                            onSources = viewModel::updateLoggedWorkoutHealthSources
+                        )
                         LogWorkoutDetailScreen(
                             uiState = uiState,
                             strings = strings,
@@ -675,7 +681,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onOpenPhotos = { viewModel.navigateToSubScreen(SubScreen.PRIVATE_PHOTOS) },
                             onOpenRouteMap = { viewModel.navigateToSubScreen(SubScreen.LOG_ROUTE_MAP) },
                             onOpenWatchSync = { viewModel.navigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
-                            onOpenHealthTab = { viewModel.selectTab(MainTab.HEALTH) }
+                            onOpenHealthTab = { viewModel.selectTab(MainTab.HEALTH) },
+                            workoutHealth = workoutHealth
                         )
                     }
 

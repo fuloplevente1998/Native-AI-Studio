@@ -56,6 +56,7 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
             }
             val health = JSONObject(response.toString()).put("windowStart", current.started).put("windowEnd", current.finished)
                 .put("syncedAt", Instant.now().toString())
+            check(matchesWindow(health, current)) { "Provider returned different active workout intervals" }
             val raw = LegacyWebViewMigrator.workoutJson(latest).put("health240", health)
             // All other fields come from the latest row, including edits made while the SDK was reading.
             // Original Wear telemetry/window markers stay separate; an HC refresh does not rewrite them.
@@ -101,8 +102,18 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
     companion object {
         private fun aliases(row: WorkoutHistoryEntity) = setOf(row.id, row.syncId, row.workoutKey).filter { it.isNotBlank() }.toSet()
         private fun sameInstant(a: String, b: String) = runCatching { Instant.parse(a) == Instant.parse(b) }.getOrDefault(false)
-        fun matchesWindow(health: JSONObject, workout: WorkoutHistoryEntity) =
-            sameInstant(health.optString("windowStart"), workout.started) && sameInstant(health.optString("windowEnd"), workout.finished)
+        fun matchesWindow(health: JSONObject, workout: WorkoutHistoryEntity): Boolean {
+            if (!sameInstant(health.optString("windowStart"), workout.started) ||
+                !sameInstant(health.optString("windowEnd"), workout.finished)) return false
+            return runCatching {
+                val saved = JSONObject().put("started", workout.started).put("finished", workout.finished)
+                workout.activeIntervalsJson?.let { saved.put("activeIntervals", org.json.JSONArray(it)) }
+                val measured = JSONObject().put("started", workout.started).put("finished", workout.finished)
+                // A legacy full-window snapshot is safe only when the workout had no pause.
+                health.optJSONArray("activeIntervals")?.let { measured.put("activeIntervals", it) }
+                NativeWorkoutActiveWindows.read(saved) == NativeWorkoutActiveWindows.read(measured)
+            }.getOrDefault(false)
+        }
 
         /** Missing/null/invalid values stay missing, distinct from a real zero. No cross-source sum. */
         fun metrics(data: JSONObject, wear: Boolean): Map<String, Double> {

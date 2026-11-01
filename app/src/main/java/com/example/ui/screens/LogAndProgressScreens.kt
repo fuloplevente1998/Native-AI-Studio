@@ -790,7 +790,8 @@ fun LogWorkoutDetailScreen(
     onOpenPhotos: () -> Unit,
     onOpenRouteMap: () -> Unit,
     onOpenWatchSync: () -> Unit,
-    onOpenHealthTab: () -> Unit
+    onOpenHealthTab: () -> Unit,
+    workoutHealth: @Composable () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val workout = uiState.loggedWorkouts.find { it.id == uiState.selectedLogWorkoutId }
@@ -1097,6 +1098,9 @@ fun LogWorkoutDetailScreen(
                 }
             }
         }
+
+        // The health controller lives outside LazyColumn; scrolling never restarts provider reads.
+        item(key = "workout_health") { workoutHealth() }
 
         // Fotók (2) & Útvonal megtekintése buttons
         item {

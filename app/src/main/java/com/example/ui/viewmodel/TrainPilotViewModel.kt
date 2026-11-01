@@ -3077,6 +3077,12 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
+    fun updateLoggedWorkoutHealthSources(workoutId: String, wear: Boolean, healthConnect: Boolean) {
+        _uiState.update { state -> state.copy(loggedWorkouts = state.loggedWorkouts.map { entry ->
+            if (entry.id == workoutId) entry.copy(sourceWatch = wear, sourceHealthConnect = healthConnect) else entry
+        }) }
+    }
+
     fun selectLogDetailTab(index: Int) {
         _uiState.update { it.copy(logDetailTabIndex = index) }
     }
