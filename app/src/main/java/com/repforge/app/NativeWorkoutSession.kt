@@ -231,8 +231,10 @@ internal object NativeWorkoutSession {
         val execution = PhoneWorkoutExecution.store(context)
         check(!execution.restoreBlocked() && !execution.commandsSuspended()) { "Az edzésvezérlés átmenetileg foglalt." }
         val generation = maxOf(System.currentTimeMillis(), (execution.snapshot()?.optLong("generation") ?: 0L) + 1L)
+        check(candidate.optString("timerOwner", "phone") == "phone" && candidate.optLong("ownerEpoch193") == 0L &&
+            !candidate.has("handoff193")) { "Csak új, telefonos edzés indítható; az órás állapotot előbb egyeztesd." }
         val next = JSONObject(candidate.toString()).put("generation", generation).put("executionRevision", 0)
-            .put("nativeEditorProjection", 1)
+            .put("nativeEditorProjection", 1).put("ownershipProtocol193", 1).put("ownerEpoch193", 0L)
         // The native frame is durable first. If snapshot publication fails, recoverActive
         // restores this same frame and IDs; it never creates a second workout.
         val prepared = execution.prepare(next, 0L)

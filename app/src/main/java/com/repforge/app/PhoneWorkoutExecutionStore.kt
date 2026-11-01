@@ -241,6 +241,7 @@ internal class PhoneWorkoutExecutionStore(context: Context) :
                 throw IllegalStateException("The returned workout changed")
             }
             marker.put("state", "installed")
+            frame.put("nativeEditorProjection", 1)
             save(db, frame)
             db.execSQL("INSERT OR REPLACE INTO flags(name,value) VALUES('suspended',0)")
             db.setTransactionSuccessful()

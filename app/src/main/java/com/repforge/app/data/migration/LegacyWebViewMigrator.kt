@@ -294,7 +294,12 @@ class LegacyWebViewMigrator(
             // The immutable file archive holds the whole source; avoid duplicating full
             // normalized history/catalog collections again in the key-value table.
             val projected = setOf("history", "exercises", "programs", "weights", "scheduled",
-                NativeExerciseFavorites.KEY, NativeWeightTombstones18.KEY, "legacyStorageRaw")
+                NativeExerciseFavorites.KEY, NativeWeightTombstones18.KEY, "legacyStorageRaw", "nativeHealthJournal")
+            // HealthJournalStore owns this snapshot and its rollback receipt. Storing the
+            // entire journal a second time as one Room TEXT row exhausts the Android heap
+            // and later exceeds CursorWindow capacity. The staged source remains intact.
+            if (data.optJSONObject("nativeHealthJournal") != null)
+                database.keyValueDocumentDao().deleteDocument("legacy:nativeHealthJournal")
             for (key in data.keys()) if (key !in projected) database.keyValueDocumentDao().putDocument(
                 KeyValueDocumentEntity(key = "legacy:$key", json = JSONObject().put("value", data.get(key)).toString(), updatedAt = System.currentTimeMillis())
             )

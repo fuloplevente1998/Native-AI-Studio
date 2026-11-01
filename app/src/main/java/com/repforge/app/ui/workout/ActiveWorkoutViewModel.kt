@@ -9,6 +9,7 @@ import com.repforge.app.NativeSetStopwatch
 import com.repforge.app.NativeMeasuredTime
 import com.repforge.app.NativeMeasuredSet
 import com.repforge.app.NativeWorkoutTarget
+import com.repforge.app.NativePhoneReturnInstallation
 import com.repforge.app.NativeWorkoutEditing
 import com.repforge.app.NativeWorkoutStartValues
 import com.repforge.app.HealthJournalStore
@@ -859,14 +860,12 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
 
     fun requestOwnershipBackFromWatch() {
         if (_uiState.value.isFinishing || ActiveWorkoutStore.current(context)?.optBoolean("finalizationPending") == true) return
-        viewModelScope.launch(Dispatchers.IO) {
-            val current = ActiveWorkoutStore.current(context) ?: return@launch
-            runCatching {
-                PhoneOwnership193.journal(context).recover()
-                val resume = PhoneOwnership193.prepareResume(context)
-                val reqId = resume.optJSONObject("snapshot")?.optJSONObject("ownershipImport193")?.optString("id") ?: ""
-                val epoch = resume.optJSONObject("snapshot")?.optLong("ownerEpoch193") ?: 0L
-                PhoneOwnership193.installResume(context, reqId, epoch)
+        viewModelScope.launch {
+            try {
+                NativePhoneReturnInstallation.complete(context)
+            } catch (error: Exception) {
+                if (error is kotlinx.coroutines.CancellationException) throw error
+                showStatus(error.message ?: "Az órás visszaadás még nincs igazolva.")
             }
         }
     }

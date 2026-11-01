@@ -222,6 +222,83 @@ internal class HealthJournalStore(context: Context) :
         }
     }
 
+    /** Persist restore JSON in bounded SQLite rows without a document-sized string. */
+    private fun putSnapshot(db: SQLiteDatabase, key: String, snapshot: JSONObject) {
+        putMeta(db, key, META_CHUNKS)
+        db.delete("meta_parts", "key=?", arrayOf(key))
+        var part = 0
+        val writer = object : java.io.Writer() {
+            val buffer = StringBuilder(META_CHUNK_CHARS + 1)
+            fun emit(final: Boolean) {
+                var length = buffer.length
+                if (!final && length > 0 && Character.isHighSurrogate(buffer[length - 1])) length--
+                if (length == 0) return
+                val row = ContentValues().apply {
+                    put("key", key); put("part", part++); put("value", buffer.substring(0, length))
+                }
+                db.insertOrThrow("meta_parts", null, row)
+                buffer.delete(0, length)
+            }
+            override fun write(chars: CharArray, offset: Int, length: Int) {
+                var start = offset
+                val end = offset + length
+                while (start < end) {
+                    val count = min(end - start, META_CHUNK_CHARS - buffer.length)
+                    buffer.append(chars, start, count); start += count
+                    if (buffer.length >= META_CHUNK_CHARS) emit(false)
+                }
+            }
+            override fun write(text: String, offset: Int, length: Int) {
+                var start = offset
+                val end = offset + length
+                while (start < end) {
+                    val count = min(end - start, META_CHUNK_CHARS - buffer.length)
+                    buffer.append(text, start, start + count); start += count
+                    if (buffer.length >= META_CHUNK_CHARS) emit(false)
+                }
+            }
+            override fun flush() { emit(false) }
+            override fun close() { emit(true) }
+        }
+        writer.use { BackupJsonIO.write(snapshot, it) }
+    }
+
+    /** Also accepts pending snapshots written by older versions as one TEXT value. */
+    private fun readSnapshot(db: SQLiteDatabase, key: String): JSONObject {
+        val header = db.rawQuery("SELECT substr(value,1,$META_CHUNK_CHARS) FROM meta WHERE key=?", arrayOf(key)).use {
+            if (!it.moveToFirst()) throw IllegalStateException("Missing health restore snapshot")
+            it.getString(0)
+        }
+        if (header != META_CHUNKS) return BackupJsonIO.read(java.io.StringReader(meta(db, key, ""))) as JSONObject
+        val reader = object : java.io.Reader() {
+            var part = 0
+            var chunk = ""
+            var offset = 0
+            var ended = false
+            override fun read(chars: CharArray, start: Int, length: Int): Int {
+                if (length == 0) return 0
+                if (offset == chunk.length) {
+                    if (ended) return -1
+                    db.rawQuery("SELECT value FROM meta_parts WHERE key=? AND part=?", arrayOf(key, part.toString())).use {
+                        if (!it.moveToFirst()) {
+                            val remaining = db.rawQuery("SELECT COUNT(*) FROM meta_parts WHERE key=? AND part>?", arrayOf(key, part.toString())).use { c -> c.moveToFirst(); c.getInt(0) }
+                            if (part == 0 || remaining != 0) throw IllegalStateException("Incomplete health restore snapshot")
+                            ended = true
+                            return -1
+                        }
+                        chunk = it.getString(0); offset = 0; part++
+                    }
+                }
+                val count = min(length, chunk.length - offset)
+                chunk.toCharArray(chars, start, offset, offset + count)
+                offset += count
+                return count
+            }
+            override fun close() = Unit
+        }
+        return BackupJsonIO.read(reader) as JSONObject
+    }
+
     fun generation(): Long {
         synchronized(LOCK) {
             return meta(readableDatabase, "generation", "0").toLong()
@@ -1111,9 +1188,7 @@ internal class HealthJournalStore(context: Context) :
                 if (value.isNotEmpty()) sync.put(key, value)
             }
             out.put("records", records).put("days", days).put("deletions", deleted).put("syncMeta", sync)
-            if (out.toString().length > 18 * 1024 * 1024) {
-                throw IllegalStateException("Health export exceeds 18 MB")
-            }
+            BackupJsonIO.requireWithinCharacters(out, 18 * 1024 * 1024)
             out
         }
     }
@@ -1126,9 +1201,10 @@ internal class HealthJournalStore(context: Context) :
         val records = snapshot.getJSONArray("records")
         val days = snapshot.getJSONArray("days")
         val deleted = snapshot.optJSONArray("deletions")
-        if (records.length() > 100_000 || days.length() > 20_000 || snapshot.toString().length > 18 * 1024 * 1024) {
+        if (records.length() > 100_000 || days.length() > 20_000) {
             throw IllegalArgumentException("Health backup too large")
         }
+        BackupJsonIO.requireWithinCharacters(snapshot, 18 * 1024 * 1024)
         db.delete("records", null, null)
         db.delete("days", null, null)
         db.delete("deletions", null, null)
@@ -1181,8 +1257,8 @@ internal class HealthJournalStore(context: Context) :
                 db.execSQL("RELEASE validate_health")
             }
             val token = UUID.randomUUID().toString()
-            putMeta(db, "restore_old", old.toString())
-            putMeta(db, "restore_next", snapshot.toString())
+            putSnapshot(db, "restore_old", old)
+            putSnapshot(db, "restore_next", snapshot)
             putMeta(db, "restore_pending", token)
             token
         }
@@ -1194,7 +1270,7 @@ internal class HealthJournalStore(context: Context) :
             if (token != meta(db, "restore_pending", "")) {
                 throw IllegalArgumentException("Invalid restore token")
             }
-            replace(db, JSONObject(meta(db, "restore_next", "")))
+            replace(db, readSnapshot(db, "restore_next"))
             putMeta(db, "generation", (generation() + 1L).toString())
             null
         }
@@ -1207,8 +1283,9 @@ internal class HealthJournalStore(context: Context) :
                 throw IllegalArgumentException("Invalid restore token")
             }
             if (!commit) {
-                replace(db, JSONObject(meta(db, "restore_old", "")))
+                replace(db, readSnapshot(db, "restore_old"))
             }
+            db.delete("meta_parts", "key IN ('restore_old','restore_next')", null)
             db.delete("meta", "key IN ('restore_pending','restore_old','restore_next')", null)
             putMeta(db, "generation", (generation() + 1L).toString())
             null
