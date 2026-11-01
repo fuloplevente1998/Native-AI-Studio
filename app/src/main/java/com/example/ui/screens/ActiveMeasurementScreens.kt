@@ -4280,15 +4280,9 @@ fun WorkoutSummaryScreen(
             }
         }
 
-        val caloriesLabel = if (uiState.activeCaloriesKcal > 0) {
-            "— kcal (edzésadat nem érhető el)"
-        } else if (isOutdoor && uiState.outdoorDistanceKm > 0f) {
-            "~${(uiState.outdoorDistanceKm * 65f).toInt()} kcal"
-        } else if (elapsedSec > 0) {
-            "~${((elapsedSec / 60) * 6).coerceAtLeast(10)} kcal"
-        } else {
-            "0 kcal"
-        }
+        // Daily calories and generic time/distance estimates are NOT workout sensor measurements.
+        // Show an explicit unavailable state until a verified workout-specific Health record exists.
+        val caloriesLabel = "— kcal (nincs hiteles edzésadat)"
 
         item {
             Text(
