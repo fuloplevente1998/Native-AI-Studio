@@ -106,6 +106,7 @@ fun HomeScreen(
             .padding(top = 8.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        if (!state.profileComplete || state.programs.none { it.isActive && it.isCustom && it.days.isNotEmpty() }) {
         // Mini nézetben a Profil és új terv (Kezdőlapról a köszönés eltűnt, maradt mini nézetben a Profil és új terv)
         Surface(
             shape = RoundedCornerShape(14.dp),
@@ -175,6 +176,8 @@ fun HomeScreen(
                     )
                 }
             }
+        }
+
         }
 
         // 3. HERO WORKOUT CARD (Mockup 1/4 #1: "Szüneteltetve • Teljes test A • 8 gyakorlat • kb. 60 perc • ▶ Folytatás")

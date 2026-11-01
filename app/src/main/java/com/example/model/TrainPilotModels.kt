@@ -156,7 +156,8 @@ data class CalendarDayEvent(
     val exerciseCount: Int,
     val durationMinutes: Int,
     val status: CalendarEventStatus,
-    val splitBadge: String = "A"
+    val splitBadge: String = "A",
+    val dateIso: String = ""
 )
 
 data class LoggedWorkoutEntry(
@@ -174,8 +175,9 @@ data class LoggedWorkoutEntry(
     val distanceKm: Float = 0f,
     val paceLabel: String = "",
     val photoCount: Int = 0,
-    val sourceWatch: Boolean = true,
-    val sourceHealthConnect: Boolean = true,
+    val sourceWatch: Boolean = false,
+    val sourceHealthConnect: Boolean = false,
+    val routeKeys: List<String> = emptyList(),
     val exerciseDetails: List<LoggedExerciseDetail> = emptyList()
 )
 

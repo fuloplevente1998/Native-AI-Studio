@@ -96,6 +96,11 @@ import kotlinx.coroutines.delay
 class MainActivity : ComponentActivity() {
     private val viewModel: TrainPilotViewModel by viewModels()
 
+    override fun onStop() {
+        viewModel.onAppBackground()
+        super.onStop()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -463,6 +468,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onBack = { viewModel.navigateBack() },
                             onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                             onSelectDay = { viewModel.selectCalendarDay(it) },
+                                    onSelectMonth = { viewModel.selectCalendarMonth(it) },
                             onOpenReplanModal = { viewModel.toggleReplanModal(it) },
                             onApplyReplan = { dateStr, firstDay ->
                                 viewModel.applyCalendarReplan(dateStr, firstDay)
@@ -622,9 +628,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onSelectOutdoorActivity = { activityName ->
                                 viewModel.selectOutdoorActivityType(activityName)
                             },
-                            onStartGpsTracking = { activityName ->
-                                viewModel.startGpsTrackingSession(activityName)
-                            }
+                            onStartGpsTracking = { activityName, key -> viewModel.startGpsTrackingSession(activityName, key) },
+                            onPauseMeasurement = { paused -> viewModel.pauseOutdoorMeasurement(paused) }
                         )
                     }
 
@@ -650,13 +655,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onUpdateNote = { viewModel.updateWorkoutSummaryNote(it) },
                             onSaveWorkout = { viewModel.finishAndSaveWorkout() },
                             onPauseAndExit = {
-                                viewModel.cycleHomeDemoMode(HomeDemoMode.PAUSED_WORKOUT)
-                                viewModel.selectTab(MainTab.HOME)
+                                if (viewModel.pauseActiveWorkout()) viewModel.selectTab(MainTab.HOME)
                             },
                             onDiscardWorkout = {
                                 viewModel.stopActiveWorkoutSession()
-                                viewModel.showBannerMessage("Edzés elvetve")
-                                viewModel.selectTab(MainTab.HOME)
                             }
                         )
                     }
@@ -850,6 +852,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onBack = { viewModel.selectTab(MainTab.HOME) },
                                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                                     onSelectDay = { viewModel.selectCalendarDay(it) },
+                                    onSelectMonth = { viewModel.selectCalendarMonth(it) },
                                     onOpenReplanModal = { viewModel.toggleReplanModal(it) },
                                     onApplyReplan = { dateStr, firstDay ->
                                         viewModel.applyCalendarReplan(dateStr, firstDay)
@@ -928,15 +931,32 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             }
 
                             MainTab.HEALTH -> {
+                                val nativeHealth: com.repforge.app.ui.health.HealthDashboardViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+                                val health by nativeHealth.uiState.collectAsStateWithLifecycle()
+                                val activity = context as? android.app.Activity
+                                androidx.compose.runtime.DisposableEffect(activity) {
+                                    nativeHealth.healthScreenVisible(activity)
+                                    onDispose { nativeHealth.healthScreenHidden(activity) }
+                                }
+                                androidx.compose.runtime.LaunchedEffect(health.statusMessage, health.lastSyncAt) {
+                                    health.statusMessage?.let(viewModel::showBannerMessage)
+                                    viewModel.reloadHealthJournal()
+                                }
                                 HealthTabScreen(
-                                    uiState = uiState,
+                                    uiState = uiState.copy(primaryHealthSourceSamsung = health.provider == com.repforge.app.HealthJournalStore.SAMSUNG,
+                                        lastHealthSyncLabel = health.lastSyncAt,
+                                        healthProviderStatus = if (health.provider == com.repforge.app.HealthJournalStore.SAMSUNG)
+                                            if (health.samsungInstalled && health.samsungAvailable) "Samsung Health • szolgáltató elérhető" else "Samsung Health • alkalmazás vagy SDK nem érhető el"
+                                        else if (health.hcSupported && health.hcGranted) "Health Connect • olvasási hozzáférés engedélyezett" else "Health Connect • hiányzó támogatás vagy engedély"),
                                     strings = strings,
                                     onToggleHealthSection = { viewModel.toggleHealthSection(it) },
                                     onSelectWeightRange = { viewModel.selectWeightRange(it) },
                                     onToggleAddWeightDialog = { viewModel.toggleAddWeightDialog(it) },
                                     onSaveNewWeight = { kg, dateStr -> viewModel.saveNewBodyWeight(kg, dateStr) },
-                                    onTogglePrimaryHealthSource = { viewModel.togglePrimaryHealthSource() },
-                                    onTriggerHealthSync = { viewModel.triggerHealthSyncNow() },
+                                    onTogglePrimaryHealthSource = { nativeHealth.setProvider(
+                                        if (health.provider == com.repforge.app.HealthJournalStore.SAMSUNG) com.repforge.app.HealthJournalStore.HC
+                                        else com.repforge.app.HealthJournalStore.SAMSUNG, activity) },
+                                    onTriggerHealthSync = { nativeHealth.syncHealth(activity) },
                                     onNavigateToSubScreen = { viewModel.navigateToSubScreen(it) },
                                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
                                     onOpenGoalsDialog = { viewModel.toggleGoalsDialog(true) },

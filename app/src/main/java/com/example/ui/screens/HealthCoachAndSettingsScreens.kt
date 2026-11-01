@@ -471,12 +471,12 @@ fun HealthTabScreen(
                                 val (titleStr, onActionClick) = when (activeKey) {
                                     "calories" -> listOf(
                                         "Aktív kalória részletek • ${uiState.activeCaloriesKcal} kcal",
-                                        "Edzés + napi mozgás: ${uiState.activeCaloriesKcal} kcal | Alapanyagcsere: 1 780 kcal",
+                                        "Edzés + napi mozgás: ${uiState.activeCaloriesKcal} kcal | Alapanyagcsere: nincs mért adat",
                                         "További Health-adatok megnyitása lent"
                                     ) to { onToggleHealthSection("extra") }
                                     "pulse" -> listOf(
                                         "Pulzus részletek • Aktuális: ${if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"}",
-                                        "Nyugalmi pulzus: ${uiState.restingHrBpm} bpm | Napi tartomány: 58–146 bpm",
+                                        "Nyugalmi pulzus: ${uiState.restingHrBpm} bpm | Napi tartomány: nincs mért adat",
                                         "24 órás Pulzustrend megtekintése lent"
                                     ) to { onToggleHealthSection("pulse") }
                                     "steps" -> listOf(
@@ -1603,12 +1603,12 @@ fun HealthTabScreen(
                 }
 
                 Text(
-                    text = "Utolsó sikeres szinkron: 2026. 10. 27. 14:59",
+                    text = "Utolsó igazolt szinkron: ${uiState.lastHealthSyncLabel}",
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary
                 )
                 Text(
-                    text = "Samsung Health · közvetlen: 1/2",
+                    text = uiState.healthProviderStatus,
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary
                 )
@@ -3186,7 +3186,7 @@ fun BackupRestoreScreen(
             Button(
                 onClick = {
                     if (uiState.selectedBackupFormat == "DRIVE") {
-                        onShowBanner("Google Drive mentés előkészítve")
+                        onShowBanner("Google Drive mentés nem történt: a Drive-integráció nincs beállítva. Válaszd a helyi JSON / ZIP mentést.")
                     } else {
                         exportLauncher.launch(defaultFileName)
                     }

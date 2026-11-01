@@ -551,263 +551,54 @@ private fun DrawScope.drawAnatomicalFigure(
  * Matching Mockup 3/4 #3 (`Edzésútvonal`) & Mockup 2/4 #4 (`Kültéri mérés`).
  */
 @Composable
-fun MargitszigetDetailedMapBox(
+fun NativeWorkoutRouteMapBox(
     modifier: Modifier = Modifier,
     interactiveControls: Boolean = true,
-    selectedKmSplit: Int = 0,
-    onSelectKmSplit: ((Int) -> Unit)? = null
+    routeKeys: List<String> = emptyList(),
+    refreshToken: Int = 0
 ) {
     val palette = LocalTrainPilotPalette.current
-    var zoomScale by remember { mutableFloatStateOf(1.0f) }
-
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(24.dp))
-            .background(Color(0xFF0E1A24))
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(24.dp))
-    ) {
-        val routeGreen = Color(0xFF22C55E)
-        val bridgeYellow = Color(0xFFEAB308)
-
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val w = size.width
-            val h = size.height
-
-            // 1. Base urban land (Vizafogó on top-left, Újlipótváros on right)
-            drawRect(color = Color(0xFF1A242D), size = size)
-
-            // 2. Danube River branches around Margaret Island (Duna)
-            val leftRiver = Path().apply {
-                moveTo(w * 0.42f, 0f)
-                lineTo(w * 0.68f, 0f)
-                lineTo(w * 0.24f, h)
-                lineTo(0f, h)
-                lineTo(0f, h * 0.62f)
-                close()
-            }
-            drawPath(leftRiver, Color(0xFF1B3B52))
-
-            val rightRiver = Path().apply {
-                moveTo(w * 0.82f, 0f)
-                lineTo(w, 0f)
-                lineTo(w, h * 0.35f)
-                lineTo(w * 0.56f, h)
-                lineTo(w * 0.30f, h)
-                close()
-            }
-            drawPath(rightRiver, Color(0xFF1B3B52))
-
-            // 3. Margaret Island (Margitsziget) diagonal park landmass
-            val island = Path().apply {
-                moveTo(w * 0.72f, h * 0.08f)
-                cubicTo(w * 0.84f, h * 0.14f, w * 0.80f, h * 0.35f, w * 0.62f, h * 0.65f)
-                cubicTo(w * 0.48f, h * 0.85f, w * 0.36f, h * 0.88f, w * 0.27f, h * 0.82f)
-                cubicTo(w * 0.22f, h * 0.72f, w * 0.34f, h * 0.45f, w * 0.52f, h * 0.22f)
-                close()
-            }
-            drawPath(island, Color(0xFF233931))
-
-            // Inner park lawns & paths
-            val innerPark = Path().apply {
-                moveTo(w * 0.66f, h * 0.16f)
-                lineTo(w * 0.72f, h * 0.26f)
-                lineTo(w * 0.46f, h * 0.72f)
-                lineTo(w * 0.34f, h * 0.66f)
-                close()
-            }
-            drawPath(innerPark, Color(0xFF2B473C))
-
-            // 4. Urban street grids (Vizafogó top-left & Újlipótváros right)
-            val streetStroke = Stroke(width = 1.2.dp.toPx())
-            for (i in 1..6) {
-                // Top-left streets
-                drawLine(
-                    color = Color.White.copy(alpha = 0.09f),
-                    start = Offset(0f, h * 0.06f * i),
-                    end = Offset(w * 0.42f, h * 0.11f * i),
-                    strokeWidth = streetStroke.width
-                )
-                // Right-side Újlipótváros grid
-                drawLine(
-                    color = Color.White.copy(alpha = 0.10f),
-                    start = Offset(w * 0.66f, h * (0.28f + i * 0.10f)),
-                    end = Offset(w, h * (0.38f + i * 0.10f)),
-                    strokeWidth = streetStroke.width
-                )
-                drawLine(
-                    color = Color.White.copy(alpha = 0.08f),
-                    start = Offset(w * (0.62f + i * 0.06f), h * 0.25f),
-                    end = Offset(w * (0.48f + i * 0.07f), h),
-                    strokeWidth = streetStroke.width
-                )
-            }
-
-            // 5. Margit híd (Margaret Bridge at bottom, angled with bend at island tip)
-            val bridgePath = Path().apply {
-                moveTo(0f, h * 0.78f)
-                lineTo(w * 0.32f, h * 0.85f)
-                lineTo(w * 0.68f, h * 0.96f)
-            }
-            drawPath(
-                path = bridgePath,
-                color = bridgeYellow.copy(alpha = 0.8f),
-                style = Stroke(width = 4.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-            )
-
-            // 6. Glowing GPS Running Track on Margitsziget (matching Mockup 3/4 #3)
-            val gpsRoute = Path().apply {
-                moveTo(w * 0.37f, h * 0.73f)
-                cubicTo(
-                    w * 0.42f, h * 0.68f,
-                    w * 0.50f, h * 0.71f,
-                    w * 0.56f, h * 0.62f
-                )
-                cubicTo(
-                    w * 0.63f, h * 0.50f,
-                    w * 0.68f, h * 0.36f,
-                    w * 0.74f, h * 0.22f
-                )
-            }
-            // Outer glow
-            drawPath(
-                path = gpsRoute,
-                color = routeGreen.copy(alpha = 0.28f),
-                style = Stroke(width = (11.dp * zoomScale).toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-            )
-            // Main GPS line
-            drawPath(
-                path = gpsRoute,
-                color = routeGreen,
-                style = Stroke(width = (4.5.dp * zoomScale).toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-            )
-
-            // Intermediate 1 km marker dot
-            drawCircle(
-                color = Color.White,
-                radius = 5.dp.toPx(),
-                center = Offset(w * 0.60f, h * 0.54f)
-            )
-            drawCircle(
-                color = routeGreen,
-                radius = 3.dp.toPx(),
-                center = Offset(w * 0.60f, h * 0.54f)
-            )
-
-            // Start Pin (South-west green circle with white ring)
-            val startCenter = Offset(w * 0.37f, h * 0.73f)
-            drawCircle(color = Color.White, radius = 9.dp.toPx(), center = startCenter)
-            drawCircle(color = routeGreen, radius = 6.dp.toPx(), center = startCenter)
-
-            // Finish Pin (North-east checkered target circle)
-            val endCenter = Offset(w * 0.74f, h * 0.22f)
-            drawCircle(color = Color.White, radius = 10.dp.toPx(), center = endCenter)
-            drawCircle(color = Color(0xFF111827), radius = 7.dp.toPx(), center = endCenter)
-            drawCircle(color = Color.White, radius = 3.5.dp.toPx(), center = endCenter)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var segments by remember { mutableStateOf<List<List<com.google.android.gms.maps.model.LatLng>>>(emptyList()) }
+    androidx.compose.runtime.LaunchedEffect(routeKeys, refreshToken) {
+        segments = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            com.repforge.app.ui.journal.WorkoutRouteCoordinates.loadAll(context, routeKeys)?.segments.orEmpty()
+                .map { segment -> segment.filter { it.first.isFinite() && it.second.isFinite() &&
+                    it.first in -90.0..90.0 && it.second in -180.0..180.0 }
+                    .map { com.google.android.gms.maps.model.LatLng(it.first, it.second) } }
         }
-
-        // Geographic Labels matching Mockup 3/4 #3
-        Text(
-            text = "Vizafogó",
-            style = MaterialTheme.typography.labelMedium,
-            color = Color.White.copy(alpha = 0.75f),
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(start = 18.dp, top = 22.dp)
-        )
-        Text(
-            text = "Újlipótváros",
-            style = MaterialTheme.typography.labelMedium,
-            color = Color.White.copy(alpha = 0.80f),
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(end = 18.dp, top = 46.dp)
-        )
-        Text(
-            text = "Margitsziget",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .padding(end = 28.dp, bottom = 24.dp)
-        )
-        Text(
-            text = "Duna",
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF93C5FD),
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 68.dp, top = 24.dp)
-        )
-        Text(
-            text = "Margit\nhíd",
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color.White.copy(alpha = 0.88f),
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(start = 76.dp, bottom = 22.dp)
-        )
-
-        if (interactiveControls) {
-            val strings = LocalTrainPilotStrings.current
-            // Zoom & Recenter floating controls (bottom-right matching Mockup 3/4 #3)
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+    }
+    val configured = remember(context) {
+        runCatching { context.packageManager.getApplicationInfo(context.packageName,
+            android.content.pm.PackageManager.GET_META_DATA).metaData
+            ?.getString("com.google.android.geo.API_KEY").orEmpty().isNotBlank() }.getOrDefault(false)
+    }
+    val points = segments.flatten()
+    Box(modifier.clip(RoundedCornerShape(24.dp)).background(palette.background)
+        .border(1.dp, palette.cardBorder, RoundedCornerShape(24.dp)), contentAlignment = Alignment.Center) {
+        if (!configured || points.isEmpty()) {
+            Text(if (!configured) "A Google Maps kulcs nincs konfigurálva. Az útvonal helyben megmarad."
+                else "Még nincs rögzített GPS-útvonal.", color = palette.textSecondary,
+                modifier = Modifier.padding(16.dp))
+        } else {
+            val camera = com.google.maps.android.compose.rememberCameraPositionState {
+                position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(points.first(), 16f)
+            }
+            com.google.maps.android.compose.GoogleMap(
+                modifier = Modifier.fillMaxSize(), cameraPositionState = camera,
+                uiSettings = com.google.maps.android.compose.MapUiSettings(
+                    zoomControlsEnabled = interactiveControls, scrollGesturesEnabled = interactiveControls,
+                    zoomGesturesEnabled = interactiveControls, rotationGesturesEnabled = interactiveControls)
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = Color(0xFF1F2937).copy(alpha = 0.9f),
-                    modifier = Modifier
-                        .size(48.dp)
-                        .border(1.dp, palette.cardBorder, CircleShape)
-                        .clip(CircleShape)
-                        .clickable { zoomScale = (zoomScale + 0.2f).coerceAtMost(1.6f) }
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(imageVector = Icons.Default.Add, contentDescription = strings.zoomInDesc, tint = Color.White, modifier = Modifier.size(18.dp))
-                    }
-                }
-                Surface(
-                    shape = CircleShape,
-                    color = Color(0xFF1F2937).copy(alpha = 0.9f),
-                    modifier = Modifier
-                        .size(48.dp)
-                        .border(1.dp, palette.cardBorder, CircleShape)
-                        .clip(CircleShape)
-                        .clickable { zoomScale = (zoomScale - 0.2f).coerceAtLeast(0.8f) }
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(imageVector = Icons.Default.Remove, contentDescription = strings.zoomOutDesc, tint = Color.White, modifier = Modifier.size(18.dp))
-                    }
-                }
-                Surface(
-                    shape = CircleShape,
-                    color = Color(0xFF1F2937).copy(alpha = 0.9f),
-                    modifier = Modifier
-                        .size(48.dp)
-                        .border(1.dp, palette.primary.copy(alpha = 0.6f), CircleShape)
-                        .clip(CircleShape)
-                        .clickable { zoomScale = 1.0f }
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(imageVector = Icons.Default.MyLocation, contentDescription = strings.recenterMapDesc, tint = Color.White, modifier = Modifier.size(20.dp))
-                    }
+                // Never bridge a paused/ownership gap with an invented straight route.
+                segments.filter { it.size > 1 }.forEach { segment ->
+                    com.google.maps.android.compose.Polyline(points = segment, color = palette.primary, width = 8f)
                 }
             }
         }
     }
 }
 
-/**
- * Custom Exercise Posture & Target Muscle Mini-Illustration (Mockup 1/4 #5 & #6, Mockup 2/4 #1..#3, Mockup 3/4 #2).
- * Depicts the exact exercise body position (Squat, Push-up/Bench, Row/Pull, Lunge, Plank, Overhead Press, Arm Curl)
- * with highlighted active muscles and motion direction arrow.
- */
 @Composable
 fun ExercisePostureMiniIllustration(
     exerciseNameOrId: String,

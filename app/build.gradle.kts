@@ -14,6 +14,7 @@ android {
 
   defaultConfig {
     applicationId = "com.TrainPilot.com"
+    manifestPlaceholders["TRAINPILOT_MAPS_API_KEY"] = providers.environmentVariable("TRAINPILOT_MAPS_API_KEY").orElse("").get()
     minSdk = 26
     targetSdk = 36
     versionCode = 2736

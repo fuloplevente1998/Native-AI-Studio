@@ -1,5 +1,11 @@
 package com.example.ui.viewmodel
 
+import androidx.room.withTransaction
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.time.YearMonth
+import java.time.ZoneId
+import java.time.LocalTime
 import androidx.lifecycle.ViewModel
 import com.example.data.DemoDataProvider
 import com.example.model.AppLanguage
@@ -21,6 +27,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -91,6 +98,8 @@ data class TrainPilotUiState(
     val dailySteps: Int = 0,
     val stepsGoal: Int = 10000,
     val activeCaloriesKcal: Int = 0,
+    val lastHealthSyncLabel: String = "—",
+    val healthProviderStatus: String = "A szolgáltató állapota még nem ismert",
     val samsungEnergyScore: Int = 0,
     val coachReadinessScore: Int = 0,
 
@@ -119,6 +128,7 @@ data class TrainPilotUiState(
     val beginnerGentleProfileActive: Boolean = false,
 
     // Calendar & Replan State (Mockup 1/4 #4 + main Naptár & Újratervezés)
+    val calendarYearMonth: String = YearMonth.now().toString(),
     val selectedCalendarDay: Int = LocalDate.now().dayOfMonth,
     val calendarEvents: List<CalendarDayEvent> = emptyList(),
     val calendarUndoStack: List<List<CalendarDayEvent>> = emptyList(),
@@ -138,6 +148,7 @@ data class TrainPilotUiState(
     val showAddCustomExerciseDialog: Boolean = false,
 
     // Active Workout & Measurement State (Mockup 2/4 #1..#6)
+    val isSavingWorkout: Boolean = false,
     val isWorkoutSessionActive: Boolean = false,
     val activeWorkoutId: String = "",
     val workoutStartedEpochMs: Long = 0L,
@@ -153,6 +164,7 @@ data class TrainPilotUiState(
     val activeSetsByExerciseId: Map<String, List<ExerciseSetItem>> = emptyMap(),
     val quickWorkoutQueue: List<ExerciseItem> = emptyList(),
     val autoModeEnabled: Boolean = false,
+    val profileComplete: Boolean = false,
     val userHeightCm: Int = 179,
     val userWeightKg: Float = 65f,
     val userFitnessGoalHu: String = "Izomépítés",
@@ -176,6 +188,7 @@ data class TrainPilotUiState(
     val bilateralLeftSec: Int = 0,
     val bilateralRightSec: Int = 0,
     val outdoorGpsEnabled: Boolean = true,
+    val outdoorRouteKey: String = "",
     val outdoorDistanceKm: Float = 0f,
     val outdoorElapsedLabel: String = "00:00",
     val outdoorPaceLabel: String = "0:00",
@@ -237,6 +250,8 @@ class TrainPilotViewModel : ViewModel() {
     val uiState: StateFlow<TrainPilotUiState> = _uiState.asStateFlow()
 
     private var nativeContext: Context? = null
+    private val calendarWriteMutex = Mutex()
+    @Volatile private var calendarWriteRevision = 0L
     private var nativeSettingsStore: TrainPilotSettingsStore? = null
     private var nativeDatabase: TrainPilotDatabase? = null
     private var nativeScope: CoroutineScope? = null
@@ -424,7 +439,7 @@ class TrainPilotViewModel : ViewModel() {
             }
     }
 
-    private fun persistProgramsToRoomAsync() {
+    private fun persistProgramsToRoomAsync(profile: JSONObject? = null) {
         val db = nativeDatabase ?: return
         val scope = nativeScope ?: return
         val currentPrograms = _uiState.value.programs
@@ -489,6 +504,20 @@ class TrainPilotViewModel : ViewModel() {
                     }
                     db.programDao().saveProgramWithDays(progEntity, progDays)
                 }
+                if (profile != null) {
+                    val store = checkNotNull(nativeSettingsStore)
+                    val merged = JSONObject(store.current().profileJson)
+                    profile.keys().forEach { key -> merged.put(key, profile.get(key)) }
+                    store.saveTrainingProfile(merged)
+                    val active = currentPrograms.first { it.isActive }
+                    check(db.programDao().getProgramWithDaysById(active.id)?.days?.isNotEmpty() == true)
+                    store.setActiveProgramId(active.id)
+                    _uiState.update { it.copy(profileComplete = true,
+                        statusBannerMessage = "Profil és egyéni terv tartósan elmentve.") }
+                }
+            }.onFailure { failure ->
+                if (failure is kotlinx.coroutines.CancellationException) throw failure
+                _uiState.update { it.copy(statusBannerMessage = "A terv/profil mentése nem sikerült. Próbáld újra.") }
             }
         }
     }
@@ -501,12 +530,26 @@ class TrainPilotViewModel : ViewModel() {
         val undoStack = state.calendarUndoStack
         val activeProg = state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
         val nowMs = System.currentTimeMillis()
-        val ym = LocalDate.now()
+        val revision = ++calendarWriteRevision
         scope.launch(Dispatchers.IO) {
             runCatching {
-                val scheduleEntities = events.map { ev ->
-                    val clampedDay = ev.dayOfMonth.coerceIn(1, ym.lengthOfMonth())
-                    val dateStr = LocalDate.of(ym.year, ym.monthValue, clampedDay).toString()
+              calendarWriteMutex.withLock {
+                if (revision != calendarWriteRevision) return@withLock
+                db.withTransaction {
+                val oldDocument = db.keyValueDocumentDao().getDocument("native:calendarState")
+                val previous = oldDocument?.json?.let { JSONObject(it).optJSONArray("events") } ?: JSONArray()
+                val retainedIds = events.map { it.id }.toSet()
+                for (i in 0 until previous.length()) {
+                    val id = previous.getJSONObject(i).getString("id")
+                    if (id !in retainedIds && db.calendarScheduleDao().getEntry(id)?.googleEventId.isNullOrBlank())
+                        db.calendarScheduleDao().deleteEntry(id)
+                }
+                val scheduleEntities = events.filter { ev ->
+                    db.calendarScheduleDao().getEntry(ev.id)?.googleEventId.isNullOrBlank()
+                }.map { ev ->
+                    val date = LocalDate.parse(ev.dateIso)
+                    val dateStr = date.toString()
+                    val (start, end) = com.example.model.StudioCalendarDates.window(ev, ZoneId.systemDefault())
                     val statusStr = when (ev.status) {
                         CalendarEventStatus.COMPLETED -> "completed"
                         CalendarEventStatus.MISSED -> "skipped"
@@ -515,6 +558,7 @@ class TrainPilotViewModel : ViewModel() {
                     val rawEv = JSONObject().apply {
                         put("id", ev.id)
                         put("dayOfMonth", ev.dayOfMonth)
+                        put("dateIso", ev.dateIso)
                         put("timeLabel", ev.timeLabel)
                         put("titleHu", ev.titleHu)
                         put("exerciseCount", ev.exerciseCount)
@@ -526,8 +570,8 @@ class TrainPilotViewModel : ViewModel() {
                         id = ev.id,
                         googleEventId = "",
                         date = dateStr,
-                        startIso = "${dateStr}T${ev.timeLabel.ifBlank { "10:00" }}:00Z",
-                        endIso = "${dateStr}T11:00:00Z",
+                        startIso = start.toString(),
+                        endIso = end.toString(),
                         programId = activeProg?.id ?: "program_default",
                         programName = activeProg?.nameHu ?: ev.titleHu,
                         dayId = ev.splitBadge,
@@ -548,6 +592,7 @@ class TrainPilotViewModel : ViewModel() {
                             JSONObject().apply {
                                 put("id", ev.id)
                                 put("dayOfMonth", ev.dayOfMonth)
+                        put("dateIso", ev.dateIso)
                                 put("timeLabel", ev.timeLabel)
                                 put("titleHu", ev.titleHu)
                                 put("exerciseCount", ev.exerciseCount)
@@ -565,6 +610,7 @@ class TrainPilotViewModel : ViewModel() {
                         JSONObject().apply {
                             put("id", ev.id)
                             put("dayOfMonth", ev.dayOfMonth)
+                        put("dateIso", ev.dateIso)
                             put("timeLabel", ev.timeLabel)
                             put("titleHu", ev.titleHu)
                             put("exerciseCount", ev.exerciseCount)
@@ -586,6 +632,11 @@ class TrainPilotViewModel : ViewModel() {
                         updatedAt = nowMs
                     )
                 )
+                }
+              }
+            }.onFailure { error ->
+                if (error is kotlinx.coroutines.CancellationException) throw error
+                _uiState.update { it.copy(statusBannerMessage = "A naptármódosítás nem menthető. Próbáld újra.") }
             }
         }
     }
@@ -700,11 +751,13 @@ class TrainPilotViewModel : ViewModel() {
                 put("nameEn", exItem.nameEn)
                 put("loadType", if (exItem.defaultWeightKg <= 0f) "bodyweight" else "weight")
                 put("repUnit", when {
+                    exItem.id == "outdoor_run_ex" && state.outdoorGpsEnabled -> "km"
                     exItem.isBilateral -> "mp/oldal"
                     exItem.isTimed -> "sec"
                     else -> "reps"
                 })
                 put("measurementType", when {
+                    exItem.id == "outdoor_run_ex" && state.outdoorGpsEnabled -> "distance"
                     exItem.isBilateral -> "bilateral_time"
                     exItem.isTimed -> "time"
                     else -> "reps"
@@ -734,6 +787,10 @@ class TrainPilotViewModel : ViewModel() {
             put("timerOwner", if (state.phoneControlsWorkout) "phone" else "watch")
             put("originDevice", "phone")
             put("workoutPaused", false)
+            if (state.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS) {
+                put("studioGpsKey", state.outdoorRouteKey)
+                put("studioIndoor", !state.outdoorGpsEnabled)
+            }
             put("restSeconds", state.defaultRestSec)
             put("exercises", exercisesArray)
         }
@@ -742,21 +799,41 @@ class TrainPilotViewModel : ViewModel() {
     private fun persistCanonicalActiveSessionAsync(installNew: Boolean = false) {
         val ctx = nativeContext ?: return
         val scope = nativeScope ?: return
-        val currentState = _uiState.value
-        if (!currentState.isWorkoutSessionActive) return
-        val snapshotJson = buildCanonicalSessionJsonFromState(currentState)
-        scope.launch(Dispatchers.IO) {
-            runCatching {
-                if (installNew) {
-                    withContext(Dispatchers.Main.immediate) {
-                        NativeWorkoutSession.installPrepared(ctx, snapshotJson)
-                    }
-                } else {
-                    ActiveWorkoutStore.saveOwned(ctx, snapshotJson)
-                }
+        val state = _uiState.value
+        if (!state.isWorkoutSessionActive) return
+        val candidate = buildCanonicalSessionJsonFromState(state)
+        scope.launch(Dispatchers.Main.immediate) {
+            try {
+                com.repforge.app.StudioWorkoutBridge.persist(ctx, candidate)
+            } catch (failure: Exception) {
+                if (failure is kotlinx.coroutines.CancellationException) throw failure
+                _uiState.update { it.copy(statusBannerMessage = failure.message ?: "Az edzés nem menthető.") }
             }
         }
     }
+
+    fun pauseActiveWorkout(paused: Boolean = true): Boolean {
+        val ctx = nativeContext ?: return !_uiState.value.isWorkoutSessionActive
+        val current = ActiveWorkoutStore.current(ctx)?.takeIf { it.optBoolean("active") } ?: return true
+        // A running GPS session and acknowledged watch owner intentionally continue in background.
+        if (current.optString("timerOwner", "phone") != "phone" ||
+            (_uiState.value.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS &&
+                com.repforge.app.DistanceTrackingService.snapshot(ctx).optBoolean("active"))) return true
+        return try {
+            com.repforge.app.StudioWorkoutBridge.pause(ctx, paused)
+            _uiState.update { it.copy(homeDemoMode = if (paused) HomeDemoMode.PAUSED_WORKOUT else it.homeDemoMode) }
+            true
+        } catch (failure: Exception) {
+            _uiState.update { it.copy(statusBannerMessage = failure.message ?: "A szünet nem menthető.") }
+            false
+        }
+    }
+
+    fun onAppBackground() { pauseWhenLeavingMeasurement() }
+
+    private fun pauseWhenLeavingMeasurement(): Boolean =
+        if (_uiState.value.currentSubScreen in setOf(SubScreen.ACTIVE_STRENGTH, SubScreen.ACTIVE_TIMED, SubScreen.ACTIVE_BILATERAL, SubScreen.ACTIVE_OUTDOOR_GPS))
+            pauseActiveWorkout() else true
 
     init {
         try {
@@ -795,15 +872,43 @@ class TrainPilotViewModel : ViewModel() {
         nativeDatabase = database
         nativeScope = scope
 
+        scope.launch(Dispatchers.Main.immediate) {
+            ActiveWorkoutStore.snapshotFlow.collect { frame ->
+                if (frame?.optBoolean("active") == true) _uiState.update { state ->
+                    if (state.activeWorkoutId != frame.optString("workoutId")) return@update state
+                    val nativeSets = mutableMapOf<String, List<ExerciseSetItem>>()
+                    val exercises = frame.optJSONArray("exercises") ?: JSONArray()
+                    for (index in 0 until exercises.length()) {
+                        val exercise = exercises.getJSONObject(index)
+                        val rows = exercise.optJSONArray("sets") ?: JSONArray()
+                        nativeSets[exercise.optString("id")] = (0 until rows.length()).map { rowIndex ->
+                            val row = rows.getJSONObject(rowIndex)
+                            ExerciseSetItem(setNumber = row.optInt("setNumber", rowIndex + 1),
+                                weightKg = row.optDouble("weight", 0.0).toFloat(), reps = row.optString("reps").toDoubleOrNull()?.toInt() ?: 0,
+                                rir = row.optInt("actualRir", 2), completed = row.optBoolean("done"),
+                                leftSec = row.optInt("leftSeconds", row.optInt("leftSec", 0)),
+                                rightSec = row.optInt("rightSeconds", row.optInt("rightSec", 0)),
+                                leftRecorded = row.optInt("leftSeconds") > 0 || row.optBoolean("leftRecorded"),
+                                rightRecorded = row.optInt("rightSeconds") > 0 || row.optBoolean("rightRecorded"))
+                        }
+                    }
+                    val selected = state.activeWorkoutExercises.getOrNull(state.activeExerciseIndex)?.id
+                    state.copy(activeSetsByExerciseId = state.activeSetsByExerciseId + nativeSets,
+                        activeSets = nativeSets[selected] ?: state.activeSets)
+                }
+            }
+        }
+
         scope.launch(Dispatchers.IO) {
             // Seed catalog into Room DB
             try {
                 TrainPilotDatabase.ensureBuiltinCatalogSeeded(database, context)
             } catch (_: Throwable) {}
 
+            val savedProfile = JSONObject(settingsStore.current().profileJson)
             // 1. Detect if a paused or active workout is running natively
             try {
-                val execution = PhoneWorkoutExecution.store(context).snapshot()
+                val execution = withContext(Dispatchers.Main.immediate) { PhoneWorkoutExecution.store(context).snapshot() }
                 val activeStore = ActiveWorkoutStore.current(context)
                 val isPaused = (execution?.optBoolean("active") == true && execution.optBoolean("workoutPaused")) ||
                         (activeStore?.optBoolean("active") == true && activeStore.optBoolean("workoutPaused"))
@@ -924,6 +1029,8 @@ class TrainPilotViewModel : ViewModel() {
                 val calDoc = database.keyValueDocumentDao().getDocument("native:calendarState")
                 if (calDoc != null && calDoc.json.isNotBlank()) {
                     val root = JSONObject(calDoc.json)
+                    val calendarRows = database.calendarScheduleDao().getAllEntries().associateBy { it.id }
+                    val legacyMonth = YearMonth.from(Instant.ofEpochMilli(calDoc.updatedAt).atZone(ZoneId.systemDefault()))
                     val evArr = root.optJSONArray("events")
                     if (evArr != null) {
                         loadedCalendarEvents = (0 until evArr.length()).mapNotNull { idx ->
@@ -936,7 +1043,11 @@ class TrainPilotViewModel : ViewModel() {
                                 exerciseCount = o.optInt("exerciseCount", 6),
                                 durationMinutes = o.optInt("durationMinutes", 60),
                                 status = runCatching { CalendarEventStatus.valueOf(o.optString("status", "PLANNED")) }.getOrDefault(CalendarEventStatus.PLANNED),
-                                splitBadge = o.optString("splitBadge", "A")
+                                splitBadge = o.optString("splitBadge", "A"),
+                                dateIso = o.optString("dateIso").ifBlank {
+                                    calendarRows[o.optString("id")]?.date ?: legacyMonth.atDay(
+                                        o.optInt("dayOfMonth", 1).coerceIn(1, legacyMonth.lengthOfMonth())).toString()
+                                }
                             )
                         }
                     }
@@ -954,7 +1065,11 @@ class TrainPilotViewModel : ViewModel() {
                                     exerciseCount = o.optInt("exerciseCount", 6),
                                     durationMinutes = o.optInt("durationMinutes", 60),
                                     status = runCatching { CalendarEventStatus.valueOf(o.optString("status", "PLANNED")) }.getOrDefault(CalendarEventStatus.PLANNED),
-                                    splitBadge = o.optString("splitBadge", "A")
+                                    splitBadge = o.optString("splitBadge", "A"),
+                                dateIso = o.optString("dateIso").ifBlank {
+                                    calendarRows[o.optString("id")]?.date ?: legacyMonth.atDay(
+                                        o.optInt("dayOfMonth", 1).coerceIn(1, legacyMonth.lengthOfMonth())).toString()
+                                }
                                 )
                             }
                         }
@@ -1011,6 +1126,10 @@ class TrainPilotViewModel : ViewModel() {
                         summaryExercisesHu = exerciseNames.ifBlank { "Rögzített gyakorlatok" },
                         hasPr = w.hasPr226,
                         isOutdoorRun = isOutdoor,
+                        routeKeys = detail.exercises.flatMap { it.sets }.flatMap {
+                            listOfNotNull(it.gpsRouteKey163, it.gpsRouteKey193)
+                        }.filter(String::isNotBlank).distinct(),
+                        sourceWatch = !w.wearMetricsJson.isNullOrBlank(), sourceHealthConnect = !w.health240Json.isNullOrBlank(),
                         exerciseDetails = mappedDetails
                     )
                 }
@@ -1050,7 +1169,7 @@ class TrainPilotViewModel : ViewModel() {
             // Restore active workout session from ActiveWorkoutStore on cold start if present
             val restoredActiveSnap = runCatching {
                 ActiveWorkoutStore.current(context)?.takeIf { it.optBoolean("active", false) }
-                    ?: PhoneWorkoutExecution.store(context).snapshot()?.takeIf { it.optBoolean("active", false) }
+                    ?: withContext(Dispatchers.Main.immediate) { PhoneWorkoutExecution.store(context).snapshot() }?.takeIf { it.optBoolean("active", false) }
             }.getOrNull()
 
             withContext(Dispatchers.Main) {
@@ -1119,15 +1238,35 @@ class TrainPilotViewModel : ViewModel() {
                     val computedPrs = computePrRecordsFromWorkouts(mappedWorkouts)
                     st.copy(
                         exercises = mappedExercises,
+                        profileComplete = com.example.model.StudioProfileCompletion.complete(savedProfile),
+                        userHeightCm = savedProfile.optInt("height", st.userHeightCm),
+                        userWeightKg = savedProfile.optDouble("weight", st.userWeightKg.toDouble()).toFloat(),
+                        userFitnessGoalHu = savedProfile.optString("goal", st.userFitnessGoalHu),
+                        userExperienceLevelHu = savedProfile.optString("experience", st.userExperienceLevelHu),
+                        userWorkoutLocationHu = savedProfile.optString("location", st.userWorkoutLocationHu),
+                        userSelectedEquipmentHu = savedProfile.optJSONArray("gear")?.let { arr ->
+                            (0 until arr.length()).joinToString(", ") { arr.optString(it) }
+                        } ?: st.userSelectedEquipmentHu,
+                        userScheduleDaysPerWeek = savedProfile.optInt("daysPerWeek", st.userScheduleDaysPerWeek),
+                        userWorkoutDurationMin = savedProfile.optInt("minutes", st.userWorkoutDurationMin),
+                        userExcludedMusclesHu = savedProfile.optJSONArray("avoidAreas")?.let { arr ->
+                            (0 until arr.length()).map { arr.optString(it) }.toSet()
+                        } ?: st.userExcludedMusclesHu,
+                        userExcludedExercisesHu = savedProfile.optJSONArray("excluded")?.let { arr ->
+                            (0 until arr.length()).map { arr.optString(it) }.toSet()
+                        } ?: st.userExcludedExercisesHu,
                         selectedExerciseId = currentActiveEx?.id ?: st.selectedExerciseId,
                         programs = mappedPrograms,
                         editingProgramId = activeProg?.id ?: st.editingProgramId,
                         calendarEvents = if (loadedCalendarEvents.isNotEmpty()) loadedCalendarEvents else st.calendarEvents,
                         calendarUndoStack = if (loadedCalendarUndo.isNotEmpty()) loadedCalendarUndo else st.calendarUndoStack,
                         isWorkoutSessionActive = restoredActiveSnap != null || st.isWorkoutSessionActive,
+                        outdoorRouteKey = restoredActiveSnap?.optString("studioGpsKey") ?: st.outdoorRouteKey,
+                        outdoorGpsEnabled = restoredActiveSnap?.takeIf { it.has("studioIndoor") }?.let { !it.optBoolean("studioIndoor") } ?: st.outdoorGpsEnabled,
                         activeWorkoutId = restoredActiveSnap?.optString("workoutId")?.takeIf { it.isNotBlank() } ?: st.activeWorkoutId,
                         workoutStartedEpochMs = restoredActiveSnap?.optLong("startedEpochMs", 0L)?.takeIf { it > 0L } ?: st.workoutStartedEpochMs,
-                        activeWorkoutSubScreen = if (restoredActiveSnap != null) targetSubScreenForExercise(currentActiveEx) else st.activeWorkoutSubScreen,
+                        activeWorkoutSubScreen = if (restoredActiveSnap?.has("studioIndoor") == true) SubScreen.ACTIVE_OUTDOOR_GPS
+                            else if (restoredActiveSnap != null) targetSubScreenForExercise(currentActiveEx) else st.activeWorkoutSubScreen,
                         activeWorkoutTitleHu = restoredActiveSnap?.optString("programName")?.takeIf { it.isNotBlank() }
                             ?: if (activeProg != null) "${activeProg.nameHu} • ${firstDay?.dayCode ?: "A nap"}" else st.activeWorkoutTitleHu,
                         activeWorkoutExercises = initialWorkoutExs,
@@ -1157,6 +1296,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun selectTab(tab: MainTab) {
+        if (!pauseWhenLeavingMeasurement()) return
         _uiState.update { state ->
             if (state.currentTab == tab && state.currentSubScreen == SubScreen.NONE) {
                 state
@@ -1172,6 +1312,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun navigateToSubScreen(subScreen: SubScreen, targetTab: MainTab? = null) {
+        if (subScreen != _uiState.value.currentSubScreen && !pauseWhenLeavingMeasurement()) return
         val isActiveMeasurement = subScreen == SubScreen.ACTIVE_STRENGTH ||
             subScreen == SubScreen.ACTIVE_TIMED ||
             subScreen == SubScreen.ACTIVE_BILATERAL ||
@@ -1195,6 +1336,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun returnToActiveWorkout() {
+        if (!pauseActiveWorkout(false)) return
         _uiState.update { state ->
             val targetSub = state.activeWorkoutSubScreen
             val updatedStack = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16)
@@ -1208,23 +1350,29 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun stopActiveWorkoutSession() {
-        _uiState.update { state ->
-            state.copy(
-                isWorkoutSessionActive = false,
-                activeWorkoutId = "",
-                workoutStartedEpochMs = 0L
-            )
-        }
-        val ctx = nativeContext
-        val scope = nativeScope
-        if (ctx != null && scope != null) {
-            scope.launch(Dispatchers.IO) {
-                runCatching { ActiveWorkoutStore.clear(ctx) }
-            }
+        if (_uiState.value.isSavingWorkout) return
+        val ctx = nativeContext ?: return
+        val db = nativeDatabase ?: return
+        val scope = nativeScope ?: return
+        _uiState.update { it.copy(isSavingWorkout = true) }
+        scope.launch(Dispatchers.Main.immediate) {
+            try {
+                val active = ActiveWorkoutStore.current(ctx)?.takeIf { it.optBoolean("active") }
+                if (active != null) {
+                    check(active.optString("workoutId") == _uiState.value.activeWorkoutId)
+                    TrainPilotWorkoutFinalization(ctx, db).discardWorkout(active)
+                }
+                _uiState.update { it.copy(isWorkoutSessionActive = false, activeWorkoutId = "", workoutStartedEpochMs = 0,
+                    currentSubScreen = SubScreen.NONE, currentTab = MainTab.HOME, statusBannerMessage = "Edzés elvetve.") }
+            } catch (error: Exception) {
+                if (error is kotlinx.coroutines.CancellationException) throw error
+                _uiState.update { it.copy(statusBannerMessage = error.message ?: "Az edzés elvetése nem sikerült.") }
+            } finally { _uiState.update { it.copy(isSavingWorkout = false) } }
         }
     }
 
     fun navigateBack(): Boolean {
+        if (!pauseWhenLeavingMeasurement()) return true
         val current = _uiState.value
         if (current.backStack.isNotEmpty()) {
             val previous = current.backStack.last()
@@ -1734,6 +1882,14 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
+    fun selectCalendarMonth(month: String) {
+        val parsed = YearMonth.parse(month)
+        _uiState.update { it.copy(calendarYearMonth = parsed.toString(),
+            selectedCalendarDay = it.selectedCalendarDay.coerceAtMost(parsed.lengthOfMonth()),
+            planningStartDate = parsed.atDay(it.selectedCalendarDay.coerceAtMost(parsed.lengthOfMonth()))
+                .format(DateTimeFormatter.ofPattern("yyyy. MM. dd."))) }
+    }
+
     fun planMonthlyWorkouts() {
         _uiState.update { state ->
             val startDayNum = state.planningStartDate
@@ -1750,7 +1906,7 @@ class TrainPilotViewModel : ViewModel() {
             }
 
             val retainedCompleted = state.calendarEvents.filter {
-                it.status == CalendarEventStatus.COMPLETED || it.dayOfMonth < startDayNum
+                !it.dateIso.startsWith(state.calendarYearMonth) || it.status == CalendarEventStatus.COMPLETED || it.dayOfMonth < startDayNum
             }
             val activeProgName = state.programs.firstOrNull { it.isActive }?.nameHu
                 ?: "Otthoni A/B – Alap (személyre szabott)"
@@ -1758,7 +1914,7 @@ class TrainPilotViewModel : ViewModel() {
             var currentSplit = if (state.planningFirstDayHu.contains("B", ignoreCase = true)) "B" else "A"
             val newPlanned = mutableListOf<CalendarDayEvent>()
             var d = startDayNum
-            while (d <= 31) {
+            while (d <= YearMonth.parse(state.calendarYearMonth).lengthOfMonth()) {
                 if (retainedCompleted.none { it.dayOfMonth == d && it.status == CalendarEventStatus.COMPLETED }) {
                     newPlanned.add(
                         CalendarDayEvent(
@@ -1769,7 +1925,8 @@ class TrainPilotViewModel : ViewModel() {
                             exerciseCount = 6,
                             durationMinutes = state.planningDurationMin,
                             status = CalendarEventStatus.PLANNED,
-                            splitBadge = currentSplit
+                            dateIso = YearMonth.parse(state.calendarYearMonth).atDay(d).toString(),
+                        splitBadge = currentSplit
                         )
                     )
                     currentSplit = if (currentSplit == "A") "B" else "A"
@@ -1796,7 +1953,7 @@ class TrainPilotViewModel : ViewModel() {
                 ?.coerceIn(1, 31) ?: 28
 
             val retained = state.calendarEvents.filter {
-                it.status == CalendarEventStatus.COMPLETED
+                !it.dateIso.startsWith(state.calendarYearMonth) || it.status == CalendarEventStatus.COMPLETED
             }
             val activeProgName = state.programs.firstOrNull { it.isActive }?.nameHu
                 ?: "Otthoni A/B – Alap (személyre szabott)"
@@ -1808,7 +1965,7 @@ class TrainPilotViewModel : ViewModel() {
             }
             val replanned = mutableListOf<CalendarDayEvent>()
             var d = startDayNum
-            while (d <= 31) {
+            while (d <= YearMonth.parse(state.calendarYearMonth).lengthOfMonth()) {
                 replanned.add(
                     CalendarDayEvent(
                         id = "ev_replan_${d}_${System.currentTimeMillis()}",
@@ -1818,6 +1975,7 @@ class TrainPilotViewModel : ViewModel() {
                         exerciseCount = 6,
                         durationMinutes = state.planningDurationMin,
                         status = CalendarEventStatus.PLANNED,
+                        dateIso = YearMonth.parse(state.calendarYearMonth).atDay(d).toString(),
                         splitBadge = split
                     )
                 )
@@ -1868,14 +2026,15 @@ class TrainPilotViewModel : ViewModel() {
     fun moveCalendarEvent(eventId: String, targetDay: Int, shiftFollowingPlanned: Boolean = true) {
         _uiState.update { state ->
             val target = state.calendarEvents.firstOrNull { it.id == eventId } ?: return@update state
-            val clampedDay = targetDay.coerceIn(1, 31)
+            val month = YearMonth.from(LocalDate.parse(target.dateIso))
+            val clampedDay = targetDay.coerceIn(1, month.lengthOfMonth())
             val delta = clampedDay - target.dayOfMonth
             val updated = state.calendarEvents.mapNotNull { ev ->
                 when {
-                    ev.id == eventId -> ev.copy(dayOfMonth = clampedDay)
-                    shiftFollowingPlanned && ev.status == CalendarEventStatus.PLANNED && ev.dayOfMonth > target.dayOfMonth -> {
+                    ev.id == eventId -> ev.copy(dayOfMonth = clampedDay, dateIso = month.atDay(clampedDay).toString())
+                    shiftFollowingPlanned && ev.status == CalendarEventStatus.PLANNED && ev.dateIso > target.dateIso && ev.dateIso.startsWith(month.toString()) -> {
                         val nextD = ev.dayOfMonth + delta
-                        if (nextD in 1..31) ev.copy(dayOfMonth = nextD) else null
+                        if (nextD in 1..month.lengthOfMonth()) ev.copy(dayOfMonth = nextD, dateIso = month.atDay(nextD).toString()) else ev
                     }
                     else -> ev
                 }
@@ -1885,7 +2044,7 @@ class TrainPilotViewModel : ViewModel() {
                 calendarUndoStack = (state.calendarUndoStack + listOf(state.calendarEvents)).takeLast(12),
                 calendarEvents = updated,
                 selectedCalendarDay = clampedDay,
-                statusBannerMessage = "Edzés áthelyezve: 2026. 10. ${clampedDay}."
+                statusBannerMessage = "Edzés áthelyezve: ${month.atDay(clampedDay)}."
             )
         }
         persistCalendarStateToRoomAsync()
@@ -1902,13 +2061,6 @@ class TrainPilotViewModel : ViewModel() {
                 statusBannerMessage = "Tervezett edzés törölve (Visszavonható)"
             )
         }
-        if (db != null && scope != null) {
-            scope.launch(Dispatchers.IO) {
-                runCatching {
-                    db.calendarScheduleDao().deleteEntry(eventId)
-                }
-            }
-        }
         persistCalendarStateToRoomAsync()
     }
 
@@ -1918,18 +2070,19 @@ class TrainPilotViewModel : ViewModel() {
                 ?: "Otthoni A/B – Alap (személyre szabott)"
             val newEv = CalendarDayEvent(
                 id = "ev_manual_${day}_${System.currentTimeMillis()}",
-                dayOfMonth = day.coerceIn(1, 31),
+                dayOfMonth = day.coerceIn(1, YearMonth.parse(state.calendarYearMonth).lengthOfMonth()),
                 timeLabel = timeLabel,
                 titleHu = "$activeProgName • Alap $splitBadge",
                 exerciseCount = 6,
                 durationMinutes = durationMin,
                 status = CalendarEventStatus.PLANNED,
+                dateIso = YearMonth.parse(state.calendarYearMonth).atDay(day.coerceIn(1, YearMonth.parse(state.calendarYearMonth).lengthOfMonth())).toString(),
                 splitBadge = splitBadge
             )
             state.copy(
                 calendarUndoStack = (state.calendarUndoStack + listOf(state.calendarEvents)).takeLast(12),
                 calendarEvents = (state.calendarEvents + newEv).sortedBy { it.dayOfMonth },
-                statusBannerMessage = "Edzés hozzáadva: 2026. 10. $day. (Alap $splitBadge)"
+                statusBannerMessage = "Edzés hozzáadva: ${state.calendarYearMonth}-$day. (Alap $splitBadge)"
             )
         }
         persistCalendarStateToRoomAsync()
@@ -2252,10 +2405,16 @@ class TrainPilotViewModel : ViewModel() {
                 programs = updatedPrograms,
                 editingProgramId = generatedProgramId,
                 showPersonalPlannerModal = false,
-                statusBannerMessage = "Egyéni terv elmentve és aktiválva!"
+                statusBannerMessage = "Profil és terv mentése…"
             )
         }
-        persistProgramsToRoomAsync()
+        persistProgramsToRoomAsync(JSONObject()
+            .put("height", heightCm).put("weight", weightKg.toDouble())
+            .put("goal", goalHu).put("experience", experienceHu).put("location", locationHu)
+            .put("gear", JSONArray(equipmentHu.split(',').map(String::trim).filter(String::isNotBlank)))
+            .put("daysPerWeek", daysPerWeek).put("minutes", durationMin)
+            .put("avoidAreas", JSONArray(excludedMuscles.toList()))
+            .put("excluded", JSONArray(excludedExercises.toList())))
     }
 
     fun undoLastCompletedSet() {
@@ -2453,13 +2612,7 @@ class TrainPilotViewModel : ViewModel() {
     fun startOutdoorWorkout(titleHu: String = "Kültéri futás") {
         val currentSub = _uiState.value.activeWorkoutSubScreen
         if (_uiState.value.isWorkoutSessionActive && currentSub != SubScreen.ACTIVE_OUTDOOR_GPS) {
-            _uiState.update { state ->
-                state.copy(
-                    currentSubScreen = SubScreen.ACTIVE_OUTDOOR_GPS,
-                    currentTab = MainTab.WORKOUT,
-                    showQuickWorkoutSheet = false
-                )
-            }
+            _uiState.update { it.copy(statusBannerMessage = "Előbb fejezd be vagy vesd el az aktív edzést.") }
             return
         }
 
@@ -2499,7 +2652,18 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    fun startGpsTrackingSession(activityName: String = "Kültéri futás") {
+    fun startGpsTrackingSession(activityName: String = "Kültéri futás", routeKey: String = ""): Boolean {
+        val ctx = nativeContext ?: return false
+        val previous = ActiveWorkoutStore.current(ctx)
+        if (previous?.optBoolean("active") == true && previous.optString("workoutId") != _uiState.value.activeWorkoutId) {
+            _uiState.update { it.copy(statusBannerMessage = "Előbb fejezd be a már aktív edzést.") }
+            return false
+        }
+        if (previous?.optBoolean("active") == true) {
+            _uiState.update { it.copy(outdoorRouteKey = routeKey, outdoorGpsEnabled = routeKey.isNotBlank()) }
+            persistCanonicalActiveSessionAsync()
+            return true
+        }
         val nowMs = System.currentTimeMillis()
         _uiState.update { state ->
             val currentTitle = activityName.ifBlank { state.activeWorkoutTitleHu.ifBlank { "Kültéri futás" } }
@@ -2516,6 +2680,8 @@ class TrainPilotViewModel : ViewModel() {
             )
             state.copy(
                 isWorkoutSessionActive = true,
+                outdoorRouteKey = routeKey,
+                outdoorGpsEnabled = routeKey.isNotBlank(),
                 activeWorkoutId = if (state.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS && state.activeWorkoutId.isNotBlank()) state.activeWorkoutId else UUID.randomUUID().toString(),
                 workoutStartedEpochMs = if (state.workoutStartedEpochMs > 0L) state.workoutStartedEpochMs else nowMs,
                 activeWorkoutSubScreen = SubScreen.ACTIVE_OUTDOOR_GPS,
@@ -2525,10 +2691,17 @@ class TrainPilotViewModel : ViewModel() {
                 selectedExerciseId = outdoorEx.id,
                 activeSets = defaultSets,
                 activeSetsByExerciseId = mapOf(outdoorEx.id to defaultSets),
-                statusBannerMessage = "$currentTitle GPS mérés elindítva."
+                statusBannerMessage = if (routeKey.isBlank()) "Beltéri natív munkamenet előkészítve." else "Natív edzés előkészítve; GPS-visszaigazolásra vár."
             )
         }
         persistCanonicalActiveSessionAsync(installNew = true)
+        return ActiveWorkoutStore.current(ctx)?.optString("workoutId") == _uiState.value.activeWorkoutId
+    }
+
+    fun pauseOutdoorMeasurement(paused: Boolean): Boolean {
+        val ctx = nativeContext ?: return false
+        return try { com.repforge.app.StudioWorkoutBridge.pause(ctx, paused); true }
+        catch (error: Exception) { _uiState.update { it.copy(statusBannerMessage = error.message) }; false }
     }
 
     fun selectOutdoorActivityType(activityName: String) {
@@ -2715,224 +2888,42 @@ class TrainPilotViewModel : ViewModel() {
 
     fun finishAndSaveWorkout() {
         val state = _uiState.value
-        val now = Instant.now()
-        val nowMs = System.currentTimeMillis()
-        val workoutId = state.activeWorkoutId.ifBlank { UUID.randomUUID().toString() }
-        val workoutExs = state.activeWorkoutExercises.ifEmpty {
-            listOfNotNull(state.exercises.getOrNull(state.activeExerciseIndex) ?: state.exercises.firstOrNull())
-        }
-        val currentEx = workoutExs.getOrNull(state.activeExerciseIndex)
-        val allSetsMap = state.activeSetsByExerciseId.toMutableMap()
-        if (currentEx != null) {
-            allSetsMap[currentEx.id] = state.activeSets
-        }
-
-        var totalCompletedSets = 0
-        var totalSetsCount = 0
-        var totalVolumeDouble = 0.0
-        val completedExerciseNames = mutableListOf<String>()
-        val exercisesArray = JSONArray()
-
-        workoutExs.forEachIndexed { exIdx, exItem ->
-            val setsForEx = allSetsMap[exItem.id] ?: buildDefaultSetsForExercise(exItem)
-            val completedSets = setsForEx.filter { it.completed }
-            // P0-02: Only completed sets count as done; never fabricate completion for uncompleted sets
-            if (completedSets.isNotEmpty()) {
-                completedExerciseNames.add(exItem.nameHu)
-            }
-            totalCompletedSets += completedSets.size
-            totalSetsCount += setsForEx.size
-            totalVolumeDouble += completedSets.sumOf { s ->
-                if (exItem.isTimed || exItem.isBilateral) 0.0 else (s.weightKg.toDouble() * s.reps.toDouble())
-            }
-
-            val exObj = JSONObject().apply {
-                put("id", exItem.id)
-                put("exerciseId", exItem.id)
-                put("name", exItem.nameHu)
-                put("nameHu", exItem.nameHu)
-                put("nameEn", exItem.nameEn)
-                put("loadType", if (exItem.defaultWeightKg <= 0f) "bodyweight" else "weight")
-                put("repUnit", when {
-                    exItem.isBilateral -> "mp/oldal"
-                    exItem.isTimed -> "sec"
-                    else -> "reps"
-                })
-                put("measurementType", when {
-                    exItem.isBilateral -> "bilateral_time"
-                    exItem.isTimed -> "time"
-                    else -> "reps"
-                })
-                put("orderIndex", exIdx)
-                val setsArray = JSONArray()
-                setsForEx.forEachIndexed { idx, s ->
-                    setsArray.put(JSONObject().apply {
-                        put("setId", "${exItem.id}_set_${s.setNumber}")
-                        put("set", idx + 1)
-                        put("setNumber", s.setNumber)
-                        put("weight", s.weightKg.toDouble())
-                        put("reps", if (exItem.isBilateral) "${s.leftSec}/${s.rightSec}" else s.reps.toString())
-                        put("done", s.completed)
-                        if (s.completed) {
-                            put("actualRir", s.rir)
-                        }
-                        put("leftSec", s.leftSec)
-                        put("rightSec", s.rightSec)
-                    })
-                }
-                put("sets", setsArray)
-            }
-            exercisesArray.put(exObj)
-        }
-
-        val isOutdoorSession = state.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS || state.outdoorDistanceKm > 0f
-
-        val hasElapsedSec = state.outdoorElapsedLabel.isNotBlank() && state.outdoorElapsedLabel != "00:00"
-        val hasDistance = state.outdoorDistanceKm > 0f
-        val isTimerStarted = state.workoutStartedEpochMs > 0L
-
-        if (isOutdoorSession && !hasElapsedSec && !hasDistance && !isTimerStarted) {
-            _uiState.update {
-                it.copy(statusBannerMessage = "A GPS-mérés nem indult el, vagy az edzés időtartama 0! Nincs menthető edzés.")
-            }
-            return
-        }
-
-        if (totalCompletedSets == 0 && !isOutdoorSession) {
-            _uiState.update {
-                it.copy(statusBannerMessage = "Nincs teljesített (✓) sorozat! Jelölj késznek legalább 1 sorozatot az edzés mentéséhez.")
-            }
-            return
-        }
-
-        if (isOutdoorSession) {
-            totalCompletedSets = if (totalCompletedSets > 0) totalCompletedSets else 1
-            totalSetsCount = maxOf(totalSetsCount, 1)
-        }
-
+        if (state.isSavingWorkout) return
         val ctx = nativeContext
         val db = nativeDatabase
-        val store = nativeSettingsStore
         val scope = nativeScope
-
-        if (ctx == null || db == null || store == null || scope == null) {
-            _uiState.update { it.copy(statusBannerMessage = "Hiba: A natív edzésmotor nem elérhető!") }
+        if (ctx == null || db == null || scope == null) {
+            _uiState.update { it.copy(statusBannerMessage = "A natív edzésmotor nem érhető el.") }
             return
         }
-
-        val workoutTitle = if (isOutdoorSession) {
-            if (state.activeWorkoutTitleHu.contains("Kültéri", ignoreCase = true) || state.activeWorkoutTitleHu.contains("Futás", ignoreCase = true)) {
-                state.activeWorkoutTitleHu
-            } else {
-                "Kültéri futás"
-            }
-        } else {
-            state.activeWorkoutTitleHu.ifBlank { workoutExs.firstOrNull()?.nameHu ?: "Edzés" }
-        }
-
-        val finalExercisesArray = if (isOutdoorSession && (state.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS || exercisesArray.length() == 0)) {
-            JSONArray().apply {
-                put(JSONObject().apply {
-                    put("id", "outdoor_run_ex")
-                    put("exerciseId", "outdoor_run_ex")
-                    put("name", workoutTitle)
-                    put("nameHu", workoutTitle)
-                    put("nameEn", "Outdoor Running")
-                    put("loadType", "cardio_gps")
-                    put("repUnit", "km")
-                    put("measurementType", "distance_time")
-                    put("orderIndex", 0)
-                    put("distanceKm", state.outdoorDistanceKm.toDouble())
-                    put("elapsedLabel", state.outdoorElapsedLabel)
-                    put("paceLabel", state.outdoorPaceLabel)
-                    put("sets", JSONArray().apply {
-                        put(JSONObject().apply {
-                            put("setId", "outdoor_run_set_1")
-                            put("set", 1)
-                            put("setNumber", 1)
-                            put("weight", 0.0)
-                            put("reps", String.format(Locale.US, "%.2f km", state.outdoorDistanceKm))
-                            put("done", true)
-                            put("distanceKm", state.outdoorDistanceKm.toDouble())
-                            put("elapsedLabel", state.outdoorElapsedLabel)
-                        })
-                    })
-                })
-            }
-        } else {
-            exercisesArray
-        }
-
+        _uiState.update { it.copy(isSavingWorkout = true) }
         scope.launch(Dispatchers.IO) {
             try {
-                val existingActive = ActiveWorkoutStore.current(ctx)
-                val startedMs = when {
-                    state.workoutStartedEpochMs > 0L -> state.workoutStartedEpochMs
-                    existingActive != null && existingActive.optLong("startedEpochMs", 0L) > 0L -> existingActive.optLong("startedEpochMs")
-                    state.timedCurrentSec > 0 -> nowMs - (state.timedCurrentSec * 1000L)
-                    else -> nowMs - 60_000L
-                }.coerceAtMost(nowMs - 1000L)
-
-                val candidateJson = JSONObject().apply {
-                    put("schema", 1)
-                    put("active", true)
-                    put("id", workoutId)
-                    put("workoutId", workoutId)
-                    put("workoutKey", workoutId)
-                    put("syncId", workoutId)
-                    put("started", Instant.ofEpochMilli(startedMs).toString())
-                    put("finished", now.toString())
-                    put("startedEpochMs", startedMs)
-                    put("finishedEpochMs", nowMs)
-                    put("programId", if (isOutdoorSession) "outdoor_gps_program" else state.editingProgramId.ifBlank { "program_custom" })
-                    put("programName", workoutTitle)
-                    put("dayId", "session")
-                    put("dayName", workoutTitle)
-                    put("workout", workoutTitle)
-                    put("totalVolumeKg", totalVolumeDouble)
-                    put("completedSetsCount", totalCompletedSets)
-                    put("totalSetsCount", totalSetsCount)
-                    put("timerOwner", "phone")
-                    put("originDevice", "phone")
-                    put("workoutPaused", false)
-                    put("exercises", finalExercisesArray)
-                    if (state.workoutSummaryNote.isNotBlank() || state.workoutSummaryMoodIndex >= 0) {
-                        put("feedback", JSONObject().apply {
-                            put("effort", when (state.workoutSummaryMoodIndex) {
-                                0 -> "könnyű"
-                                1 -> "mérsékelt"
-                                2 -> "pont jó"
-                                3 -> "nehéz"
-                                else -> "maximális"
-                            })
-                            put("note", state.workoutSummaryNote)
-                            put("updatedAt", nowMs)
-                        })
+                val activeToFinalize = withContext(Dispatchers.Main.immediate) {
+                    // Never fabricate a GPS set, a start timestamp or a replacement workout.
+                    val current = com.repforge.app.NativeWorkoutEditing.project(ctx)
+                    check(current.optBoolean("active") && current.optString("workoutId") == state.activeWorkoutId)
+                    val exercises = current.getJSONArray("exercises")
+                    val completed = (0 until exercises.length()).sumOf { index ->
+                        val sets = exercises.getJSONObject(index).getJSONArray("sets")
+                        (0 until sets.length()).count { sets.getJSONObject(it).optBoolean("done") }
                     }
+                    check(completed > 0) { "Nincs hitelesen rögzített sorozat vagy mérés. Előbb fejezd be a mérést." }
+                    if (state.workoutSummaryNote.isNotBlank() || state.workoutSummaryMoodIndex >= 0)
+                        current.put("feedback", JSONObject().put("note", state.workoutSummaryNote)
+                            .put("effort", listOf("könnyű", "mérsékelt", "pont jó", "nehéz", "maximális")
+                                .getOrElse(state.workoutSummaryMoodIndex) { "" }).put("updatedAt", System.currentTimeMillis()))
+                    current
                 }
-
-                // Always synchronize latest exercises & completed sets into the active session before finalization
-                val activeToFinalize = if (existingActive?.optBoolean("active") == true && existingActive.optString("timerOwner", "phone") == "phone") {
-                    existingActive.put("finished", now.toString())
-                    existingActive.put("finishedEpochMs", nowMs)
-                    existingActive.put("startedEpochMs", startedMs)
-                    existingActive.put("programName", workoutTitle)
-                    existingActive.put("dayName", workoutTitle)
-                    existingActive.put("workout", workoutTitle)
-                    existingActive.put("totalVolumeKg", totalVolumeDouble)
-                    existingActive.put("completedSetsCount", totalCompletedSets)
-                    existingActive.put("totalSetsCount", totalSetsCount)
-                    existingActive.put("exercises", finalExercisesArray)
-                    if (candidateJson.has("feedback")) existingActive.put("feedback", candidateJson.getJSONObject("feedback"))
-                    existingActive
-                } else {
-                    withContext(Dispatchers.Main.immediate) {
-                        NativeWorkoutSession.installPrepared(ctx, candidateJson)
-                    }
+                val workoutId = activeToFinalize.getString("workoutId")
+                val workoutTitle = activeToFinalize.optString("programName", "Edzés")
+                val isOutdoorSession = state.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS
+                val exercises = activeToFinalize.getJSONArray("exercises")
+                val totalCompletedSets = (0 until exercises.length()).sumOf { i ->
+                    val sets = exercises.getJSONObject(i).getJSONArray("sets")
+                    (0 until sets.length()).count { sets.getJSONObject(it).optBoolean("done") }
                 }
-
-                val finalizer = TrainPilotWorkoutFinalization(ctx, db)
-                val saved = finalizer.finishWorkout(activeToFinalize)
+                val saved = TrainPilotWorkoutFinalization(ctx, db).finishWorkout(activeToFinalize)
 
                 // Verify persistence by querying Room directly and build LoggedWorkoutEntry from Room truth
                 val finalWorkoutId = saved.history.optString("workoutId", workoutId)
@@ -2943,7 +2934,7 @@ class TrainPilotViewModel : ViewModel() {
                     runCatching { WearSyncRepository.publishWatchHomeSnapshot(ctx) }
 
                     val dbW = savedInDb.workout
-                    val realElapsedMs = (dbW.finishedEpochMs - dbW.startedEpochMs).coerceAtLeast(1000L)
+                    val realElapsedMs = dbW.durationSeconds.coerceAtLeast(0).toLong() * 1000L
                     val realElapsedSec = (realElapsedMs / 1000L).toInt()
                     val realDurationMins = ((realElapsedMs + 59_999L) / 60_000L).toInt().coerceAtLeast(1)
                     val realWorkTimeLabel = String.format("%02d:%02d", realElapsedSec / 60, realElapsedSec % 60)
@@ -2965,9 +2956,8 @@ class TrainPilotViewModel : ViewModel() {
                             sets = mappedSets
                         )
                     }
-                    val summaryNamesFromDb = completedExerciseNames.ifEmpty {
-                        savedInDb.exercises.map { it.exercise.nameHu }
-                    }.joinToString(", ").ifBlank { workoutTitle }
+                    val summaryNamesFromDb = savedInDb.exercises.filter { ex -> ex.sets.any { it.done } }
+                        .map { it.exercise.nameHu }.joinToString(", ").ifBlank { workoutTitle }
 
                     val newEntry = LoggedWorkoutEntry(
                         id = finalWorkoutId,
@@ -2977,12 +2967,21 @@ class TrainPilotViewModel : ViewModel() {
                         workTimeLabel = realWorkTimeLabel,
                         restTimeLabel = "—",
                         totalSets = if (dbW.completedSetsCount > 0) dbW.completedSetsCount else totalCompletedSets,
-                        totalVolumeKg = if (dbW.totalVolumeKg > 0.0) dbW.totalVolumeKg.roundToInt() else totalVolumeDouble.roundToInt(),
+                        totalVolumeKg = dbW.totalVolumeKg.roundToInt(),
                         summaryExercisesHu = summaryNamesFromDb,
                         hasPr = dbW.hasPr226,
                         isOutdoorRun = isOutdoorSession,
-                        distanceKm = state.outdoorDistanceKm,
-                        paceLabel = state.outdoorPaceLabel,
+                        routeKeys = savedInDb.exercises.flatMap { it.sets }.flatMap {
+                            listOfNotNull(it.gpsRouteKey163, it.gpsRouteKey193)
+                        }.filter(String::isNotBlank).distinct(),
+                        sourceWatch = !dbW.wearMetricsJson.isNullOrBlank(), sourceHealthConnect = !dbW.health240Json.isNullOrBlank(),
+                        distanceKm = (savedInDb.exercises.flatMap { it.sets }.filter { it.done }
+                            .sumOf { it.distanceMeters ?: 0.0 } / 1000.0).toFloat(),
+                        paceLabel = savedInDb.exercises.flatMap { it.sets }.filter { it.done }.sumOf { it.distanceMeters ?: 0.0 }
+                            .takeIf { it > 0 }?.let { meters ->
+                                val pace = (dbW.durationSeconds / (meters / 1000.0)).toInt()
+                                "%d:%02d /km".format(pace / 60, pace % 60)
+                            } ?: "—",
                         exerciseDetails = dbDetails
                     )
 
@@ -3013,13 +3012,14 @@ class TrainPilotViewModel : ViewModel() {
                     }
                 }
             } catch (e: Throwable) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.e("TrainPilotViewModel", "Failed to finalize workout canonically", e)
                 withContext(Dispatchers.Main) {
                     _uiState.update { st ->
                         st.copy(statusBannerMessage = "Hiba az edzés mentésekor: ${e.localizedMessage ?: "adatbázishiba"}")
                     }
                 }
-            }
+            } finally { _uiState.update { it.copy(isSavingWorkout = false) } }
         }
     }
 
@@ -3204,15 +3204,10 @@ class TrainPilotViewModel : ViewModel() {
     fun deleteBodyWeightLog(id: String) {
         val db = nativeDatabase
         val scope = nativeScope
-        _uiState.update { state ->
-            val updated = state.bodyWeightLogs.filterNot { it.id == id }
-            val newCurrent = updated.lastOrNull()?.kg ?: 0f
-            state.copy(
-                bodyWeightLogs = updated,
-                currentBodyWeightKg = newCurrent
-            )
+        if (db == null || scope == null) {
+            _uiState.update { it.copy(statusBannerMessage = "A testsúly-adatbázis nem érhető el.") }
+            return
         }
-        if (db == null || scope == null) return
         scope.launch(Dispatchers.IO) {
             try {
                 db.bodyWeightDao().deleteWeightById(id)
@@ -3231,6 +3226,8 @@ class TrainPilotViewModel : ViewModel() {
                     }
                 }
             } catch (e: Throwable) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                _uiState.update { it.copy(statusBannerMessage = "A testsúly törlése nem sikerült; a mérés megmaradt.") }
                 android.util.Log.e("TrainPilotViewModel", "Failed to delete body weight log from Room", e)
             }
         }
@@ -3246,7 +3243,7 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    fun triggerHealthSyncNow() {
+    fun reloadHealthJournal() {
         val ctx = nativeContext
         val scope = nativeScope
         if (ctx == null || scope == null) {
@@ -3257,8 +3254,6 @@ class TrainPilotViewModel : ViewModel() {
         }
         scope.launch(Dispatchers.IO) {
             try {
-                HealthBackgroundJob.schedule(ctx)
-                WearSyncRepository.publishWatchHomeSnapshot(ctx)
                 val store = HealthJournalStore.get(ctx)
                 val todayStr = LocalDate.now().toString()
                 val page = store.page(LocalDate.now().minusDays(1).toString(), todayStr, "journal", "", 0L, 0L, 1)
@@ -3283,7 +3278,7 @@ class TrainPilotViewModel : ViewModel() {
                             activeCaloriesKcal = if (caloriesDbl.isFinite() && caloriesDbl > 0) caloriesDbl.toInt() else st.activeCaloriesKcal,
                             sleepDurationLabel = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) String.format("%d ó %d p", (sleepMinDbl / 60).toInt(), (sleepMinDbl % 60).toInt()) else st.sleepDurationLabel,
                             sleepHoursDecimal = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) "${((sleepMinDbl / 60.0) * 10.0).roundToInt() / 10.0} h" else st.sleepHoursDecimal,
-                            statusBannerMessage = if (hasData) "Egészségügyi adatok sikeresen szinkronizálva!" else "Szinkronizáció lefutott. Nincs új elérhető adat a szolgáltatótól."
+                            statusBannerMessage = st.statusBannerMessage
                         )
                     }
                 }

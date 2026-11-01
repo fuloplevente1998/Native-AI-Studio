@@ -1,0 +1,29 @@
+{
+  "tests": {
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "bytes": 28132322,
+  "sha256": "252539830d0c13228785ef25dadad741d4610818da9fe305312ff1ede445515b",
+  "package": "com.TrainPilot.com",
+  "versionCode": 2736,
+  "versionName": "1.3.71-native-test",
+  "debugCertificateSha256": "12d903b9e70014aacaa67a5d65038254f5795263376940c3b338b3bd8c96145e",
+  "repository": "fuloplevente1998/Native-AI-Studio",
+  "pr": 2,
+  "sourceCommit": "a36528ad04b365a2936c8bbd03dcb2373a9fad4f",
+  "ciCheckout": "5749e64bf9fdfc45a22385587f769c870a4ccb1a",
+  "sourceAndCiTree": "10690fd5220ddec34f76f9c6b273c75d69350ad9",
+  "sourceAndCiTreesEqual": true,
+  "runId": 41284190084,
+  "runConclusion": "success",
+  "apkArtifactId": 13074790214,
+  "testArtifactId": 13073639553,
+  "apkUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41284190084/artifacts/13074790214",
+  "testUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41284190084/artifacts/13073639553",
+  "signing": "Temporary CI debug key; release signing unchanged. Not proven compatible with installed AI Studio/release signer.",
+  "deviceValidation": false,
+  "wearModuleValidation": false
+}

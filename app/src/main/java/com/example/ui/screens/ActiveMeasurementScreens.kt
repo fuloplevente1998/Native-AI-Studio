@@ -78,6 +78,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -121,7 +122,7 @@ import com.example.model.ExerciseItem
 import com.example.model.ExerciseSetItem
 import com.example.model.SubScreen
 import com.example.ui.components.ExercisePostureMiniIllustration
-import com.example.ui.components.MargitszigetDetailedMapBox
+import com.example.ui.components.NativeWorkoutRouteMapBox
 import com.example.ui.components.SmallExerciseVideoButton
 import com.example.ui.components.SubScreenTopBar
 import com.example.ui.theme.LocalTrainPilotPalette
@@ -1537,11 +1538,18 @@ fun ActiveTimedWorkoutScreen(
     val exerciseNameHu = currentExercise?.nameHu ?: "Plank"
     val defaultTargetSec = (currentExercise?.targetSeconds ?: 45).coerceAtLeast(15)
 
-    var currentSec by remember(currentExercise?.id) { mutableIntStateOf(uiState.timedCurrentSec) }
-    var isRunning by remember(currentExercise?.id) { mutableStateOf(false) }
+    val nativeModel: com.repforge.app.ui.workout.ActiveWorkoutViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val native by nativeModel.uiState.collectAsState()
+    LaunchedEffect(uiState.activeWorkoutId) { nativeModel.onEditorVisible() }
+    val nativeExercise = native.exercises.firstOrNull { it.exerciseId == currentExercise?.id }
+    val nativeSet = nativeExercise?.sets?.firstOrNull { !it.isCompleted }
+    val target = nativeSet?.let { com.repforge.app.NativeWorkoutTarget(native.workoutId, native.generation,
+        checkNotNull(nativeExercise).exerciseId, it.setId) }
+    val currentSec = if (native.stopwatchSetId == nativeSet?.setId) native.stopwatchSeconds.toInt() else 0
+    val isRunning = native.stopwatchSetId == nativeSet?.setId && native.stopwatchRunning
     var targetSec by remember(currentExercise?.id) { mutableIntStateOf(defaultTargetSec) }
-    var currentSetIndex by remember(currentExercise?.id) { mutableIntStateOf(1) }
-    var completedSets by remember(currentExercise?.id) { mutableStateOf(listOf<Int>()) }
+    val currentSetIndex = nativeSet?.setNumber ?: ((nativeExercise?.sets?.size ?: 0) + 1)
+    val completedSets = nativeExercise?.sets?.filter { it.isCompleted }?.map { it.reps.toIntOrNull() ?: 0 }.orEmpty()
     var timedDropdownExpanded by remember { mutableStateOf(false) }
 
     val timedExerciseOptions = remember(uiState.exercises) {
@@ -1565,20 +1573,14 @@ fun ActiveTimedWorkoutScreen(
         (fromDb + presets).distinctBy { it.nameHu.lowercase() }
     }
 
-    // Live ticking stopwatch coroutine loop
-    LaunchedEffect(isRunning) {
-        while (isRunning) {
-            delay(1000L)
-            currentSec++
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(palette.background)
             .testTag("active_timed_screen")
     ) {
+        native.statusMessage?.let { Text(it, color = palette.danger) }
+
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
@@ -1731,10 +1733,8 @@ fun ActiveTimedWorkoutScreen(
                             )
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            val min = currentSec / 60
-                            val sec = currentSec % 60
-                            Text(
-                                text = String.format("%02d:%02d", min, sec),
+                            StudioTimerReadout(
+                                seconds = currentSec,
                                 style = MaterialTheme.typography.displayLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.textPrimary
@@ -1762,10 +1762,10 @@ fun ActiveTimedWorkoutScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        SmallAdjustChip("-5 mp") { currentSec = (currentSec - 5).coerceAtLeast(0) }
-                        SmallAdjustChip("+5 mp") { currentSec += 5 }
-                        SmallAdjustChip("+15 mp") { currentSec += 15 }
-                        SmallAdjustChip("+30 mp") { currentSec += 30 }
+                        SmallAdjustChip("-5 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "single", -5) } }
+                        SmallAdjustChip("+5 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "single", 5) } }
+                        SmallAdjustChip("+15 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "single", 15) } }
+                        SmallAdjustChip("+30 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "single", 30) } }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -1776,7 +1776,7 @@ fun ActiveTimedWorkoutScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Button(
-                            onClick = { isRunning = !isRunning },
+                            onClick = { target?.let { if (isRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.toggleSetStopwatch(it, "single") } },
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (isRunning) palette.primary else palette.success,
@@ -1799,8 +1799,7 @@ fun ActiveTimedWorkoutScreen(
                         }
                         OutlinedButton(
                             onClick = {
-                                isRunning = false
-                                currentSec = 0
+                                target?.let(nativeModel::resetSetStopwatch)
                             },
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier
@@ -1818,10 +1817,7 @@ fun ActiveTimedWorkoutScreen(
                     // Set complete button
                     Button(
                         onClick = {
-                            isRunning = false
-                            completedSets = completedSets + currentSec
-                            currentSetIndex++
-                            currentSec = 0
+                            target?.let { nativeModel.recordSetStopwatch(it, "single") }
                         },
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -1919,8 +1915,9 @@ fun ActiveTimedWorkoutScreen(
                             color = palette.primary,
                             fontWeight = FontWeight.Bold
                         )
-                        Text(
-                            text = String.format("%02d:%02d", currentSec / 60, currentSec % 60),
+                        StudioTimerReadout(
+                            seconds = currentSec,
+                            style = MaterialTheme.typography.bodyLarge,
                             color = palette.primary,
                             fontWeight = FontWeight.Bold
                         )
@@ -2013,34 +2010,22 @@ fun ActiveBilateralWorkoutScreen(
         mutableIntStateOf(firstUncompletedSetNum)
     }
 
-    // Left side stopwatch state
-    var leftSec by remember(currentExercise?.id) { mutableIntStateOf(0) }
-    var leftRunning by remember(currentExercise?.id) { mutableStateOf(false) }
-
-    // Right side stopwatch state
-    var rightSec by remember(currentExercise?.id) { mutableIntStateOf(0) }
-    var rightRunning by remember(currentExercise?.id) { mutableStateOf(false) }
+    val nativeModel: com.repforge.app.ui.workout.ActiveWorkoutViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val native by nativeModel.uiState.collectAsState()
+    LaunchedEffect(uiState.activeWorkoutId) { nativeModel.onEditorVisible() }
+    val nativeExercise = native.exercises.firstOrNull { it.exerciseId == currentExercise?.id }
+    val nativeSet = nativeExercise?.sets?.firstOrNull { it.setNumber == selectedTargetSetNumber }
+    val target = nativeSet?.let { com.repforge.app.NativeWorkoutTarget(native.workoutId, native.generation,
+        checkNotNull(nativeExercise).exerciseId, it.setId) }
+    val leftSec = if (native.stopwatchSetId == nativeSet?.setId && native.stopwatchSide == "left") native.stopwatchSeconds.toInt() else nativeSet?.leftSeconds ?: 0
+    val rightSec = if (native.stopwatchSetId == nativeSet?.setId && native.stopwatchSide == "right") native.stopwatchSeconds.toInt() else nativeSet?.rightSeconds ?: 0
+    val leftRunning = native.stopwatchSetId == nativeSet?.setId && native.stopwatchSide == "left" && native.stopwatchRunning
+    val rightRunning = native.stopwatchSetId == nativeSet?.setId && native.stopwatchSide == "right" && native.stopwatchRunning
 
     // Modal dialog for manual bilateral set editing
     var editingBilateralSet by remember { mutableStateOf<com.example.model.ExerciseSetItem?>(null) }
     var showExerciseDropdown by remember { mutableStateOf(false) }
     var restTimerLargeMode by remember { mutableStateOf(false) }
-
-    // Ticking coroutine for Left Side Stopwatch
-    LaunchedEffect(leftRunning) {
-        while (leftRunning) {
-            delay(1000L)
-            leftSec++
-        }
-    }
-
-    // Ticking coroutine for Right Side Stopwatch
-    LaunchedEffect(rightRunning) {
-        while (rightRunning) {
-            delay(1000L)
-            rightSec++
-        }
-    }
 
     // Dedicated Bilateral Set Editor Modal ("külön ablak adat rögzítésre")
     editingBilateralSet?.let { setToEdit ->
@@ -2157,6 +2142,8 @@ fun ActiveBilateralWorkoutScreen(
             .background(palette.background)
             .testTag("active_bilateral_screen")
     ) {
+        native.statusMessage?.let { Text(it, color = palette.danger) }
+
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
@@ -2350,8 +2337,8 @@ fun ActiveBilateralWorkoutScreen(
                                 color = palette.surfaceElevated,
                                 modifier = Modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                             ) {
-                                Text(
-                                    text = String.format("%02d:%02d", leftSec / 60, leftSec % 60),
+                                StudioTimerReadout(
+                                    seconds = leftSec,
                                     style = MaterialTheme.typography.headlineMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = if (leftRunning) palette.primary else palette.textPrimary,
@@ -2368,7 +2355,7 @@ fun ActiveBilateralWorkoutScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Button(
-                                onClick = { leftRunning = !leftRunning },
+                                onClick = { target?.let { if (leftRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.toggleSetStopwatch(it, "left") } },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (leftRunning) palette.warning else palette.success,
@@ -2391,10 +2378,7 @@ fun ActiveBilateralWorkoutScreen(
                             // Leállítás és rögzítés button -> writes directly into selectedTargetSetNumber's Left slot!
                             Button(
                                 onClick = {
-                                    leftRunning = false
-                                    val secToRecord = if (leftSec > 0) leftSec else (targetSetObj?.leftSec ?: defaultTargetSec)
-                                    onRecordBilateralSide(true, secToRecord, selectedTargetSetNumber)
-                                    leftSec = 0
+                                    target?.let { nativeModel.recordSetStopwatch(it, "left") }
                                 },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
@@ -2427,11 +2411,10 @@ fun ActiveBilateralWorkoutScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             SmallAdjustChip("Nulláz") {
-                                leftRunning = false
-                                leftSec = 0
+                                target?.let(nativeModel::resetSetStopwatch)
                             }
-                            SmallAdjustChip("+5 mp") { leftSec += 5 }
-                            SmallAdjustChip("+15 mp") { leftSec += 15 }
+                            SmallAdjustChip("+5 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "left", 5) } }
+                            SmallAdjustChip("+15 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "left", 15) } }
                         }
                     }
                 }
@@ -2503,8 +2486,8 @@ fun ActiveBilateralWorkoutScreen(
                                 color = palette.surfaceElevated,
                                 modifier = Modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                             ) {
-                                Text(
-                                    text = String.format("%02d:%02d", rightSec / 60, rightSec % 60),
+                                StudioTimerReadout(
+                                    seconds = rightSec,
                                     style = MaterialTheme.typography.headlineMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = if (rightRunning) palette.primary else palette.textPrimary,
@@ -2521,7 +2504,7 @@ fun ActiveBilateralWorkoutScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Button(
-                                onClick = { rightRunning = !rightRunning },
+                                onClick = { target?.let { if (rightRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.toggleSetStopwatch(it, "right") } },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (rightRunning) palette.warning else palette.success,
@@ -2544,10 +2527,7 @@ fun ActiveBilateralWorkoutScreen(
                             // Leállítás és rögzítés button -> writes directly into selectedTargetSetNumber's Right slot!
                             Button(
                                 onClick = {
-                                    rightRunning = false
-                                    val secToRecord = if (rightSec > 0) rightSec else (targetSetObj?.rightSec ?: defaultTargetSec)
-                                    onRecordBilateralSide(false, secToRecord, selectedTargetSetNumber)
-                                    rightSec = 0
+                                    target?.let { nativeModel.recordSetStopwatch(it, "right") }
                                 },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
@@ -2580,11 +2560,10 @@ fun ActiveBilateralWorkoutScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             SmallAdjustChip("Nulláz") {
-                                rightRunning = false
-                                rightSec = 0
+                                target?.let(nativeModel::resetSetStopwatch)
                             }
-                            SmallAdjustChip("+5 mp") { rightSec += 5 }
-                            SmallAdjustChip("+15 mp") { rightSec += 15 }
+                            SmallAdjustChip("+5 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "right", 5) } }
+                            SmallAdjustChip("+15 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "right", 15) } }
                         }
                     }
                 }
@@ -2994,7 +2973,8 @@ fun ActiveOutdoorGpsScreen(
     onSelectMeasurementMode: (SubScreen) -> Unit,
     onUpdateOutdoorMetrics: (String, Float, String) -> Unit = { _, _, _ -> },
     onSelectOutdoorActivity: (String) -> Unit = {},
-    onStartGpsTracking: (String) -> Unit = {}
+    onStartGpsTracking: (String, String) -> Boolean = { _, _ -> false },
+    onPauseMeasurement: (Boolean) -> Boolean = { false }
 ) {
     val palette = LocalTrainPilotPalette.current
     val context = LocalContext.current
@@ -3002,8 +2982,13 @@ fun ActiveOutdoorGpsScreen(
     // Observe canonical DistanceTrackingService state flow
     val serviceState by com.repforge.app.DistanceTrackingService.gpsStateFlow.collectAsState()
     val initialSnap = remember { com.repforge.app.DistanceTrackingService.snapshot(context) }
-    val activeSnap = if (serviceState.length() > 0) serviceState else initialSnap
+    val candidateSnap = if (serviceState.length() > 0) serviceState else initialSnap
+    val activeSnap = if (uiState.outdoorRouteKey.isNotBlank() && candidateSnap.optString("key") == uiState.outdoorRouteKey)
+        candidateSnap else org.json.JSONObject()
 
+    val screenScope = androidx.compose.runtime.rememberCoroutineScope()
+    val nativeMeasurement: com.repforge.app.ui.workout.ActiveWorkoutViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    var startRequested by remember { mutableStateOf(false) }
     var gpsActive by remember { mutableStateOf(uiState.outdoorGpsEnabled) }
     var isStarted by remember { mutableStateOf(activeSnap.optBoolean("active", false)) }
     var isPaused by remember { mutableStateOf(activeSnap.optBoolean("paused", false)) }
@@ -3017,7 +3002,11 @@ fun ActiveOutdoorGpsScreen(
     var lapCount by remember { mutableIntStateOf(1) }
     var lapSplits by remember { mutableStateOf(listOf<String>()) }
     var isFullscreenMapOpen by remember { mutableStateOf(false) }
-    val routeOwnerKey = remember { "outdoor_run_${System.currentTimeMillis()}" }
+    var routeOwnerKey by remember { mutableStateOf(
+        uiState.outdoorRouteKey.takeIf(String::isNotBlank)
+            ?: initialSnap.optString("key").takeIf { initialSnap.optBoolean("active") }
+            ?: "outdoor_run_${java.util.UUID.randomUUID()}"
+    ) }
 
     var hasLocationPermission by remember {
         mutableStateOf(
@@ -3027,7 +3016,10 @@ fun ActiveOutdoorGpsScreen(
 
     // Sync from DistanceTrackingService whenever its state updates
     LaunchedEffect(serviceState) {
-        if (serviceState.length() > 0) {
+        if (gpsActive && serviceState.optString("key") == routeOwnerKey) {
+            val binding = com.repforge.app.ActiveWorkoutStore.current(context)?.optJSONObject(com.repforge.app.NativeGpsMeasurement.FIELD)
+            val baseMeters = binding?.optDouble("baseMeters", 0.0) ?: 0.0
+            val baseSeconds = binding?.optLong("baseSeconds", 0) ?: 0
             val srvActive = serviceState.optBoolean("active", false)
             if (srvActive) {
                 isStarted = true
@@ -3035,11 +3027,11 @@ fun ActiveOutdoorGpsScreen(
             }
             val srvDist = serviceState.optDouble("distanceMeters", Double.NaN)
             if (srvDist.isFinite() && srvDist >= 0.0) {
-                distanceMeters = srvDist.toFloat()
+                distanceMeters = (baseMeters + srvDist).toFloat()
             }
             val srvElapsed = serviceState.optLong("elapsedSeconds", -1L)
             if (srvElapsed >= 0L && srvElapsed.toInt() > elapsedSec) {
-                elapsedSec = srvElapsed.toInt()
+                elapsedSec = (baseSeconds + srvElapsed).toInt()
             }
             realGpsFixesCount = serviceState.optInt("routePointCount", realGpsFixesCount)
             hasServiceFix = serviceState.optBoolean("hasFix", false)
@@ -3048,23 +3040,118 @@ fun ActiveOutdoorGpsScreen(
         }
     }
 
-    val startNativeGpsTracking = {
-        val activityName = uiState.activeWorkoutTitleHu.ifBlank { "Kültéri futás" }
-        val intent = android.content.Intent(context, com.repforge.app.DistanceTrackingService::class.java)
-            .setAction(com.repforge.app.DistanceTrackingService.START)
-            .putExtra("key", routeOwnerKey)
-            .putExtra("language", uiState.language.code.lowercase())
-            .putExtra("name", activityName)
-        val startedOk = runCatching {
-            ContextCompat.startForegroundService(context, intent)
-        }.isSuccess
-        if (startedOk) {
-            isStarted = true
-            isPaused = false
-            onStartGpsTracking(activityName)
-        } else {
-            serviceErrorMsg = "A GPS-szolgáltatás nem tudott elindulni."
+    LaunchedEffect(uiState.activeWorkoutId, gpsActive) {
+        if (!gpsActive) {
+            val frame = com.repforge.app.PhoneWorkoutExecution.store(context).snapshot()
+            if (frame?.optString("workoutId") == uiState.activeWorkoutId) {
+                val clock = frame.optJSONObject(com.repforge.app.NativeSetStopwatch.FIELD)
+                isStarted = clock != null
+                isPaused = frame.optBoolean("workoutPaused") || clock?.let { !com.repforge.app.NativeSetStopwatch.running(it) } == true
+                elapsedSec = clock?.let { (com.repforge.app.NativeSetStopwatch.elapsed(it) / 1000).toInt() } ?: 0
+            }
         }
+    }
+
+    val startNativeGpsTracking = {
+        if (!startRequested && (!isStarted || isPaused)) {
+            startRequested = true
+            serviceErrorMsg = "GPS-szolgáltatás indul; visszaigazolásra vár…"
+            screenScope.launch {
+                var confirmed = false
+                try {
+                    val activityName = uiState.activeWorkoutTitleHu.ifBlank { "Kültéri futás" }
+                    check(onStartGpsTracking(activityName, routeOwnerKey)) { "A natív munkamenet nem készíthető elő." }
+                    nativeMeasurement.onEditorVisible()
+                    val frame = checkNotNull(com.repforge.app.PhoneWorkoutExecution.store(context).snapshot())
+                    check(kotlinx.coroutines.withTimeoutOrNull(5_000) {
+                        while (!com.repforge.app.IntervalTimerService.armed(frame.getString("workoutId"), frame.getLong("generation"))) delay(100)
+                        true
+                    } == true) { "A natív háttérvezérlő nem igazolta vissza az indítást." }
+                    val exercise = frame.getJSONArray("exercises").getJSONObject(frame.optInt("currentExercise"))
+                    val sets = exercise.getJSONArray("sets")
+                    val set = (0 until sets.length()).map { sets.getJSONObject(it) }.first { !it.optBoolean("done") }
+                    val target = com.repforge.app.NativeWorkoutTarget(frame.getString("workoutId"), frame.getLong("generation"), exercise.getString("id"), set.getString("setId"))
+                    val prepared = com.repforge.app.NativeWorkoutEditing.startGps(context, target)
+                    val binding = prepared.getJSONObject(com.repforge.app.NativeGpsMeasurement.FIELD)
+                    routeOwnerKey = binding.getString("key")
+                    val receipt = kotlinx.coroutines.withTimeoutOrNull(10_000) {
+                        while (true) {
+                            val snap = com.repforge.app.DistanceTrackingService.snapshot(context)
+                            if (snap.optString("key") == routeOwnerKey && snap.optBoolean("active")) break
+                            delay(100)
+                        }
+                        true
+                    } == true
+                    check(receipt) { "A GPS-szolgáltatás nem igazolta vissza az indítást." }
+                    check(onStartGpsTracking(activityName, routeOwnerKey)) { "A GPS-mérés natív edzéshez kötése nem sikerült." }
+                    confirmed = true
+                    isStarted = true
+                    isPaused = false
+                    serviceErrorMsg = ""
+                } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                catch (error: Exception) { serviceErrorMsg = error.message ?: "A GPS-mérés nem indult el." }
+                finally {
+                    startRequested = false
+                    if (!confirmed) {
+                        isStarted = false
+                        runCatching { com.repforge.app.NativeWorkoutEditing.interruptGps(context) }
+                    }
+                }
+            }
+        }
+    }
+
+    val startIndoorMeasurement = {
+        try {
+            check(onStartGpsTracking(uiState.activeWorkoutTitleHu, "")) { "A beltéri munkamenet nem menthető." }
+            val frame = com.repforge.app.StudioWorkoutBridge.startIndoor(context)
+            isStarted = frame.optJSONObject(com.repforge.app.NativeSetStopwatch.FIELD)?.let {
+                com.repforge.app.NativeSetStopwatch.running(it)
+            } == true
+            isPaused = !isStarted
+            serviceErrorMsg = ""
+        } catch (error: Exception) { serviceErrorMsg = error.message ?: "A beltéri időmérés nem indult el." }
+    }
+
+    val pauseMeasurement = {
+        val paused = !isPaused
+        if (onPauseMeasurement(paused)) {
+            if (gpsActive && !paused) startNativeGpsTracking()
+            else {
+                if (!gpsActive && !paused) com.repforge.app.StudioWorkoutBridge.startIndoor(context)
+                isPaused = paused
+            }
+        }
+    }
+
+    val finishMeasurement = {
+        var recorded = false
+        try {
+            var frame = com.repforge.app.NativeWorkoutEditing.project(context)
+            if (frame.optBoolean("workoutPaused")) {
+                check(onPauseMeasurement(false))
+                frame = com.repforge.app.NativeWorkoutEditing.project(context)
+            }
+            val saved = if (gpsActive) {
+                val binding = frame.getJSONObject(com.repforge.app.NativeGpsMeasurement.FIELD)
+                com.repforge.app.NativeWorkoutEditing.finishGps(context,
+                    com.repforge.app.NativeGpsMeasurement.target(frame), binding.getString("id"))
+            } else {
+                val clock = frame.getJSONObject(com.repforge.app.NativeSetStopwatch.FIELD)
+                if (!com.repforge.app.NativeSetStopwatch.running(clock)) frame = com.repforge.app.StudioWorkoutBridge.startIndoor(context)
+                val current = frame.getJSONObject(com.repforge.app.NativeSetStopwatch.FIELD)
+                com.repforge.app.NativeWorkoutEditing.stopStopwatch(context, com.repforge.app.NativeWorkoutTarget(
+                    frame.getString("workoutId"), frame.getLong("generation"), current.getString("exerciseId"), current.getString("setId")))
+            }
+            val exercises = saved.getJSONArray("exercises")
+            recorded = (0 until exercises.length()).any { i ->
+                val sets = exercises.getJSONObject(i).getJSONArray("sets")
+                (0 until sets.length()).any { sets.getJSONObject(it).optBoolean("done") }
+            }
+            check(recorded) { "Nem áll rendelkezésre sikeres, pozitív mérés. Az edzés nem jelölhető késznek." }
+            isPaused = true
+        } catch (error: Exception) { serviceErrorMsg = error.message ?: "A mérés nem rögzíthető." }
+        recorded
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -3079,55 +3166,24 @@ fun ActiveOutdoorGpsScreen(
         }
     }
 
-    // Direct LocationManager fallback listener for real physical GPS fixes (never fabricates distance)
-    DisposableEffect(isStarted, isPaused, gpsActive, hasLocationPermission) {
-        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
-        val listener = object : LocationListener {
-            override fun onLocationChanged(location: Location) {
-                if (isStarted && !isPaused && gpsActive && location.hasAccuracy() && location.accuracy <= 35f) {
-                    val prev = lastGpsLocation
-                    if (prev != null) {
-                        val delta = prev.distanceTo(location)
-                        if (delta in 1.0f..100f) {
-                            val srvDist = com.repforge.app.DistanceTrackingService.snapshot(context).optDouble("distanceMeters", 0.0).toFloat()
-                            distanceMeters = maxOf(distanceMeters, srvDist)
-                            realGpsFixesCount++
-                            hasServiceFix = true
-                            gpsAccuracyMeters = location.accuracy
-                        }
-                    } else {
-                        hasServiceFix = true
-                        gpsAccuracyMeters = location.accuracy
-                    }
-                    lastGpsLocation = location
-                }
-            }
-            override fun onProviderEnabled(provider: String) {}
-            override fun onProviderDisabled(provider: String) {
-                hasServiceFix = false
-            }
-        }
-
-        if (isStarted && !isPaused && gpsActive && hasLocationPermission && locationManager != null) {
-            runCatching {
-                if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000L, 2f, listener)
-                }
-            }
-        }
-        onDispose {
-            runCatching { locationManager?.removeUpdates(listener) }
-        }
-    }
-
     // Live 1-second stopwatch loop — STRICTLY NO FAKE DISTANCE OR FAKE HEART RATE
     LaunchedEffect(isStarted, isPaused) {
         while (isStarted && !isPaused) {
             delay(1000L)
-            elapsedSec += 1
+            val frame = com.repforge.app.PhoneWorkoutExecution.store(context).snapshot()
+            if (!gpsActive && frame != null) {
+                com.repforge.app.PhoneWorkoutExecution.store(context).checkpointStopwatch(
+                    frame.optString("workoutId"), frame.optLong("generation"), android.os.SystemClock.elapsedRealtime())
+                val current = com.repforge.app.PhoneWorkoutExecution.store(context).snapshot()
+                val clock = current?.optJSONObject(com.repforge.app.NativeSetStopwatch.FIELD)
+                elapsedSec = clock?.let { (com.repforge.app.NativeSetStopwatch.elapsed(it) / 1000).toInt() } ?: 0
+                isPaused = current?.optBoolean("workoutPaused") == true
+            }
             val snap = com.repforge.app.DistanceTrackingService.snapshot(context)
-            if (snap.optBoolean("active", false)) {
-                val srvMeters = snap.optDouble("distanceMeters", 0.0).toFloat()
+            if (gpsActive && snap.optString("key") == routeOwnerKey && snap.optBoolean("active", false)) {
+                val binding = com.repforge.app.ActiveWorkoutStore.current(context)?.optJSONObject(com.repforge.app.NativeGpsMeasurement.FIELD)
+                elapsedSec = ((binding?.optLong("baseSeconds", 0) ?: 0) + snap.optLong("elapsedSeconds", 0)).toInt()
+                val srvMeters = ((binding?.optDouble("baseMeters", 0.0) ?: 0.0) + snap.optDouble("distanceMeters", 0.0)).toFloat()
                 if (srvMeters > distanceMeters) {
                     distanceMeters = srvMeters
                 }
@@ -3164,7 +3220,7 @@ fun ActiveOutdoorGpsScreen(
     }
     val realHrBpm = if (wearLiveHr > 0) wearLiveHr else uiState.currentHrBpm
     val hrLabel = if (realHrBpm > 0) "♥ $realHrBpm bpm" else "♥ — bpm (nincs szenzor)"
-    val caloriesLabel = if (uiState.activeCaloriesKcal > 0) "${uiState.activeCaloriesKcal} kcal" else if (distanceKm > 0f) "~${(distanceKm * 65f).toInt()} kcal (becsült)" else "— kcal"
+    val caloriesLabel = "— kcal (edzésadat nem érhető el)"
 
     LazyColumn(
         modifier = Modifier
@@ -3433,9 +3489,10 @@ fun ActiveOutdoorGpsScreen(
                             .height(140.dp)
                             .clip(RoundedCornerShape(16.dp))
                     ) {
-                        MargitszigetDetailedMapBox(
+                        NativeWorkoutRouteMapBox(
                             modifier = Modifier.fillMaxSize(),
-                            interactiveControls = true
+                            interactiveControls = true,
+                            routeKeys = listOf(routeOwnerKey), refreshToken = realGpsFixesCount
                         )
                         Surface(
                             shape = RoundedCornerShape(12.dp),
@@ -3594,9 +3651,7 @@ fun ActiveOutdoorGpsScreen(
                                         startNativeGpsTracking()
                                     }
                                 } else {
-                                    // Beltéri időmérés GPS nélkül
-                                    isStarted = true
-                                    isPaused = false
+                                    startIndoorMeasurement()
                                 }
                             },
                             shape = RoundedCornerShape(16.dp),
@@ -3628,11 +3683,7 @@ fun ActiveOutdoorGpsScreen(
                         ) {
                             OutlinedButton(
                                 onClick = {
-                                    val nextPaused = !isPaused
-                                    isPaused = nextPaused
-                                    if (gpsActive) {
-                                        com.repforge.app.DistanceTrackingService.pauseOwned(context, routeOwnerKey, nextPaused)
-                                    }
+                                    pauseMeasurement()
                                 },
                                 shape = RoundedCornerShape(14.dp),
                                 modifier = Modifier
@@ -3671,11 +3722,7 @@ fun ActiveOutdoorGpsScreen(
                             }
                             Button(
                                 onClick = {
-                                    isPaused = true
-                                    if (gpsActive) {
-                                        com.repforge.app.DistanceTrackingService.stop(context)
-                                    }
-                                    onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY)
+                                    if (finishMeasurement()) onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY)
                                 },
                                 shape = RoundedCornerShape(14.dp),
                                 colors = ButtonDefaults.buttonColors(
@@ -3714,9 +3761,10 @@ fun ActiveOutdoorGpsScreen(
                     .testTag("fullscreen_map_overlay")
             ) {
                 // 1. Fullscreen Map Canvas
-                MargitszigetDetailedMapBox(
+                NativeWorkoutRouteMapBox(
                     modifier = Modifier.fillMaxSize(),
-                    interactiveControls = true
+                    interactiveControls = true,
+                    routeKeys = listOf(routeOwnerKey), refreshToken = realGpsFixesCount
                 )
 
                 // 2. Floating Top Header
@@ -3844,8 +3892,7 @@ fun ActiveOutdoorGpsScreen(
                                             startNativeGpsTracking()
                                         }
                                     } else {
-                                        isStarted = true
-                                        isPaused = false
+                                        startIndoorMeasurement()
                                     }
                                 },
                                 shape = RoundedCornerShape(16.dp),
@@ -3868,11 +3915,7 @@ fun ActiveOutdoorGpsScreen(
                             ) {
                                 OutlinedButton(
                                     onClick = {
-                                        val nextPaused = !isPaused
-                                        isPaused = nextPaused
-                                        if (gpsActive) {
-                                            com.repforge.app.DistanceTrackingService.pauseOwned(context, routeOwnerKey, nextPaused)
-                                        }
+                                        pauseMeasurement()
                                     },
                                     shape = RoundedCornerShape(14.dp),
                                     modifier = Modifier.weight(1f).height(46.dp)
@@ -3906,12 +3949,10 @@ fun ActiveOutdoorGpsScreen(
                                 }
                                 Button(
                                     onClick = {
-                                        isPaused = true
-                                        if (gpsActive) {
-                                            com.repforge.app.DistanceTrackingService.stop(context)
+                                        if (finishMeasurement()) {
+                                            isFullscreenMapOpen = false
+                                            onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY)
                                         }
-                                        isFullscreenMapOpen = false
-                                        onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY)
                                     },
                                     shape = RoundedCornerShape(14.dp),
                                     colors = ButtonDefaults.buttonColors(
@@ -4225,7 +4266,7 @@ fun WorkoutSummaryScreen(
         }
 
         val caloriesLabel = if (uiState.activeCaloriesKcal > 0) {
-            "${uiState.activeCaloriesKcal} kcal"
+            "— kcal (edzésadat nem érhető el)"
         } else if (isOutdoor && uiState.outdoorDistanceKm > 0f) {
             "~${(uiState.outdoorDistanceKm * 65f).toInt()} kcal"
         } else if (elapsedSec > 0) {

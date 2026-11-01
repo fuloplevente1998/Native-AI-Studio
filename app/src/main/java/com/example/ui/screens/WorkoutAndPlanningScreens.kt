@@ -1461,19 +1461,20 @@ fun CalendarPlannerScreen(
     onDeleteCalendarEvent: (String) -> Unit = {},
     onAddPlannedWorkoutOnDay: (Int, String, String, Int) -> Unit = { _, _, _, _ -> },
     onUndoCalendarAction: () -> Unit = {},
+    onSelectMonth: (String) -> Unit = {},
     onActivateProgram: (String) -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
     val today = remember { java.time.LocalDate.now() }
-    var displayedYearMonth by remember { mutableStateOf(java.time.YearMonth.from(today)) }
+    val displayedYearMonth = java.time.YearMonth.parse(state.calendarYearMonth)
 
     val huMonthNames = listOf(
         "Január", "Február", "Március", "Április", "Május", "Június",
         "Július", "Augusztus", "Szeptember", "Október", "November", "December"
     )
     val monthHeaderText = "${displayedYearMonth.year}. ${huMonthNames[displayedYearMonth.monthValue - 1]} 01."
-    val dayEvents = state.calendarEvents.filter { it.dayOfMonth == state.selectedCalendarDay }
+    val dayEvents = state.calendarEvents.filter { it.dayOfMonth == state.selectedCalendarDay && it.dateIso.startsWith(displayedYearMonth.toString()) }
     val activeProgram = state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
     val activeProgramTitle = activeProgram?.nameHu ?: "Otthoni A/B – Alap (személyre szabott)"
 
@@ -1735,7 +1736,7 @@ fun CalendarPlannerScreen(
                                 .size(44.dp)
                                 .border(1.dp, Color(0xFF252E3B), RoundedCornerShape(12.dp))
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable { displayedYearMonth = displayedYearMonth.minusMonths(1) }
+                                .clickable { onSelectMonth(displayedYearMonth.minusMonths(1).toString()) }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
@@ -1760,7 +1761,7 @@ fun CalendarPlannerScreen(
                                     .size(44.dp)
                                     .border(1.dp, Color(0xFF252E3B), RoundedCornerShape(12.dp))
                                     .clip(RoundedCornerShape(12.dp))
-                                    .clickable { displayedYearMonth = displayedYearMonth.plusMonths(1) }
+                                    .clickable { onSelectMonth(displayedYearMonth.plusMonths(1).toString()) }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
@@ -1828,7 +1829,7 @@ fun CalendarPlannerScreen(
                                         )
                                     } else {
                                         val isSelected = dayNumber == state.selectedCalendarDay
-                                        val evs = state.calendarEvents.filter { it.dayOfMonth == dayNumber }
+                                        val evs = state.calendarEvents.filter { it.dayOfMonth == dayNumber && it.dateIso.startsWith(displayedYearMonth.toString()) }
                                         val completedEv = evs.firstOrNull { it.status == CalendarEventStatus.COMPLETED }
                                         val plannedEv = evs.firstOrNull { it.status == CalendarEventStatus.PLANNED }
 

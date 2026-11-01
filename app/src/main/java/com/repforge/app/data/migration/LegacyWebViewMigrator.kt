@@ -561,10 +561,9 @@ class LegacyWebViewMigrator(
         val workoutKey = h.optString("key", syncId).ifBlank { started }
         val startedMs = runCatching { Instant.parse(started).toEpochMilli() }.getOrDefault(0L)
         val finishedMs = runCatching { Instant.parse(finished).toEpochMilli() }.getOrDefault(startedMs)
-        val durationSec = h.optInt(
-            "durationSeconds",
-            max(0L, (finishedMs - startedMs) / 1000L).toInt()
-        )
+        val durationSec = if (h.optJSONArray("activeIntervals") != null) {
+            com.repforge.app.NativeWorkoutActiveWindows.seconds(h).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        } else h.optInt("durationSeconds", max(0L, (finishedMs - startedMs) / 1000L).toInt())
 
         val exercisesWithSets = ArrayList<Pair<WorkoutHistoryExerciseEntity, List<WorkoutHistorySetEntity>>>()
         val srcExercises = h.optJSONArray("exercises") ?: JSONArray()
