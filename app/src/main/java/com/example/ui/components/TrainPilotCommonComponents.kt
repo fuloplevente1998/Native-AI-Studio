@@ -161,7 +161,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
             modifier = Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(top = 10.dp, bottom = 8.dp, start = 12.dp, end = 12.dp),
+                .padding(top = 6.dp, bottom = 6.dp, start = 12.dp, end = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // 1. Vékony sáv: App logó + TrainPilot név + Nyelvválasztó + Témaválasztó + Beállítások ikon
@@ -335,7 +335,8 @@ fun TrainPilotGlobalTopHeaderAndNav(
                     TopNavPillItem(
                         label = strings.navProgress,
                         icon = Icons.AutoMirrored.Filled.TrendingUp,
-                        selected = (currentTab == MainTab.PROGRESS || currentTab == MainTab.LOG) && currentSubScreen == SubScreen.NONE,
+                        selected = (currentTab == MainTab.PROGRESS || currentTab == MainTab.LOG) &&
+                            currentSubScreen in setOf(SubScreen.NONE, SubScreen.LOG_WORKOUT_DETAIL, SubScreen.LOG_ROUTE_MAP),
                         onClick = { onSelectTab(MainTab.PROGRESS) },
                         modifier = itemModifier,
                         allowUnclippedText = true,
@@ -437,27 +438,24 @@ private fun TopNavPillItem(
 fun TrainPilotRedCloseButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    size: androidx.compose.ui.unit.Dp = 42.dp,
+    size: androidx.compose.ui.unit.Dp = 38.dp,
     testTag: String = ""
 ) {
     val strings = LocalTrainPilotStrings.current
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = Color(0xFFEF4444).copy(alpha = 0.16f),
-        modifier = modifier
-            .size(size)
-            .border(1.dp, Color(0xFFEF4444).copy(alpha = 0.55f), RoundedCornerShape(12.dp))
-            .clip(RoundedCornerShape(12.dp))
-            .clickable { onClick() }
-            .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier)
-    ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = strings.closeAction,
-                tint = Color(0xFFFCA5A5),
-                modifier = Modifier.size(20.dp)
-            )
+    val palette = LocalTrainPilotPalette.current
+    val iconColor = if (palette.isDark) Color(0xFFFCA5A5) else Color(0xFFB91C1C)
+    // The painted control shrinks ~10%; its independent hit target remains 48 dp.
+    Box(modifier = modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+        .clickable(role = Role.Button, onClick = onClick)
+        .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier), contentAlignment = Alignment.Center) {
+        Surface(shape = RoundedCornerShape(11.dp), color = Color(0xFFEF4444).copy(alpha = 0.16f),
+            modifier = Modifier.size(size)
+                .border(1.dp, Color(0xFFEF4444).copy(alpha = 0.55f), RoundedCornerShape(11.dp))
+                .then(if (testTag.isNotEmpty()) Modifier.testTag("${testTag}_visual") else Modifier)) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Icon(Icons.Default.Close, contentDescription = strings.closeAction,
+                    tint = iconColor, modifier = Modifier.size(18.dp))
+            }
         }
     }
 }
@@ -473,14 +471,14 @@ fun SubScreenTopBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 2.dp),
+            .padding(horizontal = 0.dp, vertical = 0.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.ExtraBold,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
             color = palette.textPrimary,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,

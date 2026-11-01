@@ -53,8 +53,8 @@ val Typography = Typography(
     titleLarge = TextStyle(
         fontFamily = PlusJakartaSansFontFamily,
         fontWeight = FontWeight.Bold,
-        fontSize = 19.sp,
-        lineHeight = 25.sp
+        fontSize = 16.sp,
+        lineHeight = 22.sp
     ),
     titleMedium = TextStyle(
         fontFamily = PlusJakartaSansFontFamily,

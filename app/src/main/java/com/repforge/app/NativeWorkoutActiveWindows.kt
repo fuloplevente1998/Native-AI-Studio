@@ -58,6 +58,19 @@ internal object NativeWorkoutActiveWindows {
             out.put("heartRateSamples", count).put("averageHeartRate",
                 pulses.sumOf { value(it, "averageHeartRate")!! * value(it, "heartRateSamples")!! } / count)
         }
+        val speeds = rows.filter { value(it, "speedSamples")?.let { n -> n > 0 } == true }
+        if (speeds.isNotEmpty() && speeds.all { value(it, "averageSpeedMps") != null }) {
+            val count = speeds.sumOf { value(it, "speedSamples")!! }
+            out.put("speedSamples", count).put("averageSpeedMps",
+                speeds.sumOf { value(it, "averageSpeedMps")!! * value(it, "speedSamples")!! } / count)
+        }
+        // Keep the provider's provenance and estimate warning when combining active windows.
+        out.put("workoutEnergyProrated", rows.any { it.optBoolean("workoutEnergyProrated") })
+        val labels = JSONObject()
+        for (row in rows) row.optJSONObject("sourceLabels")?.let { source ->
+            for (key in source.keys()) labels.put(key, source.get(key))
+        }
+        out.put("sourceLabels", labels)
         for (key in listOf("sources", "warnings")) {
             val values = rows.flatMap { row -> row.optJSONArray(key)?.let { a ->
                 (0 until a.length()).map { a.get(it).toString() }

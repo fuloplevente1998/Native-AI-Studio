@@ -365,7 +365,7 @@ fun LogTabScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 ) {
                     Column(
                         modifier = Modifier.padding(12.dp),
@@ -653,7 +653,7 @@ private fun LogWorkoutCard(
         color = palette.surfaceCard,
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
             .clickable { onOpenDetailAlways() }
             .testTag("log_card_${entry.id}")
@@ -790,7 +790,8 @@ fun LogWorkoutDetailScreen(
     onOpenPhotos: () -> Unit,
     onOpenRouteMap: () -> Unit,
     onOpenWatchSync: () -> Unit,
-    onOpenHealthTab: () -> Unit
+    onOpenHealthTab: () -> Unit,
+    workoutHealth: @Composable () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val workout = uiState.loggedWorkouts.find { it.id == uiState.selectedLogWorkoutId }
@@ -815,7 +816,7 @@ fun LogWorkoutDetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 24.dp)
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .padding(24.dp)
             ) {
                 Column(
@@ -844,17 +845,9 @@ fun LogWorkoutDetailScreen(
             .fillMaxSize()
             .background(palette.background)
             .testTag("log_workout_detail_screen"),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        item {
-            SubScreenTopBar(
-                title = strings.workoutDetailTitle,
-                onBack = onBack,
-                onOpenSettings = onOpenSettings
-            )
-        }
-
         // Summary Header Card
         item {
             Surface(
@@ -862,51 +855,25 @@ fun LogWorkoutDetailScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
+                    .testTag("journal_detail_header")
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(palette.primary.copy(alpha = 0.16f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.FitnessCenter,
-                                contentDescription = null,
-                                tint = palette.primary
-                            )
+                        Column(Modifier.weight(1f)) {
+                            Text("${strings.navProgress} · ${strings.navLog}", style = MaterialTheme.typography.labelSmall,
+                                color = palette.primary, modifier = Modifier.testTag("journal_detail_location"))
+                            Text(workout.titleHu, style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold, color = palette.textPrimary,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(workout.dateLabelHu, style = MaterialTheme.typography.bodySmall,
+                                color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = workout.titleHu,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.textPrimary
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    tint = palette.success,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                            Text(
-                                text = workout.dateLabelHu,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = palette.textSecondary
-                            )
-                        }
+                        com.example.ui.components.TrainPilotRedCloseButton(onClick = onBack, testTag = "subscreen_back_button")
                     }
-
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     HorizontalDivider(color = palette.cardBorder)
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -973,7 +940,7 @@ fun LogWorkoutDetailScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                         .clip(RoundedCornerShape(18.dp))
                         .clickable { onToggleExpandedExercise(index) }
                 ) {
@@ -1059,7 +1026,7 @@ fun LogWorkoutDetailScreen(
                     Surface(
                         shape = RoundedCornerShape(18.dp),
                         color = palette.surfaceCard,
-                        modifier = Modifier.fillMaxWidth().border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                        modifier = Modifier.fillMaxWidth().border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("Kültéri edzés mért adatai", style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
@@ -1085,7 +1052,7 @@ fun LogWorkoutDetailScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Adatforrás és szinkron napló", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
@@ -1097,6 +1064,9 @@ fun LogWorkoutDetailScreen(
                 }
             }
         }
+
+        // The health controller lives outside LazyColumn; scrolling never restarts provider reads.
+        item(key = "workout_health") { workoutHealth() }
 
         // Fotók (2) & Útvonal megtekintése buttons
         item {
@@ -1238,23 +1208,12 @@ fun LogRouteMapScreen(
         ) {
             Text(
                 text = strings.routeMapTitle,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = palette.textPrimary
+                color = palette.textPrimary,
+                maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
             )
-            Surface(
-                shape = CircleShape,
-                color = palette.danger,
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .clickable { onBack() }
-                    .testTag("close_route_map_button")
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = strings.closeAction, tint = Color.White)
-                }
-            }
+            com.example.ui.components.TrainPilotRedCloseButton(onClick = onBack, testTag = "close_route_map_button")
         }
 
         // High-precision Margitsziget + Duna + Vizafogó + Újlipótváros + Margit híd Map Canvas
@@ -1271,7 +1230,7 @@ fun LogRouteMapScreen(
             color = palette.surfaceCard,
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
+                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(
@@ -1539,7 +1498,7 @@ fun ProgressTabScreen(
                             color = palette.surfaceCard,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Row(
@@ -1592,7 +1551,7 @@ fun ProgressTabScreen(
                             color = palette.surfaceCard,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                         ) {
                             Column(modifier = Modifier.padding(14.dp)) {
                                 Text("1RM becslés (kg) • Epley-képlet ⓘ", style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
@@ -2642,7 +2601,7 @@ private fun MainStatisticsRecordsAndCardioSection(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Text(pr.exerciseNameHu, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
@@ -2685,7 +2644,7 @@ private fun MainStatisticsRecordsAndCardioSection(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .clickable { onToggleCardioFilterStepsMode(!uiState.cardioFilterStepsMode) }
             ) {
                 Row(
@@ -2736,7 +2695,7 @@ private fun MainStatisticsRecordsAndCardioSection(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),

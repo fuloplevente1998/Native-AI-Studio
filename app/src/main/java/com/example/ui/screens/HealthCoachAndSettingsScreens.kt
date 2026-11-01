@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -212,7 +213,7 @@ fun HealthTabScreen(
             title = {
                 Text(
                     text = if (editingMeasurement != null) "Mérés szerkesztése" else "Új testsúlymérés",
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold
                 )
             },
             text = {
@@ -611,7 +612,7 @@ fun HealthTabScreen(
                             shape = RoundedCornerShape(18.dp),
                             color = palette.background.copy(alpha = 0.65f),
                             modifier = Modifier
-                                .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                                 .clip(RoundedCornerShape(18.dp))
                                 .clickable { onOpenGoalsDialog() }
                                 .testTag("health_weekly_goals_button")
@@ -643,7 +644,7 @@ fun HealthTabScreen(
                             color = palette.background.copy(alpha = 0.55f),
                             modifier = Modifier
                                 .weight(1f)
-                                .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                         ) {
                             Column(
                                 modifier = Modifier.padding(12.dp),
@@ -712,7 +713,7 @@ fun HealthTabScreen(
                             color = palette.background.copy(alpha = 0.55f),
                             modifier = Modifier
                                 .weight(1f)
-                                .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                         ) {
                             Column(
                                 modifier = Modifier.padding(12.dp),
@@ -1836,7 +1837,7 @@ fun CoachDetailScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
@@ -1987,7 +1988,7 @@ fun CoachDetailScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -2008,7 +2009,7 @@ fun CoachDetailScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Javasolt edzés (MAI JAVASLAT)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
@@ -2134,7 +2135,7 @@ fun SettingsMainScreen(
     val palette = LocalTrainPilotPalette.current
     val currentPaletteObj = TrainPilotPalettes.getById(uiState.selectedPaletteId)
 
-    var expandedMainThemesSection by remember { mutableStateOf(true) }
+    var expandedMainThemesSection by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var expandedMatteThemes by remember { mutableStateOf(false) }
     var expandedContrastThemes by remember { mutableStateOf(false) }
     var expandedGlowThemes by remember { mutableStateOf(false) }
@@ -2150,7 +2151,7 @@ fun SettingsMainScreen(
             containerColor = palette.surfaceCard,
             titleContentColor = palette.textPrimary,
             textContentColor = palette.textSecondary,
-            title = { Text("Edzés beállításai és progresszió", fontWeight = FontWeight.Bold) },
+            title = { Text("Edzés beállításai és progresszió", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(
@@ -2274,7 +2275,7 @@ fun SettingsMainScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2336,29 +2337,30 @@ fun SettingsMainScreen(
                     Triple("Világos témák (Nappali / Light)", allPalettes.filter { it.id in 25..32 }, expandedLightThemes) to { expandedLightThemes = !expandedLightThemes }
                 )
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                categories.forEach { (catInfo, onToggleCat) ->
+            Surface(shape = RoundedCornerShape(18.dp), color = palette.surfaceCard,
+                modifier = Modifier.fillMaxWidth().border(1.5.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                    .testTag("settings_themes_group")) {
+            Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                categories.forEachIndexed { categoryIndex, entry ->
+                    val (catInfo, onToggleCat) = entry
                     val (catTitle, catPalettes, isExpanded) = catInfo
                     Surface(
                         shape = RoundedCornerShape(18.dp),
-                        color = palette.surfaceCard,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(
-                                width = 1.dp,
-                                color = if (isExpanded) palette.primary.copy(alpha = 0.6f) else palette.cardBorder,
-                                shape = RoundedCornerShape(18.dp)
-                            )
+                        color = palette.surfaceElevated,
+                        modifier = Modifier.fillMaxWidth().testTag("settings_theme_category_$categoryIndex")
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { onToggleCat() },
+                                    .heightIn(min = 48.dp)
+                                    .clickable { onToggleCat() }
+                                    .testTag("settings_theme_category_toggle_$categoryIndex"),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Row(
+                                    modifier = Modifier.weight(1f),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
@@ -2370,6 +2372,7 @@ fun SettingsMainScreen(
                                     )
                                     Text(
                                         text = catTitle,
+                                        modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis,
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = palette.textPrimary
@@ -2457,6 +2460,7 @@ fun SettingsMainScreen(
                     }
                 }
             }
+            }
         }
         }
 
@@ -2466,7 +2470,7 @@ fun SettingsMainScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(strings.languageTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
@@ -2520,7 +2524,7 @@ fun SettingsMainScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(
@@ -2627,7 +2631,7 @@ private fun SettingsActionRowCard(
         color = palette.surfaceCard,
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+            .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             .clip(RoundedCornerShape(18.dp))
             .clickable { onClick() }
             .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier)
@@ -2770,7 +2774,7 @@ fun WatchAndSyncScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -2948,7 +2952,7 @@ fun WatchAndSyncScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .clip(RoundedCornerShape(18.dp))
                     .clickable { onRequestPermission("hc") }
             ) {
@@ -2991,7 +2995,7 @@ fun WatchAndSyncScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .clip(RoundedCornerShape(18.dp))
                     .clickable { onRequestPermission("samsung") }
             ) {
@@ -3132,7 +3136,7 @@ fun BackupRestoreScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Mentés tartalma", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
@@ -3296,7 +3300,7 @@ private fun PermissionToggleCard(
         color = palette.surfaceCard,
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+            .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
     ) {
         Row(
             modifier = Modifier
@@ -3437,7 +3441,7 @@ private fun PrivatePhotoPlaceholderCard(
     Surface(
         shape = RoundedCornerShape(18.dp),
         color = palette.surfaceCard,
-        modifier = modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+        modifier = modifier.border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Box(

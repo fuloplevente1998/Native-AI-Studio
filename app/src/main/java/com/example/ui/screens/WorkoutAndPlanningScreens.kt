@@ -129,7 +129,7 @@ fun WorkoutTabScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 .clickable { onOpenQuickWorkout() }
                 .testTag("workout_tab_quick_card")
         ) {
@@ -176,7 +176,7 @@ fun WorkoutTabScreen(
                 color = palette.surface,
                 modifier = Modifier
                     .weight(1f)
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .clickable { onOpenExerciseLibrary() }
                     .testTag("workout_tab_exercise_picker")
             ) {
@@ -236,7 +236,7 @@ fun WorkoutTabScreen(
                 color = palette.surface,
                 modifier = Modifier
                     .weight(1f)
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .clickable { onOpenOutdoorWorkout() }
                     .testTag("workout_tab_outdoor_card")
             ) {
@@ -502,7 +502,7 @@ fun WorkoutTabScreen(
                 color = palette.surface,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .padding(20.dp)
             ) {
                 Column(
@@ -615,7 +615,7 @@ fun ProgramsListScreen(
             titleContentColor = palette.textPrimary,
             textContentColor = palette.textSecondary,
             title = {
-                Text("Új egyedi program létrehozása", fontWeight = FontWeight.Bold)
+                Text("Új egyedi program létrehozása", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -699,7 +699,7 @@ fun ProgramsListScreen(
                 color = palette.surface,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(24.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(24.dp))
             ) {
                 Row(modifier = Modifier.padding(4.dp)) {
                     val builtinCount = state.programs.count { !it.isCustom }
@@ -1491,7 +1491,7 @@ fun CalendarPlannerScreen(
             onDismissRequest = { editingEvent = null },
             containerColor = palette.surface,
             titleContentColor = palette.textPrimary,
-            title = { Text("Edzésnap módosítása (${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${ev.dayOfMonth}.)", fontWeight = FontWeight.Bold) },
+            title = { Text("Edzésnap módosítása (${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${ev.dayOfMonth}.)", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Edzésnap típusa (A / B):", style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
@@ -1574,7 +1574,7 @@ fun CalendarPlannerScreen(
             onDismissRequest = { movingEvent = null },
             containerColor = palette.surface,
             titleContentColor = palette.textPrimary,
-            title = { Text("Edzés áthelyezése (${ev.dayOfMonth}. napról)", fontWeight = FontWeight.Bold) },
+            title = { Text("Edzés áthelyezése (${ev.dayOfMonth}. napról)", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Válaszd ki az új napot ebben a hónapban:", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
@@ -1645,7 +1645,7 @@ fun CalendarPlannerScreen(
                         "duration" -> "Időtartam (perc)"
                         else -> "Hetek száma"
                     },
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold
                 )
             },
             text = {
@@ -1717,7 +1717,7 @@ fun CalendarPlannerScreen(
                 color = Color(0xFF0E131A),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(
                     modifier = Modifier.padding(12.dp),
@@ -1899,7 +1899,7 @@ fun CalendarPlannerScreen(
                 color = Color(0xFF121820),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(
                     modifier = Modifier.padding(14.dp),
@@ -2076,7 +2076,7 @@ fun CalendarPlannerScreen(
                 color = Color(0xFF0E131A),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -2889,7 +2889,7 @@ fun ExerciseDetailScreen(
             ) {
                 Text(
                     text = exercise.localizedName(state.language),
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.titleMedium,
                     color = palette.textPrimary,
                     modifier = Modifier.weight(1f)
                 )
@@ -2926,7 +2926,7 @@ fun ExerciseDetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(190.dp)
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
                     .clip(RoundedCornerShape(20.dp))
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {

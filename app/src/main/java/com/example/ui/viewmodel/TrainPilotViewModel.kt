@@ -3071,10 +3071,18 @@ class TrainPilotViewModel : ViewModel() {
             val back = (it.backStack + NavRoute(it.currentTab, it.currentSubScreen)).takeLast(16)
             it.copy(
                 selectedLogWorkoutId = workoutId,
+                currentTab = MainTab.PROGRESS,
+                progressMainSection = 1,
                 currentSubScreen = SubScreen.LOG_WORKOUT_DETAIL,
                 backStack = back
             )
         }
+    }
+
+    fun updateLoggedWorkoutHealthSources(workoutId: String, wear: Boolean, healthConnect: Boolean) {
+        _uiState.update { state -> state.copy(loggedWorkouts = state.loggedWorkouts.map { entry ->
+            if (entry.id == workoutId) entry.copy(sourceWatch = wear, sourceHealthConnect = healthConnect) else entry
+        }) }
     }
 
     fun selectLogDetailTab(index: Int) {

@@ -278,7 +278,7 @@ fun HomeScreen(
 
                         Text(
                             text = currentDay?.localizedTitle(state.language) ?: "Teljes test A",
-                            style = MaterialTheme.typography.titleLarge.copy(fontSize = 21.sp),
+                            style = MaterialTheme.typography.titleLarge,
                             color = palette.textPrimary
                         )
 
@@ -333,7 +333,7 @@ fun HomeScreen(
             color = palette.surface,
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 .clickable { onOpenQuickWorkout() }
                 .testTag("home_quick_workout_card")
         ) {
@@ -384,7 +384,7 @@ fun HomeScreen(
             color = palette.surface,
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 .clickable { onOpenWatchAndSync() }
                 .testTag("home_watch_status_card")
         ) {
@@ -847,7 +847,7 @@ private fun HomeVitalCard(
         color = palette.surface,
         modifier = modifier
             .heightIn(min = 48.dp)
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+            .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             .clickable { onClick() }
     ) {
         Column(
