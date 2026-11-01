@@ -79,3 +79,14 @@ For the physical test:
 Compilation/unit tests cannot prove Bluetooth delivery, installed-device signatures,
 real sensor values or physical round-screen layout. Mark those device checks pending
 until observed. Do not claim a transport node alone is a successful workout handoff.
+
+## Optimized test APK size
+
+The earlier reference Wear release APK measured 5,109,898 bytes (one 4,264,656-byte
+DEX). The unshrunk new debug APK measured 39,262,279 bytes, including 38,087,480 bytes
+of DEX and no phone application classes. A separate `optimized` variant inherits
+the existing release R8/resource shrinking but explicitly uses the phone debug
+signing configuration. It is an optimized test APK, not a release-key build. The
+normal debug variant remains available. The pipeline verifies optimized size is
+smaller, watch declaration and companion capability are retained, and actual signer
+and application ID match the phone APK. Device/R8 runtime acceptance remains pending.

@@ -39,10 +39,24 @@ key = next((n.get(android + "value", "") for n in manifest.findall("application/
             if n.get(android + "name") == "com.google.android.geo.API_KEY"), "")
 result["mapsApiKeyConfigured"] = bool(key.strip()) and not key.startswith("${") and key not in {"YOUR_API_KEY", "DEFAULT_API_KEY"}
 result["ciCheckout"] = os.environ.get("GITHUB_SHA")
-wear = pathlib.Path("wear/build/outputs/apk/debug/wear-debug.apk")
+wear_debug = pathlib.Path("wear/build/outputs/apk/debug/wear-debug.apk")
+wear = pathlib.Path("wear/build/outputs/apk/optimized/wear-optimized.apk")
+optimized = wear.is_file()
+if not optimized:
+    wear = wear_debug
 requires_wear = os.environ.get("TRAINPILOT_REQUIRE_WEAR_PAIR") == "true"
 if wear.is_file():
     wear_manifest, result["wear"] = inspect(wear)
+    result["wear"]["variant"] = "optimized-test" if optimized else "debug"
+    result["wear"]["bytes"] = wear.stat().st_size
+    if wear_debug.is_file():
+        result["wearDebugBytes"] = wear_debug.stat().st_size
+    with __import__("zipfile").ZipFile(wear) as archive:
+        resources = archive.read("resources.arsc")
+        result["wearCompanionCapabilityRetained"] = (
+            b"android_wear_capabilities" in resources or
+            "android_wear_capabilities".encode("utf-16le") in resources
+        )
     result["dataLayerPairIdentityVerified"] = (
         result["applicationId"] == result["wear"]["applicationId"] == "com.TrainPilot.com"
         and result["signerSha256"] == result["wear"]["signerSha256"]
@@ -57,3 +71,6 @@ if requires_wear:
     assert wear.is_file(), "Paired Wear APK missing"
     assert result["dataLayerPairIdentityVerified"], "Phone/Wear package or signer differs"
     assert result["wearHardwareRequired"], "Wear hardware declaration missing"
+    assert optimized, "Optimized paired Wear test APK missing"
+    assert result["wearCompanionCapabilityRetained"], "Wear capability resource was removed"
+    assert result["wear"]["bytes"] < result["wearDebugBytes"], "Wear optimization did not reduce APK size"

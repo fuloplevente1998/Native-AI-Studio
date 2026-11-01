@@ -65,7 +65,7 @@ jobs:
 
       - name: Build debug APK and run JVM tests
         shell: bash
-        run: gradle --no-daemon --stacktrace --continue :app:assembleDebug :app:testDebugUnitTest :wear:assembleDebug :wear:testDebugUnitTest :shared:testDebugUnitTest
+        run: gradle --no-daemon --stacktrace --continue :app:assembleDebug :app:testDebugUnitTest :wear:assembleDebug :wear:assembleOptimized :wear:testDebugUnitTest :shared:testDebugUnitTest
 
       - name: Report Maps configuration and APK signer without exposing the key
         if: always()
@@ -96,6 +96,15 @@ jobs:
         with:
           name: trainpilot-wear-debug-ci-apk
           path: wear/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload optimized paired Wear test APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trainpilot-wear-optimized-test-apk
+          path: wear/build/outputs/apk/optimized/*.apk
           if-no-files-found: warn
           retention-days: 7
 

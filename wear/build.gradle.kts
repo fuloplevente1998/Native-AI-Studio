@@ -29,6 +29,12 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
+        // Release optimizations, explicitly a test artifact signed with the existing phone debug key.
+        create("optimized") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("phoneDebug")
+            matchingFallbacks += listOf("release")
+        }
     }
     buildFeatures { compose = true }
     compileOptions {

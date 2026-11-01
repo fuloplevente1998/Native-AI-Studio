@@ -17,7 +17,7 @@ CI uses Gradle 9.3.1 / JDK 17 / Android 36.1:
 
 ```
 :app:assembleDebug :app:testDebugUnitTest
-:wear:assembleDebug :wear:testDebugUnitTest :shared:testDebugUnitTest
+:wear:assembleDebug :wear:assembleOptimized :wear:testDebugUnitTest :shared:testDebugUnitTest
 ```
 
 Download phone and Wear APKs from the same successful run. Actual manifests and

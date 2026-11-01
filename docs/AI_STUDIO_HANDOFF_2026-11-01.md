@@ -112,7 +112,7 @@ CI: Gradle 9.3.1, JDK 17, Android compileSdk 36.1.
 
 ```
 :app:assembleDebug :app:testDebugUnitTest
-:wear:assembleDebug :wear:testDebugUnitTest :shared:testDebugUnitTest
+:wear:assembleDebug :wear:assembleOptimized :wear:testDebugUnitTest :shared:testDebugUnitTest
 ```
 
 Az önálló #9 kör 37/37 tesztet igazolt; a Wear-integráció és natív session-javítás
@@ -131,6 +131,22 @@ Mindig egyetlen sikeres futás telefonos ÉS órás APK-ját használd. A metada
 mindkét SHA256-ot, a tényleges signer SHA1/SHA256-ot és a CI merge checkout commitját.
 A PR HEAD és a CI által buildelt merge commit külön azonosító; a forrásfák egyezését
 az átadás ellenőrizte. Régi külön futások APK-it ne keverd össze páros tesztnél.
+
+## Wear APK méret: debug és optimalizált teszt nem ugyanaz
+
+A megvizsgált korábbi natív Wear release APK 5 109 898 bájt volt, DEX-kódja
+4 264 656 bájt. Az új, zsugorítás nélküli debug APK 39 262 279 bájt, ebből
+38 087 480 bájt a kilenc DEX-fájl. A legnagyobb osztálycsoportok Compose/Wear,
+Guava, ProtoLayout és Health Services; telefonos apposztályt nem találtunk benne.
+A méretet nem a felhasználói adatbázis vagy fotó okozta.
+
+A `:wear:assembleOptimized` külön optimalizált **teszt-APK**: a meglévő release
+R8/resource-shrinking beállításokat örökli, de kifejezetten a telefon tesztkulcsával
+írjuk alá. Nem engedélyezett release-kulcsot helyettesítő release-kiadás. A nagy debug
+APK megmarad hibakereséshez; készülékes páros teszthez az optimalizált Wear artifactot
+és az azonos futás telefonos APK-ját válaszd. A metadata az optimalizált fájlon ellenőrzi
+az app/signer-egyezést, tényleges méretcsökkenést és a companion capability erőforrás
+megmaradását. A valós órás működés/optimalizált képernyő továbbra is készülékes próba.
 
 ## Nyitott feladatok, prioritási sorrendben
 
