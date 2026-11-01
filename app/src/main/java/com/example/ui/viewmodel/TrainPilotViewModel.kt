@@ -2927,6 +2927,8 @@ class TrainPilotViewModel : ViewModel() {
             try {
                 val activeToFinalize = withContext(Dispatchers.Main.immediate) {
                     // Never fabricate a GPS set, a start timestamp or a replacement workout.
+                    if (com.repforge.app.NativePhoneReturnInstallation.requiresInstallation(ActiveWorkoutStore.current(ctx)))
+                        com.repforge.app.NativePhoneReturnInstallation.complete(ctx)
                     val current = com.repforge.app.NativeWorkoutEditing.project(ctx)
                     check(current.optBoolean("active") && current.optString("workoutId") == state.activeWorkoutId)
                     val exercises = current.getJSONArray("exercises")
@@ -3351,6 +3353,11 @@ class TrainPilotViewModel : ViewModel() {
             }
             _uiState.update { it.copy(watchControlPending = true, statusBannerMessage = "Óra kapcsolat és tulajdonosi ACK ellenőrzése…") }
             try {
+                if (com.repforge.app.NativePhoneReturnInstallation.requiresInstallation(active)) {
+                    com.repforge.app.NativePhoneReturnInstallation.complete(ctx)
+                    showBannerMessage("A telefon visszavette az edzést. Az edzés szünetel; folytatható vagy menthető.")
+                    return@launch
+                }
                 val nodes = kotlinx.coroutines.withTimeout(5_000) {
                     com.google.android.gms.wearable.Wearable.getNodeClient(ctx).connectedNodes.await()
                 }
@@ -3375,10 +3382,7 @@ class TrainPilotViewModel : ViewModel() {
                     journal.request(local.id, nodes.single().id, System.currentTimeMillis())
                     com.repforge.shared.OwnershipTransport193.send(ctx, journal)
                     awaitOwner("phone")
-                    val resume = PhoneOwnership193.prepareResume(ctx)
-                    val returned = resume.getJSONObject("snapshot")
-                    PhoneOwnership193.installResume(ctx, returned.getJSONObject("ownershipImport193").getString("id"),
-                        returned.getLong("ownerEpoch193"))
+                    com.repforge.app.NativePhoneReturnInstallation.complete(ctx)
                 }
                 val current = checkNotNull(ActiveWorkoutStore.current(ctx))
                 check(current.optString("workoutId") == id && !com.repforge.shared.WorkoutOwnership193.pending(current))

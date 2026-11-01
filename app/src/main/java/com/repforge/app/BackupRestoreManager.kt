@@ -123,7 +123,7 @@ class BackupRestoreManager(context: Context) {
                 }
                 decoded
             }
-            else -> JSONObject(parsed.toString())
+            else -> parsed
         }
         // Normalize any prefixed keys (e.g. "repforge:history" -> "history")
         val normalized = JSONObject()
@@ -229,19 +229,8 @@ class BackupRestoreManager(context: Context) {
     suspend fun importJsonBackupFromUri(uri: Uri, recoverInterrupted: Boolean = false): Result<Unit> = withContext(Dispatchers.IO) {
         NativeHealthBackupGate.begin()
         try {
-            val bytes = readUriBytes(uri, JSON_LIMIT)
-            val rawText = String(bytes, StandardCharsets.UTF_8).trim()
-            val parsed = if (rawText.startsWith("[")) {
-                JSONObject().put("history", JSONArray(rawText))
-            } else {
-                JSONObject(rawText)
-            }
-            val data = normalizeLegacyRepForgePayload(parsed)
-            photoIds(data) // Validate the history/photo envelope before acquiring the destructive lease.
+            val token = stageJsonImport(uri)
             val operation: suspend () -> Unit = {
-                val token = UUID.randomUUID().toString()
-                val dir = transactionDir(token); mkdir(dir)
-                writeSynced(File(dir, "backup.json"), data.toString().toByteArray(StandardCharsets.UTF_8))
                 completeReplacement(NativeReplacementJournal.Entry("json", token, false))
             }
             if (recoverInterrupted) NativeDataReplacement.recover(appContext, operation)
@@ -250,6 +239,30 @@ class BackupRestoreManager(context: Context) {
         } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (error: Exception) { Result.failure(error) }
         finally { NativeHealthBackupGate.end() }
+    }
+
+    // Keep parsing locals outside the suspend frame: replay must not retain the original tree.
+    private fun stageJsonImport(uri: Uri): String {
+        val token = UUID.randomUUID().toString()
+        val dir = transactionDir(token); mkdir(dir)
+        try {
+            val source = File(dir, "selected.json")
+            appContext.contentResolver.openInputStream(uri).use { input ->
+                if (input == null) throw IOException("Nem nyitható meg olvasásra.")
+                FileOutputStream(source).use { out -> ArchiveIO.copy(input, out, JSON_LIMIT.toLong()) }
+            }
+            val selected = BackupJsonIO.readFile(source, JSON_LIMIT)
+            val parsed = if (selected is JSONArray) JSONObject().put("history", selected)
+                else selected as? JSONObject ?: throw IOException("Invalid backup JSON")
+            val data = normalizeLegacyRepForgePayload(parsed)
+            photoIds(data)
+            BackupJsonIO.writeFile(File(dir, "backup.json"), data, JSON_LIMIT)
+            if (!source.delete()) throw IOException("Cannot remove staged source")
+            return token
+        } catch (error: Exception) {
+            removeRecursive(dir)
+            throw error
+        }
     }
 
     /** Reuse the same staged redo path for an already merged Drive payload, under its caller's lease. */
@@ -340,13 +353,13 @@ class BackupRestoreManager(context: Context) {
             val payloadHash = FileInputStream(payload).use { ArchiveIO.hash(it) }
             check(entry.payloadSha256 == null || entry.payloadSha256 == payloadHash) { "A félbehagyott mentés sérült." }
             val durableEntry = entry.copy(payloadSha256 = payloadHash)
-            val data = JSONObject(String(readLimited(File(dir, if (entry.kind == "zip") "incoming/backup.json" else "backup.json"), JSON_LIMIT), StandardCharsets.UTF_8))
+            val data = (BackupJsonIO.readFile(File(dir, if (entry.kind == "zip") "incoming/backup.json" else "backup.json"), JSON_LIMIT) as JSONObject)
             photoIds(data)
             var cloudDeletes: Set<String> = emptySet()
             if (entry.kind == "zip") {
                 // Recheck staged checksums during replay as well as on the original import.
                 val incoming = File(dir, "incoming")
-                val manifest = JSONObject(String(readLimited(File(incoming, "manifest.json"), JSON_LIMIT), StandardCharsets.UTF_8))
+                val manifest = (BackupJsonIO.readFile(File(incoming, "manifest.json"), JSON_LIMIT) as JSONObject)
                 check(manifest.optString("format") == "TrainPilotArchive" && manifest.optInt("version") == 1)
                 val hashes = manifest.getJSONObject("sha256")
                 val expected = setOf("backup.json", "manifest.json") + photoIds(data).map { "photos/$it.jpg" }
@@ -467,6 +480,28 @@ class BackupRestoreManager(context: Context) {
             mkdir(dir)
             val incoming = File(dir, "incoming")
             mkdir(incoming)
+            stageZipImport(uri, incoming)
+
+            val operation: suspend () -> Unit = { completeReplacement(NativeReplacementJournal.Entry("zip", token, false)) }
+            if (recoverInterrupted) NativeDataReplacement.recover(appContext, operation)
+            else NativeDataReplacement.exclusively(appContext, operation)
+            Result.success(Unit)
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (e: Exception) {
+            val dir = stagingDir
+            if (dir != null && !NativeReplacementJournal(appContext).exists() &&
+                !File(dir, "journal.json").isFile
+            ) {
+                try { removeRecursive(dir) } catch (_: Exception) { }
+            }
+            Result.failure(e)
+        } finally {
+            NativeHealthBackupGate.end()
+        }
+    }
+
+    private fun stageZipImport(uri: Uri, incoming: File) {
             val names = appContext.contentResolver.openInputStream(uri).use { raw ->
                 if (raw == null) throw IOException("Cannot read selected archive.")
                 ArchiveIO.extract(raw, incoming, JSON_LIMIT, PHOTO_LIMIT, ARCHIVE_LIMIT, MAX_ENTRIES)
@@ -479,7 +514,7 @@ class BackupRestoreManager(context: Context) {
                 if (!backupFile.isFile) {
                     throw IOException("Missing archive file: backup.json")
                 }
-                val rawManifest = JSONObject(String(readLimited(manifestFile, JSON_LIMIT), StandardCharsets.UTF_8))
+                val rawManifest = (BackupJsonIO.readFile(manifestFile, JSON_LIMIT) as JSONObject)
                 val fmt = rawManifest.optString("format")
                 if (fmt != "TrainPilotArchive" && fmt != "RepForgeArchive") {
                     throw IOException("Unknown archive format.")
@@ -488,7 +523,7 @@ class BackupRestoreManager(context: Context) {
                     throw IOException("Unknown archive version.")
                 }
                 val checks = rawManifest.getJSONObject("sha256")
-                val rawBackupJson = JSONObject(String(readLimited(backupFile, JSON_LIMIT), StandardCharsets.UTF_8))
+                val rawBackupJson = (BackupJsonIO.readFile(backupFile, JSON_LIMIT) as JSONObject)
                 val normalizedData = normalizeLegacyRepForgePayload(rawBackupJson)
                 val expected = HashSet<String>().apply {
                     add("backup.json")
@@ -507,10 +542,9 @@ class BackupRestoreManager(context: Context) {
                 ArchiveIO.verify(incoming, names, expected, hashes)
 
                 // 2. Only after original cryptographic integrity passes, stage normalized payload if needed
-                if (normalizedData.toString() != rawBackupJson.toString() || fmt != "TrainPilotArchive") {
-                    val normalizedBytes = normalizedData.toString().toByteArray(StandardCharsets.UTF_8)
-                    writeSynced(backupFile, normalizedBytes)
-                    checks.put("backup.json", ArchiveIO.hash(ByteArrayInputStream(normalizedBytes)))
+                if (true) { // Re-stage only after the untouched archive passed checksum verification.
+                    BackupJsonIO.writeFile(backupFile, normalizedData, JSON_LIMIT)
+                    checks.put("backup.json", FileInputStream(backupFile).use { ArchiveIO.hash(it) })
                     rawManifest.put("format", "TrainPilotArchive")
                     rawManifest.put("version", 1)
                     rawManifest.put("sha256", checks)
@@ -525,12 +559,12 @@ class BackupRestoreManager(context: Context) {
                         it.isFile && it.extension.equals("json", ignoreCase = true)
                     } ?: throw IOException("A ZIP archívumban nem található biztonsági mentés JSON fájl.")
                 }
-                val rawParsed = JSONObject(String(readLimited(sourceJsonFile, JSON_LIMIT), StandardCharsets.UTF_8))
+                val rawParsed = (BackupJsonIO.readFile(sourceJsonFile, JSON_LIMIT) as JSONObject)
                 val normalizedData = normalizeLegacyRepForgePayload(rawParsed)
                 if (sourceJsonFile != backupFile && sourceJsonFile.exists()) {
                     sourceJsonFile.delete()
                 }
-                writeSynced(backupFile, normalizedData.toString().toByteArray(StandardCharsets.UTF_8))
+                BackupJsonIO.writeFile(backupFile, normalizedData, JSON_LIMIT)
 
                 val hashes = JSONObject().put("backup.json", FileInputStream(backupFile).use { ArchiveIO.hash(it) })
                 for (id in photoIds(normalizedData)) {
@@ -551,23 +585,6 @@ class BackupRestoreManager(context: Context) {
                 ArchiveIO.verify(incoming, actualFiles, expected, hashMap)
             }
 
-            val operation: suspend () -> Unit = { completeReplacement(NativeReplacementJournal.Entry("zip", token, false)) }
-            if (recoverInterrupted) NativeDataReplacement.recover(appContext, operation)
-            else NativeDataReplacement.exclusively(appContext, operation)
-            Result.success(Unit)
-        } catch (cancelled: kotlinx.coroutines.CancellationException) {
-            throw cancelled
-        } catch (e: Exception) {
-            val dir = stagingDir
-            if (dir != null && !NativeReplacementJournal(appContext).exists() &&
-                !File(dir, "journal.json").isFile
-            ) {
-                try { removeRecursive(dir) } catch (_: Exception) { }
-            }
-            Result.failure(e)
-        } finally {
-            NativeHealthBackupGate.end()
-        }
     }
 
     private fun installPhotosTransactionally(dir: File, data: JSONObject, deleted: Set<String> = emptySet()) {

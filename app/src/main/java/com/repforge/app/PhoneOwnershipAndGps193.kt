@@ -409,6 +409,7 @@ internal object PhoneOwnershipResume193 {
         frame.put("generation", generation)
             .put("executionRevision", 1)
             .put("nativeExecutionProtocol", 2)
+            .put("nativeEditorProjection", 1)
             .put("automaticEnabled", a != null && a.optBoolean("enabled"))
             .put(
                 "ownershipImport193",
