@@ -156,7 +156,8 @@ data class CalendarDayEvent(
     val exerciseCount: Int,
     val durationMinutes: Int,
     val status: CalendarEventStatus,
-    val splitBadge: String = "A"
+    val splitBadge: String = "A",
+    val dateIso: String = ""
 )
 
 data class LoggedWorkoutEntry(

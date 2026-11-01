@@ -1731,10 +1731,8 @@ fun ActiveTimedWorkoutScreen(
                             )
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            val min = currentSec / 60
-                            val sec = currentSec % 60
-                            Text(
-                                text = String.format("%02d:%02d", min, sec),
+                            StudioTimerReadout(
+                                seconds = currentSec,
                                 style = MaterialTheme.typography.displayLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.textPrimary
@@ -1919,8 +1917,9 @@ fun ActiveTimedWorkoutScreen(
                             color = palette.primary,
                             fontWeight = FontWeight.Bold
                         )
-                        Text(
-                            text = String.format("%02d:%02d", currentSec / 60, currentSec % 60),
+                        StudioTimerReadout(
+                            seconds = currentSec,
+                            style = MaterialTheme.typography.bodyLarge,
                             color = palette.primary,
                             fontWeight = FontWeight.Bold
                         )
@@ -2350,8 +2349,8 @@ fun ActiveBilateralWorkoutScreen(
                                 color = palette.surfaceElevated,
                                 modifier = Modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                             ) {
-                                Text(
-                                    text = String.format("%02d:%02d", leftSec / 60, leftSec % 60),
+                                StudioTimerReadout(
+                                    seconds = leftSec,
                                     style = MaterialTheme.typography.headlineMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = if (leftRunning) palette.primary else palette.textPrimary,
@@ -2503,8 +2502,8 @@ fun ActiveBilateralWorkoutScreen(
                                 color = palette.surfaceElevated,
                                 modifier = Modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                             ) {
-                                Text(
-                                    text = String.format("%02d:%02d", rightSec / 60, rightSec % 60),
+                                StudioTimerReadout(
+                                    seconds = rightSec,
                                     style = MaterialTheme.typography.headlineMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = if (rightRunning) palette.primary else palette.textPrimary,

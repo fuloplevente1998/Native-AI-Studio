@@ -73,4 +73,22 @@ class StudioNativeRegressionTest {
         profile.remove("goal")
         assertFalse(StudioProfileCompletion.complete(profile))
     }
+    @Test fun stopwatchLabelsKeepMinutesAndHoursWithoutWrappingTokens() {
+        val cases = mapOf(0 to "00:00", 59 to "00:59", 60 to "01:00", 600 to "10:00", 3600 to "01:00:00")
+        cases.forEach { (seconds, label) -> assertEquals(label, com.example.ui.screens.studioTimerLabel(seconds)) }
+    }
+
+    @Test fun calendarFullDateAndRealDurationCrossDstAndYearBoundary() {
+        fun event(date: String, time: String, minutes: Int) = com.example.model.CalendarDayEvent(
+            id = "own-plan", dayOfMonth = java.time.LocalDate.parse(date).dayOfMonth,
+            timeLabel = time, titleHu = "Terv", exerciseCount = 2, durationMinutes = minutes,
+            status = com.example.model.CalendarEventStatus.PLANNED, dateIso = date)
+        val zone = java.time.ZoneId.of("Europe/Budapest")
+        val (start, end) = com.example.model.StudioCalendarDates.window(event("2026-03-29", "01:30", 60), zone)
+        assertEquals(3600L, java.time.Duration.between(start, end).seconds)
+        assertEquals(3, end.atZone(zone).hour)
+        val (_, yearEnd) = com.example.model.StudioCalendarDates.window(event("2026-12-31", "23:30", 90), zone)
+        assertEquals("2027-01-01", yearEnd.atZone(zone).toLocalDate().toString())
+    }
+
 }

@@ -468,6 +468,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onBack = { viewModel.navigateBack() },
                             onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                             onSelectDay = { viewModel.selectCalendarDay(it) },
+                                    onSelectMonth = { viewModel.selectCalendarMonth(it) },
                             onOpenReplanModal = { viewModel.toggleReplanModal(it) },
                             onApplyReplan = { dateStr, firstDay ->
                                 viewModel.applyCalendarReplan(dateStr, firstDay)
@@ -854,6 +855,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onBack = { viewModel.selectTab(MainTab.HOME) },
                                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                                     onSelectDay = { viewModel.selectCalendarDay(it) },
+                                    onSelectMonth = { viewModel.selectCalendarMonth(it) },
                                     onOpenReplanModal = { viewModel.toggleReplanModal(it) },
                                     onApplyReplan = { dateStr, firstDay ->
                                         viewModel.applyCalendarReplan(dateStr, firstDay)

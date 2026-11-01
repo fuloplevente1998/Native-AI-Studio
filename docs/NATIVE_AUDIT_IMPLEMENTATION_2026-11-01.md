@@ -37,3 +37,20 @@ No runtime/build success is claimed at this initial checkpoint.
 
 Required regression: 10:00–10:25 +16:00–16:20 =45active minutes, with pause-period
 Health samples excluded; duplicate finish/pause/resume and restart retain identity.
+
+## First validated source
+
+62bd8f26da5bcf269352aab0fc88fe3bf115093d, PR#2.
+Actions41282771615 SUCCESS (pull_request). Raw report artifact13074301878:
+3JUnit XML files,7tests PASS,0failure/error/skip. Five regressions cover exact45
+active minutes across duplicate pause/resume and JSON roundtrip, overlap union,
+per-active-window Health queries with weighted pulse, unknown Health and profile
+completion. Debug APK artifact13074172267; bytehash/manifest verification pending.
+No phone/emulator/Health/Samsung/Wear/device success is inferred from these JVM tests.
+
+Next increment (runtime not yet tested): calendar ISO dates, local-zone start and
+duration-derived end; coalesced serialized Room transaction for schedule+undo,
+exact previously managed local-id deletion, synced event protection and full-month
+filtering. Timer labels now fit one line and add hours using existing typography.
+Durable stopwatch control wiring remains open. Push/PR duplicate CI removed;
+canonical builds now run once on PR changes.

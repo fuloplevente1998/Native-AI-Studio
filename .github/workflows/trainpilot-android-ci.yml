@@ -1,9 +1,6 @@
 name: TrainPilot Native Android CI and Debug APK
 
 on:
-  push:
-    branches:
-      - fix/native-audit-stability-20261101
   pull_request:
     paths:
       - 'app/**'

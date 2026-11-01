@@ -1,5 +1,11 @@
 package com.example.ui.viewmodel
 
+import androidx.room.withTransaction
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.time.YearMonth
+import java.time.ZoneId
+import java.time.LocalTime
 import androidx.lifecycle.ViewModel
 import com.example.data.DemoDataProvider
 import com.example.model.AppLanguage
@@ -119,6 +125,7 @@ data class TrainPilotUiState(
     val beginnerGentleProfileActive: Boolean = false,
 
     // Calendar & Replan State (Mockup 1/4 #4 + main Naptár & Újratervezés)
+    val calendarYearMonth: String = YearMonth.now().toString(),
     val selectedCalendarDay: Int = LocalDate.now().dayOfMonth,
     val calendarEvents: List<CalendarDayEvent> = emptyList(),
     val calendarUndoStack: List<List<CalendarDayEvent>> = emptyList(),
@@ -238,6 +245,8 @@ class TrainPilotViewModel : ViewModel() {
     val uiState: StateFlow<TrainPilotUiState> = _uiState.asStateFlow()
 
     private var nativeContext: Context? = null
+    private val calendarWriteMutex = Mutex()
+    @Volatile private var calendarWriteRevision = 0L
     private var nativeSettingsStore: TrainPilotSettingsStore? = null
     private var nativeDatabase: TrainPilotDatabase? = null
     private var nativeScope: CoroutineScope? = null
@@ -516,12 +525,26 @@ class TrainPilotViewModel : ViewModel() {
         val undoStack = state.calendarUndoStack
         val activeProg = state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
         val nowMs = System.currentTimeMillis()
-        val ym = LocalDate.now()
+        val revision = ++calendarWriteRevision
         scope.launch(Dispatchers.IO) {
             runCatching {
-                val scheduleEntities = events.map { ev ->
-                    val clampedDay = ev.dayOfMonth.coerceIn(1, ym.lengthOfMonth())
-                    val dateStr = LocalDate.of(ym.year, ym.monthValue, clampedDay).toString()
+              calendarWriteMutex.withLock {
+                if (revision != calendarWriteRevision) return@withLock
+                db.withTransaction {
+                val oldDocument = db.keyValueDocumentDao().getDocument("native:calendarState")
+                val previous = oldDocument?.json?.let { JSONObject(it).optJSONArray("events") } ?: JSONArray()
+                val retainedIds = events.map { it.id }.toSet()
+                for (i in 0 until previous.length()) {
+                    val id = previous.getJSONObject(i).getString("id")
+                    if (id !in retainedIds && db.calendarScheduleDao().getEntry(id)?.googleEventId.isNullOrBlank())
+                        db.calendarScheduleDao().deleteEntry(id)
+                }
+                val scheduleEntities = events.filter { ev ->
+                    db.calendarScheduleDao().getEntry(ev.id)?.googleEventId.isNullOrBlank()
+                }.map { ev ->
+                    val date = LocalDate.parse(ev.dateIso)
+                    val dateStr = date.toString()
+                    val (start, end) = com.example.model.StudioCalendarDates.window(ev, ZoneId.systemDefault())
                     val statusStr = when (ev.status) {
                         CalendarEventStatus.COMPLETED -> "completed"
                         CalendarEventStatus.MISSED -> "skipped"
@@ -530,6 +553,7 @@ class TrainPilotViewModel : ViewModel() {
                     val rawEv = JSONObject().apply {
                         put("id", ev.id)
                         put("dayOfMonth", ev.dayOfMonth)
+                        put("dateIso", ev.dateIso)
                         put("timeLabel", ev.timeLabel)
                         put("titleHu", ev.titleHu)
                         put("exerciseCount", ev.exerciseCount)
@@ -541,8 +565,8 @@ class TrainPilotViewModel : ViewModel() {
                         id = ev.id,
                         googleEventId = "",
                         date = dateStr,
-                        startIso = "${dateStr}T${ev.timeLabel.ifBlank { "10:00" }}:00Z",
-                        endIso = "${dateStr}T11:00:00Z",
+                        startIso = start.toString(),
+                        endIso = end.toString(),
                         programId = activeProg?.id ?: "program_default",
                         programName = activeProg?.nameHu ?: ev.titleHu,
                         dayId = ev.splitBadge,
@@ -563,6 +587,7 @@ class TrainPilotViewModel : ViewModel() {
                             JSONObject().apply {
                                 put("id", ev.id)
                                 put("dayOfMonth", ev.dayOfMonth)
+                        put("dateIso", ev.dateIso)
                                 put("timeLabel", ev.timeLabel)
                                 put("titleHu", ev.titleHu)
                                 put("exerciseCount", ev.exerciseCount)
@@ -580,6 +605,7 @@ class TrainPilotViewModel : ViewModel() {
                         JSONObject().apply {
                             put("id", ev.id)
                             put("dayOfMonth", ev.dayOfMonth)
+                        put("dateIso", ev.dateIso)
                             put("timeLabel", ev.timeLabel)
                             put("titleHu", ev.titleHu)
                             put("exerciseCount", ev.exerciseCount)
@@ -601,6 +627,11 @@ class TrainPilotViewModel : ViewModel() {
                         updatedAt = nowMs
                     )
                 )
+                }
+              }
+            }.onFailure { error ->
+                if (error is kotlinx.coroutines.CancellationException) throw error
+                _uiState.update { it.copy(statusBannerMessage = "A naptármódosítás nem menthető. Próbáld újra.") }
             }
         }
     }
@@ -959,6 +990,8 @@ class TrainPilotViewModel : ViewModel() {
                 val calDoc = database.keyValueDocumentDao().getDocument("native:calendarState")
                 if (calDoc != null && calDoc.json.isNotBlank()) {
                     val root = JSONObject(calDoc.json)
+                    val calendarRows = database.calendarScheduleDao().getAllEntries().associateBy { it.id }
+                    val legacyMonth = YearMonth.from(Instant.ofEpochMilli(calDoc.updatedAt).atZone(ZoneId.systemDefault()))
                     val evArr = root.optJSONArray("events")
                     if (evArr != null) {
                         loadedCalendarEvents = (0 until evArr.length()).mapNotNull { idx ->
@@ -971,7 +1004,11 @@ class TrainPilotViewModel : ViewModel() {
                                 exerciseCount = o.optInt("exerciseCount", 6),
                                 durationMinutes = o.optInt("durationMinutes", 60),
                                 status = runCatching { CalendarEventStatus.valueOf(o.optString("status", "PLANNED")) }.getOrDefault(CalendarEventStatus.PLANNED),
-                                splitBadge = o.optString("splitBadge", "A")
+                                splitBadge = o.optString("splitBadge", "A"),
+                                dateIso = o.optString("dateIso").ifBlank {
+                                    calendarRows[o.optString("id")]?.date ?: legacyMonth.atDay(
+                                        o.optInt("dayOfMonth", 1).coerceIn(1, legacyMonth.lengthOfMonth())).toString()
+                                }
                             )
                         }
                     }
@@ -989,7 +1026,11 @@ class TrainPilotViewModel : ViewModel() {
                                     exerciseCount = o.optInt("exerciseCount", 6),
                                     durationMinutes = o.optInt("durationMinutes", 60),
                                     status = runCatching { CalendarEventStatus.valueOf(o.optString("status", "PLANNED")) }.getOrDefault(CalendarEventStatus.PLANNED),
-                                    splitBadge = o.optString("splitBadge", "A")
+                                    splitBadge = o.optString("splitBadge", "A"),
+                                dateIso = o.optString("dateIso").ifBlank {
+                                    calendarRows[o.optString("id")]?.date ?: legacyMonth.atDay(
+                                        o.optInt("dayOfMonth", 1).coerceIn(1, legacyMonth.lengthOfMonth())).toString()
+                                }
                                 )
                             }
                         }
@@ -1790,6 +1831,14 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
+    fun selectCalendarMonth(month: String) {
+        val parsed = YearMonth.parse(month)
+        _uiState.update { it.copy(calendarYearMonth = parsed.toString(),
+            selectedCalendarDay = it.selectedCalendarDay.coerceAtMost(parsed.lengthOfMonth()),
+            planningStartDate = parsed.atDay(it.selectedCalendarDay.coerceAtMost(parsed.lengthOfMonth()))
+                .format(DateTimeFormatter.ofPattern("yyyy. MM. dd."))) }
+    }
+
     fun planMonthlyWorkouts() {
         _uiState.update { state ->
             val startDayNum = state.planningStartDate
@@ -1806,7 +1855,7 @@ class TrainPilotViewModel : ViewModel() {
             }
 
             val retainedCompleted = state.calendarEvents.filter {
-                it.status == CalendarEventStatus.COMPLETED || it.dayOfMonth < startDayNum
+                !it.dateIso.startsWith(state.calendarYearMonth) || it.status == CalendarEventStatus.COMPLETED || it.dayOfMonth < startDayNum
             }
             val activeProgName = state.programs.firstOrNull { it.isActive }?.nameHu
                 ?: "Otthoni A/B – Alap (személyre szabott)"
@@ -1814,7 +1863,7 @@ class TrainPilotViewModel : ViewModel() {
             var currentSplit = if (state.planningFirstDayHu.contains("B", ignoreCase = true)) "B" else "A"
             val newPlanned = mutableListOf<CalendarDayEvent>()
             var d = startDayNum
-            while (d <= 31) {
+            while (d <= YearMonth.parse(state.calendarYearMonth).lengthOfMonth()) {
                 if (retainedCompleted.none { it.dayOfMonth == d && it.status == CalendarEventStatus.COMPLETED }) {
                     newPlanned.add(
                         CalendarDayEvent(
@@ -1825,7 +1874,8 @@ class TrainPilotViewModel : ViewModel() {
                             exerciseCount = 6,
                             durationMinutes = state.planningDurationMin,
                             status = CalendarEventStatus.PLANNED,
-                            splitBadge = currentSplit
+                            dateIso = YearMonth.parse(state.calendarYearMonth).atDay(d).toString(),
+                        splitBadge = currentSplit
                         )
                     )
                     currentSplit = if (currentSplit == "A") "B" else "A"
@@ -1852,7 +1902,7 @@ class TrainPilotViewModel : ViewModel() {
                 ?.coerceIn(1, 31) ?: 28
 
             val retained = state.calendarEvents.filter {
-                it.status == CalendarEventStatus.COMPLETED
+                !it.dateIso.startsWith(state.calendarYearMonth) || it.status == CalendarEventStatus.COMPLETED
             }
             val activeProgName = state.programs.firstOrNull { it.isActive }?.nameHu
                 ?: "Otthoni A/B – Alap (személyre szabott)"
@@ -1864,7 +1914,7 @@ class TrainPilotViewModel : ViewModel() {
             }
             val replanned = mutableListOf<CalendarDayEvent>()
             var d = startDayNum
-            while (d <= 31) {
+            while (d <= YearMonth.parse(state.calendarYearMonth).lengthOfMonth()) {
                 replanned.add(
                     CalendarDayEvent(
                         id = "ev_replan_${d}_${System.currentTimeMillis()}",
@@ -1874,6 +1924,7 @@ class TrainPilotViewModel : ViewModel() {
                         exerciseCount = 6,
                         durationMinutes = state.planningDurationMin,
                         status = CalendarEventStatus.PLANNED,
+                        dateIso = YearMonth.parse(state.calendarYearMonth).atDay(d).toString(),
                         splitBadge = split
                     )
                 )
@@ -1924,14 +1975,15 @@ class TrainPilotViewModel : ViewModel() {
     fun moveCalendarEvent(eventId: String, targetDay: Int, shiftFollowingPlanned: Boolean = true) {
         _uiState.update { state ->
             val target = state.calendarEvents.firstOrNull { it.id == eventId } ?: return@update state
-            val clampedDay = targetDay.coerceIn(1, 31)
+            val month = YearMonth.from(LocalDate.parse(target.dateIso))
+            val clampedDay = targetDay.coerceIn(1, month.lengthOfMonth())
             val delta = clampedDay - target.dayOfMonth
             val updated = state.calendarEvents.mapNotNull { ev ->
                 when {
-                    ev.id == eventId -> ev.copy(dayOfMonth = clampedDay)
-                    shiftFollowingPlanned && ev.status == CalendarEventStatus.PLANNED && ev.dayOfMonth > target.dayOfMonth -> {
+                    ev.id == eventId -> ev.copy(dayOfMonth = clampedDay, dateIso = month.atDay(clampedDay).toString())
+                    shiftFollowingPlanned && ev.status == CalendarEventStatus.PLANNED && ev.dateIso > target.dateIso && ev.dateIso.startsWith(month.toString()) -> {
                         val nextD = ev.dayOfMonth + delta
-                        if (nextD in 1..31) ev.copy(dayOfMonth = nextD) else null
+                        if (nextD in 1..month.lengthOfMonth()) ev.copy(dayOfMonth = nextD, dateIso = month.atDay(nextD).toString()) else ev
                     }
                     else -> ev
                 }
@@ -1941,7 +1993,7 @@ class TrainPilotViewModel : ViewModel() {
                 calendarUndoStack = (state.calendarUndoStack + listOf(state.calendarEvents)).takeLast(12),
                 calendarEvents = updated,
                 selectedCalendarDay = clampedDay,
-                statusBannerMessage = "Edzés áthelyezve: 2026. 10. ${clampedDay}."
+                statusBannerMessage = "Edzés áthelyezve: ${month.atDay(clampedDay)}."
             )
         }
         persistCalendarStateToRoomAsync()
@@ -1958,13 +2010,6 @@ class TrainPilotViewModel : ViewModel() {
                 statusBannerMessage = "Tervezett edzés törölve (Visszavonható)"
             )
         }
-        if (db != null && scope != null) {
-            scope.launch(Dispatchers.IO) {
-                runCatching {
-                    db.calendarScheduleDao().deleteEntry(eventId)
-                }
-            }
-        }
         persistCalendarStateToRoomAsync()
     }
 
@@ -1974,18 +2019,19 @@ class TrainPilotViewModel : ViewModel() {
                 ?: "Otthoni A/B – Alap (személyre szabott)"
             val newEv = CalendarDayEvent(
                 id = "ev_manual_${day}_${System.currentTimeMillis()}",
-                dayOfMonth = day.coerceIn(1, 31),
+                dayOfMonth = day.coerceIn(1, YearMonth.parse(state.calendarYearMonth).lengthOfMonth()),
                 timeLabel = timeLabel,
                 titleHu = "$activeProgName • Alap $splitBadge",
                 exerciseCount = 6,
                 durationMinutes = durationMin,
                 status = CalendarEventStatus.PLANNED,
+                dateIso = YearMonth.parse(state.calendarYearMonth).atDay(day.coerceIn(1, YearMonth.parse(state.calendarYearMonth).lengthOfMonth())).toString(),
                 splitBadge = splitBadge
             )
             state.copy(
                 calendarUndoStack = (state.calendarUndoStack + listOf(state.calendarEvents)).takeLast(12),
                 calendarEvents = (state.calendarEvents + newEv).sortedBy { it.dayOfMonth },
-                statusBannerMessage = "Edzés hozzáadva: 2026. 10. $day. (Alap $splitBadge)"
+                statusBannerMessage = "Edzés hozzáadva: ${state.calendarYearMonth}-$day. (Alap $splitBadge)"
             )
         }
         persistCalendarStateToRoomAsync()
