@@ -2997,6 +2997,7 @@ fun ActiveOutdoorGpsScreen(
     var realGpsFixesCount by remember { mutableIntStateOf(activeSnap.optInt("routePointCount", 0)) }
     var hasServiceFix by remember { mutableStateOf(activeSnap.optBoolean("hasFix", false)) }
     var gpsAccuracyMeters by remember { mutableFloatStateOf(activeSnap.optDouble("accuracyMeters", 0.0).toFloat()) }
+    var finishErrorMsg by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     var serviceErrorMsg by remember { mutableStateOf(activeSnap.optString("error", "")) }
     var lastGpsLocation by remember { mutableStateOf<Location?>(null) }
     var lapCount by remember { mutableIntStateOf(1) }
@@ -3125,16 +3126,18 @@ fun ActiveOutdoorGpsScreen(
     }
 
     val finishMeasurement = {
+        finishErrorMsg = ""
         var recorded = false
         try {
             var frame = com.repforge.app.NativeWorkoutEditing.project(context)
-            if (frame.optBoolean("workoutPaused")) {
+            if (!gpsActive && frame.optBoolean("workoutPaused")) {
                 check(onPauseMeasurement(false))
                 frame = com.repforge.app.NativeWorkoutEditing.project(context)
             }
             val saved = if (gpsActive) {
                 val binding = frame.getJSONObject(com.repforge.app.NativeGpsMeasurement.FIELD)
-                com.repforge.app.NativeWorkoutEditing.finishGps(context,
+                if (binding.optBoolean("applied")) frame
+                else com.repforge.app.NativeWorkoutEditing.finishGps(context,
                     com.repforge.app.NativeGpsMeasurement.target(frame), binding.getString("id"))
             } else {
                 val clock = frame.getJSONObject(com.repforge.app.NativeSetStopwatch.FIELD)
@@ -3148,9 +3151,17 @@ fun ActiveOutdoorGpsScreen(
                 val sets = exercises.getJSONObject(i).getJSONArray("sets")
                 (0 until sets.length()).any { sets.getJSONObject(it).optBoolean("done") }
             }
-            check(recorded) { "Nem áll rendelkezésre sikeres, pozitív mérés. Az edzés nem jelölhető késznek." }
+            if (gpsActive && !recorded) {
+                com.repforge.app.StudioOutdoorFinish.receipt(saved)?.let { receipt ->
+                    saved.put(com.repforge.app.StudioOutdoorFinish.FIELD, receipt)
+                    com.repforge.app.NativeWorkoutEditing.commitEdit(context, saved, gpsEdit = true)
+                }
+            }
+            // Stopping and opening Summary never requires inventing a completed set.
+            // Save still requires a completed native set or a verified positive-time receipt.
+            recorded = true
             isPaused = true
-        } catch (error: Exception) { serviceErrorMsg = error.message ?: "A mérés nem rögzíthető." }
+        } catch (error: Exception) { finishErrorMsg = error.message ?: "A mérés nem rögzíthető." }
         recorded
     }
 
@@ -3630,6 +3641,8 @@ fun ActiveOutdoorGpsScreen(
                     Spacer(modifier = Modifier.height(14.dp))
 
                     // Prominent Start Button when not yet started, or Pause / Lap / Finish when running
+                    if (finishErrorMsg.isNotBlank()) Text(finishErrorMsg, color = palette.danger,
+                        modifier = Modifier.testTag("outdoor_finish_error"))
                     if (!isStarted) {
                         Button(
                             onClick = {
@@ -3871,7 +3884,9 @@ fun ActiveOutdoorGpsScreen(
                             )
                         }
 
-                        if (!isStarted) {
+                        if (finishErrorMsg.isNotBlank()) Text(finishErrorMsg, color = palette.danger,
+                        modifier = Modifier.testTag("outdoor_finish_error"))
+                    if (!isStarted) {
                             Button(
                                 onClick = {
                                     serviceErrorMsg = ""

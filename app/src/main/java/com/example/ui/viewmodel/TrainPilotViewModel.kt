@@ -2908,7 +2908,9 @@ class TrainPilotViewModel : ViewModel() {
                         val sets = exercises.getJSONObject(index).getJSONArray("sets")
                         (0 until sets.length()).count { sets.getJSONObject(it).optBoolean("done") }
                     }
-                    check(completed > 0) { "Nincs hitelesen rögzített sorozat vagy mérés. Előbb fejezd be a mérést." }
+                    check(completed > 0 || com.repforge.app.StudioOutdoorFinish.canSaveTimeOnly(current)) {
+                        "Nincs hitelesen mért idő vagy rögzített sorozat. A mérés elvethető, de üres edzés nem menthető."
+                    }
                     if (state.workoutSummaryNote.isNotBlank() || state.workoutSummaryMoodIndex >= 0)
                         current.put("feedback", JSONObject().put("note", state.workoutSummaryNote)
                             .put("effort", listOf("könnyű", "mérsékelt", "pont jó", "nehéz", "maximális")
