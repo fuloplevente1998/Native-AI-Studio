@@ -20,12 +20,13 @@ internal fun ReplacementRecoveryPanel(language: String, busy: Boolean, error: Bo
     onResume: () -> Unit, onJson: (Uri) -> Unit, onZip: (Uri) -> Unit,
     errorDetails: String? = null) {
     val context = LocalContext.current
+    val palette = com.example.ui.theme.LocalTrainPilotPalette.current
     val text = remember(context, language) { nativeResources(context, language) }
     val jsonPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let(onJson) }
     val zipPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let(onZip) }
     Column(Modifier.fillMaxWidth().padding(16.dp).testTag("replacement_recovery"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(text.getString(R.string.replacement_title), style = MaterialTheme.typography.titleLarge)
-        Text(text.getString(R.string.replacement_explanation))
+        Text(text.getString(R.string.replacement_title), style = MaterialTheme.typography.titleLarge, color = palette.textPrimary)
+        Text(text.getString(R.string.replacement_explanation), color = palette.textSecondary)
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         if (error) {
             Text(text.getString(R.string.replacement_error), color = MaterialTheme.colorScheme.error)
