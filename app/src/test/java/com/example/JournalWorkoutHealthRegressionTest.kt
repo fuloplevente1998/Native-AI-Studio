@@ -42,6 +42,7 @@ class JournalWorkoutHealthRegressionTest {
     @get:Rule val compose = createComposeRule()
     private val context get() = ApplicationProvider.getApplicationContext<Context>()
     private lateinit var db: TrainPilotDatabase
+    private val models = androidx.lifecycle.ViewModelStore()
     private val start = "2026-11-01T10:00:00Z"
     private val end = "2026-11-01T16:20:00Z"
     private fun intervals() = JSONArray("""[
@@ -52,9 +53,16 @@ class JournalWorkoutHealthRegressionTest {
     @Before fun open() {
         val field = PhoneWorkoutExecution::class.java.getDeclaredField("store").apply { isAccessible = true }
         (field.get(null) as? PhoneWorkoutExecutionStore)?.close(); field.set(null, null)
+        val roomField = TrainPilotDatabase::class.java.getDeclaredField("INSTANCE").apply { isAccessible = true }
+        (roomField.get(null) as? TrainPilotDatabase)?.close()
         db = Room.inMemoryDatabaseBuilder(context, TrainPilotDatabase::class.java).build()
+        roomField.set(null, db)
     }
-    @After fun close() { db.close() }
+    @After fun close() {
+        models.clear()
+        db.close()
+        TrainPilotDatabase::class.java.getDeclaredField("INSTANCE").apply { isAccessible = true }.set(null, null)
+    }
     private fun <T> awaitNative(operation: suspend () -> T): T {
         val worker = Executors.newSingleThreadExecutor()
         val future = worker.submit<T> { runBlocking { operation() } }
@@ -140,14 +148,21 @@ class JournalWorkoutHealthRegressionTest {
         val data = response().put("windowStart", start).put("windowEnd", end).put("syncedAt", end)
         val detail = seed(health = data)
         val entry = LoggedWorkoutEntry("fresh", "2026.11.01", "Edzés", 45, "45:00", "—", 1, 150, "Futás", isOutdoorRun = true)
-        val text = nativeResources(context, "hu")
+        val model = com.repforge.app.ui.journal.JournalViewModel(context as android.app.Application)
+        models.put("journal", model)
+        var canonicalSources = false
         compose.setContent {
             TrainPilotTheme {
+                val health = com.example.ui.components.studioWorkoutHealthContent("fresh", "hu", {},
+                    { id, wear, hc -> canonicalSources = id == "fresh" && wear && hc }, model)
                 LogWorkoutDetailScreen(TrainPilotUiState(loggedWorkouts = listOf(entry), selectedLogWorkoutId = entry.id,
                     logDetailTabIndex = 1), TrainPilotStrings.forLanguage(AppLanguage.HU), {}, {}, {}, {}, {}, {}, {}, {},
-                    workoutHealth = { JournalHealthPanel(detail, text, "hu", false, null, true) {} })
+                    workoutHealth = health)
             }
         }
+        compose.waitUntil(10_000) { model.uiState.value.detail != null && canonicalSources }
+        assertFalse(model.uiState.value.healthRefreshing)
+        assertNull(model.uiState.value.healthError)
         val list = compose.onNodeWithTag("log_workout_detail_screen")
         list.performScrollToNode(hasTestTag("journal_hc_averageHeartRate_value"))
         compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertTextEquals("120 bpm")

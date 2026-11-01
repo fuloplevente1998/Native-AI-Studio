@@ -475,7 +475,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 viewModel.applyCalendarReplan(dateStr, firstDay)
                             },
                             onOpenWorkoutDetail = {
-                                viewModel.openLogWorkoutDetail("log_4")
+                                uiState.loggedWorkouts.firstOrNull()?.id?.let(viewModel::openLogWorkoutDetail)
                             },
                             onUpdatePlanningParams = { rhythm, firstDay, startDate, time, dur, weeks ->
                                 viewModel.updatePlanningParameters(rhythm, firstDay, startDate, time, dur, weeks)
@@ -867,7 +867,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                         viewModel.applyCalendarReplan(dateStr, firstDay)
                                     },
                                     onOpenWorkoutDetail = {
-                                        viewModel.openLogWorkoutDetail("log_4")
+                                        uiState.loggedWorkouts.firstOrNull()?.id?.let(viewModel::openLogWorkoutDetail)
                                     },
                                     onUpdatePlanningParams = { rhythm, firstDay, startDate, time, dur, weeks ->
                                         viewModel.updatePlanningParameters(rhythm, firstDay, startDate, time, dur, weeks)
