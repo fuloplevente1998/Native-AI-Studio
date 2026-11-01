@@ -58,9 +58,22 @@ class BackupImportValidationRegressionTest {
         // The production database is a singleton reused by these manager integration tests.
         // Reset only the Robolectric fixture; retain the strict one-workout precondition below.
         awaitNative {
+            // Robolectric supplies a new application/files directory per method, while these
+            // production singletons survive in the sandbox. Retire the old test connections
+            // before opening the current context's files; otherwise a reopened helper reads a
+            // different SQLite file from the cached singleton and reports a false data loss.
+            val roomInstance = TrainPilotDatabase::class.java.getDeclaredField("INSTANCE").apply { isAccessible = true }
+            (roomInstance.get(null) as? TrainPilotDatabase)?.close()
+            roomInstance.set(null, null)
+            val healthInstance = HealthJournalStore::class.java.getDeclaredField("instance").apply { isAccessible = true }
+            (healthInstance.get(null) as? HealthJournalStore)?.close()
+            healthInstance.set(null, null)
             TrainPilotDatabase.getInstance(context).clearAllTables()
             TrainPilotSettingsStore(context).resetAllSettingsForEraseLocal()
-            HealthJournalStore.get(context).erase()
+            val health = HealthJournalStore.get(context)
+            assertEquals("Health singleton must use the current test's database file",
+                context.getDatabasePath("health-journal.db").canonicalPath, File(health.readableDatabase.path).canonicalPath)
+            health.erase()
         }
     }
 

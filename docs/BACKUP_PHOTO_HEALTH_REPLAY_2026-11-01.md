@@ -32,3 +32,14 @@ Run `:app:assembleDebug :app:testDebugUnitTest` in Actions and inspect raw XML b
 calling these cases successful. Real phone process death, photo rendering, external
 Health provider sync and cloud import must still be checked on devices/accounts.
 Do not clear user data or remove a recovery receipt as a workaround.
+
+## Test fixture diagnosis
+
+The first replay attempt failed at `receipt-prepared`: the cached Health singleton
+contained the restored record (count 1), while a helper constructed with the new
+Robolectric application context read count 0. Production singleton connections had
+survived the prior test method and referenced that method's files. The fixture now
+closes/resets the cached Room and Health connections before opening the current
+context's files, and explicitly checks the Health database path. The independent
+reopen and strict record-count/content assertions remain enabled. This changes test
+isolation only; it does not clear real application data or relax restore validation.
