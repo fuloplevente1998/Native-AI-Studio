@@ -216,6 +216,7 @@ class MainActivity : ComponentActivity() {
                 }
                 recoveryError = result.isFailure
                 recoveryErrorDetails = result.exceptionOrNull()?.localizedMessage
+                result.exceptionOrNull()?.let { android.util.Log.e("MainActivity", "Data replacement recovery returned failure", it) }
                 if (result.isSuccess) {
                     recoveryNeeded = NativeDataReplacement.blocked(this@MainActivity) ||
                         NativeReplacementJournal(this@MainActivity).exists() ||
