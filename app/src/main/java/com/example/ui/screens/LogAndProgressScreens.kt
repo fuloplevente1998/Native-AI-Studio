@@ -1037,12 +1037,16 @@ fun LogWorkoutDetailScreen(
                                         fontWeight = FontWeight.Bold,
                                         color = palette.textPrimary
                                     )
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = null,
-                                        tint = palette.success,
-                                        modifier = Modifier.size(18.dp)
-                                    )
+                                    if (setRow.completed) {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = "Teljesített mérés",
+                                            tint = palette.success,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    } else {
+                                        Text("Nem teljesített", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                    }
                                 }
                             }
                         }
