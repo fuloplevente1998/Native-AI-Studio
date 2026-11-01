@@ -104,11 +104,27 @@
             android:exported="true"
             android:theme="@style/AppTheme.NoActionBar" />
 
-        <!-- Adatvédelmi tájékoztató Activity -->
+        <!-- Health Connect permission rationale / privacy policy: discoverable by Android. -->
         <activity
             android:name="com.repforge.app.HealthPrivacyActivity"
-            android:exported="false"
-            android:theme="@style/AppTheme" />
+            android:exported="true"
+            android:theme="@style/AppTheme">
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+        </activity>
+        <!-- Android 14+ Health Connect requires a VIEW_PERMISSION_USAGE handler to
+             list the app as a health-data permission requester. -->
+        <activity-alias
+            android:name="com.repforge.app.HealthPermissionsUsageActivity"
+            android:targetActivity="com.repforge.app.HealthPrivacyActivity"
+            android:exported="true"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
 
         <!-- GPS távolság- és nyomvonalrögzítő szolgáltatás -->
         <service
