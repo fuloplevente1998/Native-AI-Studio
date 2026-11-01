@@ -1144,6 +1144,7 @@ class TrainPilotViewModel : ViewModel() {
                         originDevice = w.originDevice,
                         savedStartIso = w.started,
                         savedFinishIso = w.finished,
+                        photoCount = detail.photos.size,
                         exerciseDetails = mappedDetails
                     )
                 }
@@ -2996,6 +2997,7 @@ class TrainPilotViewModel : ViewModel() {
                         originDevice = dbW.originDevice,
                         savedStartIso = dbW.started,
                         savedFinishIso = dbW.finished,
+                        photoCount = savedInDb.photos.size,
                         distanceKm = (savedInDb.exercises.flatMap { it.sets }.filter { it.done }
                             .sumOf { it.distanceMeters ?: 0.0 } / 1000.0).toFloat(),
                         paceLabel = savedInDb.exercises.flatMap { it.sets }.filter { it.done }.sumOf { it.distanceMeters ?: 0.0 }
