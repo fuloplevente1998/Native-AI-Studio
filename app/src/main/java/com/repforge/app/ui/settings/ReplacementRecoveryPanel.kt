@@ -17,7 +17,8 @@ import com.repforge.app.ui.text.nativeResources
 /** Explicit redo/alternative-backup entry; never clears a stale fence just to enter the app. */
 @Composable
 internal fun ReplacementRecoveryPanel(language: String, busy: Boolean, error: Boolean,
-    onResume: () -> Unit, onJson: (Uri) -> Unit, onZip: (Uri) -> Unit) {
+    onResume: () -> Unit, onJson: (Uri) -> Unit, onZip: (Uri) -> Unit,
+    errorDetails: String? = null) {
     val context = LocalContext.current
     val text = remember(context, language) { nativeResources(context, language) }
     val jsonPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let(onJson) }
@@ -26,7 +27,12 @@ internal fun ReplacementRecoveryPanel(language: String, busy: Boolean, error: Bo
         Text(text.getString(R.string.replacement_title), style = MaterialTheme.typography.titleLarge)
         Text(text.getString(R.string.replacement_explanation))
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-        if (error) Text(text.getString(R.string.replacement_error))
+        if (error) {
+            Text(text.getString(R.string.replacement_error), color = MaterialTheme.colorScheme.error)
+            if (!errorDetails.isNullOrBlank()) {
+                Text(errorDetails, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+            }
+        }
         Button(onClick = onResume, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
             Text(text.getString(R.string.replacement_resume))
         }
