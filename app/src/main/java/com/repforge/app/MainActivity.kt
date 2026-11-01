@@ -63,6 +63,7 @@ class MainActivity : ComponentActivity() {
     private var recoveryNeeded by mutableStateOf(false)
     private var recoveryBusy by mutableStateOf(false)
     private var recoveryError by mutableStateOf(false)
+    private var recoveryErrorDetails by mutableStateOf<String?>(null)
     private var migrationReady by mutableStateOf(false)
     private var migrationFailure by mutableStateOf(false)
     private var migrationJob: Job? = null
@@ -126,7 +127,8 @@ class MainActivity : ComponentActivity() {
                         recoveryError,
                         onResume = { recoverReplacement() },
                         onJson = { recoverReplacement(it, false) },
-                        onZip = { recoverReplacement(it, true) }
+                        onZip = { recoverReplacement(it, true) },
+                        errorDetails = recoveryErrorDetails
                     )
                 } else if (migrationReady) {
                     LaunchedEffect(Unit) {
@@ -202,14 +204,35 @@ class MainActivity : ComponentActivity() {
     private fun recoverReplacement(uri: android.net.Uri? = null, zip: Boolean = false) {
         if (recoveryBusy) return
         recoveryBusy = true
+        recoveryError = false
+        recoveryErrorDetails = null
         lifecycleScope.launch {
             try {
                 val manager = BackupRestoreManager(this@MainActivity)
-                val result = when { uri == null -> manager.resumeInterruptedReplacement()
+                val result = when {
+                    uri == null -> manager.resumeInterruptedReplacement()
                     zip -> manager.importZipArchiveFromUri(uri, recoverInterrupted = true)
-                    else -> manager.importJsonBackupFromUri(uri, recoverInterrupted = true) }
+                    else -> manager.importJsonBackupFromUri(uri, recoverInterrupted = true)
+                }
                 recoveryError = result.isFailure
-                if (result.isSuccess) { recoveryNeeded = false; startMigration() }
+                recoveryErrorDetails = result.exceptionOrNull()?.localizedMessage
+                result.exceptionOrNull()?.let { android.util.Log.e("MainActivity", "Data replacement recovery returned failure", it) }
+                if (result.isSuccess) {
+                    recoveryNeeded = NativeDataReplacement.blocked(this@MainActivity) ||
+                        NativeReplacementJournal(this@MainActivity).exists() ||
+                        PhoneWorkoutExecution.store(this@MainActivity).restoreBlocked()
+                    if (!recoveryNeeded) startMigration()
+                    else {
+                        recoveryError = true
+                        recoveryErrorDetails = "A művelet befejeződött, de a helyreállítási zárolás még aktív."
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                android.util.Log.e("MainActivity", "Data replacement recovery failed", error)
+                recoveryError = true
+                recoveryErrorDetails = error.localizedMessage ?: error.javaClass.simpleName
             } finally { recoveryBusy = false }
         }
     }
