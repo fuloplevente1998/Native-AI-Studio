@@ -1,0 +1,19 @@
+Folytasd a meglévő TrainPilot NATÍV ANDROID projektet AI Studio App Builder módban.
+Repo: https://github.com/fuloplevente1998/Native-AI-Studio
+Mindig a legfrissebb main ágat töltsd be; ne korábbi ZIP-et, PR270 checkoutot vagy új demóprojektet használj.
+
+Elsőként olvasd el a docs/AI_STUDIO_HANDOFF_2026-11-01.md fájlt, a PR #10 végleges átadási/CI-leírását és a PR #1 audit nyitott tételeit. Ellenőrizd az aktuális main HEAD-et. A korábbi, már megvalósított javításokat ne készítsd újra.
+
+Maradjon a Kotlin/Jetpack Compose Studio felület, grafit/arany dizájn, eredeti logó, natív anatómia és felső navigáció. Nincs WebView/webes helyettesítés, új edzésmotor vagy párhuzamos telefonos adatbázis. A telefon és az óra applicationId-ja com.TrainPilot.com; verzió 2736 / 1.3.71-native-test. Release signingot vagy kulcsot ne módosíts; titkot ne commitolj és ne naplózz. Felhasználói adat, backup vagy recovery receipt nem törölhető hibakerülésként. Fake/demo Health-, Wear-, GPS-, akku-, kalória- és pulzusadat tilos.
+
+A natív Wear app már ebben a repóban van :wear modulként, a közös motor/protokoll :shared modulban. A telefon és az óra ugyanabból a buildből, ugyanazzal az engedélyezett signerrel készült párját használd. A rendszeres Wear node-kapcsolat nem bizonyítja a TrainPilot companion jelenlétét vagy az edzés átadását. Maradjon a capability-ellenőrzés és a natív request/offer/commit/installed ACK-folyamat; a telefonról adás csak settled journal után kész. A pending ownership/finalization, aktív GPS, migráció és adatcsere védelmét ne gyengítsd. Átadás után explicit Folytatás kell. Régi aktív sessiont ne írj át csendben új tulajdonosi állapotra.
+
+Első prioritás: a valódi Google Maps működés befejezése. A kulcs kódoldali bekötése kész, de a korábbi build metadata mapsApiKeyConfigured=false értéket mutatott. Ellenőrizd a legfrissebb artifactot; ha hiányzik, nevezd meg a szükséges TRAINPILOT_MAPS_API_KEY Actions secretet / engedélyezett helyi konfigurációt, a Maps SDK for Android és Cloud-hozzáférés hiányát. A kulcsot ne kérd chatbe. Az Android-korlátozás com.TrainPilot.com és a konkrét APK metadata szerinti signer SHA1 legyen. Nemüres kulcs nem bizonyítja a valódi térképcsempék betöltését.
+
+Ezután ellenőrizd a Galaxy Watch7 valódi kétirányú átadását, ACK-ját, szenzorengedélyeit és kapcsolatbontás utáni helyreállítását. Ellenőrizd a kültéri normál/teljes képernyős nézetet valódi rendszer-sávokkal; normál méretben ne kelljen a fő gombokért görgetni. Nagy rendszerbetűt ne zsugoríts vissza: a másodlagos tartalom szükség esetén görgethető, a vezérlés maradjon elérhető.
+
+Folytasd a fizikai mentés/visszaállítás/import tesztekkel: JSON, fotós ZIP, Health-hozzájárulás, hibás archívum, valódi app/process újraindítás, adatok megőrzése. Ne állítsd ezeket késznek pusztán a Robolectric/hibainjektálás alapján. Az eddig ellenőrzött és a készüléken még nem ellenőrzött pontokat külön jelöld.
+
+A tényleges javításokat a meglévő kódban végezd el, külön fejlesztőágon/PR-ban. Ha Git eszköz elérhető, őrizd meg a helyi munkát, frissíts origin/mainről, és ne pusholj közvetlen mainre. Futtasd Actionsben a :app:assembleDebug :app:testDebugUnitTest :wear:assembleDebug :wear:testDebugUnitTest :shared:testDebugUnitTest feladatokat, vizsgáld meg a nyers eredményeket és az APK-metadata bizonyítékait. Build- és teszthibát javíts, a kaput ne gyengítsd. Külső kulcs/eszköz/jogosultság hiányát pontosan dokumentáld, és folytasd a többi elvégezhető munkát.
+
+A végén add át a tényleges módosításokat/PR-t, az egyazon ellenőrzött forrásból épült telefon+Wear APK-párt, a verziót, forráscommitot, SHA256-okat, signer-bizonyítékot, sikeres/sikertelen teszteket és prioritásos nyitott listát. Új felhatalmazás nélkül ne merge-ölj és ne publikálj release-t. Magyarul, röviden kommunikálj; ne állj meg egy újabb tervnél vagy általános auditnál.

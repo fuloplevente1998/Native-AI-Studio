@@ -1,3 +1,5 @@
+> Historical PR #2 checkpoint. The current authoritative continuation is [AI_STUDIO_HANDOFF_2026-11-01.md](AI_STUDIO_HANDOFF_2026-11-01.md) and its linked PR #10 evidence.
+
 # Main test checkpoint – 2026-11-01
 
 The owner explicitly requested merging the validated phone repair to main for
