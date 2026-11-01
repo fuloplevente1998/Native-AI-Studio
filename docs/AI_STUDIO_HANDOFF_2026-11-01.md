@@ -70,6 +70,26 @@ staging/install/rollback/reopen folyamatot, és több megabájtos Health JSON/ca
 ZIP/manifest nélküli RepForge ZIP importot ellenőriznek. Ezek JVM/Robolectric tesztek;
 a konkrét felhasználói mentés és 256 MB-os készülékes heap még külön ellenőrzendő.
 
+### Napló: az edzés időablakához tartozó egészségadatok
+
+A Studio naplórészletező korábban csak forrásjelzőket mutatott, a már meglévő natív
+`JournalHealthPanel` és `NativeWorkoutHealth` nem volt bekötve. A
+`StudioWorkoutHealth` adapter most a meglévő `JournalViewModel` Room-megfigyelését,
+frissítési és lifecycle/adatcsere/törlés elleni védelmét használja a Studio felületen.
+A mentett Wear és Health Connect értékek külön látszanak; érvényes cache esetén
+nincs új provider-lekérdezés. Hiányzó/elavult Health Connect összesítésnél egyszeri,
+előtérben végzett olvasás indul a részletek megnyitásakor. Kézi frissítés és a valódi
+rendszerengedély-kéréshez kapcsolt gomb is elérhető. A sikertelen olvasás nem akadályozza
+az edzés mentését, és nem törli a korábbi összesítést.
+
+Az edzés `activeIntervals` mezője a mérvadó: a szünetet a provider-lekérdezés nem
+foglalja magában. Azonos külső kezdő/végdátum sem tesz érvényessé olyan cache-t,
+amely a szünet alatti adatokat is összesítette. Átlagpulzus/átlagsebesség a tényleges
+mintaszám szerint kombinálódik; forrásnevek és időarányos energia figyelmeztetése
+megmaradnak. A Wear és Health Connect kalóriákat nem szabad összeadni. Ismeretlen
+érték nem válik becsült vagy nulla mérési adattá. A konkrét készülék Health Connect
+adatelérhetősége és szinkronkésése továbbra is fizikai ellenőrzést igényel.
+
 ### Kültéri képernyő és Google Maps
 
 Az `OutdoorGpsDashboard.kt` a meglévő natív callbackeket használja. A térkép kapja
