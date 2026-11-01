@@ -171,4 +171,28 @@ class JournalWorkoutHealthRegressionTest {
         list.performScrollToNode(hasTestTag("journal_wear_totalCalories_value"))
         compose.onNodeWithTag("journal_wear_totalCalories_value").assertTextEquals("200 kcal")
     }
+    @Test fun emptyCachedResponseRetriesOnOpenAndNeverAdvertisesMissingMeasurements() {
+        val empty = JSONObject().put("windowStart", start).put("windowEnd", end).put("activeIntervals", intervals())
+        val detail = seed(health = empty)
+        assertTrue(NativeWorkoutHealth.matchesWindow(empty, detail.workout))
+        val model = com.repforge.app.ui.journal.JournalViewModel(context as android.app.Application)
+        models.put("empty-journal", model)
+        var healthAvailable = true
+        compose.setContent {
+            TrainPilotTheme {
+                val content = com.example.ui.components.studioWorkoutHealthContent("fresh", "hu", {},
+                    { _, _, hc -> healthAvailable = hc }, model)
+                content()
+            }
+        }
+        // Robolectric has no granted provider permissions. A read must be attempted,
+        // fail truthfully, and retain the cached row instead of inventing a pulse/zero.
+        compose.waitUntil(10_000) { model.uiState.value.healthError != null }
+        assertFalse(healthAvailable)
+        compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_hc_activeCalories_value").assertDoesNotExist()
+        assertEquals(detail.workout.health240Json,
+            awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById("fresh")!!.workout.health240Json })
+    }
+
 }

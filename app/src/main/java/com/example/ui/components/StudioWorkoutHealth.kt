@@ -56,8 +56,13 @@ internal fun studioWorkoutHealthContent(
     LaunchedEffect(detail?.workout, resumed) {
         val workout = detail?.workout ?: return@LaunchedEffect
         val cached = workout.health240Json?.let { runCatching { org.json.JSONObject(it) }.getOrNull() }
-        onSources(workout.id, !workout.wearMetricsJson.isNullOrBlank(), cached != null && NativeWorkoutHealth.matchesWindow(cached, workout))
-        if (resumed && !attempted && (cached == null || !NativeWorkoutHealth.matchesWindow(cached, workout))) {
+        val hasHealthMetrics = cached != null && NativeWorkoutHealth.matchesWindow(cached, workout) &&
+            NativeWorkoutHealth.metrics(cached, false).isNotEmpty()
+        val wear = workout.wearMetricsJson?.let { runCatching { org.json.JSONObject(it) }.getOrNull() }
+        onSources(workout.id, wear != null && NativeWorkoutHealth.metrics(wear, true).isNotEmpty(), hasHealthMetrics)
+        // Health Connect can receive watch/Samsung records after the workout was saved.
+        // A previous empty response must not suppress future foreground refresh attempts.
+        if (resumed && !attempted && !hasHealthMetrics) {
             attempted = true
             // Foreground only; the native adapter checks actual OS grants, active windows,
             // deletion/restore generations and lifecycle again before attaching the response.
