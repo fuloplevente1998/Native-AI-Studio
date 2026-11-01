@@ -90,12 +90,18 @@ class BackupImportValidationRegressionTest {
                     .put("updatedAt", 123L).put("width", 1).put("height", 1).put("bytes", photoBytes.size))))
             val health = HealthJournalStore.get(context)
             health.importRecords(JSONArray().put(healthRecord("restored-health", 123)), health.generation())
+            assertEquals("Seeded Health record before export", 1, health.exportSnapshot().getJSONArray("records").length())
         }
         photoFile.parentFile!!.mkdirs()
         photoFile.writeBytes(photoBytes)
         val archive = File(context.cacheDir, "photo-health-archive")
         val exported = awaitNative { BackupRestoreManager(context).exportZipArchiveToUri(Uri.fromFile(archive)) }
         assertTrue(exported.exceptionOrNull()?.message ?: "archive export failed", exported.isSuccess)
+        ZipFile(archive).use { zip ->
+            val data = JSONObject(zip.getInputStream(zip.getEntry("backup.json")).use { String(it.readBytes()) })
+            assertEquals("Health record actually present in exported ZIP", 1,
+                data.getJSONObject("nativeHealthJournal").getJSONArray("records").length())
+        }
         return archive
     }
 
@@ -113,7 +119,7 @@ class BackupImportValidationRegressionTest {
         photoFile.writeBytes(oldPhotoBytes)
     }
 
-    private fun assertPhotoHealthRestored() {
+    private fun assertPhotoHealthRestored(checkpoint: String = "normal ZIP restore") {
         val workout = awaitNative {
             TrainPilotDatabase.getInstance(context).workoutHistoryDao().getWorkoutWithDetails("photo-health-workout")
         }
@@ -129,7 +135,8 @@ class BackupImportValidationRegressionTest {
             } finally { reopened.close() }
         }
         val records = snapshot.getJSONArray("records")
-        assertEquals(1, records.length())
+        val liveCount = awaitNative { HealthJournalStore.get(context).exportSnapshot().getJSONArray("records").length() }
+        assertEquals("$checkpoint: reopened Health count; live singleton count=$liveCount", 1, records.length())
         assertEquals("restored-health", records.getJSONObject(0).getString("recordId"))
         assertEquals(123, records.getJSONObject(0).getJSONObject("data").getInt("value"))
         assertFalse(NativeReplacementJournal(context).exists())
@@ -154,6 +161,7 @@ class BackupImportValidationRegressionTest {
             "health-prepared", "health-installed", "room-settings-imported", "health-committed",
             "data-imported", "receipt-committed")
         for (checkpoint in checkpoints) {
+            println("Restore fault injection: $checkpoint")
             resetIsolatedTestDataset()
             val archive = seedPhotoHealthArchive()
             val bytes = archive.readBytes()
@@ -169,7 +177,7 @@ class BackupImportValidationRegressionTest {
             assertTrue(NativeDataReplacement.blocked(context))
             val recovered = awaitNative { BackupRestoreManager(context).resumeInterruptedReplacement() }
             assertTrue("$checkpoint: ${recovered.exceptionOrNull()}", recovered.isSuccess)
-            assertPhotoHealthRestored()
+            assertPhotoHealthRestored(checkpoint)
             assertArrayEquals(bytes, archive.readBytes())
         }
     }
