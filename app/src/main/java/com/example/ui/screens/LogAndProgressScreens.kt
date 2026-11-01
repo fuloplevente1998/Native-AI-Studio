@@ -909,7 +909,7 @@ fun LogWorkoutDetailScreen(
                                 )
                             }
                             Text(
-                                text = "${workout.dateLabelHu} • 17:03–17:51",
+                                text = workout.dateLabelHu,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = palette.textSecondary
                             )
@@ -944,7 +944,7 @@ fun LogWorkoutDetailScreen(
         // Sub-tabs: Gyakorlatok (5) | Statisztikák | Forrás
         item {
             val tabTitles = listOf(
-                "Gyakorlatok (${workout.exerciseDetails.size.coerceAtLeast(5)})",
+                if (workout.isOutdoorRun) "Aktivitás" else "Gyakorlatok (${workout.exerciseDetails.size})",
                 "Statisztikák",
                 "Forrás"
             )
@@ -1039,12 +1039,12 @@ fun LogWorkoutDetailScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "${setRow.setNumber}. sorozat",
+                                        text = if (workout.isOutdoorRun || exDetail.measurementType == "distance") "${setRow.setNumber}. mérés" else "${setRow.setNumber}. sorozat",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = palette.textSecondary
                                     )
                                     Text(
-                                        text = "${setRow.weightKg.toInt()} kg  ×  ${setRow.reps}",
+                                        text = com.example.model.StudioWorkoutJournalDisplay.setLabel(setRow, exDetail.measurementType, exDetail.repUnit, workout.isOutdoorRun),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = palette.textPrimary
@@ -1079,9 +1079,10 @@ fun LogWorkoutDetailScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Adatforrás és szinkron napló", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                        Text("• Rögzítő eszköz: Galaxy Watch7 (TrainPilot Wear OS v2.4)", color = palette.textPrimary)
-                        Text("• Másodlagos híd: Health Connect + Samsung Health", color = palette.textSecondary)
-                        Text("• Átlagpulzus: 128 bpm • Max pulzus: 162 bpm • Aktív kalória: 312 kcal", color = palette.primary, fontWeight = FontWeight.SemiBold)
+                        Text("• Rögzítő eszköz: ${if (workout.originDevice == "watch") "Óra" else "Telefon"}", color = palette.textPrimary)
+                        Text("• Wear OS adatok: ${if (workout.sourceWatch) "Edzéshez rögzítve" else "Nem érhető el"}", color = palette.textSecondary)
+                        Text("• Health Connect adatok: ${if (workout.sourceHealthConnect) "Edzéshez rögzítve" else "Nem érhető el"}", color = palette.textSecondary)
+                        Text("• Pulzus és kalória: csak hiteles edzésmérésből jeleníthető meg", color = palette.textSecondary)
                     }
                 }
             }
@@ -1095,6 +1096,7 @@ fun LogWorkoutDetailScreen(
             ) {
                 OutlinedButton(
                     onClick = onOpenPhotos,
+                    enabled = workout.photoCount > 0,
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier
                         .weight(1f)
@@ -1103,10 +1105,11 @@ fun LogWorkoutDetailScreen(
                 ) {
                     Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Fotók (2)", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
+                    Text("Fotók (${workout.photoCount})", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
                 }
                 OutlinedButton(
                     onClick = onOpenRouteMap,
+                    enabled = workout.routeKeys.isNotEmpty(),
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier
                         .weight(1.2f)
@@ -1115,7 +1118,7 @@ fun LogWorkoutDetailScreen(
                 ) {
                     Icon(imageVector = Icons.Default.Map, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Útvonal megtekintése", color = palette.textPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                    Text(if (workout.routeKeys.isEmpty()) "Nincs útvonal" else "Útvonal megtekintése", color = palette.textPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 }
             }
         }
@@ -1156,7 +1159,7 @@ fun LogWorkoutDetailScreen(
                                 color = palette.textPrimary
                             )
                             Text(
-                                text = "Galaxy Watch7",
+                                text = if (workout.sourceWatch) "Órás edzésadat rögzítve" else "Nincs órás mérés",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.success
                             )
@@ -1187,7 +1190,7 @@ fun LogWorkoutDetailScreen(
                                 color = palette.textPrimary
                             )
                             Text(
-                                text = "Szinkronizálva",
+                                text = if (workout.sourceHealthConnect) "Edzésadat elérhető" else "Nincs edzésadat",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.secondary
                             )
@@ -1300,7 +1303,7 @@ fun LogRouteMapScreen(
                     color = palette.textPrimary
                 )
                 Text(
-                    text = "2026. október 13. • 07:12–07:24",
+                    text = workout?.dateLabelHu ?: "Nincs dátum",
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary
                 )
