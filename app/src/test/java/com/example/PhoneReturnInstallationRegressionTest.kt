@@ -65,7 +65,10 @@ class PhoneReturnInstallationRegressionTest {
         watchFrame.getJSONArray("exercises").getJSONObject(0).getJSONArray("sets").getJSONObject(0)
             .put("done", true).put("reps", "10").put("weight", 15)
         if (timed) {
-            watchFrame.getJSONArray("exercises").getJSONObject(0).put("repUnit", "mp")
+            watchFrame.getJSONArray("exercises").getJSONObject(0).apply {
+                put("repUnit", "mp")
+                getJSONArray("sets").getJSONObject(0).put("done", false)
+            }
             watchFrame.put("automation", JSONObject("""{"enabled":true,"owner":"watch","phase":"work","workSeconds":10,"restSeconds":5,"rounds":2}"""))
             val timer = JSONObject("""
                 {"key":"native|4|9","generation":4,"autoAdvance":true,"restOnly":false,"initialRest":3,
@@ -130,4 +133,29 @@ class PhoneReturnInstallationRegressionTest {
         catch (_: IllegalStateException) { }
         assertTrue(PhoneWorkoutExecution.store(context).commandsSuspended())
     }
+    @Test fun returnedWorkoutCanActuallyFinalizeIntoRoomWithoutTheBusyError() {
+        roundTrip()
+        val frame = runBlocking { NativePhoneReturnInstallation.complete(context) }
+        val database = androidx.room.Room.inMemoryDatabaseBuilder(context,
+            com.repforge.app.data.db.TrainPilotDatabase::class.java).build()
+        val worker = java.util.concurrent.Executors.newSingleThreadExecutor()
+        try {
+            val future = worker.submit<Unit> { runBlocking {
+                TrainPilotWorkoutFinalization(context, database).finishWorkout(frame)
+                val history = database.workoutHistoryDao().getWorkoutWithDetails(frame.getString("workoutId"))
+                assertNotNull(history)
+                assertEquals(1, database.workoutHistoryDao().getAllWorkoutsWithDetails().size)
+                assertFalse(ActiveWorkoutStore.current(context)!!.getBoolean("active"))
+            } }
+            val deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(30)
+            while (!future.isDone) {
+                org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+                if (System.nanoTime() > deadline) fail("Finalization timed out")
+                try { future.get(10, java.util.concurrent.TimeUnit.MILLISECONDS) }
+                catch (_: java.util.concurrent.TimeoutException) { }
+            }
+            future.get()
+        } finally { worker.shutdownNow(); database.close() }
+    }
+
 }

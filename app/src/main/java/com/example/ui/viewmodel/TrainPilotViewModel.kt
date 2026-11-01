@@ -905,7 +905,8 @@ class TrainPilotViewModel : ViewModel() {
                     }
                     val selected = state.activeWorkoutExercises.getOrNull(state.activeExerciseIndex)?.id
                     state.copy(phoneControlsWorkout = frame.optString("timerOwner", "phone") == "phone" &&
-                            !watchHandoffBusy && !com.repforge.app.NativeWatchHandoffReceipt.pending(frame, watchJournal()),
+                            !watchHandoffBusy && !com.repforge.app.NativePhoneReturnInstallation.requiresInstallation(frame) &&
+                            !com.repforge.app.NativeWatchHandoffReceipt.pending(frame, watchJournal()),
                         watchControlPending = watchHandoffBusy || com.repforge.app.NativeWatchHandoffReceipt.pending(frame, watchJournal()),
                         activeSetsByExerciseId = state.activeSetsByExerciseId + nativeSets,
                         activeSets = nativeSets[selected] ?: state.activeSets)
@@ -3398,7 +3399,7 @@ class TrainPilotViewModel : ViewModel() {
                 val current = ActiveWorkoutStore.current(ctx)
                 val pending = com.repforge.app.NativeWatchHandoffReceipt.pending(current, watchJournal())
                 _uiState.update { it.copy(watchControlPending = pending,
-                    phoneControlsWorkout = (current == null || current.optString("timerOwner", "phone") == "phone") && !pending,
+                    phoneControlsWorkout = (current == null || current.optString("timerOwner", "phone") == "phone") && !pending && !com.repforge.app.NativePhoneReturnInstallation.requiresInstallation(current),
                     lastWatchSyncLabel = if (pending) "Átadás függőben; vezérlés zárolva" else it.lastWatchSyncLabel) }
             }
         }
@@ -3582,7 +3583,7 @@ class TrainPilotViewModel : ViewModel() {
             permissionHealthConnectEnabled = access.optInt("healthGranted") > 0,
             healthGrantedCount = access.optInt("healthGranted"), healthPermissionCount = access.optInt("healthTotal"),
             watchControlPending = pending,
-            phoneControlsWorkout = (frame == null || frame.optString("timerOwner", "phone") == "phone") && !pending,
+            phoneControlsWorkout = (frame == null || frame.optString("timerOwner", "phone") == "phone") && !pending && !com.repforge.app.NativePhoneReturnInstallation.requiresInstallation(frame),
             watchAppAvailable = companionAvailable && watchNames.size == 1,
             watchConnected = watchNames.isNotEmpty(), watchName = watchNames.firstOrNull() ?: "Nincs csatlakoztatott Wear OS óra",
             watchBatteryPercent = -1,

@@ -40,7 +40,7 @@ internal object NativePhoneReturnInstallation {
         check(NativeWatchHandoffReceipt.confirmed(current, PhoneOwnership193.journal(context).read(),
             current.getString("workoutId"), "phone")) { "Még nincs igazolt órás visszaadás; az edzés zárolva marad." }
         if (!requiresInstallation(current) && !PhoneWorkoutExecution.store(context).commandsSuspended())
-            return@withContext NativeWorkoutEditing.project(context)
+            return@withContext NativeWorkoutEditing.project(context, PhoneWorkoutExecution.display(context))
         val frame = PhoneOwnership193.prepareResume(context).getJSONObject("snapshot")
         // ARM creates only the foreground lifetime. installResume restores the paused timer;
         // explicit user Resume remains necessary. A failed ARM keeps the durable fence closed.
@@ -48,6 +48,9 @@ internal object NativePhoneReturnInstallation {
             !IntervalTimerService.armed(frame.getString("workoutId"), frame.getLong("generation"))) arm(frame)
         PhoneOwnership193.installResume(context, frame.getJSONObject("ownershipImport193").getString("id"),
             frame.getLong("ownerEpoch193"))
-        NativeWorkoutEditing.project(context)
+        NativeWorkoutEditing.project(context, PhoneWorkoutExecution.display(context)).also { frame ->
+            // Local readiness remains durable if Data Layer is temporarily unavailable.
+            runCatching { WearSyncRepository.publishActiveWorkoutSnapshot(context, frame) }
+        }
     }
 }

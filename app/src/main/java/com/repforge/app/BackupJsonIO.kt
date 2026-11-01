@@ -53,7 +53,6 @@ internal object BackupJsonIO {
 
     fun write(value: Any, writer: Writer) {
         val json = JsonWriter(writer)
-        json.serializeNulls = true
         writeValue(json, value, 0)
         json.flush()
     }
