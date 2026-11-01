@@ -279,8 +279,12 @@ class BackupRestoreManager(context: Context) {
                     if (entry.kind == "erase") eraseLocalContents(entry) else completeReplacement(entry)
                 }
             } else {
-                val execution = PhoneWorkoutExecution.store(appContext)
-                check(NativeDataReplacement.blocked(appContext) || execution.restoreBlocked()) {
+                // PhoneWorkoutExecution.store() is main-looper confined; restore
+                // runs on Dispatchers.IO, so obtain the execution flag on Main.
+                val executionRestoreBlocked = withContext(Dispatchers.Main.immediate) {
+                    PhoneWorkoutExecution.store(appContext).restoreBlocked()
+                }
+                check(NativeDataReplacement.blocked(appContext) || executionRestoreBlocked) {
                     "Nincs félbeszakadt adatcsere vagy helyreállításra váró zárolás."
                 }
                 // The lease rechecks active workouts and writer ownership, and clears
