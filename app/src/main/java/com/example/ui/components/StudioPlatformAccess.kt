@@ -70,7 +70,14 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
         }
         model.updateSamsungAccess(granted)
     }
-    val runtime = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+    var healthRequestPending by remember { mutableStateOf(false) }
+    val runtime = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+        if (healthRequestPending) {
+            healthRequestPending = false
+            if (results.isEmpty() || results.values.none { it }) {
+                model.showBannerMessage("A Health Connect nem adott hozzáférést. Ellenőrizd a rendszerengedélyeket.")
+            }
+        }
         scope.launch { refresh() }
     }
     val settings = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -95,8 +102,16 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                 "hc" -> {
                     val permissions = StudioPlatformAccess.healthPermissions(context)
                     check(permissions.isNotEmpty()) { "A Health Connect ezen az eszközön nem érhető el." }
-                    if (permissions.none { context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }) runtime.launch(permissions.toTypedArray())
-                    else settings.launch(Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS").putExtra(Intent.EXTRA_PACKAGE_NAME, context.packageName))
+                    val missing = permissions.filter {
+                        context.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+                    }
+                    if (missing.isNotEmpty()) {
+                        healthRequestPending = true
+                        runtime.launch(missing.toTypedArray())
+                    } else {
+                        settings.launch(Intent(android.health.connect.HealthConnectManager.ACTION_MANAGE_HEALTH_PERMISSIONS)
+                            .putExtra(Intent.EXTRA_PACKAGE_NAME, context.packageName))
+                    }
                 }
                 "samsung" -> scope.launch {
                     val result = activity?.let { SamsungHealthRepository.requestReadPermissions(it) }
