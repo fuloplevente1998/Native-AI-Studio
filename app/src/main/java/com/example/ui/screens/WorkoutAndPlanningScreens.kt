@@ -615,7 +615,7 @@ fun ProgramsListScreen(
             titleContentColor = palette.textPrimary,
             textContentColor = palette.textSecondary,
             title = {
-                Text("Új egyedi program létrehozása", fontWeight = FontWeight.Bold)
+                Text("Új egyedi program létrehozása", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1491,7 +1491,7 @@ fun CalendarPlannerScreen(
             onDismissRequest = { editingEvent = null },
             containerColor = palette.surface,
             titleContentColor = palette.textPrimary,
-            title = { Text("Edzésnap módosítása (${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${ev.dayOfMonth}.)", fontWeight = FontWeight.Bold) },
+            title = { Text("Edzésnap módosítása (${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${ev.dayOfMonth}.)", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Edzésnap típusa (A / B):", style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
@@ -1574,7 +1574,7 @@ fun CalendarPlannerScreen(
             onDismissRequest = { movingEvent = null },
             containerColor = palette.surface,
             titleContentColor = palette.textPrimary,
-            title = { Text("Edzés áthelyezése (${ev.dayOfMonth}. napról)", fontWeight = FontWeight.Bold) },
+            title = { Text("Edzés áthelyezése (${ev.dayOfMonth}. napról)", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Válaszd ki az új napot ebben a hónapban:", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
@@ -1645,7 +1645,7 @@ fun CalendarPlannerScreen(
                         "duration" -> "Időtartam (perc)"
                         else -> "Hetek száma"
                     },
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold
                 )
             },
             text = {

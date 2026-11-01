@@ -212,7 +212,7 @@ fun HealthTabScreen(
             title = {
                 Text(
                     text = if (editingMeasurement != null) "Mérés szerkesztése" else "Új testsúlymérés",
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold
                 )
             },
             text = {
@@ -2150,7 +2150,7 @@ fun SettingsMainScreen(
             containerColor = palette.surfaceCard,
             titleContentColor = palette.textPrimary,
             textContentColor = palette.textSecondary,
-            title = { Text("Edzés beállításai és progresszió", fontWeight = FontWeight.Bold) },
+            title = { Text("Edzés beállításai és progresszió", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(

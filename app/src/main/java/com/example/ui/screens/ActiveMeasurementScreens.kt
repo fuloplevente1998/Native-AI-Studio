@@ -478,7 +478,7 @@ fun ActiveStrengthWorkoutScreen(
                             ) {
                                 Text(
                                     text = currentExerciseName,
-                                    style = MaterialTheme.typography.headlineSmall,
+                                    style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary
                                 )
@@ -2042,7 +2042,7 @@ fun ActiveBilateralWorkoutScreen(
                 Text(
                     text = "${setToEdit.setNumber}. sorozat • Kétoldali adatrögzítés",
                     color = palette.textPrimary,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold
                 )
             },
             text = {
