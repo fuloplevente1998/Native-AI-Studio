@@ -20,6 +20,13 @@ files move byte-for-byte from the phone into `:shared`, used by both apps. No pa
 workout engine, ownership journal or phone database is created. Existing native Wear
 UI, sensor permissions, local workout storage and protocol tests are retained.
 
+New phone starts now persist native ownership protocol 1 / epoch 0 in the same
+canonical execution frame before publication. Previously these starts omitted the
+protocol field, preventing the watch's native takeover admission. Existing recovered
+sessions are returned unchanged; a legacy session without the protocol stays safely
+phone-controlled and receives an explicit message rather than an endless ACK wait.
+A new-session install cannot reset a transferred/watch-owned candidate to phone.
+
 Both application IDs are `com.TrainPilot.com`, version 2736 / `1.3.71-native-test`.
 Wear signing copies the existing phone signing configuration; release settings and
 keys are unchanged. Actions creates one existing-style temporary debug keystore for

@@ -3336,6 +3336,10 @@ class TrainPilotViewModel : ViewModel() {
             val active = ActiveWorkoutStore.current(ctx)?.takeIf { it.optBoolean("active") }
             if (active == null) { showBannerMessage("Nincs átadható aktív edzés."); return@launch }
             val id = active.optString("workoutId")
+            if (active.optInt("ownershipProtocol193") != 1) {
+                showBannerMessage("Ez a korábbi edzés nem támogatja az órás átadást; a telefonon biztonságosan folytatható.")
+                return@launch
+            }
             watchHandoffBusy = true
             suspend fun awaitOwner(owner: String) {
                 kotlinx.coroutines.withTimeout(32_000) {
