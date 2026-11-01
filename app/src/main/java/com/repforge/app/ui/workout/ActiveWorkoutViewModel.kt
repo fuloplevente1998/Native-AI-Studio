@@ -4,6 +4,7 @@ import com.repforge.app.NativeGpsMeasurement
 import com.repforge.app.NativeTimerTarget
 import com.repforge.app.ui.journal.RouteCoordinatesUiModel
 import com.repforge.app.ui.journal.WorkoutRouteCoordinates
+import com.repforge.app.IntervalTimeline
 import com.repforge.app.NativeSetStopwatch
 import com.repforge.app.NativeMeasuredTime
 import com.repforge.app.NativeMeasuredSet
@@ -455,6 +456,54 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
                 AppHapticsManager.setRecorded(context, settingsStore.current().hapticSetRecorded227)
             }
         } catch (error: Exception) { _uiState.value = _uiState.value.copy(statusMessage = error.message ?: "A stopper nem vezérelhető.") }
+    }
+
+    /** Studio separates Pause (no completion) from explicit Stop and record. */
+    fun pauseSetStopwatch(target: NativeWorkoutTarget) {
+        val frame = editableSnapshot() ?: return
+        if (resolveTarget(frame, target) == null) return
+        try {
+            val clock = frame.optJSONObject(NativeSetStopwatch.FIELD) ?: return
+            check(clock.optString("setId") == target.setId)
+            PhoneWorkoutExecution.store(context).checkpointStopwatch(target.workoutId, target.generation,
+                SystemClock.elapsedRealtime(), pause = true)
+            parseSnapshotToUi(NativeWorkoutEditing.project(context))
+            refreshStopwatchUi()
+        } catch (error: Exception) { showStatus(error.message ?: "A stopper nem szüneteltethető.") }
+    }
+
+    fun recordSetStopwatch(target: NativeWorkoutTarget, side: String) {
+        val frame = editableSnapshot() ?: return
+        if (resolveTarget(frame, target) == null) return
+        try {
+            val clock = frame.optJSONObject(NativeSetStopwatch.FIELD) ?: error("Előbb indítsd el a mérést.")
+            check(clock.optString("setId") == target.setId && clock.optString("side") == side && NativeSetStopwatch.elapsed(clock) >= 1000)
+            if (!NativeSetStopwatch.running(clock)) NativeWorkoutEditing.startStopwatch(context, target, side)
+            val saved = NativeWorkoutEditing.stopStopwatch(context, target)
+            parseSnapshotToUi(saved)
+            refreshStopwatchUi()
+        } catch (error: Exception) { showStatus(error.message ?: "A mért sorozat nem rögzíthető.") }
+    }
+
+    fun adjustSetStopwatch(target: NativeWorkoutTarget, side: String, deltaSeconds: Int) {
+        val frame = editableSnapshot() ?: return
+        if (resolveTarget(frame, target) == null) return
+        try {
+            val now = SystemClock.elapsedRealtime()
+            var clock = frame.optJSONObject(NativeSetStopwatch.FIELD)
+            if (clock == null || clock.optString("setId") != target.setId || clock.optString("side") != side) {
+                NativeSetStopwatch.start(frame, target, side, now)
+                NativeSetStopwatch.pause(frame, now, trackPause = false)
+                clock = frame.getJSONObject(NativeSetStopwatch.FIELD)
+            }
+            NativeSetStopwatch.checkpoint(frame, now)
+            val previous = clock.getLong("elapsedMs")
+            val adjusted = (previous + deltaSeconds * 1000L).coerceIn(0, IntervalTimeline.MAX_MS)
+            // Explicit manual edits change the displayed/recorded seconds, never invent measured work time.
+            clock.put("elapsedMs", adjusted).put("creditBaseMs", clock.optLong("creditBaseMs") + adjusted - previous)
+            parseSnapshotToUi(NativeWorkoutEditing.commitEdit(context, frame, clockEdit = true))
+            refreshStopwatchUi()
+        } catch (error: Exception) { showStatus(error.message ?: "A stopper nem módosítható.") }
     }
 
     fun resetSetStopwatch(target: NativeWorkoutTarget) {

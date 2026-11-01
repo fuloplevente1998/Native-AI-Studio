@@ -1537,11 +1537,18 @@ fun ActiveTimedWorkoutScreen(
     val exerciseNameHu = currentExercise?.nameHu ?: "Plank"
     val defaultTargetSec = (currentExercise?.targetSeconds ?: 45).coerceAtLeast(15)
 
-    var currentSec by remember(currentExercise?.id) { mutableIntStateOf(uiState.timedCurrentSec) }
-    var isRunning by remember(currentExercise?.id) { mutableStateOf(false) }
+    val nativeModel: com.repforge.app.ui.workout.ActiveWorkoutViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val native by nativeModel.uiState.collectAsState()
+    LaunchedEffect(uiState.activeWorkoutId) { nativeModel.onEditorVisible() }
+    val nativeExercise = native.exercises.firstOrNull { it.exerciseId == currentExercise?.id }
+    val nativeSet = nativeExercise?.sets?.firstOrNull { !it.isCompleted }
+    val target = nativeSet?.let { com.repforge.app.NativeWorkoutTarget(native.workoutId, native.generation,
+        checkNotNull(nativeExercise).exerciseId, it.setId) }
+    val currentSec = if (native.stopwatchSetId == nativeSet?.setId) native.stopwatchSeconds.toInt() else 0
+    val isRunning = native.stopwatchSetId == nativeSet?.setId && native.stopwatchRunning
     var targetSec by remember(currentExercise?.id) { mutableIntStateOf(defaultTargetSec) }
-    var currentSetIndex by remember(currentExercise?.id) { mutableIntStateOf(1) }
-    var completedSets by remember(currentExercise?.id) { mutableStateOf(listOf<Int>()) }
+    val currentSetIndex = nativeSet?.setNumber ?: ((nativeExercise?.sets?.size ?: 0) + 1)
+    val completedSets = nativeExercise?.sets?.filter { it.isCompleted }?.map { it.reps.toIntOrNull() ?: 0 }.orEmpty()
     var timedDropdownExpanded by remember { mutableStateOf(false) }
 
     val timedExerciseOptions = remember(uiState.exercises) {
@@ -1565,20 +1572,14 @@ fun ActiveTimedWorkoutScreen(
         (fromDb + presets).distinctBy { it.nameHu.lowercase() }
     }
 
-    // Live ticking stopwatch coroutine loop
-    LaunchedEffect(isRunning) {
-        while (isRunning) {
-            delay(1000L)
-            currentSec++
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(palette.background)
             .testTag("active_timed_screen")
     ) {
+        native.statusMessage?.let { Text(it, color = palette.danger) }
+
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
@@ -1760,10 +1761,10 @@ fun ActiveTimedWorkoutScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        SmallAdjustChip("-5 mp") { currentSec = (currentSec - 5).coerceAtLeast(0) }
-                        SmallAdjustChip("+5 mp") { currentSec += 5 }
-                        SmallAdjustChip("+15 mp") { currentSec += 15 }
-                        SmallAdjustChip("+30 mp") { currentSec += 30 }
+                        SmallAdjustChip("-5 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "single", -5) } }
+                        SmallAdjustChip("+5 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "single", 5) } }
+                        SmallAdjustChip("+15 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "single", 15) } }
+                        SmallAdjustChip("+30 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "single", 30) } }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -1774,7 +1775,7 @@ fun ActiveTimedWorkoutScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Button(
-                            onClick = { isRunning = !isRunning },
+                            onClick = { target?.let { if (isRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.toggleSetStopwatch(it, "single") } },
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (isRunning) palette.primary else palette.success,
@@ -1797,8 +1798,7 @@ fun ActiveTimedWorkoutScreen(
                         }
                         OutlinedButton(
                             onClick = {
-                                isRunning = false
-                                currentSec = 0
+                                target?.let(nativeModel::resetSetStopwatch)
                             },
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier
@@ -1816,10 +1816,7 @@ fun ActiveTimedWorkoutScreen(
                     // Set complete button
                     Button(
                         onClick = {
-                            isRunning = false
-                            completedSets = completedSets + currentSec
-                            currentSetIndex++
-                            currentSec = 0
+                            target?.let { nativeModel.recordSetStopwatch(it, "single") }
                         },
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -2012,34 +2009,22 @@ fun ActiveBilateralWorkoutScreen(
         mutableIntStateOf(firstUncompletedSetNum)
     }
 
-    // Left side stopwatch state
-    var leftSec by remember(currentExercise?.id) { mutableIntStateOf(0) }
-    var leftRunning by remember(currentExercise?.id) { mutableStateOf(false) }
-
-    // Right side stopwatch state
-    var rightSec by remember(currentExercise?.id) { mutableIntStateOf(0) }
-    var rightRunning by remember(currentExercise?.id) { mutableStateOf(false) }
+    val nativeModel: com.repforge.app.ui.workout.ActiveWorkoutViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val native by nativeModel.uiState.collectAsState()
+    LaunchedEffect(uiState.activeWorkoutId) { nativeModel.onEditorVisible() }
+    val nativeExercise = native.exercises.firstOrNull { it.exerciseId == currentExercise?.id }
+    val nativeSet = nativeExercise?.sets?.firstOrNull { it.setNumber == selectedTargetSetNumber }
+    val target = nativeSet?.let { com.repforge.app.NativeWorkoutTarget(native.workoutId, native.generation,
+        checkNotNull(nativeExercise).exerciseId, it.setId) }
+    val leftSec = if (native.stopwatchSetId == nativeSet?.setId && native.stopwatchSide == "left") native.stopwatchSeconds.toInt() else nativeSet?.leftSeconds ?: 0
+    val rightSec = if (native.stopwatchSetId == nativeSet?.setId && native.stopwatchSide == "right") native.stopwatchSeconds.toInt() else nativeSet?.rightSeconds ?: 0
+    val leftRunning = native.stopwatchSetId == nativeSet?.setId && native.stopwatchSide == "left" && native.stopwatchRunning
+    val rightRunning = native.stopwatchSetId == nativeSet?.setId && native.stopwatchSide == "right" && native.stopwatchRunning
 
     // Modal dialog for manual bilateral set editing
     var editingBilateralSet by remember { mutableStateOf<com.example.model.ExerciseSetItem?>(null) }
     var showExerciseDropdown by remember { mutableStateOf(false) }
     var restTimerLargeMode by remember { mutableStateOf(false) }
-
-    // Ticking coroutine for Left Side Stopwatch
-    LaunchedEffect(leftRunning) {
-        while (leftRunning) {
-            delay(1000L)
-            leftSec++
-        }
-    }
-
-    // Ticking coroutine for Right Side Stopwatch
-    LaunchedEffect(rightRunning) {
-        while (rightRunning) {
-            delay(1000L)
-            rightSec++
-        }
-    }
 
     // Dedicated Bilateral Set Editor Modal ("külön ablak adat rögzítésre")
     editingBilateralSet?.let { setToEdit ->
@@ -2156,6 +2141,8 @@ fun ActiveBilateralWorkoutScreen(
             .background(palette.background)
             .testTag("active_bilateral_screen")
     ) {
+        native.statusMessage?.let { Text(it, color = palette.danger) }
+
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
@@ -2367,7 +2354,7 @@ fun ActiveBilateralWorkoutScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Button(
-                                onClick = { leftRunning = !leftRunning },
+                                onClick = { target?.let { if (leftRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.toggleSetStopwatch(it, "left") } },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (leftRunning) palette.warning else palette.success,
@@ -2390,10 +2377,7 @@ fun ActiveBilateralWorkoutScreen(
                             // Leállítás és rögzítés button -> writes directly into selectedTargetSetNumber's Left slot!
                             Button(
                                 onClick = {
-                                    leftRunning = false
-                                    val secToRecord = if (leftSec > 0) leftSec else (targetSetObj?.leftSec ?: defaultTargetSec)
-                                    onRecordBilateralSide(true, secToRecord, selectedTargetSetNumber)
-                                    leftSec = 0
+                                    target?.let { nativeModel.recordSetStopwatch(it, "left") }
                                 },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
@@ -2426,11 +2410,10 @@ fun ActiveBilateralWorkoutScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             SmallAdjustChip("Nulláz") {
-                                leftRunning = false
-                                leftSec = 0
+                                target?.let(nativeModel::resetSetStopwatch)
                             }
-                            SmallAdjustChip("+5 mp") { leftSec += 5 }
-                            SmallAdjustChip("+15 mp") { leftSec += 15 }
+                            SmallAdjustChip("+5 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "left", 5) } }
+                            SmallAdjustChip("+15 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "left", 15) } }
                         }
                     }
                 }
@@ -2520,7 +2503,7 @@ fun ActiveBilateralWorkoutScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Button(
-                                onClick = { rightRunning = !rightRunning },
+                                onClick = { target?.let { if (rightRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.toggleSetStopwatch(it, "right") } },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (rightRunning) palette.warning else palette.success,
@@ -2543,10 +2526,7 @@ fun ActiveBilateralWorkoutScreen(
                             // Leállítás és rögzítés button -> writes directly into selectedTargetSetNumber's Right slot!
                             Button(
                                 onClick = {
-                                    rightRunning = false
-                                    val secToRecord = if (rightSec > 0) rightSec else (targetSetObj?.rightSec ?: defaultTargetSec)
-                                    onRecordBilateralSide(false, secToRecord, selectedTargetSetNumber)
-                                    rightSec = 0
+                                    target?.let { nativeModel.recordSetStopwatch(it, "right") }
                                 },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
@@ -2579,11 +2559,10 @@ fun ActiveBilateralWorkoutScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             SmallAdjustChip("Nulláz") {
-                                rightRunning = false
-                                rightSec = 0
+                                target?.let(nativeModel::resetSetStopwatch)
                             }
-                            SmallAdjustChip("+5 mp") { rightSec += 5 }
-                            SmallAdjustChip("+15 mp") { rightSec += 15 }
+                            SmallAdjustChip("+5 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "right", 5) } }
+                            SmallAdjustChip("+15 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "right", 15) } }
                         }
                     }
                 }

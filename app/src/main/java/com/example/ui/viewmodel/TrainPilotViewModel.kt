@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -97,6 +98,8 @@ data class TrainPilotUiState(
     val dailySteps: Int = 0,
     val stepsGoal: Int = 10000,
     val activeCaloriesKcal: Int = 0,
+    val lastHealthSyncLabel: String = "—",
+    val healthProviderStatus: String = "A szolgáltató állapota még nem ismert",
     val samsungEnergyScore: Int = 0,
     val coachReadinessScore: Int = 0,
 
@@ -806,7 +809,8 @@ class TrainPilotViewModel : ViewModel() {
         val current = ActiveWorkoutStore.current(ctx)?.takeIf { it.optBoolean("active") } ?: return true
         // A running GPS session and acknowledged watch owner intentionally continue in background.
         if (current.optString("timerOwner", "phone") != "phone" ||
-            _uiState.value.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS) return true
+            (_uiState.value.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS &&
+                com.repforge.app.DistanceTrackingService.snapshot(ctx).optBoolean("active"))) return true
         return try {
             com.repforge.app.StudioWorkoutBridge.pause(ctx, paused)
             _uiState.update { it.copy(homeDemoMode = if (paused) HomeDemoMode.PAUSED_WORKOUT else it.homeDemoMode) }
@@ -859,6 +863,33 @@ class TrainPilotViewModel : ViewModel() {
         nativeSettingsStore = settingsStore
         nativeDatabase = database
         nativeScope = scope
+
+        scope.launch(Dispatchers.Main.immediate) {
+            ActiveWorkoutStore.snapshotFlow.collect { frame ->
+                if (frame?.optBoolean("active") == true) _uiState.update { state ->
+                    if (state.activeWorkoutId != frame.optString("workoutId")) return@update state
+                    val nativeSets = mutableMapOf<String, List<ExerciseSetItem>>()
+                    val exercises = frame.optJSONArray("exercises") ?: JSONArray()
+                    for (index in 0 until exercises.length()) {
+                        val exercise = exercises.getJSONObject(index)
+                        val rows = exercise.optJSONArray("sets") ?: JSONArray()
+                        nativeSets[exercise.optString("id")] = (0 until rows.length()).map { rowIndex ->
+                            val row = rows.getJSONObject(rowIndex)
+                            ExerciseSetItem(setNumber = row.optInt("setNumber", rowIndex + 1),
+                                weightKg = row.optDouble("weight", 0.0).toFloat(), reps = row.optString("reps").toDoubleOrNull()?.toInt() ?: 0,
+                                rir = row.optInt("actualRir", 2), completed = row.optBoolean("done"),
+                                leftSec = row.optInt("leftSeconds", row.optInt("leftSec", 0)),
+                                rightSec = row.optInt("rightSeconds", row.optInt("rightSec", 0)),
+                                leftRecorded = row.optInt("leftSeconds") > 0 || row.optBoolean("leftRecorded"),
+                                rightRecorded = row.optInt("rightSeconds") > 0 || row.optBoolean("rightRecorded"))
+                        }
+                    }
+                    val selected = state.activeWorkoutExercises.getOrNull(state.activeExerciseIndex)?.id
+                    state.copy(activeSetsByExerciseId = state.activeSetsByExerciseId + nativeSets,
+                        activeSets = nativeSets[selected] ?: state.activeSets)
+                }
+            }
+        }
 
         scope.launch(Dispatchers.IO) {
             // Seed catalog into Room DB
@@ -3354,7 +3385,7 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    fun triggerHealthSyncNow() {
+    fun reloadHealthJournal() {
         val ctx = nativeContext
         val scope = nativeScope
         if (ctx == null || scope == null) {
@@ -3365,8 +3396,6 @@ class TrainPilotViewModel : ViewModel() {
         }
         scope.launch(Dispatchers.IO) {
             try {
-                HealthBackgroundJob.schedule(ctx)
-                WearSyncRepository.publishWatchHomeSnapshot(ctx)
                 val store = HealthJournalStore.get(ctx)
                 val todayStr = LocalDate.now().toString()
                 val page = store.page(LocalDate.now().minusDays(1).toString(), todayStr, "journal", "", 0L, 0L, 1)
@@ -3391,7 +3420,7 @@ class TrainPilotViewModel : ViewModel() {
                             activeCaloriesKcal = if (caloriesDbl.isFinite() && caloriesDbl > 0) caloriesDbl.toInt() else st.activeCaloriesKcal,
                             sleepDurationLabel = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) String.format("%d ó %d p", (sleepMinDbl / 60).toInt(), (sleepMinDbl % 60).toInt()) else st.sleepDurationLabel,
                             sleepHoursDecimal = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) "${((sleepMinDbl / 60.0) * 10.0).roundToInt() / 10.0} h" else st.sleepHoursDecimal,
-                            statusBannerMessage = if (hasData) "Egészségügyi adatok sikeresen szinkronizálva!" else "Szinkronizáció lefutott. Nincs új elérhető adat a szolgáltatótól."
+                            statusBannerMessage = st.statusBannerMessage
                         )
                     }
                 }

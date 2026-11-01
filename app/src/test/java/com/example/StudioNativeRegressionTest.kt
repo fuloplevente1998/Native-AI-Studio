@@ -91,4 +91,20 @@ class StudioNativeRegressionTest {
         assertEquals("2027-01-01", yearEnd.atZone(zone).toLocalDate().toString())
     }
 
+    @Test fun nativeStopwatchPauseCheckpointAndResumeDoNotCountTheGap() {
+        val frame = started().put("active", true).put("timerOwner", "phone").put("generation", 1)
+            .put("exercises", JSONArray().put(JSONObject().put("id", "plank").put("repUnit", "sec")
+                .put("measurementType", "time").put("sets", JSONArray().put(JSONObject()
+                    .put("setId", "set-one").put("done", false).put("reps", "")))))
+        val target = com.repforge.app.NativeWorkoutTarget("original-session", 1, "plank", "set-one")
+        com.repforge.app.NativeSetStopwatch.start(frame, target, "single", 1_000)
+        com.repforge.app.NativeSetStopwatch.checkpoint(frame, 26_000)
+        com.repforge.app.NativeSetStopwatch.pause(frame, 26_000)
+        val restored = JSONObject(frame.toString())
+        assertEquals(25_000L, com.repforge.app.NativeSetStopwatch.elapsed(restored.getJSONObject("setStopwatch"), 1_000_000))
+        com.repforge.app.NativeSetStopwatch.start(restored, target, "single", 1_000_000)
+        assertEquals(45_000L, com.repforge.app.NativeSetStopwatch.elapsed(restored.getJSONObject("setStopwatch"), 1_020_000))
+        assertFalse(target.resolve(restored).set.optBoolean("done"))
+    }
+
 }

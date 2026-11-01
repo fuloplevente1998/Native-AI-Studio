@@ -934,15 +934,32 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             }
 
                             MainTab.HEALTH -> {
+                                val nativeHealth: com.repforge.app.ui.health.HealthDashboardViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+                                val health by nativeHealth.uiState.collectAsStateWithLifecycle()
+                                val activity = context as? android.app.Activity
+                                androidx.compose.runtime.DisposableEffect(activity) {
+                                    nativeHealth.healthScreenVisible(activity)
+                                    onDispose { nativeHealth.healthScreenHidden(activity) }
+                                }
+                                androidx.compose.runtime.LaunchedEffect(health.statusMessage, health.lastSyncAt) {
+                                    health.statusMessage?.let(viewModel::showBannerMessage)
+                                    viewModel.reloadHealthJournal()
+                                }
                                 HealthTabScreen(
-                                    uiState = uiState,
+                                    uiState = uiState.copy(primaryHealthSourceSamsung = health.provider == com.repforge.app.HealthJournalStore.SAMSUNG,
+                                        lastHealthSyncLabel = health.lastSyncAt,
+                                        healthProviderStatus = if (health.provider == com.repforge.app.HealthJournalStore.SAMSUNG)
+                                            if (health.samsungInstalled && health.samsungAvailable) "Samsung Health • szolgáltató elérhető" else "Samsung Health • alkalmazás vagy SDK nem érhető el"
+                                        else if (health.hcSupported && health.hcGranted) "Health Connect • olvasási hozzáférés engedélyezett" else "Health Connect • hiányzó támogatás vagy engedély"),
                                     strings = strings,
                                     onToggleHealthSection = { viewModel.toggleHealthSection(it) },
                                     onSelectWeightRange = { viewModel.selectWeightRange(it) },
                                     onToggleAddWeightDialog = { viewModel.toggleAddWeightDialog(it) },
                                     onSaveNewWeight = { kg, dateStr -> viewModel.saveNewBodyWeight(kg, dateStr) },
-                                    onTogglePrimaryHealthSource = { viewModel.togglePrimaryHealthSource() },
-                                    onTriggerHealthSync = { viewModel.triggerHealthSyncNow() },
+                                    onTogglePrimaryHealthSource = { nativeHealth.setProvider(
+                                        if (health.provider == com.repforge.app.HealthJournalStore.SAMSUNG) com.repforge.app.HealthJournalStore.HC
+                                        else com.repforge.app.HealthJournalStore.SAMSUNG, activity) },
+                                    onTriggerHealthSync = { nativeHealth.syncHealth(activity) },
                                     onNavigateToSubScreen = { viewModel.navigateToSubScreen(it) },
                                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
                                     onOpenGoalsDialog = { viewModel.toggleGoalsDialog(true) },
