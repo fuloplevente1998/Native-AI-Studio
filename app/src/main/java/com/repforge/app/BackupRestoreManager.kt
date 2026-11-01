@@ -161,7 +161,7 @@ class BackupRestoreManager(context: Context) {
             val workout = history.optJSONObject(index) ?: throw IOException("Invalid workout in backup history.")
             // The existing Room mapper skips rows without started. Reject before replaceAll can
             // delete the current journal and silently drop those incoming rows.
-            if (workout.optString("started").trim().isEmpty()) throw IOException("Invalid workout in backup history.")
+            if (workout.isNull("started") || workout.optString("started").trim().isEmpty()) throw IOException("Invalid workout in backup history.")
         }
         for (photo in NativeCloudPhotoStage.photoRows(data)) {
             if (photoDeleted(photo)) continue

@@ -8,6 +8,7 @@ import com.repforge.app.BackupRestoreManager
 import com.repforge.app.NativeDataReplacement
 import com.repforge.app.NativeReplacementJournal
 import com.repforge.app.data.db.TrainPilotDatabase
+import com.repforge.app.data.db.BodyWeightEntryEntity
 import com.repforge.app.data.migration.LegacyWebViewMigrator
 import com.repforge.app.data.store.TrainPilotSettingsStore
 import kotlinx.coroutines.runBlocking
@@ -46,6 +47,56 @@ class BackupImportValidationRegressionTest {
                 }
             }
         } finally { future.cancel(true); worker.shutdownNow() }
+    }
+
+    @Test fun canonicalJsonExportAndRestorePreserveWorkoutWeightAndSettings() = roundTrip(false)
+
+    @Test fun canonicalZipExportAndRestorePreserveWorkoutWeightAndSettings() = roundTrip(true)
+
+    private fun roundTrip(zip: Boolean) {
+        val db = TrainPilotDatabase.getInstance(context)
+        val settings = TrainPilotSettingsStore(context)
+        val migrator = LegacyWebViewMigrator(context, db, settings)
+        val weight = BodyWeightEntryEntity("round-trip-weight", "2026-11-01", "2026-11-01", 80.5, 123L,
+            "{\"id\":\"round-trip-weight\",\"date\":\"2026-11-01\",\"kg\":80.5,\"updatedAt\":123}")
+        val identity = awaitNative {
+            migrator.saveWorkoutJsonToRoom(JSONObject()
+                .put("id", "round-trip-workout").put("key", "round-trip-workout")
+                .put("started", "2026-11-01T10:00:00Z").put("finished", "2026-11-01T10:45:00Z")
+                .put("exercises", JSONArray()))
+            db.bodyWeightDao().upsertWeight(weight)
+            settings.setLanguage("de")
+            settings.ensureCloudDeviceId()
+        }
+        val originalProfile = awaitNative { settings.current().profileJson }
+        val file = File(context.cacheDir, "opaque-round-trip-document")
+        val manager = BackupRestoreManager(context)
+        val exported = awaitNative {
+            if (zip) manager.exportZipArchiveToUri(Uri.fromFile(file)).map { Unit }
+            else manager.exportJsonBackupToUri(Uri.fromFile(file)).map { Unit }
+        }
+        assertTrue(exported.exceptionOrNull()?.message ?: "export failed", exported.isSuccess)
+        val originalBytes = file.readBytes()
+        awaitNative {
+            db.workoutHistoryDao().deleteAllWorkouts()
+            db.bodyWeightDao().deleteAllWeights()
+            settings.setLanguage("hu")
+        }
+        val restored = awaitNative { manager.importBackupFromUri(Uri.fromFile(file)) }
+        assertTrue(restored.exceptionOrNull()?.message ?: "restore failed", restored.isSuccess)
+        val workout = awaitNative { db.workoutHistoryDao().getWorkoutWithDetails("round-trip-workout") }
+        assertNotNull(workout)
+        assertEquals(2700, workout!!.workout.durationSeconds)
+        assertEquals(80.5, awaitNative { db.bodyWeightDao().getWeightById(weight.id) }!!.kg, 0.0)
+        val restoredSettings = awaitNative { settings.current() }
+        assertEquals("de", restoredSettings.language)
+        assertEquals(identity, restoredSettings.cloudDeviceId)
+        // Profile serialization may acquire canonical defaults, so compare verified objects.
+        assertEquals(com.repforge.app.NativeTrainingProfile.verified(JSONObject(originalProfile)).toString(),
+            com.repforge.app.NativeTrainingProfile.verified(JSONObject(restoredSettings.profileJson)).toString())
+        assertFalse(NativeDataReplacement.blocked(context))
+        assertFalse(NativeReplacementJournal(context).exists())
+        assertArrayEquals(originalBytes, file.readBytes())
     }
 
     @Test fun unrelatedAndDamagedJsonCannotEraseExistingWorkoutHistory() {
