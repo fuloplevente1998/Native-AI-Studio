@@ -124,6 +124,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
     val palette = LocalTrainPilotPalette.current
     val context = androidx.compose.ui.platform.LocalContext.current
     val strings = TrainPilotStrings.forLanguage(uiState.language)
+    val requestPlatformPermission = com.example.ui.components.rememberStudioPermissionRequest(context, viewModel)
 
     val canNavigateBack = uiState.currentSubScreen != SubScreen.NONE ||
         uiState.currentTab != MainTab.HOME ||
@@ -725,6 +726,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onBack = { viewModel.navigateBack() },
                             onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                             onToggleControlMode = { viewModel.toggleWatchControlMode() },
+                            onRequestPermission = requestPlatformPermission,
                             onShowBanner = { viewModel.showBannerMessage(it) }
                         )
                     }
@@ -753,7 +755,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             strings = strings,
                             onBack = { viewModel.navigateBack() },
                             onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
-                            onTogglePermission = { viewModel.togglePermission(it) }
+                            onTogglePermission = requestPlatformPermission
                         )
                     }
 

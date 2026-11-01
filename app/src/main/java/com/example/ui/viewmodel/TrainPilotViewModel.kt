@@ -98,15 +98,17 @@ data class TrainPilotUiState(
     val dailySteps: Int = 0,
     val stepsGoal: Int = 10000,
     val activeCaloriesKcal: Int = 0,
+    val healthGrantedCount: Int = 0,
+    val healthPermissionCount: Int = 0,
     val lastHealthSyncLabel: String = "—",
     val healthProviderStatus: String = "A szolgáltató állapota még nem ismert",
     val samsungEnergyScore: Int = 0,
     val coachReadinessScore: Int = 0,
 
     // Watch & Sync State (Mockup 4/4 #2 + main)
-    val watchName: String = "Galaxy Watch",
+    val watchName: String = "Wear OS óra",
     val watchConnected: Boolean = false,
-    val watchBatteryPercent: Int = 0,
+    val watchBatteryPercent: Int = -1,
     val phoneControlsWorkout: Boolean = true,
     val watchControlPending: Boolean = false,
     val offlineContinuationEnabled: Boolean = true,
@@ -234,10 +236,10 @@ data class TrainPilotUiState(
     // Permissions & Backup State (Mockup 4/4 #3, #4, #5)
     val selectedBackupFormat: String = "JSON", // JSON, ZIP, DRIVE
     val includeHealthInBackup: Boolean = true,
-    val permissionGpsEnabled: Boolean = true,
-    val permissionCentralLocEnabled: Boolean = true,
-    val permissionNotificationsEnabled: Boolean = true,
-    val permissionHealthConnectEnabled: Boolean = true,
+    val permissionGpsEnabled: Boolean = false,
+    val permissionCentralLocEnabled: Boolean = false,
+    val permissionNotificationsEnabled: Boolean = false,
+    val permissionHealthConnectEnabled: Boolean = false,
     val permissionSamsungHealthEnabled: Boolean = false,
     val privatePhotoCount: Int = 0,
 
@@ -3594,18 +3596,18 @@ class TrainPilotViewModel : ViewModel() {
         _uiState.update { it.copy(includeHealthInBackup = include) }
     }
 
-    fun togglePermission(key: String) {
-        _uiState.update { state ->
-            when (key) {
-                "gps" -> state.copy(permissionGpsEnabled = !state.permissionGpsEnabled)
-                "central" -> state.copy(permissionCentralLocEnabled = !state.permissionCentralLocEnabled)
-                "notif" -> state.copy(permissionNotificationsEnabled = !state.permissionNotificationsEnabled)
-                "hc" -> state.copy(permissionHealthConnectEnabled = !state.permissionHealthConnectEnabled)
-                "samsung" -> state.copy(permissionSamsungHealthEnabled = !state.permissionSamsungHealthEnabled)
-                else -> state
-            }
-        }
+    fun updatePlatformAccess(access: JSONObject, watchNames: List<String>) {
+        _uiState.update { it.copy(permissionGpsEnabled = access.optBoolean("gps"),
+            permissionCentralLocEnabled = access.optBoolean("location"), permissionNotificationsEnabled = access.optBoolean("notifications"),
+            permissionHealthConnectEnabled = access.optInt("healthGranted") > 0,
+            healthGrantedCount = access.optInt("healthGranted"), healthPermissionCount = access.optInt("healthTotal"),
+            watchConnected = watchNames.isNotEmpty(), watchName = watchNames.firstOrNull() ?: "Nincs csatlakoztatott Wear OS óra",
+            watchBatteryPercent = -1,
+            lastWatchSyncLabel = if (watchNames.isEmpty()) "Nincs órakapcsolat"
+                else if (it.lastWatchSyncLabel in setOf("—", "Nincs órakapcsolat", "Nincs óra kapcsolat")) "Még nincs igazolt adatszinkron" else it.lastWatchSyncLabel) }
     }
+
+    fun updateSamsungAccess(granted: Boolean) { _uiState.update { it.copy(permissionSamsungHealthEnabled = granted) } }
 
     fun showBannerMessage(message: String) {
         _uiState.update { it.copy(statusBannerMessage = message) }
