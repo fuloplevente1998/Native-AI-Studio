@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Watch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -1500,7 +1501,7 @@ fun HealthTabScreen(
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
                             Text("Health Connect", fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text("● 10/17 engedély", style = MaterialTheme.typography.labelSmall, color = palette.success)
+                            Text("● ${uiState.healthGrantedCount}/${uiState.healthPermissionCount} engedély", style = MaterialTheme.typography.labelSmall, color = palette.success)
                         }
                     }
                 }
@@ -1539,7 +1540,7 @@ fun HealthTabScreen(
                             color = palette.textPrimary
                         )
                         Text(
-                            text = "● Csatlakoztatva • ${uiState.watchBatteryPercent}% • Edzés átadása órának",
+                            text = if (uiState.watchConnected) "● Wear OS adatkapcsolat • átadás külön ACK-val" else "Nincs csatlakoztatott óra",
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.success
                         )
@@ -2572,8 +2573,8 @@ fun SettingsMainScreen(
         item {
             SettingsActionRowCard(
                 title = strings.watchAndSyncTitle,
-                subtitle = "${uiState.watchName} • Csatlakoztatva (${uiState.watchBatteryPercent}%)",
-                badgeText = "Aktív",
+                subtitle = if (uiState.watchConnected) "${uiState.watchName} • Wear OS adatkapcsolat" else "Nincs csatlakoztatott óra",
+                badgeText = if (uiState.watchConnected) "Adatkapcsolat" else "Nincs kapcsolat",
                 onClick = { onNavigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
                 testTag = "settings_open_watch_row"
             )
@@ -2676,7 +2677,8 @@ fun WatchAndSyncScreen(
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
     onToggleControlMode: () -> Unit,
-    onShowBanner: (String) -> Unit
+    onShowBanner: (String) -> Unit,
+    onRequestPermission: (String) -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     LazyColumn(
@@ -2722,7 +2724,8 @@ fun WatchAndSyncScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        MockupWatchGraphicBadge(size = 64.dp)
+                        if (uiState.watchConnected) MockupWatchGraphicBadge(size = 64.dp)
+                        else Icon(Icons.Default.Watch, contentDescription = null, tint = palette.textSecondary, modifier = Modifier.size(64.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = uiState.watchName,
@@ -2736,20 +2739,20 @@ fun WatchAndSyncScreen(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 Text(
-                                    text = "● Csatlakoztatva",
+                                    text = if (uiState.watchConnected) "● Wear OS adatkapcsolat elérhető" else "Nincs órakapcsolat",
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = palette.success
+                                    color = if (uiState.watchConnected) palette.success else palette.textSecondary
                                 )
                                 Text(
-                                    text = "Akkumulátor: ${uiState.watchBatteryPercent}%",
+                                    text = "Akkumulátor: " + if (uiState.watchBatteryPercent >= 0) "${uiState.watchBatteryPercent}%" else "—",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textPrimary
                                 )
                             }
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "TrainPilot v2.4  •  Utolsó szinkron: ${uiState.lastWatchSyncLabel}",
+                                text = "Utolsó igazolt szinkron: ${uiState.lastWatchSyncLabel}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = palette.textSecondary
                             )
@@ -2909,7 +2912,7 @@ fun WatchAndSyncScreen(
 
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
-                            text = "• Pulzus, sorozatok és pihenőidő valós időben szinkronizálva",
+                            text = "• A pulzus és edzésadatok szinkronja órakapcsolatot és külön visszaigazolást igényel",
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.textSecondary
                         )
@@ -2941,7 +2944,7 @@ fun WatchAndSyncScreen(
                     .fillMaxWidth()
                     .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
                     .clip(RoundedCornerShape(18.dp))
-                    .clickable { onShowBanner("Health Connect szinkronizáció aktív") }
+                    .clickable { onRequestPermission("hc") }
             ) {
                 Row(
                     modifier = Modifier.padding(14.dp),
@@ -2957,7 +2960,7 @@ fun WatchAndSyncScreen(
                             color = palette.textPrimary
                         )
                         Text(
-                            text = "● Aktív • Olvasás és írás engedélyezve (10/17)",
+                            text = if (uiState.permissionHealthConnectEnabled) "Engedélyezett: ${uiState.healthGrantedCount}/${uiState.healthPermissionCount}" else "Nincs olvasási engedély • engedélykérés",
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.success
                         )
@@ -2984,7 +2987,7 @@ fun WatchAndSyncScreen(
                     .fillMaxWidth()
                     .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
                     .clip(RoundedCornerShape(18.dp))
-                    .clickable { onShowBanner("Samsung Health közvetlen híd szinkronizálva") }
+                    .clickable { onRequestPermission("samsung") }
             ) {
                 Row(
                     modifier = Modifier.padding(14.dp),
@@ -3015,12 +3018,12 @@ fun WatchAndSyncScreen(
                             color = palette.textPrimary
                         )
                         Text(
-                            text = "● Szinkronizálva • Közvetlen kapcsolat (1/2)",
+                            text = if (uiState.permissionSamsungHealthEnabled) "Olvasási engedély igazolva" else "Nincs igazolt olvasási engedély",
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.success
                         )
                         Text(
-                            text = "Utolsó frissítés: ma 14:59 • Energia pontszám & testsúly",
+                            text = "Engedélykezelés • az adatszinkron külön művelet",
                             style = MaterialTheme.typography.labelSmall,
                             color = palette.textSecondary
                         )
@@ -3252,7 +3255,7 @@ fun PermissionsScreen(
             }
         }
         item {
-            PermissionToggleCard("Központi helymeghatározás", "Pontos távolságmérés a háttérben", uiState.permissionCentralLocEnabled) {
+            PermissionToggleCard("Központi helymeghatározás", "Android rendszer-helyszolgáltatás beállításai", uiState.permissionCentralLocEnabled) {
                 onTogglePermission("central")
             }
         }
@@ -3262,12 +3265,12 @@ fun PermissionsScreen(
             }
         }
         item {
-            PermissionToggleCard("Health Connect (10/17)", "Pulzus, alvás, lépések és testsúly szinkron", uiState.permissionHealthConnectEnabled) {
+            PermissionToggleCard("Health Connect (${uiState.healthGrantedCount}/${uiState.healthPermissionCount})", "Pulzus, alvás, lépések és testsúly szinkron", uiState.permissionHealthConnectEnabled) {
                 onTogglePermission("hc")
             }
         }
         item {
-            PermissionToggleCard("Samsung Health közvetlen híd", "Energia pontszám és Galaxy Watch7 adatok", uiState.permissionSamsungHealthEnabled) {
+            PermissionToggleCard("Samsung Health közvetlen híd", "Samsung Health olvasási engedélyének kezelése", uiState.permissionSamsungHealthEnabled) {
                 onTogglePermission("samsung")
             }
         }
