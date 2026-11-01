@@ -260,6 +260,12 @@ class TrainPilotViewModel : ViewModel() {
     private var nativeSettingsStore: TrainPilotSettingsStore? = null
     private var nativeDatabase: TrainPilotDatabase? = null
     private var nativeScope: CoroutineScope? = null
+    @Volatile private var watchHandoffBusy = false
+    private fun watchJournal(): JSONObject = nativeContext?.let { context ->
+        runCatching { PhoneOwnership193.journal(context).read() }
+            .getOrElse { JSONObject().put("stage", "unreadable") }
+    } ?: JSONObject()
+
 
     private fun translateMuscleTokenHu(token: String): String {
         return when (token.trim().lowercase()) {
@@ -899,8 +905,8 @@ class TrainPilotViewModel : ViewModel() {
                     }
                     val selected = state.activeWorkoutExercises.getOrNull(state.activeExerciseIndex)?.id
                     state.copy(phoneControlsWorkout = frame.optString("timerOwner", "phone") == "phone" &&
-                            !com.repforge.shared.WorkoutOwnership193.pending(frame),
-                        watchControlPending = com.repforge.shared.WorkoutOwnership193.pending(frame),
+                            !watchHandoffBusy && !com.repforge.app.NativeWatchHandoffReceipt.pending(frame, watchJournal()),
+                        watchControlPending = watchHandoffBusy || com.repforge.app.NativeWatchHandoffReceipt.pending(frame, watchJournal()),
                         activeSetsByExerciseId = state.activeSetsByExerciseId + nativeSets,
                         activeSets = nativeSets[selected] ?: state.activeSets)
                 }
@@ -3330,6 +3336,15 @@ class TrainPilotViewModel : ViewModel() {
             val active = ActiveWorkoutStore.current(ctx)?.takeIf { it.optBoolean("active") }
             if (active == null) { showBannerMessage("Nincs átadható aktív edzés."); return@launch }
             val id = active.optString("workoutId")
+            watchHandoffBusy = true
+            suspend fun awaitOwner(owner: String) {
+                kotlinx.coroutines.withTimeout(32_000) {
+                    while (!com.repforge.app.NativeWatchHandoffReceipt.confirmed(
+                            ActiveWorkoutStore.current(ctx), PhoneOwnership193.journal(ctx).read(), id, owner)) {
+                        kotlinx.coroutines.delay(200)
+                    }
+                }
+            }
             _uiState.update { it.copy(watchControlPending = true, statusBannerMessage = "Óra kapcsolat és tulajdonosi ACK ellenőrzése…") }
             try {
                 val nodes = kotlinx.coroutines.withTimeout(5_000) {
@@ -3348,20 +3363,14 @@ class TrainPilotViewModel : ViewModel() {
                         WearSyncRepository.startWatchMeasurementRemotely(activity, id, requestOwnership = true).getOrThrow()
                     }
                     // Remote activity launch is a request, not an ownership receipt.
-                    kotlinx.coroutines.withTimeout(32_000) {
-                        ActiveWorkoutStore.snapshotFlow.first { frame -> frame?.optString("workoutId") == id &&
-                            frame.optString("timerOwner") == "watch" && !com.repforge.shared.WorkoutOwnership193.pending(frame) }
-                    }
+                    awaitOwner("watch")
                 } else {
                     val local = com.google.android.gms.wearable.Wearable.getNodeClient(ctx).localNode.await()
                     val journal = PhoneOwnership193.journal(ctx)
                     journal.recover()
                     journal.request(local.id, nodes.single().id, System.currentTimeMillis())
                     com.repforge.shared.OwnershipTransport193.send(ctx, journal)
-                    kotlinx.coroutines.withTimeout(32_000) {
-                        ActiveWorkoutStore.snapshotFlow.first { frame -> frame?.optString("workoutId") == id &&
-                            frame.optString("timerOwner") == "phone" && !com.repforge.shared.WorkoutOwnership193.pending(frame) }
-                    }
+                    awaitOwner("phone")
                     val resume = PhoneOwnership193.prepareResume(ctx)
                     val returned = resume.getJSONObject("snapshot")
                     PhoneOwnership193.installResume(ctx, returned.getJSONObject("ownershipImport193").getString("id"),
@@ -3377,10 +3386,11 @@ class TrainPilotViewModel : ViewModel() {
                 runCatching { PhoneOwnership193.journal(ctx).recover() }
                 showBannerMessage(error.message ?: "Nem érkezett igazolt tulajdonosi ACK.")
             } finally {
+                watchHandoffBusy = false
                 val current = ActiveWorkoutStore.current(ctx)
-                val pending = current != null && com.repforge.shared.WorkoutOwnership193.pending(current)
+                val pending = com.repforge.app.NativeWatchHandoffReceipt.pending(current, watchJournal())
                 _uiState.update { it.copy(watchControlPending = pending,
-                    phoneControlsWorkout = current?.optString("timerOwner", "phone") == "phone" && !pending,
+                    phoneControlsWorkout = (current == null || current.optString("timerOwner", "phone") == "phone") && !pending,
                     lastWatchSyncLabel = if (pending) "Átadás függőben; vezérlés zárolva" else it.lastWatchSyncLabel) }
             }
         }
@@ -3554,14 +3564,22 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun updatePlatformAccess(access: JSONObject, watchNames: List<String>, companionAvailable: Boolean = false) {
+        val frame = nativeContext?.let { ActiveWorkoutStore.current(it) }
+        val journal = watchJournal()
+        val pending = watchHandoffBusy || com.repforge.app.NativeWatchHandoffReceipt.pending(frame, journal)
+        val confirmed = frame?.let { com.repforge.app.NativeWatchHandoffReceipt.confirmed(
+            it, journal, it.optString("workoutId"), it.optString("timerOwner")) } == true
         _uiState.update { it.copy(permissionGpsEnabled = access.optBoolean("gps"),
             permissionCentralLocEnabled = access.optBoolean("location"), permissionNotificationsEnabled = access.optBoolean("notifications"),
             permissionHealthConnectEnabled = access.optInt("healthGranted") > 0,
             healthGrantedCount = access.optInt("healthGranted"), healthPermissionCount = access.optInt("healthTotal"),
+            watchControlPending = pending,
+            phoneControlsWorkout = (frame == null || frame.optString("timerOwner", "phone") == "phone") && !pending,
             watchAppAvailable = companionAvailable && watchNames.size == 1,
             watchConnected = watchNames.isNotEmpty(), watchName = watchNames.firstOrNull() ?: "Nincs csatlakoztatott Wear OS óra",
             watchBatteryPercent = -1,
             lastWatchSyncLabel = if (watchNames.isEmpty()) "Nincs órakapcsolat"
+                else if (confirmed) "Tulajdonosi ACK igazolva"
                 else if (it.lastWatchSyncLabel in setOf("—", "Nincs órakapcsolat", "Nincs óra kapcsolat")) "Még nincs igazolt adatszinkron" else it.lastWatchSyncLabel) }
     }
 

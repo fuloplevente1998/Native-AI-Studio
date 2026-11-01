@@ -29,8 +29,13 @@ signer identities before a pair can be reported as verified.
 Phone handoff opens the visible watch activity for the expected workout/revision.
 The watch requests ownership only for a fresh, visible, matching explicit launch;
 merely opening the watch to view measurements does not request ownership. Existing
-native journals perform request/offer/commit/ACK. The phone waits for the matching
-committed snapshot and leaves an uncertain transfer locked. Both devices require
+native journals perform request/offer/commit/ACK. The phone waits for a matching
+native receipt, not merely an owner flag: after sending to the watch, the source
+journal must reach `settled` (the watch's installed acknowledgement received).
+On return, the phone's target journal must reach `installed`, with matching workout,
+transfer ID and epoch before native resume installation. A source-side `committed`
+snapshot alone does not prove installation on the peer. Uncertain transfers stay
+locked, and the foreground refresh rechecks late receipts without inventing an ACK. Both devices require
 explicit Continue after transfer; this does not start sensors from a background
 receiver. Active phone GPS recording is rejected with an explicit explanation,
 matching the existing native transfer admission rule. Takeback uses the same native
