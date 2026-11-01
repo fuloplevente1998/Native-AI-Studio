@@ -101,7 +101,7 @@ class BackupRestoreManager(context: Context) {
         }
     }
 
-    private fun normalizeLegacyRepForgePayload(parsed: JSONObject): JSONObject {
+    internal fun normalizeLegacyRepForgePayload(parsed: JSONObject): JSONObject {
         val unwrapped = when {
             parsed.optJSONObject("data") != null -> parsed.getJSONObject("data")
             parsed.optJSONObject("backup") != null -> parsed.getJSONObject("backup")
@@ -141,22 +141,32 @@ class BackupRestoreManager(context: Context) {
                 normalized.put(clean, v)
             }
         }
-        if (normalized.optJSONArray("history") == null) {
-            val altHistory = normalized.optJSONArray("workouts") ?: normalized.optJSONArray("loggedWorkouts")
-            normalized.put("history", altHistory ?: JSONArray())
+        // Never invent an empty replacement history from an unrelated or damaged JSON.
+        // Canonical backups include history explicitly; supported legacy backups may alias it.
+        if (normalized.has("history")) {
+            if (normalized.optJSONArray("history") == null) throw IOException("Invalid backup history.")
+        } else {
+            val legacyKey = listOf("workouts", "loggedWorkouts").firstOrNull { normalized.has(it) }
+                ?: throw IOException("Missing backup history.")
+            val history = normalized.optJSONArray(legacyKey) ?: throw IOException("Invalid backup history.")
+            normalized.put("history", history)
         }
         return normalized
     }
 
     private fun photoIds(data: JSONObject): Set<String> {
         val ids = TreeSet<String>()
-        if (data.optJSONArray("history") == null) {
-            data.put("history", JSONArray())
+        val history = data.optJSONArray("history") ?: throw IOException("Missing or invalid backup history.")
+        for (index in 0 until history.length()) {
+            val workout = history.optJSONObject(index) ?: throw IOException("Invalid workout in backup history.")
+            // The existing Room mapper skips rows without started. Reject before replaceAll can
+            // delete the current journal and silently drop those incoming rows.
+            if (workout.isNull("started") || workout.optString("started").trim().isEmpty()) throw IOException("Invalid workout in backup history.")
         }
         for (photo in NativeCloudPhotoStage.photoRows(data)) {
             if (photoDeleted(photo)) continue
             val id = photo.optString("id")
-            if (!UUID_REGEX.matches(id)) continue
+            if (!UUID_REGEX.matches(id)) throw IOException("Invalid photo reference.")
             ids.add(id)
         }
         if (ids.size > 5000) throw IOException("Too many photos.")
@@ -191,7 +201,31 @@ class BackupRestoreManager(context: Context) {
         finally { NativeHealthBackupGate.end() }
     }
 
-    /** Imports a JSON backup (including legacy RepForge JSON backups) from a user-selected SAF Uri. */
+    /** SAF document IDs and MIME types need not expose the archive extension. Inspect bytes. */
+    suspend fun importBackupFromUri(uri: Uri, recoverInterrupted: Boolean = false): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val header = ByteArray(4)
+            val count = appContext.contentResolver.openInputStream(uri).use { input ->
+                if (input == null) throw IOException("Cannot read selected backup.")
+                var read = 0
+                while (read < header.size) {
+                    val n = input.read(header, read, header.size - read)
+                    if (n < 0) break
+                    if (n == 0) continue
+                    read += n
+                }
+                read
+            }
+            val zip = count == 4 && header[0] == 0x50.toByte() && header[1] == 0x4b.toByte() &&
+                ((header[2] == 3.toByte() && header[3] == 4.toByte()) ||
+                    (header[2] == 5.toByte() && header[3] == 6.toByte()))
+            if (zip) importZipArchiveFromUri(uri, recoverInterrupted)
+            else importJsonBackupFromUri(uri, recoverInterrupted)
+        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+        catch (error: Exception) { Result.failure(error) }
+    }
+
+    /** Imports canonical or supported legacy JSON from a user-selected SAF URI. */
     suspend fun importJsonBackupFromUri(uri: Uri, recoverInterrupted: Boolean = false): Result<Unit> = withContext(Dispatchers.IO) {
         NativeHealthBackupGate.begin()
         try {
