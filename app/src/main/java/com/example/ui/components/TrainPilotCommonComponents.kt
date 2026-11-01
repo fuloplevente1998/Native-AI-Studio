@@ -335,7 +335,8 @@ fun TrainPilotGlobalTopHeaderAndNav(
                     TopNavPillItem(
                         label = strings.navProgress,
                         icon = Icons.AutoMirrored.Filled.TrendingUp,
-                        selected = (currentTab == MainTab.PROGRESS || currentTab == MainTab.LOG) && currentSubScreen == SubScreen.NONE,
+                        selected = (currentTab == MainTab.PROGRESS || currentTab == MainTab.LOG) &&
+                            currentSubScreen in setOf(SubScreen.NONE, SubScreen.LOG_WORKOUT_DETAIL, SubScreen.LOG_ROUTE_MAP),
                         onClick = { onSelectTab(MainTab.PROGRESS) },
                         modifier = itemModifier,
                         allowUnclippedText = true,

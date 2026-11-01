@@ -90,6 +90,13 @@ megmaradnak. A Wear és Health Connect kalóriákat nem szabad összeadni. Ismer
 érték nem válik becsült vagy nulla mérési adattá. A konkrét készülék Health Connect
 adatelérhetősége és szinkronkésése továbbra is fizikai ellenőrzést igényel.
 
+A naplórészletező a Fejlődés/Napló navigációs állapotot használja, a felső Fejlődés
+fül a részleteknél és útvonaltérképnél is kijelölt marad. A nagy külön oldalcím és
+ismételt dekoratív fejléc helyett kompakt összegző kártya mutatja a helyet, edzésnevet,
+dátumot és időket, a bezárás megmarad. Az aktív edzés kézi súlyállító gombjai
+±0,5 kg-ot módosítanak. Ez a kézi léptetés; a meglévő progressziós/Coach-beállítások
+nem kerülnek átírásra.
+
 ### Kültéri képernyő és Google Maps
 
 Az `OutdoorGpsDashboard.kt` a meglévő natív callbackeket használja. A térkép kapja

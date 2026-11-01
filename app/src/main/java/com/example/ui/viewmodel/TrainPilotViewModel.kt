@@ -3071,6 +3071,8 @@ class TrainPilotViewModel : ViewModel() {
             val back = (it.backStack + NavRoute(it.currentTab, it.currentSubScreen)).takeLast(16)
             it.copy(
                 selectedLogWorkoutId = workoutId,
+                currentTab = MainTab.PROGRESS,
+                progressMainSection = 1,
                 currentSubScreen = SubScreen.LOG_WORKOUT_DETAIL,
                 backStack = back
             )

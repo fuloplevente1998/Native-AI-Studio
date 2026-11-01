@@ -2,6 +2,9 @@ package com.example
 
 import android.content.Context
 import android.os.Looper
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.room.Room
@@ -164,6 +167,11 @@ class JournalWorkoutHealthRegressionTest {
         assertFalse(model.uiState.value.healthRefreshing)
         assertNull(model.uiState.value.healthError)
         val list = compose.onNodeWithTag("log_workout_detail_screen")
+        val header = compose.onNodeWithTag("journal_detail_header").getUnclippedBoundsInRoot()
+        assertTrue("Compact header must not consume a large empty top section", header.bottom - header.top <= 160.dp)
+        assertTrue("No duplicate top spacer", header.top - list.getUnclippedBoundsInRoot().top <= 10.dp)
+        compose.onNodeWithTag("journal_detail_location").assertTextEquals("Fejlődés · Napló")
+        compose.onNodeWithText("Edzés részletei").assertDoesNotExist()
         list.performScrollToNode(hasTestTag("journal_hc_averageHeartRate_value"))
         compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertTextEquals("120 bpm")
         list.performScrollToNode(hasTestTag("journal_hc_activeCalories_value"))
@@ -193,6 +201,31 @@ class JournalWorkoutHealthRegressionTest {
         compose.onNodeWithTag("journal_hc_activeCalories_value").assertDoesNotExist()
         assertEquals(detail.workout.health240Json,
             awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById("fresh")!!.workout.health240Json })
+    }
+
+    @Test fun journalDetailsAndRouteKeepProgressSelectedAndBackRestoresTheOrigin() {
+        val model = com.example.ui.viewmodel.TrainPilotViewModel()
+        models.put("studio-navigation", model)
+        model.openLogWorkoutDetail("fresh")
+        assertEquals(com.example.model.MainTab.PROGRESS, model.uiState.value.currentTab)
+        assertEquals(1, model.uiState.value.progressMainSection)
+        compose.setContent {
+            val state by model.uiState.collectAsState()
+            TrainPilotTheme {
+                com.example.ui.components.TrainPilotGlobalTopHeaderAndNav(
+                    currentTab = state.currentTab, currentSubScreen = state.currentSubScreen,
+                    currentLanguage = state.language, selectedPaletteId = state.selectedPaletteId,
+                    strings = TrainPilotStrings.forLanguage(state.language), onSelectTab = model::selectTab,
+                    onNavigateToSubScreen = { _, _ -> }, onSelectLanguage = {}, onOpenPalettePicker = {}, onOpenSettings = {})
+            }
+        }
+        compose.onNodeWithTag("top_nav_progress").assertIsSelected()
+        compose.runOnIdle { model.navigateToSubScreen(com.example.model.SubScreen.LOG_ROUTE_MAP) }
+        compose.onNodeWithTag("top_nav_progress").assertIsSelected()
+        compose.runOnIdle { model.navigateBack() }
+        compose.onNodeWithTag("top_nav_progress").assertIsSelected()
+        compose.runOnIdle { model.navigateBack() }
+        compose.onNodeWithTag("top_nav_home").assertIsSelected()
     }
 
 }

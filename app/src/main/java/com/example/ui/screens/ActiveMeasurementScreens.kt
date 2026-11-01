@@ -789,8 +789,8 @@ fun ActiveStrengthWorkoutScreen(
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        SmallAdjustChip("-2.5 kg") { onAdjustSetValues(setItem.setNumber, -2.5f, 0, 0) }
-                        SmallAdjustChip("+2.5 kg") { onAdjustSetValues(setItem.setNumber, 2.5f, 0, 0) }
+                        SmallAdjustChip(String.format(java.util.Locale.forLanguageTag(uiState.language.name.lowercase()), "%+.1f kg", -0.5f)) { onAdjustSetValues(setItem.setNumber, -0.5f, 0, 0) }
+                        SmallAdjustChip(String.format(java.util.Locale.forLanguageTag(uiState.language.name.lowercase()), "%+.1f kg", 0.5f)) { onAdjustSetValues(setItem.setNumber, 0.5f, 0, 0) }
                         SmallAdjustChip("-1 ism.") { onAdjustSetValues(setItem.setNumber, 0f, -1, 0) }
                         SmallAdjustChip("+1 ism.") { onAdjustSetValues(setItem.setNumber, 0f, 1, 0) }
                         SmallAdjustChip("RIR 0") { onUpdateSetValuesExact(setItem.setNumber, setItem.weightKg, setItem.reps, 0) }
