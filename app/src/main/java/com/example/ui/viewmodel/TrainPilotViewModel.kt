@@ -1108,7 +1108,6 @@ class TrainPilotViewModel : ViewModel() {
                                 reps = sEntity.reps.toIntOrNull() ?: 0,
                                 rir = sEntity.actualRir ?: 2,
                                 completed = sEntity.done,
-                                distanceMeters = sEntity.distanceMeters,
                                 distanceMeters = sEntity.distanceMeters
                             )
                         }
@@ -2964,7 +2963,8 @@ class TrainPilotViewModel : ViewModel() {
                                 weightKg = (sEntity.weight ?: 0.0).toFloat(),
                                 reps = sEntity.reps.toIntOrNull() ?: 0,
                                 rir = sEntity.actualRir ?: 2,
-                                completed = sEntity.done
+                                completed = sEntity.done,
+                                distanceMeters = sEntity.distanceMeters
                             )
                         }
                         com.example.model.LoggedExerciseDetail(
