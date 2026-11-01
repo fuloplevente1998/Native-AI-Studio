@@ -1603,7 +1603,7 @@ fun ActiveTimedWorkoutScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1848,7 +1848,7 @@ fun ActiveTimedWorkoutScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -1892,7 +1892,7 @@ fun ActiveTimedWorkoutScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -2168,7 +2168,7 @@ fun ActiveBilateralWorkoutScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
                 ) {
                     Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(
@@ -2578,7 +2578,7 @@ fun ActiveBilateralWorkoutScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
                 ) {
                     Column(
                         modifier = Modifier.padding(14.dp),
@@ -2800,7 +2800,7 @@ fun ActiveBilateralWorkoutScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 ) {
                     Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Row(
@@ -3362,7 +3362,7 @@ fun IntervalSettingsScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(
@@ -3421,7 +3421,7 @@ private fun IntervalStepperCard(
         color = palette.surfaceCard,
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+            .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
     ) {
         Row(
             modifier = Modifier
@@ -3550,7 +3550,7 @@ fun WorkoutSummaryScreen(
         item {
             Text(
                 text = strings.workoutSummaryTitle,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = palette.textPrimary
             )
@@ -3579,7 +3579,7 @@ fun WorkoutSummaryScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(

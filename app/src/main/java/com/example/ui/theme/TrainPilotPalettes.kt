@@ -60,6 +60,7 @@ data class TrainPilotPalette(
     val isMatte: Boolean get() = subGroup == PaletteCategory.MATTE
     val glowColor: Color get() = if (hasGlow) primary.copy(alpha = 0.34f) else Color.Transparent
 
+    val sectionBorder: Color get() = androidx.compose.ui.graphics.lerp(cardBorder, primary, 0.72f)
     val surfaceCard: Color get() = surface
     val textMuted: Color = textSecondary.copy(alpha = 0.90f)
 

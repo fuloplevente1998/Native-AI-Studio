@@ -129,7 +129,7 @@ fun WorkoutTabScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 .clickable { onOpenQuickWorkout() }
                 .testTag("workout_tab_quick_card")
         ) {
@@ -176,7 +176,7 @@ fun WorkoutTabScreen(
                 color = palette.surface,
                 modifier = Modifier
                     .weight(1f)
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .clickable { onOpenExerciseLibrary() }
                     .testTag("workout_tab_exercise_picker")
             ) {
@@ -236,7 +236,7 @@ fun WorkoutTabScreen(
                 color = palette.surface,
                 modifier = Modifier
                     .weight(1f)
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .clickable { onOpenOutdoorWorkout() }
                     .testTag("workout_tab_outdoor_card")
             ) {
@@ -502,7 +502,7 @@ fun WorkoutTabScreen(
                 color = palette.surface,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .padding(20.dp)
             ) {
                 Column(
@@ -699,7 +699,7 @@ fun ProgramsListScreen(
                 color = palette.surface,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(24.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(24.dp))
             ) {
                 Row(modifier = Modifier.padding(4.dp)) {
                     val builtinCount = state.programs.count { !it.isCustom }
@@ -1717,7 +1717,7 @@ fun CalendarPlannerScreen(
                 color = Color(0xFF0E131A),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(
                     modifier = Modifier.padding(12.dp),
@@ -1899,7 +1899,7 @@ fun CalendarPlannerScreen(
                 color = Color(0xFF121820),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(
                     modifier = Modifier.padding(14.dp),
@@ -2076,7 +2076,7 @@ fun CalendarPlannerScreen(
                 color = Color(0xFF0E131A),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -2889,7 +2889,7 @@ fun ExerciseDetailScreen(
             ) {
                 Text(
                     text = exercise.localizedName(state.language),
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.titleMedium,
                     color = palette.textPrimary,
                     modifier = Modifier.weight(1f)
                 )
@@ -2926,7 +2926,7 @@ fun ExerciseDetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(190.dp)
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
                     .clip(RoundedCornerShape(20.dp))
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {

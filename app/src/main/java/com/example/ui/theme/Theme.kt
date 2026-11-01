@@ -36,7 +36,7 @@ fun TrainPilotTheme(
             onSurface = palette.textPrimary,
             surfaceVariant = palette.surfaceElevated,
             onSurfaceVariant = palette.textSecondary,
-            outline = palette.cardBorder,
+            outline = palette.sectionBorder,
             error = palette.danger
         )
     } else {
@@ -56,7 +56,7 @@ fun TrainPilotTheme(
             onSurface = palette.textPrimary,
             surfaceVariant = palette.surfaceElevated,
             onSurfaceVariant = palette.textSecondary,
-            outline = palette.cardBorder,
+            outline = palette.sectionBorder,
             error = palette.danger
         )
     }

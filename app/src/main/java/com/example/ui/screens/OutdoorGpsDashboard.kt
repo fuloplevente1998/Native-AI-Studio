@@ -116,11 +116,15 @@ internal fun OutdoorGpsDashboard(
 private fun DashboardHeader(state: OutdoorGpsDisplay, actions: OutdoorGpsActions, fullscreen: Boolean) {
     val copy = outdoorCopy(state.language)
     val palette = LocalTrainPilotPalette.current
-    Surface(shape = RoundedCornerShape(16.dp), color = palette.surfaceCard) {
+    Surface(shape = RoundedCornerShape(16.dp), color = palette.surfaceCard,
+        modifier = Modifier.border(1.25.dp, palette.sectionBorder, RoundedCornerShape(16.dp))) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(actions.back, modifier = Modifier.size(48.dp)) {
-                Icon(if (fullscreen) Icons.Default.Close else Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = if (fullscreen) copy.close else copy.back, tint = palette.textPrimary)
+            if (fullscreen) {
+                com.example.ui.components.TrainPilotRedCloseButton(actions.back, testTag = "gps_close_fullscreen")
+            } else {
+                IconButton(actions.back, modifier = Modifier.size(48.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = copy.back, tint = palette.textPrimary)
+                }
             }
             Column(Modifier.weight(1f).padding(vertical = 4.dp)) {
                 Text(state.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold,

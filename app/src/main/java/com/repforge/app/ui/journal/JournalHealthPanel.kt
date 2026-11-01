@@ -1,6 +1,7 @@
 package com.repforge.app.ui.journal
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.border
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -34,7 +35,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
         .withLocale(locale).withZone(ZoneId.systemDefault()) }
     fun time(value: String) = runCatching { date.format(Instant.parse(value)) }.getOrDefault("—")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Card(colors = CardDefaults.cardColors(containerColor = colors.card), modifier = Modifier.fillMaxWidth().testTag("journal_health_wear")) {
+        Card(colors = CardDefaults.cardColors(containerColor = colors.card), modifier = Modifier.fillMaxWidth().border(1.25.dp, colors.emphasisBorder, MaterialTheme.shapes.medium).testTag("journal_health_wear")) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(text.getString(R.string.journal_health_wear), style = MaterialTheme.typography.titleMedium)
                 Text("Health Services", color = colors.muted)
@@ -50,7 +51,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                 if (wear?.optBoolean("partial") == true) Text(text.getString(R.string.journal_health_partial), color = colors.muted)
             }
         }
-        Card(colors = CardDefaults.cardColors(containerColor = colors.card), modifier = Modifier.fillMaxWidth().testTag("journal_health_hc")) {
+        Card(colors = CardDefaults.cardColors(containerColor = colors.card), modifier = Modifier.fillMaxWidth().border(1.25.dp, colors.emphasisBorder, MaterialTheme.shapes.medium).testTag("journal_health_hc")) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Health Connect", style = MaterialTheme.typography.titleMedium)
                 Text("${text.getString(R.string.journal_health_window)}: ${time(workout.started)} – ${time(workout.finished)}")
@@ -72,7 +73,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                     Text("${text.getString(R.string.journal_health_synced)}: ${time(data.optString("syncedAt"))}", color = colors.muted)
                 }
                 OutlinedButton(onClick = refresh, enabled = enabled && !refreshing,
-                    modifier = Modifier.fillMaxWidth().testTag("journal_health_refresh")) {
+                    modifier = Modifier.fillMaxWidth().border(1.25.dp, colors.emphasisBorder, MaterialTheme.shapes.medium).testTag("journal_health_refresh")) {
                     Text(text.getString(if (refreshing) R.string.journal_health_refreshing else R.string.journal_health_refresh))
                 }
                 error?.let { Text(text.getString(it), color = colors.dangerText, modifier = Modifier.testTag("journal_health_error")) }

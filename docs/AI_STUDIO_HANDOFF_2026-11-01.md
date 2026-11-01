@@ -97,6 +97,20 @@ dátumot és időket, a bezárás megmarad. Az aktív edzés kézi súlyállít�
 ±0,5 kg-ot módosítanak. Ez a kézi léptetés; a meglévő progressziós/Coach-beállítások
 nem kerülnek átírásra.
 
+### Közös Studio megjelenési szabályok
+
+A közös oldal- és párbeszédcímek kompakt 16 sp típust használnak, a nagy mérési
+számok/időzítők megőrzik saját olvasható méretüket. A közös piros bezáró vizuális
+kerete 38 dp (korábban 42), az X 18 dp (korábban 20); a külön kattintható célterület
+48×48 dp marad. A térképes bezárások is ezt a komponenst használják.
+A `TrainPilotPalette.sectionBorder` a választott elsődleges színhez igazítja a fő
+kártyák 1,25 dp keretét; a mezők és elválasztók halkabb belső kerete megmarad.
+
+A Beállítások négy témacsoportja alapból csukott. Kinyitva a négy csoport közös,
+hangsúlyos 1,5 dp külső keretben jelenik meg, külön csoportkeretek nélkül. A 32
+választható paletta és a kijelölési állapot megmarad; a paletták választás közben
+azonnal frissítik a kereteket is.
+
 ### Kültéri képernyő és Google Maps
 
 Az `OutdoorGpsDashboard.kt` a meglévő natív callbackeket használja. A térkép kapja

@@ -11,6 +11,7 @@ on:
       - 'settings.gradle.kts'
       - 'gradle.properties'
       - 'scripts/verify_android_apk_metadata.py'
+      - 'scripts/prefetch_robolectric_sdk.py'
       - '.github/workflows/trainpilot-android-ci.yml'
   workflow_dispatch:
 
@@ -56,6 +57,17 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.3.1'
+          cache-read-only: false
+
+      - name: Cache Robolectric Android SDK dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-api34-i7-v1-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+
+      - name: Fetch checksum-verified Robolectric SDK with retries
+        shell: bash
+        run: python3 scripts/prefetch_robolectric_sdk.py
 
       - name: Create temporary CI debug signing key
         shell: bash

@@ -365,7 +365,7 @@ fun LogTabScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 ) {
                     Column(
                         modifier = Modifier.padding(12.dp),
@@ -653,7 +653,7 @@ private fun LogWorkoutCard(
         color = palette.surfaceCard,
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
             .clickable { onOpenDetailAlways() }
             .testTag("log_card_${entry.id}")
@@ -816,7 +816,7 @@ fun LogWorkoutDetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 24.dp)
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .padding(24.dp)
             ) {
                 Column(
@@ -855,7 +855,7 @@ fun LogWorkoutDetailScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
                     .testTag("journal_detail_header")
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
@@ -940,7 +940,7 @@ fun LogWorkoutDetailScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                         .clip(RoundedCornerShape(18.dp))
                         .clickable { onToggleExpandedExercise(index) }
                 ) {
@@ -1026,7 +1026,7 @@ fun LogWorkoutDetailScreen(
                     Surface(
                         shape = RoundedCornerShape(18.dp),
                         color = palette.surfaceCard,
-                        modifier = Modifier.fillMaxWidth().border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                        modifier = Modifier.fillMaxWidth().border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("Kültéri edzés mért adatai", style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
@@ -1052,7 +1052,7 @@ fun LogWorkoutDetailScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Adatforrás és szinkron napló", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
@@ -1208,23 +1208,11 @@ fun LogRouteMapScreen(
         ) {
             Text(
                 text = strings.routeMapTitle,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = palette.textPrimary
             )
-            Surface(
-                shape = CircleShape,
-                color = palette.danger,
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .clickable { onBack() }
-                    .testTag("close_route_map_button")
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = strings.closeAction, tint = Color.White)
-                }
-            }
+            com.example.ui.components.TrainPilotRedCloseButton(onClick = onBack, testTag = "close_route_map_button")
         }
 
         // High-precision Margitsziget + Duna + Vizafogó + Újlipótváros + Margit híd Map Canvas
@@ -1241,7 +1229,7 @@ fun LogRouteMapScreen(
             color = palette.surfaceCard,
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(22.dp))
+                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(
@@ -1509,7 +1497,7 @@ fun ProgressTabScreen(
                             color = palette.surfaceCard,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Row(
@@ -1562,7 +1550,7 @@ fun ProgressTabScreen(
                             color = palette.surfaceCard,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                         ) {
                             Column(modifier = Modifier.padding(14.dp)) {
                                 Text("1RM becslés (kg) • Epley-képlet ⓘ", style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
@@ -2612,7 +2600,7 @@ private fun MainStatisticsRecordsAndCardioSection(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Text(pr.exerciseNameHu, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
@@ -2655,7 +2643,7 @@ private fun MainStatisticsRecordsAndCardioSection(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .clickable { onToggleCardioFilterStepsMode(!uiState.cardioFilterStepsMode) }
             ) {
                 Row(
@@ -2706,7 +2694,7 @@ private fun MainStatisticsRecordsAndCardioSection(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),

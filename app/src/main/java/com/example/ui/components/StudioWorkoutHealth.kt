@@ -73,7 +73,7 @@ internal fun studioWorkoutHealthContent(
         TrainPilotExtendedColors(bg = palette.background, card = palette.surfaceCard, card2 = palette.surfaceElevated,
             line = palette.cardBorder, text = palette.textPrimary, muted = palette.textSecondary,
             accent = palette.primary, accent2 = palette.secondary, onAccent = palette.onPrimary,
-            dangerText = palette.danger, success = palette.success)
+            dangerText = palette.danger, success = palette.success, emphasisBorder = palette.sectionBorder)
     }
     return {
         CompositionLocalProvider(LocalTrainPilotColors provides nativeColors) {
