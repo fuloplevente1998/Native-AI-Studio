@@ -16,6 +16,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
@@ -47,6 +48,15 @@ class BackupImportValidationRegressionTest {
                 }
             }
         } finally { future.cancel(true); worker.shutdownNow() }
+    }
+
+    @Before fun resetIsolatedTestDataset() {
+        // The production database is a singleton reused by these manager integration tests.
+        // Reset only the Robolectric fixture; retain the strict one-workout precondition below.
+        awaitNative {
+            TrainPilotDatabase.getInstance(context).clearAllTables()
+            TrainPilotSettingsStore(context).resetAllSettingsForEraseLocal()
+        }
     }
 
     @Test fun canonicalJsonExportAndRestorePreserveWorkoutWeightAndSettings() = roundTrip(false)
