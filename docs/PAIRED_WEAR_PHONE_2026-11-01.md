@@ -35,7 +35,10 @@ journal must reach `settled` (the watch's installed acknowledgement received).
 On return, the phone's target journal must reach `installed`, with matching workout,
 transfer ID and epoch before native resume installation. A source-side `committed`
 snapshot alone does not prove installation on the peer. Uncertain transfers stay
-locked, and the foreground refresh rechecks late receipts without inventing an ACK. Both devices require
+locked, and the foreground refresh rechecks late receipts without inventing an ACK.
+Only an expired request that never reached an offered/accepted native lease may be
+retried after the protocol's existing 30-second admission window. A pending native
+frame or durable offered/accepted/committed journal never unlocks merely on timeout. Both devices require
 explicit Continue after transfer; this does not start sensors from a background
 receiver. Active phone GPS recording is rejected with an explicit explanation,
 matching the existing native transfer admission rule. Takeback uses the same native

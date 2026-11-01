@@ -22,10 +22,20 @@ internal object NativeWatchHandoffReceipt {
             journal.optString("stage") == if (owner == "watch") "settled" else "installed"
     }
 
-    fun pending(frame: JSONObject?, journal: JSONObject): Boolean {
+    fun pending(frame: JSONObject?, journal: JSONObject, now: Long = System.currentTimeMillis()): Boolean {
         if (frame == null || !frame.optBoolean("active")) return false
         if (WorkoutOwnership193.pending(frame) || journal.optString("stage") == "unreadable") return true
-        return journal.optJSONObject("request")?.optString("workoutId") == frame.optString("workoutId") &&
-            journal.optString("stage") in setOf("requested", "incoming", "offered", "accepted", "committed")
+        val request = journal.optJSONObject("request") ?: return false
+        if (request.optString("workoutId") != frame.optString("workoutId")) return false
+        return when (journal.optString("stage")) {
+            "offered", "accepted", "committed" -> true // A durable transfer must never expire through UI.
+            "requested", "incoming" -> {
+                val createdAt = request.optLong("createdAt")
+                // The native protocol rejects unoffered requests after 30 seconds. Only those
+                // known-expired requests may be retried; an installed/offered lease stays locked.
+                createdAt <= 0L || now < createdAt - 5_000L || now - createdAt <= 30_000L
+            }
+            else -> false
+        }
     }
 }

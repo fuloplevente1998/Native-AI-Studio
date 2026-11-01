@@ -38,4 +38,17 @@ class WatchHandoffReceiptRegressionTest {
         assertTrue(NativeWatchHandoffReceipt.confirmed(frame("phone"), journal("installed", "phone"), "current", "phone"))
         assertTrue(NativeWatchHandoffReceipt.pending(frame(), JSONObject().put("stage", "unreadable")))
     }
+    @Test fun expiredUnofferedRequestCanRetryButDurableTransferNeverUnlocksOnTimeout() {
+        val request = journal("requested").apply { getJSONObject("request").put("createdAt", 1_000) }
+        assertTrue(NativeWatchHandoffReceipt.pending(frame(), request, now = 10_000))
+        assertFalse(NativeWatchHandoffReceipt.pending(frame(), request, now = 32_000))
+        request.put("stage", "offered")
+        assertTrue(NativeWatchHandoffReceipt.pending(frame(), request, now = 32_000))
+        request.put("stage", "committed")
+        assertTrue(NativeWatchHandoffReceipt.pending(frame(), request, now = 100_000))
+        request.put("stage", "requested")
+        val offered = frame().apply { getJSONObject("handoff193").put("state", "offered") }
+        assertTrue(NativeWatchHandoffReceipt.pending(offered, request, now = 100_000))
+    }
+
 }
