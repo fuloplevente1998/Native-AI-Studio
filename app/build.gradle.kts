@@ -1,3 +1,4 @@
+import java.util.Properties
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
 
 plugins {
@@ -8,13 +9,28 @@ plugins {
   alias(libs.plugins.google.services)
 }
 
+// Local/AI Studio builds may use ignored properties; Actions supplies the same key via env.
+// Keep credentials out of source and do not alter the existing signing configurations.
+val localMapsProperties = Properties().apply {
+    listOf("local.properties", "secrets.properties").forEach { name ->
+        val source = rootProject.file(name)
+        if (source.isFile) source.inputStream().use { load(it) }
+    }
+}
+val mapsApiKey = sequenceOf(
+    providers.environmentVariable("TRAINPILOT_MAPS_API_KEY").orNull,
+    providers.gradleProperty("TRAINPILOT_MAPS_API_KEY").orNull,
+    localMapsProperties.getProperty("TRAINPILOT_MAPS_API_KEY"),
+    localMapsProperties.getProperty("MAPS_API_KEY")
+).firstOrNull { !it.isNullOrBlank() }?.trim().orEmpty()
+
 android {
   namespace = "com.repforge.app"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
     applicationId = "com.TrainPilot.com"
-    manifestPlaceholders["TRAINPILOT_MAPS_API_KEY"] = providers.environmentVariable("TRAINPILOT_MAPS_API_KEY").orElse("").get()
+    manifestPlaceholders["TRAINPILOT_MAPS_API_KEY"] = mapsApiKey
     minSdk = 26
     targetSdk = 36
     versionCode = 2736
