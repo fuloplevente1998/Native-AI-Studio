@@ -294,12 +294,38 @@ class BackupRestoreManager(context: Context) {
         }
     }
 
-    /** Explicit replay of the staged, already selected backup; never an automatic unlock. */
+    /**
+     * Explicit recovery, never an automatic unlock.
+     *
+     * The replacement fence is persisted before a durable redo receipt is created,
+     * and retired only after that receipt has been removed. A process death in either
+     * narrow interval can leave a stale fence without any receipt. In that state
+     * no destructive import step has begun, or the completed import was already
+     * committed; safely retire ONLY those orphan fences under the regular exclusive
+     * recovery lease. Do not bypass a corrupt or unreadable *existing* receipt.
+     */
     suspend fun resumeInterruptedReplacement(): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val entry = NativeReplacementJournal(appContext).read()
-            NativeDataReplacement.recover(appContext) {
-                if (entry.kind == "erase") eraseLocalContents(entry) else completeReplacement(entry)
+            val journal = NativeReplacementJournal(appContext)
+            if (journal.exists()) {
+                val entry = journal.read() // Fail closed if damaged: staged data may need replay.
+                NativeDataReplacement.recover(appContext) {
+                    if (entry.kind == "erase") eraseLocalContents(entry) else completeReplacement(entry)
+                }
+            } else {
+                // PhoneWorkoutExecution.store() is main-looper confined; restore
+                // runs on Dispatchers.IO, so obtain the execution flag on Main.
+                val executionRestoreBlocked = withContext(Dispatchers.Main.immediate) {
+                    PhoneWorkoutExecution.store(appContext).restoreBlocked()
+                }
+                check(NativeDataReplacement.blocked(appContext) || executionRestoreBlocked) {
+                    "Nincs félbeszakadt adatcsere vagy helyreállításra váró zárolás."
+                }
+                // The lease rechecks active workouts and writer ownership, and clears
+                // both fences in its finally block only when the receipt is absent.
+                NativeDataReplacement.recover(appContext) {
+                    check(!journal.exists()) { "Közben új helyreállítási napló jött létre." }
+                }
             }
             Result.success(Unit)
         } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
