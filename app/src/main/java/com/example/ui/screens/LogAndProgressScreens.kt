@@ -736,8 +736,8 @@ private fun LogWorkoutCard(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
                     }
-                } else if (entry.isOutdoorRun) {
-                    // Mini route thumbnail (clickable to open route map directly)
+                } else if (entry.isOutdoorRun && entry.routeKeys.isNotEmpty()) {
+                    // An icon, not an invented route thumbnail; tapping opens the stored route.
                     Box(
                         modifier = Modifier
                             .size(44.dp)
@@ -747,20 +747,8 @@ private fun LogWorkoutCard(
                             .clickable { onClick() },
                         contentAlignment = Alignment.Center
                     ) {
-                        val lineCol = palette.success
-                        Canvas(modifier = Modifier.size(30.dp)) {
-                            val path = Path().apply {
-                                moveTo(4f, size.height - 4f)
-                                lineTo(size.width * 0.45f, size.height * 0.35f)
-                                lineTo(size.width * 0.72f, size.height * 0.65f)
-                                lineTo(size.width - 4f, 4f)
-                            }
-                            drawPath(
-                                path = path,
-                                color = lineCol,
-                                style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-                            )
-                        }
+                        Icon(imageVector = Icons.Default.Map, contentDescription = "Rögzített útvonal megnyitása",
+                            tint = palette.success, modifier = Modifier.size(26.dp))
                     }
                 }
                 Row(
@@ -1063,10 +1051,28 @@ fun LogWorkoutDetailScreen(
             }
         } else if (uiState.logDetailTabIndex == 1) {
             item {
-                AnatomicalMuscleHeatmapCard(
-                    title = "Edzés izomterhelése (${workout.titleHu})",
-                    subtitle = "Elöl- és hátulnézeti anatómiai terhelés ezen az edzésen"
-                )
+                if (workout.isOutdoorRun) {
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = palette.surfaceCard,
+                        modifier = Modifier.fillMaxWidth().border(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Kültéri edzés mért adatai", style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
+                            Text("Aktív idő: ${workout.workTimeLabel}", color = palette.textPrimary)
+                            Text("Távolság: ${if (workout.distanceKm > 0f) "%.2f km".format(java.util.Locale.forLanguageTag("hu-HU"), workout.distanceKm) else "Nincs GPS-adat"}",
+                                color = palette.textPrimary)
+                            Text("Átlagtempó: ${workout.paceLabel.takeUnless { it.isBlank() || it == "—" } ?: "Nincs adat"}",
+                                color = palette.textPrimary)
+                            Text("Pulzus és kalória: csak hiteles órás/Health Connect mérés esetén", color = palette.textSecondary)
+                        }
+                    }
+                } else {
+                    AnatomicalMuscleHeatmapCard(
+                        title = "Edzés izomterhelése (${workout.titleHu})",
+                        subtitle = "Elöl- és hátulnézeti anatómiai terhelés ezen az edzésen"
+                    )
+                }
             }
         } else {
             item {
