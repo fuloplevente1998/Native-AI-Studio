@@ -1,8 +1,12 @@
 # Backup review after PRs #3–#6 (2026-11-01)
 
 Baseline: Native-AI-Studio/main `ef4aa24791f5041e750d4e4ed69f00e855ab7e8c`.
-PRs #3, #4 and #5 are merged. PR #6 is a separate draft; its production recovery
-changes are not included in this branch. Do not mark them present in main yet.
+At the initial review, PRs #3–#5 were merged and PR #6 was still a separate draft.
+Following explicit user authorization, PR #6 merged at `8e2aaacb07b2f1d9d0fcd2093404ccbd22405057`
+and PR #7 at `2558adc2fb487c6c0553a6b9a4cab1466120b266`. Both fixes are now in main.
+The combined run [41306853276](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41306853276)
+passed 31/31 tests with zero failures/errors/skips. Its APK source tree equals that
+main tree (`fccb0050041aa07e69daad2d7560046ec10ce76c`). The APK and SHA256 are in PR #7.
 
 ## Implemented in this branch
 
@@ -32,7 +36,7 @@ Do not infer success from the existence of an APK artifact alone.
 PR #6's previous run 41293213069 had one failing recovery test (`Execution requires
 main looper`). Its subsequent test blocked Main with `runBlocking`; commit 9669a07
 keeps the real Main looper available and also checks preservation of files and Room.
-That change is on PR #6, independently of this branch.
+That change was originally verified independently in PR #6 and is now included in main.
 
 Still required: complete JSON and ZIP export/import/restart on a real device,
 including photo, profile, weight, schedule and Health Journal preservation;
