@@ -77,6 +77,8 @@
         android:fullBackupContent="@xml/backup_rules"
         android:dataExtractionRules="@xml/data_extraction_rules">
 
+        <meta-data android:name="com.google.android.geo.API_KEY" android:value="${TRAINPILOT_MAPS_API_KEY}" />
+
         <!-- Főképernyő: Valós natív TrainPilot alkalmazás -->
         <activity
             android:name="com.repforge.app.MainActivity"

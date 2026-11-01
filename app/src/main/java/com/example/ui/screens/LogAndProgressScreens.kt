@@ -90,7 +90,7 @@ import com.example.model.LoggedWorkoutEntry
 import com.example.model.SubScreen
 import com.example.ui.components.AnatomicalMuscleHeatmapCard
 import com.example.ui.components.ExercisePostureMiniIllustration
-import com.example.ui.components.MargitszigetDetailedMapBox
+import com.example.ui.components.NativeWorkoutRouteMapBox
 import com.example.ui.components.MockupHealthConnectBadge
 import com.example.ui.components.MockupWatchGraphicBadge
 import com.example.ui.components.SmallExerciseVideoButton
@@ -1209,6 +1209,7 @@ fun LogRouteMapScreen(
     onBack: () -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
+    val workout = uiState.loggedWorkouts.firstOrNull { it.id == uiState.selectedLogWorkoutId }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -1244,11 +1245,11 @@ fun LogRouteMapScreen(
         }
 
         // High-precision Margitsziget + Duna + Vizafogó + Újlipótváros + Margit híd Map Canvas
-        MargitszigetDetailedMapBox(
+        NativeWorkoutRouteMapBox(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
-            interactiveControls = true
+            interactiveControls = true, routeKeys = workout?.routeKeys.orEmpty()
         )
 
         // Bottom info card + Km Splits matching Mockup 3/4 #3
@@ -1274,7 +1275,7 @@ fun LogRouteMapScreen(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "1,62 km",
+                            text = workout?.distanceKm?.takeIf { it > 0 }?.let { "%.2f km".format(it) } ?: "— km",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                             color = palette.textPrimary
@@ -1285,7 +1286,7 @@ fun LogRouteMapScreen(
                         color = palette.success.copy(alpha = 0.16f)
                     ) {
                         Text(
-                            text = "7:48 /km átlag",
+                            text = workout?.paceLabel?.takeIf(String::isNotBlank) ?: "— /km",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = palette.success,
@@ -1294,7 +1295,7 @@ fun LogRouteMapScreen(
                     }
                 }
                 Text(
-                    text = "Privát útvonal • 31 GPS-pont • Margitsziget futókör",
+                    text = if (workout?.routeKeys.isNullOrEmpty()) "Ehhez az edzéshez nincs rögzített útvonal." else "Privát, rögzített GPS-útvonal",
                     style = MaterialTheme.typography.bodyMedium,
                     color = palette.textPrimary
                 )
@@ -1308,8 +1309,8 @@ fun LogRouteMapScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("1. km részidő: 7:42 /km (142 bpm)", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                    Text("0,62 km: 7:56 /km (151 bpm)", style = MaterialTheme.typography.labelSmall, color = palette.primary, fontWeight = FontWeight.Bold)
+                    Text("Hitelesített részidőadat nem érhető el", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                    Text("—", style = MaterialTheme.typography.labelSmall, color = palette.primary, fontWeight = FontWeight.Bold)
                 }
             }
         }

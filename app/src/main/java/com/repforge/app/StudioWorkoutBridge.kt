@@ -32,8 +32,20 @@ internal object StudioWorkoutBridge {
                 }
             }
         }
+        for (key in listOf("studioGpsKey", "studioIndoor")) if (candidate.has(key)) edit.put(key, candidate.get(key))
         edit.put("exercises", exercises).put("currentExercise", candidate.getInt("currentExercise"))
         return NativeWorkoutEditing.commitEdit(context, edit)
+    }
+
+    fun startIndoor(context: android.content.Context): JSONObject {
+        var frame = NativeWorkoutEditing.project(context)
+        if (frame.optBoolean("workoutPaused")) { pause(context, false); frame = NativeWorkoutEditing.project(context) }
+        val exercise = frame.getJSONArray("exercises").getJSONObject(frame.optInt("currentExercise"))
+        val sets = exercise.getJSONArray("sets")
+        val set = (0 until sets.length()).map { sets.getJSONObject(it) }.first { !it.optBoolean("done") }
+        val target = NativeWorkoutTarget(frame.getString("workoutId"), frame.getLong("generation"), exercise.getString("id"), set.getString("setId"))
+        NativeSetStopwatch.start(frame, target, "single")
+        return NativeWorkoutEditing.commitEdit(context, frame, clockEdit = true)
     }
 
     /** Matches the original native editor's interval/rest/pause-revision contract. */

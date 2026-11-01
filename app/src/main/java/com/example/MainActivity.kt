@@ -628,9 +628,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onSelectOutdoorActivity = { activityName ->
                                 viewModel.selectOutdoorActivityType(activityName)
                             },
-                            onStartGpsTracking = { activityName ->
-                                viewModel.startGpsTrackingSession(activityName)
-                            }
+                            onStartGpsTracking = { activityName, key -> viewModel.startGpsTrackingSession(activityName, key) },
+                            onPauseMeasurement = { paused -> viewModel.pauseOutdoorMeasurement(paused) }
                         )
                     }
 
@@ -660,8 +659,6 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             },
                             onDiscardWorkout = {
                                 viewModel.stopActiveWorkoutSession()
-                                viewModel.showBannerMessage("Edzés elvetve")
-                                viewModel.selectTab(MainTab.HOME)
                             }
                         )
                     }
