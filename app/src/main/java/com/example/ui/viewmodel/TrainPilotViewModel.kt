@@ -3514,12 +3514,7 @@ class TrainPilotViewModel : ViewModel() {
         scope.launch(Dispatchers.IO) {
             try {
                 val mgr = BackupRestoreManager(context)
-                val isZip = uri.toString().endsWith(".zip", ignoreCase = true) || context.contentResolver.getType(uri)?.contains("zip") == true
-                val result = if (isZip) {
-                    mgr.importZipArchiveFromUri(uri, recoverInterrupted = false)
-                } else {
-                    mgr.importJsonBackupFromUri(uri, recoverInterrupted = false)
-                }
+                val result = mgr.importBackupFromUri(uri, recoverInterrupted = false)
                 withContext(Dispatchers.Main) {
                     _uiState.update {
                         it.copy(
