@@ -1210,7 +1210,8 @@ fun LogRouteMapScreen(
                 text = strings.routeMapTitle,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = palette.textPrimary
+                color = palette.textPrimary,
+                maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
             )
             com.example.ui.components.TrainPilotRedCloseButton(onClick = onBack, testTag = "close_route_map_button")
         }
