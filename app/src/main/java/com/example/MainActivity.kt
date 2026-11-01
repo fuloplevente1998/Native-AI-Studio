@@ -96,6 +96,11 @@ import kotlinx.coroutines.delay
 class MainActivity : ComponentActivity() {
     private val viewModel: TrainPilotViewModel by viewModels()
 
+    override fun onStop() {
+        viewModel.onAppBackground()
+        super.onStop()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -650,8 +655,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onUpdateNote = { viewModel.updateWorkoutSummaryNote(it) },
                             onSaveWorkout = { viewModel.finishAndSaveWorkout() },
                             onPauseAndExit = {
-                                viewModel.cycleHomeDemoMode(HomeDemoMode.PAUSED_WORKOUT)
-                                viewModel.selectTab(MainTab.HOME)
+                                if (viewModel.pauseActiveWorkout()) viewModel.selectTab(MainTab.HOME)
                             },
                             onDiscardWorkout = {
                                 viewModel.stopActiveWorkoutSession()

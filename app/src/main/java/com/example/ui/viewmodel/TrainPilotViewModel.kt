@@ -153,6 +153,7 @@ data class TrainPilotUiState(
     val activeSetsByExerciseId: Map<String, List<ExerciseSetItem>> = emptyMap(),
     val quickWorkoutQueue: List<ExerciseItem> = emptyList(),
     val autoModeEnabled: Boolean = false,
+    val profileComplete: Boolean = false,
     val userHeightCm: Int = 179,
     val userWeightKg: Float = 65f,
     val userFitnessGoalHu: String = "Izomépítés",
@@ -424,7 +425,7 @@ class TrainPilotViewModel : ViewModel() {
             }
     }
 
-    private fun persistProgramsToRoomAsync() {
+    private fun persistProgramsToRoomAsync(profile: JSONObject? = null) {
         val db = nativeDatabase ?: return
         val scope = nativeScope ?: return
         val currentPrograms = _uiState.value.programs
@@ -489,6 +490,20 @@ class TrainPilotViewModel : ViewModel() {
                     }
                     db.programDao().saveProgramWithDays(progEntity, progDays)
                 }
+                if (profile != null) {
+                    val store = checkNotNull(nativeSettingsStore)
+                    val merged = JSONObject(store.current().profileJson)
+                    profile.keys().forEach { key -> merged.put(key, profile.get(key)) }
+                    store.saveTrainingProfile(merged)
+                    val active = currentPrograms.first { it.isActive }
+                    check(db.programDao().getProgramWithDaysById(active.id)?.days?.isNotEmpty() == true)
+                    store.setActiveProgramId(active.id)
+                    _uiState.update { it.copy(profileComplete = true,
+                        statusBannerMessage = "Profil és egyéni terv tartósan elmentve.") }
+                }
+            }.onFailure { failure ->
+                if (failure is kotlinx.coroutines.CancellationException) throw failure
+                _uiState.update { it.copy(statusBannerMessage = "A terv/profil mentése nem sikerült. Próbáld újra.") }
             }
         }
     }
@@ -742,21 +757,40 @@ class TrainPilotViewModel : ViewModel() {
     private fun persistCanonicalActiveSessionAsync(installNew: Boolean = false) {
         val ctx = nativeContext ?: return
         val scope = nativeScope ?: return
-        val currentState = _uiState.value
-        if (!currentState.isWorkoutSessionActive) return
-        val snapshotJson = buildCanonicalSessionJsonFromState(currentState)
-        scope.launch(Dispatchers.IO) {
-            runCatching {
-                if (installNew) {
-                    withContext(Dispatchers.Main.immediate) {
-                        NativeWorkoutSession.installPrepared(ctx, snapshotJson)
-                    }
-                } else {
-                    ActiveWorkoutStore.saveOwned(ctx, snapshotJson)
-                }
+        val state = _uiState.value
+        if (!state.isWorkoutSessionActive) return
+        val candidate = buildCanonicalSessionJsonFromState(state)
+        scope.launch(Dispatchers.Main.immediate) {
+            try {
+                com.repforge.app.StudioWorkoutBridge.persist(ctx, candidate)
+            } catch (failure: Exception) {
+                if (failure is kotlinx.coroutines.CancellationException) throw failure
+                _uiState.update { it.copy(statusBannerMessage = failure.message ?: "Az edzés nem menthető.") }
             }
         }
     }
+
+    fun pauseActiveWorkout(paused: Boolean = true): Boolean {
+        val ctx = nativeContext ?: return !_uiState.value.isWorkoutSessionActive
+        val current = ActiveWorkoutStore.current(ctx)?.takeIf { it.optBoolean("active") } ?: return true
+        // A running GPS session and acknowledged watch owner intentionally continue in background.
+        if (current.optString("timerOwner", "phone") != "phone" ||
+            _uiState.value.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS) return true
+        return try {
+            com.repforge.app.StudioWorkoutBridge.pause(ctx, paused)
+            _uiState.update { it.copy(homeDemoMode = if (paused) HomeDemoMode.PAUSED_WORKOUT else it.homeDemoMode) }
+            true
+        } catch (failure: Exception) {
+            _uiState.update { it.copy(statusBannerMessage = failure.message ?: "A szünet nem menthető.") }
+            false
+        }
+    }
+
+    fun onAppBackground() { pauseWhenLeavingMeasurement() }
+
+    private fun pauseWhenLeavingMeasurement(): Boolean =
+        if (_uiState.value.currentSubScreen in setOf(SubScreen.ACTIVE_STRENGTH, SubScreen.ACTIVE_TIMED, SubScreen.ACTIVE_BILATERAL))
+            pauseActiveWorkout() else true
 
     init {
         try {
@@ -801,9 +835,10 @@ class TrainPilotViewModel : ViewModel() {
                 TrainPilotDatabase.ensureBuiltinCatalogSeeded(database, context)
             } catch (_: Throwable) {}
 
+            val savedProfile = JSONObject(settingsStore.current().profileJson)
             // 1. Detect if a paused or active workout is running natively
             try {
-                val execution = PhoneWorkoutExecution.store(context).snapshot()
+                val execution = withContext(Dispatchers.Main.immediate) { PhoneWorkoutExecution.store(context).snapshot() }
                 val activeStore = ActiveWorkoutStore.current(context)
                 val isPaused = (execution?.optBoolean("active") == true && execution.optBoolean("workoutPaused")) ||
                         (activeStore?.optBoolean("active") == true && activeStore.optBoolean("workoutPaused"))
@@ -1050,7 +1085,7 @@ class TrainPilotViewModel : ViewModel() {
             // Restore active workout session from ActiveWorkoutStore on cold start if present
             val restoredActiveSnap = runCatching {
                 ActiveWorkoutStore.current(context)?.takeIf { it.optBoolean("active", false) }
-                    ?: PhoneWorkoutExecution.store(context).snapshot()?.takeIf { it.optBoolean("active", false) }
+                    ?: withContext(Dispatchers.Main.immediate) { PhoneWorkoutExecution.store(context).snapshot() }?.takeIf { it.optBoolean("active", false) }
             }.getOrNull()
 
             withContext(Dispatchers.Main) {
@@ -1119,6 +1154,23 @@ class TrainPilotViewModel : ViewModel() {
                     val computedPrs = computePrRecordsFromWorkouts(mappedWorkouts)
                     st.copy(
                         exercises = mappedExercises,
+                        profileComplete = com.example.model.StudioProfileCompletion.complete(savedProfile),
+                        userHeightCm = savedProfile.optInt("height", st.userHeightCm),
+                        userWeightKg = savedProfile.optDouble("weight", st.userWeightKg.toDouble()).toFloat(),
+                        userFitnessGoalHu = savedProfile.optString("goal", st.userFitnessGoalHu),
+                        userExperienceLevelHu = savedProfile.optString("experience", st.userExperienceLevelHu),
+                        userWorkoutLocationHu = savedProfile.optString("location", st.userWorkoutLocationHu),
+                        userSelectedEquipmentHu = savedProfile.optJSONArray("gear")?.let { arr ->
+                            (0 until arr.length()).joinToString(", ") { arr.optString(it) }
+                        } ?: st.userSelectedEquipmentHu,
+                        userScheduleDaysPerWeek = savedProfile.optInt("daysPerWeek", st.userScheduleDaysPerWeek),
+                        userWorkoutDurationMin = savedProfile.optInt("minutes", st.userWorkoutDurationMin),
+                        userExcludedMusclesHu = savedProfile.optJSONArray("avoidAreas")?.let { arr ->
+                            (0 until arr.length()).map { arr.optString(it) }.toSet()
+                        } ?: st.userExcludedMusclesHu,
+                        userExcludedExercisesHu = savedProfile.optJSONArray("excluded")?.let { arr ->
+                            (0 until arr.length()).map { arr.optString(it) }.toSet()
+                        } ?: st.userExcludedExercisesHu,
                         selectedExerciseId = currentActiveEx?.id ?: st.selectedExerciseId,
                         programs = mappedPrograms,
                         editingProgramId = activeProg?.id ?: st.editingProgramId,
@@ -1157,6 +1209,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun selectTab(tab: MainTab) {
+        if (!pauseWhenLeavingMeasurement()) return
         _uiState.update { state ->
             if (state.currentTab == tab && state.currentSubScreen == SubScreen.NONE) {
                 state
@@ -1172,6 +1225,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun navigateToSubScreen(subScreen: SubScreen, targetTab: MainTab? = null) {
+        if (subScreen != _uiState.value.currentSubScreen && !pauseWhenLeavingMeasurement()) return
         val isActiveMeasurement = subScreen == SubScreen.ACTIVE_STRENGTH ||
             subScreen == SubScreen.ACTIVE_TIMED ||
             subScreen == SubScreen.ACTIVE_BILATERAL ||
@@ -1195,6 +1249,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun returnToActiveWorkout() {
+        if (!pauseActiveWorkout(false)) return
         _uiState.update { state ->
             val targetSub = state.activeWorkoutSubScreen
             val updatedStack = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16)
@@ -1225,6 +1280,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun navigateBack(): Boolean {
+        if (!pauseWhenLeavingMeasurement()) return true
         val current = _uiState.value
         if (current.backStack.isNotEmpty()) {
             val previous = current.backStack.last()
@@ -2252,10 +2308,16 @@ class TrainPilotViewModel : ViewModel() {
                 programs = updatedPrograms,
                 editingProgramId = generatedProgramId,
                 showPersonalPlannerModal = false,
-                statusBannerMessage = "Egyéni terv elmentve és aktiválva!"
+                statusBannerMessage = "Profil és terv mentése…"
             )
         }
-        persistProgramsToRoomAsync()
+        persistProgramsToRoomAsync(JSONObject()
+            .put("height", heightCm).put("weight", weightKg.toDouble())
+            .put("goal", goalHu).put("experience", experienceHu).put("location", locationHu)
+            .put("gear", JSONArray(equipmentHu.split(',').map(String::trim).filter(String::isNotBlank)))
+            .put("daysPerWeek", daysPerWeek).put("minutes", durationMin)
+            .put("avoidAreas", JSONArray(excludedMuscles.toList()))
+            .put("excluded", JSONArray(excludedExercises.toList())))
     }
 
     fun undoLastCompletedSet() {
@@ -2865,6 +2927,9 @@ class TrainPilotViewModel : ViewModel() {
 
         scope.launch(Dispatchers.IO) {
             try {
+                withContext(Dispatchers.Main.immediate) {
+                    com.repforge.app.StudioWorkoutBridge.persist(ctx, buildCanonicalSessionJsonFromState(state))
+                }
                 val existingActive = ActiveWorkoutStore.current(ctx)
                 val startedMs = when {
                     state.workoutStartedEpochMs > 0L -> state.workoutStartedEpochMs
@@ -2943,7 +3008,7 @@ class TrainPilotViewModel : ViewModel() {
                     runCatching { WearSyncRepository.publishWatchHomeSnapshot(ctx) }
 
                     val dbW = savedInDb.workout
-                    val realElapsedMs = (dbW.finishedEpochMs - dbW.startedEpochMs).coerceAtLeast(1000L)
+                    val realElapsedMs = dbW.durationSeconds.coerceAtLeast(0).toLong() * 1000L
                     val realElapsedSec = (realElapsedMs / 1000L).toInt()
                     val realDurationMins = ((realElapsedMs + 59_999L) / 60_000L).toInt().coerceAtLeast(1)
                     val realWorkTimeLabel = String.format("%02d:%02d", realElapsedSec / 60, realElapsedSec % 60)
@@ -3204,15 +3269,10 @@ class TrainPilotViewModel : ViewModel() {
     fun deleteBodyWeightLog(id: String) {
         val db = nativeDatabase
         val scope = nativeScope
-        _uiState.update { state ->
-            val updated = state.bodyWeightLogs.filterNot { it.id == id }
-            val newCurrent = updated.lastOrNull()?.kg ?: 0f
-            state.copy(
-                bodyWeightLogs = updated,
-                currentBodyWeightKg = newCurrent
-            )
+        if (db == null || scope == null) {
+            _uiState.update { it.copy(statusBannerMessage = "A testsúly-adatbázis nem érhető el.") }
+            return
         }
-        if (db == null || scope == null) return
         scope.launch(Dispatchers.IO) {
             try {
                 db.bodyWeightDao().deleteWeightById(id)
@@ -3231,6 +3291,8 @@ class TrainPilotViewModel : ViewModel() {
                     }
                 }
             } catch (e: Throwable) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                _uiState.update { it.copy(statusBannerMessage = "A testsúly törlése nem sikerült; a mérés megmaradt.") }
                 android.util.Log.e("TrainPilotViewModel", "Failed to delete body weight log from Room", e)
             }
         }

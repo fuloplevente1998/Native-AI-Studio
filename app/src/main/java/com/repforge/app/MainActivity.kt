@@ -67,6 +67,11 @@ class MainActivity : ComponentActivity() {
     private var migrationFailure by mutableStateOf(false)
     private var migrationJob: Job? = null
 
+    override fun onStop() {
+        viewModel.onAppBackground()
+        super.onStop()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         startupScreen = StartupScreen.install(this)
         super.onCreate(savedInstanceState)

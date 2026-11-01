@@ -50,7 +50,7 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
             val latest = db.workoutHistoryDao().getWorkoutWithDetailsById(expected.id) ?: error("Workout deleted")
             val current = latest.workout
             check(current.started == expected.started && current.finished == expected.finished &&
-                current.health240Json == expected.health240Json) { "Workout or Health data changed; refresh again" }
+                current.health240Json == expected.health240Json && current.activeIntervalsJson == expected.activeIntervalsJson) { "Workout or Health data changed; refresh again" }
             for (id in aliases(current)) check(!db.workoutHistoryDao().isTombstoned(id, JSONObject.quote(id))) {
                 "Deleted workout cannot receive Health data"
             }
@@ -84,7 +84,12 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
             val guard = { check(foreground.get()) { "Foreground health read interrupted" }; request.ticket.requireCurrent(context); Unit }
             guard()
             // No metadata lease, Room transaction or snapshot monitor is held over provider IPC.
-            val response = HealthConnectRepository.readTrainingWindowSuspend(context, request.expected.started, request.expected.finished, guard)
+            val workout = JSONObject().put("started", request.expected.started).put("finished", request.expected.finished)
+            request.expected.activeIntervalsJson?.let { workout.put("activeIntervals", org.json.JSONArray(it)) }
+            val response = NativeWorkoutActiveWindows.health(workout) { window ->
+                guard()
+                HealthConnectRepository.readTrainingWindowSuspend(context, window.start.toString(), window.end.toString(), guard)
+            }
             guard()
             withContext(Dispatchers.IO) { attach(request, response) }
             Result.success(Unit)
