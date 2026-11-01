@@ -23,4 +23,7 @@
     <string name="journal_health_max_speed">Maximális sebesség</string>
     <string name="journal_health_separate_energy">Az órán mért összes energia és a Health Connect aktív energiája külön adat. Nem adjuk őket össze.</string>
     <string name="journal_health_permissions">Health Connect-engedélyek</string>
+    <string name="journal_health_read">Edzésadatok lekérése</string>
+    <string name="journal_samsung_permission">Samsung Health pulzus- vagy edzésolvasási engedély szükséges.</string>
+    <string name="journal_samsung_unavailable">Samsung Health közvetlen SDK-olvasás nem érhető el.</string>
 </resources>

@@ -143,7 +143,9 @@ fun HealthTabScreen(
     onNavigateToSubScreen: (SubScreen) -> Unit,
     onOpenPalettePicker: () -> Unit,
     onOpenGoalsDialog: () -> Unit = {},
-    onDeleteWeightLog: (String) -> Unit = {}
+    onDeleteWeightLog: (String) -> Unit = {},
+    onSelectHealthSource: (Boolean) -> Unit = { onTogglePrimaryHealthSource() },
+    onRequestHealthPermissions: () -> Unit = { onNavigateToSubScreen(SubScreen.PERMISSIONS_SCREEN) }
 ) {
     val palette = LocalTrainPilotPalette.current
     val today = remember { java.time.LocalDate.now() }
@@ -1459,7 +1461,7 @@ fun HealthTabScreen(
         item {
             ExpandableHealthSectionCard(
                 icon = Icons.Default.Link,
-                title = "Health Connect",
+                title = "Egészségadat-források",
                 subtitle = "Adatforrások, engedélyek és szinkron",
                 expanded = uiState.expandedHealthConnect,
                 onToggle = { onToggleHealthSection("connect") },
@@ -1481,11 +1483,15 @@ fun HealthTabScreen(
                                 color = if (uiState.primaryHealthSourceSamsung) palette.primary else palette.cardBorder,
                                 shape = RoundedCornerShape(14.dp)
                             )
-                            .clickable { onTogglePrimaryHealthSource() }
+                            .clickable { onSelectHealthSource(true) }
+                            .testTag("health_provider_samsung")
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
                             Text("Samsung Health", fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text("● Közvetlen (1/2)", style = MaterialTheme.typography.labelSmall, color = palette.success)
+                            Text(if (uiState.samsungGrantedCount < 0) "Engedély ellenőrzése…"
+                                else "${uiState.samsungGrantedCount}/${uiState.samsungPermissionCount} adatkör",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (uiState.samsungGrantedCount > 0) palette.success else palette.textSecondary)
                         }
                     }
                     Surface(
@@ -1498,17 +1504,18 @@ fun HealthTabScreen(
                                 color = if (!uiState.primaryHealthSourceSamsung) palette.primary else palette.cardBorder,
                                 shape = RoundedCornerShape(14.dp)
                             )
-                            .clickable { onTogglePrimaryHealthSource() }
+                            .clickable { onSelectHealthSource(false) }
+                            .testTag("health_provider_connect")
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
                             Text("Health Connect", fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text("● ${uiState.healthGrantedCount}/${uiState.healthPermissionCount} engedély", style = MaterialTheme.typography.labelSmall, color = palette.success)
+                            Text("● ${uiState.healthGrantedCount}/${uiState.healthPermissionCount} engedély", style = MaterialTheme.typography.labelSmall, color = if (uiState.healthGrantedCount > 0) palette.success else palette.textSecondary)
                         }
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Olvasott adatok: Lépések, Pulzus, Alvás, Aktív kalória, Testsúly, Testzsír, SpO₂, VO₂max, Edzések.",
+                    text = "Az elérhető adatok a választott szolgáltatótól és a tényleges engedélyektől függenek.",
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary
                 )
@@ -1570,12 +1577,12 @@ fun HealthTabScreen(
                             .height(52.dp)
                             .border(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(16.dp))
                             .clip(RoundedCornerShape(16.dp))
-                            .clickable { onTriggerHealthSync() }
+                            .clickable(enabled = !uiState.healthSyncBusy) { onTriggerHealthSync() }
                             .testTag("health_sync_button")
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
-                                text = strings.syncAction,
+                                text = if (uiState.healthSyncBusy) "Szinkronizálás…" else strings.syncAction,
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.textPrimary
@@ -1590,7 +1597,7 @@ fun HealthTabScreen(
                             .height(52.dp)
                             .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                             .clip(RoundedCornerShape(16.dp))
-                            .clickable { onNavigateToSubScreen(SubScreen.PERMISSIONS_SCREEN) }
+                            .clickable { onRequestHealthPermissions() }
                             .testTag("health_open_permissions_button")
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -1605,10 +1612,14 @@ fun HealthTabScreen(
                 }
 
                 Text(
-                    text = "Utolsó igazolt szinkron: ${uiState.lastHealthSyncLabel}",
+                    text = "${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} • utolsó teljes szinkron: ${uiState.lastHealthSyncLabel}",
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary
                 )
+                if (uiState.healthSyncMessage.isNotBlank()) Text(uiState.healthSyncMessage,
+                    color = if (uiState.healthSyncFailed) palette.danger else if (uiState.healthSyncPartial) palette.warning else palette.textPrimary,
+                    modifier = Modifier.testTag("health_sync_result"))
+                Text("Utolsó adatolvasás: ${uiState.lastHealthReadLabel}", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                 Text(
                     text = uiState.healthProviderStatus,
                     style = MaterialTheme.typography.bodySmall,

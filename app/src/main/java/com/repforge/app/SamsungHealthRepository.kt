@@ -135,6 +135,21 @@ object SamsungHealthRepository {
         }
     }
 
+    /** The existing Samsung SDK workout reader, scoped strictly to the requested window. */
+    suspend fun readTrainingWindowSuspend(context: Context, startIso: String, endIso: String,
+        guard: () -> Unit): JSONObject = withContext(Dispatchers.IO) {
+        guard()
+        if (!isInstalled(context) || !isSdkAvailable()) throw UnsupportedOperationException("Samsung Health alkalmazás vagy SDK nem érhető el.")
+        val range = validateRange(startIso, endIso, 24 * 60L)
+        val reader = SamsungSdkReader.open(context) { guard() }
+        if (reader.grantedKeys().none { it in setOf("READ_STEPS", "READ_HEART_RATE", "READ_EXERCISE") })
+            throw SecurityException("Samsung Health: pulzus- vagy edzésolvasási engedély szükséges.")
+        val result = reader.workout(range[0], range[1]).put("provider", HealthJournalStore.SAMSUNG)
+        guard()
+        check(SamsungSdkReader.open(context) { guard() }.granted == reader.granted) { "Samsung Health engedélyei megváltoztak." }
+        result.put("partial", (result.optJSONArray("failedFields")?.length() ?: 0) > 0)
+    }
+
     suspend fun readHealthDay(
         context: Context,
         startIso: String,

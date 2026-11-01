@@ -41,7 +41,7 @@ internal object NativeWorkoutActiveWindows {
         val out = JSONObject().put("start", workout.getString("started")).put("end", workout.getString("finished"))
             .put("activeIntervals", org.json.JSONArray(windows.map {
                 JSONObject().put("start", it.start.toString()).put("end", it.end.toString())
-            })).put("partial", rows.any { it.optBoolean("partial") })
+            })).put("partial", rows.any { it.optBoolean("partial") || (it.optJSONArray("failedFields")?.length() ?: 0) > 0 })
         fun value(row: JSONObject, key: String) = (row.opt(key) as? Number)?.toDouble()
             ?.takeIf { it.isFinite() && it >= 0 }
         for (key in listOf("steps", "activeCalories", "totalCalories", "workoutCalories", "distanceMeters", "exerciseMinutes")) {
@@ -70,8 +70,11 @@ internal object NativeWorkoutActiveWindows {
         for (row in rows) row.optJSONObject("sourceLabels")?.let { source ->
             for (key in source.keys()) labels.put(key, source.get(key))
         }
+        val errors = JSONObject()
+        for (row in rows) row.optJSONObject("errors")?.let { values -> for (key in values.keys()) errors.put(key, values.get(key)) }
+        out.put("errors", errors)
         out.put("sourceLabels", labels)
-        for (key in listOf("sources", "warnings")) {
+        for (key in listOf("sources", "warnings", "failedFields")) {
             val values = rows.flatMap { row -> row.optJSONArray(key)?.let { a ->
                 (0 until a.length()).map { a.get(it).toString() }
             } ?: emptyList() }.distinct()

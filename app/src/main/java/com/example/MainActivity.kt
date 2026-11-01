@@ -126,6 +126,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
     val strings = TrainPilotStrings.forLanguage(uiState.language)
     val requestPlatformPermission = com.example.ui.components.rememberStudioPermissionRequest(context, viewModel)
 
+    var showLiveHealth by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+
     val canNavigateBack = uiState.currentSubScreen != SubScreen.NONE ||
         uiState.currentTab != MainTab.HOME ||
         uiState.backStack.isNotEmpty()
@@ -143,8 +145,12 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
 
     CompositionLocalProvider(
         LocalTrainPilotStrings provides strings,
+        com.example.ui.components.LocalOpenWorkoutHealth provides { showLiveHealth = true },
+        com.example.ui.components.LocalRequestWorkoutHealthPermission provides { provider -> requestPlatformPermission(if (provider == com.repforge.app.HealthJournalStore.SAMSUNG) "samsung" else "hc") },
         LocalOpenExerciseVideo provides { exTitle -> viewModel.openExerciseVideoModal(exTitle) }
     ) {
+        if (showLiveHealth) com.example.ui.components.StudioLiveWorkoutHealthDialog { showLiveHealth = false }
+
         // 0. Embedded YouTube Exercise Video Modal Dialog
         uiState.videoModalExerciseTitle?.let { exTitle ->
             ExerciseYouTubeVideoModalDialog(
@@ -681,7 +687,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onOpenPhotos = { viewModel.navigateToSubScreen(SubScreen.PRIVATE_PHOTOS) },
                             onOpenRouteMap = { viewModel.navigateToSubScreen(SubScreen.LOG_ROUTE_MAP) },
                             onOpenWatchSync = { viewModel.navigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
-                            onOpenHealthTab = { viewModel.selectTab(MainTab.HEALTH) },
+                            onOpenHealthTab = { viewModel.selectLogDetailTab(2) },
                             workoutHealth = workoutHealth
                         )
                     }
@@ -945,18 +951,22 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 val activity = context as? android.app.Activity
                                 androidx.compose.runtime.DisposableEffect(activity) {
                                     nativeHealth.healthScreenVisible(activity)
+                                    nativeHealth.refreshSamsungGrants(activity)
                                     onDispose { nativeHealth.healthScreenHidden(activity) }
                                 }
-                                androidx.compose.runtime.LaunchedEffect(health.statusMessage, health.lastSyncAt) {
+                                androidx.compose.runtime.LaunchedEffect(health.statusMessage, health.lastSyncAt, health.lastReadAt, health.provider, health.healthRefreshing) {
                                     health.statusMessage?.let(viewModel::showBannerMessage)
                                     viewModel.reloadHealthJournal()
                                 }
                                 HealthTabScreen(
                                     uiState = uiState.copy(primaryHealthSourceSamsung = health.provider == com.repforge.app.HealthJournalStore.SAMSUNG,
-                                        lastHealthSyncLabel = health.lastSyncAt,
-                                        healthProviderStatus = if (health.provider == com.repforge.app.HealthJournalStore.SAMSUNG)
+                                        lastHealthSyncLabel = health.lastSyncAt, lastHealthReadLabel = health.lastReadAt,
+                                        healthSyncBusy = health.healthRefreshing, healthSyncPartial = health.syncPartial,
+                                        healthSyncFailed = health.syncFailed, healthSyncMessage = health.syncMessage,
+                                        samsungGrantedCount = health.samsungGrantedCount,
+                                        healthProviderStatus = (if (health.provider == com.repforge.app.HealthJournalStore.SAMSUNG)
                                             if (health.samsungInstalled && health.samsungAvailable) "Samsung Health • szolgáltató elérhető" else "Samsung Health • alkalmazás vagy SDK nem érhető el"
-                                        else if (health.hcSupported && health.hcGranted) "Health Connect • olvasási hozzáférés engedélyezett" else "Health Connect • hiányzó támogatás vagy engedély"),
+                                        else if (health.hcSupported && health.hcGranted) "Health Connect • olvasási hozzáférés engedélyezett" else "Health Connect • hiányzó támogatás vagy engedély") + health.providerReadDetails.takeIf { it.isNotBlank() }?.let { " • $it" }.orEmpty()),
                                     strings = strings,
                                     onToggleHealthSection = { viewModel.toggleHealthSection(it) },
                                     onSelectWeightRange = { viewModel.selectWeightRange(it) },
@@ -969,7 +979,13 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onNavigateToSubScreen = { viewModel.navigateToSubScreen(it) },
                                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
                                     onOpenGoalsDialog = { viewModel.toggleGoalsDialog(true) },
-                                    onDeleteWeightLog = { id -> viewModel.deleteBodyWeightLog(id) }
+                                    onDeleteWeightLog = { id -> viewModel.deleteBodyWeightLog(id) },
+                                    onSelectHealthSource = { samsung -> nativeHealth.setProvider(
+                                        if (samsung) com.repforge.app.HealthJournalStore.SAMSUNG else com.repforge.app.HealthJournalStore.HC, activity) },
+                                    onRequestHealthPermissions = {
+                                        if (health.provider == com.repforge.app.HealthJournalStore.SAMSUNG) nativeHealth.requestSamsungPermissions(activity)
+                                        else requestPlatformPermission("hc")
+                                    }
                                 )
                             }
                         }

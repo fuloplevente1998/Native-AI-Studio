@@ -23,4 +23,7 @@
     <string name="journal_health_max_speed">Höchstgeschwindigkeit</string>
     <string name="journal_health_separate_energy">Die von der Uhr gemessene Gesamtenergie und die aktive Energie aus Health Connect sind getrennte Messwerte. Sie werden nicht addiert.</string>
     <string name="journal_health_permissions">Health Connect-Berechtigungen</string>
+    <string name="journal_health_read">Trainingsdaten lesen</string>
+    <string name="journal_samsung_permission">Samsung Health benötigt eine Leseberechtigung für Puls oder Training.</string>
+    <string name="journal_samsung_unavailable">Direkter Samsung Health SDK-Zugriff ist nicht verfügbar.</string>
 </resources>

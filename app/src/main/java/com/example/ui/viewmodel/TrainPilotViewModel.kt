@@ -104,6 +104,10 @@ data class TrainPilotUiState(
     val healthPermissionCount: Int = 0,
     val lastHealthSyncLabel: String = "—",
     val healthProviderStatus: String = "A szolgáltató állapota még nem ismert",
+    val healthSyncMessage: String = "", val healthSyncBusy: Boolean = false,
+    val healthSyncPartial: Boolean = false, val healthSyncFailed: Boolean = false,
+    val samsungGrantedCount: Int = -1, val samsungPermissionCount: Int = com.repforge.app.SamsungHealthRepository.PERMISSION_KEYS.size,
+    val lastHealthReadLabel: String = "—",
     val samsungEnergyScore: Int = 0,
     val coachReadinessScore: Int = 0,
 
@@ -1164,6 +1168,8 @@ class TrainPilotViewModel : ViewModel() {
 
             // 6. Read real daily health projections from HealthJournalStore using sleepMinutes
             val todayStr = LocalDate.now().toString()
+            val healthProviderAtBind = HealthJournalStore.get(context).preferences().optString("provider", HealthJournalStore.HC)
+            val healthGenerationAtBind = HealthJournalStore.get(context).generation()
             var stepsVal = 0
             var restingHrVal = 0
             var currentHrVal = 0
@@ -1173,12 +1179,12 @@ class TrainPilotViewModel : ViewModel() {
 
             try {
                 val store = HealthJournalStore.get(context)
-                val projection = store.projection()
-                val todayData = projection.optJSONObject("days")?.optJSONObject(todayStr)
+                val provider = store.preferences().optString("provider", HealthJournalStore.HC)
+                val todayData = com.repforge.app.NativeHealthProviderData.day(store, provider, LocalDate.now())
                 if (todayData != null) {
                     val stepsDbl = todayData.optDouble("steps", Double.NaN)
                     val restingDbl = todayData.optDouble("restingHeartRate", Double.NaN)
-                    val currentDbl = todayData.optDouble("heartRate", Double.NaN)
+                    val currentDbl = todayData.optDouble("averageHeartRate", Double.NaN)
                     val calDbl = todayData.optDouble("activeCalories", Double.NaN)
                     val sleepMinDbl = todayData.optDouble("sleepMinutes", Double.NaN)
 
@@ -1307,15 +1313,17 @@ class TrainPilotViewModel : ViewModel() {
                         stepsGoal = if (loadedStepsGoal > 0) loadedStepsGoal else st.stepsGoal,
                         currentBodyWeightKg = if (latestWeightKg > 0f) latestWeightKg else st.currentBodyWeightKg,
                         bodyWeightLogs = loadedWeightLogs,
-                        dailySteps = if (stepsVal > 0) stepsVal else st.dailySteps,
-                        restingHrBpm = if (restingHrVal > 0) restingHrVal else st.restingHrBpm,
-                        currentHrBpm = if (currentHrVal > 0) currentHrVal else st.currentHrBpm,
-                        activeCaloriesKcal = if (activeCalVal > 0) activeCalVal else st.activeCaloriesKcal,
-                        sleepDurationLabel = if (sleepStr != "—") sleepStr else st.sleepDurationLabel,
-                        sleepHoursDecimal = if (sleepDecimal != "—") sleepDecimal else st.sleepHoursDecimal
+                        dailySteps = if (HealthJournalStore.get(context).generation() == healthGenerationAtBind && HealthJournalStore.get(context).preferences().optString("provider", HealthJournalStore.HC) == healthProviderAtBind) stepsVal else st.dailySteps,
+                        restingHrBpm = restingHrVal,
+                        currentHrBpm = currentHrVal,
+                        activeCaloriesKcal = activeCalVal,
+                        sleepDurationLabel = sleepStr,
+                        sleepHoursDecimal = sleepDecimal
                     )
                 }
             }
+
+            withContext(Dispatchers.Main) { reloadHealthJournal() }
 
             // 7. Load real muscle load summary from Room
             loadMuscleLoadSummary(90)
@@ -3298,14 +3306,15 @@ class TrainPilotViewModel : ViewModel() {
             }
             return
         }
+        _uiState.update { it.copy(dailySteps = 0, currentHrBpm = 0, restingHrBpm = 0, activeCaloriesKcal = 0,
+            sleepDurationLabel = "—", sleepHoursDecimal = "—", samsungEnergyScore = 0, spo2Percent = 0f, vo2Max = 0f) }
         scope.launch(Dispatchers.IO) {
             try {
                 val store = HealthJournalStore.get(ctx)
                 val todayStr = LocalDate.now().toString()
-                val page = store.page(LocalDate.now().minusDays(1).toString(), todayStr, "journal", "", 0L, 0L, 1)
-                val summaries = page.optJSONArray("days")
-                val daysList = (0 until (summaries?.length() ?: 0)).mapNotNull { summaries?.optJSONObject(it) }
-                val todayData = daysList.firstOrNull { it.optString("day") == todayStr } ?: store.projection().optJSONObject("days")?.optJSONObject(todayStr)
+                val provider = store.preferences().optString("provider", HealthJournalStore.HC)
+                val generation = store.generation()
+                val todayData = com.repforge.app.NativeHealthProviderData.day(store, provider, LocalDate.now())
 
                 val stepsDbl = todayData?.optDouble("steps", Double.NaN) ?: Double.NaN
                 val pulseDbl = todayData?.optDouble("averageHeartRate", Double.NaN) ?: Double.NaN
@@ -3316,14 +3325,18 @@ class TrainPilotViewModel : ViewModel() {
                 val hasData = (stepsDbl.isFinite() && stepsDbl > 0) || (pulseDbl.isFinite() && pulseDbl > 0) || (sleepMinDbl.isFinite() && sleepMinDbl > 0)
 
                 withContext(Dispatchers.Main) {
+                    if (store.generation() != generation || store.preferences().optString("provider", HealthJournalStore.HC) != provider) return@withContext
                     _uiState.update { st ->
                         st.copy(
-                            dailySteps = if (stepsDbl.isFinite() && stepsDbl >= 0) stepsDbl.toInt() else st.dailySteps,
-                            currentHrBpm = if (pulseDbl.isFinite() && pulseDbl > 0) pulseDbl.toInt() else st.currentHrBpm,
-                            restingHrBpm = if (restingDbl.isFinite() && restingDbl > 0) restingDbl.toInt() else st.restingHrBpm,
-                            activeCaloriesKcal = if (caloriesDbl.isFinite() && caloriesDbl > 0) caloriesDbl.toInt() else st.activeCaloriesKcal,
-                            sleepDurationLabel = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) String.format("%d ó %d p", (sleepMinDbl / 60).toInt(), (sleepMinDbl % 60).toInt()) else st.sleepDurationLabel,
-                            sleepHoursDecimal = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) "${((sleepMinDbl / 60.0) * 10.0).roundToInt() / 10.0} h" else st.sleepHoursDecimal,
+                            dailySteps = if (stepsDbl.isFinite() && stepsDbl >= 0) stepsDbl.toInt() else 0,
+                            currentHrBpm = if (pulseDbl.isFinite() && pulseDbl > 0) pulseDbl.toInt() else 0,
+                            restingHrBpm = if (restingDbl.isFinite() && restingDbl > 0) restingDbl.toInt() else 0,
+                            activeCaloriesKcal = if (caloriesDbl.isFinite() && caloriesDbl > 0) caloriesDbl.toInt() else 0,
+                            sleepDurationLabel = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) String.format("%d ó %d p", (sleepMinDbl / 60).toInt(), (sleepMinDbl % 60).toInt()) else "—",
+                            sleepHoursDecimal = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) "${((sleepMinDbl / 60.0) * 10.0).roundToInt() / 10.0} h" else "—",
+                            samsungEnergyScore = todayData?.optDouble("energyScore", Double.NaN)?.takeIf { it.isFinite() && it >= 0 }?.toInt() ?: 0,
+                            spo2Percent = todayData?.optDouble("oxygenSaturationPercent", Double.NaN)?.takeIf { it.isFinite() && it > 0 }?.toFloat() ?: 0f,
+                            vo2Max = todayData?.optDouble("vo2Max", Double.NaN)?.takeIf { it.isFinite() && it > 0 }?.toFloat() ?: 0f,
                             statusBannerMessage = st.statusBannerMessage
                         )
                     }

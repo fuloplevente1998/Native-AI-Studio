@@ -133,6 +133,7 @@ private fun DashboardHeader(state: OutdoorGpsDisplay, actions: OutdoorGpsActions
                     color = if (state.paused) palette.warning else palette.textSecondary,
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
+            com.example.ui.components.StudioWorkoutHealthAction()
             if (fullscreen) Text(state.elapsed, color = palette.primary, fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 8.dp).testTag("gps_elapsed_timer_text"))
             else IconButton(actions.settings, modifier = Modifier.size(48.dp)) {
