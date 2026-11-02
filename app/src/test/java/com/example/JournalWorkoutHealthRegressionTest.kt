@@ -9,7 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.localization.TrainPilotStrings
@@ -45,7 +45,7 @@ import java.util.concurrent.TimeoutException
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @LooperMode(LooperMode.Mode.PAUSED)
 class JournalWorkoutHealthRegressionTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule val compose = createAndroidComposeRule<androidx.activity.ComponentActivity>()
     private val context get() = ApplicationProvider.getApplicationContext<Context>()
     private lateinit var db: TrainPilotDatabase
     private val models = androidx.lifecycle.ViewModelStore()
@@ -214,6 +214,14 @@ class JournalWorkoutHealthRegressionTest {
         compose.onNodeWithTag("journal_wear_totalCalories_value").assertTextEquals("200 kcal")
     }
     @Test fun emptyCachedResponseRetriesOnOpenAndNeverAdvertisesMissingMeasurements() {
+        // The foreground-only refresh contract needs an explicitly resumed host and
+        // denied grants; neither state is an implicit Robolectric fixture guarantee.
+        compose.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
+        shadowOf(context as android.app.Application).denyPermissions(*listOf(
+            "READ_STEPS", "READ_HEART_RATE", "READ_ACTIVE_CALORIES_BURNED", "READ_TOTAL_CALORIES_BURNED",
+            "READ_EXERCISE", "READ_DISTANCE", "READ_SPEED"
+        ).map { "android.permission.health.$it" }.toTypedArray())
+        assertEquals(androidx.lifecycle.Lifecycle.State.RESUMED, compose.activity.lifecycle.currentState)
         val empty = JSONObject().put("windowStart", start).put("windowEnd", end).put("activeIntervals", intervals())
         val detail = seed(health = empty)
         assertTrue(NativeWorkoutHealth.matchesWindow(empty, detail.workout))
@@ -229,7 +237,11 @@ class JournalWorkoutHealthRegressionTest {
         }
         // Robolectric has no granted provider permissions. A read must be attempted,
         // fail truthfully, and retain the cached row instead of inventing a pulse/zero.
-        compose.waitUntil(10_000) { model.uiState.value.healthError != null }
+        try {
+            compose.waitUntil(10_000) { model.uiState.value.healthError != null }
+        } catch (timeout: androidx.compose.ui.test.ComposeTimeoutException) {
+            throw AssertionError("Empty-cache foreground read did not report an error: ${model.uiState.value}; host=${compose.activity.lifecycle.currentState}", timeout)
+        }
         assertFalse(healthAvailable)
         compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertDoesNotExist()
         compose.onNodeWithTag("journal_hc_activeCalories_value").assertDoesNotExist()
