@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.model.volumeAxisMaximum
+
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import com.repforge.app.ui.theme.trainPilotBorder
@@ -1453,7 +1455,7 @@ internal fun MainProgressVolumeAndMuscleSection(
     val compactVolumeBars = volumeBars
     val expandedWeeklyBars = volumeBars
     val maxVolume = (volumeBars.maxOfOrNull { it.second } ?: 0).coerceAtLeast(1)
-    val axisMax = kotlin.math.ceil(maxVolume / 4.0).toInt().coerceAtLeast(1) * 4
+    val axisMax = volumeAxisMaximum(maxVolume)
     val axisLabels = (4 downTo 0).map { (axisMax * it / 4).toString() }
     val loggedTotalKg = periodWorkouts.sumOf { it.totalVolumeKg }
     val totalVolumeText = "%,d kg".format(java.util.Locale.US, loggedTotalKg).replace(',', ' ')
@@ -1591,7 +1593,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                             modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                         ) {
                             Text(
-                                text = if (period.days == 90) "Heti bontás" else "Napi bontás",
+                                text = if (period.days >= 30) "Heti bontás" else "Napi bontás",
                                 modifier = Modifier.testTag("progress_volume_bucket_unit").padding(horizontal = 12.dp, vertical = 6.dp),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = palette.textSecondary
@@ -1646,7 +1648,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                         ) {
                             expandedWeeklyBars.forEachIndexed { idx, (weekLbl, kg) ->
                                 val isBarSelected = uiState.selectedVolumeBarIndex == idx
-                                val ratio = (kg.toFloat() / axisMax).coerceIn(0f, 1f)
+                                val ratio = (kg.toFloat() / axisMax.toFloat()).coerceIn(0f, 1f)
                                 Column(
                                     modifier = Modifier
                                         .weight(1f)
@@ -1657,7 +1659,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .fillMaxWidth()
+                                            .widthIn(max = 48.dp).fillMaxWidth()
                                             .height((122 * ratio).dp)
                                             .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
                                             .background(
@@ -1667,7 +1669,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                     )
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(
-                                        text = if (volumeBars.size > 14) weekLbl.substring(3, 5) else weekLbl,
+                                        text = weekLbl.substring(3, 5).trimStart('0'),
                                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                         color = if (isBarSelected) palette.primary else palette.textSecondary,
                                         maxLines = 1
@@ -1788,16 +1790,18 @@ internal fun MainProgressVolumeAndMuscleSection(
                                 }
                             }
 
+                            Box(Modifier.weight(1f).height(82.dp)) {
+                                Column(Modifier.fillMaxWidth().height(62.dp), verticalArrangement = Arrangement.SpaceBetween) {
+                                    repeat(5) { HorizontalDivider(color = palette.cardBorder.copy(alpha = 0.45f), thickness = 0.5.dp) }
+                                }
                             Row(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(82.dp),
+                                modifier = Modifier.fillMaxSize(),
                                 horizontalArrangement = Arrangement.spacedBy(3.dp),
                                 verticalAlignment = Alignment.Bottom
                             ) {
                                 compactVolumeBars.forEachIndexed { idx, (dayLbl, kg) ->
                                     val isBarSelected = uiState.selectedVolumeBarIndex == idx
-                                    val ratio = (kg.toFloat() / axisMax).coerceIn(0f, 1f)
+                                    val ratio = (kg.toFloat() / axisMax.toFloat()).coerceIn(0f, 1f)
                                     Column(
                                         modifier = Modifier
                                             .weight(1f)
@@ -1810,7 +1814,8 @@ internal fun MainProgressVolumeAndMuscleSection(
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .fillMaxWidth()
+                                                .widthIn(max = 32.dp).fillMaxWidth()
+                                                .testTag("progress_compact_bar_$idx")
                                                 .height((62 * ratio).dp)
                                                 .clip(RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp))
                                                 .background(
@@ -1820,13 +1825,14 @@ internal fun MainProgressVolumeAndMuscleSection(
                                         )
                                         Spacer(modifier = Modifier.height(3.dp))
                                         Text(
-                                            text = if (volumeBars.size > 14) dayLbl.substring(3, 5) else dayLbl,
-                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.5.sp),
+                                            text = dayLbl.substring(3, 5).trimStart('0'),
+                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                                             color = if (isBarSelected) palette.primary else palette.textSecondary,
                                             maxLines = 1
                                         )
                                     }
                                 }
+                            }
                             }
                         }
                     }

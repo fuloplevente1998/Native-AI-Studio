@@ -1,6 +1,6 @@
 # Telefonos kerethierarchia és forrás-harmonika
 
-A felhasználó 2026-11-02-i natív és korábbi WebView referenciái alapján.
+A felhasználó 2026-11-02-i natív és régi appból küldött referenciái alapján.
 
 - Külső oldal / egyetlen összetartozó csoport: 1 dp, finom grafit/arany átmenettel.
 - Belső panel: legfeljebb 0,75 dp, halványabb palettaszínnel.
@@ -26,3 +26,11 @@ Elfogadás: egyetlen nyitott forrás, megőrzött provider-adatok és state rest
 Kezdőlap, Programok, Edzés, Fejlődés, Egészség, Naptár, Coach, Beállítások és részleteik
 egységes keretezése. Szűk képernyőn és nagyobb betűmérettel se sérüljön a használhatóság.
 Fizikai kinézet és készülékes elfogadás a kiadott APK tesztjén igazolható.
+
+## Fejlődési volumenábra
+
+A régi app képe szerinti kiosztás: 1 nap egy napi oszlop, 7 nap hét napi oszlop,
+30 nap öt, 3 hó tizenhárom hétnyi csoport. A legutolsó csoport lehet rövidebb; minden
+oszlop csak a kiválasztott intervallum adatait összegzi. A teljes összeg és az oszlopösszeg
+egyezik. A kompakt grafikonon az egyetlen oszlop nem tölti ki a teljes rajzterületet,
+az oszlopok mögött finom rácsvonalak és olvasható skála jelenik meg.

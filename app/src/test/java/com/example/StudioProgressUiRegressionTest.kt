@@ -48,6 +48,10 @@ class StudioProgressUiRegressionTest {
                 }
             }
         }
+        compose.onNodeWithTag("progress_range_0").performClick()
+        val bar = compose.onNodeWithTag("progress_compact_bar_0").getUnclippedBoundsInRoot()
+        val card = compose.onNodeWithTag("progress_total_volume_card").getUnclippedBoundsInRoot()
+        assertTrue((bar.right - bar.left) < (card.right - card.left) / 4)
         for ((index, total) in listOf(100, 300, 700, 1500).withIndex()) {
             compose.onNodeWithTag("progress_range_$index").performClick()
             compose.onNodeWithTag("progress_volume_total", useUnmergedTree = true).assertTextEquals("${if (total == 1500) "1 500" else total} kg")
@@ -57,6 +61,8 @@ class StudioProgressUiRegressionTest {
         compose.onNodeWithTag("progress_range_0").performClick()
         compose.onNodeWithTag("progress_volume_bucket_unit").assertTextEquals("Napi bontás")
         compose.onNodeWithTag("progress_volume_total", useUnmergedTree = true).assertTextEquals("100 kg")
+        compose.onNodeWithTag("progress_range_2").performClick()
+        compose.onNodeWithTag("progress_volume_bucket_unit").assertTextEquals("Heti bontás")
     }
     @Test fun bodyLayersFollowWorkoutLoadsAndSmallMeasuredLoadsAreNotRoundedAway() {
         var loads by mutableStateOf(listOf(MuscleLoadItem("chest", "Mell", "1 sorozat", 0, 0.005f, "Kisebb", emptyList(), "", setsCount = 1)))
