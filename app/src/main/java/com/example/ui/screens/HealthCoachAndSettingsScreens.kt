@@ -3132,9 +3132,11 @@ fun BackupRestoreScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Egészségügyi előzmények (Health)", color = palette.textPrimary)
-                        Switch(checked = uiState.includeHealthInBackup, onCheckedChange = onToggleIncludeHealth)
+                        Text("Health Connect, Samsung Health és órás egészségadatok", color = palette.textPrimary, modifier = Modifier.weight(1f))
+                        Switch(checked = uiState.includeHealthInBackup, enabled = !uiState.backupHealthConsentSaving, onCheckedChange = onToggleIncludeHealth)
                     }
+                    Text("Alapból kikapcsolva. JSON/ZIP: tárolt egészségnapló és edzésösszesítések. Drive: az edzéshez mentett egészségadatok; a teljes napi egészségnapló nem kerül Drive-ra. Kikapcsolás nem törli a helyi adatokat vagy a korábbi mentéseket.",
+                        color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
@@ -3313,139 +3315,5 @@ fun PrivatePhotosScreen(
     onOpenSettings: () -> Unit,
     onShowBanner: (String) -> Unit
 ) {
-    val palette = LocalTrainPilotPalette.current
-    var capturedPhotoStatus by remember { mutableStateOf<String?>(null) }
-
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap ->
-        if (bitmap != null) {
-            capturedPhotoStatus = "Készült foto: ${bitmap.width}x${bitmap.height}"
-            onShowBanner("Privát edzésfotó rögzítve az eszközön")
-        }
-    }
-
-    val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        if (uri != null) {
-            capturedPhotoStatus = "Importálva: ${uri.lastPathSegment}"
-            onShowBanner("Fotó hozzáadva a privát képtárhoz")
-        }
-    }
-
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(palette.background)
-            .testTag("private_photos_screen"),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        item {
-            SubScreenTopBar(
-                title = strings.privatePhotosTitle,
-                onBack = onBack,
-                onOpenSettings = onOpenSettings
-            )
-        }
-        item {
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = palette.primary)
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = capturedPhotoStatus ?: "Csak ezen az eszközön tárolva • A privát edzésfotók nem kerülnek felhőbe.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.textPrimary
-                    )
-                }
-            }
-        }
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                PrivatePhotoPlaceholderCard("2026. okt. 11. • 17:48", "Teljes testes edzés A #1", Modifier.weight(1f))
-                PrivatePhotoPlaceholderCard("2026. okt. 11. • 17:50", "Teljes testes edzés A #2", Modifier.weight(1f))
-            }
-        }
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Button(
-                    onClick = { cameraLauncher.launch(null) },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp)
-                ) {
-                    Icon(imageVector = Icons.Default.PhotoCamera, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Kamera", fontWeight = FontWeight.Bold)
-                }
-                OutlinedButton(
-                    onClick = {
-                        galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    },
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp)
-                ) {
-                    Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = null, tint = palette.textPrimary, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Galéria", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PrivatePhotoPlaceholderCard(
-    dateLabel: String,
-    caption: String,
-    modifier: Modifier = Modifier
-) {
-    val palette = LocalTrainPilotPalette.current
-    Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = palette.surfaceCard,
-        modifier = modifier.border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(palette.surfaceElevated),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.FitnessCenter,
-                    contentDescription = null,
-                    tint = palette.primary,
-                    modifier = Modifier.size(42.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(caption, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-            Text(dateLabel, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-        }
-    }
+    com.example.ui.components.StudioPrivatePhotos(uiState, strings, onBack, onOpenSettings)
 }

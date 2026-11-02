@@ -406,6 +406,7 @@ class GoogleSyncRepository internal constructor(context: Context, private val op
                 }
             }
 
+            val includeHealth = settingsStore.current().healthBackupConsent
             val merged = NativeBackupPrivacy.sanitize(mergeSync18(
                 local = localData,
                 remotes = remotes,
@@ -414,7 +415,10 @@ class GoogleSyncRepository internal constructor(context: Context, private val op
                 deletedHistoryIds = deletedIds,
                 deletedHistoryKeys = deletedKeys,
                 preferLocalOnConflict = preferPhoneOnConflict
-            ))
+            ), includeHealth = includeHealth)
+            // A remote backup must never turn this device's health-sharing choice on.
+            merged.optJSONObject("settings")?.put("healthBackupConsent", includeHealth)
+            merged.put("healthIncluded", includeHealth)
 
             // Validate portable v144 favorites before any Drive upload or local replacement.
             NativeExerciseFavorites.decode(merged.opt(NativeExerciseFavorites.KEY))

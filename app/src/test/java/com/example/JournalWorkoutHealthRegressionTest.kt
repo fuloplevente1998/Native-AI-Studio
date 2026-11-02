@@ -197,7 +197,9 @@ class JournalWorkoutHealthRegressionTest {
                     workoutHealth = health)
             }
         }
-        compose.waitUntil(10_000) { model.uiState.value.detail != null && canonicalSources }
+        compose.waitUntil(10_000) {
+            shadowOf(Looper.getMainLooper()).idle()
+            model.uiState.value.detail != null && canonicalSources }
         assertFalse(model.uiState.value.healthRefreshing)
         assertNull(model.uiState.value.healthError)
         val list = compose.onNodeWithTag("log_workout_detail_screen")
@@ -238,7 +240,9 @@ class JournalWorkoutHealthRegressionTest {
         // Robolectric has no granted provider permissions. A read must be attempted,
         // fail truthfully, and retain the cached row instead of inventing a pulse/zero.
         try {
-            compose.waitUntil(10_000) { model.uiState.value.healthError != null }
+            compose.waitUntil(10_000) {
+            shadowOf(Looper.getMainLooper()).idle()
+            model.uiState.value.healthError != null }
         } catch (timeout: androidx.compose.ui.test.ComposeTimeoutException) {
             throw AssertionError("Empty-cache foreground read did not report an error: ${model.uiState.value}; host=${compose.activity.lifecycle.currentState}", timeout)
         }

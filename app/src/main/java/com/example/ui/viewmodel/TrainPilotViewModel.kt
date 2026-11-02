@@ -28,8 +28,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.CancellationException
+import com.repforge.app.NativeDataReplacement
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.launch
@@ -242,13 +246,15 @@ data class TrainPilotUiState(
 
     // Permissions & Backup State (Mockup 4/4 #3, #4, #5)
     val selectedBackupFormat: String = "JSON", // JSON, ZIP, DRIVE
-    val includeHealthInBackup: Boolean = true,
+    val includeHealthInBackup: Boolean = false,
+    val backupHealthConsentSaving: Boolean = false,
     val permissionGpsEnabled: Boolean = false,
     val permissionCentralLocEnabled: Boolean = false,
     val permissionNotificationsEnabled: Boolean = false,
     val permissionHealthConnectEnabled: Boolean = false,
     val permissionSamsungHealthEnabled: Boolean = false,
     val privatePhotoCount: Int = 0,
+    val privatePhotoWorkoutId: String? = null,
 
     // Toast / Feedback banner for immediate visual confirmation of actions
     val statusBannerMessage: String? = null
@@ -887,6 +893,12 @@ class TrainPilotViewModel : ViewModel() {
         nativeDatabase = database
         nativeScope = scope
 
+        scope.launch {
+            settingsStore.settingsFlow.map { it.healthBackupConsent }.distinctUntilChanged().collect { consent ->
+                _uiState.update { it.copy(includeHealthInBackup = consent) }
+            }
+        }
+
         scope.launch(Dispatchers.Main.immediate) {
             ActiveWorkoutStore.snapshotFlow.collect { frame ->
                 if (frame?.optBoolean("active") == true) _uiState.update { state ->
@@ -924,7 +936,8 @@ class TrainPilotViewModel : ViewModel() {
                 TrainPilotDatabase.ensureBuiltinCatalogSeeded(database, context)
             } catch (_: Throwable) {}
 
-            val savedProfile = JSONObject(settingsStore.current().profileJson)
+            val savedNativeSettings = settingsStore.current()
+            val savedProfile = JSONObject(savedNativeSettings.profileJson)
             // 1. Detect if a paused or active workout is running natively
             try {
                 val execution = withContext(Dispatchers.Main.immediate) { PhoneWorkoutExecution.store(context).snapshot() }
@@ -1151,7 +1164,7 @@ class TrainPilotViewModel : ViewModel() {
                         routeKeys = detail.exercises.flatMap { it.sets }.flatMap {
                             listOfNotNull(it.gpsRouteKey163, it.gpsRouteKey193)
                         }.filter(String::isNotBlank).distinct(),
-                        sourceWatch = !w.wearMetricsJson.isNullOrBlank(), sourceHealthConnect = !w.health240Json.isNullOrBlank(),
+                        sourceWatch = com.repforge.app.NativeSavedWearHealth.read(w) != null, sourceHealthConnect = !w.health240Json.isNullOrBlank(),
                         distanceKm = (completedDbSets.sumOf { it.distanceMeters ?: 0.0 } / 1000.0).toFloat(),
                         paceLabel = completedDbSets.sumOf { it.distanceMeters ?: 0.0 }.takeIf { it > 0 && elapsedSec > 0 }?.let { meters ->
                             val secondsPerKm = (elapsedSec / (meters / 1000.0)).toInt()
@@ -1309,6 +1322,7 @@ class TrainPilotViewModel : ViewModel() {
                         activeSets = activeSetsForCurrent,
                         activeSetsByExerciseId = if (restoredSetsMap.isNotEmpty()) restoredSetsMap else st.activeSetsByExerciseId,
                         loggedWorkouts = mappedWorkouts,
+                        privatePhotoCount = mappedWorkouts.sumOf { it.photoCount },
                         prRecords = computedPrs,
                         weeklyGoalCompleted = mappedWorkouts.size,
                         weeklyGoalTarget = if (loadedWeeklyGoal > 0) loadedWeeklyGoal else st.weeklyGoalTarget,
@@ -1365,11 +1379,19 @@ class TrainPilotViewModel : ViewModel() {
             state.copy(
                 currentTab = targetTab ?: state.currentTab,
                 currentSubScreen = subScreen,
+                privatePhotoWorkoutId = if (subScreen == SubScreen.PRIVATE_PHOTOS) null else state.privatePhotoWorkoutId,
                 isWorkoutSessionActive = if (isActiveMeasurement) true else state.isWorkoutSessionActive,
                 activeWorkoutSubScreen = if (isActiveMeasurement) subScreen else state.activeWorkoutSubScreen,
                 backStack = updatedStack
             )
         }
+    }
+
+    fun openLogWorkoutPhotos() {
+        val id = _uiState.value.selectedLogWorkoutId ?: return
+        navigateToSubScreen(SubScreen.PRIVATE_PHOTOS)
+        if (_uiState.value.currentSubScreen == SubScreen.PRIVATE_PHOTOS)
+            _uiState.update { it.copy(privatePhotoWorkoutId = id) }
     }
 
     fun returnToActiveWorkout() {
@@ -3018,7 +3040,7 @@ class TrainPilotViewModel : ViewModel() {
                         routeKeys = savedInDb.exercises.flatMap { it.sets }.flatMap {
                             listOfNotNull(it.gpsRouteKey163, it.gpsRouteKey193)
                         }.filter(String::isNotBlank).distinct(),
-                        sourceWatch = !dbW.wearMetricsJson.isNullOrBlank(), sourceHealthConnect = !dbW.health240Json.isNullOrBlank(),
+                        sourceWatch = com.repforge.app.NativeSavedWearHealth.read(dbW) != null, sourceHealthConnect = !dbW.health240Json.isNullOrBlank(),
                         originDevice = dbW.originDevice,
                         savedStartIso = dbW.started,
                         savedFinishIso = dbW.finished,
@@ -3592,7 +3614,19 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun toggleIncludeHealthInBackup(include: Boolean) {
-        _uiState.update { it.copy(includeHealthInBackup = include) }
+        val ctx = nativeContext ?: return
+        val store = nativeSettingsStore ?: return
+        val scope = nativeScope ?: return
+        if (_uiState.value.backupHealthConsentSaving) return
+        _uiState.update { it.copy(backupHealthConsentSaving = true) }
+        scope.launch(Dispatchers.IO) {
+            try {
+                NativeDataReplacement.mutate(ctx) { store.setHealthBackupConsent(include) }
+                _uiState.update { it.copy(includeHealthInBackup = include) }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { _uiState.update { it.copy(statusBannerMessage = "A mentési hozzájárulás nem menthető. Próbáld újra.") } }
+            finally { _uiState.update { it.copy(backupHealthConsentSaving = false) } }
+        }
     }
 
     fun updatePlatformAccess(access: JSONObject, watchNames: List<String>, companionAvailable: Boolean = false) {

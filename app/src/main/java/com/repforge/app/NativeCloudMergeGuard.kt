@@ -35,7 +35,13 @@ internal object NativeCloudMergeGuard {
         val acceptedJson = merged.toString()
         val continuation = NativeDataReplacement.exclusively(app) {
             requireUnchanged(beforeNetwork, migrator.exportBackupJson(includeHealthJournal = false))
-            BackupRestoreManager(app).installCloudMerge(JSONObject(acceptedJson), photos)
+            val localInstall = JSONObject(acceptedJson)
+            if (!TrainPilotSettingsStore(app).current().healthBackupConsent) {
+                // Network data remains health-free; only the local install recovers local caches.
+                val local = db.workoutHistoryDao().getAllWorkoutsWithDetails().map { LegacyWebViewMigrator.workoutJson(it) }
+                com.repforge.app.data.migration.NativeBackupPrivacy.preserveLocalWorkoutHealth(localInstall, local)
+            }
+            BackupRestoreManager(app).installCloudMerge(localInstall, photos)
             NativeDataReplacement.continuationAfterReplacement()
         }
         continuation.requireCurrent(app)

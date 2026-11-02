@@ -456,7 +456,7 @@
     <string name="native_settings_haptic">Sorozat rögzítési rezgés (#227)</string>
     <string name="native_settings_haptic_info">40 ms diszkrét haptikus jelzés szett kipipálásakor</string>
     <string name="native_settings_health_backup">Egészségnapló mentése</string>
-    <string name="native_settings_health_backup_info">Health Connect / pulzus adatok belefoglalása a kézi mentésbe</string>
+    <string name="native_settings_health_backup_info">Health Connect-, közvetlen Samsung Health- és órás egészségadatok. JSON/ZIP: egészségnapló és edzésösszesítések; Drive: mentett edzésösszesítések. Alapból kikapcsolva. A helyi adatokat és korábbi mentéseket nem törli.</string>
     <string name="native_settings_privacy_open">Adatkezelési tájékoztató megtekintése</string>
     <string name="native_settings_erase_open">Minden helyi adat törlése (Erase Local)</string>
     <string name="native_settings_erase_title">Minden helyi adat törlése</string>

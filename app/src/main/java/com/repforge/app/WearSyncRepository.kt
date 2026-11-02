@@ -631,8 +631,8 @@ object WearSyncRepository {
                     .put("dayName", h.workout.dayName.ifBlank { "Edzés" })
                     .put("quickWorkout", h.workout.quickWorkout)
                     .put("exercises", exArr)
-                h.workout.wearMetricsJson?.let {
-                    runCatching { itemObj.put("wear", JSONObject(it)) }
+                NativeSavedWearHealth.read(h.workout)?.let {
+                    itemObj.put("wear", it)
                 }
                 h.workout.health240Json?.let {
                     runCatching { itemObj.put("healthConnect", JSONObject(it)) }

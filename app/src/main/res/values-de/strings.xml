@@ -456,7 +456,7 @@
     <string name="native_settings_haptic">Vibration bei Satzaufzeichnung (#227)</string>
     <string name="native_settings_haptic_info">Dezente 40-ms-Rückmeldung beim Abschließen eines Satzes</string>
     <string name="native_settings_health_backup">Gesundheitsprotokoll sichern</string>
-    <string name="native_settings_health_backup_info">Health-Connect- und Pulswerte in manuelle Sicherung aufnehmen</string>
+    <string name="native_settings_health_backup_info">Gesundheitsdaten aus Health Connect, Samsung Health und der Uhr. JSON/ZIP: Gesundheitsjournal und Trainingszusammenfassungen; Drive: gespeicherte Trainingszusammenfassungen. Standardmäßig aus. Lokale Daten und frühere Sicherungen bleiben erhalten.</string>
     <string name="native_settings_privacy_open">Datenschutzhinweise ansehen</string>
     <string name="native_settings_erase_open">Alle lokalen Daten löschen (Erase Local)</string>
     <string name="native_settings_erase_title">Alle lokalen Daten löschen</string>
