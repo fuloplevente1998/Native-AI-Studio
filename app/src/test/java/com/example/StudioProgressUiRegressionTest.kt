@@ -91,6 +91,18 @@ class StudioProgressUiRegressionTest {
             dailyHealthAvailableFields = setOf("steps"), dailySteps = 7000) }
         compose.onNodeWithTag("daily_health_values").assertTextContains("még nincs lekérve", substring = true)
     }
+    @Test fun healthTabCanMoveRefreshAndTotalEnergyWithoutBreakingSharedHomeStatus() {
+        val state = TrainPilotUiState(primaryHealthSourceSamsung = true,
+            dailyHealthDate = LocalDate.now().toString(), dailyHealthSourceLabel = "Samsung Health",
+            dailyHealthAvailableFields = setOf("steps", "activeCalories", "totalCalories"),
+            dailySteps = 5000, activeCaloriesKcal = 220, totalCaloriesKcal = 1460)
+        compose.setContent { TrainPilotTheme { StudioDailyHealthStatus(state,
+            showRefreshButton = false, showTotalEnergy = false) } }
+        compose.onNodeWithTag("daily_health_values").assertTextContains("Aktív energia: 220 kcal", substring = true)
+        compose.onNodeWithTag("daily_health_sync").assertDoesNotExist()
+        compose.onNodeWithText("Összes energia (nyugalmival): 1460 kcal").assertDoesNotExist()
+    }
+
     @Test fun stickyHandoverUsesRealDirectionAndDisablesPendingCommands() {
         var calls = 0
         var state by mutableStateOf(TrainPilotUiState(isWorkoutSessionActive = true, watchAppAvailable = true))
