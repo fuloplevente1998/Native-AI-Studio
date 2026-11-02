@@ -2,7 +2,38 @@
 
 Ez az elsődleges checkpoint. A 2026-11-01-es átadó és a korábbi PR-leírások történeti háttérként használhatók; a kulcsok, Maps, tesztszám és APK-k tekintetében az alábbi állapot az irányadó.
 
-## Aktuális béta-folytatás – #20 és #19
+## Aktuális folytatás – #22, béta 2738
+
+A [#22](https://github.com/fuloplevente1998/Native-AI-Studio/pull/22) mainre került: **`b96982dd62212d53f80ee1af366d77bfaacd439d`**. Innen folytasd az AI Studio-munkát. Az alábbi #20 / 2737 blokk történeti checkpoint, a #22 módosításait ne valósítsd újra.
+
+- A Fejlődés harmadik füle **Statisztikák**, az önálló Erő és 1RM helyett. Két alfül: Személyes rekordok / Kardióstatisztika. A rekordlista a `PersonalRecordCalculator226` meglévő kanonikus akkumulátorát használja, lapozott skalár Room-lekérdezéssel, törölt és befejezetlen sorozatok nélkül. Súly, ismétlés, idő és táv a tényleges mérési típusnak megfelelően jelenik meg. A becsült 1RM a súlyos gyakorlat részleteiben marad. Nincs katalógusból származó mérési minta.
+- A kardió heti grafikonja, tempója/ideje és azonos távú rekordjai a meglévő `ProgressViewModel` / `NativeCardioProgressPanel` motorból jönnek. A napi aktivitás kétoszlopos kártyái és napi sorai a kiválasztott provider 14 napi cache-ét használják; a hét naptári hét. A korábbi gördülő heti célösszeg továbbra is csak 7 napból számol. Ismeretlen lépés vagy nem elkülöníthető edzésen kívüli rész: **—**. Nincs szolgáltató- vagy órás workout-lépés összeadás.
+- A Heti lépésszám és Aktív edzésidő független lenyitásai a két fejléc **alatt, teljes szélességen** jelennek meg.
+- Az üres naptári nap normál tájékoztató sort, két egyenlő szélességű hozzáadásgombot és egyetlen visszavonást kapott; a hozzáadás és visszavonás meglévő callbackje maradt.
+- A mentett edzés utáni szinkront a lezárt execution/ownership pillanatképben megőrzött pause/finalization jelző blokkolta. Kizárólag a hiteles forrásból származó, **kifejezetten `active=false`** lezárt pillanatkép vetíthető ki az admission ellenőrzéséből. Semmilyen tárolt frame/receipt/recovery marker nem törlődik. Aktív vagy sikertelenül mentett edzés, pending átadás, restore, backup és adatcsere továbbra is tilt. A main-thread vezérlés foglaltsága önmagában nem bizonyít átadást: a pontos mentési/átadási okot az IO-oldali tartós állapot adja. A magyar hiba inline jelenik meg, ismételt sikerjelzés nélkül.
+
+**Verzió:** telefon és óra `0.1.0-beta / 2738`, `com.TrainPilot.com`, változatlan állandó signer. A 2737-es bétára adatmegőrző frissítés szükséges; nincs kulcscsere vagy adattörlés.
+
+**Célzott bizonyíték:** [Actions 41491162595](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41491162595) SUCCESS, letöltött nyers XML **50 teszt, 0 failure/error/skip**. Forrás: `50384fc93bc12aff28d05e3e354cd52429440794`; a main merge teljes Git-fája azonos: `773096c3c3450f08f80ca5ee2a55d676a93ef8ac`. A tesztek a valódi finalizálási mentést, SQLite által visszautasított tartós írást, megmaradó blokkolást, rekordtípusokat, navigációt és elrendezési méreteket is vizsgálják.
+
+**Teljes build:** [signed Actions 41492179428](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41492179428) **SUCCESS**, rögzített main-forrás `b96982dd62212d53f80ee1af366d77bfaacd439d`. Letöltött nyers XML: **277 teszt = 108 telefon + 169 Wear, 0 failure/error/skip**; shared NO-SOURCE. A tényleges APK-k package/verziója, hash-e, CI-checkoutja és állandó signere ellenőrizve. Signer SHA256: `a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6`. Maps-konfiguráció, Data Layer pár és Wear capability/hardverkövetelmény igazolva.
+
+| Csomag | Méret (bájt) | APK SHA256 |
+|---|---:|---|
+| Telefon 2738 release | 19464875 | `7a492760f3db6c90e1670091b1c1a3b7f10d1cc928646ad3248b821c1526b18d` |
+| Natív Wear 2738 release | 4636863 | `9cf0f31c1c890e3b8c3b415217d1a4f458d3abca6991cadc928f9551d94abcd7` |
+
+- [Telefon APK, ZIP nélkül](https://drive.google.com/file/d/18RYsx0OXugqxwRM5j0c0LcbIbJBSXEKh/view)
+- [Natív Wear APK, ZIP nélkül](https://drive.google.com/file/d/1op7tJccyPg5Rc927Ipy_74vfH5rQxhxy/view)
+- [Eredeti APK-pár + public metadata](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41492179428/artifacts/13166126011)
+- [Teljes nyers tesztjelentés](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41492179428/artifacts/13165781493)
+- [Célzott nyers tesztjelentés](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41491162595/artifacts/13163908378)
+
+Mindkét új Drive-fájl mérete és szülőmappája külön metadata-visszaolvasással ellenőrizve: **TrainPilot Native**, `1ywHgrManynjV9uNvZfVncOmCr3SbHIb9`. A korábbi fájlok megmaradtak. Ez az átadófrissítés csak dokumentáció; az APK alkalmazásforrása a fenti main merge.
+
+A fizikai Samsung Health / Health Connect adatolvasás, valamint a valódi óra–telefon működés készülékes elfogadása továbbra is külön feladat. A #19 követő nyitott checkboxai ezt is jelölik; ne írd újra a már mainre került megoldást pusztán emiatt.
+
+## Korábbi béta-folytatás – #20 és #19
 
 A felhasználó a készülékes hibák javítása után **a mainből szeretné AI Studióval folytatni**. Közös hibakövető: [#19](https://github.com/fuloplevente1998/Native-AI-Studio/issues/19), javító PR: [#20](https://github.com/fuloplevente1998/Native-AI-Studio/pull/20), teljes elfogadási lista: [PROGRESS_HEALTH_BUG_TRACKER_2026-11-02.md](PROGRESS_HEALTH_BUG_TRACKER_2026-11-02.md). A #20 célzott ellenőrzésének eredményét és a mainből indított teljes Actions eredményét külön kell kezelni.
 
@@ -23,7 +54,7 @@ Célzott forrás: `5df8374a65f81dc759ecfb6e8e96a936698344ff`. [Actions 414507248
 
 Készülékes elfogadás továbbra is külön: valódi Samsung/HC engedély és teljes napi számai/hibakódja, az új szűrők/anatómia, a három forrás és a telefon↔óra átadás. #19 marad a folytatható lista. A saját régi ZIP/fotók elfogadása és az új fotó csatolása, illetve videóhiba #11 sem tekinthető automatikusan megoldottnak.
 
-## Igazolt béta main-build és APK-k
+## Korábbi #20 béta main-build és APK-k
 
 Main / signed checkout: **`3572e2086cc741cc42bc2c6929c786b0772bf91c`**, [#20](https://github.com/fuloplevente1998/Native-AI-Studio/pull/20) merge. [Teljes állandó kulcsos Actions 41451874030](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41451874030): **SUCCESS**, letöltött nyers XML **270 teszt = 101 telefon + 169 Wear; 0 failure/error/skip**. A shared task NO-SOURCE. A célzott forrás `5df8374` és PR-head `c8f194c` között csak a fenti átadó dokumentáció változott; a PR-head és a main merge Git-fája azonos.
 
@@ -45,10 +76,10 @@ Mindkét fájl a TrainPilot Native mappában van; a feltöltés után méret és
 
 Az alábbi APK-tábla még a `35d9d64` / `2736 / 1.3.71-native-test` kiadásé, nem az új béta. A régi példányokat és linkeket megőrizzük. A legfrissebb forrásra és a #16 állapotára a fenti #20 blokk az irányadó.
 
-## Projekt és ellenőrzött forrás
+## Projekt és történeti #18 forrás
 
 - Folytatandó repo: https://github.com/fuloplevente1998/Native-AI-Studio, **a legfrissebb main**.
-- Utolsó validált alkalmazáskód: main **`35d9d64ad99ed0cc67e5ffa72eb89ee28a7c14e6`**, PR #18 merge (AI Studio-frissítés + két kért hibajavítás).
+- A #18 ellenőrzött alkalmazáskódja: main **`35d9d64ad99ed0cc67e5ffa72eb89ee28a7c14e6`**, PR #18 merge (AI Studio-frissítés + két kért hibajavítás).
 - PR #18 forrás-HEAD: `ea5b897edcb5166edaffe770af22f76435cfec27`; a CI-checkout `cea5ee79c922b651e4bcfd2697ce63dd7c057389`; a forrás, CI és main teljes Git-fája azonos: `337f04da5ee8edc78e40f3009384e676097e3558`. [CI 41437300036](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41437300036): SUCCESS, letöltött XML szerint **255 teszt (86 telefon + 169 Wear), 0 failure/error/skip**. A 977cdd5 / PR #15 korábbi checkpoint.
 - Ezután az átadó dokumentáció külön PR-ban frissülhet; a következő agent ellenőrizze az aktuális main HEAD-et és a checkpoint óta érkezett kódváltozásokat. A dokumentáció frissítése nem új APK-build.
 - Audit: [PR #1](https://github.com/fuloplevente1998/Native-AI-Studio/pull/1). A már megvalósított pontokat ne készítsd újra.
@@ -59,13 +90,13 @@ Az alábbi APK-tábla még a `35d9d64` / `2736 / 1.3.71-native-test` kiadásé, 
 ## Megőrzendő szerződések
 
 - Meglévő Kotlin/Jetpack Compose Studio alkalmazás; grafit/arany UI, eredeti arany súlyzó logó, natív anatómia és felső navigáció maradjon. Nincs új webes/WebView helyettesítő app.
-- Telefon és óra applicationId: **`com.TrainPilot.com`** (kis-/nagybetű számít). Aktuális felhasználói béta-kérés szerint versionCode **2737**, versionName **`0.1.0-beta`**; az alábbi korábbi APK-táblában még a történeti verzió szerepel.
+- Telefon és óra applicationId: **`com.TrainPilot.com`** (kis-/nagybetű számít). Aktuális béta versionCode **2738**, versionName **`0.1.0-beta`**; az alábbi korábbi APK-táblában még a történeti verzió szerepel.
 - Egyetlen meglévő natív edzésmotor, Room/DataStore, GPS- és Health-tárolók. Ne építs párhuzamos adatbázist/motort.
 - Nincs fake/demo Health-, Wear-, GPS-, kalória-, pulzus-, akkumulátor- vagy sikerjelzés. Ismeretlen adat nem helyettesíthető kitalált számmal.
 - Ownership/finalization, pending átadás, installed ACK, backup/restore generáció, tombstone, migráció, staging/redo és adatvédelmi kapu maradjon érvényes. Felhasználói adat vagy recovery receipt nem törölhető hibakerülésként.
 - A helyi munkát őrizd meg. Külön javítóág/PR, érdemi kódváltozás után Actions és nyers teszteredmény; tesztet ne hagyj ki/ne gyengíts. Automatikus Play/GitHub release-publikálás nem engedélyezett.
 
-## Legutóbbi igazolt build és letöltés
+## Történeti #18 build és letöltés
 
 **Állandó saját kulcsos phone/Wear release-pár:** [Actions 41438108278](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41438108278), **SUCCESS**. A checkout a fenti `35d9d64` main commit, a PR #18 javításaival.
 

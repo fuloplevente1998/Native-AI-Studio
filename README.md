@@ -24,8 +24,10 @@ Download phone and Wear APKs from the same successful run. Actual manifests and
 signatures are checked together; `trainpilot-apk-metadata` records package/version,
 APK hashes, signer fingerprints and Maps key presence without exposing the key.
 Ordinary CI debug signers are temporary. Device APKs now use the owner-managed persistent
-key through `trainpilot-persistent-signing.yml` / `android-signing`; the last validated
-validated beta main source is `3572e20`: **0.1.0-beta / 2737, 270/270 full tests passing**, after 43/43 targeted regressions. Signed APKs and source/signer proof are recorded in the handoff and PR #20. Existing Gradle signing configurations remain intact.
+key through `trainpilot-persistent-signing.yml` / `android-signing`. Latest application
+main source is `b96982d`: **0.1.0-beta / 2738**, after **50/50 targeted regressions**.
+**277/277 full tests pass** in signed Actions `41492179428` (108 phone + 169 Wear; no failures/errors/skips). Signed APKs and source/signer proof
+are recorded in the handoff and PR #22. Existing Gradle signing configurations remain intact.
 
 `TRAINPILOT_MAPS_API_KEY` is configured externally and embedded in the latest signed pair. Presence is not proof of
 live Cloud authorization. Physical map tiles, watch ACK/sensors and real device

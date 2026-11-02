@@ -15,14 +15,14 @@ A 2026-11-02-i készülékes visszajelzések közös követője. Kiindulás: a m
 - [ ] **Mai állapot az Egészség és Kezdőlapon:** közös, hiteles mai provider-adat; napi lépés, aktív és teljes energia külön értelmezve. A felhasználó Samsung Healthben kb. 6–8 ezer lépést és 1000 kcal-t lát, miközben a natív UI üres. Ezeket a számokat tilos beégetni vagy mérést helyettesítő becslésként használni. Látszódjon forrás, tényleges frissítési idő, szinkronállapot és hiány/hiba; ismeretlen adat ne állítsa azt, hogy nulla.
 - [ ] **Edzés közbeni felugró súgók:** az alsó, vezérlőgombot takaró rutin snackbar/útmutató üzenetek (pl. gyakorlat befejezése, következő gyakorlat) megszűnnek. A felső következőgyakorlat-jelzés megmarad; érdemi hiba nem veszhet el.
 - [ ] **Edzés közbeni rögzített vezérlés:** az aktív edzésben görgetéstől független helyen legyen elérhető az Átadás órára / Visszavétel telefonra. A tényleges meglévő átadási parancsokat és ACK/ownership/paused/install védelmeket használja, ne pusztán kapcsolót váltson vagy másik képernyőre vigyen.
-- [x] **Béta verzió:** látható verzió `0.1.0-beta`, mindkét APK belső Android buildszáma `2737`. A belső kód nem indulhat 1-ről, mert a telepített 2736-ra adattörlés nélkül frissíthetőnek kell maradnia. Appazonosító és állandó signer változatlan.
+- [x] **Első #20 béta verzió:** látható verzió `0.1.0-beta`, mindkét APK belső Android buildszáma `2737`. A belső kód nem indulhat 1-ről, mert a telepített 2736-ra adattörlés nélkül frissíthetőnek kell maradnia. Appazonosító és állandó signer változatlan.
 - [x] **Kapu és átadás:** célzott regressziók + teljes telefon/Wear Actions; nyers XML ellenőrzés. Mainbe merge után állandó saját kulcsos APK-pár, kért új bétaverzió és változatlan appId/signer, hash/metadata-ellenőrzés és feltöltés a TrainPilot Native Drive-mappába. Friss AI Studio-átadó és folytatóprompt.
 
 ## Megőrzendő szerződések
 
-`com.TrainPilot.com`, az új felhasználói kérés szerint 2737 / 0.1.0-beta, az állandó saját kulcs, natív Room/DataStore/motor, ownership/finalization/ACK/replacement/tombstone/backup-adatvédelem. Nincs adattörlés, másik szolgáltatóra csendes fallback, fake/demo mérés vagy engedély nélküli sikerjelzés. Aktív edzés/adatcsere alatti tiltásnál a valós ok jelenjen meg; védelmet nem szabad kikapcsolni a szinkron kedvéért.
+`com.TrainPilot.com`, az aktuális folytatás szerint 2738 / 0.1.0-beta, az állandó saját kulcs, natív Room/DataStore/motor, ownership/finalization/ACK/replacement/tombstone/backup-adatvédelem. Nincs adattörlés, másik szolgáltatóra csendes fallback, fake/demo mérés vagy engedély nélküli sikerjelzés. Aktív edzés/adatcsere alatti tiltásnál a valós ok jelenjen meg; védelmet nem szabad kikapcsolni a szinkron kedvéért.
 
-A javítás folyamatban van. A checklist csak nyers teszt-/APK-bizonyíték után jelölhető késznek; a valódi Samsung/HC készülékes elfogadás külön visszajelzés marad.
+A kód a #20 és #22 alatt mainre került. A nyers teszt-/APK-bizonyíték és a valódi Samsung/HC készülékes elfogadás külön kezelendő; egy nyitott checkbox önmagában nem jelent implementálatlan kódot.
 
 
 GitHub-követő: #19; javító PR: #20.
@@ -41,4 +41,4 @@ A #20 mainre merge-elve: `3572e2086cc741cc42bc2c6929c786b0772bf91c`. Teljes sign
 - Heti célok: a két önálló lenyitás a két fejléc alatt teljes szélességet kap.
 - A Fejlődés harmadik füle Statisztikák: Személyes rekordok és Kardióstatisztika, a meglévő natív PR-/kardiómotorral, tényleges mentett sorozatokból és napi provider-cache-ből.
 - Üres naptári nap: önálló tájékoztató sor, két egyenlő szélességű hozzáadásgomb, egyetlen visszavonás.
-- Következő belső build: 2738, látható verzió továbbra is 0.1.0-beta. Célzott és teljes ellenőrzés még folyamatban; ez a szakasz nem készülékes elfogadás.
+- Következő belső build: 2738, látható verzió továbbra is 0.1.0-beta. A #22 mainre merge-elve: `b96982dd62212d53f80ee1af366d77bfaacd439d`. Célzott Actions `41491162595` SUCCESS: nyers XML-ben 50/50, nulla hiba/kihagyás. Teljes main signed Actions `41492179428` SUCCESS: letöltött XML **277/277 = 108 telefon + 169 Wear, nulla failure/error/skip**. A 2738-as állandó kulcsos APK-pár hash/package/verzió/CI-forrás ellenőrizve; feltöltve a TrainPilot Native mappába, méret/szülő readback igazolva. Aktuális linkek és hash-ek az AI Studio-átadó legfelső #22 blokkjában. Ez nem fizikai Samsung/HC vagy Wear készülékes elfogadás.
