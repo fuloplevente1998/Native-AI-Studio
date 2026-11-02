@@ -15,6 +15,10 @@ on:
       - '.github/workflows/trainpilot-android-ci.yml'
   workflow_dispatch:
     inputs:
+      wear_closure_regressions:
+        description: 'Check pending Wear closure receipts and phone discard recovery'
+        type: boolean
+        default: false
       targeted_regressions:
         description: 'Run the device-reported progress/health regressions before main integration'
         type: boolean
@@ -83,9 +87,16 @@ jobs:
       - name: Build debug APK and run JVM tests
         shell: bash
         env:
+          WEAR_CLOSURE_REGRESSIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.wear_closure_regressions }}
           TARGETED_REGRESSIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.targeted_regressions }}
         run: |
-          if [[ "$TARGETED_REGRESSIONS" == "true" ]]; then
+          if [[ "$WEAR_CLOSURE_REGRESSIONS" == "true" ]]; then
+            gradle --no-daemon --stacktrace --continue :app:assembleDebug :wear:assembleDebug :wear:assembleOptimized \
+              :app:testDebugUnitTest --tests 'com.example.WatchDiscardRecoveryRegressionTest' \
+              --tests 'com.example.PhoneReturnInstallationRegressionTest' --tests 'com.example.HealthSyncAdmissionRegressionTest' \
+              :wear:testDebugUnitTest --tests 'com.repforge.app.wear.WearClosureRecoveryTest' \
+              --tests 'com.repforge.app.wear.WearSaveSyncTest' --tests 'com.repforge.app.wear.WorkoutOwnership193Test'
+          elif [[ "$TARGETED_REGRESSIONS" == "true" ]]; then
             gradle --no-daemon --stacktrace --continue :app:assembleDebug :wear:assembleDebug :wear:assembleOptimized :app:testDebugUnitTest \
               --tests 'com.example.StudioProgress*' \
               --tests 'com.example.StudioHealthPermissionActionTest' \

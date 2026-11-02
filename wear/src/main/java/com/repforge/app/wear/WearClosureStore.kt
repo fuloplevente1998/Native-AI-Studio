@@ -18,6 +18,34 @@ data class WearClosure(
     val needsFeedback: Boolean = false
 )
 
+/** Only a matching terminal receipt proves closure; rejections must not look like endless delivery. */
+internal fun wearClosureReceipt(local: JSONObject, receipt: JSONObject): JSONObject? {
+    if (receipt.optInt("schema") != 1 || receipt.optLong("sequence") <= 0 ||
+        listOf("commandId", "workoutId", "action").any { local.optString(it).isBlank() || local.optString(it) != receipt.optString(it) }) return null
+    // results191 already passed the outbox's full sequence/identity validation.
+    // The closure command was persisted before enqueue assigned its sequence.
+    val status = receipt.optString("status")
+    val expected = if (local.optString("action") == "discardWorkout") "discarded" else "saved"
+    if (status !in setOf("saved", "discarded", "error", "superseded", "processed", "applied")) return null
+    return JSONObject(local.toString()).put("status", if (status == expected) status else "error")
+        .put("message", if (status == expected) "" else receipt.optString("message").ifBlank {
+            if (status == "superseded") "A telefon ezt a lezárást már nem aktuálisnak jelölte. Ellenőrizd az állapotot, majd próbáld újra."
+            else "A telefon nem igazolta a lezárást. Az órán megőrzött kérés újrapróbálható."
+        })
+}
+
+internal fun wearClosureDelivery(local: WearClosure?, delivery: WearSaveSyncState?): WearClosure? {
+    if (local == null || local.status != "pending") return local
+    if (delivery != null && delivery.workoutId != local.workoutId) return local
+    if (delivery == null || delivery.phase in setOf(WearSavePhase.ERROR, WearSavePhase.SYNCED))
+        return local.copy(status = "error", message = when (delivery?.reason) {
+            "timeout" -> "Nem érkezett telefonos visszaigazolás. A lezárási kérés újraküldhető."
+            "transport" -> "A lezárási kérés elküldése nem sikerült. Próbáld újra."
+            else -> "A lezárás még nincs visszaigazolva. Az órán megőrzött kérés újrapróbálható."
+        })
+    return local
+}
+
 object WearClosureStore {
     private const val PREFS = "trainpilot_wear_closure"
 
@@ -70,7 +98,8 @@ object WearClosureStore {
         result ?: return
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val local = prefs.getString("result", null)?.let(::JSONObject) ?: return
-        if (local.optString("commandId") != result.optString("commandId")) return
+        if (local.optString("commandId") != result.optString("commandId") ||
+            local.optString("workoutId") != result.optString("workoutId")) return
         local.put("status", result.optString("status", "pending"))
         local.put("message", result.optString("message"))
         if (result.optBoolean("feedbackAnswered")) local.put("needsFeedback", false)
@@ -84,8 +113,9 @@ object WearClosureStore {
         val receipts=try { JSONArray(context.getSharedPreferences("trainpilot_wear_outbox",Context.MODE_PRIVATE).getString("results191","[]")) }
             catch(_:Exception) { return parse(local) }
         for(i in 0 until receipts.length())receipts.optJSONObject(i)?.let {
-            if(it.optString("commandId")==local.optString("commandId") && it.optString("workoutId")==local.optString("workoutId") &&
-                it.optString("status") in setOf("saved","discarded","error"))local.put("status",it.optString("status"))
+            wearClosureReceipt(local, it)?.let { reconciled ->
+                local.put("status", reconciled.getString("status")).put("message", reconciled.optString("message"))
+            }
         }
         return parse(local)
     }

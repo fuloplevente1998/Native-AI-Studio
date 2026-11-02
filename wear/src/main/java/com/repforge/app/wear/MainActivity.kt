@@ -388,7 +388,10 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                 restRemaining = restRemaining,
                 closure = closure,
                 saveSync = saveSync,
-                onRetrySync = { id -> WearCommandOutbox.retry(this,id);refreshSaveSync() },
+                onRetrySync = { id ->
+                    if (closure.value?.workoutId == id) retryClosure()
+                    else { WearCommandOutbox.retry(this,id); refreshSaveSync() }
+                },
                 health = health,
                 measuring = measuring,
                 gpsEnabled = gpsEnabled,
@@ -859,8 +862,10 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
     }
 
     private fun refreshSaveSync() {
-        closure.value=WearClosureStore.load(this)
-        saveSync.value=WearCommandOutbox.state(this,workout.value?.workoutId ?: closure.value?.takeIf { it.status in listOf("pending","error") }?.workoutId)
+        val local = WearClosureStore.load(this)
+        val delivery = WearCommandOutbox.state(this, workout.value?.workoutId ?: local?.takeIf { it.status in listOf("pending", "error") }?.workoutId)
+        closure.value = wearClosureDelivery(local, delivery)
+        saveSync.value = delivery
     }
 
     private fun saveWorkoutFeedback(pending: WatchWorkoutFeedback, effort: String?) {
