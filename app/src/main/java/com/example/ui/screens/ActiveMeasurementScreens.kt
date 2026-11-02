@@ -570,7 +570,7 @@ fun ActiveStrengthWorkoutScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        SmallExerciseVideoButton(exerciseName = currentExerciseName)
+                        SmallExerciseVideoButton(exerciseName = currentExerciseName, exerciseId = currentExerciseId)
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = palette.surfaceElevated,
@@ -1716,7 +1716,10 @@ fun ActiveTimedWorkoutScreen(
                                     }
                                 }
                             }
-                            SmallExerciseVideoButton(exerciseName = exerciseNameHu)
+                            SmallExerciseVideoButton(
+                                exerciseName = exerciseNameHu,
+                                exerciseId = timedExerciseOptions.firstOrNull { it.nameHu == exerciseNameHu }?.id
+                            )
                         }
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -2202,7 +2205,10 @@ fun ActiveBilateralWorkoutScreen(
                                     color = palette.textSecondary
                                 )
                             }
-                            SmallExerciseVideoButton(exerciseName = exerciseTitle)
+                            SmallExerciseVideoButton(
+                                exerciseName = exerciseTitle,
+                                exerciseId = uiState.exercises.firstOrNull { it.nameHu == exerciseTitle }?.id
+                            )
                         }
 
                         Row(
