@@ -2,6 +2,11 @@ package com.example
 
 import com.repforge.app.HealthConnectReadDiagnosis
 import com.repforge.app.HealthConnectRepository
+import com.repforge.app.HealthJournalStore
+import com.repforge.app.NativeHealthProviderData
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import java.time.LocalDate
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.*
@@ -55,6 +60,23 @@ class HealthConnectReadDiagnosisRegressionTest {
         assertEquals(selected, diagnosis.getString("preferredStepOrigin"))
         assertEquals(available, diagnosis.getJSONArray("observedStepOrigins").getString(0))
         assertTrue(day.isNull("steps"))
+    }
+
+    @Test fun diagnosticSurvivesHcJournalAndNeverBecomesSamsungDailyData() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        HealthJournalStore(context).use { store ->
+            store.erase()
+            val day = LocalDate.parse("2026-11-01")
+            val payload = read().put("source", "@aggregate")
+            payload.put("hcReadDiagnosis", HealthConnectReadDiagnosis.inspect(payload, "auto"))
+            store.healthDay(day.toString(), payload, store.generation())
+            val persisted = NativeHealthProviderData.day(store, HealthJournalStore.HC, day)
+            assertNotNull(persisted)
+            assertEquals(HealthConnectReadDiagnosis.NO_DATA,
+                persisted!!.getJSONObject("hcReadDiagnosis").getString("status"))
+            assertNull(NativeHealthProviderData.day(store, HealthJournalStore.SAMSUNG, day))
+            store.erase()
+        }
     }
 
     @Test fun genuineMeasuredValueRemainsAvailableInSourceScopedResult() {
