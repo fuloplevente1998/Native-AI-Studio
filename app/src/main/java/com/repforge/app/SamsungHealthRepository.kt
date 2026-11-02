@@ -158,7 +158,7 @@ object SamsungHealthRepository {
         val granted = reader.grantedKeys()
         for ((permission, fields) in mapOf(
             "READ_STEPS" to listOf("steps"),
-            "READ_HEART_RATE" to listOf("averageHeartRate", "minHeartRate", "maxHeartRate", "heartRateSamples"),
+            "READ_HEART_RATE" to listOf("averageHeartRate", "minHeartRate", "maxHeartRate", "heartRateSamples", "heartRateSeries"),
             "READ_EXERCISE" to listOf("workoutCalories", "exerciseMinutes")
         )) if (permission !in granted) for (field in fields) {
             failures.put(field)
@@ -203,7 +203,7 @@ object SamsungHealthRepository {
                 "READ_ACTIVE_CALORIES_BURNED" to listOf("activeCalories"),
                 "READ_TOTAL_CALORIES_BURNED" to listOf("totalCalories"),
                 "READ_DISTANCE" to listOf("distanceMeters"),
-                "READ_HEART_RATE" to listOf("averageHeartRate", "minHeartRate", "maxHeartRate", "heartRateSamples"),
+                "READ_HEART_RATE" to listOf("averageHeartRate", "minHeartRate", "maxHeartRate", "heartRateSamples", "heartRateSeries"),
                 "READ_SLEEP" to listOf("sleepSessions"),
                 "READ_WEIGHT" to listOf("weightKg", "weightTime", "weightSource", "bodyFatPercent", "bodyFatTime",
                     "bodyFatSource", "bodyFatMassKg", "skeletalMuscleMassKg", "fatFreeMassKg",
