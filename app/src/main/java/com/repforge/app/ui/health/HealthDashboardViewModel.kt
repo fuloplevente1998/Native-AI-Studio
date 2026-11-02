@@ -266,7 +266,10 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                         page.selected.optJSONArray("sleepSessions")?.length() ?: 0),
                     lastSyncAt = loaded.third.second,
                     lastReadAt = page.selected.optString("readAt", page.selected.optString("syncedAt", "—")),
-                    providerReadDetails = page.selected.optJSONObject("errors")?.let { errors ->
+                    providerReadDetails = if (page.selected.optString("channel") == HealthJournalStore.HC)
+                        com.repforge.app.HealthConnectReadDiagnosis.describe(
+                            page.selected.optJSONObject("hcReadDiagnosis") ?: JSONObject())
+                    else page.selected.optJSONObject("errors")?.let { errors ->
                         errors.keys().asSequence().map { errors.optString(it) }.filter(String::isNotBlank).distinct().joinToString(", ")
                     }.orEmpty(),
                     hcSupported = access[0], hcGranted = access[1], samsungInstalled = access[2], samsungAvailable = access[3])

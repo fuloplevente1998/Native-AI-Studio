@@ -388,6 +388,10 @@ fun HealthJournalTabContent(
                         if (state.dailySourcePreference !in (listOf("auto", "priority") + state.dailySourceOptions))
                             Text(state.dailySourcePreference, color = colors.muted)
                         Text(text.getString(com.repforge.app.R.string.health_daily_source_hint), color = colors.muted)
+                        if (state.providerReadDetails.isNotBlank()) {
+                            Text(state.providerReadDetails, color = colors.muted, fontSize = 11.sp,
+                                modifier = Modifier.testTag("health_connect_read_diagnosis"))
+                        }
                         if (state.sourceSaveFailed) Text(text.getString(com.repforge.app.R.string.metadata_write_failed), color = colors.danger)
                     }
                     if (state.historyPartial) Text(com.repforge.app.ui.text.nativeResources(LocalContext.current, state.language)
