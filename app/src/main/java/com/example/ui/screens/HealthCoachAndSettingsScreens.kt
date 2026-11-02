@@ -816,7 +816,7 @@ fun HealthTabScreen(
                                         color = palette.textPrimary
                                     )
                                     val restLbl = if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"
-                                    val peakLbl = if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"
+                                    val peakLbl = if (uiState.maxHrBpm > 0) "${uiState.maxHrBpm} bpm" else "—"
                                     Text(
                                         text = "Nyugalmi: $restLbl • Csúcs: $peakLbl",
                                         style = MaterialTheme.typography.bodySmall,
@@ -863,9 +863,32 @@ fun HealthTabScreen(
                                     .border(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
                                     .clickable { onToggleHealthSection("pulse") }
                             ) {
-                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Text("Nincs lekért pulzus-idősor", color = palette.textSecondary,
-                                        style = MaterialTheme.typography.bodySmall)
+                                if (uiState.dailyPulseHistory.size < 2) {
+                                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                        Text(if (uiState.dailyPulseHistory.isEmpty()) "Nincs lekért pulzus-idősor"
+                                            else "Egy időbélyeges pulzusmérés érhető el",
+                                            color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
+                                    }
+                                } else {
+                                    val readings = uiState.dailyPulseHistory
+                                    Canvas(Modifier.fillMaxSize().padding(horizontal = 9.dp, vertical = 7.dp)
+                                        .testTag("health_pulse_real_trend")) {
+                                        val first = java.time.Instant.parse(readings.first().timeIso).toEpochMilli()
+                                        val last = java.time.Instant.parse(readings.last().timeIso).toEpochMilli()
+                                        val delta = (last - first).coerceAtLeast(1L).toFloat()
+                                        val lowest = readings.minOf { it.bpm }.toFloat()
+                                        val spread = (readings.maxOf { it.bpm } - readings.minOf { it.bpm })
+                                            .toFloat().coerceAtLeast(1f)
+                                        val line = Path()
+                                        readings.forEachIndexed { index, sample ->
+                                            val time = java.time.Instant.parse(sample.timeIso).toEpochMilli()
+                                            val x = ((time - first) / delta).coerceIn(0f, 1f) * size.width
+                                            val y = size.height - (sample.bpm - lowest) / spread * size.height
+                                            if (index == 0) line.moveTo(x, y) else line.lineTo(x, y)
+                                        }
+                                        drawPath(line, color = Color(0xFFEF4444),
+                                            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
+                                    }
                                 }
                             }
 
