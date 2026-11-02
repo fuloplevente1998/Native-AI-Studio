@@ -8,6 +8,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import com.repforge.shared.WorkoutOwnership193
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.time.Instant
@@ -24,6 +26,7 @@ internal object NativeLiveWorkoutHealth {
     }
     fun sameSession(expected: JSONObject, current: JSONObject?): Boolean = current != null && current.optBoolean("active") &&
         !current.optBoolean("finalizationPending") && !WorkoutOwnership193.pending(current) &&
+        current.optString("started") == expected.optString("started") &&
         current.optString("workoutId") == expected.optString("workoutId") && current.optLong("generation") == expected.optLong("generation") &&
         current.optLong("ownerEpoch193") == expected.optLong("ownerEpoch193") && current.optLong("pauseRevision") == expected.optLong("pauseRevision") &&
         current.optJSONArray("activeIntervals")?.toString() == expected.optJSONArray("activeIntervals")?.toString()
@@ -32,13 +35,17 @@ internal object NativeLiveWorkoutHealth {
         NativeWorkoutHealthSource.requireProvider(provider)
         val owner = activity as? LifecycleOwner ?: error("Látható edzésképernyő szükséges.")
         val foreground = AtomicBoolean(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
-        val observer = LifecycleEventObserver { _, _ -> foreground.set(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) }
+        val observer = LifecycleEventObserver { _, _ ->
+            if (!owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) foreground.set(false)
+        }
         owner.lifecycle.addObserver(observer)
         try {
             val expected = checkNotNull(ActiveWorkoutStore.current(context)) { "Nincs aktív edzés." }
             val ticket = NativeDataReplacement.continuationForCurrentData(context)
             val query = window(expected, Instant.now())
+            val operation = currentCoroutineContext()
             val guard = {
+                operation.ensureActive()
                 check(foreground.get()) { "Az egészségadat-lekérés csak előtérben folytatható." }
                 ticket.requireCurrent(context)
                 check(NativeHealthBackupGate.available() && sameSession(expected, ActiveWorkoutStore.current(context))) {

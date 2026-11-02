@@ -918,17 +918,17 @@ fun HealthTabScreen(
                                         ) {
                                             PulseInnerBox(
                                                 label = "Max. pulzus",
-                                                value = if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm + 25} bpm" else "—",
+                                                value = "—",
                                                 modifier = Modifier.weight(1f)
                                             )
                                             PulseInnerBox(
                                                 label = "Min. pulzus",
-                                                value = if (uiState.restingHrBpm > 0) "${(uiState.restingHrBpm - 6).coerceAtLeast(45)} bpm" else "—",
+                                                value = "—",
                                                 modifier = Modifier.weight(1f)
                                             )
                                         }
                                         Text(
-                                            text = "Health Connect / Samsung Health",
+                                            text = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = palette.textSecondary
                                         )
@@ -1461,7 +1461,7 @@ fun HealthTabScreen(
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
                             Text("Samsung Health", fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text(if (uiState.samsungGrantedCount < 0) "Engedély ellenőrzése…"
+                            Text(if (uiState.samsungGrantedCount < 0) "Engedély még nem igazolt"
                                 else "${uiState.samsungGrantedCount}/${uiState.samsungPermissionCount} adatkör",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = if (uiState.samsungGrantedCount > 0) palette.success else palette.textSecondary)

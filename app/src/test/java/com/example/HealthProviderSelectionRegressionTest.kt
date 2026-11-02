@@ -41,7 +41,7 @@ class HealthProviderSelectionRegressionTest {
         val out = NativeWorkoutHealthSource.read(workout(), HealthJournalStore.SAMSUNG,
             healthConnect = { hcReads++; error("Wrong provider") }, samsung = { w ->
                 windows.add(w)
-                JSONObject().put("start", w.start).put("end", w.end).put("steps", 100)
+                JSONObject().put("start", w.start.toString()).put("end", w.end.toString()).put("steps", 100)
                     .put("failedFields", JSONArray().put("averageHeartRate"))
                     .put("errors", JSONObject().put("averageHeartRate", "PERMISSION_DENIED"))
             })
@@ -55,7 +55,7 @@ class HealthProviderSelectionRegressionTest {
     }
     @Test fun selectedHealthConnectNeverInvokesSamsungAndSamsungFailureNeverFallsBack() = runBlocking {
         val out = NativeWorkoutHealthSource.read(workout(), HealthJournalStore.HC,
-            healthConnect = { w -> JSONObject().put("start", w.start).put("end", w.end).put("steps", 20) },
+            healthConnect = { w -> JSONObject().put("start", w.start.toString()).put("end", w.end.toString()).put("steps", 20) },
             samsung = { error("Wrong provider") })
         assertEquals(40, out.getInt("steps"))
         try {
@@ -88,6 +88,7 @@ class HealthProviderSelectionRegressionTest {
         assertTrue(NativeLiveWorkoutHealth.sameSession(frame, JSONObject(original)))
         for (key in listOf("generation", "ownerEpoch193", "pauseRevision"))
             assertFalse(NativeLiveWorkoutHealth.sameSession(frame, JSONObject(original).put(key, 99)))
+        assertFalse(NativeLiveWorkoutHealth.sameSession(frame, JSONObject(original).put("started", "2026-11-01T09:00:00Z")))
         assertFalse(NativeLiveWorkoutHealth.sameSession(frame, JSONObject(original).put("finalizationPending", true)))
         assertEquals(original, frame.toString())
     }

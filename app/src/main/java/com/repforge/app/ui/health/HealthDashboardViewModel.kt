@@ -317,7 +317,7 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                 }
                 historyQuery = historyQuery.copy(channel = newProvider)
                 _uiState.update { it.copy(provider = newProvider, metrics = emptyList(), lastSyncAt = "—", lastReadAt = "—",
-                    syncOutcome = "NONE", syncMessage = "", samsungGrantedCount = -1) }
+                    syncOutcome = "NONE", syncMessage = "") }
                 loadHealthDashboard()
                 // Explicit provider selection owns the permission prompt even when an old
                 // automatic operation was cancelled while waiting for the SDK.
