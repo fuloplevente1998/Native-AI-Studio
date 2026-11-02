@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -17,10 +18,10 @@ internal fun StudioPausedWorkoutActions(workoutId: String, phoneControls: Boolea
     var pendingId by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(workoutId) { if (pendingId != workoutId) pendingId = null }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(onClick = onContinue, enabled = !busy, modifier = Modifier.weight(1f).heightIn(min = 50.dp)
+        Button(onClick = onContinue, enabled = !busy, shape = RoundedCornerShape(14.dp), modifier = Modifier.weight(1f).heightIn(min = 50.dp)
             .testTag("home_continue_workout_button")) { Text(continueLabel) }
         TrainPilotOutlinedButton(onClick = { pendingId = workoutId },
-            enabled = !busy && phoneControls && workoutId.isNotBlank(),
+            enabled = !busy && phoneControls && workoutId.isNotBlank(), shape = RoundedCornerShape(14.dp),
             modifier = Modifier.heightIn(min = 50.dp).testTag("home_discard_workout_button")) { Text("Elvetés") }
     }
     if (pendingId != null && pendingId == workoutId) {

@@ -49,7 +49,7 @@ class StudioProgressUiRegressionTest {
             }
         }
         compose.onNodeWithTag("progress_range_0").performClick()
-        val bar = compose.onNodeWithTag("progress_compact_bar_0").getUnclippedBoundsInRoot()
+        val bar = compose.onNodeWithTag("progress_compact_bar_0", useUnmergedTree = true).getUnclippedBoundsInRoot()
         val card = compose.onNodeWithTag("progress_total_volume_card").getUnclippedBoundsInRoot()
         assertTrue((bar.right - bar.left) < (card.right - card.left) / 4)
         for ((index, total) in listOf(100, 300, 700, 1500).withIndex()) {
@@ -63,6 +63,27 @@ class StudioProgressUiRegressionTest {
         compose.onNodeWithTag("progress_volume_total", useUnmergedTree = true).assertTextEquals("100 kg")
         compose.onNodeWithTag("progress_range_2").performClick()
         compose.onNodeWithTag("progress_volume_bucket_unit").assertTextEquals("Heti bontás")
+    }
+    @Test fun threeMonthChartOpensAtLatestAndManualScrollIsPreservedOnSelection() {
+        var selected by mutableStateOf(-1)
+        val period = StudioProgressWindow(90, LocalDate.of(2026, 11, 2))
+        val bars = period.volumes(listOf(row(0, 100))).mapIndexed { index, pair -> pair.first to (100 + index) }
+        compose.setContent { TrainPilotTheme {
+            Box(Modifier.width(300.dp)) {
+                com.example.ui.screens.StudioVolumeChart(bars, period, selected, false) { selected = it }
+            }
+        } }
+        fun scrollRange() = compose.onNodeWithTag("progress_volume_scroll_compact").fetchSemanticsNode()
+            .config[androidx.compose.ui.semantics.SemanticsProperties.HorizontalScrollAxisRange]
+        val range = scrollRange()
+        compose.runOnIdle {
+            assertTrue(range.maxValue() > 0f)
+            assertEquals(range.maxValue(), range.value(), 1f)
+        }
+        compose.onNodeWithTag("progress_compact_bar_0", useUnmergedTree = true).performScrollTo()
+        compose.onNodeWithTag("progress_compact_bar_0", useUnmergedTree = true).performTouchInput { click() }
+        val afterSelection = scrollRange()
+        compose.runOnIdle { assertEquals(0, selected); assertTrue(afterSelection.value() < afterSelection.maxValue()) }
     }
     @Test fun bodyLayersFollowWorkoutLoadsAndSmallMeasuredLoadsAreNotRoundedAway() {
         var loads by mutableStateOf(listOf(MuscleLoadItem("chest", "Mell", "1 sorozat", 0, 0.005f, "Kisebb", emptyList(), "", setsCount = 1)))
