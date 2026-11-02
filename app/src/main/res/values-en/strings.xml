@@ -456,7 +456,7 @@
     <string name="native_settings_haptic">Vibrate when set recorded (#227)</string>
     <string name="native_settings_haptic_info">Subtle 40 ms feedback when marking a set complete</string>
     <string name="native_settings_health_backup">Back up health journal</string>
-    <string name="native_settings_health_backup_info">Include Health Connect / heart rate data in manual backup</string>
+    <string name="native_settings_health_backup_info">Health Connect, direct Samsung Health and watch health data. JSON/ZIP: health journal and workout summaries; Drive: saved workout summaries. Off by default. Local data and previous backups are retained.</string>
     <string name="native_settings_privacy_open">View privacy notice</string>
     <string name="native_settings_erase_open">Erase all local data (Erase Local)</string>
     <string name="native_settings_erase_title">Erase all local data</string>

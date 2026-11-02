@@ -874,7 +874,8 @@ class LegacyWebViewMigrator(
                 out.put("nativeHealthJournal", healthSnapshot)
             }
 
-            NativeBackupPrivacy.sanitize(out)
+            out.put("healthIncluded", settings.healthBackupConsent)
+            NativeBackupPrivacy.sanitize(out, includeHealth = settings.healthBackupConsent)
             }
         }
 }

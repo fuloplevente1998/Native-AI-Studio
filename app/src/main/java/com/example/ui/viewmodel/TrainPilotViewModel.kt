@@ -28,8 +28,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.CancellationException
+import com.repforge.app.NativeDataReplacement
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.launch
@@ -242,7 +245,8 @@ data class TrainPilotUiState(
 
     // Permissions & Backup State (Mockup 4/4 #3, #4, #5)
     val selectedBackupFormat: String = "JSON", // JSON, ZIP, DRIVE
-    val includeHealthInBackup: Boolean = true,
+    val includeHealthInBackup: Boolean = false,
+    val backupHealthConsentSaving: Boolean = false,
     val permissionGpsEnabled: Boolean = false,
     val permissionCentralLocEnabled: Boolean = false,
     val permissionNotificationsEnabled: Boolean = false,
@@ -888,6 +892,12 @@ class TrainPilotViewModel : ViewModel() {
         nativeDatabase = database
         nativeScope = scope
 
+        scope.launch {
+            settingsStore.settingsFlow.map { it.healthBackupConsent }.distinctUntilChanged().collect { consent ->
+                _uiState.update { it.copy(includeHealthInBackup = consent) }
+            }
+        }
+
         scope.launch(Dispatchers.Main.immediate) {
             ActiveWorkoutStore.snapshotFlow.collect { frame ->
                 if (frame?.optBoolean("active") == true) _uiState.update { state ->
@@ -925,7 +935,8 @@ class TrainPilotViewModel : ViewModel() {
                 TrainPilotDatabase.ensureBuiltinCatalogSeeded(database, context)
             } catch (_: Throwable) {}
 
-            val savedProfile = JSONObject(settingsStore.current().profileJson)
+            val savedNativeSettings = settingsStore.current()
+            val savedProfile = JSONObject(savedNativeSettings.profileJson)
             // 1. Detect if a paused or active workout is running natively
             try {
                 val execution = withContext(Dispatchers.Main.immediate) { PhoneWorkoutExecution.store(context).snapshot() }
@@ -3602,7 +3613,19 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun toggleIncludeHealthInBackup(include: Boolean) {
-        _uiState.update { it.copy(includeHealthInBackup = include) }
+        val ctx = nativeContext ?: return
+        val store = nativeSettingsStore ?: return
+        val scope = nativeScope ?: return
+        if (_uiState.value.backupHealthConsentSaving) return
+        _uiState.update { it.copy(backupHealthConsentSaving = true) }
+        scope.launch(Dispatchers.IO) {
+            try {
+                NativeDataReplacement.mutate(ctx) { store.setHealthBackupConsent(include) }
+                _uiState.update { it.copy(includeHealthInBackup = include) }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { _uiState.update { it.copy(statusBannerMessage = "A mentési hozzájárulás nem menthető. Próbáld újra.") } }
+            finally { _uiState.update { it.copy(backupHealthConsentSaving = false) } }
+        }
     }
 
     fun updatePlatformAccess(access: JSONObject, watchNames: List<String>, companionAvailable: Boolean = false) {

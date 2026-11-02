@@ -95,12 +95,19 @@ class LegacyRestoreEvidenceRegressionTest {
     }
     @Test fun legacyZipRestoresRealPhotoAndStudioGalleryActuallyDecodesIt() {
         restore()
+        val db = TrainPilotDatabase.getInstance(context)
+        val indexed = awaitNative { com.repforge.app.ui.progress.NativeProgressPhotoData.load(db) }
+        assertEquals("ZIP metadata must index the actual saved photo", 1, indexed.size)
         val model = ProgressViewModel(context as android.app.Application); models.put("photos", model)
         compose.setContent { TrainPilotTheme {
             StudioPrivatePhotos(TrainPilotUiState(privatePhotoWorkoutId = "restored"),
                 TrainPilotStrings.forLanguage(AppLanguage.HU), {}, {}, model)
         } }
-        compose.waitUntil(10_000) { !model.uiState.value.photosLoading && model.uiState.value.progressPhotos.size == 1 }
+        try {
+            compose.waitUntil(10_000) { !model.uiState.value.photosLoading && model.uiState.value.progressPhotos.size == 1 }
+        } catch (error: androidx.compose.ui.test.ComposeTimeoutException) {
+            throw AssertionError("Restored photo is indexed but controller did not publish it: ${model.uiState.value}", error)
+        }
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("progress_photo_image_$photo").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("progress_photo_$photo").performClick()
         compose.onNodeWithTag("progress_photo_detail").assertExists()
@@ -120,6 +127,67 @@ class LegacyRestoreEvidenceRegressionTest {
         compose.onNodeWithTag("journal_wear_totalCalories_value").assertTextEquals("404 kcal")
         compose.onNodeWithTag("journal_hc_totalCalories_value").assertTextEquals("72,2 kcal")
         compose.onNodeWithTag("journal_hc_activeCalories_value").assertTextEquals("8 kcal")
+    }
+    @Test fun samsungHealthConnectAndWearRespectBackupConsentInBothJsonAndZipWithoutDeletingLocalData() {
+        restore()
+        val db = TrainPilotDatabase.getInstance(context)
+        val settings = TrainPilotSettingsStore(context)
+        val samsung = JSONObject().put("windowStart", start).put("windowEnd", "2026-10-29T20:15:00Z").put("averageHeartRate", 134)
+        val payload = raw()
+        payload.put("health240", NativeWorkoutHealthSource.attach(payload.getJSONObject("health240"), HealthJournalStore.SAMSUNG, samsung))
+        awaitNative {
+            LegacyWebViewMigrator(context, db, settings).saveWorkoutJsonToRoom(payload)
+            HealthJournalStore.get(context).samsungDay("2026-10-29", JSONObject().put("steps", 654), JSONArray(), HealthJournalStore.get(context).generation())
+        }
+        for (consent in listOf(false, true)) {
+            awaitNative { settings.setHealthBackupConsent(consent) }
+            for (zip in listOf(false, true)) {
+                val file = File(context.cacheDir, "consent-$consent-$zip")
+                awaitNative {
+                    val manager = BackupRestoreManager(context)
+                    if (zip) manager.exportZipArchiveToUri(Uri.fromFile(file)).getOrThrow()
+                    else manager.exportJsonBackupToUri(Uri.fromFile(file)).getOrThrow()
+                }
+                val data = if (zip) java.util.zip.ZipFile(file).use { archive ->
+                    assertNotNull(archive.getEntry("photos/$photo.jpg"))
+                    JSONObject(archive.getInputStream(archive.getEntry("backup.json")).bufferedReader().readText())
+                } else JSONObject(file.readText())
+                val saved = data.getJSONArray("history").getJSONObject(0)
+                assertEquals(consent, data.getBoolean("healthIncluded"))
+                assertEquals(consent, saved.has("healthWear129"))
+                assertEquals(consent, saved.has("health240"))
+                assertEquals(consent, data.has("nativeHealthJournal"))
+                if (consent) {
+                    assertEquals(134, NativeWorkoutHealthSource.snapshot(saved.getJSONObject("health240"), HealthJournalStore.SAMSUNG)!!.getInt("averageHeartRate"))
+                    val days = data.getJSONObject("nativeHealthJournal").getJSONArray("days")
+                    assertTrue((0 until days.length()).any { days.getJSONObject(it).optString("channel") == HealthJournalStore.SAMSUNG })
+                }
+            }
+            val local = awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById("restored")!! }
+            assertEquals(404, NativeSavedWearHealth.read(local.workout)!!.getInt("totalCalories"))
+            assertNotNull(local.workout.health240Json)
+            assertTrue(File(context.filesDir, "workout_photos/$photo.jpg").isFile)
+        }
+    }
+    @Test fun optedOutCloudProjectionKeepsCachesOnlyInTheLocalInstallCopyAndRejectsChangedWindows() {
+        val local = raw()
+        val network = com.repforge.app.data.migration.NativeBackupPrivacy.sanitize(JSONObject().put("history", JSONArray().put(local)), false)
+        val install = JSONObject(network.toString())
+        com.repforge.app.data.migration.NativeBackupPrivacy.preserveLocalWorkoutHealth(install, listOf(local))
+        assertFalse(network.getJSONArray("history").getJSONObject(0).has("healthWear129"))
+        assertTrue(install.getJSONArray("history").getJSONObject(0).has("healthWear129"))
+        assertTrue(local.has("healthWear129"))
+        val changed = JSONObject(network.toString())
+        changed.getJSONArray("history").getJSONObject(0).put("finished", "2026-10-29T23:00:00Z")
+        com.repforge.app.data.migration.NativeBackupPrivacy.preserveLocalWorkoutHealth(changed, listOf(local))
+        assertFalse(changed.getJSONArray("history").getJSONObject(0).has("healthWear129"))
+    }
+    @Test fun watchIdentityCanReferenceOriginalIdAfterCloudAddsANewSyncId() {
+        val row = raw()
+        row.getJSONObject("healthWear129").put("workoutId", row.getString("id"))
+        assertEquals(404, NativeSavedWearHealth.fromRaw(row)!!.getInt("totalCalories"))
+        row.getJSONObject("healthWear129").put("workoutId", "other-session")
+        assertNull(NativeSavedWearHealth.fromRaw(row))
     }
     @Test fun oldTimestampIdentitySurvivesGeneratedNativeIdButForeignWatchSummaryIsRejected() {
         val row = raw().apply { remove("id"); remove("syncId") }

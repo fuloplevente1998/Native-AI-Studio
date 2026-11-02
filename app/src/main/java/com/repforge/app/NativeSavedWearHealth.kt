@@ -15,10 +15,11 @@ internal object NativeSavedWearHealth {
         val expected = listOf("syncId", "id", "started", "workout", "dayId")
             .firstNotNullOfOrNull { raw.optString(it).takeIf(String::isNotBlank) } ?: return null
         val actual = legacy.optString("workoutId")
+        val aliases = listOf("syncId", "id", "workoutId").map { raw.optString(it) }.filter(String::isNotBlank)
         val generatedId = com.repforge.shared.LegacySyncIdentity18.legacyHistoryId(raw)
         val originalHadNoId = raw.optString("id").let { it.isBlank() || it == generatedId } &&
             raw.optString("syncId").let { it.isBlank() || it == generatedId }
-        val same = expected == actual || (originalHadNoId &&
+        val same = actual in aliases || expected == actual || (originalHadNoId &&
             runCatching { Instant.parse(raw.getString("started")) == Instant.parse(actual) }.getOrDefault(false))
         return legacy.takeIf { same }
     }

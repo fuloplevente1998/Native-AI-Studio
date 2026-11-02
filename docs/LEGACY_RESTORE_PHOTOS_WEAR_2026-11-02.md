@@ -21,3 +21,12 @@
 A képernyőképen látott értékek csak a teszt fixture-ben szerepelnek. A felhasználó tényleges ZIP-fájlja még nincs megvizsgálva. Ha a régi exportból az órás Health-adatot eleve kihagyták (healthIncluded/hozzájárulás), a hiányzó bájtok nem gyárthatók le a képernyőképből. A régi ZIP-et őrizd meg; cél a már meglévő raw adatok megjelenítése újraimport nélkül.
 
 CI és a tényleges készülékes ellenőrzés állapotát a javító PR leírása tartalmazza. A közvetlen Samsung SDK-val végzett olvasás másik útvonal; azt ez a kompatibilitási javítás nem állítja készüléken igazoltnak.
+
+
+## Hozzáadott adatvédelmi ellenőrzés
+
+A natív egészségnapló a Samsung csatornát is tárolja; hozzájárulással a JSON/ZIP ezt a naplót és a HC/Samsung/Wear workout-összesítéseket is menti. A Drive szándékosan workout-összesítéseket szinkronizál, a teljes napi provider-naplót nem. Ezt a felirat most külön kimondja.
+
+A Studio kapcsoló korábban csak memóriában változott és true volt az alapállapota; most a meglévő DataStore hozzájáruláshoz kötött, alapból false. A hozzájárulás nélküli export az összes egészségadat-alias mezőt kizárja, nem csak a teljes naplót. A kikapcsolás nem törli a helyi méréseket. Drive-nál a feltöltött projekció egészségadatmentes; a helyi install külön, azonos workout/ablak ellenőrzéssel megtartja a saját cache-t, és egy távoli snapshot nem kapcsolhatja be ezen az eszközön az egészségadat-megosztást.
+
+Új tesztek: consent false/true × JSON/ZIP, Samsung napi csatorna és workout-provider, HC/Wear adatok kizárása/megőrzése, fotók változatlansága, egészségadatmentes Drive-projekció és kizárólag lokális cache-visszaillesztés, eltérő időablak elutasítása. Az első CI 244/245 siker; az új fotógaléria tesztje controller-adatbetöltésre várva timeoutolt. A következő futás közvetlen indexellenőrzéssel és részletes controllerállapottal különíti el az adatbázis- és megjelenítési hibát; az időkorlát nem változott.

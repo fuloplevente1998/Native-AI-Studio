@@ -3132,9 +3132,11 @@ fun BackupRestoreScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Egészségügyi előzmények (Health)", color = palette.textPrimary)
-                        Switch(checked = uiState.includeHealthInBackup, onCheckedChange = onToggleIncludeHealth)
+                        Text("Health Connect, Samsung Health és órás egészségadatok", color = palette.textPrimary, modifier = Modifier.weight(1f))
+                        Switch(checked = uiState.includeHealthInBackup, enabled = !uiState.backupHealthConsentSaving, onCheckedChange = onToggleIncludeHealth)
                     }
+                    Text("Alapból kikapcsolva. JSON/ZIP: tárolt egészségnapló és edzésösszesítések. Drive: az edzéshez mentett egészségadatok; a teljes napi egészségnapló nem kerül Drive-ra. Kikapcsolás nem törli a helyi adatokat vagy a korábbi mentéseket.",
+                        color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
                 }
             }
         }

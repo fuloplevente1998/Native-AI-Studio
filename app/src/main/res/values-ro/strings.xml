@@ -456,7 +456,7 @@
     <string name="native_settings_haptic">Vibrație la înregistrarea seriei (#227)</string>
     <string name="native_settings_haptic_info">Semnal haptic discret de 40 ms la finalizarea unei serii</string>
     <string name="native_settings_health_backup">Salvează jurnalul de sănătate</string>
-    <string name="native_settings_health_backup_info">Include datele Health Connect / puls în copia manuală</string>
+    <string name="native_settings_health_backup_info">Date de sănătate Health Connect, Samsung Health direct și ceas. JSON/ZIP: jurnal de sănătate și rezumate antrenamente; Drive: rezumate salvate. Dezactivat implicit. Datele locale și copiile anterioare se păstrează.</string>
     <string name="native_settings_privacy_open">Vezi informarea privind confidențialitatea</string>
     <string name="native_settings_erase_open">Șterge toate datele locale (Erase Local)</string>
     <string name="native_settings_erase_title">Șterge toate datele locale</string>
