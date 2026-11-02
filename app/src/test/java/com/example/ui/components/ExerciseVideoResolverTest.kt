@@ -100,6 +100,14 @@ class ExerciseVideoResolverTest {
         assertTrue(byId.notesHu.contains("kézisúlyzót"))
     }
 
+    @Test fun ambiguousNameOnlySelectionDoesNotGuessBuiltinVideo() {
+        val result = resolveExerciseVideoAndNotes(
+            exerciseTitle = "Goblet guggolás",
+            allowCatalogByTitle = false
+        )
+        assertEquals(ExerciseVideoState.MISSING, result.link.state)
+    }
+
     @Test fun unknownIdMustNotUseMatchingTitleFallback() {
         val result = resolveExerciseVideoAndNotes(
             exerciseTitle = "Goblet guggolás",
