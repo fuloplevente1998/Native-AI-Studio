@@ -19,9 +19,27 @@ A #20 kódja:
 - Edzés közben nincs vezérlőgombot takaró alsó státusz-pill. A rutin indulási/következőgyakorlat-üzenetek törölve; érdemi állapot/hiba az edzés fejlécének lefoglalt helyén jelenik meg. Az átadás/visszavétel a Scaffold rögzített felső részében a meglévő natív parancsot hívja; a `StudioWorkoutBridge.pauseForHandover` előbb a valódi motorral szüneteltet, lezárja az aktív időintervallumot, és azonosítót ellenőriz. Ezt a célzott natív regresszió is vizsgálja. Ownership, ACK, installed receipt, ARM/szünet, aktív GPS és adatcsere tiltása megmarad.
 - A valódi Wear node-nevet (például a felhasználó `Galaxy Watch7 (ZW4J)` nevét) megtartjuk. Rögzített mintanevek/minta-akkumulátorok nem jelenhetnek meg.
 
-Célzott forrás: `5df8374a65f81dc759ecfb6e8e96a936698344ff`. [Actions 41450724814](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41450724814): **SUCCESS, letöltött nyers XML szerint 43 teszt, 0 failure/error/skip**. [Nyers jelentés](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41450724814/artifacts/13144568757), [APK-metadata](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41450724814/artifacts/13144966264). A tényleges CI-checkout megegyezik a fenti forrással; a debug/optimalizált pár verziója és package-e ellenőrizve, a debug signer nem készülékes frissítési kulcs. A célzott futás a meghatározott regressziókat és a debug/optimalizált APK-fordítást ellenőrzi; nem teljes JVM-suite. A felhasználó kérése alapján a #20 e célzott ellenőrzés után kerül mainre, az átadó dokumentációjával együtt (alkalmazáskód-eltérés nélkül a tesztelt forráshoz képest), majd **mainből teljes Actions / állandó kulcsos APK-pár**. A teljes main-futás forrását, nyers tesztösszegét és APK-bizonyítékát a #20 PR végleges jelentésében és a következő buildblokkban rögzítjük; addig nincs új igazolt béta APK.
+Célzott forrás: `5df8374a65f81dc759ecfb6e8e96a936698344ff`. [Actions 41450724814](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41450724814): **SUCCESS, letöltött nyers XML szerint 43 teszt, 0 failure/error/skip**. [Nyers jelentés](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41450724814/artifacts/13144568757), [APK-metadata](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41450724814/artifacts/13144966264). A tényleges CI-checkout megegyezik a fenti forrással; a debug/optimalizált pár verziója és package-e ellenőrizve, a debug signer nem készülékes frissítési kulcs. A célzott futás a meghatározott regressziókat és a debug/optimalizált APK-fordítást ellenőrzi; nem teljes JVM-suite. A felhasználó kérése alapján a #20 e célzott ellenőrzés után mainre került, az átadó dokumentációjával együtt (alkalmazáskód-eltérés nélkül a tesztelt forráshoz képest), majd **mainből teljes Actions / állandó kulcsos APK-pár**. A #20 mainre merge-elve. Az alábbi teljes main-futás és állandó kulcsos béta APK-pár is igazolt; a célzott 43 teszt és a teljes 270 teszt eredményét ne keverd össze.
 
 Készülékes elfogadás továbbra is külön: valódi Samsung/HC engedély és teljes napi számai/hibakódja, az új szűrők/anatómia, a három forrás és a telefon↔óra átadás. #19 marad a folytatható lista. A saját régi ZIP/fotók elfogadása és az új fotó csatolása, illetve videóhiba #11 sem tekinthető automatikusan megoldottnak.
+
+## Igazolt béta main-build és APK-k
+
+Main / signed checkout: **`3572e2086cc741cc42bc2c6929c786b0772bf91c`**, [#20](https://github.com/fuloplevente1998/Native-AI-Studio/pull/20) merge. [Teljes állandó kulcsos Actions 41451874030](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41451874030): **SUCCESS**, letöltött nyers XML **270 teszt = 101 telefon + 169 Wear; 0 failure/error/skip**. A shared task NO-SOURCE. A célzott forrás `5df8374` és PR-head `c8f194c` között csak a fenti átadó dokumentáció változott; a PR-head és a main merge Git-fája azonos.
+
+Mindkét tényleges release APK: **`com.TrainPilot.com`, `2737 / 0.1.0-beta`**. A tényleges signer megegyezik az előző tulajdonosi kulccsal: SHA256 **`a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6`**. Maps-konfiguráció jelen van, a Data Layer package/signer pár és Wear capability ellenőrizve. Ez nem igazolja a valódi Samsung/HC olvasás készülékes eredményét.
+
+| Csomag | Méret | APK SHA256 |
+|---|---:|---|
+| Telefon béta release | 19 464 875 bájt | `ba97e62fcb4ffa387209d6095fa7005c92379527d0a7298f451fae7a725becd1` |
+| Wear OS béta release | 4 636 863 bájt | `02a18995f64109555d0db96a893e06124f69f691b404ff79bbc3a34d7f3148db` |
+
+- [Telefon béta APK](https://drive.google.com/file/d/1qztMA9a1c-0O_9ZXr0j7dm6VlM7FR5Im/view)
+- [Wear OS béta APK](https://drive.google.com/file/d/1RpezY4dAGdexDSZi2tuwQm9iDBgL74cZ/view)
+- [Eredeti APK-pár + metadata](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41451874030/artifacts/13146057644)
+- [Teljes nyers tesztjelentés](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41451874030/artifacts/13144834463)
+
+Mindkét fájl a TrainPilot Native mappában van; a feltöltés után méret és szülőmappa külön metadata-olvasással ellenőrizve. A régi APK-k megmaradtak. A #16 külön PR-ját a #20-ba történt integráció váltja ki; a régi külön ágat nem kell újra merge-elni vagy újra megvalósítani.
 
 ## Korábbi, igazolt checkpoint – #18/#17, történeti háttér
 
