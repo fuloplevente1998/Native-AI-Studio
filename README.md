@@ -25,7 +25,7 @@ signatures are checked together; `trainpilot-apk-metadata` records package/versi
 APK hashes, signer fingerprints and Maps key presence without exposing the key.
 Ordinary CI debug signers are temporary. Device APKs now use the owner-managed persistent
 key through `trainpilot-persistent-signing.yml` / `android-signing`; the last validated
-historical signed checkpoint is `35d9d64` (255/255 tests). The current `0.1.0-beta` / `2737` changes and their targeted/full validation are recorded in the handoff and PR #20. Existing Gradle signing configurations remain intact.
+validated beta main source is `3572e20`: **0.1.0-beta / 2737, 270/270 full tests passing**, after 43/43 targeted regressions. Signed APKs and source/signer proof are recorded in the handoff and PR #20. Existing Gradle signing configurations remain intact.
 
 `TRAINPILOT_MAPS_API_KEY` is configured externally and embedded in the latest signed pair. Presence is not proof of
 live Cloud authorization. Physical map tiles, watch ACK/sensors and real device
