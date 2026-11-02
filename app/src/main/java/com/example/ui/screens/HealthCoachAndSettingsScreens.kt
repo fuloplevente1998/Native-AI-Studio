@@ -744,19 +744,28 @@ fun HealthTabScreen(
                                     Text(if (steps) "Heti lépésszám • napi bontás" else "Aktív edzésidő • napi bontás",
                                         style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
                                     for (day in goalDays) {
+                                        val dayWorkouts = if (steps) emptyList() else
+                                            uiState.loggedWorkouts.filter { it.localWorkoutDate()?.toString() == day.dateIso }
                                         HorizontalDivider(color = palette.cardBorder)
-                                        Text(day.dayLabelHu, style = MaterialTheme.typography.labelLarge, color = palette.textPrimary)
-                                        Text(if (steps) { if (day.stepsAvailable) "${day.steps} lépés" else "Nincs napi lépésadat" }
-                                            else "${day.workoutMinutes} perc • ${day.workoutCount} edzés",
-                                            modifier = Modifier.testTag("health_weekly_${tag}_${day.dateIso}"),
-                                            style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
-                                        if (steps) Text(day.stepsSourceLabelHu, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                        else {
-                                            Text("Room edzésnapló • aktív idő", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                            uiState.loggedWorkouts.filter { it.localWorkoutDate()?.toString() == day.dateIso }.forEach { workout ->
-                                                Text("${workout.titleHu}: ${workout.durationMinutes} perc",
-                                                    style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                        Row(Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                                                Text(day.dayLabelHu, style = MaterialTheme.typography.labelLarge,
+                                                    color = palette.textPrimary)
+                                                Text(if (steps) day.stepsSourceLabelHu else
+                                                    if (dayWorkouts.isEmpty()) "Room edzésnapló • nincs mai edzés"
+                                                    else "Room • " + dayWorkouts.joinToString(" · ") {
+                                                        "${it.titleHu}: ${it.durationMinutes} perc"
+                                                    },
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = palette.textSecondary, maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis)
                                             }
+                                            Text(if (steps) { if (day.stepsAvailable) "${day.steps} lépés" else "—" }
+                                                else "${day.workoutMinutes} perc • ${day.workoutCount} edzés",
+                                                modifier = Modifier.testTag("health_weekly_${tag}_${day.dateIso}"),
+                                                style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
                                         }
                                     }
                                 }
