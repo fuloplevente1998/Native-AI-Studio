@@ -14,7 +14,7 @@ import kotlin.math.min
 object NativeDailyHealthDetails {
     data class PulsePoint(val timeIso: String, val bpm: Int, val source: String)
 
-    fun pulseSeries(day: JSONObject?, limit: Int = 48): List<PulsePoint> {
+    fun pulseSeries(day: JSONObject?, limit: Int = 96): List<PulsePoint> {
         val values = day?.optJSONArray("heartRateSeries") ?: return emptyList()
         val unique = linkedMapOf<String, PulsePoint>()
         for (index in 0 until values.length()) {
