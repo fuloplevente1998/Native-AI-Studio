@@ -171,3 +171,33 @@ ugyanaz a signer mindkét APK-ban. Ellenőrizd a forrás-SHA-t, manifestet, verz
 és fájlhash-t; a két külön APK a TrainPilot Native Drive-mappába kerüljön, méret/szülő
 readbackkel. Frissítsd az átadót/promptot/#19-et. Eszközös elfogadás csak a felhasználó
 valódi tesztjével kész. A 2740-es APK ettől külön, korábban igazolt kiadás.
+
+---
+
+# Chat 8 – Naplózott edzés valódi törlése
+
+Ez külön feladat a 3. chat aktív/szüneteltetett edzésének elvetésétől.
+A naplózott edzés részletein legyen Edzés törlése gomb és megerősítő párbeszéd.
+A törlés valóban távolítsa el a kiválasztott mentett edzést a Room tárolóból és a
+hozzá tartozó, más adathoz nem szükséges sorozat-/gyakorlat-/fotó-/GPS adatokat és
+helyi fájlokat. Nem elegendő a listából vagy a memóriabeli UI-ból elrejteni.
+Más edzés, megosztott fájl vagy másik aktív session nem sérülhet. Siker után a napló,
+statisztikák, PR-/volumen-/kardióösszesítések a tényleges maradék tárolt adatokból frissüljenek.
+
+Meglévő kiindulás: JournalViewModel.requestDeleteWorkout/cancelDeleteWorkout/
+confirmDeleteWorkout és WorkoutHistoryDao.deleteWorkoutByIdOrKey. A backend Room-
+tranzakcióban töröl és tombstone-t ír, de a Studio képernyőn nincs bekötött törlés.
+Ne csak a gombot kösd be: auditáld a kapcsolt helyi fájlok valódi takarítását is,
+az SQL cascade önmagában nem bizonyítja a fotó/GPS fájl eltávolítását.
+Használd újra a meglévő privát fotó-/route-/szinkrontörlési mechanizmusokat.
+A minimális tartós törlési jelző megmarad a régi sync/import példányból történő
+visszaéledés megakadályozásához; a felhasználó nem egy új archív másolatot kér.
+Egy korábban külön exportált ZIP-et ez nem ír át; ennek eltüntetését ne állítsd.
+
+Elsődleges tulajdon: JournalViewModel törlési út, szükséges tároló-/fájltakarítás,
+LogAndProgressScreens edzésrészletének törlési gombja és MainActivity bekötése.
+A 2. chat grafikonrészét és a 3. chat aktív-session elvetését ne írd felül.
+Teszt: Mégse nem módosít; csak azonosított mentett edzés törölhető; újranyitás/újraindítás
+után sincs a tárolóban; nincs fölös helyi fájl; megosztott/idegen adat megmarad;
+a régi sync nem hozza vissza; SQL-/fájlhiba nem mutathat teljes, hamis sikert.
+Külön referencia nem szükséges: az elvárt működés a fenti, gombhely a naplózott edzés részlete.
