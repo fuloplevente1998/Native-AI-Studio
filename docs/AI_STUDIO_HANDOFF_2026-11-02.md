@@ -5,8 +5,8 @@ Ez az elsődleges checkpoint. A 2026-11-01-es átadó és a korábbi PR-leírás
 ## Projekt és ellenőrzött forrás
 
 - Folytatandó repo: https://github.com/fuloplevente1998/Native-AI-Studio, **a legfrissebb main**.
-- Utolsó validált alkalmazáskód: main **`977cdd5a09f41f4f92a6eaa21c8f83ea84492679`**, PR #15 merge.
-- PR #15 forrás-HEAD: `337d48234ce2f06d97892e9c7651ae89ce81cf4c`; a forrás és a main teljes Git-fája azonos: `33176ff07800b25360c06081ea58dbc78f5af409`.
+- Utolsó validált alkalmazáskód: main **`35d9d64ad99ed0cc67e5ffa72eb89ee28a7c14e6`**, PR #18 merge (AI Studio-frissítés + két kért hibajavítás).
+- PR #18 forrás-HEAD: `ea5b897edcb5166edaffe770af22f76435cfec27`; a CI-checkout `cea5ee79c922b651e4bcfd2697ce63dd7c057389`; a forrás, CI és main teljes Git-fája azonos: `337f04da5ee8edc78e40f3009384e676097e3558`. [CI 41437300036](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41437300036): SUCCESS, letöltött XML szerint **255 teszt (86 telefon + 169 Wear), 0 failure/error/skip**. A 977cdd5 / PR #15 korábbi checkpoint.
 - Ezután az átadó dokumentáció külön PR-ban frissülhet; a következő agent ellenőrizze az aktuális main HEAD-et és a checkpoint óta érkezett kódváltozásokat. A dokumentáció frissítése nem új APK-build.
 - Audit: [PR #1](https://github.com/fuloplevente1998/Native-AI-Studio/pull/1). A már megvalósított pontokat ne készítsd újra.
 - Bemásolható feladat: [AI_STUDIO_CONTINUE_PROMPT.md](AI_STUDIO_CONTINUE_PROMPT.md).
@@ -24,36 +24,36 @@ Ez az elsődleges checkpoint. A 2026-11-01-es átadó és a korábbi PR-leírás
 
 ## Legutóbbi igazolt build és letöltés
 
-**Állandó saját kulcsos phone/Wear release-pár:** [Actions 41410559088](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41410559088), **SUCCESS**. A checkout a fenti `977cdd5` main commit.
+**Állandó saját kulcsos phone/Wear release-pár:** [Actions 41438108278](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41438108278), **SUCCESS**. A checkout a fenti `35d9d64` main commit, a PR #18 javításaival.
 
-Letöltött nyers XML: **248 teszt = 79 telefon + 169 Wear; 0 failure, 0 error, 0 skip**. A shared task NO-SOURCE; közös kódját a telefonos/órás tesztek gyakorolják. Az alkalmazásváltozatok és JVM-tesztek sikeresek; ez nem fizikai készülékes elfogadás.
+Letöltött nyers XML: **255 teszt = 86 telefon + 169 Wear; 0 failure, 0 error, 0 skip**. A shared task NO-SOURCE; közös kódját a telefonos/órás tesztek gyakorolják. Az alkalmazásváltozatok és JVM-tesztek sikeresek; ez nem fizikai készülékes elfogadás.
 
 | Csomag | Méret | APK SHA256 |
 |---|---:|---|
-| Telefon release | 19 398 407 bájt | `cf82e74c5463b8cf01dd6dd18f2f52018030491cb0db320acbe26412d6b1def9` |
-| Natív Wear release | 4 636 867 bájt | `011a77223b26cd1bb9975a66b2a896c22d1d372817c361d1f3cb194fdb8249b6` |
+| Telefon release | 19 447 559 bájt | `de12cd02b8270ab86814e784e4cf1393a9a894d8777cc94661b442200f03e48a` |
+| Natív Wear release | 4 636 867 bájt | `3dd4228f00cd250ba76dd888e3dfb640e58fedfe8c8494603b5f4857e7a98f9f` |
 
-- [Telefon APK, ZIP nélkül](https://drive.google.com/file/d/13lgopg5hVnXrNlB7DrhQbFSYoTFHzBix/view)
-- [Natív Wear APK, ZIP nélkül](https://drive.google.com/file/d/1khG7CuDJhiaEwcRMu5VXnJInuiOzsLF4/view)
-- [Eredeti APK-pár és metadata artifact](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41410559088/artifacts/13125607634)
-- [Nyers tesztjelentés](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41410559088/artifacts/13125523153)
-- Előző teljes PR-CI: [41410163497](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41410163497), szintén 248/248.
+- [Telefon APK, ZIP nélkül](https://drive.google.com/file/d/17Zeo7lI6UghlW_2RwqbehmfnjZR0ATcK/view)
+- [Natív Wear APK, ZIP nélkül](https://drive.google.com/file/d/1MtXXvN9-gEp_lLeakA5Wckwk5lGdkzIk/view)
+- [Eredeti APK-pár és metadata artifact](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41438108278/artifacts/13138253377)
+- [Nyers tesztjelentés](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41438108278/artifacts/13138546648)
+- Teljes PR-CI: [41437300036](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41437300036), szintén 255/255. A Drive-fájlok mérete és a TrainPilot Native szülőmappa feltöltés után külön metadata-olvasással ellenőrizve. A korábbi APK-k megmaradtak.
 
 **Minden további APK a [TrainPilot Native Drive-mappába](https://drive.google.com/drive/folders/1ywHgrManynjV9uNvZfVncOmCr3SbHIb9) kerüljön.** Mappaazonosító: `1ywHgrManynjV9uNvZfVncOmCr3SbHIb9`. Ne a Drive gyökérbe töltsd fel. A fájlnév tartalmazza a telefon/óra megkülönböztetést és a forrás rövid commitját. Őrizd meg a régi fájlokat és linkeket; ellenőrizd a szülőmappát, méretet és hash-t.
 
 ## AI Studio main-frissítés átnézése, 2026-11-02
 
-A felhasználó kérésére átnézett új alkalmazásforrás: **`256e4536ee3c3a94bc5c78b93a33259bb2b15657`** (`feat: enhance cloud sync, equipment UI, and coaching`), 10 fájl, +1623/−214 sor. A fenti 977cdd5 a korábbi validált checkpoint. Az új forrásból indított [Actions 41434365835](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41434365835) a felhasználó új, két hibát előbb javító kérése miatt le lett állítva; ez nem igazolt új build. A javítások [PR #18](https://github.com/fuloplevente1998/Native-AI-Studio/pull/18) alatt készülnek; a végleges javított forrás és signed bizonyíték a buildblokkban lesz.
+A felhasználó kérésére átnézett új alkalmazásforrás: **`256e4536ee3c3a94bc5c78b93a33259bb2b15657`** (`feat: enhance cloud sync, equipment UI, and coaching`), 10 fájl, +1623/−214 sor. A fenti 977cdd5 a korábbi validált checkpoint. Az új forrásból indított [Actions 41434365835](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41434365835) a felhasználó új, két hibát előbb javító kérése miatt le lett állítva; ez nem igazolt új build. A javítások [PR #18](https://github.com/fuloplevente1998/Native-AI-Studio/pull/18) alatt elkészültek, 255 teszttel mainre merge-elve; a végleges javított forrás és signed bizonyíték a fenti buildblokkban található.
 
 A frissítés a meglévő SettingsViewModel/GoogleSyncRepository útvonalat használó Google-bejelentkezési, Drive- és Naptár-kezelő kártyát, felszerelésválasztást/szűrést, napi/heti Health-összesítést és naplóalapú fejlődési statisztikát vezet be. A release signing konfiguráció, appazonosítók, verziók és a PR #15 alapvető mentési/adatvédelmi javításai változatlanok. A PR #16 három forráskártyája **nem része ennek a main commitnak**; a már elkészült ágat őrizd meg, és a friss mainnel együtt ellenőrizd integráció előtt.
 
 A `256e453` kódáttekintésekor talált pontok, amelyeket a felhasználó kérésére a #18 javít:
 
-- `LogAndProgressScreens.kt`, `MainStatisticsRecordsAndCardioSection`: a „Heti kilométer” az összes `loggedWorkouts` távolságát összegzi dátumszűrés nélkül; a „7 napos átlag” csak a pozitív lépésszámú napokkal oszt. Az intervallumot/nevezőt a felirat jelentéséhez kell igazítani.
-- A heti térfogat/távolság oszlopok ma kezdődő utolsó heti ablakkal készülnek; a dátum nélküli rekordokat az utolsó hétbe sorolják. A `savedStartIso.take(10)`/`startsWith(dayKey)` UTC ISO-időből helyi naphoz rendelés nélkül számol. Tisztázd a naptári vagy gördülő heti határt, használj helyi zónába konvertált időpontot, ismeretlen dátumot ne rendelj önkényesen a mai héthez.
-- `TrainPilotViewModel.refreshAfterCloudSync()` ismét `bindNativeEnvironment()`-et hív, amely új hosszú életű Flow-gyűjtéseket indít a meglévők megtartásával. Tegyél egyszerivé/lecserélhetővé a környezetkötést, vagy használj külön adatfrissítést; ismételt képernyőmegnyitás/szinkron ne sokszorozza az adatfigyelőket. Ezt célzott regresszióval ellenőrizd.
+- `LogAndProgressScreens.kt`, `MainStatisticsRecordsAndCardioSection`: a „Heti kilométer” az összes `loggedWorkouts` távolságát összegzi dátumszűrés nélkül; a „7 napos átlag” csak a pozitív lépésszámú napokkal oszt. A #18 dátumszűréssel és hét napos nevezővel javította.
+- A heti térfogat/távolság oszlopok ma kezdődő utolsó heti ablakkal készülnek; a dátum nélküli rekordokat az utolsó hétbe sorolják. A `savedStartIso.take(10)`/`startsWith(dayKey)` UTC ISO-időből helyi naphoz rendelés nélkül számol. A #18 gördülő hét napot, helyi zónába konvertált időpontot használ, az ismeretlen dátumot kizárja a heti oszlopokból.
+- `TrainPilotViewModel.refreshAfterCloudSync()` ismét `bindNativeEnvironment()`-et hív, amely új hosszú életű Flow-gyűjtéseket indít a meglévők megtartásával. A #18 külön adatfrissítést és explicit kötéskor lecserélhető megfigyelőket használ; az ismételt szinkront, kötést és élő hozzájárulás-változást célzott regresszió ellenőrzi.
 
-A felhasználó az áttekintés után kifejezetten a két hiba javításával együtt kéri az APK-t. A #18 az utolsó hét helyi napját használja a heti kilométerhez és oszlopokhoz; a nulla lépéses napokat is számolja az átlagban; a napi edzésszámhoz is helyi dátumot használ. A felhőfrissítés már csak adatot tölt, az explicit újrakötés pedig lecseréli a korábbi Flow-figyelőket. Három dátumteszt és egy valódi Room-frissítést/élő feliratkozást/hozzájárulás-változást ellenőrző regresszió egészíti ki a kaput. Ezek eredményét és a main merge-et a végleges buildblokk rögzítse; a fizikai Google/Samsung működés továbbra is készülékes ellenőrzés.
+A felhasználó az áttekintés után kifejezetten a két hiba javításával együtt kéri az APK-t. A #18 az utolsó hét helyi napját használja a heti kilométerhez és oszlopokhoz; a nulla lépéses napokat is számolja az átlagban; a napi edzésszámhoz is helyi dátumot használ. A felhőfrissítés már csak adatot tölt, az explicit újrakötés pedig lecseréli a korábbi Flow-figyelőket. Három dátumteszt és egy valódi Room-frissítést/élő feliratkozást/hozzájárulás-változást ellenőrző regresszió egészíti ki a kaput. A #18 mind a négy új regressziója sikeres, a fenti 255 tesztes CI és main merge ellenőrizve. A javított signed build [41438108278](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41438108278) a 35d9d64 mainből indult, **SUCCESS**, a letöltött release APK-k hash-e, verziója, appazonosítója és állandó signere ellenőrizve; a fizikai Google/Samsung működés továbbra is készülékes ellenőrzés.
 
 ## Folyamatban lévő, új felhasználói UI-kérés
 
@@ -111,7 +111,7 @@ Fő fájlok: `NativeSavedWearHealth.kt`, `LegacyWebViewMigrator.kt`, `StudioWork
 ## Bizonyíték és korlát
 
 - **Automatizáltan igazolt:** LegacyRestoreEvidenceRegressionTest 6/6: valódi JPEG-gel régi ZIP → restore → bájtegyezés → Room-index → dekódolt, látható kép → teljesképernyős nézet; régi órás és HC érték külön, raw-only fallback, alias/idegen forrás/ID ellenőrzés; consent false/true × JSON/ZIP, Samsung napi/workout adat, fotó- és helyi adatmegőrzés, egészségadatmentes Drive-projekció/local-only cache és eltérő ablak elutasítása.
-- **Korábbi sikertelen körök rendezve:** hiányzó Flow import; kattintható képkártya összevont semantics-fájának tesztelése; PAUSED Robolectric főszálon várakozó Room-UI callbackek. A teszt az unmerged képelem valódi láthatóságát ellenőrzi és a szüneteltetett Android loopert futtatja. Nincs timeoutnövelés, skip vagy lazított adatfeltétel. A végleges PR és signed kör is 248/248.
+- **Korábbi sikertelen körök rendezve:** hiányzó Flow import; kattintható képkártya összevont semantics-fájának tesztelése; PAUSED Robolectric főszálon várakozó Room-UI callbackek. A teszt az unmerged képelem valódi láthatóságát ellenőrzi és a szüneteltetett Android loopert futtatja. Nincs timeoutnövelés, skip vagy lazított adatfeltétel. A #15 végleges PR és signed köre 248/248 volt; az aktuális #18 utáni kör 255/255 (fent).
 - **Még nem bizonyított:** a felhasználó saját ZIP-ének tartalma és a legújabb APK fizikai elfogadása. A valódi app/process kill nem azonos a Robolectric/hibainjektálással. A képernyőképek számai csak teszt-fixture adatok, nem termékbe égetett mérések.
 - **Közvetlen Samsung SDK:** a naplós Wear-import javítása nem bizonyítja a Samsung SDK fizikai olvasását. SDK/app/cert regisztráció és valódi grant/hibakód alapján vizsgáld; HC-re ne ess vissza csendben.
 
