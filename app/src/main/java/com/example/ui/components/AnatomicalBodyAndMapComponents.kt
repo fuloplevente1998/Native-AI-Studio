@@ -36,6 +36,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -555,6 +558,10 @@ private fun DrawScope.drawAnatomicalFigure(
  * High-detail Margitsziget / Danube / Margit híd GPS Route Map Canvas
  * Matching Mockup 3/4 #3 (`Edzésútvonal`) & Mockup 2/4 #4 (`Kültéri mérés`).
  */
+/**
+ * Shared saved-workout / live-outdoor GPS map.
+ * Styling changes only the map presentation, not its recorded coordinates or tracking lifecycle.
+ */
 @Composable
 fun NativeWorkoutRouteMapBox(
     modifier: Modifier = Modifier,
@@ -564,21 +571,42 @@ fun NativeWorkoutRouteMapBox(
 ) {
     val palette = LocalTrainPilotPalette.current
     val context = androidx.compose.ui.platform.LocalContext.current
-    var segments by remember { mutableStateOf<List<List<com.google.android.gms.maps.model.LatLng>>>(emptyList()) }
+    val preferences = remember(context) {
+        com.repforge.app.data.store.TrainPilotSettingsStore(context.applicationContext)
+    }
+    val darkMapMode by preferences.mapDarkModeFlow.collectAsState(initial = false)
+    val preferenceScope = rememberCoroutineScope()
+    val mapStyle = remember(context, darkMapMode) {
+        if (darkMapMode) com.google.android.gms.maps.model.MapStyleOptions.loadRawResourceStyle(
+            context, com.repforge.app.R.raw.trainpilot_map_dark
+        ) else null
+    }
+    // A different workout must never momentarily show the previous workout's private route.
+    var segments by remember(routeKeys) {
+        mutableStateOf<List<List<Pair<Double, Double>>>>(emptyList())
+    }
     androidx.compose.runtime.LaunchedEffect(routeKeys, refreshToken) {
         segments = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             com.repforge.app.ui.journal.WorkoutRouteCoordinates.loadAll(context, routeKeys)?.segments.orEmpty()
-                .map { segment -> segment.filter { it.first.isFinite() && it.second.isFinite() &&
-                    it.first in -90.0..90.0 && it.second in -180.0..180.0 }
-                    .map { com.google.android.gms.maps.model.LatLng(it.first, it.second) } }
+                .map { segment -> segment.filter { (lat, lon) ->
+                    lat.isFinite() && lon.isFinite() && lat in -90.0..90.0 && lon in -180.0..180.0
+                } }
         }
     }
+    val points = remember(segments) {
+        segments.flatten().map { (lat, lon) -> com.google.android.gms.maps.model.LatLng(lat, lon) }
+    }
+    val drawableSegments = remember(segments) {
+        recordedPolylineSegments(segments).map { segment ->
+            segment.map { (lat, lon) -> com.google.android.gms.maps.model.LatLng(lat, lon) }
+        }
+    }
+    val endpoints = remember(segments) { recordedMapEndpoints(segments) }
     val configured = remember(context) { com.repforge.app.NativeMapsConfiguration.configured(context) }
     val playServicesAvailable = remember(context) {
         runCatching { com.google.android.gms.common.GoogleApiAvailability.getInstance()
             .isGooglePlayServicesAvailable(context) == com.google.android.gms.common.ConnectionResult.SUCCESS }.getOrDefault(false)
     }
-    val points = segments.flatten()
     var loaded by remember { mutableStateOf(false) }
     var timedOut by remember { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
@@ -608,16 +636,45 @@ fun NativeWorkoutRouteMapBox(
                 }
                 com.google.maps.android.compose.GoogleMap(
                     modifier = Modifier.fillMaxSize(), cameraPositionState = camera,
+                    properties = com.google.maps.android.compose.MapProperties(mapStyleOptions = mapStyle),
                     onMapLoaded = { loaded = true; timedOut = false },
                     uiSettings = com.google.maps.android.compose.MapUiSettings(
                         zoomControlsEnabled = interactiveControls, scrollGesturesEnabled = interactiveControls,
                         zoomGesturesEnabled = interactiveControls, rotationGesturesEnabled = interactiveControls)
                 ) {
-                    // A paused/ownership gap must remain a gap in the displayed path.
-                    segments.filter { it.size > 1 }.forEach { segment ->
+                    // Distinct paused/ownership segments are never connected by a synthetic line.
+                    drawableSegments.forEach { segment ->
                         com.google.maps.android.compose.Polyline(points = segment, color = palette.primary, width = 8f)
                     }
+                    endpoints?.let { recorded ->
+                        val startPoint = com.google.android.gms.maps.model.LatLng(
+                            recorded.start.first, recorded.start.second)
+                        com.google.maps.android.compose.Marker(
+                            state = com.google.maps.android.compose.MarkerState(position = startPoint),
+                            title = if (recorded.finish == null) "Rajt és cél" else "Rajt",
+                            icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(
+                                com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_AZURE)
+                        )
+                        recorded.finish?.let { (lat, lon) ->
+                            com.google.maps.android.compose.Marker(
+                                state = com.google.maps.android.compose.MarkerState(
+                                    position = com.google.android.gms.maps.model.LatLng(lat, lon)),
+                                title = "Cél",
+                                icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(
+                                    com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_ORANGE)
+                            )
+                        }
+                    }
                 }
+            }
+            androidx.compose.material3.FilledTonalButton(
+                onClick = { preferenceScope.launch {
+                    preferences.setMapDarkMode(!darkMapMode)
+                } },
+                modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)
+                    .heightIn(min = 48.dp).testTag("route_map_style_toggle")
+            ) {
+                Text(if (darkMapMode) "Világos térkép" else "Sötét térkép")
             }
             if (!loaded) {
                 Surface(color = palette.surfaceCard.copy(alpha = 0.94f), shape = RoundedCornerShape(12.dp)) {
