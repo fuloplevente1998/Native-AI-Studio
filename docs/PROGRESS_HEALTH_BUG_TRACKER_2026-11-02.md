@@ -61,3 +61,7 @@ Javítás: hiteles, teljes azonossággal ellenőrzött terminális receipt, idő
 - [ ] **Kompakt heti bontás:** a Heti lépésszám / Aktív edzésidő lenyitott 7 napi listája legyen sűrűbb és áttekinthetőbb, kevesebb görgetéssel. A már javított teljes szélesség, független nyitás, tényleges napi adatok/forrás és hiányjelzés maradjon meg.
 
 Kapcsolódó aktuális órás hiba: telefonon nincs látható edzés/törlési lehetőség, ezért a felhasználó az órán választotta az elvetést; az óra telefonos törlési visszaigazolásra vár. Ez külön javítás, a fenti egészségképernyős pontok most rögzített további teendők.
+
+## #25 kód és APK igazolás – 2740
+
+A hat egészségképernyős pont implementálva, main `5300efd`, PR CI `41513584412` és full signed `41514520016` SUCCESS. Mindkét letöltött XML 296/296, nulla hiba/kihagyás. Állandó kulcsos 2740-es telefon/Wear pár ellenőrizve és a TrainPilot Native mappába feltöltve, méret/szülő readback rendben. Aktuális linkek/hashes az átadó legfelső blokkjában. A készülékes elfogadáshoz a checkboxok nyitva maradnak; ez nem implementálatlan kódot jelent.
