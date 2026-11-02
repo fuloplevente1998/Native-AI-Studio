@@ -82,6 +82,22 @@ class WatchDiscardRecoveryRegressionTest {
         assertEquals(current, ActiveWorkoutStore.current(context)!!.toString())
         assertEquals(engine, PhoneWorkoutExecution.store(context).snapshot()!!.toString())
     }
+    @Test fun savedLegacyAliasCannotBeHiddenByAnOrphanDiscardMarker() {
+        native {
+            com.repforge.app.data.migration.LegacyWebViewMigrator(context, db,
+                com.repforge.app.data.store.TrainPilotSettingsStore(context)).saveWorkoutJsonToRoom(
+                JSONObject().put("id", "saved-real").put("started", "2026-11-02T10:00:00Z")
+                    .put("finished", "2026-11-02T10:10:00Z").put("exercises", org.json.JSONArray()))
+            db.openHelper.writableDatabase.execSQL(
+                "UPDATE workout_history SET workoutKey = ?, syncId = ? WHERE id = ?",
+                arrayOf("old", "different-sync", "saved-real"))
+            assertTrue(db.workoutHistoryDao().hasSavedWorkoutId("old"))
+            assertEquals(NativeWatchDiscardAdmission.Decision.REJECT,
+                NativeDataReplacement.mutate(context) { NativeWatchDiscardAdmission.reconcile(context, db, orphan()) })
+            assertFalse(db.workoutHistoryDao().isTombstoned("old", JSONObject.quote("old")))
+            assertNotNull(db.workoutHistoryDao().getWorkoutWithDetails("saved-real"))
+        }
+    }
     @Test fun absenceSavedHistoryAndForeignWorkoutsNeverAuthorizeDeletion() {
         for (current in listOf(null, frame().put("active", false), frame("new")))
             assertEquals(NativeWatchDiscardAdmission.Decision.REJECT,

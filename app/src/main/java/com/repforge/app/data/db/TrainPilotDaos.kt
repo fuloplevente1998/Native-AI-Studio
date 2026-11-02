@@ -121,7 +121,7 @@ interface WorkoutHistoryDao {
     @Query("SELECT EXISTS(SELECT 1 FROM workout_history WHERE id = :id OR syncId = :id OR started = :started)")
     suspend fun hasFinishedIdentity(id: String, started: String): Boolean
 
-    @Query("SELECT EXISTS(SELECT 1 FROM workout_history WHERE id = :id OR syncId = :id)")
+    @Query("SELECT EXISTS(SELECT 1 FROM workout_history WHERE id = :id OR syncId = :id OR workoutKey = :id OR started = :id)")
     suspend fun hasSavedWorkoutId(id: String): Boolean
 
     @Query("SELECT EXISTS(SELECT 1 FROM history_tombstones WHERE primaryId = :id OR workoutKey = :id OR instr(idsJson, :quotedId) > 0)")
