@@ -437,7 +437,6 @@ fun HealthTabScreen(
                             value = if ("activeCalories" in uiState.dailyHealthAvailableFields) "${uiState.activeCaloriesKcal} kcal" else "—",
                             onClick = {
                                 expandedTodayTileKey = if (expandedTodayTileKey == "calories") null else "calories"
-                                onToggleHealthSection("extra")
                             },
                             modifier = Modifier.weight(1f)
                         )
