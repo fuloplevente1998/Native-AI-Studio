@@ -3824,6 +3824,7 @@ class TrainPilotViewModel : ViewModel() {
                         "Aktív GPS-mérés közben nem adható át a vezérlés. Előbb fejezd be a GPS-mérést."
                     }
                     checkNotNull(activity) { "Az óra indításához látható telefonos felület szükséges." }
+                    com.repforge.app.StudioWorkoutBridge.pauseForHandover(ctx, id)
                     kotlinx.coroutines.withTimeout(15_000) {
                         WearSyncRepository.startWatchMeasurementRemotely(activity, id, requestOwnership = true).getOrThrow()
                     }
