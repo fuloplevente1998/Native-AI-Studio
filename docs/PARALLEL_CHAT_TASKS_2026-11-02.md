@@ -1,5 +1,7 @@
 # TrainPilot – külön ChatGPT/Codex chateknek kiosztható feladatok
 
+Önálló, külön chatnek átadható MD-fájlok: [nyitott feladatok indexe](chat-tasks-open-2741/README.md). Minden feladat a közös munkaszabályokat is tartalmazza.
+
 ## Aktuális munkalista – a 2741-es kiadás utáni visszajelzésekkel
 
 Ez az aktuális kiosztható lista; az alatta megőrzött korábbi kiosztás történeti terv.
