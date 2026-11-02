@@ -208,8 +208,11 @@ final class SamsungSdkReader {
                 ordered.sort(Comparator.comparing(point -> point.optString("time")));
                 JSONArray latest = new JSONArray();
                 // Bounded persisted display history; no synthesized/interpolated readings.
-                for (int i = Math.max(0, ordered.size() - 96); i < ordered.size(); i++)
-                    latest.put(ordered.get(i));
+                int count = Math.min(96, ordered.size());
+                for (int i = 0; i < count; i++) {
+                    int at = count == 1 ? 0 : (int) Math.round(i * (ordered.size() - 1.0) / (count - 1.0));
+                    latest.put(ordered.get(at));
+                }
                 out.put("heartRateSeries", latest);
             }, "averageHeartRate", "minHeartRate", "maxHeartRate", "heartRateSamples", "heartRateSeries");
         }
