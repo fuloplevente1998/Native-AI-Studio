@@ -1036,7 +1036,104 @@ fun PersonalPlannerModalDialog(
     var selectedGoal by remember { mutableStateOf(initialGoalHu) }
     var selectedExperience by remember { mutableStateOf(initialExperienceHu) }
     var selectedLocation by remember { mutableStateOf(initialLocationHu) }
-    var selectedEquipment by remember { mutableStateOf(initialEquipmentHu) }
+    val equipmentCatalog = listOf(
+        "Saját testsúly" to "Alap saját testsúlyos gyakorlatok (fekvőtámasz, plank, guggolás)",
+        "Egykezes kézisúlyzó (1 db)" to "1 db kézisúlyzós gyakorlatok (pl. goblet guggolás, egykezes evezés)",
+        "Kézisúlyzó pár (2 db)" to "Páros egykezes súlyzós gyakorlatok (nyomások, kitörések, kar)",
+        "Kétkezes rúd (Súlyzórúd)" to "Kétkezes rudas alapgyakorlatok (guggolás, felhúzás, evezés, nyomás)",
+        "Pad / Szék / Kanapé" to "Támasz pl. bolgár guggoláshoz, fekvenyomáshoz vagy csípőemeléshez",
+        "Stabil támaszték / Fal / Szék" to "Kéztámasz pl. egykezes evezéshez vagy vádliemeléshez",
+        "Fellépő / Doboz / Lépcső" to "Magasítás fellépéshez (step-up) és felugráshoz",
+        "Húzódzkodó rúd" to "Húzódzkodás, függeszkedés és lábemelések",
+        "Tolódzkodó korlát" to "Tolódzkodás mellre és tricepszre",
+        "Gumiszalag / Ellenállás-szalag" to "Gumiszalagos evezések, lehúzások és izolációk",
+        "Kettlebell" to "Kettlebell swing, goblet guggolás és nyomás",
+        "Edzőtermi gépek / Csigás gépek" to "Lábtoló, hátlehúzó, csigás és vezetett gépek"
+    )
+    val equipments = equipmentCatalog.map { it.first }
+
+    fun parseInitialEquipments(raw: String): Set<String> {
+        val tokens = raw.split(',').map { it.trim() }.filter { it.isNotBlank() }
+        val result = linkedSetOf<String>()
+        for (token in tokens) {
+            val lower = token.lowercase()
+            when {
+                token in equipments -> result.add(token)
+                lower == "csak saját testsúly" || lower.contains("saját testsúly") || lower == "bodyweight" -> {
+                    result.add("Saját testsúly")
+                }
+                lower == "kézisúlyzó és pad" -> {
+                    result.add("Saját testsúly")
+                    result.add("Egykezes kézisúlyzó (1 db)")
+                    result.add("Kézisúlyzó pár (2 db)")
+                    result.add("Pad / Szék / Kanapé")
+                    result.add("Stabil támaszték / Fal / Szék")
+                }
+                lower == "kézisúlyzó (pad nélkül)" -> {
+                    result.add("Saját testsúly")
+                    result.add("Egykezes kézisúlyzó (1 db)")
+                    result.add("Kézisúlyzó pár (2 db)")
+                }
+                lower == "teljes edzőtermi géppark" || lower == "machines" -> {
+                    result.addAll(equipments)
+                }
+                lower == "gumiszalag és rúd" -> {
+                    result.add("Saját testsúly")
+                    result.add("Gumiszalag / Ellenállás-szalag")
+                    result.add("Húzódzkodó rúd")
+                    result.add("Kétkezes rúd (Súlyzórúd)")
+                }
+                lower == "kettlebell és saját testsúly" || lower == "kettlebell" -> {
+                    result.add("Saját testsúly")
+                    result.add("Kettlebell")
+                }
+                lower == "dumbbell" || lower.contains("1 kézisúlyzó") || lower.contains("egykezes") -> {
+                    result.add("Egykezes kézisúlyzó (1 db)")
+                }
+                lower == "dumbbells" || lower.contains("kézisúlyzó") -> {
+                    result.add("Egykezes kézisúlyzó (1 db)")
+                    result.add("Kézisúlyzó pár (2 db)")
+                }
+                lower == "barbell" || lower.contains("kétkezes") || lower.contains("súlyzórúd") -> {
+                    result.add("Kétkezes rúd (Súlyzórúd)")
+                }
+                lower == "bench" || lower.contains("pad") || lower.contains("kanapé") -> {
+                    result.add("Pad / Szék / Kanapé")
+                }
+                lower == "support" || lower.contains("támasz") || lower.contains("szék") -> {
+                    result.add("Stabil támaszték / Fal / Szék")
+                    result.add("Pad / Szék / Kanapé")
+                }
+                lower == "step" || lower.contains("fellépő") || lower.contains("lépcső") -> {
+                    result.add("Fellépő / Doboz / Lépcső")
+                }
+                lower == "pullupbar" || lower.contains("húzódzkodó") -> {
+                    result.add("Húzódzkodó rúd")
+                }
+                lower == "dipbars" || lower.contains("tolódzkodó") -> {
+                    result.add("Tolódzkodó korlát")
+                }
+                lower == "bands" || lower.contains("gumiszalag") -> {
+                    result.add("Gumiszalag / Ellenállás-szalag")
+                }
+                else -> result.add(token)
+            }
+        }
+        if (result.isEmpty()) {
+            result.add("Saját testsúly")
+            result.add("Egykezes kézisúlyzó (1 db)")
+            result.add("Kézisúlyzó pár (2 db)")
+            result.add("Pad / Szék / Kanapé")
+        }
+        return result
+    }
+
+    var selectedEquipments by remember(initialEquipmentHu) {
+        mutableStateOf(parseInitialEquipments(initialEquipmentHu))
+    }
+    val selectedEquipment = remember(selectedEquipments) {
+        selectedEquipments.joinToString(", ").ifBlank { "Saját testsúly" }
+    }
     var selectedDays by remember { mutableIntStateOf(initialDaysPerWeek) }
     var selectedDuration by remember { mutableIntStateOf(initialDurationMin) }
     var excludedMuscles by remember { mutableStateOf(initialExcludedMuscles) }
@@ -1058,14 +1155,6 @@ fun PersonalPlannerModalDialog(
         "Edzőterem",
         "Vegyes (Otthon + Terem)",
         "Szabadtér / Street workout"
-    )
-    val equipments = listOf(
-        "Kézisúlyzó és pad",
-        "Csak saját testsúly",
-        "Kézisúlyzó (pad nélkül)",
-        "Teljes edzőtermi géppark",
-        "Gumiszalag és rúd",
-        "Kettlebell és saját testsúly"
     )
     val daysOptions = listOf(2, 3, 4, 5, 6)
     val durationOptions = listOf(30, 45, 60, 75, 90)
@@ -1325,7 +1414,7 @@ fun PersonalPlannerModalDialog(
                     }
                 }
 
-                // 2. Felszerelés
+                // 2. Felszerelés (Több opció egyidejű kijelölése)
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = palette.surfaceElevated,
@@ -1343,19 +1432,185 @@ fun PersonalPlannerModalDialog(
                         ) {
                             Text("🏋️", fontSize = 16.sp)
                             Column {
-                                Text("Felszerelés", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                                Text(selectedEquipment, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                Text("Felszerelés (több is választható)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                Text(
+                                    text = "${selectedEquipments.size} eszköz kiválasztva • A terv ezek alapján épül fel",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = palette.textSecondary
+                                )
                             }
                         }
 
-                        PlannerDropdownBox(
-                            dropdownKey = "equipment",
-                            label = "Elérhető eszközök",
-                            selectedValue = selectedEquipment,
-                            options = equipments,
-                            onSelect = { _, value -> selectedEquipment = value },
-                            testTag = "profile_equipment_box"
-                        )
+                        val isEquipmentOpen = openDropdownKey == "equipment"
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = palette.surface,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .border(
+                                        1.dp,
+                                        if (isEquipmentOpen) palette.primary else palette.cardBorder,
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable {
+                                        openDropdownKey = if (isEquipmentOpen) null else "equipment"
+                                    }
+                                    .testTag("profile_equipment_box")
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "Elérhető eszközök (koppints a listához)",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = palette.textSecondary
+                                        )
+                                        Icon(
+                                            imageVector = if (isEquipmentOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                            contentDescription = null,
+                                            tint = palette.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = selectedEquipment,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = palette.textPrimary
+                                    )
+                                }
+                            }
+
+                            DropdownMenu(
+                                expanded = isEquipmentOpen,
+                                onDismissRequest = { openDropdownKey = null },
+                                containerColor = palette.background,
+                                shape = RoundedCornerShape(12.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, palette.primary.copy(alpha = 0.7f)),
+                                modifier = Modifier
+                                    .widthIn(min = 250.dp, max = 320.dp)
+                                    .heightIn(max = 320.dp)
+                            ) {
+                                equipmentCatalog.forEachIndexed { idx, (eqName, eqDesc) ->
+                                    val isChecked = eqName in selectedEquipments
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(20.dp)
+                                                        .clip(RoundedCornerShape(4.dp))
+                                                        .border(
+                                                            1.5.dp,
+                                                            if (isChecked) palette.primary else palette.textSecondary,
+                                                            RoundedCornerShape(4.dp)
+                                                        )
+                                                        .background(if (isChecked) palette.primary else Color.Transparent),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    if (isChecked) {
+                                                        Text("✓", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = palette.onPrimary)
+                                                    }
+                                                }
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = eqName,
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = if (isChecked) FontWeight.Bold else FontWeight.SemiBold,
+                                                        color = if (isChecked) palette.primary else palette.textPrimary
+                                                    )
+                                                    Text(
+                                                        text = eqDesc,
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = palette.textSecondary
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        onClick = {
+                                            val updated = if (isChecked) {
+                                                if (selectedEquipments.size > 1) selectedEquipments - eqName else selectedEquipments
+                                            } else {
+                                                selectedEquipments + eqName
+                                            }
+                                            selectedEquipments = updated
+                                        },
+                                        modifier = Modifier
+                                            .background(if (isChecked) palette.primary.copy(alpha = 0.14f) else Color.Transparent)
+                                            .testTag("profile_equipment_option_$idx")
+                                    )
+                                }
+                            }
+                        }
+
+                        // Quick multi-select chips so the user can also toggle equipment with 1 tap without opening the dropdown
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            equipments.chunked(2).forEachIndexed { rowIdx, pair ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    pair.forEachIndexed { colIdx, eqName ->
+                                        val isChecked = eqName in selectedEquipments
+                                        val flatIdx = rowIdx * 2 + colIdx
+                                        Surface(
+                                            shape = RoundedCornerShape(10.dp),
+                                            color = if (isChecked) palette.primary.copy(alpha = 0.18f) else palette.surface,
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .border(
+                                                    width = if (isChecked) 1.5.dp else 1.dp,
+                                                    color = if (isChecked) palette.primary else palette.cardBorder,
+                                                    shape = RoundedCornerShape(10.dp)
+                                                )
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .clickable {
+                                                    selectedEquipments = if (isChecked) {
+                                                        if (selectedEquipments.size > 1) selectedEquipments - eqName else selectedEquipments
+                                                    } else {
+                                                        selectedEquipments + eqName
+                                                    }
+                                                }
+                                                .testTag("profile_equipment_chip_$flatIdx")
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Text(
+                                                    text = if (isChecked) "☑" else "☐",
+                                                    fontSize = 12.sp,
+                                                    color = if (isChecked) palette.primary else palette.textSecondary
+                                                )
+                                                Text(
+                                                    text = eqName,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = if (isChecked) FontWeight.Bold else FontWeight.Medium,
+                                                    color = if (isChecked) palette.primary else palette.textPrimary,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
+                                        }
+                                    }
+                                    if (pair.size == 1) {
+                                        Spacer(modifier = Modifier.weight(1f))
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 

@@ -842,8 +842,9 @@ fun ActiveStrengthWorkoutScreen(
             val readinessScore = when {
                 uiState.coachReadinessScore > 0 -> uiState.coachReadinessScore
                 uiState.samsungEnergyScore > 0 -> uiState.samsungEnergyScore
-                else -> 84
+                else -> 0
             }
+            val readinessLabel = if (readinessScore > 0) "$readinessScore/100" else "—"
 
             data class LiveCoachCalc(
                 val actionTitle: String,
@@ -855,12 +856,12 @@ fun ActiveStrengthWorkoutScreen(
             )
 
             val engineCalc = when {
-                readinessScore < 55 -> LiveCoachCalc(
+                readinessScore in 1..54 -> LiveCoachCalc(
                     actionTitle = "Könnyített terhelés (Regeneráció)",
                     suggestedWeightKg = (baseWeight - 2.5f).coerceAtLeast(0f),
                     suggestedReps = minReps.coerceAtMost(10),
                     suggestedRir = 2,
-                    reasonText = "Alacsony napi készenlét ($readinessScore/100) miatt a Coach motor visszafogott terhelést és 2–3 RIR tartalékot javasol.",
+                    reasonText = "Alacsony napi készenlét ($readinessLabel) miatt a Coach motor visszafogott terhelést és 2–3 RIR tartalékot javasol.",
                     accentColor = palette.secondary
                 )
                 selectedEngineMode.startsWith("RIR") -> when {
@@ -917,7 +918,7 @@ fun ActiveStrengthWorkoutScreen(
                             suggestedWeightKg = baseWeight + 2.5f,
                             suggestedReps = minReps,
                             suggestedRir = 2,
-                            reasonText = "Stabil teljesítmény (${minReps} ism., RIR $observedMinRir, készenlét $readinessScore/100). A lineáris motor +2.5 kg súlyemelést javasol (${baseWeight} kg → ${baseWeight + 2.5f} kg).",
+                            reasonText = "Stabil teljesítmény (${minReps} ism., RIR $observedMinRir, készenlét $readinessLabel). A lineáris motor +2.5 kg súlyemelést javasol (${baseWeight} kg → ${baseWeight + 2.5f} kg).",
                             accentColor = palette.success
                         )
                     } else {
@@ -958,7 +959,7 @@ fun ActiveStrengthWorkoutScreen(
                                 color = palette.primary
                             )
                             Text(
-                                text = "Előzmény: $historyCount edzés • Kész: $completedCount/${uiState.activeSets.size} sorozat • Készenlét: $readinessScore/100",
+                                text = "Előzmény: $historyCount edzés • Kész: $completedCount/${uiState.activeSets.size} sorozat • Készenlét: $readinessLabel",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.textSecondary
                             )

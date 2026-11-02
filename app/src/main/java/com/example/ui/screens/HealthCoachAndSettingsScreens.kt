@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import kotlin.math.roundToInt
+import androidx.compose.animation.AnimatedVisibility
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.PickVisualMediaRequest
@@ -97,9 +99,24 @@ import com.example.model.SubScreen
 import com.example.ui.components.MockupHealthConnectBadge
 import com.example.ui.components.MockupWatchGraphicBadge
 import com.example.ui.components.SubScreenTopBar
+import android.app.Activity
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.TrainPilotPalettes
 import com.example.ui.viewmodel.TrainPilotUiState
+import com.repforge.app.ui.settings.NativeGoogleConsentLauncher
+import com.repforge.app.ui.settings.NativeGoogleMaintenanceConfirmation
+import com.repforge.app.ui.settings.NativeGoogleMaintenanceControls
+import com.repforge.app.ui.settings.NativeGoogleMaintenanceFeedback
+import com.repforge.app.ui.settings.SettingsViewModel
 
 /**
  * 5. EGÉSZSÉG (Mockup 3/4 #5 + teljes régi main Egészség elrendezés)
@@ -564,15 +581,21 @@ fun HealthTabScreen(
             }
         }
 
-        // 2. SCREENSHOT 9: "Heti egészség & edzés célok" CONTAINER (with Heti lépésszám, Aktív edzésidő, 24 órás pulzustrend & Testsúlynapló & Trend inside!)
+        // 2. SCREENSHOT 9: "Heti egészség & edzés célok" CONTAINER (with Heti lépésszám, Aktív edzésidő, Expandable Weekly Source & 7-Day Breakdown, 24 órás pulzustrend & Testsúlynapló)
         item {
             val weeklyStepsTarget = (uiState.stepsGoal * 7).coerceAtLeast(70000)
-            val weeklyStepsCurrent = uiState.dailySteps
+            val weeklyStepsCurrent = if (uiState.weeklyTotalSteps > 0) uiState.weeklyTotalSteps else uiState.dailySteps
             val weeklyStepsPct = ((weeklyStepsCurrent.toFloat() / weeklyStepsTarget.toFloat()) * 100f).toInt().coerceIn(0, 100)
 
-            val weeklyMinutesTarget = 180
-            val weeklyMinutesCurrent = uiState.loggedWorkouts.sumOf { it.durationMinutes }
+            val weeklyMinutesTarget = (uiState.userScheduleDaysPerWeek * uiState.userWorkoutDurationMin).coerceAtLeast(150)
+            val weeklyMinutesCurrent = if (uiState.weeklyHealthDays.isNotEmpty()) {
+                uiState.weeklyHealthDays.sumOf { it.workoutMinutes }.takeIf { it > 0 }
+                    ?: uiState.loggedWorkouts.sumOf { it.durationMinutes }
+            } else {
+                uiState.loggedWorkouts.sumOf { it.durationMinutes }
+            }
             val weeklyMinutesPct = ((weeklyMinutesCurrent.toFloat() / weeklyMinutesTarget.toFloat()) * 100f).toInt().coerceIn(0, 100)
+            val primaryProviderName = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"
 
             Surface(
                 shape = RoundedCornerShape(24.dp),
@@ -592,7 +615,12 @@ fun HealthTabScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { onToggleHealthSection("weekly") }
+                        ) {
                             Text(
                                 text = "Heti egészség & edzés célok",
                                 style = MaterialTheme.typography.titleLarge,
@@ -601,7 +629,7 @@ fun HealthTabScreen(
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "Health Connect & Room gyorsítótár (Offline elérhető)",
+                                text = "$primaryProviderName & Room edzésnapló (Koppints a forrásokhoz)",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.primary,
@@ -635,7 +663,7 @@ fun HealthTabScreen(
                         }
                     }
 
-                    // 2-Column Weekly Progress Cards: Heti lépésszám | Aktív edzésidő
+                    // 2-Column Weekly Progress Cards: Heti lépésszám | Aktív edzésidő (clickable to expand weekly breakdown & sources)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -646,7 +674,14 @@ fun HealthTabScreen(
                             color = palette.background.copy(alpha = 0.55f),
                             modifier = Modifier
                                 .weight(1f)
-                                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                                .border(
+                                    width = if (uiState.expandedHealthWeeklySummary) 1.5.dp else 1.25.dp,
+                                    color = if (uiState.expandedHealthWeeklySummary) palette.primary else palette.sectionBorder,
+                                    shape = RoundedCornerShape(18.dp)
+                                )
+                                .clip(RoundedCornerShape(18.dp))
+                                .clickable { onToggleHealthSection("weekly") }
+                                .testTag("health_weekly_steps_card")
                         ) {
                             Column(
                                 modifier = Modifier.padding(12.dp),
@@ -665,7 +700,14 @@ fun HealthTabScreen(
                                     Text(
                                         text = "Heti lépésszám",
                                         style = MaterialTheme.typography.labelMedium,
-                                        color = palette.textSecondary
+                                        color = palette.textSecondary,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Icon(
+                                        imageVector = if (uiState.expandedHealthWeeklySummary) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                        contentDescription = null,
+                                        tint = palette.textSecondary,
+                                        modifier = Modifier.size(16.dp)
                                     )
                                 }
                                 Text(
@@ -715,7 +757,14 @@ fun HealthTabScreen(
                             color = palette.background.copy(alpha = 0.55f),
                             modifier = Modifier
                                 .weight(1f)
-                                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                                .border(
+                                    width = if (uiState.expandedHealthWeeklySummary) 1.5.dp else 1.25.dp,
+                                    color = if (uiState.expandedHealthWeeklySummary) palette.primary else palette.sectionBorder,
+                                    shape = RoundedCornerShape(18.dp)
+                                )
+                                .clip(RoundedCornerShape(18.dp))
+                                .clickable { onToggleHealthSection("weekly") }
+                                .testTag("health_weekly_minutes_card")
                         ) {
                             Column(
                                 modifier = Modifier.padding(12.dp),
@@ -734,7 +783,14 @@ fun HealthTabScreen(
                                     Text(
                                         text = "Aktív edzésidő",
                                         style = MaterialTheme.typography.labelMedium,
-                                        color = palette.textSecondary
+                                        color = palette.textSecondary,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Icon(
+                                        imageVector = if (uiState.expandedHealthWeeklySummary) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                        contentDescription = null,
+                                        tint = palette.textSecondary,
+                                        modifier = Modifier.size(16.dp)
                                     )
                                 }
                                 Text(
@@ -774,6 +830,230 @@ fun HealthTabScreen(
                                             .clip(RoundedCornerShape(3.dp))
                                             .background(palette.primary)
                                     )
+                                }
+                            }
+                        }
+                    }
+
+                    // Expandable Trigger Bar & Panel for Weekly Summary + Data Sources ("Heti összesítő és adatforrások")
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = palette.background.copy(alpha = 0.55f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(
+                                width = 1.dp,
+                                color = if (uiState.expandedHealthWeeklySummary) palette.primary.copy(alpha = 0.65f) else palette.cardBorder,
+                                shape = RoundedCornerShape(18.dp)
+                            )
+                            .clip(RoundedCornerShape(18.dp))
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onToggleHealthSection("weekly") }
+                                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                                    .testTag("health_weekly_summary_toggle"),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Link,
+                                        contentDescription = null,
+                                        tint = palette.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Column {
+                                        Text(
+                                            text = "Heti összesítő és adatforrások (7 napos bontás)",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            color = palette.textPrimary
+                                        )
+                                        Text(
+                                            text = "Honnan származnak a heti lépés-, kalória-, alvás- és edzésadatok?",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = palette.textSecondary
+                                        )
+                                    }
+                                }
+                                Icon(
+                                    imageVector = if (uiState.expandedHealthWeeklySummary) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = null,
+                                    tint = palette.primary
+                                )
+                            }
+
+                            AnimatedVisibility(visible = uiState.expandedHealthWeeklySummary) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                                        .testTag("health_weekly_expanded_section"),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    HorizontalDivider(color = palette.cardBorder)
+
+                                    // 1. Data source attribution card ("Honnan szedi össze az adatokat?")
+                                    Surface(
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = palette.surfaceElevated,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text(
+                                                text = "Adatforrások és begyűjtés módja",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = palette.primary
+                                            )
+                                            Text(
+                                                text = "• Elsődleges egészség-szolgáltató: $primaryProviderName (" +
+                                                    if (uiState.primaryHealthSourceSamsung) {
+                                                        if (uiState.samsungGrantedCount >= 0) "${uiState.samsungGrantedCount}/${uiState.samsungPermissionCount} adatkör engedélyezve" else "engedély még nem igazolt"
+                                                    } else {
+                                                        "${uiState.healthGrantedCount}/${uiState.healthPermissionCount} engedély megadva"
+                                                    } + ")",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = palette.textPrimary
+                                            )
+                                            Text(
+                                                text = "• Napi lépés- és aktivitásforrás: ${uiState.dailySourceModeLabel}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = palette.textSecondary
+                                            )
+                                            Text(
+                                                text = "• Aktív edzésidő forrása: Room edzésnapló – tényleges aktív edzésintervallumok (hosszú szünetek nélkül)",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = palette.textSecondary
+                                            )
+                                            Text(
+                                                text = "• Észlelt 7 napos források: ${uiState.weeklyDataSourcesSummary}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = palette.textPrimary
+                                            )
+                                            Text(
+                                                text = "• Utolsó szinkron: ${uiState.lastHealthSyncLabel} • Utolsó olvasás: ${uiState.lastHealthReadLabel}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = palette.textSecondary
+                                            )
+                                        }
+                                    }
+
+                                    // 2. 7-day aggregated summary pills
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        SummarySmallPill(
+                                            label = "Heti lépések",
+                                            value = "%,d".format(java.util.Locale.US, weeklyStepsCurrent),
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        SummarySmallPill(
+                                            label = "Heti aktív kalória",
+                                            value = when {
+                                                uiState.weeklyTotalCaloriesKcal > 0 -> "${uiState.weeklyTotalCaloriesKcal} kcal"
+                                                uiState.activeCaloriesKcal > 0 -> "${uiState.activeCaloriesKcal} kcal"
+                                                else -> "—"
+                                            },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        SummarySmallPill(
+                                            label = "Heti távolság",
+                                            value = when {
+                                                uiState.weeklyTotalDistanceKm > 0f -> String.format(java.util.Locale.US, "%.2f km", uiState.weeklyTotalDistanceKm).replace('.', ',')
+                                                uiState.dailyDistanceKm > 0f -> String.format(java.util.Locale.US, "%.2f km", uiState.dailyDistanceKm).replace('.', ',')
+                                                else -> "—"
+                                            },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        SummarySmallPill(
+                                            label = "Heti átlag alvás",
+                                            value = if (uiState.weeklyAvgSleepLabel != "—") uiState.weeklyAvgSleepLabel else uiState.sleepDurationLabel,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+
+                                    // 3. Per-day 7-day breakdown with source badge
+                                    Text(
+                                        text = "Napi bontás és forrásmegjelölés (utolsó 7 nap)",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = palette.textSecondary
+                                    )
+                                    val daysToRender = uiState.weeklyHealthDays.ifEmpty {
+                                        listOf(
+                                            com.example.ui.viewmodel.WeeklyHealthDaySummary(
+                                                dateIso = today.toString(),
+                                                dayLabelHu = "Ma (${today})",
+                                                steps = uiState.dailySteps,
+                                                activeCaloriesKcal = uiState.activeCaloriesKcal,
+                                                sleepLabel = uiState.sleepDurationLabel,
+                                                workoutMinutes = weeklyMinutesCurrent,
+                                                workoutCount = uiState.loggedWorkouts.size,
+                                                sourceLabelHu = if (uiState.dailySteps > 0 || uiState.activeCaloriesKcal > 0) primaryProviderName else "Nincs rögzített adat"
+                                            )
+                                        )
+                                    }
+                                    daysToRender.forEach { dayItem ->
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = palette.surfaceElevated,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
+                                        ) {
+                                            Column(
+                                                modifier = Modifier.padding(10.dp),
+                                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = dayItem.dayLabelHu,
+                                                        style = MaterialTheme.typography.labelLarge,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = palette.textPrimary
+                                                    )
+                                                    Text(
+                                                        text = dayItem.sourceLabelHu,
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = palette.primary
+                                                    )
+                                                }
+                                                Text(
+                                                    text = "Lépés: ${if (dayItem.steps > 0) "%,d".format(java.util.Locale.US, dayItem.steps) else "—"} • " +
+                                                        "Aktív kcal: ${if (dayItem.activeCaloriesKcal > 0) "${dayItem.activeCaloriesKcal} kcal" else "—"} • " +
+                                                        "Alvás: ${dayItem.sleepLabel} • " +
+                                                        "Edzés: ${if (dayItem.workoutMinutes > 0) "${dayItem.workoutMinutes} perc (${dayItem.workoutCount} db)" else "—"}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = palette.textSecondary
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -918,12 +1198,12 @@ fun HealthTabScreen(
                                         ) {
                                             PulseInnerBox(
                                                 label = "Max. pulzus",
-                                                value = "—",
+                                                value = if (uiState.maxHrBpm > 0) "${uiState.maxHrBpm} bpm" else "—",
                                                 modifier = Modifier.weight(1f)
                                             )
                                             PulseInnerBox(
                                                 label = "Min. pulzus",
-                                                value = "—",
+                                                value = if (uiState.minHrBpm > 0) "${uiState.minHrBpm} bpm" else "—",
                                                 modifier = Modifier.weight(1f)
                                             )
                                         }
@@ -1381,18 +1661,22 @@ fun HealthTabScreen(
                 onToggle = { onToggleHealthSection("extra") }
             ) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SummarySmallPill("Vérnyomás", "—", Modifier.weight(1f))
-                    SummarySmallPill("Vércukor", "—", Modifier.weight(1f))
+                    SummarySmallPill("Vérnyomás", uiState.bloodPressureLabel, Modifier.weight(1f))
+                    SummarySmallPill("Vércukor", uiState.bloodGlucoseLabel, Modifier.weight(1f))
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SummarySmallPill("Légzésszám", "—", Modifier.weight(1f))
-                    SummarySmallPill("Távolság (ma)", "—", Modifier.weight(1f))
+                    SummarySmallPill("Légzésszám", uiState.respiratoryRateLabel, Modifier.weight(1f))
+                    SummarySmallPill(
+                        "Távolság (ma)",
+                        if (uiState.dailyDistanceKm > 0f) String.format(java.util.Locale.US, "%.2f km", uiState.dailyDistanceKm).replace('.', ',') else "—",
+                        Modifier.weight(1f)
+                    )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SummarySmallPill("Véroxigén (SpO₂)", if (uiState.spo2Percent > 0) "${uiState.spo2Percent} %" else "—", Modifier.weight(1f))
-                    SummarySmallPill("Testhőmérséklet", "—", Modifier.weight(1f))
+                    SummarySmallPill("Véroxigén (SpO₂)", if (uiState.spo2Percent > 0f) "${uiState.spo2Percent} %" else "—", Modifier.weight(1f))
+                    SummarySmallPill("HRV (RMSSD)", if (uiState.hrvRmssdMs > 0f) "${uiState.hrvRmssdMs.roundToInt()} ms" else "—", Modifier.weight(1f))
                 }
             }
         }
@@ -1406,14 +1690,23 @@ fun HealthTabScreen(
                 expanded = uiState.expandedHealthJournal,
                 onToggle = { onToggleHealthSection("journal") }
             ) {
-                val journalDays = listOf(
-                    today.toString() to ("${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} • " +
-                        "Alvás: ${uiState.sleepDurationLabel} • " +
-                        "Pulzus: ${if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"} • " +
-                        "Lépések: ${if (uiState.dailySteps > 0) uiState.dailySteps.toString() else "—"} • " +
-                        "Kalória: ${if (uiState.activeCaloriesKcal > 0) "${uiState.activeCaloriesKcal} kcal" else "—"}")
-                )
-                journalDays.forEach { (d, summary) ->
+                val journalEntries = if (uiState.weeklyHealthDays.isNotEmpty()) {
+                    uiState.weeklyHealthDays.reversed().map { day ->
+                        day.dayLabelHu to ("Forrás: ${day.sourceLabelHu} • " +
+                            "Alvás: ${day.sleepLabel} • " +
+                            "Lépés: ${if (day.steps > 0) day.steps.toString() else "—"} • " +
+                            "Kalória: ${if (day.activeCaloriesKcal > 0) "${day.activeCaloriesKcal} kcal" else "—"}")
+                    }
+                } else {
+                    listOf(
+                        today.toString() to ("${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} • " +
+                            "Alvás: ${uiState.sleepDurationLabel} • " +
+                            "Pulzus: ${if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"} • " +
+                            "Lépések: ${if (uiState.dailySteps > 0) uiState.dailySteps.toString() else "—"} • " +
+                            "Kalória: ${if (uiState.activeCaloriesKcal > 0) "${uiState.activeCaloriesKcal} kcal" else "—"}")
+                    )
+                }
+                journalEntries.forEach { (d, summary) ->
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = palette.surfaceElevated,
@@ -1514,16 +1807,21 @@ fun HealthTabScreen(
                 ) {
                     MockupWatchGraphicBadge(size = 46.dp)
                     Column(modifier = Modifier.weight(1f)) {
+                        val watchTitle = if (uiState.watchAppAvailable) "Óra és szinkron (${uiState.watchName})" else "Óra és szinkron"
                         Text(
-                            text = "Óra és szinkron (${uiState.watchName})",
+                            text = watchTitle,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = palette.textPrimary
                         )
                         Text(
-                            text = if (uiState.watchConnected) "● Wear OS adatkapcsolat • átadás külön ACK-val" else "Nincs csatlakoztatott óra",
+                            text = when {
+                                uiState.watchAppAvailable -> "● Wear OS adatkapcsolat • átadás külön ACK-val"
+                                uiState.watchConnected -> "Wear OS rendszerkapcsolat • TrainPilot óraapp nincs telepítve"
+                                else -> "Nincs csatlakoztatott óra"
+                            },
                             style = MaterialTheme.typography.bodySmall,
-                            color = palette.success
+                            color = if (uiState.watchAppAvailable) palette.success else palette.textSecondary
                         )
                     }
                     Icon(
@@ -1793,8 +2091,9 @@ fun CoachDetailScreen(
     onOpenExerciseDetail: (String) -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
-    val displayScore = if (uiState.coachReadinessScore > 0) uiState.coachReadinessScore else 78
-    val samsungScore = if (uiState.samsungEnergyScore > 0) uiState.samsungEnergyScore else 84
+    val displayScore = uiState.coachReadinessScore.coerceIn(0, 100)
+    val samsungScore = uiState.samsungEnergyScore.coerceIn(0, 100)
+    val ownReadinessScore = uiState.trainPilotReadinessScore.coerceIn(0, 100)
 
     LazyColumn(
         modifier = Modifier
@@ -1814,7 +2113,7 @@ fun CoachDetailScreen(
             }
         }
 
-        // Screenshot 4: Mai felkészültség (Arc gauge + OPTIMÁLIS KÉSZENLÉT + 3 distinct D10 readiness indicators)
+        // Screenshot 4: Mai felkészültség (Arc gauge + 3 distinct D10 readiness indicators)
         item {
             Surface(
                 shape = RoundedCornerShape(22.dp),
@@ -1835,16 +2134,28 @@ fun CoachDetailScreen(
                             fontWeight = FontWeight.Bold,
                             color = palette.textPrimary
                         )
+                        val statusBadgeText = when {
+                            displayScore >= 75 -> "OPTIMÁLIS KÉSZENLÉT"
+                            displayScore >= 50 -> "MÉRSÉKELT KÉSZENLÉT"
+                            displayScore > 0 -> "PIHENÉS JAVASOLT"
+                            else -> "NINCS MÉRT ADAT"
+                        }
+                        val statusBadgeColor = when {
+                            displayScore >= 75 -> palette.success
+                            displayScore >= 50 -> palette.primary
+                            displayScore > 0 -> palette.warning
+                            else -> palette.textSecondary
+                        }
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = palette.success.copy(alpha = 0.16f),
-                            modifier = Modifier.border(1.dp, palette.success.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                            color = statusBadgeColor.copy(alpha = 0.16f),
+                            modifier = Modifier.border(1.dp, statusBadgeColor.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                         ) {
                             Text(
-                                text = "OPTIMÁLIS KÉSZENLÉT",
+                                text = statusBadgeText,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = palette.success,
+                                color = statusBadgeColor,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
@@ -1861,7 +2172,7 @@ fun CoachDetailScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             val trackCol = palette.surfaceElevated
-                            val ringCol = palette.success
+                            val ringCol = if (displayScore > 0) palette.success else palette.cardBorder
                             Canvas(modifier = Modifier.size(98.dp)) {
                                 drawArc(
                                     color = trackCol,
@@ -1870,17 +2181,19 @@ fun CoachDetailScreen(
                                     useCenter = false,
                                     style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
                                 )
-                                drawArc(
-                                    color = ringCol,
-                                    startAngle = 135f,
-                                    sweepAngle = 270f * (displayScore / 100f),
-                                    useCenter = false,
-                                    style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
-                                )
+                                if (displayScore > 0) {
+                                    drawArc(
+                                        color = ringCol,
+                                        startAngle = 135f,
+                                        sweepAngle = 270f * (displayScore / 100f),
+                                        useCenter = false,
+                                        style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
+                                    )
+                                }
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    text = "$displayScore",
+                                    text = if (displayScore > 0) "$displayScore" else "—",
                                     style = MaterialTheme.typography.headlineLarge,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = palette.textPrimary
@@ -1901,7 +2214,11 @@ fun CoachDetailScreen(
                                 color = palette.primary
                             )
                             Text(
-                                text = "A napi regeneráció és az akut izomterhelés alapján ma teljes értékű edzés végezhető 1–2 RIR tartalékkal.",
+                                text = if (displayScore > 0) {
+                                    "A napi regeneráció és az akut izomterhelés alapján ma teljes értékű edzés végezhető 1–2 RIR tartalékkal."
+                                } else {
+                                    "Szinkronizáld a Health Connect vagy Samsung Health adatokat a mai személyre szabott készenléti érték kiszámításához."
+                                },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = palette.textSecondary
                             )
@@ -1930,8 +2247,17 @@ fun CoachDetailScreen(
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
                                 Text("1. Mai Samsung...", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
-                                Text("$samsungScore / 100", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                                Text("Jó állapotban", style = MaterialTheme.typography.labelSmall, color = palette.success)
+                                Text(
+                                    text = if (samsungScore > 0) "$samsungScore / 100" else "—",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.textPrimary
+                                )
+                                Text(
+                                    text = if (samsungScore > 0) "Samsung Health" else "Nincs adat",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (samsungScore > 0) palette.success else palette.textSecondary
+                                )
                             }
                         }
                         Surface(
@@ -1943,7 +2269,12 @@ fun CoachDetailScreen(
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
                                 Text("2. TrainPilot saját...", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
-                                Text("81 / 100", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                Text(
+                                    text = if (ownReadinessScore > 0) "$ownReadinessScore / 100" else "—",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.textPrimary
+                                )
                                 Text("HRV & alvás", style = MaterialTheme.typography.labelSmall, color = palette.primary)
                             }
                         }
@@ -1956,7 +2287,12 @@ fun CoachDetailScreen(
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
                                 Text("3. Terheléssel...", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
-                                Text("$displayScore / 100", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.primary)
+                                Text(
+                                    text = if (displayScore > 0) "$displayScore / 100" else "—",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.primary
+                                )
                                 Text("Végső Coach", style = MaterialTheme.typography.labelSmall, color = palette.primary)
                             }
                         }
@@ -1981,6 +2317,7 @@ fun CoachDetailScreen(
                     }
                     CoachSignalRow("Alvás", uiState.sleepDurationLabel, palette.success)
                     CoachSignalRow("Nyugalmi pulzus", if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—", palette.success)
+                    CoachSignalRow("HRV (RMSSD)", if (uiState.hrvRmssdMs > 0f) "${uiState.hrvRmssdMs.roundToInt()} ms" else "—", palette.primary)
                     CoachSignalRow("Rögzített edzések", "${uiState.loggedWorkouts.size} db", palette.primary)
                 }
             }
@@ -1988,6 +2325,9 @@ fun CoachDetailScreen(
 
         // Javasolt edzés Card
         item {
+            val activeProgram = uiState.programs.firstOrNull { it.isActive } ?: uiState.programs.firstOrNull()
+            val nextDay = activeProgram?.days?.firstOrNull()
+            val suggestedExercises = nextDay?.exercises?.take(3).orEmpty().ifEmpty { uiState.activeWorkoutExercises.take(3) }
             Surface(
                 shape = RoundedCornerShape(22.dp),
                 color = palette.surfaceCard,
@@ -2009,19 +2349,19 @@ fun CoachDetailScreen(
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Ma • Teljes testes edzés A/B", fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text("Közepes intenzitás • ~ ${uiState.userWorkoutDurationMin} perc", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                            Text(
+                                text = if (activeProgram != null) "${activeProgram.nameHu} • ${nextDay?.dayCode ?: "A nap"}" else "Személyre szabott edzés",
+                                fontWeight = FontWeight.Bold,
+                                color = palette.textPrimary
+                            )
+                            Text("Felszereléshez igazított terv • ~ ${uiState.userWorkoutDurationMin} perc", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                         }
                     }
 
-                    CoachExerciseAdviceRow("Guggolás", "Normál terhelés", palette.success) {
-                        onOpenExerciseDetail("goblet_squat")
-                    }
-                    CoachExerciseAdviceRow("Fekvenyomás", "Kissé csökkentett terhelés", palette.primary) {
-                        onOpenExerciseDetail("bench_press")
-                    }
-                    CoachExerciseAdviceRow("Evezés gumiszalaggal", "Könnyebb kezdés", palette.primary) {
-                        onOpenExerciseDetail("band_row")
+                    suggestedExercises.forEach { ex ->
+                        CoachExerciseAdviceRow(ex.nameHu, "${ex.defaultSets}×${ex.defaultReps} • ${ex.equipmentHu}", palette.success) {
+                            onOpenExerciseDetail(ex.id)
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -2114,7 +2454,8 @@ fun SettingsMainScreen(
     onToggleProgressionModal: (Boolean) -> Unit,
     onSaveProgression: (String, String, Boolean) -> Unit,
     onNavigateToSubScreen: (SubScreen) -> Unit,
-    onShowBanner: (String) -> Unit
+    onShowBanner: (String) -> Unit,
+    onCloudSyncCompleted: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val currentPaletteObj = TrainPilotPalettes.getById(uiState.selectedPaletteId)
@@ -2252,46 +2593,12 @@ fun SettingsMainScreen(
             )
         }
 
-        // Profile & Google Sync Card
+        // Google Cloud Szinkron (Drive appDataFolder + Managed Naptár)
         item {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(50.dp)
-                                .clip(CircleShape)
-                                .background(palette.primary.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("TP", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = palette.primary)
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("TrainPilot Profil", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text("Helyi Room adatbázis és felhő szinkron", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(
-                            onClick = { onShowBanner("Google Drive szinkronizáció nincs beállítva. Használd a helyi JSON / ZIP mentést.") },
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(imageVector = Icons.Default.Sync, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Szinkron most", color = palette.textPrimary)
-                        }
-                    }
-                }
-            }
+            StudioGoogleCloudSyncCard(
+                onShowBanner = onShowBanner,
+                onCloudSyncCompleted = onCloudSyncCompleted
+            )
         }
 
         // Megjelenés és nyelv (32 Palettes in 4 Expandable Columns + 4 Languages)
@@ -2561,8 +2868,12 @@ fun SettingsMainScreen(
         item {
             SettingsActionRowCard(
                 title = strings.watchAndSyncTitle,
-                subtitle = if (uiState.watchConnected) "${uiState.watchName} • Wear OS adatkapcsolat" else "Nincs csatlakoztatott óra",
-                badgeText = if (uiState.watchConnected) "Adatkapcsolat" else "Nincs kapcsolat",
+                subtitle = when {
+                    uiState.watchAppAvailable -> "${uiState.watchName} • Wear OS adatkapcsolat"
+                    uiState.watchConnected -> "Wear OS rendszerkapcsolat • TrainPilot óraapp nincs telepítve"
+                    else -> "Nincs csatlakoztatott óra"
+                },
+                badgeText = if (uiState.watchAppAvailable) "Adatkapcsolat" else "Nincs kapcsolat",
                 onClick = { onNavigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
                 testTag = "settings_open_watch_row"
             )
@@ -2716,7 +3027,7 @@ fun WatchAndSyncScreen(
                         else Icon(Icons.Default.Watch, contentDescription = null, tint = palette.textSecondary, modifier = Modifier.size(64.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = uiState.watchName,
+                                text = if (uiState.watchAppAvailable) uiState.watchName else "Nincs csatlakoztatott Wear OS óra",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = palette.textPrimary
@@ -3033,6 +3344,333 @@ fun WatchAndSyncScreen(
     }
 }
 
+@Composable
+fun StudioGoogleCloudSyncCard(
+    onShowBanner: (String) -> Unit,
+    onCloudSyncCompleted: () -> Unit = {},
+    settingsViewModel: SettingsViewModel = viewModel()
+) {
+    val palette = LocalTrainPilotPalette.current
+    val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+    val gs = settingsState.googleSyncState
+    val context = LocalContext.current
+    val activity = context as? Activity
+    var showMaintenanceOptions by remember { mutableStateOf(false) }
+
+    val maintenancePreview by settingsViewModel.maintenancePreview.collectAsStateWithLifecycle()
+    NativeGoogleMaintenanceConfirmation(
+        request = maintenancePreview,
+        language = settingsState.settings.language,
+        busy = settingsState.maintenanceBusy,
+        cancel = settingsViewModel::cancelGoogleMaintenance,
+        confirm = { activity?.let(settingsViewModel::confirmGoogleMaintenance) }
+    )
+
+    val googleConsent by settingsViewModel.googleConsent.collectAsStateWithLifecycle()
+    NativeGoogleConsentLauncher(
+        prompt = googleConsent,
+        take = settingsViewModel::takeGoogleConsent,
+        complete = settingsViewModel::completeGoogleConsent,
+        fail = settingsViewModel::failGoogleConsent
+    )
+
+    LaunchedEffect(settingsState.statusMessage) {
+        val msg = settingsState.statusMessage
+        if (!msg.isNullOrBlank()) {
+            onShowBanner(msg)
+        }
+    }
+
+    LaunchedEffect(gs.lastDriveSyncIso, settingsState.maintenanceCompleted) {
+        if (gs.lastDriveSyncIso.isNotBlank() || settingsState.maintenanceCompleted > 0) {
+            onCloudSyncCompleted()
+        }
+    }
+
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = palette.surfaceCard,
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
+            .testTag("studio_google_cloud_card")
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(CircleShape)
+                            .background(palette.primary.copy(alpha = 0.18f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (gs.connectedEmail.isNotEmpty()) Icons.Default.CloudDone else Icons.Default.CloudSync,
+                            contentDescription = null,
+                            tint = palette.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Google Cloud Szinkron",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = palette.textPrimary
+                        )
+                        Text(
+                            text = if (gs.connectedEmail.isNotEmpty()) {
+                                gs.connectedEmail
+                            } else {
+                                "Google Drive felhőmentés és Google Naptár szinkron"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (gs.connectedEmail.isNotEmpty()) palette.primary else palette.textSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (gs.connectedEmail.isNotEmpty()) palette.success.copy(alpha = 0.16f) else palette.surfaceElevated,
+                    modifier = Modifier.border(
+                        1.dp,
+                        if (gs.connectedEmail.isNotEmpty()) palette.success.copy(alpha = 0.55f) else palette.cardBorder,
+                        RoundedCornerShape(10.dp)
+                    )
+                ) {
+                    Text(
+                        text = if (gs.connectedEmail.isNotEmpty()) "Csatlakoztatva" else "Nincs belépve",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (gs.connectedEmail.isNotEmpty()) palette.success else palette.textSecondary,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            if (gs.connectedEmail.isNotEmpty()) {
+                if (gs.connectedName.isNotBlank()) {
+                    Text(
+                        text = "Fiók: ${gs.connectedName} (${gs.connectedEmail})",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = palette.textPrimary
+                    )
+                }
+                if (gs.lastDriveSyncIso.isNotEmpty()) {
+                    Text(
+                        text = "Utolsó Drive szinkron: ${gs.lastDriveSyncIso.take(19).replace('T', ' ')}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = palette.textSecondary
+                    )
+                }
+                if (gs.lastCalendarSyncIso.isNotEmpty()) {
+                    Text(
+                        text = "Utolsó Naptár szinkron: ${gs.lastCalendarSyncIso.take(19).replace('T', ' ')}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = palette.textSecondary
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable { settingsViewModel.setRecoverEarlierBackups(!settingsState.recoverEarlierBackupsChecked) }
+                        .padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = settingsState.recoverEarlierBackupsChecked,
+                        onCheckedChange = { settingsViewModel.setRecoverEarlierBackups(it) },
+                        colors = CheckboxDefaults.colors(checkedColor = palette.primary)
+                    )
+                    Text(
+                        text = "Korábbi felhőmentések keresése és összefésülése",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = palette.textSecondary
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = { activity?.let { settingsViewModel.syncDriveCloud(it) } },
+                        enabled = !gs.isBusy && !settingsState.replacementBusy && !settingsState.maintenanceBusy && activity != null,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = palette.primary,
+                            contentColor = palette.onPrimary
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp)
+                            .testTag("settings_google_drive_sync_btn")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CloudSync,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Drive szinkron",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                    OutlinedButton(
+                        onClick = { activity?.let { settingsViewModel.syncCalendarCloud(it) } },
+                        enabled = !gs.isBusy && !settingsState.replacementBusy && !settingsState.maintenanceBusy && activity != null,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp)
+                            .testTag("settings_google_calendar_sync_btn")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            tint = palette.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Naptár szinkron",
+                            color = palette.textPrimary,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(
+                        onClick = { settingsViewModel.disconnectGoogle() },
+                        enabled = !gs.isBusy && !settingsState.replacementBusy && !settingsState.maintenanceBusy,
+                        modifier = Modifier
+                            .heightIn(min = 48.dp)
+                            .testTag("settings_google_disconnect_btn")
+                    ) {
+                        Text(
+                            text = "Google-fiók lekapcsolása",
+                            color = Color(0xFFEF4444),
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                    TextButton(
+                        onClick = { showMaintenanceOptions = !showMaintenanceOptions },
+                        modifier = Modifier.heightIn(min = 48.dp)
+                    ) {
+                        Text(
+                            text = if (showMaintenanceOptions) "Karbantartás elrejtése" else "Felhő karbantartás",
+                            color = palette.textSecondary,
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                }
+
+                if (showMaintenanceOptions) {
+                    HorizontalDivider(color = palette.cardBorder)
+                    NativeGoogleMaintenanceControls(
+                        language = settingsState.settings.language,
+                        busy = settingsState.maintenanceBusy || gs.isBusy || settingsState.replacementBusy,
+                        open = settingsViewModel::openGoogleMaintenance
+                    )
+                }
+            } else {
+                Text(
+                    text = "Jelentkezz be Google-fiókkal az automatikus többeszközös Drive-szinkronhoz (edzésnapló, tervek, privát fotók) és a dedikált edzésnaptárhoz.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = palette.textSecondary
+                )
+                Button(
+                    onClick = { activity?.let { settingsViewModel.connectGoogle(it) } },
+                    enabled = !gs.isBusy && !settingsState.replacementBusy && !settingsState.maintenanceBusy && activity != null,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = palette.primary,
+                        contentColor = palette.onPrimary
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                        .testTag("settings_google_login_btn")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CloudSync,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Bejelentkezés Google-fiókkal",
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            NativeGoogleMaintenanceFeedback(
+                language = settingsState.settings.language,
+                outcome = settingsState.maintenanceOutcome,
+                count = settingsState.maintenanceCompleted
+            )
+
+            if (gs.isBusy && gs.stageMessage.isNotBlank()) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = palette.primary.copy(alpha = 0.14f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = gs.stageMessage,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = palette.primary,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    )
+                }
+            }
+
+            if (!gs.errorMessage.isNullOrBlank()) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFFEF4444).copy(alpha = 0.14f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = gs.errorMessage,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color(0xFFEF4444),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
 /**
  * 4/4 #3 MENTÉS ÉS VISSZAÁLLÍTÁS (Mockup 4/4 #3)
  */
@@ -3046,9 +3684,15 @@ fun BackupRestoreScreen(
     onToggleIncludeHealth: (Boolean) -> Unit,
     onShowBanner: (String) -> Unit,
     onExportBackup: ((android.net.Uri) -> Unit)? = null,
-    onImportBackup: ((android.net.Uri) -> Unit)? = null
+    onImportBackup: ((android.net.Uri) -> Unit)? = null,
+    onCloudSyncCompleted: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
+    val settingsViewModel: SettingsViewModel = viewModel()
+    val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+    val gs = settingsState.googleSyncState
+    val context = LocalContext.current
+    val activity = context as? Activity
     val mimeType = if (uiState.selectedBackupFormat == "ZIP") "application/zip" else "application/json"
     val defaultFileName = if (uiState.selectedBackupFormat == "ZIP") "trainpilot-backup.zip" else "trainpilot-backup.json"
 
@@ -3113,6 +3757,13 @@ fun BackupRestoreScreen(
                     }
                 }
             }
+        }
+        item {
+            StudioGoogleCloudSyncCard(
+                onShowBanner = onShowBanner,
+                onCloudSyncCompleted = onCloudSyncCompleted,
+                settingsViewModel = settingsViewModel
+            )
         }
         item {
             Surface(
@@ -3185,11 +3836,18 @@ fun BackupRestoreScreen(
             Button(
                 onClick = {
                     if (uiState.selectedBackupFormat == "DRIVE") {
-                        onShowBanner("Google Drive mentés nem történt: a Drive-integráció nincs beállítva. Válaszd a helyi JSON / ZIP mentést.")
+                        if (gs.connectedEmail.isEmpty()) {
+                            activity?.let { settingsViewModel.connectGoogle(it) }
+                        } else {
+                            activity?.let { settingsViewModel.syncDriveCloud(it) }
+                        }
                     } else {
                         exportLauncher.launch(defaultFileName)
                     }
                 },
+                enabled = if (uiState.selectedBackupFormat == "DRIVE") {
+                    !gs.isBusy && !settingsState.replacementBusy && !settingsState.maintenanceBusy && activity != null
+                } else true,
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
                 modifier = Modifier
@@ -3198,7 +3856,14 @@ fun BackupRestoreScreen(
             ) {
                 Icon(imageVector = Icons.Default.Backup, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Mentés indítása (${uiState.selectedBackupFormat})", fontWeight = FontWeight.Bold)
+                Text(
+                    text = if (uiState.selectedBackupFormat == "DRIVE" && gs.connectedEmail.isEmpty()) {
+                        "Bejelentkezés Google-fiókkal (Drive)"
+                    } else {
+                        "Mentés indítása (${uiState.selectedBackupFormat})"
+                    },
+                    fontWeight = FontWeight.Bold
+                )
             }
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedButton(

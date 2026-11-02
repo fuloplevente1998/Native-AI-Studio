@@ -1718,36 +1718,33 @@ private fun MainProgressVolumeAndMuscleSection(
         uiState.loggedWorkouts.sumOf { w -> w.totalVolumeKg }
     }
 
-    // Compact 12-bar series vs Expanded 7-week series (Screenshot 6)
-    val compactVolumeBars = remember(loggedTotalKg) {
-        if (loggedTotalKg == 0) {
-            (0..11).map { idx ->
-                val d = today.minusWeeks((11 - idx).toLong())
-                "${d.dayOfMonth}" to 0
-            }
-        } else {
-            listOf(
-                "5" to 200, "12" to 300, "19" to 150, "26" to 250,
-                "2" to 650, "9" to 2100, "16" to 3850, "23" to 2050,
-                "30" to 3250, "7" to 4400, "14" to 2750, "21" to loggedTotalKg.coerceAtLeast(1200)
-            )
+    // Real 12-week and 7-week volume series computed from loggedWorkouts
+    val compactVolumeBars = remember(uiState.loggedWorkouts, today) {
+        (0..11).map { idx ->
+            val weekStart = today.minusWeeks((11 - idx).toLong())
+            val weekEnd = weekStart.plusDays(6)
+            val kgForWeek = uiState.loggedWorkouts.filter { w ->
+                val rawDate = w.savedStartIso.take(10).ifBlank { w.dateLabelHu.take(10) }
+                val parsed = runCatching { java.time.LocalDate.parse(rawDate) }.getOrNull()
+                if (parsed != null) !parsed.isBefore(weekStart) && !parsed.isAfter(weekEnd)
+                else idx == 11
+            }.sumOf { it.totalVolumeKg }
+            "${weekStart.dayOfMonth}" to kgForWeek
         }
     }
 
-    val expandedWeeklyBars = remember(loggedTotalKg, today) {
+    val expandedWeeklyBars = remember(uiState.loggedWorkouts, today) {
         (0..6).map { idx ->
-            val d = today.minusWeeks((6 - idx).toLong())
-            val label = d.format(shortFmt)
-            val kg = if (loggedTotalKg == 0) 0 else when (idx) {
-                0 -> 2000
-                1 -> 3750
-                2 -> 1950
-                3 -> 2950
-                4 -> 4350
-                5 -> 2600
-                else -> loggedTotalKg.coerceAtLeast(2500)
-            }
-            label to kg
+            val weekStart = today.minusWeeks((6 - idx).toLong())
+            val weekEnd = weekStart.plusDays(6)
+            val label = weekStart.format(shortFmt)
+            val kgForWeek = uiState.loggedWorkouts.filter { w ->
+                val rawDate = w.savedStartIso.take(10).ifBlank { w.dateLabelHu.take(10) }
+                val parsed = runCatching { java.time.LocalDate.parse(rawDate) }.getOrNull()
+                if (parsed != null) !parsed.isBefore(weekStart) && !parsed.isAfter(weekEnd)
+                else idx == 6
+            }.sumOf { it.totalVolumeKg }
+            label to kgForWeek
         }
     }
 
@@ -2422,6 +2419,7 @@ private fun MainProgressVolumeAndMuscleSection(
                         )
                     }
                     Column(modifier = Modifier.weight(1f)) {
+                        val topMuscle = uiState.realMuscleLoads.maxByOrNull { it.percentage }?.takeIf { it.percentage > 0 }
                         Text(
                             text = strings.progressAdviceTitle,
                             style = MaterialTheme.typography.titleSmall,
@@ -2429,7 +2427,11 @@ private fun MainProgressVolumeAndMuscleSection(
                             color = palette.textPrimary
                         )
                         Text(
-                            text = "A legtöbb sorozatterhelést ez az izomcsoport kapta: Kar.",
+                            text = if (topMuscle != null) {
+                                "A legtöbb sorozatterhelést ez az izomcsoport kapta: ${topMuscle.nameHu} (${topMuscle.setsText})."
+                            } else {
+                                "Rögzíts edzéseket az izomcsoport-arányok és egyéni fejlődési javaslatok kiszámításához."
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.textSecondary
                         )
@@ -2442,6 +2444,8 @@ private fun MainProgressVolumeAndMuscleSection(
                 }
 
                 AnimatedVisibility(visible = expandedAdviceDetails) {
+                    val lowMuscle = uiState.realMuscleLoads.minByOrNull { it.percentage }
+                    val latestPr = uiState.prRecords.firstOrNull()
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -2450,12 +2454,20 @@ private fun MainProgressVolumeAndMuscleSection(
                     ) {
                         HorizontalDivider(color = palette.cardBorder)
                         Text(
-                            text = "• Egyensúly javaslat: A Mell (45%) és Váll (59%) sorozatszámát érdemes +2 munkasorozattal növelni a következő héten.",
+                            text = if (lowMuscle != null && uiState.loggedWorkouts.isNotEmpty()) {
+                                "• Egyensúly javaslat: A(z) ${lowMuscle.nameHu} (${lowMuscle.setsText}) terhelését érdemes +2 munkasorozattal növelni a következő héten."
+                            } else {
+                                "• Egyensúly javaslat: Még nincs rögzített izomcsoport-terhelés az elmúlt időszakban."
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.textPrimary
                         )
                         Text(
-                            text = "• Dupla progresszió: A Goblet guggolás (16 kg × 12) elérte a felső ismétléshatárt, emelj 18 kg-ra!",
+                            text = if (latestPr != null) {
+                                "• Legutóbbi csúcsteljesítmény: ${latestPr.exerciseNameHu} (${latestPr.newLabel} • ${latestPr.typeLabelHu})."
+                            } else {
+                                "• Progresszió: A rögzített sorozatok után itt jelenik meg a következő súlyemelési javaslat."
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.primary,
                             fontWeight = FontWeight.SemiBold
@@ -2664,32 +2676,45 @@ private fun MainStatisticsRecordsAndCardioSection(
                 }
             }
 
+            val totalCardioKm = uiState.loggedWorkouts.sumOf { it.distanceKm.toDouble() }.toFloat()
+            val totalCardioMin = uiState.loggedWorkouts.filter { it.isOutdoorRun || it.distanceKm > 0f }.sumOf { it.durationMinutes }
+            val latestPace = uiState.loggedWorkouts.firstOrNull { it.paceLabel != "—" }?.paceLabel ?: "—"
+            val avgSteps7d = if (uiState.weeklyHealthDays.isNotEmpty()) {
+                val activeStepDays = uiState.weeklyHealthDays.count { it.steps > 0 }
+                if (activeStepDays > 0) uiState.weeklyTotalSteps / activeStepDays else 0
+            } else uiState.dailySteps
+            val goalMetDays = uiState.weeklyHealthDays.count { it.steps >= uiState.stepsGoal && uiState.stepsGoal > 0 }
+
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SummaryStatBox(
                     label = if (uiState.cardioFilterStepsMode) "Mai lépések" else "Heti kilométer",
-                    value = if (uiState.cardioFilterStepsMode) "${uiState.dailySteps}" else "0 km",
+                    value = if (uiState.cardioFilterStepsMode) "${uiState.dailySteps}" else String.format(java.util.Locale.US, "%.2f km", totalCardioKm).replace('.', ','),
                     modifier = Modifier.weight(1f)
                 )
                 SummaryStatBox(
-                    label = if (uiState.cardioFilterStepsMode) "7 napos átlag" else "Előző hét",
-                    value = if (uiState.cardioFilterStepsMode) "6 377" else "1,623 km",
+                    label = if (uiState.cardioFilterStepsMode) "7 napos átlag" else "Napi távolság (HC)",
+                    value = if (uiState.cardioFilterStepsMode) {
+                        if (avgSteps7d > 0) "%,d".format(java.util.Locale.US, avgSteps7d).replace(',', ' ') else "0"
+                    } else {
+                        if (uiState.dailyDistanceKm > 0f) String.format(java.util.Locale.US, "%.2f km", uiState.dailyDistanceKm).replace('.', ',') else "0 km"
+                    },
                     modifier = Modifier.weight(1f)
                 )
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SummaryStatBox(
                     label = if (uiState.cardioFilterStepsMode) "Mai aktív kcal" else "Átlagtempó",
-                    value = if (uiState.cardioFilterStepsMode) "164 kcal" else "18:03 /km",
+                    value = if (uiState.cardioFilterStepsMode) "${uiState.activeCaloriesKcal} kcal" else latestPace,
                     modifier = Modifier.weight(1f)
                 )
                 SummaryStatBox(
                     label = if (uiState.cardioFilterStepsMode) "Célteljesítés (7 nap)" else "Rögzített idő",
-                    value = if (uiState.cardioFilterStepsMode) "0/7" else "29:17",
+                    value = if (uiState.cardioFilterStepsMode) "$goalMetDays/7" else if (totalCardioMin > 0) "$totalCardioMin perc" else "—",
                     modifier = Modifier.weight(1f)
                 )
             }
 
-            // Weekly Cardio Distance List from `main` screenshot (`Screenshot_2026-10-27-11-25-45-367_com.repforge.app.jpg`)
+            // Real Weekly Cardio Distance List computed from loggedWorkouts
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = palette.surfaceCard,
@@ -2701,18 +2726,23 @@ private fun MainStatisticsRecordsAndCardioSection(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    val cardioWeeks = listOf(
-                        "2026. szept. 7." to (0f to "0 km"),
-                        "2026. szept. 14." to (0f to "0 km"),
-                        "2026. szept. 21." to (0f to "0 km"),
-                        "2026. szept. 28." to (0f to "0 km"),
-                        "2026. okt. 5." to (0f to "0 km"),
-                        "2026. okt. 12." to (0f to "0 km"),
-                        "2026. okt. 19." to (1f to "1,623 km"),
-                        "2026. okt. 26." to (0f to "0 km")
-                    )
-                    cardioWeeks.forEach { (weekLabel, pair) ->
-                        val (progressVal, kmLabel) = pair
+                    val todayDate = remember { java.time.LocalDate.now() }
+                    val weekLabelFmt = remember { java.time.format.DateTimeFormatter.ofPattern("yyyy. MMM d.", java.util.Locale("hu", "HU")) }
+                    val rawWeekDistances = (7 downTo 0).map { wIdx ->
+                        val wStart = todayDate.minusWeeks(wIdx.toLong())
+                        val wEnd = wStart.plusDays(6)
+                        val km = uiState.loggedWorkouts.filter { w ->
+                            val rawDate = w.savedStartIso.take(10).ifBlank { w.dateLabelHu.take(10) }
+                            val parsed = runCatching { java.time.LocalDate.parse(rawDate) }.getOrNull()
+                            if (parsed != null) !parsed.isBefore(wStart) && !parsed.isAfter(wEnd)
+                            else wIdx == 0
+                        }.sumOf { it.distanceKm.toDouble() }.toFloat()
+                        wStart.format(weekLabelFmt) to km
+                    }
+                    val maxWeekKm = (rawWeekDistances.maxOfOrNull { it.second } ?: 0f).coerceAtLeast(1f)
+                    rawWeekDistances.forEach { (weekLabel, km) ->
+                        val progressVal = if (km > 0f) (km / maxWeekKm).coerceIn(0.05f, 1f) else 0f
+                        val kmLabel = if (km > 0f) String.format(java.util.Locale.US, "%.2f km", km).replace('.', ',') else "0 km"
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,

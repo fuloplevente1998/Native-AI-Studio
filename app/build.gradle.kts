@@ -12,7 +12,7 @@ plugins {
 // Local/AI Studio builds may use ignored properties; Actions supplies the same key via env.
 // Keep credentials out of source and do not alter the existing signing configurations.
 val localMapsProperties = Properties().apply {
-    listOf("local.properties", "secrets.properties").forEach { name ->
+    listOf("local.properties", "secrets.properties", ".env").forEach { name ->
         val source = rootProject.file(name)
         if (source.isFile) source.inputStream().use { load(it) }
     }
