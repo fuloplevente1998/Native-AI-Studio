@@ -141,7 +141,7 @@ class StudioProgressUiRegressionTest {
         compose.onNodeWithTag("calendar_day_actions").performScrollTo()
         compose.onNodeWithTag("calendar_empty_day").assertExists()
         val bounds = compose.onNodeWithTag("calendar_day_actions").getUnclippedBoundsInRoot()
-        assertTrue(bounds.height < 260.dp)
+        assertTrue((bounds.bottom - bounds.top) < 260.dp)
         compose.onAllNodesWithTag("calendar_undo_action").assertCountEquals(1)
         compose.onNodeWithTag("calendar_add_A").performClick()
         compose.onNodeWithTag("calendar_add_B").performClick()

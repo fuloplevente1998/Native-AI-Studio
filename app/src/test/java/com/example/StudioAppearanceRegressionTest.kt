@@ -162,7 +162,7 @@ class StudioAppearanceRegressionTest {
             val panel = compose.onNodeWithTag("health_weekly_${tag}_days", useUnmergedTree = true).getUnclippedBoundsInRoot()
             assertEquals(left.left, panel.left)
             assertEquals(right.right, panel.right)
-            assertTrue(panel.width > left.width * 1.8f)
+            assertTrue((panel.right - panel.left) > (left.right - left.left) * 1.8f)
         }
         compose.onNodeWithTag("health_weekly_steps_total", useUnmergedTree = true).assertTextEquals("—")
         compose.runOnIdle { assertTrue(steps); assertTrue(workouts) }
