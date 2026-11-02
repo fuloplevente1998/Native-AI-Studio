@@ -1,5 +1,16 @@
 # TrainPilot Native – aktuális AI Studio átadás, 2026-11-02
 
+## Új, nyitott feladatok a 2741 után
+
+- [#34](https://github.com/fuloplevente1998/Native-AI-Studio/issues/34): kisebb kártya-/ablakközi térközök az egész telefonos appban, Kezdőlapon is.
+- [#35](https://github.com/fuloplevente1998/Native-AI-Studio/issues/35): az Egészség / Mai állapot kártyái fölötti redundáns szövegblokk eltávolítása; a kártyák, részletek és érdemi diagnózis megőrzése.
+
+Mindkettő rögzített, **még nem javított** készülékes UI-hiba; együtt kioszthatók egy
+UI-chatnek. A korábbi 8. naplózottedzés-törlés, #11 videóhiba és a HC készülékes
+okfeltárása továbbra is külön nyitott munka. A részletes, aktuális munkalista:
+[PARALLEL_CHAT_TASKS_2026-11-02.md](PARALLEL_CHAT_TASKS_2026-11-02.md).
+Az 1–6 fejlesztése/2741-es kiadása kész; fizikai elfogadásuk külön marad.
+
 ## Aktuális checkpoint: #28 / 2741, az 1–6 integrálva
 
 Main appforrás: `2d7171b9cce7762553e053ab98b9828d3e7f2fc5`; PR-forrás:
