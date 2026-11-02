@@ -118,8 +118,8 @@ internal fun wearHomeDashboardState(
     if (closure?.status in listOf("pending", "error"))
         return value(
             if (closure?.status == "error") "MENTÉSI HIBA" else "MENTÉS VÁR",
-            "Órán megőrizve",
-            "Az edzés a telefonra vár",
+            if (closure?.action == "discardWorkout") "Elvetés visszaigazolása" else "Órán megőrizve",
+            if (closure?.action == "discardWorkout") "A telefon válaszának ellenőrzése" else "Az edzés a telefonra vár",
             source,
             HomeAction.RESULT,
             "Állapot",

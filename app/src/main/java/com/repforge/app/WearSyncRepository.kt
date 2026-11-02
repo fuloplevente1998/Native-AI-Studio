@@ -110,11 +110,34 @@ object WearSyncRepository {
                 NativeDataReplacement.mutate<Unit>(appContext) {
                     check(!NativeDataReplacement.blocked(appContext)) { "Adat-visszaállítás vagy törlés van folyamatban." }
                     val action = command.optString("action")
+                    val db = TrainPilotDatabase.getInstance(appContext)
+                    if (NativeWatchDiscardAdmission.rejectsResurrection(db, command)) {
+                        WearCommandReceipts.complete(appContext, command, "superseded", uri)
+                        return@mutate
+                    }
+                    if (action == "discardWorkout") {
+                        when (NativeWatchDiscardAdmission.reconcile(appContext, db, command)) {
+                            NativeWatchDiscardAdmission.Decision.ALREADY_DISCARDED,
+                            NativeWatchDiscardAdmission.Decision.RECORD_ORPHAN_DISCARD -> {
+                                check(WearCommandReceipts.complete(appContext, command, "discarded", uri)) {
+                                    "Az elvetés visszaigazolása nem menthető."
+                                }
+                                publishWatchHomeSnapshot(appContext, JSONObject().put("commandId", command.optString("commandId"))
+                                    .put("workoutId", command.optString("workoutId")).put("status", "discarded"))
+                                return@mutate
+                            }
+                            NativeWatchDiscardAdmission.Decision.REJECT -> {
+                                WearCommandReceipts.complete(appContext, command, "superseded", uri)
+                                return@mutate
+                            }
+                            NativeWatchDiscardAdmission.Decision.APPLY -> Unit
+                        }
+                    }
                     val pending = ActiveWorkoutStore.current(appContext)?.optBoolean("finalizationPending") == true
-                    check(!pending || action in setOf("finishWorkout", "saveWorkoutFeedback", "healthSummary")) {
+                    check(!pending || action in setOf("finishWorkout", "saveWorkoutFeedback", "healthSummary") ||
+                        action == "discardWorkout" && ActiveWorkoutStore.current(appContext)?.optBoolean("discardPending") == true) {
                         "Workout finalization is in progress"
                     }
-                    val db = TrainPilotDatabase.getInstance(appContext)
                     val settingsStore = TrainPilotSettingsStore(appContext)
                     val migrator = LegacyWebViewMigrator(appContext, db, settingsStore)
 
@@ -242,6 +265,17 @@ object WearSyncRepository {
 
                         "discardWorkout" -> {
                             val workoutId = command.optString("workoutId")
+                            withContext(Dispatchers.Main.immediate) {
+                                val current = requireNotNull(ActiveWorkoutStore.current(appContext))
+                                check(current.optBoolean("active") && current.optString("workoutId") == workoutId)
+                                ActiveWorkoutStore.saveFinalizing(appContext, JSONObject(current.toString())
+                                    .put("finalizationPending", true).put("discardPending", true)
+                                    .put("workoutPaused", true).put("restEndAt", 0L))
+                                val execution = PhoneWorkoutExecution.store(appContext)
+                                if (execution.snapshot()?.optString("workoutId") == workoutId) execution.suspendCommands(true)
+                                IntervalTimerService.stopForOwnership(appContext, workoutId)
+                                DistanceTrackingService.stop(appContext)
+                            }
                             try {
                                 GpsRouteLedger193.open(appContext.noBackupFilesDir).deleteWorkout(workoutId)
                             } catch (_: Exception) {
@@ -256,18 +290,25 @@ object WearSyncRepository {
                             )
                         )
                         withContext(Dispatchers.Main) {
+                            val current = ActiveWorkoutStore.current(appContext)
+                            check(current?.optBoolean("active") == true && current.optString("workoutId") == workoutId) {
+                                "Az elvetendő edzés megváltozott."
+                            }
+                            val execDb = PhoneWorkoutExecution.store(appContext)
+                            val frame = execDb.snapshot()
+                            if (frame != null && frame.optString("workoutId") == workoutId) {
+                                if (frame.optBoolean("active")) check(execDb.discardExecution(workoutId,
+                                    frame.optLong("generation"), frame.optLong("executionRevision"))) {
+                                    "A natív edzés elvetése nem sikerült."
+                                }
+                                IntervalTimerService.closeWorkout(workoutId, frame.optLong("generation"))
+                                execDb.suspendCommands(false)
+                            }
                             val closed = ActiveWorkoutStore.clear(appContext)
                             publishActiveWorkoutSnapshot(appContext, closed)
-                            try {
-                                val execDb = PhoneWorkoutExecution.store(appContext)
-                                val frame = execDb.snapshot()
-                                if (frame != null && frame.optString("workoutId") == workoutId) {
-                                    execDb.discardExecution(workoutId, frame.optLong("generation"), frame.optLong("executionRevision"))
-                                    IntervalTimerService.closeWorkout(workoutId, frame.optLong("generation"))
-                                }
-                            } catch (_: Exception) {
+                            check(WearCommandReceipts.complete(appContext, command, "discarded", uri)) {
+                                "Az elvetés visszaigazolása nem menthető."
                             }
-                            WearCommandReceipts.complete(appContext, command, "discarded", uri)
                         }
                         val workoutResult = JSONObject()
                             .put("commandId", command.optString("commandId"))

@@ -42,3 +42,22 @@ A #20 mainre merge-elve: `3572e2086cc741cc42bc2c6929c786b0772bf91c`. Teljes sign
 - A Fejlődés harmadik füle Statisztikák: Személyes rekordok és Kardióstatisztika, a meglévő natív PR-/kardiómotorral, tényleges mentett sorozatokból és napi provider-cache-ből.
 - Üres naptári nap: önálló tájékoztató sor, két egyenlő szélességű hozzáadásgomb, egyetlen visszavonás.
 - Következő belső build: 2738, látható verzió továbbra is 0.1.0-beta. A #22 mainre merge-elve: `b96982dd62212d53f80ee1af366d77bfaacd439d`. Célzott Actions `41491162595` SUCCESS: nyers XML-ben 50/50, nulla hiba/kihagyás. Teljes main signed Actions `41492179428` SUCCESS: letöltött XML **277/277 = 108 telefon + 169 Wear, nulla failure/error/skip**. A 2738-as állandó kulcsos APK-pár hash/package/verzió/CI-forrás ellenőrizve; feltöltve a TrainPilot Native mappába, méret/szülő readback igazolva. Aktuális linkek és hash-ek az AI Studio-átadó legfelső #22 blokkjában. Ez nem fizikai Samsung/HC vagy Wear készülékes elfogadás.
+
+## Órás elvetés visszaigazolása – következő 2739-es javítás
+
+Készülékes jelzés: a telefonon nincs látható edzés/törlési lehetőség, az órán választott elvetés után „A telefonos törlés még várakozik”; az átadás működik. A Wear closure eddig a superseded/processed/applied válaszokat nem képezte hibára, így a szinkronjelzés hibája mellett az összegző végtelenül várakozónak látszott, újrapróbálás nélkül.
+
+Javítás: hiteles, teljes azonossággal ellenőrzött terminális receipt, időtúllépés/elutasítás esetén látható újrapróba. Telefonon a már tartósan törölt azonosító külön visszaigazolható. Aktív vagy mentett edzés nélküli, megerősített, az eredeti DataItemhez és órás snapshothoz kötött árva elvetés csak a saját törlési jelzőjét rögzítheti. Másik aktív edzés/motor nem törölhető; mentett history, pending ownership/restore/finalization védelem marad. Az aktív órás elvetés natív lezárásának hibáját nem szabad lenyelni vagy sikerrel nyugtázni. Célzott telefon/Wear tesztek és signed main-build még folyamatban.
+
+## Új, rögzítésre kért egészségképernyős hibák – kb. 19:03
+
+Új készülékes hibák és felületi kérések – 2026-11-02, kb. 19:03, a felhasználó kifejezetten rögzítést kért. Nyitott pontok, még nem javított/elfogadott működés.
+
+- [ ] **Hiányos Mai állapot:** a mai nap teljes, kiválasztott Samsung Health provider-adatainak ellenőrzése. A képen napi lépés 5360, aktív energia 228 kcal, teljes energia (nyugalmival) 1462 kcal, utolsó sikeres szinkron 18:56, felül „Szinkron…”/„hozzáférés ellenőrzése”. Vizsgálandó a hiányzó mezők és az elhúzódó szinkronállapot oka. Ezek megfigyelt példák, nem beégetendő értékek.
+- [ ] **Kalóriarészletek helye:** az Aktív kalória kártya lenyitásába kerüljön a jelenleg fölötte külön megjelenő napi összes energia, aktív energia és kapcsolódó napi részletek. A mért aktív és nyugalmi/teljes energia értelmezése, forrása maradjon külön; nincs duplikált összegzés vagy hiányból számolt kitalált érték.
+- [ ] **Pulzuselőzmények:** a felhasználó szerint csak a pillanatnyi pulzus látszik, a korábbi mai mérések nem. A képen aktuális 61 bpm, nyugalmi 0 bpm és „Napi tartomány: nincs mért adat”. Ellenőrizni kell a tényleges napi mérési sorozatot/tartományt és a megjelenítést; hiányzó nyugalmi pulzus nem jelenhet meg mért 0 bpm-ként. Aktuális érték és időbeli előzmény nem helyettesítheti egymást.
+- [ ] **Mai alvás / délutáni alvás:** a felhasználó ma délután kb. 3 órát aludt, de a Mai állapot alvásmezője „—”. Ellenőrizni kell a szolgáltatói alvásszakaszok lekérését, helyi dátumhoz rendelését és a nappali alvás megjelenítését. A kb. 3 óra diagnosztikai viszonyítás, nem beégetendő érték; átfedő alvásszakaszok nem duplázhatók.
+- [ ] **Szinkrongomb a fejlécben:** a Mai állapot mai dátuma mellé kerüljön a meglévő szinkron/frissítés művelet és kompakt állapotjelzése; a jelenlegi lejjebb elhelyezett gomb helyett. Keskeny képernyőn is olvasható és elérhető maradjon.
+- [ ] **Kompakt heti bontás:** a Heti lépésszám / Aktív edzésidő lenyitott 7 napi listája legyen sűrűbb és áttekinthetőbb, kevesebb görgetéssel. A már javított teljes szélesség, független nyitás, tényleges napi adatok/forrás és hiányjelzés maradjon meg.
+
+Kapcsolódó aktuális órás hiba: telefonon nincs látható edzés/törlési lehetőség, ezért a felhasználó az órán választotta az elvetést; az óra telefonos törlési visszaigazolásra vár. Ez külön javítás, a fenti egészségképernyős pontok most rögzített további teendők.
