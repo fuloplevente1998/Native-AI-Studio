@@ -62,7 +62,8 @@ data class NativeProgressPhoto(
     val workoutStartedEpochMs: Long,
     val programName: String,
     val dayName: String,
-    val originDevice: String
+    val originDevice: String,
+    val workoutId: String = ""
 )
 
 /** Read-only, metadata-first projection. Never accepts private-dir contents as an index. */
@@ -76,12 +77,12 @@ internal object NativeProgressPhotoData {
         var count: Int
         do {
             count = 0
-            // Project five scalars, not @Relation, rawJson, route or photo bytes.
+            // Project metadata scalars, not @Relation, rawJson, route or photo bytes.
             // The matching active/deleted semantics are the same as the native
             // cloud-photo reference check. A physically missing file stays as a
             // missing-photo state, never silently becomes a different image.
             val sql = """
-                SELECT p.id, p.label, w.startedEpochMs, w.programName, w.dayName, w.originDevice
+                SELECT p.id, p.label, w.startedEpochMs, w.programName, w.dayName, w.originDevice, w.id
                 FROM workout_photos p
                 JOIN workout_history w ON w.id = p.workoutHistoryId
                 WHERE (p.deletedAt IS NULL OR TRIM(p.deletedAt) IN ('', '0', '0.0', 'false'))
@@ -103,7 +104,8 @@ internal object NativeProgressPhotoData {
                         workoutStartedEpochMs = rows.getLong(2),
                         programName = rows.getString(3).orEmpty(),
                         dayName = rows.getString(4).orEmpty(),
-                        originDevice = rows.getString(5).orEmpty()
+                        originDevice = rows.getString(5).orEmpty(),
+                        workoutId = rows.getString(6).orEmpty()
                     ))
                 }
             }
@@ -171,7 +173,7 @@ private fun PrivateProgressPhoto(id: String, edge: Int, language: String, modifi
                 color = colors.text, modifier = Modifier.testTag("progress_photo_error"))
             is PhotoPreview.Ready -> Image(result.image,
                 strings.getString(R.string.native_progress_photo_title),
-                Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+                Modifier.fillMaxSize().testTag("progress_photo_image_$id"), contentScale = ContentScale.Fit)
         }
     }
 }

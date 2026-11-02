@@ -709,7 +709,7 @@ class LegacyWebViewMigrator(
             totalRepsCount = totalReps,
             hasPr226 = h.optJSONArray("prRecords226")?.let { it.length() > 0 } ?: false,
             prRecordsJson226 = (h.optJSONArray("prRecords226") ?: JSONArray()).toString(),
-            wearMetricsJson = (h.optJSONObject("wear") ?: h.optJSONObject("healthSummary"))?.toString(),
+            wearMetricsJson = com.repforge.app.NativeSavedWearHealth.fromRaw(h)?.toString(),
             health240Json = (h.optJSONObject("health240") ?: h.optJSONObject("healthConnect"))?.toString(),
             timeLogs162Json = h.optJSONObject("timeLogs162")?.toString(),
             activeIntervalsJson = h.optJSONArray("activeIntervals")?.toString(),

@@ -684,7 +684,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                             onSelectDetailTab = { viewModel.selectLogDetailTab(it) },
                             onToggleExpandedExercise = { viewModel.toggleExpandedLogExercise(it) },
-                            onOpenPhotos = { viewModel.navigateToSubScreen(SubScreen.PRIVATE_PHOTOS) },
+                            onOpenPhotos = { viewModel.openLogWorkoutPhotos() },
                             onOpenRouteMap = { viewModel.navigateToSubScreen(SubScreen.LOG_ROUTE_MAP) },
                             onOpenWatchSync = { viewModel.navigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
                             onOpenHealthTab = { viewModel.selectLogDetailTab(2) },

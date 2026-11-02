@@ -59,7 +59,7 @@ internal fun studioWorkoutHealthContent(
         val cached = com.repforge.app.NativeWorkoutHealthSource.snapshot(document, state.healthProvider)
         val hasHealthMetrics = cached != null && NativeWorkoutHealth.matchesWindow(cached, workout) &&
             NativeWorkoutHealth.metrics(cached, false).isNotEmpty()
-        val wear = workout.wearMetricsJson?.let { runCatching { org.json.JSONObject(it) }.getOrNull() }
+        val wear = com.repforge.app.NativeSavedWearHealth.read(workout)
         val hc = com.repforge.app.NativeWorkoutHealthSource.snapshot(document, com.repforge.app.HealthJournalStore.HC)
         onSources(workout.id, wear != null && NativeWorkoutHealth.metrics(wear, true).isNotEmpty(),
             hc != null && NativeWorkoutHealth.matchesWindow(hc, workout) && NativeWorkoutHealth.metrics(hc, false).isNotEmpty())

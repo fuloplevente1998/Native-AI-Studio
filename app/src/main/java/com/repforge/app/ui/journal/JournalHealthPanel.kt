@@ -28,7 +28,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     val colors = LocalTrainPilotColors.current
     val workout = detail.workout
     val raw = remember(workout.rawJson) { parseHealth(workout.rawJson) }
-    val wear = remember(workout.wearMetricsJson) { parseHealth(workout.wearMetricsJson) }
+    val wear = remember(workout.wearMetricsJson, workout.rawJson) { com.repforge.app.NativeSavedWearHealth.read(workout) }
     val health = remember(workout.health240Json, provider) { com.repforge.app.NativeWorkoutHealthSource.snapshot(parseHealth(workout.health240Json), provider) }
     val current = health != null && NativeWorkoutHealth.matchesWindow(health, workout)
     val locale = remember(language) { Locale.forLanguageTag(language) }

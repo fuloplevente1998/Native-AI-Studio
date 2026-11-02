@@ -249,6 +249,7 @@ data class TrainPilotUiState(
     val permissionHealthConnectEnabled: Boolean = false,
     val permissionSamsungHealthEnabled: Boolean = false,
     val privatePhotoCount: Int = 0,
+    val privatePhotoWorkoutId: String? = null,
 
     // Toast / Feedback banner for immediate visual confirmation of actions
     val statusBannerMessage: String? = null
@@ -1151,7 +1152,7 @@ class TrainPilotViewModel : ViewModel() {
                         routeKeys = detail.exercises.flatMap { it.sets }.flatMap {
                             listOfNotNull(it.gpsRouteKey163, it.gpsRouteKey193)
                         }.filter(String::isNotBlank).distinct(),
-                        sourceWatch = !w.wearMetricsJson.isNullOrBlank(), sourceHealthConnect = !w.health240Json.isNullOrBlank(),
+                        sourceWatch = com.repforge.app.NativeSavedWearHealth.read(w) != null, sourceHealthConnect = !w.health240Json.isNullOrBlank(),
                         distanceKm = (completedDbSets.sumOf { it.distanceMeters ?: 0.0 } / 1000.0).toFloat(),
                         paceLabel = completedDbSets.sumOf { it.distanceMeters ?: 0.0 }.takeIf { it > 0 && elapsedSec > 0 }?.let { meters ->
                             val secondsPerKm = (elapsedSec / (meters / 1000.0)).toInt()
@@ -1309,6 +1310,7 @@ class TrainPilotViewModel : ViewModel() {
                         activeSets = activeSetsForCurrent,
                         activeSetsByExerciseId = if (restoredSetsMap.isNotEmpty()) restoredSetsMap else st.activeSetsByExerciseId,
                         loggedWorkouts = mappedWorkouts,
+                        privatePhotoCount = mappedWorkouts.sumOf { it.photoCount },
                         prRecords = computedPrs,
                         weeklyGoalCompleted = mappedWorkouts.size,
                         weeklyGoalTarget = if (loadedWeeklyGoal > 0) loadedWeeklyGoal else st.weeklyGoalTarget,
@@ -1365,11 +1367,19 @@ class TrainPilotViewModel : ViewModel() {
             state.copy(
                 currentTab = targetTab ?: state.currentTab,
                 currentSubScreen = subScreen,
+                privatePhotoWorkoutId = if (subScreen == SubScreen.PRIVATE_PHOTOS) null else state.privatePhotoWorkoutId,
                 isWorkoutSessionActive = if (isActiveMeasurement) true else state.isWorkoutSessionActive,
                 activeWorkoutSubScreen = if (isActiveMeasurement) subScreen else state.activeWorkoutSubScreen,
                 backStack = updatedStack
             )
         }
+    }
+
+    fun openLogWorkoutPhotos() {
+        val id = _uiState.value.selectedLogWorkoutId ?: return
+        navigateToSubScreen(SubScreen.PRIVATE_PHOTOS)
+        if (_uiState.value.currentSubScreen == SubScreen.PRIVATE_PHOTOS)
+            _uiState.update { it.copy(privatePhotoWorkoutId = id) }
     }
 
     fun returnToActiveWorkout() {
@@ -3018,7 +3028,7 @@ class TrainPilotViewModel : ViewModel() {
                         routeKeys = savedInDb.exercises.flatMap { it.sets }.flatMap {
                             listOfNotNull(it.gpsRouteKey163, it.gpsRouteKey193)
                         }.filter(String::isNotBlank).distinct(),
-                        sourceWatch = !dbW.wearMetricsJson.isNullOrBlank(), sourceHealthConnect = !dbW.health240Json.isNullOrBlank(),
+                        sourceWatch = com.repforge.app.NativeSavedWearHealth.read(dbW) != null, sourceHealthConnect = !dbW.health240Json.isNullOrBlank(),
                         originDevice = dbW.originDevice,
                         savedStartIso = dbW.started,
                         savedFinishIso = dbW.finished,
