@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.repforge.app.ui.theme.TrainPilotCardSpacing
+
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import com.repforge.app.ui.theme.TrainPilotFrames
@@ -2002,9 +2004,9 @@ fun QuickWorkoutSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
                 .padding(bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

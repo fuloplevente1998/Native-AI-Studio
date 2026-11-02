@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.repforge.app.ui.theme.TrainPilotCardSpacing
+
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import com.repforge.app.ui.theme.TrainPilotFrames
@@ -405,8 +407,8 @@ fun ActiveStrengthWorkoutScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
             // Top Workout Progress & Exercise Sequence Strip + Floating Exercise Switcher
         item {
@@ -1595,8 +1597,8 @@ fun ActiveTimedWorkoutScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
             item {
                 SubScreenTopBar(
@@ -2162,8 +2164,8 @@ fun ActiveBilateralWorkoutScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
             item {
                 SubScreenTopBar(
@@ -3338,8 +3340,8 @@ fun IntervalSettingsScreen(
             .fillMaxSize()
             .background(palette.background)
             .testTag("interval_settings_screen"),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
         item {
             SubScreenTopBar(
@@ -3505,8 +3507,8 @@ fun WorkoutSummaryScreen(
             .fillMaxSize()
             .background(palette.background)
             .testTag("workout_summary_screen"),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
         val isOutdoor = uiState.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS || uiState.outdoorDistanceKm > 0f
 

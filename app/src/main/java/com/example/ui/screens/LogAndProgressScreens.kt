@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.repforge.app.ui.theme.TrainPilotCardSpacing
+
 import com.example.model.volumeAxisMaximum
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
@@ -247,8 +249,8 @@ fun LogTabScreen(
             .fillMaxSize()
             .background(palette.background)
             .testTag("log_tab_screen"),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
         // Search bar
         item {
@@ -812,8 +814,8 @@ fun LogWorkoutDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(palette.background)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
             SubScreenTopBar(
                 title = strings.workoutDetailTitle,
@@ -855,8 +857,8 @@ fun LogWorkoutDetailScreen(
             .fillMaxSize()
             .background(palette.background)
             .testTag("log_workout_detail_screen"),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
         // Summary Header Card
         item {
@@ -1209,9 +1211,9 @@ fun LogRouteMapScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(palette.background)
-            .padding(16.dp)
+            .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp)
             .testTag("log_route_map_screen"),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1390,8 +1392,8 @@ fun ProgressTabScreen(
             0 -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 2.dp, bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 2.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
                 ) {
                     item {
                         MainProgressVolumeAndMuscleSection(

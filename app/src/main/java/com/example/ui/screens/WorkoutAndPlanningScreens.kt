@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.repforge.app.ui.theme.TrainPilotCardSpacing
+
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import com.repforge.app.ui.theme.TrainPilotFrames
@@ -124,9 +126,9 @@ fun WorkoutTabScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
             .padding(top = 8.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
         // 1. Gyors edzés Card (Mockup 1/4 #2)
         Surface(
@@ -696,8 +698,8 @@ fun ProgramsListScreen(
         }
 
         Column(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
+            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
             // Segmented Pill: Alap programok (Left) | Saját programok (Right)
             Surface(
@@ -1083,8 +1085,8 @@ fun ProgramEditorScreen(
         )
 
         Column(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
+            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
             Text(
                 text = strings.editProgramTitle,
@@ -1714,8 +1716,8 @@ fun CalendarPlannerScreen(
             .padding(top = 8.dp, bottom = 24.dp)
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
+            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
             // 1. EXACT SCREENSHOT 7 CALENDAR CARD
             Surface(
@@ -2524,8 +2526,8 @@ fun ExerciseLibraryScreen(
         )
 
         Column(
-            modifier = Modifier.padding(horizontal = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
+            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
             OutlinedTextField(
                 value = state.exerciseSearchQuery,
@@ -2843,8 +2845,8 @@ fun ExerciseDetailScreen(
         )
 
         Column(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
+            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
