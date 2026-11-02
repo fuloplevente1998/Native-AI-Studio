@@ -1,6 +1,6 @@
 # TrainPilot Native Constitution
 
-Version: 1.0.0 · Ratified: 2026-11-02 · Amended: 2026-11-02
+Version: 1.0.1 · Ratified: 2026-11-02 · Amended: 2026-11-02
 
 ## Existing architecture and identity
 
@@ -24,6 +24,15 @@ Display real measurements from the explicitly selected provider. Unknown is not 
 Do not add overlapping phone/watch/provider totals or silently switch providers.
 Use actual timestamps, local dates and deduplicated intervals. Preserve default-off local
 health backup consent and its existing export scope. Remote data cannot enable consent.
+
+## Phone presentation contract
+
+Follow the agreed frame hierarchy across phone screens: the page or related group gets
+one stronger outer frame, inner panels use softer/thinner frames, and outlined controls
+use the lightest frame. Reuse `TrainPilotFrames` and `TrainPilotOutlinedButton` instead
+of introducing independent heavy borders. The three workout health-source panels are
+mutually exclusive and keep their provider data separate. See `docs/FRAME_DESIGN_SYSTEM.md`.
+This is a presentation contract; it does not change stored data or workout ownership.
 
 ## Evidence and verification
 

@@ -1,5 +1,51 @@
 # TrainPilot Native – aktuális AI Studio átadás, 2026-11-02
 
+## Aktuális checkpoint: #28 / 2741, az 1–6 integrálva
+
+Main appforrás: `2d7171b9cce7762553e053ab98b9828d3e7f2fc5`; PR-forrás:
+`c965d01e08bcd0cf6d77ea02e407005b266398b8`. Az app/Wear/shared/scripts/workflow
+fák eltérése a két forrás között üres. PR Actions [41529082323](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41529082323)
+SUCCESS; letöltött nyers XML **315 = 139 telefon + 176 Wear**, nulla failure/error/skip,
+artifact `13181831099`.
+
+Teljes main signed Actions [41530039869](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41530039869) **SUCCESS**,
+ugyanazon mainforrásból. Letöltött nyers XML: **315 = 139 telefon + 176 Wear**, 0 failure/error/skip.
+Verzió **2741 / 0.1.0-beta**, mindkét package `com.TrainPilot.com`; állandó signer SHA256
+`a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6`.
+APK-hash/metadata, Maps-konfiguráció, phone/Wear pair identity/capability és Wear hardware flag ellenőrizve.
+Signed artifact `13182796971`, nyers jelentés `13183071147`.
+
+- [Telefon APK](https://drive.google.com/file/d/1qDgWk5fYe6D-KlWViBDsWtoyFKuUWhmh/view): 19498180 bájt; SHA256 `75544522684b570836a6a04a1089367e5d75158577ddf47cb197c2f49c923fbc`.
+- [Wear APK](https://drive.google.com/file/d/1unGr2HqcboKYvzB9Q1IgBIgFphKPV7Vc/view): 4636863 bájt; SHA256 `157ff7a1b9491dceb98415040015511f055782b117d6e4d068257d1c074f1b27`.
+
+Mindkét külön APK a TrainPilot Native `1ywHgrManynjV9uNvZfVncOmCr3SbHIb9` mappában;
+a méret és a szülőmappa külön metadata-readbackkel igazolva. A korábbi fájlok megmaradtak;
+nincs kulcscsere, adattörlés vagy Play/GitHub release. Ez tesztelhető kiadás, nem fizikai elfogadás.
+
+
+Implementált, ne kezdd újra:
+
+1. Közös oldal-/csoportkeret, halványabb belső panelek és vékony körvonalas gombok;
+   a három naplózott egészségforrásból egyszerre egy nyílik, adataik elkülönülnek.
+2. 1/7 nap napi, 30/90 nap heti volumenoszlopok. Keskeny egynapos oszlop;
+   90 nap vízszintesen görgethető, induláskor a legfrissebb heteknél, kézi választást megtartva.
+3. Szüneteltetett aktív edzésnél Elvetés a Folytatás mellett, megerősítéssel;
+   ugyanaz a natív elvetési út, edzésazonosító-/ownership-/foglaltállapot-védelemmel.
+4. #30: mentett sötét/világos térképkapcsoló, valódi rajt-/célpont, megőrzött GPS-szegmenshatárok.
+5. Main `e9bfba6`: a Kezdőlap duplikált, keret nélküli Mai adatok blokkja kikerült;
+   az egészségkártyák és az Egészség oldal működése megmaradt. A #29 azonos javítása lezárva.
+6. #31: friss HC-olvasás külön diagnózisa (üres adat, grant, SDK-hiba, forrásszűrő),
+   elkülönült HC/Samsung cache. **A készülékes HC-üresség kiváltó oka nem bizonyított.**
+
+Ez még nem fizikai készülékes elfogadás. Tesztelendő: a referenciákhoz illő keretek,
+forrásharmonika, négy időszak grafikonja, szüneteltetett edzés megerősített elvetése,
+mentett térképmód és rögzített végpontok, Kezdőlap és HC-diagnózis. #19 marad nyitva.
+A **8. feladat**, naplózott/saved edzés valódi törlése külön marad; ne keverd az aktív
+edzés kész elvetésével. Spec Kit/Codex már integrálva (#26); a közös kerethierarchia
+1.0.1-es alkotmányba emelése megállapodott megjelenítési szabály, adatmigráció nélkül.
+
+## Történeti checkpointok
+
 ## Aktuális checkpoint: #25 / 2740, valamint Codex Spec Kit #26
 
 A napi egészségképernyő #19-ben jelzett hat javítása a #25 alatt mainre került: `5300efdabb6ff019b842d13898d21aaae11e0d3c`. A Samsung pulzussorozat fordítási névütközését a `d220cfc37b12dce3c518f8aadd584e5a647ea268` javította. PR CI `41513584412` SUCCESS: letöltött nyers XML 296/296, nulla failure/error/skip.
