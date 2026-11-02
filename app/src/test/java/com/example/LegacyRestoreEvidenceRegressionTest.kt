@@ -105,12 +105,14 @@ class LegacyRestoreEvidenceRegressionTest {
         } }
         try {
             compose.waitUntil(10_000) {
-            shadowOf(Looper.getMainLooper()).idle() !model.uiState.value.photosLoading && model.uiState.value.progressPhotos.size == 1 }
+            shadowOf(Looper.getMainLooper()).idle()
+            !model.uiState.value.photosLoading && model.uiState.value.progressPhotos.size == 1 }
         } catch (error: androidx.compose.ui.test.ComposeTimeoutException) {
             throw AssertionError("Restored photo is indexed but controller did not publish it: ${model.uiState.value}", error)
         }
         compose.waitUntil(10_000) {
-            shadowOf(Looper.getMainLooper()).idle() compose.onAllNodesWithTag("progress_photo_image_$photo", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+            shadowOf(Looper.getMainLooper()).idle()
+            compose.onAllNodesWithTag("progress_photo_image_$photo", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("progress_photo_image_$photo", useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithTag("progress_photo_$photo").performClick()
         compose.onNodeWithTag("progress_photo_detail").assertExists()

@@ -198,7 +198,8 @@ class JournalWorkoutHealthRegressionTest {
             }
         }
         compose.waitUntil(10_000) {
-            shadowOf(Looper.getMainLooper()).idle() model.uiState.value.detail != null && canonicalSources }
+            shadowOf(Looper.getMainLooper()).idle()
+            model.uiState.value.detail != null && canonicalSources }
         assertFalse(model.uiState.value.healthRefreshing)
         assertNull(model.uiState.value.healthError)
         val list = compose.onNodeWithTag("log_workout_detail_screen")
@@ -240,7 +241,8 @@ class JournalWorkoutHealthRegressionTest {
         // fail truthfully, and retain the cached row instead of inventing a pulse/zero.
         try {
             compose.waitUntil(10_000) {
-            shadowOf(Looper.getMainLooper()).idle() model.uiState.value.healthError != null }
+            shadowOf(Looper.getMainLooper()).idle()
+            model.uiState.value.healthError != null }
         } catch (timeout: androidx.compose.ui.test.ComposeTimeoutException) {
             throw AssertionError("Empty-cache foreground read did not report an error: ${model.uiState.value}; host=${compose.activity.lifecycle.currentState}", timeout)
         }
