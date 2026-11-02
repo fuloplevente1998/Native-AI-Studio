@@ -67,5 +67,4 @@ készüléken is igazolni kell. A Samsung közvetlen SDK saját app/cert regiszt
 a Google OAuth/Fit/Drive integrációk külön projekt-/client-konfigurációt igényelhetnek;
 ezek nem helyettesíthetők egy általános „Google kulccsal”.
 
-Állapot a PR létrehozásakor: beállítási kód előkészítve; valódi új tulajdonosi kulcs,
-Maps API-kulcs és első állandó signerrel épített APK még nincs létrehozva/igazolva.
+Aktuális állapot: a tulajdonos saját gépén létrehozta és konfigurálta az állandó kulcsot és a Maps API-kulcsot. Az állandó signerrel készült APK-pár már sikeresen épült és ellenőrzött. **Ne generálj új kulcsot.** Aktuális nyilvános ujjlenyomat, build és készülékes korlátok: [2026-11-02-es átadó](AI_STUDIO_HANDOFF_2026-11-02.md).

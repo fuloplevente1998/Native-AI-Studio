@@ -1,5 +1,7 @@
 # TrainPilot – natív AI Studio átadás, 2026-11-01
 
+> Történeti átadó. A jelenlegi állapothoz először az [aktuális, 2026-11-02-es átadót](AI_STUDIO_HANDOFF_2026-11-02.md) olvasd. A kulcs-, Maps-, teszt- és APK-státusz lent korábbi checkpointot írhat le.
+
 ## Melyik projektet kell folytatni?
 
 **Repo:** https://github.com/fuloplevente1998/Native-AI-Studio
