@@ -26,4 +26,6 @@
     <string name="journal_health_read">Read workout data</string>
     <string name="journal_samsung_permission">Samsung Health heart-rate or exercise read permission is required.</string>
     <string name="journal_samsung_unavailable">Direct Samsung Health SDK access is unavailable.</string>
+    <string name="journal_source_expanded">Expanded</string>
+    <string name="journal_source_collapsed">Collapsed</string>
 </resources>

@@ -83,19 +83,22 @@ internal fun studioWorkoutHealthContent(
             if (detail != null) {
                 Column(Modifier.fillMaxWidth().testTag("studio_workout_health")) {
                     JournalHealthPanel(detail, text, language, state.healthRefreshing, state.healthError, !state.deleting,
-                        provider = state.healthProvider, status = state.healthStatus, selectProvider = model::selectWorkoutHealthProvider) {
-                        model.refreshWorkoutHealth(activity)
-                    }
-                    if (state.healthError in setOf(R.string.journal_health_permission, R.string.journal_samsung_permission)) {
-                        OutlinedButton(onClick = {
-                            attempted = false
-                            if (state.healthProvider == com.repforge.app.HealthJournalStore.SAMSUNG && activity != null)
-                                model.requestSamsungWorkoutPermission(activity)
-                            else requestPermissions()
-                        }, modifier = Modifier.fillMaxWidth().testTag("journal_health_permissions")) {
-                            Text(if (state.healthProvider == com.repforge.app.HealthJournalStore.SAMSUNG) "Samsung Health • ${text.getString(R.string.journal_health_permissions)}" else text.getString(R.string.journal_health_permissions))
-                        }
-                    }
+                        provider = state.healthProvider, status = state.healthStatus, selectProvider = model::selectWorkoutHealthProvider,
+                        permissions = { _ ->
+                            if (state.healthError in setOf(R.string.journal_health_permission, R.string.journal_samsung_permission)) {
+                                OutlinedButton(onClick = {
+                                    attempted = false
+                                    if (state.healthProvider == com.repforge.app.HealthJournalStore.SAMSUNG && activity != null)
+                                        model.requestSamsungWorkoutPermission(activity)
+                                    else requestPermissions()
+                                }, modifier = Modifier.fillMaxWidth().testTag("journal_health_permissions")) {
+                                    Text(if (state.healthProvider == com.repforge.app.HealthJournalStore.SAMSUNG)
+                                        "Samsung Health • ${text.getString(R.string.journal_health_permissions)}"
+                                        else text.getString(R.string.journal_health_permissions))
+                                }
+                            }
+                        }) { model.refreshWorkoutHealth(activity) }
+
                 }
             } else {
                 Text(text.getString(if (state.detailLoading) R.string.journal_health_refreshing else R.string.journal_no_data),
