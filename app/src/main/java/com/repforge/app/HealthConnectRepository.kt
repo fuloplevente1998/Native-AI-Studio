@@ -784,6 +784,20 @@ object HealthConnectRepository {
             putLongAgg(out, "minHeartRate", p, m, time, "READ_HEART_RATE", HeartRateRecord.BPM_MIN, warnings)
             putLongAgg(out, "maxHeartRate", p, m, time, "READ_HEART_RATE", HeartRateRecord.BPM_MAX, warnings)
             putLongAgg(out, "heartRateSamples", p, m, time, "READ_HEART_RATE", HeartRateRecord.HEART_MEASUREMENTS_COUNT, warnings)
+            // Real, timestamped Health Connect measurements, not an inferred trend.
+            // Deduplicate identical source/time observations and retain a bounded history.
+            val pulsePoints = linkedMapOf<String, JSONObject>()
+            for (record in hrs) for (sample in record.samples) {
+                if (sample.beatsPerMinute <= 0 || sample.time.isBefore(t[0]) || !sample.time.isBefore(t[1])) continue
+                val source = src(record)
+                pulsePoints["$source|${sample.time}"] = JSONObject()
+                    .put("time", sample.time.toString())
+                    .put("bpm", sample.beatsPerMinute)
+                    .put("source", source)
+            }
+            val pulseHistory = JSONArray()
+            for (point in pulsePoints.values.sortedBy { it.optString("time") }.takeLast(96)) pulseHistory.put(point)
+            out.put("heartRateSeries", pulseHistory)
             putLongAgg(out, "restingHeartRate", p, m, time, "READ_RESTING_HEART_RATE", RestingHeartRateRecord.BPM_AVG, warnings)
             p.origin = activityOrigin
             putEnergyAgg(out, "activeCalories", p, m, time, "READ_ACTIVE_CALORIES_BURNED", ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL, warnings)
