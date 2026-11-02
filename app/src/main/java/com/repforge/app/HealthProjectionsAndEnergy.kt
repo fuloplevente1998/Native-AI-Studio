@@ -59,42 +59,20 @@ internal object HealthProviderProjection {
         legacy: JSONObject?,
         preferred: String?
     ): JSONObject {
-        val fallback = hc ?: legacy
-        val direct = SAMSUNG == preferred && samsung != null
-        val base = if (direct) samsung else fallback
+        // The journal follows the explicitly selected provider. Historical HC/legacy
+        // rows remain available in their own channels, never as Samsung measurements.
+        val base = if (preferred == SAMSUNG) samsung else (hc ?: legacy)
         val out = if (base == null) JSONObject() else JSONObject(base.toString())
         val channel = when {
-            direct -> SAMSUNG
+            preferred == SAMSUNG -> SAMSUNG
             hc != null -> HealthJournalStore.HC
             else -> HealthJournalStore.LEGACY
         }
         val sources = JSONObject()
         for (key in METRICS) {
-            if (!out.isNull(key)) {
-                sources.put(key, channel)
-            } else if (direct && fallback != null && !fallback.isNull(key)) {
-                out.put(key, fallback.get(key))
-                sources.put(key, if (hc != null) HealthJournalStore.HC else HealthJournalStore.LEGACY)
-                val prefix = when (key) {
-                    "weightKg" -> "weight"
-                    "bodyFatPercent" -> "bodyFat"
-                    "oxygenSaturationPercent" -> "oxygenSaturation"
-                    "hrvRmssdMs" -> "hrv"
-                    else -> key
-                }
-                for (suffix in arrayOf("Time", "Source")) {
-                    if (fallback.has(prefix + suffix)) {
-                        out.put(prefix + suffix, fallback.get(prefix + suffix))
-                    }
-                }
-            }
+            if (!out.isNull(key)) sources.put(key, channel)
         }
-        val outSleep = out.optJSONArray("sleepSessions")
-        val fallbackSleep = fallback?.optJSONArray("sleepSessions")
-        if (direct && (outSleep == null || outSleep.length() == 0) && fallbackSleep != null) {
-            out.put("sleepSessions", fallbackSleep)
-            sources.put("sleepSessions", if (hc != null) HealthJournalStore.HC else HealthJournalStore.LEGACY)
-        } else if (outSleep != null && outSleep.length() > 0) {
+        if ((out.optJSONArray("sleepSessions")?.length() ?: 0) > 0) {
             sources.put("sleepSessions", channel)
         }
         out.put("channel", channel)
@@ -102,7 +80,7 @@ internal object HealthProviderProjection {
         if (!out.isNull("steps")) {
             val stepsProvider = sources.optString("steps", channel)
             out.put("stepsSource", stepsProvider)
-            val stepDay = if (stepsProvider == SAMSUNG) samsung else fallback
+            val stepDay = base
             out.put("stepsOrigin", stepDay?.optString("activityOrigin", "").orEmpty())
         }
         return out
