@@ -174,15 +174,26 @@ final class SamsungSdkReader {
             safe(DataTypes.HEART_RATE, () -> {
                 // Deduplicate series by origin + sample interval, including overlapping parent records.
                 Map<String, double[]> samples = new LinkedHashMap<>();
+                Map<String, JSONObject> timed = new LinkedHashMap<>();
                 for (HealthDataPoint p : points(DataTypes.HEART_RATE::getReadDataRequestBuilder, start, end)) {
                     List<HeartRate> series = p.getValue(DataType.HeartRateType.SERIES_DATA);
                     if (series != null && !series.isEmpty()) {
-                        for (HeartRate h : series) if (h.getStartTime().isBefore(end) && !h.getEndTime().isBefore(start))
-                            samples.put(source(p) + h.getStartTime() + "|" + h.getEndTime(), new double[]{h.getHeartRate(), h.getMin(), h.getMax()});
+                        for (HeartRate h : series) if (h.getStartTime().isBefore(end) && !h.getEndTime().isBefore(start)) {
+                            String key = source(p) + h.getStartTime() + "|" + h.getEndTime();
+                            samples.put(key, new double[]{h.getHeartRate(), h.getMin(), h.getMax()});
+                            timed.put(key, new JSONObject().put("time", h.getStartTime().toString())
+                                .put("bpm", h.getHeartRate()).put("source", source(p)));
+                        }
                     } else if (!p.getStartTime().isBefore(start) && p.getStartTime().isBefore(end)) {
                         Float value = p.getValue(DataType.HeartRateType.HEART_RATE);
-                        if (value != null) samples.put(source(p) + p.getStartTime(), new double[]{value,
-                            p.getValueOrDefault(DataType.HeartRateType.MIN_HEART_RATE, value), p.getValueOrDefault(DataType.HeartRateType.MAX_HEART_RATE, value)});
+                        if (value != null) {
+                            String key = source(p) + p.getStartTime();
+                            samples.put(key, new double[]{value,
+                                p.getValueOrDefault(DataType.HeartRateType.MIN_HEART_RATE, value),
+                                p.getValueOrDefault(DataType.HeartRateType.MAX_HEART_RATE, value)});
+                            timed.put(key, new JSONObject().put("time", p.getStartTime().toString())
+                                .put("bpm", value).put("source", source(p)));
+                        }
                     }
                 }
                 double sum = 0, min = Double.POSITIVE_INFINITY, max = 0; int count = 0;
@@ -193,7 +204,14 @@ final class SamsungSdkReader {
                 number(out, "averageHeartRate", count == 0 ? null : sum / count);
                 number(out, "minHeartRate", count == 0 ? null : min); number(out, "maxHeartRate", count == 0 ? null : max);
                 out.put("heartRateSamples", count);
-            }, "averageHeartRate", "minHeartRate", "maxHeartRate", "heartRateSamples");
+                List<JSONObject> ordered = new ArrayList<>(timed.values());
+                ordered.sort(Comparator.comparing(point -> point.optString("time")));
+                JSONArray latest = new JSONArray();
+                // Bounded persisted display history; no synthesized/interpolated readings.
+                for (int i = Math.max(0, ordered.size() - 96); i < ordered.size(); i++)
+                    latest.put(ordered.get(i));
+                out.put("heartRateSeries", latest);
+            }, "averageHeartRate", "minHeartRate", "maxHeartRate", "heartRateSamples", "heartRateSeries");
         }
         private <T extends Number> void latest(JSONObject out, List<HealthDataPoint> points, Field<T> field,
                                                String key, String prefix, String unit, String recordType) throws Exception {
