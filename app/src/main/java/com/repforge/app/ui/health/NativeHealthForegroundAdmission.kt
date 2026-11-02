@@ -38,6 +38,7 @@ internal object NativeHealthForegroundAdmission {
         RESTORE("Adat-visszaállítás vagy adatcsere van folyamatban. Várd meg a befejezését, majd frissíts újra."),
         BACKUP("Biztonsági mentés van folyamatban. A napi szinkron utána indítható."),
         HANDOVER("Az órás átadás/visszavétel még nincs lezárva. Várd meg a visszaigazolást."),
+        SUSPENDED("Az edzésvezérlés egy mentési, elvetési vagy órás átadási művelet miatt foglalt. Fejezd be a műveletet az Edzés oldalon, vagy várd meg az átadás visszaigazolását."),
         FINALIZING("Az edzés mentése vagy elvetése még nincs lezárva. Fejezd be a műveletet az edzés képernyőjén."),
         ACTIVE("Folyamatban lévő vagy szüneteltetett edzés van. A teljes napi szinkron az edzés lezárása után indítható."),
         UNREADABLE("A natív edzés- vagy adatcsereállapot nem olvasható. A szinkron biztonsági okból nem indult el.")
@@ -66,7 +67,7 @@ internal object NativeHealthForegroundAdmission {
                 val frameReason = frameBlock(listOf(admissionFrame(execution.snapshot(), terminalSource = true)))
                 when {
                     frameReason == Block.FINALIZING -> frameReason
-                    execution.commandsSuspended() -> Block.HANDOVER
+                    execution.commandsSuspended() -> Block.SUSPENDED
                     else -> frameReason
                 }
             }
@@ -93,9 +94,17 @@ internal object NativeHealthForegroundAdmission {
 
     fun safeOffMain(context: Context): Boolean = offMainBlockReason(context) == null
 
+    /** A suspended command engine alone cannot distinguish saving from ownership transfer.
+     * Prefer the durable IO-side reason in that case; suspension itself always stays blocked. */
+    internal fun combinedBlock(main: Block?, local: Block?): Block? =
+        if (main == Block.SUSPENDED) local ?: main else main ?: local
+
     /** Outside ALL metadata locks; only the main-looper execution probe changes dispatcher. */
     suspend fun requireMainAdmission(context: Context) {
-        val reason = withContext(Dispatchers.Main.immediate) { mainBlockReason(context) }
+        val main = withContext(Dispatchers.Main.immediate) { mainBlockReason(context) }
+        val reason = if (main == Block.SUSPENDED) withContext(Dispatchers.IO) {
+            combinedBlock(main, offMainBlockReason(context))
+        } else main
         check(reason == null) { reason!!.message }
     }
 

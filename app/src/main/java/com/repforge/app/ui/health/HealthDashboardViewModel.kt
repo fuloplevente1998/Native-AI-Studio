@@ -420,7 +420,7 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                 if (ticket == null) {
                     if (trigger == NativeHealthAutoRefreshGate.Trigger.MANUAL) _uiState.update { it.copy(syncFailed = true, syncOutcome = "BLOCKED",
                         syncMessage = "${com.repforge.app.NativeWorkoutHealthSource.label(snapshot.provider)}: a szinkron nem indult el • " +
-                            (executionBlock?.message ?: publicationBlock?.message
+                            (NativeHealthForegroundAdmission.combinedBlock(executionBlock, publicationBlock)?.message
                                 ?: "Hiányzó szolgáltató/engedély vagy másik folyamatban lévő művelet.")) }
                     return@launch
                 }

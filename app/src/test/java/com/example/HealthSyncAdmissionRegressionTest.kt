@@ -80,8 +80,11 @@ class HealthSyncAdmissionRegressionTest {
         catch (_: Exception) { }
         assertTrue(ActiveWorkoutStore.current(context)!!.optBoolean("finalizationPending"))
         assertTrue(PhoneWorkoutExecution.store(context).snapshot()!!.optBoolean("active"))
-        assertEquals(Admission.Block.FINALIZING, Admission.mainBlockReason(context))
-        assertFalse(Admission.safeOffMain(context))
+        assertEquals(Admission.Block.SUSPENDED, Admission.mainBlockReason(context))
+        assertEquals(Admission.Block.FINALIZING, Admission.offMainBlockReason(context))
+        assertEquals(Admission.Block.FINALIZING, Admission.combinedBlock(
+            Admission.mainBlockReason(context), Admission.offMainBlockReason(context)))
+        assertFalse(Admission.safeOnMain(context)); assertFalse(Admission.safeOffMain(context))
     }
     @Test fun onlyExplicitInactiveTerminalSourcesAreProjectedAndAllOtherGatesRemainClosed() {
         val archived = JSONObject().put("active", false).put("workoutPaused", true).put("finalizationPending", true)
@@ -93,6 +96,8 @@ class HealthSyncAdmissionRegressionTest {
         assertSame(active, Admission.admissionFrame(active, true))
         val unknown = JSONObject().put("workoutPaused", true)
         assertSame(unknown, Admission.admissionFrame(unknown, true))
+        assertEquals(Admission.Block.SUSPENDED, Admission.combinedBlock(Admission.Block.SUSPENDED, null))
+        assertEquals(Admission.Block.RESTORE, Admission.combinedBlock(Admission.Block.RESTORE, Admission.Block.FINALIZING))
         assertFalse(Admission.eligible(false, true, "closed", emptyList()))
         assertFalse(Admission.eligible(true, false, "closed", emptyList()))
         for (stage in listOf("requested", "offered", "incoming", "accepted", "committed", "installed"))
