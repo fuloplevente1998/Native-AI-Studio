@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.repforge.app.ui.theme.TrainPilotCardSpacing
+
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import com.repforge.app.ui.theme.trainPilotBorder
@@ -345,8 +347,8 @@ fun HealthTabScreen(
             .fillMaxSize()
             .background(palette.background)
             .testTag("health_tab_screen"),
-        contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 28.dp),
+        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
         // 1. OUTER GOLD-BORDERED CONTAINER: "Mai állapot" (6 daily tiles + dynamic today date)
         item {
@@ -359,7 +361,7 @@ fun HealthTabScreen(
             ) {
                 Column(
                     modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -644,7 +646,7 @@ fun HealthTabScreen(
             ) {
                 Column(
                     modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
                 ) {
                     // Header row: "Heti egészség & edzés célok" + "🎯 Célok" pill button
                     Row(
@@ -1848,8 +1850,8 @@ fun CoachDetailScreen(
             .fillMaxSize()
             .background(palette.background)
             .testTag("coach_detail_screen"),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
         if (uiState.currentSubScreen == SubScreen.COACH_DETAIL) {
             item {
@@ -2330,8 +2332,8 @@ fun SettingsMainScreen(
             .fillMaxSize()
             .background(palette.background)
             .testTag("settings_main_screen"),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
         item {
             SubScreenTopBar(
@@ -2733,8 +2735,8 @@ fun WatchAndSyncScreen(
             .fillMaxSize()
             .background(palette.background)
             .testTag("watch_and_sync_screen"),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
         item {
             SubScreenTopBar(
@@ -2764,7 +2766,7 @@ fun WatchAndSyncScreen(
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -2821,7 +2823,7 @@ fun WatchAndSyncScreen(
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
                 ) {
                     Text(
                         text = "Aktív edzés vezérlése",
@@ -3473,8 +3475,8 @@ fun BackupRestoreScreen(
             .fillMaxSize()
             .background(palette.background)
             .testTag("backup_restore_screen"),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
         item {
             SubScreenTopBar(
@@ -3648,8 +3650,8 @@ fun PermissionsScreen(
             .fillMaxSize()
             .background(palette.background)
             .testTag("permissions_screen"),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
         item {
             SubScreenTopBar(

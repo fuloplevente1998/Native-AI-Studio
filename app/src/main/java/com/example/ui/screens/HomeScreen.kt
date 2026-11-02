@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.repforge.app.ui.theme.TrainPilotCardSpacing
+
 import com.repforge.app.ui.theme.trainPilotBorder
 
 import com.example.model.localWorkoutDate
@@ -107,9 +109,9 @@ fun HomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
             .padding(top = 8.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
         if (!state.profileComplete || state.programs.none { it.isActive && it.isCustom && it.days.isNotEmpty() }) {
         // Mini nézetben a Profil és új terv (Kezdőlapról a köszönés eltűnt, maradt mini nézetben a Profil és új terv)
@@ -450,7 +452,7 @@ fun HomeScreen(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardRowGap)
         ) {
             // Top-Left: Alvás (7 ó 24 p • Jó minőség)
             HomeVitalCard(
@@ -488,7 +490,7 @@ fun HomeScreen(
         val stepsProgress = (state.dailySteps.toFloat() / state.stepsGoal.toFloat()).coerceIn(0f, 1f)
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardRowGap)
         ) {
             // Bottom-Left: Lépések (8 421 • Cél: 10 000 + cyan progress bar)
             HomeVitalCard(
@@ -673,7 +675,7 @@ fun HomeScreen(
 
         // 8. MAIN BRANCH HOME CARDS (Célok beállítása, Mai javaslat / Coach, Személyes edzéstervező, Aktív kalória)
         AnimatedVisibility(visible = showExtendedMainCards) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)) {
                 // Célok beállítása (1/15 edzés >) from main Home screenshot
                 Surface(
                     shape = RoundedCornerShape(16.dp),

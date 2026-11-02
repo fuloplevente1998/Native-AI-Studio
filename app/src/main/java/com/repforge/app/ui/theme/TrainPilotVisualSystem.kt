@@ -18,6 +18,17 @@ object TrainPilotDimensions {
     val HeroRadius = 20.dp
 }
 
+/**
+ * Page-to-card and card-to-card distances only; never use these values for
+ * button hit targets, typography, or padding inside an interactive card.
+ * Shared by the Studio phone tabs and their detail sheets.
+ */
+object TrainPilotCardSpacing {
+    val ScreenGutter = 12.dp
+    val CardGap = 8.dp
+    val CardRowGap = 8.dp
+}
+
 val TrainPilotShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
     small = RoundedCornerShape(12.dp),
