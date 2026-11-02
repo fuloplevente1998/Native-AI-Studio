@@ -101,7 +101,7 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
             while (isActive) { refresh(); delay(5_000) }
         }
     }
-    fun startHealthAction(provider: String) {
+    fun startHealthAction(provider: String, permissionOnly: Boolean = false) {
         if (healthActionJob?.isActive == true) {
             model.showBannerMessage("Egészségügyi művelet már folyamatban van."); return
         }
@@ -138,6 +138,9 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                         }
                     }, guard = guard,
                     sync = {
+                        if (permissionOnly) {
+                            model.updateHealthSyncStatus(false, message = "Olvasási hozzáférés igazolva.")
+                        } else {
                         guard()
                         NativeHealthForegroundAdmission.requireMainAdmission(context)
                         withContext(Dispatchers.IO) {
@@ -151,7 +154,7 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                         model.updateHealthSyncStatus(false, partial = partial,
                             message = "${if (provider == HealthJournalStore.HC) "Health Connect" else "Samsung Health"}: " +
                                 if (partial) "részleges szinkron • ${report.optInt("completedDays")} nap frissítve" else "szinkron befejezve")
-                        model.reloadHealthJournal()
+                        }
                     })
                 refresh(); refreshSamsung()
             } catch (cancelled: CancellationException) {
@@ -159,7 +162,10 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                 throw cancelled
             } catch (error: Exception) {
                 model.updateHealthSyncStatus(false, failed = true, message = error.message ?: "Az egészségügyi szinkron nem sikerült.")
-            } finally { healthConsent?.cancel(); healthConsent = null }
+            } finally {
+                if (!permissionOnly) model.reloadHealthJournal()
+                healthConsent?.cancel(); healthConsent = null
+            }
         }
     }
     return { key ->
@@ -174,6 +180,8 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                     else settings.launch(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName))
                 "hc" -> startHealthAction(HealthJournalStore.HC)
                 "samsung" -> startHealthAction(HealthJournalStore.SAMSUNG)
+                "hc_permission" -> startHealthAction(HealthJournalStore.HC, permissionOnly = true)
+                "samsung_permission" -> startHealthAction(HealthJournalStore.SAMSUNG, permissionOnly = true)
                 "hc_manage" -> settings.launch(Intent(android.health.connect.HealthConnectManager.ACTION_MANAGE_HEALTH_PERMISSIONS)
                     .putExtra(Intent.EXTRA_PACKAGE_NAME, context.packageName))
                 "samsung_manage" -> scope.launch {

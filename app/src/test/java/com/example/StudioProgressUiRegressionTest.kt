@@ -50,13 +50,13 @@ class StudioProgressUiRegressionTest {
         }
         for ((index, total) in listOf(100, 300, 700, 1500).withIndex()) {
             compose.onNodeWithTag("progress_range_$index").performClick()
-            compose.onNodeWithTag("progress_volume_total").assertTextEquals("${if (total == 1500) "1 500" else total} kg")
+            compose.onNodeWithTag("progress_volume_total", useUnmergedTree = true).assertTextEquals("${if (total == 1500) "1 500" else total} kg")
         }
         compose.onNodeWithTag("progress_volume_expand").performClick()
         compose.onNodeWithTag("progress_volume_bucket_unit").assertTextEquals("Heti bontás")
         compose.onNodeWithTag("progress_range_0").performClick()
         compose.onNodeWithTag("progress_volume_bucket_unit").assertTextEquals("Napi bontás")
-        compose.onNodeWithTag("progress_volume_total").assertTextEquals("100 kg")
+        compose.onNodeWithTag("progress_volume_total", useUnmergedTree = true).assertTextEquals("100 kg")
     }
     @Test fun bodyLayersFollowWorkoutLoadsAndSmallMeasuredLoadsAreNotRoundedAway() {
         var loads by mutableStateOf(listOf(MuscleLoadItem("chest", "Mell", "1 sorozat", 0, 0.005f, "Kisebb", emptyList(), "", setsCount = 1)))
@@ -76,7 +76,7 @@ class StudioProgressUiRegressionTest {
             dailyHealthSourceLabel = "Samsung Health", dailyHealthAvailableFields = setOf("steps", "activeCalories", "totalCalories"),
             dailySteps = 7000, activeCaloriesKcal = 1000, totalCaloriesKcal = 1500))
         compose.setContent {
-            CompositionLocalProvider(LocalRequestWorkoutHealthPermission provides { requested = it }) {
+            CompositionLocalProvider(LocalSyncDailyHealth provides { requested = it }) {
                 TrainPilotTheme { StudioDailyHealthStatus(state) }
             }
         }

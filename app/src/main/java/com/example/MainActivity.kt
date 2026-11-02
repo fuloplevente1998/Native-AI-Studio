@@ -146,7 +146,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
     CompositionLocalProvider(
         LocalTrainPilotStrings provides strings,
         com.example.ui.components.LocalOpenWorkoutHealth provides { showLiveHealth = true },
-        com.example.ui.components.LocalRequestWorkoutHealthPermission provides { provider -> requestPlatformPermission(if (provider == com.repforge.app.HealthJournalStore.SAMSUNG) "samsung" else "hc") },
+        com.example.ui.components.LocalRequestWorkoutHealthPermission provides { provider -> requestPlatformPermission(if (provider == com.repforge.app.HealthJournalStore.SAMSUNG) "samsung_permission" else "hc_permission") },
+        com.example.ui.components.LocalSyncDailyHealth provides { provider -> requestPlatformPermission(if (provider == com.repforge.app.HealthJournalStore.SAMSUNG) "samsung" else "hc") },
         LocalOpenExerciseVideo provides { exTitle -> viewModel.openExerciseVideoModal(exTitle) }
     ) {
         if (showLiveHealth) com.example.ui.components.StudioLiveWorkoutHealthDialog { showLiveHealth = false }
@@ -681,7 +682,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         val workoutHealth = com.example.ui.components.studioWorkoutHealthContent(
                             workoutId = uiState.selectedLogWorkoutId,
                             language = uiState.language.name.lowercase(),
-                            requestPermissions = { requestPlatformPermission("hc") },
+                            requestPermissions = { requestPlatformPermission("hc_permission") },
                             onSources = viewModel::updateLoggedWorkoutHealthSources
                         )
                         LogWorkoutDetailScreen(

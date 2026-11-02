@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.compose.material3.LinearProgressIndicator
+
 import com.example.model.localWorkoutDate
 
 import kotlin.math.roundToInt

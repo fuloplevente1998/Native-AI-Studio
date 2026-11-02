@@ -3,6 +3,7 @@ package com.example.ui.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -14,11 +15,13 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+internal val LocalSyncDailyHealth = staticCompositionLocalOf<(String) -> Unit> { {} }
+
 /** Same current-day source and sync state on Home and Health. No workout-window fallback. */
 @Composable
 internal fun StudioDailyHealthStatus(state: TrainPilotUiState) {
     val palette = LocalTrainPilotPalette.current
-    val request = LocalRequestWorkoutHealthPermission.current
+    val request = LocalSyncDailyHealth.current
     val current = state.dailyHealthDate == LocalDate.now().toString()
     val fields = if (current) state.dailyHealthAvailableFields else emptySet()
     val last = runCatching { DateTimeFormatter.ofPattern("yyyy.MM.dd. HH:mm")

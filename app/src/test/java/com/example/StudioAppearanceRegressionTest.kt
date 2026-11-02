@@ -151,11 +151,11 @@ class StudioAppearanceRegressionTest {
         list.performScrollToNode(hasTestTag("health_weekly_steps_card"))
         compose.onNodeWithTag("health_weekly_summary_toggle").assertDoesNotExist()
         compose.onNodeWithTag("health_weekly_steps_card").performClick()
-        compose.onNodeWithTag("health_weekly_steps_days").assertExists()
-        compose.onNodeWithTag("health_weekly_minutes_days").assertDoesNotExist()
+        compose.onNodeWithTag("health_weekly_steps_days", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("health_weekly_minutes_days", useUnmergedTree = true).assertDoesNotExist()
         list.performScrollToNode(hasTestTag("health_weekly_minutes_card"))
         compose.onNodeWithTag("health_weekly_minutes_card").performClick()
-        compose.onNodeWithTag("health_weekly_minutes_days").assertExists()
+        compose.onNodeWithTag("health_weekly_minutes_days", useUnmergedTree = true).assertExists()
         compose.runOnIdle { assertTrue(steps); assertTrue(workouts) }
     }
 }

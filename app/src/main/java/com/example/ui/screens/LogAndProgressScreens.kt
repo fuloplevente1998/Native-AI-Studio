@@ -1865,10 +1865,9 @@ internal fun MainProgressVolumeAndMuscleSection(
                         ) {
                             Text(
                                 text = if (period.days == 90) "Heti bontás" else "Napi bontás",
-                                modifier = Modifier.testTag("progress_volume_bucket_unit"),
+                                modifier = Modifier.testTag("progress_volume_bucket_unit").padding(horizontal = 12.dp, vertical = 6.dp),
                                 style = MaterialTheme.typography.labelMedium,
-                                color = palette.textSecondary,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                color = palette.textSecondary
                             )
                         }
                     }
