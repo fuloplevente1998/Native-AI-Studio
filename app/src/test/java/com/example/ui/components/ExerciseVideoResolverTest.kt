@@ -10,7 +10,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(manifest = Config.NONE)
+@Config(sdk = [34], manifest = Config.NONE)
 class ExerciseVideoResolverTest {
     private val gobletId = "MeIiIdhvXT4"
     private val plankId = "pSHjTRCQxIw"
