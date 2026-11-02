@@ -90,18 +90,19 @@ fun resolveExerciseVideoAndNotes(
     exerciseId: String? = null,
     storedVideoUrl: String? = null,
     isCustom: Boolean = false,
-    selectedNotesHu: String? = null
+    selectedNotesHu: String? = null,
+    allowCatalogByTitle: Boolean = true
 ): ExerciseVideoDetails {
     val catalog = runCatching { TrainPilotDatabase.defaultExercises() }.getOrDefault(emptyList())
     val knownId = exerciseId?.takeIf { it.isNotBlank() }
     val match = if (knownId != null) {
         catalog.firstOrNull { it.id.equals(knownId, ignoreCase = true) }
-    } else {
+    } else if (allowCatalogByTitle) {
         catalog.filter { entry ->
             listOf(entry.nameHu, entry.nameEn, entry.nameDe, entry.nameRo)
                 .any { it.equals(exerciseTitle.trim(), ignoreCase = true) }
         }.singleOrNull()
-    }
+    } else null
     val link = resolveExerciseVideoLink(storedVideoUrl, match?.videoUrl, isCustom)
     val notes = selectedNotesHu?.takeIf { it.isNotBlank() }
         ?: match?.notesHu?.takeIf { it.isNotBlank() }
