@@ -70,7 +70,8 @@ data class MuscleLoadItem(
     val ratio: Float,
     val levelLabelHu: String,
     val topExercisesHu: List<Pair<String, String>>, // ExerciseName to sets/load
-    val exerciseIdToOpen: String
+    val exerciseIdToOpen: String,
+    val setsCount: Int = 0
 )
 
 /**
@@ -89,24 +90,25 @@ fun AnatomicalMuscleHeatmapCard(
     highlightedMuscleId: String? = null,
     realMuscleLoads: List<MuscleLoadItem> = emptyList(),
     onPeriodSelected: ((Int) -> Unit)? = null,
+    periodDays: Int? = 90,
     onOpenExerciseDetail: ((String) -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     val periodOptions = remember { listOf("3 hó", "30 nap", "7 nap", "1 nap") }
-    val periodDays = remember { listOf(90, 30, 7, 1) }
-    var selectedPeriodIdx by remember { mutableIntStateOf(0) }
+    val periodDayOptions = remember { listOf(90, 30, 7, 1) }
+    val selectedPeriodIdx = periodDayOptions.indexOf(periodDays ?: 90).coerceAtLeast(0)
 
-    val muscleLoads = remember(realMuscleLoads, selectedPeriodIdx) {
+    val muscleLoads = remember(realMuscleLoads) {
         if (realMuscleLoads.isNotEmpty()) {
             realMuscleLoads
         } else {
             listOf(
-                MuscleLoadItem("chest", "Mell", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), "bench_press"),
-                MuscleLoadItem("back", "Hát", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), "barbell_row"),
-                MuscleLoadItem("shoulders", "Váll", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), "bench_press"),
-                MuscleLoadItem("legs", "Láb", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), "goblet_squat"),
-                MuscleLoadItem("arms", "Kar", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), "biceps_curl"),
-                MuscleLoadItem("core", "Törzs", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), "plank")
+                MuscleLoadItem("chest", "Mell", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), ""),
+                MuscleLoadItem("back", "Hát", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), ""),
+                MuscleLoadItem("shoulders", "Váll", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), ""),
+                MuscleLoadItem("legs", "Láb", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), ""),
+                MuscleLoadItem("arms", "Kar", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), ""),
+                MuscleLoadItem("core", "Törzs", "0 sorozat", 0, 0f, "Nincs terhelés", emptyList(), "")
             )
         }
     }
@@ -138,11 +140,12 @@ fun AnatomicalMuscleHeatmapCard(
             ) {
                 Text(
                     text = title,
+                    modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = palette.textPrimary
                 )
-                Surface(
+                if (onPeriodSelected != null && periodDays != null) Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = palette.surfaceElevated,
                     modifier = Modifier
@@ -150,8 +153,7 @@ fun AnatomicalMuscleHeatmapCard(
                         .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                         .clip(RoundedCornerShape(12.dp))
                         .clickable {
-                            selectedPeriodIdx = (selectedPeriodIdx + 1) % periodOptions.size
-                            onPeriodSelected?.invoke(periodDays[selectedPeriodIdx])
+                            onPeriodSelected(periodDayOptions[(selectedPeriodIdx + 1) % periodOptions.size])
                         }
                         .testTag("muscle_heatmap_period_pill")
                 ) {
@@ -203,7 +205,7 @@ fun AnatomicalMuscleHeatmapCard(
                             com.repforge.app.ui.progress.MuscleLoadUiModel(
                                 muscleKey = it.id,
                                 label = it.nameHu,
-                                setsCount = it.percentage,
+                                setsCount = it.setsCount,
                                 loadPercentage = it.ratio
                             )
                         }
@@ -1064,7 +1066,7 @@ fun programEquipmentCategoryLabel(programNameOrId: String): String {
 }
 
 /**
- * Custom Smartwatch (Galaxy Watch7 / TrainPilot óra) Icon Badge matching Mockup 3/4 #2 & Mockup 4/4 #2.
+ * Custom Smartwatch (Wear OS) Icon Badge matching Mockup 3/4 #2 & Mockup 4/4 #2.
  */
 @Composable
 fun MockupWatchGraphicBadge(

@@ -131,32 +131,31 @@ class StudioAppearanceRegressionTest {
         assertTrue(allGeneratedExercises.none { it.id in machineExerciseIds })
     }
 
-    @Test fun healthWeeklySummaryExpandsWithSourceAttributionAndNoDemoWatchOnFreshInstall() {
-        var expandedWeekly by mutableStateOf(false)
+    @Test fun weeklyGoalCardsExpandIndependentlyAndNeverShowTheRemovedCombinedSummary() {
+        var steps by mutableStateOf(false)
+        var workouts by mutableStateOf(false)
         compose.setContent {
             TrainPilotTheme {
                 com.example.ui.screens.HealthTabScreen(
-                    uiState = TrainPilotUiState(expandedHealthWeeklySummary = expandedWeekly),
+                    uiState = TrainPilotUiState(expandedWeeklySteps = steps, expandedWeeklyWorkouts = workouts),
                     strings = TrainPilotStrings.forLanguage(AppLanguage.HU),
-                    onToggleHealthSection = { if (it == "weekly") expandedWeekly = !expandedWeekly },
-                    onSelectWeightRange = {},
-                    onToggleAddWeightDialog = {},
-                    onSaveNewWeight = { _, _ -> },
-                    onTogglePrimaryHealthSource = {},
-                    onTriggerHealthSync = {},
-                    onNavigateToSubScreen = {},
-                    onOpenPalettePicker = {},
-                    onOpenGoalsDialog = {}
-                )
+                    onToggleHealthSection = {
+                        if (it == "weekly_steps") steps = !steps
+                        if (it == "weekly_workouts") workouts = !workouts
+                    }, onSelectWeightRange = {}, onToggleAddWeightDialog = {}, onSaveNewWeight = { _, _ -> },
+                    onTogglePrimaryHealthSource = {}, onTriggerHealthSync = {}, onNavigateToSubScreen = {},
+                    onOpenPalettePicker = {}, onOpenGoalsDialog = {})
             }
         }
         val list = compose.onNodeWithTag("health_tab_screen")
-        list.performScrollToNode(hasTestTag("health_weekly_summary_toggle"))
-        compose.onNodeWithTag("health_weekly_expanded_section").assertDoesNotExist()
-        compose.onNodeWithTag("health_weekly_summary_toggle").performClick()
-        compose.runOnIdle { assertTrue(expandedWeekly) }
-        compose.onNodeWithTag("health_weekly_expanded_section").assertExists()
-        compose.onNodeWithText("Adatforrások és begyűjtés módja").assertExists()
+        list.performScrollToNode(hasTestTag("health_weekly_steps_card"))
+        compose.onNodeWithTag("health_weekly_summary_toggle").assertDoesNotExist()
+        compose.onNodeWithTag("health_weekly_steps_card").performClick()
+        compose.onNodeWithTag("health_weekly_steps_days", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("health_weekly_minutes_days", useUnmergedTree = true).assertDoesNotExist()
+        list.performScrollToNode(hasTestTag("health_weekly_minutes_card"))
+        compose.onNodeWithTag("health_weekly_minutes_card").performClick()
+        compose.onNodeWithTag("health_weekly_minutes_days", useUnmergedTree = true).assertExists()
+        compose.runOnIdle { assertTrue(steps); assertTrue(workouts) }
     }
 }
-

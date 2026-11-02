@@ -22,7 +22,13 @@ internal object NativeProgressQuery {
     fun muscle(rows: List<ProgressMuscleSummary>, language: String): List<MuscleLoadUiModel> {
         val counts = groups.associateWith { 0 }.toMutableMap()
         for (row in rows) {
-            val key = if (row.muscleKey == "cardio") "legs" else row.muscleKey
+            val key = when (row.muscleKey.lowercase()) {
+                "biceps", "triceps", "forearms" -> "arms"
+                "cardio", "quads", "hamstrings", "glutes", "calves" -> "legs"
+                "abs", "abdominals" -> "core"
+                "lats" -> "back"
+                else -> row.muscleKey.lowercase()
+            }
             if (key in counts && row.setsCount > 0)
                 counts[key] = (counts.getValue(key).toLong() + row.setsCount).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         }

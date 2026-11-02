@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.model.localWorkoutDate
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -378,7 +380,7 @@ fun HomeScreen(
             }
         }
 
-        // 5. WEAR OS WATCH CARD (Mockup 1/4 #1: "Galaxy Watch7 • Csatlakoztatva • 92% • ●")
+        // 5. WEAR OS WATCH CARD (Mockup 1/4 #1: "Wear OS connection")
         Surface(
             shape = RoundedCornerShape(18.dp),
             color = palette.surface,
@@ -437,6 +439,8 @@ fun HomeScreen(
             }
         }
 
+        com.example.ui.components.StudioDailyHealthStatus(state)
+
         // 6. 2x2 VITALS & READINESS BENTO GRID (Mockup 1/4 #1: Alvás, Nyugalmi pulzus, Lépések, Samsung energia) + Expandable Dropdown Card
         var expandedHomeVitalKey by remember { mutableStateOf<String?>(null) }
 
@@ -490,7 +494,7 @@ fun HomeScreen(
                 icon = Icons.AutoMirrored.Filled.DirectionsRun,
                 iconTint = palette.stepsAccent,
                 title = strings.stepsTitle,
-                mainValue = formatThousand(state.dailySteps),
+                mainValue = if ("steps" in state.dailyHealthAvailableFields) formatThousand(state.dailySteps) else "—",
                 statusText = strings.stepsGoalWithCount(state.stepsGoal),
                 statusColor = palette.textSecondary,
                 progressFraction = stepsProgress,
@@ -691,7 +695,10 @@ fun HomeScreen(
                                 color = palette.textPrimary
                             )
                             Text(
-                                text = strings.activeCaloriesAndWorkoutsToday(state.activeCaloriesKcal, state.weeklyGoalCompleted),
+                                text = if ("activeCalories" in state.dailyHealthAvailableFields)
+                                    strings.activeCaloriesAndWorkoutsToday(state.activeCaloriesKcal,
+                                        state.loggedWorkouts.count { it.localWorkoutDate() == java.time.LocalDate.now() })
+                                    else "Mai aktív kalória: nincs lekért adat",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = palette.textSecondary
                             )

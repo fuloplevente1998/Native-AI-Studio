@@ -4,7 +4,7 @@
 
 - [Native implementation / verification handoff](docs/AI_STUDIO_HANDOFF_2026-11-02.md)
 - [Exact Hungarian AI Studio continuation prompt](docs/AI_STUDIO_CONTINUE_PROMPT.md)
-- [Current validated source, signed APKs and remaining checks: PR #18](https://github.com/fuloplevente1998/Native-AI-Studio/pull/18)
+- [Current beta fixes, source and verification status: PR #20](https://github.com/fuloplevente1998/Native-AI-Studio/pull/20)
 - [Original audit / open task list: PR #1](https://github.com/fuloplevente1998/Native-AI-Studio/pull/1)
 
 The existing Compose UI, original logo, native anatomy, top navigation,
@@ -25,7 +25,7 @@ signatures are checked together; `trainpilot-apk-metadata` records package/versi
 APK hashes, signer fingerprints and Maps key presence without exposing the key.
 Ordinary CI debug signers are temporary. Device APKs now use the owner-managed persistent
 key through `trainpilot-persistent-signing.yml` / `android-signing`; the last validated
-main source is `35d9d64`, with **255/255 tests passing**. Existing Gradle signing configurations remain intact.
+historical signed checkpoint is `35d9d64` (255/255 tests). The current `0.1.0-beta` / `2737` changes and their targeted/full validation are recorded in the handoff and PR #20. Existing Gradle signing configurations remain intact.
 
 `TRAINPILOT_MAPS_API_KEY` is configured externally and embedded in the latest signed pair. Presence is not proof of
 live Cloud authorization. Physical map tiles, watch ACK/sensors and real device
@@ -35,3 +35,5 @@ backup/restart acceptance remain separate from JVM/Compose fixture test results.
 
 Future APK uploads go to the **[TrainPilot Native Drive folder](https://drive.google.com/drive/folders/1ywHgrManynjV9uNvZfVncOmCr3SbHIb9)**.
 The current handoff distinguishes proven automated results from pending device checks and preserves the existing data/privacy rules.
+
+Device-reported progress/Health/workout acceptance checklist: [tracker](docs/PROGRESS_HEALTH_BUG_TRACKER_2026-11-02.md), [GitHub #19](https://github.com/fuloplevente1998/Native-AI-Studio/issues/19).

@@ -2,6 +2,31 @@
 
 Ez az elsődleges checkpoint. A 2026-11-01-es átadó és a korábbi PR-leírások történeti háttérként használhatók; a kulcsok, Maps, tesztszám és APK-k tekintetében az alábbi állapot az irányadó.
 
+## Aktuális béta-folytatás – #20 és #19
+
+A felhasználó a készülékes hibák javítása után **a mainből szeretné AI Studióval folytatni**. Közös hibakövető: [#19](https://github.com/fuloplevente1998/Native-AI-Studio/issues/19), javító PR: [#20](https://github.com/fuloplevente1998/Native-AI-Studio/pull/20), teljes elfogadási lista: [PROGRESS_HEALTH_BUG_TRACKER_2026-11-02.md](PROGRESS_HEALTH_BUG_TRACKER_2026-11-02.md). A #20 célzott ellenőrzésének eredményét és a mainből indított teljes Actions eredményét külön kell kezelni.
+
+**Új felhasználói verziókérés:** telefon/óra `0.1.0-beta`, belső Android buildszám mindkettőn `2737`. A 2736-nál kisebb kód nem települne normál frissítésként a korábbi appra; a kód ezért nő, a látható verzió új béta-sorozat. Package továbbra is `com.TrainPilot.com`, az állandó signer és privát kulcs változatlan. Ne indítsd 1-ről a belső kódot és ne kérj adattörlést.
+
+A #20 kódja:
+
+- 1/7/30/90 helyi nap szerinti közös volumen-/statisztikaszűrés, valós napi vagy heti oszlopok, adatalapú tengely, nulla adatnál nulla magasság. A testrajz ugyanazon időablak Room-sorozataiból frissül; egy naplózott edzés külön, saját sorozatokból készülő ábrát kap. A bicepsz/tricepsz a kar csoportjába kerül, a kis valódi terhelés nem tűnik el az egész százalékra kerekítés miatt.
+- #16 újrafelhasználva, a három, alapból csukott forrásválasztó **egymás mellett**: TrainPilot WearOS / Samsung Health / Health Connect. Mindegyik a saját mentett adatait nyitja; nincs kalóriaösszeadás vagy szolgáltatói helyettesítés. A külön #16 ágat ne valósítsd újra.
+- A forrásgomb tényleges olvasási grantot ellenőriz: meglévő hozzáférésnél szinkron, hiánynál hozzájárulás és tényleges visszaellenőrzés. Az Engedélyek oldalon külön szándékos kezelés marad. Az aktív edzés csak engedélykérő gombja külön út, nem indít teljes napi adatírást; a meglévő csak olvasási élő előnézet változatlan.
+- A külön heti összesítő panel megszűnik. A Heti lépésszám és Aktív edzésidő saját, független napi bontást kap, az utóbbiban a Room-edzések és aktív percek jelennek meg. Nincs minden korábbi edzés idejét a hétre vetítő fallback.
+- A napi lépések és energia a kiválasztott szolgáltató teljes helyi napi naplójából jönnek. A HC eredeti egyedi napi forrásválasztója és a Samsung SDK napi aggregátuma marad a számítás alapja. Külön provider-/óraértékeket nem adunk össze; egy órás workout lépésszáma nem teljes napi mérés. A Samsung/HC felől érkező órás napi eredet egyszer számít.
+- A Kezdőlap és Egészség közös Mai adatok komponense forrást, utolsó igazolt sikeres szinkront, hozzáférés-/részleges-/hibaállapotot és Frissítés műveletet mutat. A hiányzó mai mező „—”/nincs lekért adat; aktív és nyugalmival együtt mért energia külön mező. A felhasználó 6–8 ezer lépés/1000 kcal észlelése diagnosztikai viszonyítás, nem termékbe írható adat.
+- Edzés közben nincs vezérlőgombot takaró alsó státusz-pill. A rutin indulási/következőgyakorlat-üzenetek törölve; érdemi állapot/hiba az edzés fejlécének lefoglalt helyén jelenik meg. Az átadás/visszavétel a Scaffold rögzített felső részében a meglévő natív parancsot hívja; a `StudioWorkoutBridge.pauseForHandover` előbb a valódi motorral szüneteltet, lezárja az aktív időintervallumot, és azonosítót ellenőriz. Ezt a célzott natív regresszió is vizsgálja. Ownership, ACK, installed receipt, ARM/szünet, aktív GPS és adatcsere tiltása megmarad.
+- A valódi Wear node-nevet (például a felhasználó `Galaxy Watch7 (ZW4J)` nevét) megtartjuk. Rögzített mintanevek/minta-akkumulátorok nem jelenhetnek meg.
+
+Célzott forrás: `5df8374a65f81dc759ecfb6e8e96a936698344ff`. [Actions 41450724814](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41450724814): **SUCCESS, letöltött nyers XML szerint 43 teszt, 0 failure/error/skip**. [Nyers jelentés](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41450724814/artifacts/13144568757), [APK-metadata](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41450724814/artifacts/13144966264). A tényleges CI-checkout megegyezik a fenti forrással; a debug/optimalizált pár verziója és package-e ellenőrizve, a debug signer nem készülékes frissítési kulcs. A célzott futás a meghatározott regressziókat és a debug/optimalizált APK-fordítást ellenőrzi; nem teljes JVM-suite. A felhasználó kérése alapján a #20 e célzott ellenőrzés után kerül mainre, az átadó dokumentációjával együtt (alkalmazáskód-eltérés nélkül a tesztelt forráshoz képest), majd **mainből teljes Actions / állandó kulcsos APK-pár**. A teljes main-futás forrását, nyers tesztösszegét és APK-bizonyítékát a #20 PR végleges jelentésében és a következő buildblokkban rögzítjük; addig nincs új igazolt béta APK.
+
+Készülékes elfogadás továbbra is külön: valódi Samsung/HC engedély és teljes napi számai/hibakódja, az új szűrők/anatómia, a három forrás és a telefon↔óra átadás. #19 marad a folytatható lista. A saját régi ZIP/fotók elfogadása és az új fotó csatolása, illetve videóhiba #11 sem tekinthető automatikusan megoldottnak.
+
+## Korábbi, igazolt checkpoint – #18/#17, történeti háttér
+
+Az alábbi APK-tábla még a `35d9d64` / `2736 / 1.3.71-native-test` kiadásé, nem az új béta. A régi példányokat és linkeket megőrizzük. A legfrissebb forrásra és a #16 állapotára a fenti #20 blokk az irányadó.
+
 ## Projekt és ellenőrzött forrás
 
 - Folytatandó repo: https://github.com/fuloplevente1998/Native-AI-Studio, **a legfrissebb main**.
@@ -16,7 +41,7 @@ Ez az elsődleges checkpoint. A 2026-11-01-es átadó és a korábbi PR-leírás
 ## Megőrzendő szerződések
 
 - Meglévő Kotlin/Jetpack Compose Studio alkalmazás; grafit/arany UI, eredeti arany súlyzó logó, natív anatómia és felső navigáció maradjon. Nincs új webes/WebView helyettesítő app.
-- Telefon és óra applicationId: **`com.TrainPilot.com`** (kis-/nagybetű számít). VersionCode **2736**, versionName **`1.3.71-native-test`**; ne változtasd meg önkényesen.
+- Telefon és óra applicationId: **`com.TrainPilot.com`** (kis-/nagybetű számít). Aktuális felhasználói béta-kérés szerint versionCode **2737**, versionName **`0.1.0-beta`**; az alábbi korábbi APK-táblában még a történeti verzió szerepel.
 - Egyetlen meglévő natív edzésmotor, Room/DataStore, GPS- és Health-tárolók. Ne építs párhuzamos adatbázist/motort.
 - Nincs fake/demo Health-, Wear-, GPS-, kalória-, pulzus-, akkumulátor- vagy sikerjelzés. Ismeretlen adat nem helyettesíthető kitalált számmal.
 - Ownership/finalization, pending átadás, installed ACK, backup/restore generáció, tombstone, migráció, staging/redo és adatvédelmi kapu maradjon érvényes. Felhasználói adat vagy recovery receipt nem törölhető hibakerülésként.
@@ -55,9 +80,9 @@ A `256e453` kódáttekintésekor talált pontok, amelyeket a felhasználó kér�
 
 A felhasználó az áttekintés után kifejezetten a két hiba javításával együtt kéri az APK-t. A #18 az utolsó hét helyi napját használja a heti kilométerhez és oszlopokhoz; a nulla lépéses napokat is számolja az átlagban; a napi edzésszámhoz is helyi dátumot használ. A felhőfrissítés már csak adatot tölt, az explicit újrakötés pedig lecseréli a korábbi Flow-figyelőket. Három dátumteszt és egy valódi Room-frissítést/élő feliratkozást/hozzájárulás-változást ellenőrző regresszió egészíti ki a kaput. A #18 mind a négy új regressziója sikeres, a fenti 255 tesztes CI és main merge ellenőrizve. A javított signed build [41438108278](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41438108278) a 35d9d64 mainből indult, **SUCCESS**, a letöltött release APK-k hash-e, verziója, appazonosítója és állandó signere ellenőrizve; a fizikai Google/Samsung működés továbbra is készülékes ellenőrzés.
 
-## Folyamatban lévő, új felhasználói UI-kérés
+## Három forrásválasztó: a #20 újrafelhasználja a #16 megoldását
 
-[PR #16](https://github.com/fuloplevente1998/Native-AI-Studio/pull/16): a naplóban három külön lenyitható kártya legyen **TrainPilot WearOS → Samsung Health → Health Connect**, alapból csukva, saját forrásadatokkal és saját lekérő/engedélykérő felülettel. A kód és regressziók elkészültek, a külön ág `6f9f11ee9c23c1e1a5204bcc5842b1dd21150fed`. Az [Actions 41413776118](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41413776118) SUCCESS; a letöltött nyers XML szerint **249 teszt, 0 failure/error/skip** (artifact `13126373991`). Ez még a 977cdd5 alapra épült, a későbbi AI Studio mainnel és #18-cal együtt nincs validálva. PR #16 draft/open, a mainbe még nem került be; integráció után friss CI és APK szükséges.
+A korábbi [#16](https://github.com/fuloplevente1998/Native-AI-Studio/pull/16) önálló ágának `6f9f11e` forrásán 249 teszt volt sikeres. A #20 ezt cherry-pickkel beemelte, egymás melletti fejlécválasztókra igazította, és a friss mainnel együtt ellenőrzi. A régi, külön #16 eredménye önmagában nem bizonyítja az új béta tesztjeit.
 
 A legutóbbi felhasználói képen a natív app órás panelje már 403,6 kcal-t (a régi UI-ban kerekítve 404), 101,6 bpm átlagot és 3627 mintát mutatott. Ez készülékes visszajelzés az adott rekord órás adatának megjelenéséről; nem általános fotó/összes Samsung/Google funkció elfogadás. A saját fotók visszaállításáról új visszaigazolás még nem érkezett.
 

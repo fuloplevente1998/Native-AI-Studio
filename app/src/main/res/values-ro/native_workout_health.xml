@@ -26,4 +26,6 @@
     <string name="journal_health_read">Citește datele antrenamentului</string>
     <string name="journal_samsung_permission">Este necesară permisiunea Samsung Health pentru puls sau exerciții.</string>
     <string name="journal_samsung_unavailable">Accesul direct prin Samsung Health SDK nu este disponibil.</string>
+    <string name="journal_source_expanded">Extins</string>
+    <string name="journal_source_collapsed">Restrâns</string>
 </resources>

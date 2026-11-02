@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.localization.TrainPilotStrings
@@ -124,7 +125,7 @@ class JournalWorkoutHealthRegressionTest {
         assertEquals(data.toString(), JSONObject(restored.workout.health240Json!!).toString())
     }
 
-    @Test fun samsungSnapshotPersistsAlongsideHealthConnectAndProviderChipsSwitchActualValues() {
+    @Test fun threeSourceCardsStartCollapsedExpandIndependentlyAndReadOnlyTheirOwnProvider() {
         val before = seed(health = response().put("windowStart", start).put("windowEnd", end))
         val native = NativeWorkoutHealth(context, db)
         val request = awaitNative { native.prepare(before.workout) }
@@ -134,25 +135,61 @@ class JournalWorkoutHealthRegressionTest {
         assertEquals(120.0, NativeWorkoutHealthSource.snapshot(health, HealthJournalStore.HC)!!.getDouble("averageHeartRate"), .01)
         assertEquals(155.0, NativeWorkoutHealthSource.snapshot(health, HealthJournalStore.SAMSUNG)!!.getDouble("averageHeartRate"), .01)
         assertEquals(before.workout.wearMetricsJson, saved.workout.wearMetricsJson)
+        val reads = mutableListOf<String>()
         compose.setContent {
             var provider by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(HealthJournalStore.HC) }
             TrainPilotTheme {
                 androidx.compose.foundation.lazy.LazyColumn(Modifier.testTag("provider_list")) {
                     item {
                         JournalHealthPanel(saved, nativeResources(context, "hu"), "hu", false, null, true,
-                            provider = provider, selectProvider = { provider = it }) { }
+                            provider = provider, selectProvider = { provider = it }) { reads.add(provider) }
                     }
                 }
             }
         }
         val list = compose.onNodeWithTag("provider_list")
+        val sourceBounds = listOf("journal_provider_wear", "journal_provider_samsung_health", "journal_provider_health_connect")
+            .map { compose.onNodeWithTag(it).getUnclippedBoundsInRoot() }
+        assertTrue(sourceBounds.all { it.top == sourceBounds.first().top })
+        assertTrue(sourceBounds[0].right <= sourceBounds[1].left && sourceBounds[1].right <= sourceBounds[2].left)
+        for (tag in listOf("journal_provider_wear", "journal_provider_samsung_health", "journal_provider_health_connect"))
+            compose.onNodeWithTag(tag).assertHasClickAction()
+        compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_samsung_averageHeartRate_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_wear_totalCalories_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_provider_health_connect").performClick()
         list.performScrollToNode(hasTestTag("journal_hc_averageHeartRate_value"))
         compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertTextEquals("120 bpm")
         list.performScrollToNode(hasTestTag("journal_provider_samsung_health"))
         compose.onNodeWithTag("journal_provider_samsung_health").performClick()
         list.performScrollToNode(hasTestTag("journal_samsung_averageHeartRate_value"))
         compose.onNodeWithTag("journal_samsung_averageHeartRate_value").assertTextEquals("155 bpm")
+        list.performScrollToNode(hasTestTag("journal_hc_averageHeartRate_value"))
+        compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertTextEquals("120 bpm")
+        list.performScrollToNode(hasTestTag("journal_hc_health_refresh"))
+        compose.onNodeWithTag("journal_hc_health_refresh").performClick()
+        list.performScrollToNode(hasTestTag("journal_samsung_health_refresh"))
+        compose.onNodeWithTag("journal_samsung_health_refresh").performClick()
+        assertEquals(listOf(HealthJournalStore.HC, HealthJournalStore.SAMSUNG), reads)
+        list.performScrollToNode(hasTestTag("journal_provider_health_connect"))
+        compose.onNodeWithTag("journal_provider_health_connect").performClick()
         compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertDoesNotExist()
+        list.performScrollToNode(hasTestTag("journal_samsung_averageHeartRate_value"))
+        compose.onNodeWithTag("journal_samsung_averageHeartRate_value").assertTextEquals("155 bpm")
+    }
+
+    @Test fun sourceCardExpansionSurvivesRestorationWithoutOpeningOtherSources() {
+        val detail = seed(health = response().put("windowStart", start).put("windowEnd", end))
+        val restoration = StateRestorationTester(compose)
+        restoration.setContent { TrainPilotTheme {
+            JournalHealthPanel(detail, nativeResources(context, "hu"), "hu", false, null, true) { }
+        } }
+        compose.onNodeWithTag("journal_provider_health_connect").performClick()
+        compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertTextEquals("120 bpm")
+        restoration.emulateSavedInstanceStateRestore()
+        compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertTextEquals("120 bpm")
+        compose.onNodeWithTag("journal_wear_totalCalories_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_samsung_content").assertDoesNotExist()
     }
 
     @Test fun sameOuterDatesDoNotValidateHealthThatIncludesThePause() {
@@ -208,10 +245,14 @@ class JournalWorkoutHealthRegressionTest {
         assertTrue("No duplicate top spacer", header.top - list.getUnclippedBoundsInRoot().top <= 10.dp)
         compose.onNodeWithTag("journal_detail_location").assertTextEquals("Fejlődés · Napló")
         compose.onNodeWithText("Edzés részletei").assertDoesNotExist()
+        list.performScrollToNode(hasTestTag("journal_provider_health_connect"))
+        compose.onNodeWithTag("journal_provider_health_connect").performClick()
         list.performScrollToNode(hasTestTag("journal_hc_averageHeartRate_value"))
         compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertTextEquals("120 bpm")
         list.performScrollToNode(hasTestTag("journal_hc_activeCalories_value"))
         compose.onNodeWithTag("journal_hc_activeCalories_value").assertTextEquals("100 kcal")
+        list.performScrollToNode(hasTestTag("journal_provider_wear"))
+        compose.onNodeWithTag("journal_provider_wear").performClick()
         list.performScrollToNode(hasTestTag("journal_wear_totalCalories_value"))
         compose.onNodeWithTag("journal_wear_totalCalories_value").assertTextEquals("200 kcal")
     }

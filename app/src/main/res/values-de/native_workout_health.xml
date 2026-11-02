@@ -26,4 +26,6 @@
     <string name="journal_health_read">Trainingsdaten lesen</string>
     <string name="journal_samsung_permission">Samsung Health benötigt eine Leseberechtigung für Puls oder Training.</string>
     <string name="journal_samsung_unavailable">Direkter Samsung Health SDK-Zugriff ist nicht verfügbar.</string>
+    <string name="journal_source_expanded">Geöffnet</string>
+    <string name="journal_source_collapsed">Geschlossen</string>
 </resources>

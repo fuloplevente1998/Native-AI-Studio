@@ -27,6 +27,26 @@ class PhoneReturnInstallationRegressionTest {
         (field.get(null) as? PhoneWorkoutExecutionStore)?.close(); field.set(null, null)
     }
 
+    @Test fun stickyHandoverPausesTheRealExecutionBeforeAnyOwnershipOffer() {
+        val candidate = NativeWorkoutSession.quickCandidate(JSONObject("""
+            {"id":"press","name":"Press","repUnit":"ism.","measurementType":"reps","loadType":"weight",
+             "sets":[{"setId":"sticky-one","set":1,"reps":10,"weight":15,"done":false}]}
+        """), TrainPilotUserSettings())
+        NativeWorkoutSession.installPrepared(context, candidate)
+        StudioWorkoutBridge.pause(context, false)
+        val before = ActiveWorkoutStore.current(context)!!
+        assertFalse(before.optBoolean("workoutPaused"))
+        try { StudioWorkoutBridge.pauseForHandover(context, "other-workout"); fail("Wrong session accepted") }
+        catch (_: IllegalStateException) { }
+        assertFalse(ActiveWorkoutStore.current(context)!!.optBoolean("workoutPaused"))
+        val paused = StudioWorkoutBridge.pauseForHandover(context, before.getString("workoutId"))
+        assertTrue(paused.optBoolean("workoutPaused"))
+        assertTrue(PhoneWorkoutExecution.store(context).snapshot()!!.optBoolean("workoutPaused"))
+        assertEquals(before.optString("workoutId"), paused.optString("workoutId"))
+        assertEquals("phone", paused.optString("timerOwner"))
+        assertFalse(com.repforge.shared.WorkoutOwnership193.pending(paused))
+    }
+
     private fun roundTrip(timed: Boolean = false): JSONObject {
         val input = NativeWorkoutSession.quickCandidate(JSONObject("""
             {"id":"press","name":"Press","repUnit":"ism.","measurementType":"reps","loadType":"weight",

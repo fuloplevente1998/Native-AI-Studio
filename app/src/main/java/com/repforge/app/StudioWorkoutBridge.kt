@@ -48,6 +48,16 @@ internal object StudioWorkoutBridge {
         return NativeWorkoutEditing.commitEdit(context, frame, clockEdit = true)
     }
 
+    /** A sticky handover does not navigate away first; close the real active interval before an offer. */
+    fun pauseForHandover(context: android.content.Context, workoutId: String): JSONObject {
+        val current = ActiveWorkoutStore.current(context) ?: error("Nincs aktív edzés.")
+        check(current.optString("workoutId") == workoutId) { "Az edzés azonosítója megváltozott." }
+        val paused = pause(context, true)
+        check(paused.optString("workoutId") == workoutId && paused.optBoolean("workoutPaused") &&
+            paused.optString("timerOwner", "phone") == "phone") { "Az edzés nem áll készen az órás átadásra." }
+        return paused
+    }
+
     /** Matches the original native editor's interval/rest/pause-revision contract. */
     fun pause(context: android.content.Context, paused: Boolean): JSONObject {
         val current = ActiveWorkoutStore.current(context) ?: error("Nincs aktív edzés.")

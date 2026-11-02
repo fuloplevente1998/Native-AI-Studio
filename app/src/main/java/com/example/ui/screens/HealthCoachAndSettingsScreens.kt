@@ -1,5 +1,9 @@
 package com.example.ui.screens
 
+import androidx.compose.material3.LinearProgressIndicator
+
+import com.example.model.localWorkoutDate
+
 import kotlin.math.roundToInt
 import androidx.compose.animation.AnimatedVisibility
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -400,6 +404,8 @@ fun HealthTabScreen(
                         }
                     }
 
+                    com.example.ui.components.StudioDailyHealthStatus(uiState)
+
                     var expandedTodayTileKey by remember { mutableStateOf<String?>(null) }
 
                     // Row 1 of 3 tiles: Alvás | Aktív kalória | Pulzus
@@ -420,7 +426,7 @@ fun HealthTabScreen(
                         MainTodayStatusTile(
                             icon = Icons.Default.LocalFireDepartment,
                             title = "Aktív kalória",
-                            value = "${uiState.activeCaloriesKcal} kcal",
+                            value = if ("activeCalories" in uiState.dailyHealthAvailableFields) "${uiState.activeCaloriesKcal} kcal" else "—",
                             onClick = {
                                 expandedTodayTileKey = if (expandedTodayTileKey == "calories") null else "calories"
                                 onToggleHealthSection("extra")
@@ -447,7 +453,7 @@ fun HealthTabScreen(
                         MainTodayStatusTile(
                             icon = Icons.AutoMirrored.Filled.DirectionsWalk,
                             title = "Lépések",
-                            value = "${uiState.dailySteps}",
+                            value = if ("steps" in uiState.dailyHealthAvailableFields) "${uiState.dailySteps}" else "—",
                             onClick = {
                                 expandedTodayTileKey = if (expandedTodayTileKey == "steps") null else "steps"
                                 onToggleHealthSection("journal")
@@ -457,7 +463,7 @@ fun HealthTabScreen(
                         MainTodayStatusTile(
                             icon = Icons.Default.FitnessCenter,
                             title = "Mai edzés",
-                            value = "${uiState.loggedWorkouts.count { it.dateLabelHu.contains(todayDotLabel) || it.dateLabelHu.contains(todayHuLabel) }}",
+                            value = "${uiState.loggedWorkouts.count { it.localWorkoutDate() == today }}",
                             onClick = {
                                 expandedTodayTileKey = if (expandedTodayTileKey == "workout") null else "workout"
                             },
@@ -583,17 +589,20 @@ fun HealthTabScreen(
 
         // 2. SCREENSHOT 9: "Heti egészség & edzés célok" CONTAINER (with Heti lépésszám, Aktív edzésidő, Expandable Weekly Source & 7-Day Breakdown, 24 órás pulzustrend & Testsúlynapló)
         item {
-            val weeklyStepsTarget = (uiState.stepsGoal * 7).coerceAtLeast(70000)
-            val weeklyStepsCurrent = if (uiState.weeklyTotalSteps > 0) uiState.weeklyTotalSteps else uiState.dailySteps
-            val weeklyStepsPct = ((weeklyStepsCurrent.toFloat() / weeklyStepsTarget.toFloat()) * 100f).toInt().coerceIn(0, 100)
-
-            val weeklyMinutesTarget = (uiState.userScheduleDaysPerWeek * uiState.userWorkoutDurationMin).coerceAtLeast(150)
-            val weeklyMinutesCurrent = if (uiState.weeklyHealthDays.isNotEmpty()) {
-                uiState.weeklyHealthDays.sumOf { it.workoutMinutes }.takeIf { it > 0 }
-                    ?: uiState.loggedWorkouts.sumOf { it.durationMinutes }
-            } else {
-                uiState.loggedWorkouts.sumOf { it.durationMinutes }
+            val today = java.time.LocalDate.now()
+            val cachedDays = uiState.weeklyHealthDays.associateBy { it.dateIso }
+            val goalDays = (6 downTo 0).map { offset ->
+                val date = today.minusDays(offset.toLong())
+                val workouts = uiState.loggedWorkouts.filter { it.localWorkoutDate() == date }
+                val cached = cachedDays[date.toString()]
+                    ?: com.example.ui.viewmodel.WeeklyHealthDaySummary(dateIso = date.toString(), dayLabelHu = date.toString(), steps = 0, activeCaloriesKcal = 0, sleepLabel = "—", workoutMinutes = 0, workoutCount = 0, sourceLabelHu = "Nincs rögzített adat")
+                cached.copy(workoutMinutes = workouts.sumOf { it.durationMinutes.coerceAtLeast(0) }, workoutCount = workouts.size)
             }
+            val weeklyStepsTarget = (uiState.stepsGoal.coerceAtLeast(1) * 7)
+            val weeklyStepsCurrent = goalDays.filter { it.stepsAvailable }.sumOf { it.steps }
+            val weeklyStepsPct = ((weeklyStepsCurrent.toFloat() / weeklyStepsTarget.toFloat()) * 100f).toInt().coerceIn(0, 100)
+            val weeklyMinutesTarget = (uiState.userScheduleDaysPerWeek * uiState.userWorkoutDurationMin).coerceAtLeast(150)
+            val weeklyMinutesCurrent = goalDays.sumOf { it.workoutMinutes }
             val weeklyMinutesPct = ((weeklyMinutesCurrent.toFloat() / weeklyMinutesTarget.toFloat()) * 100f).toInt().coerceIn(0, 100)
             val primaryProviderName = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"
 
@@ -663,394 +672,48 @@ fun HealthTabScreen(
                         }
                     }
 
-                    // 2-Column Weekly Progress Cards: Heti lépésszám | Aktív edzésidő (clickable to expand weekly breakdown & sources)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        // Left: Heti lépésszám
-                        Surface(
-                            shape = RoundedCornerShape(18.dp),
-                            color = palette.background.copy(alpha = 0.55f),
-                            modifier = Modifier
-                                .weight(1f)
-                                .border(
-                                    width = if (uiState.expandedHealthWeeklySummary) 1.5.dp else 1.25.dp,
-                                    color = if (uiState.expandedHealthWeeklySummary) palette.primary else palette.sectionBorder,
-                                    shape = RoundedCornerShape(18.dp)
-                                )
-                                .clip(RoundedCornerShape(18.dp))
-                                .clickable { onToggleHealthSection("weekly") }
-                                .testTag("health_weekly_steps_card")
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.DirectionsWalk,
-                                        contentDescription = null,
-                                        tint = Color(0xFF3B82F6),
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Text(
-                                        text = "Heti lépésszám",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = palette.textSecondary,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    Icon(
-                                        imageVector = if (uiState.expandedHealthWeeklySummary) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                        contentDescription = null,
-                                        tint = palette.textSecondary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                                Text(
-                                    text = "%,d".format(java.util.Locale.US, weeklyStepsCurrent),
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = palette.textPrimary
-                                )
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Cél: %,d".format(java.util.Locale.US, weeklyStepsTarget),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = palette.textSecondary
-                                    )
-                                    Text(
-                                        text = "$weeklyStepsPct%",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF3B82F6)
-                                    )
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(6.dp)
-                                        .clip(RoundedCornerShape(3.dp))
-                                        .background(palette.surfaceElevated)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth((weeklyStepsPct / 100f).coerceIn(0.02f, 1f))
-                                            .height(6.dp)
-                                            .clip(RoundedCornerShape(3.dp))
-                                            .background(Color(0xFF3B82F6))
-                                    )
-                                }
-                            }
-                        }
-
-                        // Right: Aktív edzésidő
-                        Surface(
-                            shape = RoundedCornerShape(18.dp),
-                            color = palette.background.copy(alpha = 0.55f),
-                            modifier = Modifier
-                                .weight(1f)
-                                .border(
-                                    width = if (uiState.expandedHealthWeeklySummary) 1.5.dp else 1.25.dp,
-                                    color = if (uiState.expandedHealthWeeklySummary) palette.primary else palette.sectionBorder,
-                                    shape = RoundedCornerShape(18.dp)
-                                )
-                                .clip(RoundedCornerShape(18.dp))
-                                .clickable { onToggleHealthSection("weekly") }
-                                .testTag("health_weekly_minutes_card")
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.FitnessCenter,
-                                        contentDescription = null,
-                                        tint = palette.primary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Text(
-                                        text = "Aktív edzésidő",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = palette.textSecondary,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    Icon(
-                                        imageVector = if (uiState.expandedHealthWeeklySummary) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                        contentDescription = null,
-                                        tint = palette.textSecondary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                                Text(
-                                    text = "$weeklyMinutesCurrent perc",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = palette.textPrimary
-                                )
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Cél: $weeklyMinutesTarget perc",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = palette.textSecondary
-                                    )
-                                    Text(
-                                        text = "$weeklyMinutesPct%",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = palette.primary
-                                    )
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(6.dp)
-                                        .clip(RoundedCornerShape(3.dp))
-                                        .background(palette.surfaceElevated)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth((weeklyMinutesPct / 100f).coerceIn(0.02f, 1f))
-                                            .height(6.dp)
-                                            .clip(RoundedCornerShape(3.dp))
-                                            .background(palette.primary)
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // Expandable Trigger Bar & Panel for Weekly Summary + Data Sources ("Heti összesítő és adatforrások")
-                    Surface(
-                        shape = RoundedCornerShape(18.dp),
-                        color = palette.background.copy(alpha = 0.55f),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(
-                                width = 1.dp,
-                                color = if (uiState.expandedHealthWeeklySummary) palette.primary.copy(alpha = 0.65f) else palette.cardBorder,
-                                shape = RoundedCornerShape(18.dp)
-                            )
-                            .clip(RoundedCornerShape(18.dp))
-                    ) {
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onToggleHealthSection("weekly") }
-                                    .padding(horizontal = 14.dp, vertical = 10.dp)
-                                    .testTag("health_weekly_summary_toggle"),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Link,
-                                        contentDescription = null,
-                                        tint = palette.primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Column {
-                                        Text(
-                                            text = "Heti összesítő és adatforrások (7 napos bontás)",
-                                            style = MaterialTheme.typography.labelLarge,
-                                            fontWeight = FontWeight.Bold,
-                                            color = palette.textPrimary
-                                        )
-                                        Text(
-                                            text = "Honnan származnak a heti lépés-, kalória-, alvás- és edzésadatok?",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = palette.textSecondary
-                                        )
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        for (steps in listOf(true, false)) {
+                            val expanded = if (steps) uiState.expandedWeeklySteps else uiState.expandedWeeklyWorkouts
+                            val tag = if (steps) "steps" else "minutes"
+                            Surface(shape = RoundedCornerShape(18.dp), color = palette.background.copy(alpha = 0.55f),
+                                modifier = Modifier.weight(1f).border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                                    .clip(RoundedCornerShape(18.dp))
+                                    .clickable { onToggleHealthSection(if (steps) "weekly_steps" else "weekly_workouts") }
+                                    .testTag("health_weekly_${tag}_card")) {
+                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(if (steps) "Heti lépésszám" else "Aktív edzésidő", modifier = Modifier.weight(1f),
+                                            style = MaterialTheme.typography.labelLarge, color = palette.textPrimary)
+                                        Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.primary)
                                     }
-                                }
-                                Icon(
-                                    imageVector = if (uiState.expandedHealthWeeklySummary) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                    contentDescription = null,
-                                    tint = palette.primary
-                                )
-                            }
-
-                            AnimatedVisibility(visible = uiState.expandedHealthWeeklySummary) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 14.dp, vertical = 10.dp)
-                                        .testTag("health_weekly_expanded_section"),
-                                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    HorizontalDivider(color = palette.cardBorder)
-
-                                    // 1. Data source attribution card ("Honnan szedi össze az adatokat?")
-                                    Surface(
-                                        shape = RoundedCornerShape(14.dp),
-                                        color = palette.surfaceElevated,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
-                                    ) {
-                                        Column(
-                                            modifier = Modifier.padding(12.dp),
-                                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            Text(
-                                                text = "Adatforrások és begyűjtés módja",
-                                                style = MaterialTheme.typography.titleSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = palette.primary
-                                            )
-                                            Text(
-                                                text = "• Elsődleges egészség-szolgáltató: $primaryProviderName (" +
-                                                    if (uiState.primaryHealthSourceSamsung) {
-                                                        if (uiState.samsungGrantedCount >= 0) "${uiState.samsungGrantedCount}/${uiState.samsungPermissionCount} adatkör engedélyezve" else "engedély még nem igazolt"
-                                                    } else {
-                                                        "${uiState.healthGrantedCount}/${uiState.healthPermissionCount} engedély megadva"
-                                                    } + ")",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = palette.textPrimary
-                                            )
-                                            Text(
-                                                text = "• Napi lépés- és aktivitásforrás: ${uiState.dailySourceModeLabel}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = palette.textSecondary
-                                            )
-                                            Text(
-                                                text = "• Aktív edzésidő forrása: Room edzésnapló – tényleges aktív edzésintervallumok (hosszú szünetek nélkül)",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = palette.textSecondary
-                                            )
-                                            Text(
-                                                text = "• Észlelt 7 napos források: ${uiState.weeklyDataSourcesSummary}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = palette.textPrimary
-                                            )
-                                            Text(
-                                                text = "• Utolsó szinkron: ${uiState.lastHealthSyncLabel} • Utolsó olvasás: ${uiState.lastHealthReadLabel}",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = palette.textSecondary
-                                            )
-                                        }
-                                    }
-
-                                    // 2. 7-day aggregated summary pills
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        SummarySmallPill(
-                                            label = "Heti lépések",
-                                            value = "%,d".format(java.util.Locale.US, weeklyStepsCurrent),
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        SummarySmallPill(
-                                            label = "Heti aktív kalória",
-                                            value = when {
-                                                uiState.weeklyTotalCaloriesKcal > 0 -> "${uiState.weeklyTotalCaloriesKcal} kcal"
-                                                uiState.activeCaloriesKcal > 0 -> "${uiState.activeCaloriesKcal} kcal"
-                                                else -> "—"
-                                            },
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                    }
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        SummarySmallPill(
-                                            label = "Heti távolság",
-                                            value = when {
-                                                uiState.weeklyTotalDistanceKm > 0f -> String.format(java.util.Locale.US, "%.2f km", uiState.weeklyTotalDistanceKm).replace('.', ',')
-                                                uiState.dailyDistanceKm > 0f -> String.format(java.util.Locale.US, "%.2f km", uiState.dailyDistanceKm).replace('.', ',')
-                                                else -> "—"
-                                            },
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        SummarySmallPill(
-                                            label = "Heti átlag alvás",
-                                            value = if (uiState.weeklyAvgSleepLabel != "—") uiState.weeklyAvgSleepLabel else uiState.sleepDurationLabel,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                    }
-
-                                    // 3. Per-day 7-day breakdown with source badge
-                                    Text(
-                                        text = "Napi bontás és forrásmegjelölés (utolsó 7 nap)",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = palette.textSecondary
-                                    )
-                                    val daysToRender = uiState.weeklyHealthDays.ifEmpty {
-                                        listOf(
-                                            com.example.ui.viewmodel.WeeklyHealthDaySummary(
-                                                dateIso = today.toString(),
-                                                dayLabelHu = "Ma (${today})",
-                                                steps = uiState.dailySteps,
-                                                activeCaloriesKcal = uiState.activeCaloriesKcal,
-                                                sleepLabel = uiState.sleepDurationLabel,
-                                                workoutMinutes = weeklyMinutesCurrent,
-                                                workoutCount = uiState.loggedWorkouts.size,
-                                                sourceLabelHu = if (uiState.dailySteps > 0 || uiState.activeCaloriesKcal > 0) primaryProviderName else "Nincs rögzített adat"
-                                            )
-                                        )
-                                    }
-                                    daysToRender.forEach { dayItem ->
-                                        Surface(
-                                            shape = RoundedCornerShape(12.dp),
-                                            color = palette.surfaceElevated,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                                        ) {
-                                            Column(
-                                                modifier = Modifier.padding(10.dp),
-                                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                                            ) {
-                                                Row(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    Text(
-                                                        text = dayItem.dayLabelHu,
-                                                        style = MaterialTheme.typography.labelLarge,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = palette.textPrimary
-                                                    )
-                                                    Text(
-                                                        text = dayItem.sourceLabelHu,
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        color = palette.primary
-                                                    )
+                                    Text(if (steps) "%,d".format(java.util.Locale.US, weeklyStepsCurrent).replace(',', ' ')
+                                        else "$weeklyMinutesCurrent perc", style = MaterialTheme.typography.headlineMedium,
+                                        color = palette.textPrimary, modifier = Modifier.testTag("health_weekly_${tag}_total"))
+                                    Text(if (steps) "Cél: $weeklyStepsTarget" else "Cél: $weeklyMinutesTarget perc",
+                                        style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                    LinearProgressIndicator(progress = { (if (steps) weeklyStepsPct else weeklyMinutesPct) / 100f },
+                                        modifier = Modifier.fillMaxWidth(), color = palette.primary, trackColor = palette.surfaceElevated)
+                                    if (steps) Text("${goalDays.count { it.stepsAvailable }}/7 napi adat • $primaryProviderName",
+                                        style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                    AnimatedVisibility(visible = expanded) {
+                                        Column(Modifier.fillMaxWidth().testTag("health_weekly_${tag}_days"),
+                                            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            for (day in goalDays) {
+                                                HorizontalDivider(color = palette.cardBorder)
+                                                Text(day.dayLabelHu, style = MaterialTheme.typography.labelLarge, color = palette.textPrimary)
+                                                Text(if (steps) { if (day.stepsAvailable) "${day.steps} lépés" else "Nincs napi lépésadat" }
+                                                    else "${day.workoutMinutes} perc • ${day.workoutCount} edzés",
+                                                    modifier = Modifier.testTag("health_weekly_${tag}_${day.dateIso}"),
+                                                    style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
+                                                if (steps) Text(day.stepsSourceLabelHu, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                                else {
+                                                    Text("Room edzésnapló • aktív idő", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                                    uiState.loggedWorkouts.filter { it.localWorkoutDate()?.toString() == day.dateIso }.forEach { workout ->
+                                                        Text("${workout.titleHu}: ${workout.durationMinutes} perc",
+                                                            style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                                    }
                                                 }
-                                                Text(
-                                                    text = "Lépés: ${if (dayItem.steps > 0) "%,d".format(java.util.Locale.US, dayItem.steps) else "—"} • " +
-                                                        "Aktív kcal: ${if (dayItem.activeCaloriesKcal > 0) "${dayItem.activeCaloriesKcal} kcal" else "—"} • " +
-                                                        "Alvás: ${dayItem.sleepLabel} • " +
-                                                        "Edzés: ${if (dayItem.workoutMinutes > 0) "${dayItem.workoutMinutes} perc (${dayItem.workoutCount} db)" else "—"}",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = palette.textSecondary
-                                                )
                                             }
                                         }
                                     }
@@ -1788,7 +1451,7 @@ fun HealthTabScreen(
             }
         }
 
-        // 4b. Direct Óra és szinkron (Galaxy Watch7) card on Egészség tab so it's 1-tap reachable
+        // 4b. Direct Óra és szinkron (Wear OS) card on Egészség tab so it's 1-tap reachable
         item {
             Surface(
                 shape = RoundedCornerShape(20.dp),
@@ -3270,7 +2933,7 @@ fun WatchAndSyncScreen(
                             color = palette.success
                         )
                         Text(
-                            text = "Pulzus, alvás, lépések, elégetett kalória, edzések",
+                            text = if (uiState.permissionHealthConnectEnabled) "Koppints a Health Connect szinkronizálásához" else "Pulzus, alvás, lépések, elégetett kalória, edzések",
                             style = MaterialTheme.typography.labelSmall,
                             color = palette.textSecondary
                         )
@@ -3328,7 +2991,7 @@ fun WatchAndSyncScreen(
                             color = palette.success
                         )
                         Text(
-                            text = "Engedélykezelés • az adatszinkron külön művelet",
+                            text = if (uiState.permissionSamsungHealthEnabled) "Koppints a Samsung Health szinkronizálásához" else "Koppints az engedély megadásához és szinkronhoz",
                             style = MaterialTheme.typography.labelSmall,
                             color = palette.textSecondary
                         )
@@ -3927,12 +3590,12 @@ fun PermissionsScreen(
         }
         item {
             PermissionToggleCard("Health Connect (${uiState.healthGrantedCount}/${uiState.healthPermissionCount})", "Pulzus, alvás, lépések és testsúly szinkron", uiState.permissionHealthConnectEnabled) {
-                onTogglePermission("hc")
+                onTogglePermission("hc_manage")
             }
         }
         item {
             PermissionToggleCard("Samsung Health közvetlen híd", "Samsung Health olvasási engedélyének kezelése", uiState.permissionSamsungHealthEnabled) {
-                onTogglePermission("samsung")
+                onTogglePermission("samsung_manage")
             }
         }
     }

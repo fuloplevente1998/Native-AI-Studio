@@ -146,7 +146,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
     CompositionLocalProvider(
         LocalTrainPilotStrings provides strings,
         com.example.ui.components.LocalOpenWorkoutHealth provides { showLiveHealth = true },
-        com.example.ui.components.LocalRequestWorkoutHealthPermission provides { provider -> requestPlatformPermission(if (provider == com.repforge.app.HealthJournalStore.SAMSUNG) "samsung" else "hc") },
+        com.example.ui.components.LocalRequestWorkoutHealthPermission provides { provider -> requestPlatformPermission(if (provider == com.repforge.app.HealthJournalStore.SAMSUNG) "samsung_permission" else "hc_permission") },
+        com.example.ui.components.LocalSyncDailyHealth provides { provider -> requestPlatformPermission(if (provider == com.repforge.app.HealthJournalStore.SAMSUNG) "samsung" else "hc") },
         LocalOpenExerciseVideo provides { exTitle -> viewModel.openExerciseVideoModal(exTitle) }
     ) {
         if (showLiveHealth) com.example.ui.components.StudioLiveWorkoutHealthDialog { showLiveHealth = false }
@@ -407,6 +408,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
             containerColor = palette.background,
             contentWindowInsets = WindowInsets.safeDrawing,
             topBar = {
+                Column {
                 TrainPilotGlobalTopHeaderAndNav(
                     currentTab = uiState.currentTab,
                     currentSubScreen = uiState.currentSubScreen,
@@ -419,6 +421,12 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) }
                 )
+                    if (com.example.ui.components.isActiveMeasurementScreen(uiState.currentSubScreen)) {
+                        com.example.ui.components.StudioWorkoutHandoverBar(uiState, strings) {
+                            viewModel.toggleWatchControlMode(context as? android.app.Activity)
+                        }
+                    }
+                }
             }
         ) { innerPadding ->
         Box(
@@ -674,7 +682,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         val workoutHealth = com.example.ui.components.studioWorkoutHealthContent(
                             workoutId = uiState.selectedLogWorkoutId,
                             language = uiState.language.name.lowercase(),
-                            requestPermissions = { requestPlatformPermission("hc") },
+                            requestPermissions = { requestPlatformPermission("hc_permission") },
                             onSources = viewModel::updateLoggedWorkoutHealthSources
                         )
                         LogWorkoutDetailScreen(
@@ -956,15 +964,16 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     nativeHealth.refreshSamsungGrants(activity)
                                     onDispose { nativeHealth.healthScreenHidden(activity) }
                                 }
-                                androidx.compose.runtime.LaunchedEffect(health.statusMessage, health.lastSyncAt, health.lastReadAt, health.provider, health.healthRefreshing) {
+                                androidx.compose.runtime.LaunchedEffect(health.statusMessage, health.lastSyncAt, health.lastReadAt, health.provider, health.healthRefreshing, health.syncMessage, health.syncFailed, health.syncPartial) {
                                     health.statusMessage?.let(viewModel::showBannerMessage)
-                                    viewModel.reloadHealthJournal()
+                                    if (health.healthRefreshing || health.syncMessage.isNotBlank())
+                                        viewModel.updateHealthSyncStatus(health.healthRefreshing, partial = health.syncPartial,
+                                            failed = health.syncFailed, message = health.syncMessage)
+                                    if (!health.healthRefreshing) viewModel.reloadHealthJournal()
                                 }
                                 HealthTabScreen(
                                     uiState = uiState.copy(primaryHealthSourceSamsung = health.provider == com.repforge.app.HealthJournalStore.SAMSUNG,
                                         lastHealthSyncLabel = health.lastSyncAt, lastHealthReadLabel = health.lastReadAt,
-                                        healthSyncBusy = health.healthRefreshing, healthSyncPartial = health.syncPartial,
-                                        healthSyncFailed = health.syncFailed, healthSyncMessage = health.syncMessage,
                                         samsungGrantedCount = health.samsungGrantedCount,
                                         healthProviderStatus = (if (health.provider == com.repforge.app.HealthJournalStore.SAMSUNG)
                                             if (health.samsungInstalled && health.samsungAvailable) "Samsung Health • szolgáltató elérhető" else "Samsung Health • alkalmazás vagy SDK nem érhető el"
@@ -1083,7 +1092,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
 
             // Status / Toast Banner Pill at bottom-top
             AnimatedVisibility(
-                visible = uiState.statusBannerMessage != null,
+                visible = uiState.statusBannerMessage != null && !com.example.ui.components.isActiveMeasurementScreen(uiState.currentSubScreen),
                 enter = fadeIn(),
                 exit = fadeOut(),
                 modifier = Modifier

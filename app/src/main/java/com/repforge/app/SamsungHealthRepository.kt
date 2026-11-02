@@ -110,9 +110,12 @@ object SamsungHealthRepository {
     }
 
     /** Explicit permission UI, initiated by selecting Samsung Health. */
-    suspend fun requestReadPermissions(activity: Activity): Result<Unit> = withContext(Dispatchers.Main) {
+    suspend fun requestReadPermissions(activity: Activity, force: Boolean = false): Result<Unit> = withContext(Dispatchers.Main) {
         runCatching {
             check(isInstalled(activity) && isSdkAvailable()) { "Samsung Health nem érhető el." }
+            if (!force && readGrantedKeys(activity) {
+                check(!activity.isFinishing && !activity.isDestroyed) { "Samsung Health Activity closed" }
+            }.isNotEmpty()) return@runCatching
             suspendCancellableCoroutine<Unit> { continuation ->
                 try {
                     HealthDataService.getStore(activity).requestPermissionsAsync(SamsungSdkReader.permissions(), activity)
@@ -128,12 +131,15 @@ object SamsungHealthRepository {
     private fun grantScope(reader: SamsungSdkReader.Reader): Set<String> = reader.grantedKeys()
 
     /** Permission-only SDK IPC. Call outside every journal/metadata lock. */
-    internal suspend fun readGrantScope(context: Context, guard: () -> Unit): Set<String> = withContext(Dispatchers.IO) {
+    internal suspend fun readGrantedKeys(context: Context, guard: () -> Unit): Set<String> = withContext(Dispatchers.IO) {
         guard()
-        grantScope(SamsungSdkReader.open(context) { guard() }).also {
+        grantScope(SamsungSdkReader.open(context) { guard() })
+    }
+
+    internal suspend fun readGrantScope(context: Context, guard: () -> Unit): Set<String> =
+        readGrantedKeys(context, guard).also {
             check(it.isNotEmpty()) { "Samsung Health read permission required" }
         }
-    }
 
     /** The existing Samsung SDK workout reader, scoped strictly to the requested window. */
     suspend fun readTrainingWindowSuspend(context: Context, startIso: String, endIso: String,
