@@ -1,3 +1,5 @@
+Aktuális új main-forrás: 256e4536ee3c3a94bc5c78b93a33259bb2b15657, AI Studio cloud/equipment/coaching frissítés. Az átadó új review-blokkját és a javított signed futás végleges bizonyítékait olvasd el; a korábbi 977cdd5/248 teszt történeti checkpoint. A heti statisztikák időszűrése/helyi dátuma és a felhőfrissítés ismételt Flow-gyűjtése a #18 javítása; az állapotát ellenőrizd. A 41434365835 régi signed futás a javítások elsőbbsége miatt megszakítva, nem kiadható checkpoint. PR #16 még külön UI-ág, nincs ebben az appforrásban.
+
 Folytasd a meglévő TrainPilot NATÍV ANDROID projektet AI Studio App Builder módban.
 Repo: https://github.com/fuloplevente1998/Native-AI-Studio
 A legfrissebb main ágból indulj. Először olvasd el a docs/AI_STUDIO_HANDOFF_2026-11-02.md átadót, a PR #15 végleges build-/tesztjelentését és a PR #1 auditját. Ellenőrizd az aktuális main HEAD-et és a checkpoint óta érkezett kódváltozásokat. Az utolsó ellenőrzött appforrás 977cdd5a09f41f4f92a6eaa21c8f83ea84492679; ezután dokumentációs frissítés is jöhetett. A régi PR270 checkout és a korábbi ZIP nem kiindulási alap.

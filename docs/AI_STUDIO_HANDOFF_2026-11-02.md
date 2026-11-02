@@ -41,9 +41,23 @@ Letöltött nyers XML: **248 teszt = 79 telefon + 169 Wear; 0 failure, 0 error, 
 
 **Minden további APK a [TrainPilot Native Drive-mappába](https://drive.google.com/drive/folders/1ywHgrManynjV9uNvZfVncOmCr3SbHIb9) kerüljön.** Mappaazonosító: `1ywHgrManynjV9uNvZfVncOmCr3SbHIb9`. Ne a Drive gyökérbe töltsd fel. A fájlnév tartalmazza a telefon/óra megkülönböztetést és a forrás rövid commitját. Őrizd meg a régi fájlokat és linkeket; ellenőrizd a szülőmappát, méretet és hash-t.
 
+## AI Studio main-frissítés átnézése, 2026-11-02
+
+A felhasználó kérésére átnézett új alkalmazásforrás: **`256e4536ee3c3a94bc5c78b93a33259bb2b15657`** (`feat: enhance cloud sync, equipment UI, and coaching`), 10 fájl, +1623/−214 sor. A fenti 977cdd5 a korábbi validált checkpoint. Az új forrásból indított [Actions 41434365835](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41434365835) a felhasználó új, két hibát előbb javító kérése miatt le lett állítva; ez nem igazolt új build. A javítások [PR #18](https://github.com/fuloplevente1998/Native-AI-Studio/pull/18) alatt készülnek; a végleges javított forrás és signed bizonyíték a buildblokkban lesz.
+
+A frissítés a meglévő SettingsViewModel/GoogleSyncRepository útvonalat használó Google-bejelentkezési, Drive- és Naptár-kezelő kártyát, felszerelésválasztást/szűrést, napi/heti Health-összesítést és naplóalapú fejlődési statisztikát vezet be. A release signing konfiguráció, appazonosítók, verziók és a PR #15 alapvető mentési/adatvédelmi javításai változatlanok. A PR #16 három forráskártyája **nem része ennek a main commitnak**; a már elkészült ágat őrizd meg, és a friss mainnel együtt ellenőrizd integráció előtt.
+
+A `256e453` kódáttekintésekor talált pontok, amelyeket a felhasználó kérésére a #18 javít:
+
+- `LogAndProgressScreens.kt`, `MainStatisticsRecordsAndCardioSection`: a „Heti kilométer” az összes `loggedWorkouts` távolságát összegzi dátumszűrés nélkül; a „7 napos átlag” csak a pozitív lépésszámú napokkal oszt. Az intervallumot/nevezőt a felirat jelentéséhez kell igazítani.
+- A heti térfogat/távolság oszlopok ma kezdődő utolsó heti ablakkal készülnek; a dátum nélküli rekordokat az utolsó hétbe sorolják. A `savedStartIso.take(10)`/`startsWith(dayKey)` UTC ISO-időből helyi naphoz rendelés nélkül számol. Tisztázd a naptári vagy gördülő heti határt, használj helyi zónába konvertált időpontot, ismeretlen dátumot ne rendelj önkényesen a mai héthez.
+- `TrainPilotViewModel.refreshAfterCloudSync()` ismét `bindNativeEnvironment()`-et hív, amely új hosszú életű Flow-gyűjtéseket indít a meglévők megtartásával. Tegyél egyszerivé/lecserélhetővé a környezetkötést, vagy használj külön adatfrissítést; ismételt képernyőmegnyitás/szinkron ne sokszorozza az adatfigyelőket. Ezt célzott regresszióval ellenőrizd.
+
+A felhasználó az áttekintés után kifejezetten a két hiba javításával együtt kéri az APK-t. A #18 az utolsó hét helyi napját használja a heti kilométerhez és oszlopokhoz; a nulla lépéses napokat is számolja az átlagban; a napi edzésszámhoz is helyi dátumot használ. A felhőfrissítés már csak adatot tölt, az explicit újrakötés pedig lecseréli a korábbi Flow-figyelőket. Három dátumteszt és egy valódi Room-frissítést/élő feliratkozást/hozzájárulás-változást ellenőrző regresszió egészíti ki a kaput. Ezek eredményét és a main merge-et a végleges buildblokk rögzítse; a fizikai Google/Samsung működés továbbra is készülékes ellenőrzés.
+
 ## Folyamatban lévő, új felhasználói UI-kérés
 
-[PR #16](https://github.com/fuloplevente1998/Native-AI-Studio/pull/16): a naplóban három külön lenyitható kártya legyen **TrainPilot WearOS → Samsung Health → Health Connect**, alapból csukva, saját forrásadatokkal és saját lekérő/engedélykérő felülettel. A kód és regressziók elkészültek; a PR/Actions végleges állapotát ellenőrizd. Ez a blokk a végleges UI-build bizonyítékaival frissül az átadás véglegesítésekor.
+[PR #16](https://github.com/fuloplevente1998/Native-AI-Studio/pull/16): a naplóban három külön lenyitható kártya legyen **TrainPilot WearOS → Samsung Health → Health Connect**, alapból csukva, saját forrásadatokkal és saját lekérő/engedélykérő felülettel. A kód és regressziók elkészültek, a külön ág `6f9f11ee9c23c1e1a5204bcc5842b1dd21150fed`. Az [Actions 41413776118](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41413776118) SUCCESS; a letöltött nyers XML szerint **249 teszt, 0 failure/error/skip** (artifact `13126373991`). Ez még a 977cdd5 alapra épült, a későbbi AI Studio mainnel és #18-cal együtt nincs validálva. PR #16 draft/open, a mainbe még nem került be; integráció után friss CI és APK szükséges.
 
 A legutóbbi felhasználói képen a natív app órás panelje már 403,6 kcal-t (a régi UI-ban kerekítve 404), 101,6 bpm átlagot és 3627 mintát mutatott. Ez készülékes visszajelzés az adott rekord órás adatának megjelenéséről; nem általános fotó/összes Samsung/Google funkció elfogadás. A saját fotók visszaállításáról új visszaigazolás még nem érkezett.
 
