@@ -3666,7 +3666,7 @@ class TrainPilotViewModel : ViewModel() {
 
                     weeklyDaysList.add(
                         WeeklyHealthDaySummary(
-                            dateIso = dayKey,
+                            dateIso = d.toString(),
                             dayLabelHu = if (d == today) "Ma (${d.format(dayFmt)})" else d.format(dayFmt),
                             steps = dSteps,
                             activeCaloriesKcal = dKcal,
