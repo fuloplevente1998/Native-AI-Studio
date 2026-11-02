@@ -117,7 +117,7 @@ internal object NativeHealthRefresh {
             val guard = {
                 screenGuard()
                 check(NativeHealthForegroundAdmission.safeOffMain(context)) {
-                    "Workout ownership, restore or backup blocks Health refresh"
+                    NativeHealthForegroundAdmission.offMainBlockReason(context)?.message ?: "Az egészségügyi szinkron állapota megváltozott."
                 }
                 prepared.replacement.requireCurrent(context)
                 check(NativeHealthBackupGate.available()) { "Backup is in progress" }

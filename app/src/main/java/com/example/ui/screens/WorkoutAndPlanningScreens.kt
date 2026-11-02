@@ -1898,7 +1898,7 @@ fun CalendarPlannerScreen(
                 shape = RoundedCornerShape(18.dp),
                 color = Color(0xFF121820),
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth().testTag("calendar_day_actions")
                     .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(
@@ -1911,6 +1911,7 @@ fun CalendarPlannerScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
+                            modifier = Modifier.weight(1f),
                             text = "${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${state.selectedCalendarDay.toString().padStart(2, '0')}. • Napi műveletek",
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             color = palette.textPrimary
@@ -1922,7 +1923,7 @@ fun CalendarPlannerScreen(
                                 modifier = Modifier
                                     .border(1.dp, palette.primary, RoundedCornerShape(8.dp))
                                     .clip(RoundedCornerShape(8.dp))
-                                    .clickable { onUndoCalendarAction() }
+                                    .heightIn(min = 48.dp).testTag("calendar_undo_action").clickable { onUndoCalendarAction() }
                             ) {
                                 Text(
                                     text = "↶ Visszavonás (${state.calendarUndoStack.size})",
@@ -1935,58 +1936,14 @@ fun CalendarPlannerScreen(
                     }
 
                     if (dayEvents.isEmpty()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Nincs tervezett edzés ezen a napon.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = palette.textSecondary,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                listOf("A", "B").forEach { sp ->
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = palette.surfaceElevated,
-                                        modifier = Modifier
-                                            .border(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .clickable {
-                                                onAddPlannedWorkoutOnDay(
-                                                    state.selectedCalendarDay,
-                                                    sp,
-                                                    state.planningTime,
-                                                    state.planningDurationMin
-                                                )
-                                            }
-                                    ) {
-                                        Text(
-                                            text = "+ Alap $sp",
-                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                            color = palette.primary,
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
-                                        )
-                                    }
-                                    if (state.calendarUndoStack.isNotEmpty()) {
-                                        Surface(
-                                            shape = RoundedCornerShape(10.dp),
-                                            color = palette.primary.copy(alpha = 0.14f),
-                                            modifier = Modifier
-                                                .border(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
-                                                .clip(RoundedCornerShape(10.dp))
-                                                .clickable { onUndoCalendarAction() }
-                                        ) {
-                                            Text(
-                                                text = "↶ Visszavonás",
-                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                                color = palette.primary,
-                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
-                                            )
-                                        }
-                                    }
+                        Text("Nincs tervezett edzés ezen a napon.", style = MaterialTheme.typography.bodySmall,
+                            color = palette.textSecondary, modifier = Modifier.fillMaxWidth().testTag("calendar_empty_day"))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            for (split in listOf("A", "B")) {
+                                OutlinedButton(onClick = {
+                                    onAddPlannedWorkoutOnDay(state.selectedCalendarDay, split, state.planningTime, state.planningDurationMin)
+                                }, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("calendar_add_$split")) {
+                                    Text("+ Alap $split")
                                 }
                             }
                         }

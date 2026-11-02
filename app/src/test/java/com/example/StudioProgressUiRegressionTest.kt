@@ -103,4 +103,50 @@ class StudioProgressUiRegressionTest {
         compose.onNodeWithTag("workout_handover_action").assertIsEnabled().performClick()
         assertEquals(2, calls)
     }
+    @Test fun statisticsReplaceStrengthAndAreNotAppendedToTheProgressPage() {
+        var state by mutableStateOf(TrainPilotUiState(savedRecordsLoading = false,
+            savedExerciseBests = listOf(com.repforge.app.SavedExerciseBest("row", "Evezés", "Row", "ism.", "reps", 12.5, null, null, null))))
+        compose.setContent {
+            TrainPilotTheme {
+                com.example.ui.screens.ProgressTabScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU),
+                    onSelectMainSection = { state = state.copy(progressMainSection = it) }, onSelectExercise = {},
+                    onSelectRange = {}, onSelectVolumeBar = {}, onSelectExpandedStatsCard = {},
+                    onSelectStatsSubTab = { state = state.copy(statsSubTab = it) }, onToggleCardioFilterStepsMode = {},
+                    onOpenWorkoutDetail = {}, onOpenSettings = {}, onOpenPalettePicker = {})
+            }
+        }
+        compose.onNodeWithTag("statistics_subtab_0").assertDoesNotExist()
+        compose.onNodeWithText("📊 Statisztikák").performClick()
+        compose.onNodeWithTag("statistics_records_title").assertExists()
+        compose.onNodeWithTag("statistics_record_row").assertExists()
+        compose.onNodeWithTag("statistics_subtab_1").performClick()
+        compose.onNodeWithTag("statistics_daily_activity").assertExists()
+        compose.onAllNodes(hasText(TrainPilotStrings.forLanguage(AppLanguage.HU).strength1RmTab, substring = true)).assertCountEquals(0)
+    }
+    @Test fun emptyCalendarDayKeepsNormalHeightAndHasOneUndoWithTwoUsableActions() {
+        val adds = mutableListOf<String>()
+        var undos = 0
+        compose.setContent {
+            TrainPilotTheme {
+                Box(Modifier.width(320.dp)) {
+                    com.example.ui.screens.CalendarPlannerScreen(
+                        state = TrainPilotUiState(selectedCalendarDay = 2, calendarEvents = emptyList(), calendarUndoStack = listOf(emptyList())),
+                        onBack = {}, onOpenSettings = {}, onSelectDay = {}, onOpenReplanModal = {},
+                        onApplyReplan = { _, _ -> }, onOpenWorkoutDetail = {},
+                        onAddPlannedWorkoutOnDay = { day, split, _, _ -> assertEquals(2, day); adds += split },
+                        onUndoCalendarAction = { undos++ })
+                }
+            }
+        }
+        compose.onNodeWithTag("calendar_day_actions").performScrollTo()
+        compose.onNodeWithTag("calendar_empty_day").assertExists()
+        val bounds = compose.onNodeWithTag("calendar_day_actions").getUnclippedBoundsInRoot()
+        assertTrue((bounds.bottom - bounds.top) < 260.dp)
+        compose.onAllNodesWithTag("calendar_undo_action").assertCountEquals(1)
+        compose.onNodeWithTag("calendar_add_A").performClick()
+        compose.onNodeWithTag("calendar_add_B").performClick()
+        compose.onNodeWithTag("calendar_undo_action").performClick()
+        assertEquals(listOf("A", "B"), adds); assertEquals(1, undos)
+    }
+
 }

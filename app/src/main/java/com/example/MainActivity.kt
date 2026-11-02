@@ -928,6 +928,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onSelectExpandedStatsCard = { viewModel.selectExpandedStatsCard(it) },
                                     onSelectStatsSubTab = { viewModel.selectStatsSubTab(it) },
                                     onToggleCardioFilterStepsMode = { viewModel.toggleCardioFilterStepsMode(it) },
+                                    onRefreshRecords = viewModel::reloadPersonalRecords,
                                     onOpenWorkoutDetail = { id -> viewModel.openLogWorkoutDetail(id) },
                                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
@@ -965,7 +966,6 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onDispose { nativeHealth.healthScreenHidden(activity) }
                                 }
                                 androidx.compose.runtime.LaunchedEffect(health.statusMessage, health.lastSyncAt, health.lastReadAt, health.provider, health.healthRefreshing, health.syncMessage, health.syncFailed, health.syncPartial) {
-                                    health.statusMessage?.let(viewModel::showBannerMessage)
                                     if (health.healthRefreshing || health.syncMessage.isNotBlank())
                                         viewModel.updateHealthSyncStatus(health.healthRefreshing, partial = health.syncPartial,
                                             failed = health.syncFailed, message = health.syncMessage)
