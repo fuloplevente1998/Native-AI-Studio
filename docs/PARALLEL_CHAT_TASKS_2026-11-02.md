@@ -1,5 +1,34 @@
 # TrainPilot – külön ChatGPT/Codex chateknek kiosztható feladatok
 
+## Aktuális munkalista – a 2741-es kiadás utáni visszajelzésekkel
+
+Ez az aktuális kiosztható lista; az alatta megőrzött korábbi kiosztás történeti terv.
+Az 1–6 fejlesztés és integráció kész (main, 2741, mindkét teljes futásban 315/315 teszt).
+A készülékes elfogadás külön állapot, nem indok a kész funkciók újraírására.
+
+| Munka | Állapot | Kiosztás / elfogadás |
+|---|---|---|
+| 1–6: keretek/forrásharmonika, grafikon, aktív edzés elvetése, térkép, Home blokk, HC-diagnózis | Fejlesztés és kiadás kész | Készüléken ellenőrizendő; új észrevételek külön hibákban |
+| 7: integráció/kiadás | A 2741-re kész | A következő javításokhoz ismét integrátori szerep szükséges |
+| 8: naplózott edzés valódi törlése | Nyitott, kiosztható | Külön chat: megerősítés, tényleges tárolóbeli törlés és kapcsolódó privát fájlok kezelése, szükséges tombstone/restore-védelmek megtartásával; nem az aktív edzés kész Elvetés gombja |
+| [#34 – Kisebb térközök az app egészében](https://github.com/fuloplevente1998/Native-AI-Studio/issues/34) | Új, nyitott UI-hiba | A #35-tel egy UI-chatnek; Kezdőlap és minden telefonos képernyő, megőrzött érintési felületek/olvashatóság |
+| [#35 – Ismétlődő Egészség-szövegblokk](https://github.com/fuloplevente1998/Native-AI-Studio/issues/35) | Új, nyitott UI-hiba | A #34-gyel egy UI-chatnek; a Mai állapot fejléc alatti plusz sorok eltávolítása, kártyák/részletek/frissítés/érdemi hibadiagnózis megtartása |
+| [#11 – Oktatóvideó nem indul](https://github.com/fuloplevente1998/Native-AI-Studio/issues/11) | Nyitott, kiosztható | Külön videós hibajavító chat |
+| HC üres adat készülékes okfeltárása | Nyitott készülékes vizsgálat | Külön diagnosztikai chat; a 6. feladat diagnosztikai kódja kész, a konkrét ok nem bizonyított |
+
+A #34 és #35 a 2741 kipróbálása után jelzett **új javítás**, nem az 1–6 újranyitása.
+Referenciák az eredeti beszélgetésben: 23:09 Kezdőlap (térközök), 23:10 Egészség
+(térközök és a kártyákat ismétlő szöveg). A képeket az érintett chatnek az eredeti
+üzenetből kell mellékelni; a repo nem tartalmaz külön képfájlokat.
+
+Új munka a friss `main`-ből, saját ágban/worktree-ben induljon, PR-célág `main`.
+A korábbi #28 integrációs ág már merge-elve; az alábbi régi ág-/2740-utasítások
+nem érvényes kiindulópontok. Olvasd el az aktuális átadót, a konkrét hibajegyet,
+`.specify/memory/constitution.md` és `docs/FRAME_DESIGN_SYSTEM.md` szabályait.
+Alügynököt ne indíts; csak a kiosztott területet módosítsd. A közös fájlokat jelezd az
+integrátornak, különösen a #34 app-szintű stílusváltoztatásait. A buildszám, signer,
+Actions-ellenőrzés és a végleges APK-pár az integrátor feladata.
+
 ## Felülíró integrációs állapot – 1–6 elkészült
 
 A felhasználó kérésére az 1–3 itt befejezve, a külön chatek 4–6. javításai is
