@@ -18,6 +18,8 @@ import com.example.model.ExerciseSetItem
 import com.example.model.HomeDemoMode
 import com.example.model.LoggedWorkoutEntry
 import com.example.model.localWorkoutDate
+import com.example.model.StudioProgressWindow
+import com.example.model.progressPeriodDays
 import com.example.model.MainTab
 import com.example.model.PrRecordEntry
 import com.example.model.TrainingProgramModel
@@ -88,7 +90,9 @@ data class WeeklyHealthDaySummary(
     val workoutMinutes: Int,
     val workoutCount: Int,
     val sourceLabelHu: String,
-    val stepOriginPackage: String = ""
+    val stepOriginPackage: String = "",
+    val stepsAvailable: Boolean = false,
+    val stepsSourceLabelHu: String = "Nincs napi lépésadat"
 )
 
 data class TrainPilotUiState(
@@ -126,6 +130,11 @@ data class TrainPilotUiState(
     val dailySteps: Int = 0,
     val stepsGoal: Int = 10000,
     val activeCaloriesKcal: Int = 0,
+    val totalCaloriesKcal: Int = 0,
+    val dailyHealthDate: String = "",
+    val dailyHealthAvailableFields: Set<String> = emptySet(),
+    val dailyHealthSourceLabel: String = "Health Connect",
+    val dailyHealthLastSyncIso: String = "—",
     val healthGrantedCount: Int = 0,
     val healthPermissionCount: Int = 0,
     val lastHealthSyncLabel: String = "—",
@@ -251,9 +260,11 @@ data class TrainPilotUiState(
     val videoModalExerciseTitle: String? = null,
     val realMuscleLoads: List<com.example.ui.components.MuscleLoadItem> = emptyList(),
     val muscleLoadPeriodDays: Int = 90,
+    val logWorkoutMuscleLoads: List<com.example.ui.components.MuscleLoadItem> = emptyList(),
 
     // Health / Egészség State (Mockup 3/4 #5 + full main Egészség)
-    val expandedHealthWeeklySummary: Boolean = false,
+    val expandedWeeklySteps: Boolean = false,
+    val expandedWeeklyWorkouts: Boolean = false,
     val expandedHealthPulseTrend: Boolean = false,
     val expandedHealthWeightLog: Boolean = false,
     val expandedHealthExtraData: Boolean = false,
@@ -1388,7 +1399,8 @@ class TrainPilotViewModel : ViewModel() {
             withContext(Dispatchers.Main) { reloadHealthJournal() }
 
             // 7. Load real muscle load summary from Room
-            loadMuscleLoadSummary(90)
+            loadMuscleLoadSummary(progressPeriodDays(_uiState.value.selectedProgressRangeIndex))
+            _uiState.value.selectedLogWorkoutId.takeIf { it.isNotBlank() }?.let(::loadWorkoutMuscleSummary)
         }
     }
 
@@ -2367,14 +2379,6 @@ class TrainPilotViewModel : ViewModel() {
                 state.activeSetsByExerciseId + (currentExId to updatedSets)
             } else state.activeSetsByExerciseId
 
-            val sideLabel = if (isLeftSide) "Bal oldal" else "Jobb oldal"
-            val updatedRow = updatedSets.first { it.setNumber == targetSet.setNumber }
-            val msg = if (bothSidesNowDone) {
-                "✓ ${targetSet.setNumber}. sorozat kész! (Bal: ${updatedRow.leftSec} mp | Jobb: ${updatedRow.rightSec} mp) • Pihenő indul"
-            } else {
-                "✓ ${targetSet.setNumber}. sorozat • $sideLabel rögzítve: $recordedSec mp"
-            }
-
             state.copy(
                 activeSets = updatedSets,
                 activeSetsByExerciseId = updatedMap,
@@ -2382,7 +2386,7 @@ class TrainPilotViewModel : ViewModel() {
                 bilateralRightSec = if (!isLeftSide) recordedSec else state.bilateralRightSec,
                 restTimerRemainingSec = if (bothSidesNowDone) state.defaultRestSec else state.restTimerRemainingSec,
                 restTimerRunning = if (bothSidesNowDone) true else state.restTimerRunning,
-                statusBannerMessage = msg
+                statusBannerMessage = null
             )
         }
         persistCanonicalActiveSessionAsync()
@@ -2778,7 +2782,7 @@ class TrainPilotViewModel : ViewModel() {
                 currentSubScreen = targetSub,
                 backStack = back,
                 showQuickWorkoutSheet = false,
-                statusBannerMessage = "Tervezett edzés elindítva: ${dayExercises.size} gyakorlat a sorban"
+                statusBannerMessage = null
             )
         }
         persistCanonicalActiveSessionAsync(installNew = true)
@@ -2815,7 +2819,7 @@ class TrainPilotViewModel : ViewModel() {
                 currentSubScreen = targetSub,
                 backStack = back,
                 showQuickWorkoutSheet = false,
-                statusBannerMessage = "$titleHu elindítva: ${firstEx.nameHu} (1 / ${exercisesToRun.size})"
+                statusBannerMessage = null
             )
         }
         persistCanonicalActiveSessionAsync(installNew = true)
@@ -2863,7 +2867,7 @@ class TrainPilotViewModel : ViewModel() {
                 currentSubScreen = targetSub,
                 backStack = back,
                 showQuickWorkoutSheet = false,
-                statusBannerMessage = "${timedEx.nameHu} elindítva (${if (isBi) "Kétoldali stopper" else "Időalapú mérés"})"
+                statusBannerMessage = null
             )
         }
         persistCanonicalActiveSessionAsync(installNew = true)
@@ -3058,7 +3062,7 @@ class TrainPilotViewModel : ViewModel() {
                 timedCurrentSec = 0,
                 currentSubScreen = targetSub,
                 activeWorkoutSubScreen = targetSub,
-                statusBannerMessage = "Aktuális gyakorlat: ${exercise.nameHu} (${newIndex + 1} / ${currentList.size})"
+                statusBannerMessage = null
             )
         }
         persistCanonicalActiveSessionAsync()
@@ -3089,7 +3093,7 @@ class TrainPilotViewModel : ViewModel() {
                     timedCurrentSec = 0,
                     currentSubScreen = targetSub,
                     activeWorkoutSubScreen = targetSub,
-                    statusBannerMessage = "Következő gyakorlat (${nextIdx + 1}/${workoutExs.size}): ${nextEx.nameHu}"
+                    statusBannerMessage = null
                 )
             }
             persistCanonicalActiveSessionAsync()
@@ -3127,7 +3131,7 @@ class TrainPilotViewModel : ViewModel() {
                     activeSetsByExerciseId = updatedSetsMap,
                     currentSubScreen = targetSub,
                     activeWorkoutSubScreen = targetSub,
-                    statusBannerMessage = "Előző gyakorlat (${prevIdx + 1}/${workoutExs.size}): ${prevEx.nameHu}"
+                    statusBannerMessage = null
                 )
             }
             persistCanonicalActiveSessionAsync()
@@ -3274,7 +3278,7 @@ class TrainPilotViewModel : ViewModel() {
                             )
                         }
                     }
-                    loadMuscleLoadSummary(90)
+                    loadMuscleLoadSummary(progressPeriodDays(_uiState.value.selectedProgressRangeIndex))
                 } else {
                     withContext(Dispatchers.Main) {
                         _uiState.update { st ->
@@ -3304,12 +3308,14 @@ class TrainPilotViewModel : ViewModel() {
             val back = (it.backStack + NavRoute(it.currentTab, it.currentSubScreen)).takeLast(16)
             it.copy(
                 selectedLogWorkoutId = workoutId,
+                logWorkoutMuscleLoads = emptyList(),
                 currentTab = MainTab.PROGRESS,
                 progressMainSection = 1,
                 currentSubScreen = SubScreen.LOG_WORKOUT_DETAIL,
                 backStack = back
             )
         }
+        loadWorkoutMuscleSummary(workoutId)
     }
 
     fun updateLoggedWorkoutHealthSources(workoutId: String, wear: Boolean, healthConnect: Boolean) {
@@ -3338,7 +3344,11 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun selectProgressRange(index: Int) {
-        _uiState.update { it.copy(selectedProgressRangeIndex = index) }
+        val range = index.coerceIn(0, 3)
+        val days = progressPeriodDays(range)
+        _uiState.update { it.copy(selectedProgressRangeIndex = range, selectedVolumeBarIndex = -1,
+            muscleLoadPeriodDays = days, realMuscleLoads = emptyList()) }
+        loadMuscleLoadSummary(days)
     }
 
     fun selectVolumeBar(index: Int) {
@@ -3393,7 +3403,8 @@ class TrainPilotViewModel : ViewModel() {
     fun toggleHealthSection(section: String) {
         _uiState.update { state ->
             when (section) {
-                "weekly" -> state.copy(expandedHealthWeeklySummary = !state.expandedHealthWeeklySummary)
+                "weekly_steps" -> state.copy(expandedWeeklySteps = !state.expandedWeeklySteps)
+                "weekly_workouts" -> state.copy(expandedWeeklyWorkouts = !state.expandedWeeklyWorkouts)
                 "pulse" -> state.copy(expandedHealthPulseTrend = !state.expandedHealthPulseTrend)
                 "weight" -> state.copy(expandedHealthWeightLog = !state.expandedHealthWeightLog)
                 "extra" -> state.copy(expandedHealthExtraData = !state.expandedHealthExtraData)
@@ -3543,6 +3554,11 @@ class TrainPilotViewModel : ViewModel() {
         return if (shortOrigin.equals(base, ignoreCase = true)) base else "$base ($shortOrigin)"
     }
 
+    fun updateHealthSyncStatus(busy: Boolean, partial: Boolean = false, failed: Boolean = false, message: String) {
+        _uiState.update { it.copy(healthSyncBusy = busy, healthSyncPartial = partial,
+            healthSyncFailed = failed, healthSyncMessage = message, statusBannerMessage = message) }
+    }
+
     fun reloadHealthJournal() {
         val ctx = nativeContext
         val scope = nativeScope
@@ -3559,7 +3575,7 @@ class TrainPilotViewModel : ViewModel() {
                 restingHrBpm = 0,
                 maxHrBpm = 0,
                 minHrBpm = 0,
-                activeCaloriesKcal = 0,
+                activeCaloriesKcal = 0, totalCaloriesKcal = 0, dailyHealthDate = "", dailyHealthAvailableFields = emptySet(),
                 sleepDurationLabel = "—",
                 sleepHoursDecimal = "—",
                 samsungEnergyScore = 0,
@@ -3588,6 +3604,9 @@ class TrainPilotViewModel : ViewModel() {
                 val today = LocalDate.now()
                 val todayData = com.repforge.app.NativeHealthProviderData.day(store, provider, today)
 
+                val availableFields = setOf("steps", "activeCalories", "totalCalories", "sleepMinutes", "averageHeartRate", "restingHeartRate")
+                    .filter { key -> todayData?.optDouble(key, Double.NaN)?.let { it.isFinite() && it >= 0 } == true }.toSet()
+                val lastProviderSync = store.nativeSyncLastSuccess(provider)
                 val stepsDbl = todayData?.optDouble("steps", Double.NaN) ?: Double.NaN
                 val pulseDbl = todayData?.optDouble("averageHeartRate", Double.NaN) ?: Double.NaN
                 val restingDbl = todayData?.optDouble("restingHeartRate", Double.NaN) ?: Double.NaN
@@ -3629,7 +3648,9 @@ class TrainPilotViewModel : ViewModel() {
                 for (offset in 6 downTo 0) {
                     val d = today.minusDays(offset.toLong())
                     val dayObj = runCatching { com.repforge.app.NativeHealthProviderData.day(store, provider, d) }.getOrNull()
-                    val dSteps = dayObj?.optDouble("steps", Double.NaN)?.takeIf { it.isFinite() && it >= 0 }?.toInt() ?: 0
+                    val dStepsRaw = dayObj?.optDouble("steps", Double.NaN) ?: Double.NaN
+                    val stepsAvailable = dStepsRaw.isFinite() && dStepsRaw >= 0
+                    val dSteps = if (stepsAvailable) dStepsRaw.toInt() else 0
                     val dKcal = dayObj?.optDouble("activeCalories", Double.NaN)?.takeIf { it.isFinite() && it >= 0 }?.toInt() ?: 0
                     val dDistM = dayObj?.optDouble("distanceMeters", Double.NaN)?.takeIf { it.isFinite() && it >= 0 } ?: 0.0
                     val dSleepMin = dayObj?.optDouble("sleepMinutes", Double.NaN)?.takeIf { it.isFinite() && it > 0 } ?: Double.NaN
@@ -3673,6 +3694,8 @@ class TrainPilotViewModel : ViewModel() {
                             sleepLabel = dSleepLabel,
                             workoutMinutes = workoutMinForDay,
                             workoutCount = workoutCountForDay,
+                            stepsAvailable = stepsAvailable,
+                            stepsSourceLabelHu = if (stepsAvailable) formatProviderLabelHu(dayChannel, stepOriginPkg) else "Nincs napi lépésadat",
                             sourceLabelHu = sourceLabelHu,
                             stepOriginPackage = stepOriginPkg
                         )
@@ -3715,6 +3738,11 @@ class TrainPilotViewModel : ViewModel() {
                     _uiState.update { st ->
                         st.copy(
                             primaryHealthSourceSamsung = provider == HealthJournalStore.SAMSUNG,
+                            dailyHealthDate = if (todayData != null) today.toString() else "",
+                            dailyHealthAvailableFields = availableFields,
+                            dailyHealthSourceLabel = formatProviderLabelHu(provider, todayData?.optString("activityOrigin").orEmpty()),
+                            dailyHealthLastSyncIso = lastProviderSync,
+                            totalCaloriesKcal = todayData?.optDouble("totalCalories", Double.NaN)?.takeIf { it.isFinite() && it >= 0 }?.toInt() ?: 0,
                             dailySteps = if (stepsDbl.isFinite() && stepsDbl >= 0) stepsDbl.toInt() else 0,
                             currentHrBpm = if (pulseDbl.isFinite() && pulseDbl > 0) pulseDbl.toInt() else 0,
                             restingHrBpm = if (restingDbl.isFinite() && restingDbl > 0) restingDbl.toInt() else 0,
@@ -3830,41 +3858,51 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    fun loadMuscleLoadSummary(days: Int = 90) {
+    private fun muscleItems(rows: List<com.repforge.app.data.db.ProgressMuscleSummary>) =
+        NativeProgressQuery.muscle(rows, _uiState.value.language.name.lowercase()).map { m ->
+            com.example.ui.components.MuscleLoadItem(
+                id = m.muscleKey, nameHu = m.label,
+                setsText = "${m.setsCount} sorozat", percentage = (m.loadPercentage * 100).toInt(),
+                ratio = m.loadPercentage,
+                levelLabelHu = when {
+                    m.setsCount == 0 -> "Nincs terhelés"
+                    m.loadPercentage >= 0.75f -> "Nagyobb terhelés"
+                    m.loadPercentage >= 0.4f -> "Közepes terhelés"
+                    else -> "Kisebb terhelés"
+                }, topExercisesHu = emptyList(), exerciseIdToOpen = "", setsCount = m.setsCount)
+        }
+
+    fun loadMuscleLoadSummary(days: Int = progressPeriodDays(_uiState.value.selectedProgressRangeIndex)) {
         val db = nativeDatabase ?: return
         val scope = nativeScope ?: return
-        val lang = _uiState.value.language.name.lowercase()
+        val window = StudioProgressWindow(days)
         scope.launch(Dispatchers.IO) {
             try {
-                val now = System.currentTimeMillis()
-                val fromEpoch = now - (days * 24L * 3600L * 1000L)
-                val summaries = db.workoutHistoryDao().getProgressMuscleSummary(fromEpoch, now)
-                val models = NativeProgressQuery.muscle(summaries, lang)
-                val items = models.map { m ->
-                    val percentage = (m.loadPercentage * 100).toInt()
-                    val level = when {
-                        m.setsCount == 0 -> "Nincs terhelés"
-                        m.loadPercentage >= 0.75f -> "Nagyobb terhelés"
-                        m.loadPercentage >= 0.4f -> "Közepes terhelés"
-                        else -> "Kisebb terhelés"
-                    }
-                    com.example.ui.components.MuscleLoadItem(
-                        id = m.muscleKey,
-                        nameHu = m.label,
-                        setsText = if (m.setsCount > 0) "${m.setsCount} sorozat" else "0 sorozat",
-                        percentage = percentage,
-                        ratio = m.loadPercentage,
-                        levelLabelHu = level,
-                        topExercisesHu = emptyList(),
-                        exerciseIdToOpen = ""
-                    )
-                }
+                val items = muscleItems(db.workoutHistoryDao().getProgressMuscleSummary(window.fromEpoch(), window.toEpoch()))
                 withContext(Dispatchers.Main) {
-                    _uiState.update { it.copy(realMuscleLoads = items, muscleLoadPeriodDays = days) }
+                    _uiState.update { state ->
+                        if (progressPeriodDays(state.selectedProgressRangeIndex) == days)
+                            state.copy(realMuscleLoads = items, muscleLoadPeriodDays = days) else state
+                    }
                 }
-            } catch (e: Throwable) {
-                android.util.Log.e("TrainPilotViewModel", "Failed to load real muscle summary", e)
-            }
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { android.util.Log.e("TrainPilotViewModel", "Failed to load real muscle summary", e) }
+        }
+    }
+
+    private fun loadWorkoutMuscleSummary(workoutId: String) {
+        val db = nativeDatabase ?: return
+        val scope = nativeScope ?: return
+        scope.launch(Dispatchers.IO) {
+            try {
+                val items = muscleItems(db.workoutHistoryDao().getWorkoutMuscleSummary(workoutId))
+                withContext(Dispatchers.Main) {
+                    _uiState.update { state ->
+                        if (state.selectedLogWorkoutId == workoutId) state.copy(logWorkoutMuscleLoads = items) else state
+                    }
+                }
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { android.util.Log.e("TrainPilotViewModel", "Failed to load workout muscle summary", e) }
         }
     }
 

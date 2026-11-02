@@ -114,7 +114,7 @@ private fun AnatomyPaint(loads: List<MuscleLoadUiModel>, language: String, modif
                 contentScale = ContentScale.Fit, colorFilter = gray)
             for (load in loads) if (load.setsCount > 0 && load.loadPercentage.isFinite()) {
                 images?.get(load.muscleKey)?.let { bitmap ->
-                    Image(bitmap, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit,
+                    Image(bitmap, null, Modifier.fillMaxSize().testTag("progress_anatomy_layer_${load.muscleKey}"), contentScale = ContentScale.Fit,
                         colorFilter = maskTint(muscleLoadColor(load.loadPercentage, colors)))
                 }
             }

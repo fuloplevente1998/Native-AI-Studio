@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
 import com.repforge.app.HealthJournalStore
 import com.repforge.app.NativeWorkoutHealth
@@ -48,8 +49,34 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     val date = remember(locale) { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
         .withLocale(locale).withZone(ZoneId.systemDefault()) }
     fun time(value: String) = runCatching { date.format(Instant.parse(value)) }.getOrDefault("—")
+    var wearExpanded by rememberSaveable(workout.id) { mutableStateOf(false) }
+    var samsungExpanded by rememberSaveable(workout.id) { mutableStateOf(false) }
+    var hcExpanded by rememberSaveable(workout.id) { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        JournalHealthSourceCard(workout.id, "wear", "TrainPilot WearOS", "journal_provider_wear", text, enabled) {
+        Row(Modifier.fillMaxWidth().testTag("journal_health_source_row"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            for ((source, title) in listOf("wear" to "TrainPilot WearOS",
+                HealthJournalStore.SAMSUNG to "Samsung Health", HealthJournalStore.HC to "Health Connect")) {
+                val expanded = when (source) { "wear" -> wearExpanded; HealthJournalStore.SAMSUNG -> samsungExpanded; else -> hcExpanded }
+                Surface(color = if (expanded) colors.accent.copy(alpha = 0.18f) else colors.card,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.weight(1f).heightIn(min = 72.dp)
+                        .border(1.25.dp, if (expanded) colors.accent else colors.emphasisBorder, MaterialTheme.shapes.medium)
+                        .clickable(enabled = enabled && (source == "wear" || !refreshing || source == provider), role = Role.Button) {
+                            if (!expanded && source != "wear") selectProvider(source)
+                            when (source) { "wear" -> wearExpanded = !expanded; HealthJournalStore.SAMSUNG -> samsungExpanded = !expanded; else -> hcExpanded = !expanded }
+                        }.semantics {
+                            selected = expanded
+                            stateDescription = text.getString(if (expanded) R.string.journal_source_expanded else R.string.journal_source_collapsed)
+                        }.testTag("journal_provider_$source")) {
+                    Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(title, style = MaterialTheme.typography.labelLarge, color = colors.text,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = colors.accent)
+                    }
+                }
+            }
+        }
+        JournalHealthSourceContent("wear", "TrainPilot WearOS", wearExpanded) {
             Text("Health Services", color = colors.muted)
             if (wear != null && raw?.optBoolean("nativeHealthWindowStale") == true) {
                 Text(text.getString(R.string.journal_edit_stale), color = colors.muted)
@@ -68,8 +95,8 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
             val health = NativeWorkoutHealthSource.snapshot(document, source)
             val current = health != null && NativeWorkoutHealth.matchesWindow(health, workout)
             val selected = source == provider
-            JournalHealthSourceCard(workout.id, tag, NativeWorkoutHealthSource.label(source), "journal_provider_$source", text,
-                enabled && (!refreshing || selected), onOpen = { selectProvider(source) }) {
+            JournalHealthSourceContent(tag, NativeWorkoutHealthSource.label(source),
+                if (source == HealthJournalStore.SAMSUNG) samsungExpanded else hcExpanded) {
                 Text("${text.getString(R.string.journal_health_window)}: ${time(workout.started)} – ${time(workout.finished)}")
                 if (!current) Text(text.getString(if (health == null) R.string.journal_no_data else R.string.journal_health_stale),
                     color = colors.muted, modifier = Modifier.testTag("journal_${tag}_health_status"))
@@ -108,24 +135,17 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
 }
 
 @Composable
-private fun JournalHealthSourceCard(workoutId: String, source: String, title: String, tag: String,
-    text: android.content.res.Resources, enabled: Boolean, onOpen: () -> Unit = {},
+private fun JournalHealthSourceContent(source: String, title: String, expanded: Boolean,
     content: @Composable ColumnScope.() -> Unit) {
-    var expanded by rememberSaveable(workoutId, source) { mutableStateOf(false) }
+    if (!expanded) return
     val colors = LocalTrainPilotColors.current
     Card(colors = CardDefaults.cardColors(containerColor = colors.card), modifier = Modifier.fillMaxWidth()
         .border(1.25.dp, colors.emphasisBorder, MaterialTheme.shapes.medium).testTag("journal_health_$source")) {
-        Row(Modifier.fillMaxWidth().heightIn(min = 56.dp)
-            .clickable(enabled = enabled, role = Role.Button) {
-                if (!expanded) onOpen()
-                expanded = !expanded
-            }.semantics { stateDescription = text.getString(if (expanded) R.string.journal_source_expanded else R.string.journal_source_collapsed) }
-            .testTag(tag).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = colors.text, modifier = Modifier.weight(1f))
-            Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null, tint = colors.accent)
+        Column(Modifier.fillMaxWidth().padding(12.dp).testTag("journal_${source}_content"),
+            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, color = colors.text)
+            content()
         }
-        if (expanded) Column(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
-            .testTag("journal_${source}_content"), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
     }
 }
 

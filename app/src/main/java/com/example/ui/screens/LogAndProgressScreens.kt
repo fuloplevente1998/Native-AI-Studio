@@ -1,6 +1,8 @@
 package com.example.ui.screens
 
 import com.example.model.workoutsInWeekEnding
+import com.example.model.StudioProgressWindow
+import com.example.model.progressPeriodDays
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -1043,7 +1045,9 @@ fun LogWorkoutDetailScreen(
                 } else {
                     AnatomicalMuscleHeatmapCard(
                         title = "Edzés izomterhelése (${workout.titleHu})",
-                        subtitle = "Elöl- és hátulnézeti anatómiai terhelés ezen az edzésen"
+                        subtitle = "Elöl- és hátulnézeti anatómiai terhelés ezen az edzésen",
+                        realMuscleLoads = uiState.logWorkoutMuscleLoads,
+                        periodDays = null
                     )
                 }
             }
@@ -1135,7 +1139,7 @@ fun LogWorkoutDetailScreen(
                         MockupWatchGraphicBadge(modifier = Modifier.size(34.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "TrainPilot óra",
+                                text = "TrainPilot WearOS",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.textPrimary
@@ -1700,7 +1704,7 @@ fun ProgressTabScreen(
  * 4. Compact Expandable Fejlődési javaslat card at the bottom
  */
 @Composable
-private fun MainProgressVolumeAndMuscleSection(
+internal fun MainProgressVolumeAndMuscleSection(
     uiState: TrainPilotUiState,
     onSelectRange: (Int) -> Unit,
     onSelectVolumeBar: (Int) -> Unit,
@@ -1716,60 +1720,25 @@ private fun MainProgressVolumeAndMuscleSection(
     val huFmt = remember { java.time.format.DateTimeFormatter.ofPattern("yyyy. MMM d.", java.util.Locale("hu", "HU")) }
     val shortFmt = remember { java.time.format.DateTimeFormatter.ofPattern("MMM d.", java.util.Locale("hu", "HU")) }
 
-    val loggedTotalKg = remember(uiState.loggedWorkouts) {
-        uiState.loggedWorkouts.sumOf { w -> w.totalVolumeKg }
-    }
-
-    // Real 12-week and 7-week volume series computed from loggedWorkouts
-    val compactVolumeBars = remember(uiState.loggedWorkouts, today) {
-        (0..11).map { idx ->
-            val weekEnd = today.minusWeeks((11 - idx).toLong())
-            val weekStart = weekEnd.minusDays(6)
-            val kgForWeek = uiState.loggedWorkouts.workoutsInWeekEnding(weekEnd).sumOf { it.totalVolumeKg }
-            "${weekStart.dayOfMonth}" to kgForWeek
-        }
-    }
-
-    val expandedWeeklyBars = remember(uiState.loggedWorkouts, today) {
-        (0..6).map { idx ->
-            val weekEnd = today.minusWeeks((6 - idx).toLong())
-            val weekStart = weekEnd.minusDays(6)
-            val label = weekStart.format(shortFmt)
-            val kgForWeek = uiState.loggedWorkouts.workoutsInWeekEnding(weekEnd).sumOf { it.totalVolumeKg }
-            label to kgForWeek
-        }
-    }
-
-    val totalVolumeText = remember(loggedTotalKg, uiState.selectedProgressRangeIndex) {
-        if (loggedTotalKg == 0) {
-            "0 kg"
-        } else {
-            "%,d kg".format(java.util.Locale.US, loggedTotalKg).replace(',', ' ')
-        }
-    }
-
-    val dateSubtitle = remember(uiState.selectedProgressRangeIndex, today) {
-        val start = when (uiState.selectedProgressRangeIndex) {
-            0 -> today.minusDays(1)
-            1 -> today.minusDays(7)
-            2 -> today.minusDays(30)
-            else -> today.minusDays(90)
-        }
-        "${start.format(huFmt)} – ${today.format(huFmt)}"
-    }
-
-    val prCountValue = uiState.prRecords.size.toString()
-    val workoutCountValue = uiState.loggedWorkouts.size.toString()
-    val avgVolumeValue = if (uiState.loggedWorkouts.isEmpty()) {
-        "0 kg"
-    } else {
-        "${"%.1f".format(loggedTotalKg.toFloat() / uiState.loggedWorkouts.size).replace('.', ',')} kg"
-    }
-    val avgDurationValue = if (uiState.loggedWorkouts.isEmpty()) {
-        "0 min"
-    } else {
-        "${uiState.loggedWorkouts.sumOf { it.durationMinutes } / uiState.loggedWorkouts.size} min"
-    }
+    val period = StudioProgressWindow(progressPeriodDays(uiState.selectedProgressRangeIndex), today)
+    val periodWorkouts = remember(uiState.loggedWorkouts, period) { period.workouts(uiState.loggedWorkouts) }
+    val volumeBars = remember(uiState.loggedWorkouts, period) { period.volumes(uiState.loggedWorkouts) }
+    val compactVolumeBars = volumeBars
+    val expandedWeeklyBars = volumeBars
+    val maxVolume = (volumeBars.maxOfOrNull { it.second } ?: 0).coerceAtLeast(1)
+    val axisMax = kotlin.math.ceil(maxVolume / 4.0).toInt().coerceAtLeast(1) * 4
+    val axisLabels = (4 downTo 0).map { (axisMax * it / 4).toString() }
+    val loggedTotalKg = periodWorkouts.sumOf { it.totalVolumeKg }
+    val totalVolumeText = "%,d kg".format(java.util.Locale.US, loggedTotalKg).replace(',', ' ')
+    val dateSubtitle = "${period.start.format(huFmt)} – ${period.end.format(huFmt)}"
+    val prCountValue = uiState.prRecords.count {
+        period.contains(runCatching { java.time.LocalDate.parse(it.dateLabel.take(10)) }.getOrNull())
+    }.toString()
+    val workoutCountValue = periodWorkouts.size.toString()
+    val avgVolumeValue = if (periodWorkouts.isEmpty()) "0 kg" else
+        "${"%.1f".format(loggedTotalKg.toFloat() / periodWorkouts.size).replace('.', ',')} kg"
+    val avgDurationValue = if (periodWorkouts.isEmpty()) "0 min" else
+        "${periodWorkouts.sumOf { it.durationMinutes } / periodWorkouts.size} min"
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // 1. ÖSSZES VOLUMEN CARD: transforms into full-width Screenshot 6 "Volumen trend" chart when expanded!
@@ -1787,7 +1756,7 @@ private fun MainProgressVolumeAndMuscleSection(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(10.dp))
-                        .clickable { expandedVolumeDetails = !expandedVolumeDetails }
+                        .testTag("progress_volume_expand").clickable { expandedVolumeDetails = !expandedVolumeDetails }
                         .testTag("progress_total_volume_header"),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Top
@@ -1800,6 +1769,7 @@ private fun MainProgressVolumeAndMuscleSection(
                         )
                         Text(
                             text = totalVolumeText,
+                            modifier = Modifier.testTag("progress_volume_total"),
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.ExtraBold,
                             color = palette.textPrimary
@@ -1860,7 +1830,7 @@ private fun MainProgressVolumeAndMuscleSection(
                                         shape = RoundedCornerShape(12.dp)
                                     )
                                     .clip(RoundedCornerShape(12.dp))
-                                    .clickable { onSelectRange(rIdx) }
+                                    .testTag("progress_range_$rIdx").clickable { onSelectRange(rIdx) }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Text(
@@ -1894,7 +1864,8 @@ private fun MainProgressVolumeAndMuscleSection(
                             modifier = Modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                         ) {
                             Text(
-                                text = "Heti bontás",
+                                text = if (period.days == 90) "Heti bontás" else "Napi bontás",
+                                modifier = Modifier.testTag("progress_volume_bucket_unit"),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = palette.textSecondary,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
@@ -1917,7 +1888,7 @@ private fun MainProgressVolumeAndMuscleSection(
                                 .height(135.dp),
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            listOf("8000", "6000", "4000", "2000", "0").forEach { yLbl ->
+                            axisLabels.forEach { yLbl ->
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically
@@ -1949,7 +1920,7 @@ private fun MainProgressVolumeAndMuscleSection(
                         ) {
                             expandedWeeklyBars.forEachIndexed { idx, (weekLbl, kg) ->
                                 val isBarSelected = uiState.selectedVolumeBarIndex == idx
-                                val ratio = (kg / 8000f).coerceIn(if (kg == 0) 0.03f else 0.08f, 1f)
+                                val ratio = (kg.toFloat() / axisMax).coerceIn(0f, 1f)
                                 Column(
                                     modifier = Modifier
                                         .weight(1f)
@@ -1970,7 +1941,7 @@ private fun MainProgressVolumeAndMuscleSection(
                                     )
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(
-                                        text = weekLbl,
+                                        text = if (volumeBars.size > 14) weekLbl.substring(3, 5) else weekLbl,
                                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                         color = if (isBarSelected) palette.primary else palette.textSecondary,
                                         maxLines = 1
@@ -1985,7 +1956,7 @@ private fun MainProgressVolumeAndMuscleSection(
                     val selectedBar = expandedWeeklyBars.getOrNull(uiState.selectedVolumeBarIndex)
                     Text(
                         text = if (selectedBar != null) {
-                            "Kiválasztott hét (${selectedBar.first}): ${selectedBar.second} kg összvolumen"
+                            "Kiválasztott ${if (period.days == 90) "hét" else "nap"} (${selectedBar.first}): ${selectedBar.second} kg összvolumen"
                         } else {
                             "Válassz egy oszlopot a részletekhez."
                         },
@@ -2021,7 +1992,7 @@ private fun MainProgressVolumeAndMuscleSection(
                                                 shape = RoundedCornerShape(11.dp)
                                             )
                                             .clip(RoundedCornerShape(11.dp))
-                                            .clickable { onSelectRange(rIdx) }
+                                            .testTag("progress_range_$rIdx").clickable { onSelectRange(rIdx) }
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Text(
@@ -2052,7 +2023,7 @@ private fun MainProgressVolumeAndMuscleSection(
                                                 shape = RoundedCornerShape(11.dp)
                                             )
                                             .clip(RoundedCornerShape(11.dp))
-                                            .clickable { onSelectRange(rIdx) }
+                                            .testTag("progress_range_$rIdx").clickable { onSelectRange(rIdx) }
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Text(
@@ -2082,7 +2053,7 @@ private fun MainProgressVolumeAndMuscleSection(
                                 verticalArrangement = Arrangement.SpaceBetween,
                                 horizontalAlignment = Alignment.End
                             ) {
-                                listOf("8000", "6000", "4000", "2000", "0").forEach { yLbl ->
+                                axisLabels.forEach { yLbl ->
                                     Text(
                                         text = yLbl,
                                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
@@ -2100,7 +2071,7 @@ private fun MainProgressVolumeAndMuscleSection(
                             ) {
                                 compactVolumeBars.forEachIndexed { idx, (dayLbl, kg) ->
                                     val isBarSelected = uiState.selectedVolumeBarIndex == idx
-                                    val ratio = (kg / 5000f).coerceIn(if (kg == 0) 0.04f else 0.08f, 1f)
+                                    val ratio = (kg.toFloat() / axisMax).coerceIn(0f, 1f)
                                     Column(
                                         modifier = Modifier
                                             .weight(1f)
@@ -2123,7 +2094,7 @@ private fun MainProgressVolumeAndMuscleSection(
                                         )
                                         Spacer(modifier = Modifier.height(3.dp))
                                         Text(
-                                            text = dayLbl,
+                                            text = if (volumeBars.size > 14) dayLbl.substring(3, 5) else dayLbl,
                                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.5.sp),
                                             color = if (isBarSelected) palette.primary else palette.textSecondary,
                                             maxLines = 1
@@ -2260,14 +2231,14 @@ private fun MainProgressVolumeAndMuscleSection(
                                     Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
                                 }
                             }
-                            if (uiState.loggedWorkouts.isEmpty()) {
+                            if (periodWorkouts.isEmpty()) {
                                 Text(
                                     text = "Még nincs naplózott edzés.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textSecondary
                                 )
                             } else {
-                                uiState.loggedWorkouts.take(4).forEach { w ->
+                                periodWorkouts.take(4).forEach { w ->
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -2299,10 +2270,10 @@ private fun MainProgressVolumeAndMuscleSection(
                                     Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
                                 }
                             }
-                            if (uiState.loggedWorkouts.isEmpty()) {
+                            if (periodWorkouts.isEmpty()) {
                                 Text("Még nincs rögzített súlyzós volumen.", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                             } else {
-                                uiState.loggedWorkouts.take(4).forEach { w ->
+                                periodWorkouts.take(4).forEach { w ->
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -2334,10 +2305,10 @@ private fun MainProgressVolumeAndMuscleSection(
                                     Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
                                 }
                             }
-                            if (uiState.loggedWorkouts.isEmpty()) {
+                            if (periodWorkouts.isEmpty()) {
                                 Text("Még nincs rögzített edzésidő.", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                             } else {
-                                uiState.loggedWorkouts.take(4).forEach { w ->
+                                periodWorkouts.take(4).forEach { w ->
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -2363,6 +2334,7 @@ private fun MainProgressVolumeAndMuscleSection(
             title = strings.muscleLoadTitle,
             subtitle = "A színek és arányok az időszak legterheltebb izomcsoportjához viszonyítanak, nem fáradtságot mérnek.",
             realMuscleLoads = uiState.realMuscleLoads,
+            periodDays = progressPeriodDays(uiState.selectedProgressRangeIndex),
             onPeriodSelected = { periodDays ->
                 val rIdx = when (periodDays) {
                     1 -> 0
@@ -2446,7 +2418,7 @@ private fun MainProgressVolumeAndMuscleSection(
                     ) {
                         HorizontalDivider(color = palette.cardBorder)
                         Text(
-                            text = if (lowMuscle != null && uiState.loggedWorkouts.isNotEmpty()) {
+                            text = if (lowMuscle != null && periodWorkouts.isNotEmpty()) {
                                 "• Egyensúly javaslat: A(z) ${lowMuscle.nameHu} (${lowMuscle.setsText}) terhelését érdemes +2 munkasorozattal növelni a következő héten."
                             } else {
                                 "• Egyensúly javaslat: Még nincs rögzített izomcsoport-terhelés az elmúlt időszakban."

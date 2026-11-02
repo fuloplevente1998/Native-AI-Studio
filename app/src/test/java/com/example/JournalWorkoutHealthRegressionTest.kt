@@ -148,6 +148,10 @@ class JournalWorkoutHealthRegressionTest {
             }
         }
         val list = compose.onNodeWithTag("provider_list")
+        val sourceBounds = listOf("journal_provider_wear", "journal_provider_samsung_health", "journal_provider_health_connect")
+            .map { compose.onNodeWithTag(it).getUnclippedBoundsInRoot() }
+        assertTrue(sourceBounds.all { it.top == sourceBounds.first().top })
+        assertTrue(sourceBounds[0].right <= sourceBounds[1].left && sourceBounds[1].right <= sourceBounds[2].left)
         for (tag in listOf("journal_provider_wear", "journal_provider_samsung_health", "journal_provider_health_connect"))
             compose.onNodeWithTag(tag).assertHasClickAction()
         compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertDoesNotExist()

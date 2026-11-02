@@ -13,10 +13,16 @@ A 2026-11-02-i készülékes visszajelzések közös követője. Kiindulás: a m
 - [ ] **Heti célok UI:** a külön „Heti összesítő és adatforrások” panel megszűnik. A Heti lépésszám kártya saját lenyitásában csak a napi lépések és forrásuk jelenjen meg; az Aktív edzésidő saját lenyitásában naponta a Room-edzések és tényleges aktív idejük. A két nyitás független.
 - [ ] **Teljes napi lépések és deduplikáció:** teljes helyi nap (ma: éjféltől mostanáig), nem edzésidőablak. A kiválasztott Samsung Health vagy Health Connect napi összesítése legyen az egyetlen hozzájárulás; HC esetén az eredeti deduplikált napi forrásválasztás maradjon. Órás workout-lépések nem teljes napi lépések. Az órából Samsung/HC útján érkező ugyanazon napi adatot nem szabad még egyszer hozzáadni.
 - [ ] **Mai állapot az Egészség és Kezdőlapon:** közös, hiteles mai provider-adat; napi lépés, aktív és teljes energia külön értelmezve. A felhasználó Samsung Healthben kb. 6–8 ezer lépést és 1000 kcal-t lát, miközben a natív UI üres. Ezeket a számokat tilos beégetni vagy mérést helyettesítő becslésként használni. Látszódjon forrás, tényleges frissítési idő, szinkronállapot és hiány/hiba; ismeretlen adat ne állítsa azt, hogy nulla.
+- [ ] **Edzés közbeni felugró súgók:** az alsó, vezérlőgombot takaró rutin snackbar/útmutató üzenetek (pl. gyakorlat befejezése, következő gyakorlat) megszűnnek. A felső következőgyakorlat-jelzés megmarad; érdemi hiba nem veszhet el.
+- [ ] **Edzés közbeni rögzített vezérlés:** az aktív edzésben görgetéstől független helyen legyen elérhető az Átadás órára / Visszavétel telefonra. A tényleges meglévő átadási parancsokat és ACK/ownership/paused/install védelmeket használja, ne pusztán kapcsolót váltson vagy másik képernyőre vigyen.
+- [ ] **Béta verzió:** látható verzió `0.1.0-beta`, mindkét APK belső Android buildszáma `2737`. A belső kód nem indulhat 1-ről, mert a telepített 2736-ra adattörlés nélkül frissíthetőnek kell maradnia. Appazonosító és állandó signer változatlan.
 - [ ] **Kapu és átadás:** célzott regressziók + teljes telefon/Wear Actions; nyers XML ellenőrzés. Mainbe merge után állandó saját kulcsos APK-pár, változatlan appId/verzió/signer, hash/metadata-ellenőrzés és feltöltés a TrainPilot Native Drive-mappába. Friss AI Studio-átadó és folytatóprompt.
 
 ## Megőrzendő szerződések
 
-`com.TrainPilot.com`, 2736 / 1.3.71-native-test, az állandó saját kulcs, natív Room/DataStore/motor, ownership/finalization/ACK/replacement/tombstone/backup-adatvédelem. Nincs adattörlés, másik szolgáltatóra csendes fallback, fake/demo mérés vagy engedély nélküli sikerjelzés. Aktív edzés/adatcsere alatti tiltásnál a valós ok jelenjen meg; védelmet nem szabad kikapcsolni a szinkron kedvéért.
+`com.TrainPilot.com`, az új felhasználói kérés szerint 2737 / 0.1.0-beta, az állandó saját kulcs, natív Room/DataStore/motor, ownership/finalization/ACK/replacement/tombstone/backup-adatvédelem. Nincs adattörlés, másik szolgáltatóra csendes fallback, fake/demo mérés vagy engedély nélküli sikerjelzés. Aktív edzés/adatcsere alatti tiltásnál a valós ok jelenjen meg; védelmet nem szabad kikapcsolni a szinkron kedvéért.
 
 A javítás folyamatban van. A checklist csak nyers teszt-/APK-bizonyíték után jelölhető késznek; a valódi Samsung/HC készülékes elfogadás külön visszajelzés marad.
+
+
+GitHub-követő: #19; javító PR: #20.

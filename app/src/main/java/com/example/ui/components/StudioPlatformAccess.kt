@@ -17,6 +17,10 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.ui.viewmodel.TrainPilotViewModel
 import com.repforge.app.HealthConnectRepository
+import com.repforge.app.HealthJournalStore
+import com.repforge.app.NativeHealthRefresh
+import com.repforge.app.NativeDataReplacement
+import com.repforge.app.ui.health.NativeHealthForegroundAdmission
 import com.repforge.app.SamsungHealthRepository
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.*
@@ -76,14 +80,16 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
         }
         model.updateSamsungAccess(granted)
     }
-    var healthRequestPending by remember { mutableStateOf(false) }
-    val runtime = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
-        if (healthRequestPending) {
-            healthRequestPending = false
-            if (results.isEmpty() || results.values.none { it }) {
-                model.showBannerMessage("A Health Connect nem adott hozzáférést. Ellenőrizd a rendszerengedélyeket.")
-            }
-        }
+    var healthConsent by remember { mutableStateOf<CompletableDeferred<Unit>?>(null) }
+    var healthActionJob by remember { mutableStateOf<Job?>(null) }
+    val uiState by model.uiState.collectAsState()
+    val route = uiState.currentTab to uiState.currentSubScreen
+    DisposableEffect(route, owner) {
+        onDispose { healthActionJob?.cancel(); healthConsent?.cancel(); healthConsent = null }
+    }
+    val runtime = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { _ ->
+        healthConsent?.complete(Unit)
+        healthConsent = null
         scope.launch { refresh() }
     }
     val settings = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -93,6 +99,67 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
         owner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             launch { refreshSamsung() }
             while (isActive) { refresh(); delay(5_000) }
+        }
+    }
+    fun startHealthAction(provider: String) {
+        if (healthActionJob?.isActive == true) {
+            model.showBannerMessage("Egészségügyi művelet már folyamatban van."); return
+        }
+        healthActionJob = scope.launch {
+            val admittedRoute = model.uiState.value.currentTab to model.uiState.value.currentSubScreen
+            val guard = {
+                check(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) { "Látható képernyő szükséges a szinkronhoz." }
+                check((model.uiState.value.currentTab to model.uiState.value.currentSubScreen) == admittedRoute) { "A képernyő megváltozott." }
+            }
+            try {
+                val host = checkNotNull(activity) { "A szinkronhoz látható Activity szükséges." }
+                model.updateHealthSyncStatus(true, message = "${if (provider == HealthJournalStore.HC) "Health Connect" else "Samsung Health"}: hozzáférés ellenőrzése…")
+                runStudioHealthPermissionAction(
+                    hasReadPermission = {
+                        if (provider == HealthJournalStore.HC)
+                            HealthConnectRepository.isSupported(context) && HealthConnectRepository.anyReadAllowed(context)
+                        else {
+                            check(SamsungHealthRepository.isInstalled(context) && SamsungHealthRepository.isSdkAvailable()) { "Samsung Health nem érhető el." }
+                            SamsungHealthRepository.readGrantedKeys(context, guard).isNotEmpty()
+                        }
+                    },
+                    requestPermission = {
+                        if (provider == HealthJournalStore.HC) {
+                            val permissions = StudioPlatformAccess.healthPermissions(context)
+                                .filter { it != HealthConnectRepository.WRITE_EXERCISE_PERMISSION }
+                            check(permissions.isNotEmpty()) { "A Health Connect ezen az eszközön nem érhető el." }
+                            val pending = CompletableDeferred<Unit>(currentCoroutineContext()[Job])
+                            healthConsent = pending
+                            runtime.launch(permissions.toTypedArray())
+                            pending.await()
+                        } else SamsungHealthRepository.requestReadPermissions(host).getOrThrow()
+                        withTimeout(10_000) {
+                            while (!owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) delay(50)
+                        }
+                    }, guard = guard,
+                    sync = {
+                        guard()
+                        NativeHealthForegroundAdmission.requireMainAdmission(context)
+                        withContext(Dispatchers.IO) {
+                            NativeDataReplacement.mutate(context) {
+                                guard()
+                                HealthJournalStore.get(context).setPreferences(JSONObject().put("provider", provider))
+                            }
+                        }
+                        val report = NativeHealthRefresh.sync(context, host, requireScreenGuard = guard).getOrThrow()
+                        val partial = report.optBoolean("partial")
+                        model.updateHealthSyncStatus(false, partial = partial,
+                            message = "${if (provider == HealthJournalStore.HC) "Health Connect" else "Samsung Health"}: " +
+                                if (partial) "részleges szinkron • ${report.optInt("completedDays")} nap frissítve" else "szinkron befejezve")
+                        model.reloadHealthJournal()
+                    })
+                refresh(); refreshSamsung()
+            } catch (cancelled: CancellationException) {
+                model.updateHealthSyncStatus(false, failed = true, message = "Az egészségügyi művelet megszakadt.")
+                throw cancelled
+            } catch (error: Exception) {
+                model.updateHealthSyncStatus(false, failed = true, message = error.message ?: "Az egészségügyi szinkron nem sikerült.")
+            } finally { healthConsent?.cancel(); healthConsent = null }
         }
     }
     return { key ->
@@ -105,24 +172,13 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                 "notif" -> if (Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
                     runtime.launch(arrayOf(Manifest.permission.POST_NOTIFICATIONS))
                     else settings.launch(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName))
-                "hc" -> {
-                    val permissions = StudioPlatformAccess.healthPermissions(context)
-                    check(permissions.isNotEmpty()) { "A Health Connect ezen az eszközön nem érhető el." }
-                    val missing = permissions.filter {
-                        context.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
-                    }
-                    if (missing.isNotEmpty()) {
-                        healthRequestPending = true
-                        runtime.launch(missing.toTypedArray())
-                    } else {
-                        settings.launch(Intent(android.health.connect.HealthConnectManager.ACTION_MANAGE_HEALTH_PERMISSIONS)
-                            .putExtra(Intent.EXTRA_PACKAGE_NAME, context.packageName))
-                    }
-                }
-                "samsung" -> scope.launch {
-                    val result = activity?.let { SamsungHealthRepository.requestReadPermissions(it) }
-                    result?.exceptionOrNull()?.let { model.showBannerMessage(it.message ?: "Samsung Health engedélykérés sikertelen.") }
-                    if (activity == null) model.showBannerMessage("Az engedélykéréshez látható Activity szükséges.")
+                "hc" -> startHealthAction(HealthJournalStore.HC)
+                "samsung" -> startHealthAction(HealthJournalStore.SAMSUNG)
+                "hc_manage" -> settings.launch(Intent(android.health.connect.HealthConnectManager.ACTION_MANAGE_HEALTH_PERMISSIONS)
+                    .putExtra(Intent.EXTRA_PACKAGE_NAME, context.packageName))
+                "samsung_manage" -> scope.launch {
+                    activity?.let { SamsungHealthRepository.requestReadPermissions(it, force = true) }
+                        ?.exceptionOrNull()?.let { model.showBannerMessage(it.message ?: "Samsung Health engedélykérés sikertelen.") }
                     refreshSamsung()
                 }
             }

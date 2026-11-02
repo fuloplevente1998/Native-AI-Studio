@@ -39,7 +39,7 @@ enum class SubScreen {
     LOG_ROUTE_MAP,          // 3/4 #3 Edzésútvonal (Margitsziget)
     COACH_DETAIL,           // 3/4 #6 Coach + main TrainPilot Coach
     SETTINGS_MAIN,          // 4/4 #1 Beállítások + main Beállítások
-    WATCH_AND_SYNC,         // 4/4 #2 Óra és szinkron (Galaxy Watch7)
+    WATCH_AND_SYNC,         // 4/4 #2 Óra és szinkron (Wear OS)
     BACKUP_RESTORE,         // 4/4 #3 Mentés és visszaállítás
     PERMISSIONS_SCREEN,     // 4/4 #4 Engedélyek
     PRIVATE_PHOTOS          // 4/4 #5 Privát edzésfotók
