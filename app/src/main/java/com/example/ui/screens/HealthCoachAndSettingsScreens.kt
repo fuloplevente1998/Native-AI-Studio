@@ -500,7 +500,7 @@ fun HealthTabScreen(
                                     ) to { onNavigateToSubScreen(SubScreen.COACH_DETAIL) }
                                     else -> listOf(
                                         "Alvás részletek • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})",
-                                        "Mélyalvás: 1 ó 45 p • REM: 1 ó 50 p • Minőség: Jó",
+                                        "Alvásfázisok: nincs lekért adat",
                                         "Egészségnapló megnyitása lent"
                                     ) to { onToggleHealthSection("journal") }
                                 }
@@ -869,38 +869,9 @@ fun HealthTabScreen(
                                     .border(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
                                     .clickable { onToggleHealthSection("pulse") }
                             ) {
-                                Canvas(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                                ) {
-                                    val values = if (uiState.currentHrBpm > 0) {
-                                        listOf(55f, 56f, 62f, 88f, 70f, 79f, 58f, 54f)
-                                    } else {
-                                        listOf(55f, 56f, 60f, 78f, 65f, 72f, 57f, 55f)
-                                    }
-                                    val minV = 50f
-                                    val maxV = 95f
-                                    val pts = values.mapIndexed { idx, v ->
-                                        val x = (idx.toFloat() / (values.size - 1)) * size.width
-                                        val norm = (v - minV) / (maxV - minV)
-                                        val y = size.height - norm * size.height
-                                        Offset(x, y)
-                                    }
-                                    val path = Path()
-                                    pts.forEachIndexed { i, pt ->
-                                        if (i == 0) path.moveTo(pt.x, pt.y)
-                                        else {
-                                            val prev = pts[i - 1]
-                                            val cx = (prev.x + pt.x) / 2f
-                                            path.cubicTo(cx, prev.y, cx, pt.y, pt.x, pt.y)
-                                        }
-                                    }
-                                    drawPath(
-                                        path = path,
-                                        color = Color(0xFFEF4444),
-                                        style = Stroke(width = 2.6.dp.toPx(), cap = StrokeCap.Round)
-                                    )
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Text("Nincs lekért pulzus-idősor", color = palette.textSecondary,
+                                        style = MaterialTheme.typography.bodySmall)
                                 }
                             }
 

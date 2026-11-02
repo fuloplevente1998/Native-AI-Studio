@@ -7,6 +7,7 @@ Kiindulás: main 7a236fb, #12 után. #1 audit folytatása.
 - Az edzésnaplóban helyi forrásválasztó és az aktív időablakokra korlátozott SDK-olvasás van; nincs átirányítás az Egészség főoldalra.
 - Az egyes szolgáltatók edzés-összesítései a meglévő health240 dokumentum providers objektumában külön tárolódnak. A régi lapos HC-mentések olvashatók, a Wear adatok külön maradnak.
 - Futó edzésen szív gomb nyit külön, csak olvasási lekérdezést. Nem adja át a vezérlést, nem ír edzéstörténetet vagy szenzoradatot. Generáció/ownership/szünet/foreground változás megszakítja a lekérést.
+- A Health oldal korábbi fix pulzusgörbéje, alvásfázisai, extra mérései és három példanapja eltávolítva. Mérési idősor hiányában nincs rajzolt mintagörbe; a napi összefoglaló valódi kiválasztott forrást használ.
 - A Samsung rögzített „1/2” státusza helyett tényleges SDK-engedélypróba jelenik meg. A telepített szolgáltató nem bizonyít sikeres olvasást.
 - A szinkron eredménye tartós szövegként is látható: siker/részleges/hiba/blokkolt. Az utolsó teljes szinkron időpontja szolgáltatónként külön marad; a korábbi globális dátum nem Samsung-siker bizonyítéka.
 - A scoped meta a meglévő export/restore whitelist és törlési szabályok része, nincs adatbázisséma-váltás.
