@@ -130,7 +130,7 @@ private fun TrainPilotPanel(modifier: Modifier, fill: Color, outline: Color,
     radius: Int, focus: Color?, content: @Composable ColumnScope.() -> Unit) {
     val colors = LocalTrainPilotColors.current
     Surface(modifier, shape = RoundedCornerShape(radius.dp), color = fill,
-        contentColor = colors.text, border = BorderStroke(1.dp, outline)) {
+        contentColor = colors.text, border = TrainPilotFrames.stroke(1.dp, outline)) {
         Column(Modifier.background(Brush.verticalGradient(
             if (focus != null) listOf(colors.card2.copy(alpha = .65f), fill) else listOf(fill, fill)
         )).padding(TrainPilotDimensions.Page),

@@ -31,3 +31,6 @@ fun Modifier.trainPilotBorder(width: Dp, color: Color, shape: Shape = RectangleS
     border(TrainPilotFrames.stroke(width, color), shape)
 fun Modifier.trainPilotBorder(border: BorderStroke, shape: Shape = RectangleShape): Modifier =
     this.border(TrainPilotFrames.stroke(border.width, border.brush), shape)
+
+fun Modifier.trainPilotBorder(width: Dp, brush: Brush, shape: Shape = RectangleShape): Modifier =
+    border(TrainPilotFrames.stroke(width, brush), shape)
