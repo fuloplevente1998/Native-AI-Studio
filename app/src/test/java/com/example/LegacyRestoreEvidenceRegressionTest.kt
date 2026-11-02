@@ -129,6 +129,8 @@ class LegacyRestoreEvidenceRegressionTest {
         compose.setContent { TrainPilotTheme {
             JournalHealthPanel(previousImport, nativeResources(context, "hu"), "hu", false, null, true) { }
         } }
+        compose.onNodeWithTag("journal_provider_wear").performClick()
+        compose.onNodeWithTag("journal_provider_health_connect").performClick()
         compose.onNodeWithTag("journal_wear_totalCalories_value").assertTextEquals("404 kcal")
         compose.onNodeWithTag("journal_hc_totalCalories_value").assertTextEquals("72,2 kcal")
         compose.onNodeWithTag("journal_hc_activeCalories_value").assertTextEquals("8 kcal")

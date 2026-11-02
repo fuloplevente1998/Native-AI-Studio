@@ -215,7 +215,8 @@ private fun JournalDetailDialog(state: JournalUiState, text: Resources, language
                             if (tab == 2) item {
                                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                     Text(text.getString(if (workout.originDevice == "watch") R.string.journal_watch else R.string.journal_phone))
-                                    JournalHealthPanel(detail, text, language, state.healthRefreshing, state.healthError, !state.deleting) {
+                                    JournalHealthPanel(detail, text, language, state.healthRefreshing, state.healthError, !state.deleting,
+                                        provider = state.healthProvider, status = state.healthStatus, selectProvider = model::selectWorkoutHealthProvider) {
                                         model.refreshWorkoutHealth(context as? android.app.Activity)
                                     }
                                 }
