@@ -70,8 +70,13 @@ class HealthSyncAdmissionRegressionTest {
         StudioWorkoutBridge.pause(context, true)
         assertEquals(Admission.Block.ACTIVE, Admission.mainBlockReason(context))
         assertFalse(Admission.safeOffMain(context))
-        db.close()
-        try { native { TrainPilotWorkoutFinalization(context, db).finishWorkout(frame) }; fail("Closed Room accepted a save") }
+        native {
+            db.openHelper.writableDatabase.execSQL("""
+                CREATE TRIGGER reject_admission_save BEFORE INSERT ON workout_history
+                BEGIN SELECT RAISE(ABORT, 'fixture durable write rejected'); END
+            """.trimIndent())
+        }
+        try { native { TrainPilotWorkoutFinalization(context, db).finishWorkout(frame) }; fail("Rejected durable write was accepted") }
         catch (_: Exception) { }
         assertTrue(ActiveWorkoutStore.current(context)!!.optBoolean("finalizationPending"))
         assertTrue(PhoneWorkoutExecution.store(context).snapshot()!!.optBoolean("active"))

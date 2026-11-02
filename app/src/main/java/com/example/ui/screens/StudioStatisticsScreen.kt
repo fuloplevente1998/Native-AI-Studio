@@ -150,6 +150,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
 
 internal fun savedRecordLabel(record: SavedExerciseBest, number: NumberFormat): String = when {
     record.distanceMeters != null -> "Leghosszabb táv: ${number.format(record.distanceMeters / 1000)} km"
+    record.measurementType == "distance" || record.repUnit in listOf("km", "m") -> "Nincs használható távadat"
     record.seconds != null -> "Legjobb idő: ${record.seconds} mp"
     record.weightKg != null -> "Legnagyobb súly: ${number.format(record.weightKg)} kg"
     record.repetitions != null -> "Legjobb ismétlés: ${record.repetitions}"
