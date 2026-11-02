@@ -2,7 +2,29 @@
 
 Ez az elsődleges checkpoint. A 2026-11-01-es átadó és a korábbi PR-leírások történeti háttérként használhatók; a kulcsok, Maps, tesztszám és APK-k tekintetében az alábbi állapot az irányadó.
 
-## Aktuális folytatás – #22, béta 2738
+## Legfrissebb igazolt checkpoint – #24 / 2739 (2026-11-02)
+
+**Forrás és merge.** [PR #24](https://github.com/fuloplevente1998/Native-AI-Studio/pull/24) mainre merge-elve: `95ef1f896265da78698ca201efa9d6e001f6f0d9`. A végleges PR-head `727b47ffe5c5222b5dc3343cf75db7e50bbd9687`; a main merge fája és a végleges PR-head fája azonos: `d3a3add6b9267164ab17333ac06fff46bd1d2d1e`. A build elindításához kizárólag a signing workflow egy szűkített main `push` triggerét adtuk hozzá `50b4bc09491597cd4559351f0bdc4f2921716a97` commitban; az alkalmazásforrás a #24 merge óta nem változott. A régi `workflow_dispatch` továbbra is használható; az automatikus trigger csak a `.github/workflows/trainpilot-persistent-signing.yml` main ági változására él.
+
+**#24 regressziók.** [Végleges PR Actions 41499001995](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41499001995) **SUCCESS**. A letöltött nyers JUnit XML **291/291 tesztet** igazol (**115 telefon + 176 Wear**, 0 failure/error/skip, 59 suite). A `WatchDiscardRecoveryRegressionTest`, `WearClosureRecoveryTest`, `WearSaveSyncTest`, `PhoneReturnInstallationRegressionTest`, `HealthSyncAdmissionRegressionTest` és `WorkoutOwnership193Test` is hibamentes. [Nyers PR XML-artifact](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41499001995/artifacts/13169075945). A PR eredetileg draft/futó állapotú említései történetiek, nem aktuálisak.
+
+**Teljes állandó kulcsos main build.** [Signed Actions 41503008508](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41503008508) **SUCCESS**, tényleges checkout `50b4bc09491597cd4559351f0bdc4f2921716a97`, ami csak a CI-indító workflow fájlban tér el a #24 alkalmazásforrástól. A teljes signed run nyers XML-je **291/291 teszt** (**115 telefon + 176 Wear**, 0 failure/error/skip). [Nyers signed tesztjelentés](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41503008508/artifacts/13169179500); [APK-pár és valós metadata](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41503008508/artifacts/13171020761).
+
+**Ellenőrzött APK-k:** mindkét alkalmazás azonosítója `com.TrainPilot.com`, verzióneve `0.1.0-beta`, belső Android buildszáma **2739**. Mindkettő tényleges állandó signer SHA256 ujjlenyomata: `a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6`, egyezik a korábbi 2738-assal és a pinelt titkos környezeti beállítással. Nem készült új aláírókulcs. A CI ellenőrizte a Maps konfiguráció jelenlétét, a Data Layer csomag-/signer-azonosságot és a Wear capability/hardverkövetelményt.
+
+| Csomag | Méret (bájt) | Valós APK SHA256 |
+|---|---:|---|
+| Telefon release 2739 | 19464875 | `fc8a5c79c8f3d7d29f95e18afed1d2fc03781ce5f377a29b2f159a9cc8b23c95` |
+| Natív Wear release 2739 | 4636863 | `9a1940129d8a538580e4a69cde83ea5144ff63fe12b74fe23980a3a652e864fd` |
+
+- [Telefon release APK](https://drive.google.com/file/d/1uE5ssymKDuRVW0HCULmhonKKSj-qozQk/view)
+- [Natív Wear release APK](https://drive.google.com/file/d/1gzyJK8fetWHou12nalrMhg2i24-lawLv/view)
+
+A ZIP-ből külön kinyert APK-k SHA256-ja megegyezik a signed artifact metaadataival. Mindkét külön Drive-fájl mérete és `1ywHgrManynjV9uNvZfVncOmCr3SbHIb9` szülőmappája külön Google Drive metadata-olvasással igazolt; a 2738 és régebbi APK-k megmaradtak. **Nem történt Play/GitHub release-közzététel, adattörlés vagy kulcscsere.**
+
+**#24 működés és továbblépés.** A hiteles terminális Wear receipt, elveszett/elutasított válasz utáni látható újrapróba és a már tartósan törölt edzés óvatos visszaigazolása implementált, JVM-regresszióval igazolt; **fizikai telefon–Galaxy Watch készülékes elfogadás még szükséges**. Ne implementáld újra. A natív motor, Room/DataStore, ownership/ACK, finalization, tombstone, replacement és backup/restore védelmek kötelezőek. A #19-ben felvett új Mai állapot, délutáni alvás, pulzuselőzmények, Aktív kalória lenyitás, dátum melletti szinkrongomb, kompakt teljes szélességű heti listák külön nyitott feladatok: a mostani APK-ellenőrzés **nem** tekinti őket javítottnak.
+
+## Korábbi igazolt checkpoint – #22, béta 2738
 
 A [#22](https://github.com/fuloplevente1998/Native-AI-Studio/pull/22) mainre került: **`b96982dd62212d53f80ee1af366d77bfaacd439d`**. Innen folytasd az AI Studio-munkát. Az alábbi #20 / 2737 blokk történeti checkpoint, a #22 módosításait ne valósítsd újra.
 
