@@ -95,7 +95,8 @@ fun HomeScreen(
     onOpenProgramsList: () -> Unit,
     onOpenCalendarPlanner: () -> Unit,
     onOpenGoalsDialog: () -> Unit,
-    onOpenPersonalPlanner: () -> Unit
+    onOpenPersonalPlanner: () -> Unit,
+    onDiscardWorkout: (String) -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val activeProgram = state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
@@ -301,7 +302,10 @@ fun HomeScreen(
                 }
 
                 // Full-width gold primary CTA Button ("▶ Folytatás" / "▶ Tervezett edzés indítása")
-                Button(
+                if (state.isWorkoutSessionActive && state.activeWorkoutId.isNotBlank()) {
+                    com.example.ui.components.StudioPausedWorkoutActions(state.activeWorkoutId, state.phoneControlsWorkout,
+                        state.isSavingWorkout, strings.continueBtn, onStartOrContinueWorkout, onDiscardWorkout)
+                } else                 Button(
                     onClick = onStartOrContinueWorkout,
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(

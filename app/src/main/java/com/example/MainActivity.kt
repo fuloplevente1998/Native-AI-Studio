@@ -808,6 +808,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
                                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                                     onCycleDemoMode = { mode -> viewModel.cycleHomeDemoMode(mode) },
+                                    onDiscardWorkout = { id -> viewModel.stopActiveWorkoutSession(id) },
                                     onStartOrContinueWorkout = {
                                         if (uiState.isWorkoutSessionActive && uiState.workoutStartedEpochMs > 0L) {
                                             viewModel.returnToActiveWorkout()

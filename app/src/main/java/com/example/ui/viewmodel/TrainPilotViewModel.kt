@@ -1475,7 +1475,7 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    fun stopActiveWorkoutSession() {
+    fun stopActiveWorkoutSession(expectedWorkoutId: String? = null) {
         if (_uiState.value.isSavingWorkout) return
         val ctx = nativeContext ?: return
         val db = nativeDatabase ?: return
@@ -1484,6 +1484,8 @@ class TrainPilotViewModel : ViewModel() {
         scope.launch(Dispatchers.Main.immediate) {
             try {
                 val active = ActiveWorkoutStore.current(ctx)?.takeIf { it.optBoolean("active") }
+                if (expectedWorkoutId != null) check(active?.optString("workoutId") == expectedWorkoutId &&
+                    _uiState.value.activeWorkoutId == expectedWorkoutId) { "Az elvetendő edzés megváltozott. Nyisd meg újra a műveletet." }
                 if (active != null) {
                     check(active.optString("workoutId") == _uiState.value.activeWorkoutId)
                     TrainPilotWorkoutFinalization(ctx, db).discardWorkout(active)

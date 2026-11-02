@@ -1452,11 +1452,7 @@ internal fun MainProgressVolumeAndMuscleSection(
     val period = StudioProgressWindow(progressPeriodDays(uiState.selectedProgressRangeIndex), today)
     val periodWorkouts = remember(uiState.loggedWorkouts, period) { period.workouts(uiState.loggedWorkouts) }
     val volumeBars = remember(uiState.loggedWorkouts, period) { period.volumes(uiState.loggedWorkouts) }
-    val compactVolumeBars = volumeBars
     val expandedWeeklyBars = volumeBars
-    val maxVolume = (volumeBars.maxOfOrNull { it.second } ?: 0).coerceAtLeast(1)
-    val axisMax = volumeAxisMaximum(maxVolume)
-    val axisLabels = (4 downTo 0).map { (axisMax * it / 4).toString() }
     val loggedTotalKg = periodWorkouts.sumOf { it.totalVolumeKg }
     val totalVolumeText = "%,d kg".format(java.util.Locale.US, loggedTotalKg).replace(',', ' ')
     val dateSubtitle = "${period.start.format(huFmt)} – ${period.end.format(huFmt)}"
@@ -1603,81 +1599,7 @@ internal fun MainProgressVolumeAndMuscleSection(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // 3. Large Full-Width Bar Chart (8000 / 6000 / 4000 / 2000 / 0 + wide rounded gold bars)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(165.dp)
-                    ) {
-                        // Horizontal grid lines + Y-axis labels
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(135.dp),
-                            verticalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            axisLabels.forEach { yLbl ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = yLbl,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = palette.textSecondary,
-                                        modifier = Modifier.width(38.dp),
-                                        textAlign = androidx.compose.ui.text.style.TextAlign.End
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    HorizontalDivider(
-                                        color = palette.cardBorder.copy(alpha = 0.55f),
-                                        thickness = 0.8.dp,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                            }
-                        }
-
-                        // Bars + X-axis date labels aligned to the chart area
-                        Row(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(start = 46.dp, top = 6.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.Bottom
-                        ) {
-                            expandedWeeklyBars.forEachIndexed { idx, (weekLbl, kg) ->
-                                val isBarSelected = uiState.selectedVolumeBarIndex == idx
-                                val ratio = (kg.toFloat() / axisMax.toFloat()).coerceIn(0f, 1f)
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxHeight()
-                                        .clickable { onSelectVolumeBar(idx) },
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Bottom
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .widthIn(max = 48.dp).fillMaxWidth()
-                                            .height((122 * ratio).dp)
-                                            .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-                                            .background(
-                                                if (isBarSelected) palette.primary
-                                                else palette.primary.copy(alpha = if (kg == 0) 0.25f else 0.88f)
-                                            )
-                                    )
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(
-                                        text = weekLbl.substring(3, 5).trimStart('0'),
-                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                        color = if (isBarSelected) palette.primary else palette.textSecondary,
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    StudioVolumeChart(volumeBars, period, uiState.selectedVolumeBarIndex, true, onSelectVolumeBar)
 
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -1766,73 +1688,10 @@ internal fun MainProgressVolumeAndMuscleSection(
                             }
                         }
 
-                        Row(
-                            modifier = Modifier
-                                .weight(0.55f)
-                                .height(86.dp)
-                                .clickable { expandedVolumeDetails = true },
-                            verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .height(72.dp)
-                                    .padding(bottom = 12.dp),
-                                verticalArrangement = Arrangement.SpaceBetween,
-                                horizontalAlignment = Alignment.End
-                            ) {
-                                axisLabels.forEach { yLbl ->
-                                    Text(
-                                        text = yLbl,
-                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
-                                        color = palette.textSecondary
-                                    )
-                                }
-                            }
-
-                            Box(Modifier.weight(1f).height(82.dp)) {
-                                Column(Modifier.fillMaxWidth().height(62.dp), verticalArrangement = Arrangement.SpaceBetween) {
-                                    repeat(5) { HorizontalDivider(color = palette.cardBorder.copy(alpha = 0.45f), thickness = 0.5.dp) }
-                                }
-                            Row(
-                                modifier = Modifier.fillMaxSize(),
-                                horizontalArrangement = Arrangement.spacedBy(3.dp),
-                                verticalAlignment = Alignment.Bottom
-                            ) {
-                                compactVolumeBars.forEachIndexed { idx, (dayLbl, kg) ->
-                                    val isBarSelected = uiState.selectedVolumeBarIndex == idx
-                                    val ratio = (kg.toFloat() / axisMax.toFloat()).coerceIn(0f, 1f)
-                                    Column(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clickable {
-                                                onSelectVolumeBar(idx)
-                                                expandedVolumeDetails = true
-                                            },
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Bottom
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .widthIn(max = 32.dp).fillMaxWidth()
-                                                .testTag("progress_compact_bar_$idx")
-                                                .height((62 * ratio).dp)
-                                                .clip(RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp))
-                                                .background(
-                                                    if (isBarSelected) palette.primary
-                                                    else palette.primary.copy(alpha = if (kg == 0) 0.25f else 0.82f)
-                                                )
-                                        )
-                                        Spacer(modifier = Modifier.height(3.dp))
-                                        Text(
-                                            text = dayLbl.substring(3, 5).trimStart('0'),
-                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                                            color = if (isBarSelected) palette.primary else palette.textSecondary,
-                                            maxLines = 1
-                                        )
-                                    }
-                                }
-                            }
+                        Box(Modifier.weight(0.55f).height(96.dp)) {
+                            StudioVolumeChart(volumeBars, period, uiState.selectedVolumeBarIndex, false) { index ->
+                                onSelectVolumeBar(index)
+                                expandedVolumeDetails = true
                             }
                         }
                     }
