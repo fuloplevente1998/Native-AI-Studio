@@ -581,6 +581,19 @@ fun HealthTabScreen(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textPrimary
                                 )
+                                if (activeKey == "pulse") {
+                                    Text("Korábbi mai mérések", style = MaterialTheme.typography.labelSmall,
+                                        color = palette.textSecondary, modifier = Modifier.testTag("health_today_pulse_history_label"))
+                                    if (uiState.dailyPulseHistory.isEmpty()) Text("Nincs lekért időbélyeges pulzusmérés",
+                                        color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
+                                    uiState.dailyPulseHistory.takeLast(8).asReversed().forEach { reading ->
+                                        val stamp = runCatching { java.time.Instant.parse(reading.timeIso)
+                                            .atZone(java.time.ZoneId.systemDefault())
+                                            .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) }.getOrDefault("—")
+                                        Text("$stamp • ${reading.bpm} bpm", style = MaterialTheme.typography.bodySmall,
+                                            color = palette.textPrimary, modifier = Modifier.testTag("health_today_pulse_sample"))
+                                    }
+                                }
                                 Surface(
                                     shape = RoundedCornerShape(10.dp),
                                     color = palette.primary.copy(alpha = 0.16f),
