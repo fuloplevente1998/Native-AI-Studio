@@ -1,5 +1,7 @@
 package com.repforge.app.ui.programs
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
@@ -172,7 +174,7 @@ internal fun ExerciseLibraryScreen(language: String, model: ExerciseLibraryViewM
                     color = colors.muted)
                 Text(description(selected, language), color = colors.text)
                 if (selected.custom) {
-                    OutlinedButton(onClick = { editingExercise = selected; editorOpen = true; model.clearEditOutcome() },
+                    TrainPilotOutlinedButton(onClick = { editingExercise = selected; editorOpen = true; model.clearEditOutcome() },
                         modifier = Modifier.testTag("custom_exercise_edit")) {
                         Text(strings.getString(R.string.native_library_28))
                     }
@@ -190,7 +192,7 @@ internal fun ExerciseLibraryScreen(language: String, model: ExerciseLibraryViewM
                     }
                     NativeExerciseDemo.Kind.UNVERIFIED_SEARCH -> {
                         Text(labels.unverified, color = colors.muted, modifier = Modifier.testTag("exercise_library_unverified"))
-                        OutlinedButton(onClick = { open(demo) }, modifier = Modifier.fillMaxWidth().testTag("exercise_library_search_video")) {
+                        TrainPilotOutlinedButton(onClick = { open(demo) }, modifier = Modifier.fillMaxWidth().testTag("exercise_library_search_video")) {
                             Text(labels.searchVideo)
                         }
                     }
@@ -204,7 +206,7 @@ internal fun ExerciseLibraryScreen(language: String, model: ExerciseLibraryViewM
             }
         } else {
             Text(labels.title, color = colors.text, fontWeight = FontWeight.Bold)
-            OutlinedButton(onClick = { editingExercise = null; editorOpen = true; model.clearEditOutcome() },
+            TrainPilotOutlinedButton(onClick = { editingExercise = null; editorOpen = true; model.clearEditOutcome() },
                 modifier = Modifier.fillMaxWidth().testTag("custom_exercise_create")) {
                 Text(strings.getString(R.string.native_library_29))
             }

@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.repforge.app.ui.theme.trainPilotBorder
+
 import com.example.model.localWorkoutDate
 
 import androidx.compose.animation.AnimatedVisibility
@@ -115,7 +117,7 @@ fun HomeScreen(
             color = palette.surface,
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                 .clickable { onOpenPersonalPlanner() }
                 .testTag("home_personal_planner_mini_card")
         ) {
@@ -188,7 +190,7 @@ fun HomeScreen(
             color = palette.surface,
             modifier = Modifier
                 .fillMaxWidth()
-                .border(
+                .trainPilotBorder(
                     width = 1.dp,
                     brush = Brush.linearGradient(
                         listOf(
@@ -225,7 +227,7 @@ fun HomeScreen(
                         color = palette.primary.copy(alpha = 0.14f),
                         modifier = Modifier
                             .size(56.dp)
-                            .border(
+                            .trainPilotBorder(
                                 width = 1.dp,
                                 color = palette.primary.copy(alpha = 0.3f),
                                 shape = RoundedCornerShape(14.dp)
@@ -335,7 +337,7 @@ fun HomeScreen(
             color = palette.surface,
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 .clickable { onOpenQuickWorkout() }
                 .testTag("home_quick_workout_card")
         ) {
@@ -386,7 +388,7 @@ fun HomeScreen(
             color = palette.surface,
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 .clickable { onOpenWatchAndSync() }
                 .testTag("home_watch_status_card")
         ) {
@@ -533,7 +535,7 @@ fun HomeScreen(
                 color = palette.surface,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.5.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(18.dp))
+                    .trainPilotBorder(1.5.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(18.dp))
                     .testTag("home_vital_expanded_dropdown_card")
             ) {
                 Column(
@@ -640,7 +642,7 @@ fun HomeScreen(
                         color = palette.primary.copy(alpha = 0.16f),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(1.dp, palette.primary, RoundedCornerShape(12.dp))
+                            .trainPilotBorder(1.dp, palette.primary, RoundedCornerShape(12.dp))
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { onJumpTarget() }
                     ) {
@@ -677,7 +679,7 @@ fun HomeScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 48.dp)
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                         .clickable { onOpenGoalsDialog() }
                         .testTag("home_goals_row_card")
                 ) {
@@ -725,7 +727,7 @@ fun HomeScreen(
                     color = palette.surface,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(
+                        .trainPilotBorder(
                             width = 1.dp,
                             color = palette.primary.copy(alpha = 0.45f),
                             shape = RoundedCornerShape(18.dp)
@@ -786,7 +788,7 @@ fun HomeScreen(
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
                                 color = palette.surfaceElevated,
-                                modifier = Modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
+                                modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                             ) {
                                 Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                                     Text(
@@ -807,7 +809,7 @@ fun HomeScreen(
                                 color = palette.surfaceElevated,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
+                                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                             ) {
                                 Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                                     Text(
@@ -856,7 +858,7 @@ private fun HomeVitalCard(
         color = palette.surface,
         modifier = modifier
             .heightIn(min = 48.dp)
-            .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+            .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             .clickable { onClick() }
     ) {
         Column(
@@ -937,7 +939,7 @@ private fun HomeQuickShortcutTile(
         color = palette.surface,
         modifier = modifier
             .heightIn(min = 48.dp)
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
             .clickable { onClick() }
     ) {
         Column(

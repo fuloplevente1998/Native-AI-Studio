@@ -1,5 +1,7 @@
 package com.repforge.app.ui.settings
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,10 +39,10 @@ internal fun ReplacementRecoveryPanel(language: String, busy: Boolean, error: Bo
         Button(onClick = onResume, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
             Text(text.getString(R.string.replacement_resume))
         }
-        OutlinedButton(onClick = { jsonPicker.launch(arrayOf("application/json", "*/*")) }, enabled = !busy) {
+        TrainPilotOutlinedButton(onClick = { jsonPicker.launch(arrayOf("application/json", "*/*")) }, enabled = !busy) {
             Text(text.getString(R.string.replacement_json))
         }
-        OutlinedButton(onClick = { zipPicker.launch(arrayOf("application/zip", "application/x-zip-compressed", "*/*")) }, enabled = !busy) {
+        TrainPilotOutlinedButton(onClick = { zipPicker.launch(arrayOf("application/zip", "application/x-zip-compressed", "*/*")) }, enabled = !busy) {
             Text(text.getString(R.string.replacement_zip))
         }
     }

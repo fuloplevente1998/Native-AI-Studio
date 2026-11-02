@@ -1,5 +1,7 @@
 package com.repforge.app.ui.journal
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
 import android.content.res.Resources
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
@@ -202,7 +204,7 @@ private fun JournalDetailDialog(state: JournalUiState, text: Resources, language
                                         "hard" -> R.string.journal_effort_hard; "pain" -> R.string.journal_effort_pain; else -> R.string.journal_no_data
                                     }
                                     Text("${text.getString(R.string.journal_feedback)}: ${text.getString(effort)}")
-                                    OutlinedButton(onClick = model::openEditor, enabled = !state.deleting,
+                                    TrainPilotOutlinedButton(onClick = model::openEditor, enabled = !state.deleting,
                                         modifier = Modifier.fillMaxWidth().testTag("journal_edit_feedback")) {
                                         Text(text.getString(R.string.journal_feedback_edit))
                                     }
@@ -224,7 +226,7 @@ private fun JournalDetailDialog(state: JournalUiState, text: Resources, language
                             val keys = detail.exercises.flatMap { it.sets }.flatMap { listOfNotNull(it.gpsRouteKey193, it.gpsRouteKey163) }
                                 .filter { it.isNotBlank() }.distinct()
                             if (keys.isNotEmpty()) item {
-                                OutlinedButton(onClick = { model.openRouteMap(keys) }, enabled = !state.routeLoading,
+                                TrainPilotOutlinedButton(onClick = { model.openRouteMap(keys) }, enabled = !state.routeLoading,
                                     modifier = Modifier.fillMaxWidth().testTag("journal_open_route")) { Text(text.getString(R.string.journal_route)) }
                                 if (state.routeLoading) JournalLoading(text)
                                 if (state.routeError) Text(text.getString(R.string.journal_route_error), color = colors.muted)
@@ -243,9 +245,9 @@ private fun JournalDetailDialog(state: JournalUiState, text: Resources, language
                                 }
                             }
                             item {
-                                OutlinedButton(onClick = model::openEditor, enabled = !state.deleting,
+                                TrainPilotOutlinedButton(onClick = model::openEditor, enabled = !state.deleting,
                                     modifier = Modifier.fillMaxWidth().testTag("journal_edit")) { Text(text.getString(R.string.journal_edit_title)) }
-                                OutlinedButton(onClick = { runCatching { context.startActivity(model.createCalendarIntent(detail)) } }, modifier = Modifier.fillMaxWidth()) {
+                                TrainPilotOutlinedButton(onClick = { runCatching { context.startActivity(model.createCalendarIntent(detail)) } }, modifier = Modifier.fillMaxWidth()) {
                                     Text(text.getString(R.string.journal_calendar))
                                 }
                                 TextButton(onClick = model::requestDeleteWorkout, enabled = !state.deleting,

@@ -1,5 +1,7 @@
 package com.repforge.app.ui.programs
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -135,7 +137,7 @@ internal fun ProgramEditorDialog(
                         }, enabled = index < draft.days.lastIndex && !saving) { Text(labels.down) }
                     }
                 }
-                OutlinedButton(onClick = {
+                TrainPilotOutlinedButton(onClick = {
                     draft = NativeProgramEditor.addDay(draft, (draft.days.size + 1).toString())
                     focusedDay = draft.days.last().id
                 }, enabled = draft.days.size < 31 && !saving,

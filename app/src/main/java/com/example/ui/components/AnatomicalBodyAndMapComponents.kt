@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.repforge.app.ui.theme.trainPilotBorder
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -128,7 +130,7 @@ fun AnatomicalMuscleHeatmapCard(
         color = palette.surfaceCard,
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
             .testTag("anatomical_muscle_heatmap_card")
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -150,7 +152,7 @@ fun AnatomicalMuscleHeatmapCard(
                     color = palette.surfaceElevated,
                     modifier = Modifier
                         .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
+                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                         .clip(RoundedCornerShape(12.dp))
                         .clickable {
                             onPeriodSelected(periodDayOptions[(selectedPeriodIdx + 1) % periodOptions.size])
@@ -307,7 +309,7 @@ fun AnatomicalMuscleHeatmapCard(
                     color = palette.surfaceElevated,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                        .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
                         .clickable { selectedMuscleId = "all" }
                 ) {
                     Column(
@@ -589,7 +591,7 @@ fun NativeWorkoutRouteMapBox(
         }
     }
     Box(modifier.clip(RoundedCornerShape(24.dp)).background(palette.background)
-        .border(1.dp, palette.cardBorder, RoundedCornerShape(24.dp)), contentAlignment = Alignment.Center) {
+        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(24.dp)), contentAlignment = Alignment.Center) {
         if (!configured || !playServicesAvailable) {
             Text(if (!configured) "Google Maps nincs beállítva. Az útvonal helyben megmarad."
                 else "A térképhez Google Play-szolgáltatások szükségesek. Az útvonal helyben megmarad.",
@@ -642,7 +644,7 @@ fun ExercisePostureMiniIllustration(
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = palette.surfaceElevated,
-        modifier = modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+        modifier = modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
     ) {
         val primaryGold = palette.primary
         val muscleOrange = Color(0xFFF97316)
@@ -931,7 +933,7 @@ fun ProgramTypeEmblemIcon(
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = if (isHighlighted) palette.primary.copy(alpha = 0.16f) else palette.surfaceElevated,
-        modifier = modifier.border(
+        modifier = modifier.trainPilotBorder(
             1.dp,
             if (isHighlighted) palette.primary.copy(alpha = 0.5f) else palette.cardBorder,
             RoundedCornerShape(14.dp)

@@ -1,5 +1,7 @@
 package com.repforge.app.ui.settings
 
+import com.repforge.app.ui.theme.TrainPilotFrames
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -37,7 +39,7 @@ internal fun NativeThemePicker(settings: TrainPilotUserSettings, onSelect: (Them
         else -> listOf("Megjelenés", "Alapszínek", "Élénk színek")
     }
     Card(Modifier.fillMaxWidth().testTag("settings_theme_picker"), shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = colors.card), border = BorderStroke(1.dp, colors.line)) {
+        colors = CardDefaults.cardColors(containerColor = colors.card), border = TrainPilotFrames.stroke(1.dp, colors.line)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(labels[0], color = colors.text, style = MaterialTheme.typography.titleLarge)
             Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -49,7 +51,7 @@ internal fun NativeThemePicker(settings: TrainPilotUserSettings, onSelect: (Them
                             var focused by remember(theme.key) { mutableStateOf(false) }
                             Surface(shape = RoundedCornerShape(12.dp),
                                 color = if (selected) colors.selectedSurface else colors.card,
-                                border = BorderStroke(if (selected || focused) 2.dp else 1.dp,
+                                border = TrainPilotFrames.stroke(if (selected || focused) 2.dp else 1.dp,
                                     if (selected || focused) colors.selectedBorder else colors.line)) {
                                 Column(Modifier.widthIn(min = 112.dp, max = 200.dp).heightIn(min = 64.dp)
                                     .testTag("theme_${theme.key}")

@@ -1,7 +1,11 @@
 package com.repforge.app.ui.journal
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.border
+import androidx.compose.foundation.background
+import com.repforge.app.ui.theme.TrainPilotFrames
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
@@ -32,7 +36,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
 
-/** Three independent sources. Each opens its own saved data, never substitutes another provider. */
+/** One open source at a time; each shows only its own saved data. */
 @Composable
 internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android.content.res.Resources,
     language: String, refreshing: Boolean, error: Int?, enabled: Boolean,
@@ -49,10 +53,13 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     val date = remember(locale) { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
         .withLocale(locale).withZone(ZoneId.systemDefault()) }
     fun time(value: String) = runCatching { date.format(Instant.parse(value)) }.getOrDefault("—")
-    var wearExpanded by rememberSaveable(workout.id) { mutableStateOf(false) }
-    var samsungExpanded by rememberSaveable(workout.id) { mutableStateOf(false) }
-    var hcExpanded by rememberSaveable(workout.id) { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    var expandedSource by rememberSaveable(workout.id) { mutableStateOf<String?>(null) }
+    val wearExpanded = expandedSource == "wear"
+    val samsungExpanded = expandedSource == HealthJournalStore.SAMSUNG
+    val hcExpanded = expandedSource == HealthJournalStore.HC
+    Column(Modifier.fillMaxWidth().background(colors.card, MaterialTheme.shapes.large)
+        .border(TrainPilotFrames.page(colors.line, colors.accent), MaterialTheme.shapes.large)
+        .padding(12.dp).testTag("journal_health_source_group"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth().testTag("journal_health_source_row"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             for ((source, title) in listOf("wear" to "TrainPilot WearOS",
                 HealthJournalStore.SAMSUNG to "Samsung Health", HealthJournalStore.HC to "Health Connect")) {
@@ -60,10 +67,10 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                 Surface(color = if (expanded) colors.accent.copy(alpha = 0.18f) else colors.card,
                     shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.weight(1f).heightIn(min = 72.dp)
-                        .border(1.25.dp, if (expanded) colors.accent else colors.emphasisBorder, MaterialTheme.shapes.medium)
+                        .border(TrainPilotFrames.control(if (expanded) colors.accent else colors.line, expanded), MaterialTheme.shapes.medium)
                         .clickable(enabled = enabled && (source == "wear" || !refreshing || source == provider), role = Role.Button) {
                             if (!expanded && source != "wear") selectProvider(source)
-                            when (source) { "wear" -> wearExpanded = !expanded; HealthJournalStore.SAMSUNG -> samsungExpanded = !expanded; else -> hcExpanded = !expanded }
+                            expandedSource = if (expanded) null else source
                         }.semantics {
                             selected = expanded
                             stateDescription = text.getString(if (expanded) R.string.journal_source_expanded else R.string.journal_source_collapsed)
@@ -115,7 +122,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                     if (names.isNotEmpty()) Text("${text.getString(R.string.journal_health_sources)}: ${names.joinToString(", ")}", color = colors.muted)
                     Text("${text.getString(R.string.journal_health_synced)}: ${time(data.optString("syncedAt"))}", color = colors.muted)
                 }
-                OutlinedButton(onClick = { selectProvider(source); refresh() }, enabled = enabled && !refreshing,
+                TrainPilotOutlinedButton(onClick = { selectProvider(source); refresh() }, enabled = enabled && !refreshing,
                     modifier = Modifier.fillMaxWidth().testTag("journal_${tag}_health_refresh")) {
                     Text(if (refreshing && selected) text.getString(R.string.journal_health_refreshing)
                         else "${NativeWorkoutHealthSource.label(source)} • ${text.getString(R.string.journal_health_read)}")
@@ -139,8 +146,8 @@ private fun JournalHealthSourceContent(source: String, title: String, expanded: 
     content: @Composable ColumnScope.() -> Unit) {
     if (!expanded) return
     val colors = LocalTrainPilotColors.current
-    Card(colors = CardDefaults.cardColors(containerColor = colors.card), modifier = Modifier.fillMaxWidth()
-        .border(1.25.dp, colors.emphasisBorder, MaterialTheme.shapes.medium).testTag("journal_health_$source")) {
+    Column(Modifier.fillMaxWidth().testTag("journal_health_$source")) {
+        HorizontalDivider(color = colors.line.copy(alpha = 0.6f))
         Column(Modifier.fillMaxWidth().padding(12.dp).testTag("journal_${source}_content"),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = colors.text)

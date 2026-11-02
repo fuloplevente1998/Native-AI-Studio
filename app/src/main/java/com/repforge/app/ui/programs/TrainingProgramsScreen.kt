@@ -1,4 +1,8 @@
 package com.repforge.app.ui.programs
+
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
+import com.repforge.app.ui.theme.TrainPilotFrames
 import androidx.compose.foundation.layout.size
 
 import androidx.compose.animation.AnimatedVisibility
@@ -111,7 +115,7 @@ internal fun TrainingProgramsScreen(
     ) {
         if (state.restoreError != null && state.restorePreview == null) item {
             Text(state.restoreError.orEmpty(), color = colors.danger)
-            OutlinedButton(onClick = viewModel::dismissRestoreDay,
+            TrainPilotOutlinedButton(onClick = viewModel::dismissRestoreDay,
                 modifier = Modifier.heightIn(min = 48.dp)) {
                 Text(strings.getString(R.string.native_program_actions_cancel))
             }
@@ -130,7 +134,7 @@ internal fun TrainingProgramsScreen(
                     .testTag("personal_planner_open"),
                 shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(containerColor = colors.card2),
-                border = androidx.compose.foundation.BorderStroke(1.dp, colors.emphasisBorder)
+                border = TrainPilotFrames.stroke(1.dp, colors.emphasisBorder)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -182,7 +186,7 @@ internal fun TrainingProgramsScreen(
         }
 
         item {
-            OutlinedButton(onClick = {
+            TrainPilotOutlinedButton(onClick = {
                 editing = null; editorToken = java.util.UUID.randomUUID().toString()
                 editorOpen = true; viewModel.clearEditorOutcome()
             },
@@ -350,7 +354,7 @@ fun ProgramCardItem(
         modifier = Modifier.fillMaxWidth().testTag("program_${prog.id}"),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = colors.card),
-        border = androidx.compose.foundation.BorderStroke(
+        border = TrainPilotFrames.stroke(
             1.dp,
             if (isActive) colors.selectedBorder else colors.line
         )
@@ -383,7 +387,7 @@ fun ProgramCardItem(
                 if (isActive) {
                     Text(strings.getString(R.string.native_program_active), color = colors.accentText, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 } else {
-                    OutlinedButton(
+                    TrainPilotOutlinedButton(
                         onClick = onActivate,
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.text)
@@ -395,7 +399,7 @@ fun ProgramCardItem(
             Spacer(Modifier.height(8.dp))
             Text(name(prog.nameHu, prog.nameEn, prog.nameDe, prog.nameRo), color = colors.text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Text(prog.description, color = colors.muted, fontSize = 12.sp)
-            OutlinedButton(onClick = onEdit, modifier = Modifier.fillMaxWidth()
+            TrainPilotOutlinedButton(onClick = onEdit, modifier = Modifier.fillMaxWidth()
                 .testTag("program_edit_${prog.id}")) {
                 Text(strings.getString(if (prog.builtin) R.string.native_program_copy_edit else R.string.native_program_edit))
             }
@@ -452,7 +456,7 @@ fun ProgramCardItem(
                             }
                             if (!prog.builtin && prog.sourceTemplateId == "home-basic" &&
                                 day.dayId in setOf("A", "B")) {
-                                OutlinedButton(onClick = { onRestoreDay(day.dayId) },
+                                TrainPilotOutlinedButton(onClick = { onRestoreDay(day.dayId) },
                                     modifier = Modifier.heightIn(min = 48.dp)
                                         .testTag("program_restore_${prog.id}_${day.dayId}")) {
                                     Text(strings.getString(R.string.native_program_actions_restore),

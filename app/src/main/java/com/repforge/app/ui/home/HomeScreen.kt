@@ -1,5 +1,7 @@
 package com.repforge.app.ui.home
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -119,7 +121,7 @@ fun HomeScreen(
         if (state.hasImportedDraft) Button(onClick = onResumeDraft, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
             Text(strings.getString(R.string.native_home_resume_draft))
         }
-        if (offerOnboarding) OutlinedButton(
+        if (offerOnboarding) TrainPilotOutlinedButton(
             onClick = onOnboarding, enabled = !busy,
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("home_resume_onboarding")
         ) {
@@ -128,7 +130,7 @@ fun HomeScreen(
         if (state.loading) LinearProgressIndicator(Modifier.fillMaxWidth().testTag("home_loading"))
         if (state.loadFailed) {
             Text(strings.getString(R.string.home_state_error), color = colors.dangerText)
-            OutlinedButton(onClick = viewModel::loadHomeData, enabled = !busy, modifier = Modifier.testTag("home_retry")) {
+            TrainPilotOutlinedButton(onClick = viewModel::loadHomeData, enabled = !busy, modifier = Modifier.testTag("home_retry")) {
                 Text(strings.getString(R.string.home_state_retry))
             }
         }

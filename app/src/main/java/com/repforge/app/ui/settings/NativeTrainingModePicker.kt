@@ -1,5 +1,7 @@
 package com.repforge.app.ui.settings
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -120,7 +122,7 @@ internal fun NativeTrainingModePicker(
             Text(strings.getString(R.string.native_modes_help), color = colors.muted)
             Text(strings.getString(R.string.native_modes_style), color = colors.text)
             androidx.compose.foundation.layout.Box {
-                OutlinedButton(onClick = { styleExpanded = true }, enabled = enabled,
+                TrainPilotOutlinedButton(onClick = { styleExpanded = true }, enabled = enabled,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("${tag}_style")) {
                     Text(styleLabel(style), color = colors.text)
                 }
@@ -134,7 +136,7 @@ internal fun NativeTrainingModePicker(
             }
             Text(strings.getString(R.string.native_modes_progression), color = colors.text)
             androidx.compose.foundation.layout.Box {
-                OutlinedButton(onClick = { progressionExpanded = true }, enabled = enabled,
+                TrainPilotOutlinedButton(onClick = { progressionExpanded = true }, enabled = enabled,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("${tag}_progression")) {
                     Text(progressionLabel(progression), color = colors.text)
                 }
@@ -161,7 +163,7 @@ internal fun NativeTrainingModePicker(
             )
             Text(strings.getString(R.string.native_modes_notice), color = colors.muted)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(
+                TrainPilotOutlinedButton(
                     onClick = {
                         pending = NativeTrainingModeChange.prepare(
                             raw, activeProgramId, scope, programId, style, progression)

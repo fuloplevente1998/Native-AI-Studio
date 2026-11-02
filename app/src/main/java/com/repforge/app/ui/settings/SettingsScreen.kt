@@ -1,5 +1,9 @@
 package com.repforge.app.ui.settings
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
+import com.repforge.app.ui.theme.TrainPilotFrames
+
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -146,7 +150,7 @@ fun SettingsScreen(
 
         item { NativeLanguagePicker(state.settings.language, !state.replacementBusy, viewModel::setLanguage) }
         item {
-            OutlinedButton(onClick = { openedTimerJson = viewModel.beginTimerDefaults() },
+            TrainPilotOutlinedButton(onClick = { openedTimerJson = viewModel.beginTimerDefaults() },
                 enabled = !state.replacementBusy && !state.timerSaving,
                 modifier = Modifier.fillMaxWidth().testTag("settings_timer_open")) {
                 Text(strings.getString(R.string.native_timer_defaults_title))
@@ -172,7 +176,7 @@ fun SettingsScreen(
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(strings.getString(R.string.native_settings_profile_title), color = colors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Text(strings.getString(R.string.native_settings_profile_info), color = colors.muted, fontSize = 12.sp)
-                    OutlinedButton(onClick = {
+                    TrainPilotOutlinedButton(onClick = {
                         openedProfileJson = state.settings.profileJson
                         viewModel.clearProfileError()
                         profileOpen = true
@@ -191,7 +195,7 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = colors.card),
-                border = androidx.compose.foundation.BorderStroke(1.dp, colors.line)
+                border = TrainPilotFrames.stroke(1.dp, colors.line)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -267,7 +271,7 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = colors.card),
-                border = androidx.compose.foundation.BorderStroke(1.dp, colors.line)
+                border = TrainPilotFrames.stroke(1.dp, colors.line)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(strings.getString(R.string.native_settings_local_backup), color = colors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -275,12 +279,12 @@ fun SettingsScreen(
                     Spacer(Modifier.height(12.dp))
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = { exportJsonLauncher.launch("trainpilot-backup.json") }, modifier = Modifier.weight(1f)) {
+                        TrainPilotOutlinedButton(onClick = { exportJsonLauncher.launch("trainpilot-backup.json") }, modifier = Modifier.weight(1f)) {
                             Icon(Icons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
                             Text(strings.getString(R.string.native_settings_json_export), fontSize = 10.sp)
                         }
-                        OutlinedButton(enabled = allowDataReplacement, onClick = { importJsonLauncher.launch(arrayOf("application/json", "*/*")) }, modifier = Modifier.weight(1f)) {
+                        TrainPilotOutlinedButton(enabled = allowDataReplacement, onClick = { importJsonLauncher.launch(arrayOf("application/json", "*/*")) }, modifier = Modifier.weight(1f)) {
                             Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
                             Text(strings.getString(R.string.native_settings_json_import), fontSize = 10.sp)
@@ -314,7 +318,7 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = colors.card),
-                border = androidx.compose.foundation.BorderStroke(1.dp, colors.line)
+                border = TrainPilotFrames.stroke(1.dp, colors.line)
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(strings.getString(R.string.native_settings_privacy_section), color = colors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -362,7 +366,7 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = colors.card),
-                border = androidx.compose.foundation.BorderStroke(1.dp, colors.line)
+                border = TrainPilotFrames.stroke(1.dp, colors.line)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Button(

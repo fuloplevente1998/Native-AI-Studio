@@ -1,5 +1,9 @@
 package com.example
 
+import com.repforge.app.ui.theme.TrainPilotFrames
+
+import com.repforge.app.ui.theme.trainPilotBorder
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -260,7 +264,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             color = palette.surfaceElevated,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
+                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                                 .clickable { viewModel.cycleDefaultRestTimer() }
                         ) {
                             Row(
@@ -277,7 +281,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             color = palette.surfaceElevated,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
+                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -442,6 +446,9 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                 modifier = Modifier
                     .fillMaxSize()
                     .widthIn(max = contentMaxWidth)
+                    .padding(4.dp)
+                    .border(TrainPilotFrames.page(palette.cardBorder, palette.primary), RoundedCornerShape(24.dp))
+                    .padding(1.dp)
             ) {
                 when (uiState.currentSubScreen) {
                     SubScreen.PROGRAMS_LIST -> {
@@ -1042,7 +1049,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         .fillMaxWidth()
                         .widthIn(max = contentMaxWidth)
                         .heightIn(min = 44.dp)
-                        .border(1.5.dp, palette.primary, RoundedCornerShape(14.dp))
+                        .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(14.dp))
                         .clip(RoundedCornerShape(14.dp))
                         .clickable { viewModel.returnToActiveWorkout() }
                         .testTag("floating_return_to_active_workout_bar")
@@ -1105,7 +1112,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     tonalElevation = 8.dp,
                     modifier = Modifier
                         .heightIn(min = 48.dp)
-                        .border(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
+                        .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
                         .clip(RoundedCornerShape(16.dp))
                         .clickable { viewModel.clearBannerMessage() }
                 ) {

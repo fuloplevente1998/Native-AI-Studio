@@ -1,5 +1,7 @@
 package com.repforge.app.ui.onboarding
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -98,7 +100,7 @@ internal fun NativeOnboardingScreen(
                 R.string.native_onboarding_begin else R.string.native_onboarding_edit),
                 color = colors.onAccent)
         }
-        OutlinedButton(
+        TrainPilotOutlinedButton(
             onClick = onSkip, enabled = !saving,
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                 .testTag("onboarding_skip")

@@ -1,5 +1,7 @@
 package com.repforge.app.ui.journal
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -152,14 +154,14 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                                 }
                             }
                             item {
-                                OutlinedButton(onClick = { replaceExercise(e, exercise.copy(sets = exercise.sets +
+                                TrainPilotOutlinedButton(onClick = { replaceExercise(e, exercise.copy(sets = exercise.sets +
                                     NativeJournalEditor.Set(null, exercise.sets.lastOrNull()?.weight ?: "0", "", false))) },
                                     enabled = !state.saving && exercise.sets.size < 500,
                                     modifier = Modifier.fillMaxWidth().testTag("journal_editor_add_set_$e")) { Text(text.getString(R.string.journal_edit_add_set)) }
                             }
                         }
                         item {
-                            OutlinedButton(onClick = { choosing = true }, enabled = !state.saving && draft.exercises.size < 200,
+                            TrainPilotOutlinedButton(onClick = { choosing = true }, enabled = !state.saving && draft.exercises.size < 200,
                                 modifier = Modifier.fillMaxWidth().testTag("journal_editor_add_exercise")) { Text(text.getString(R.string.journal_edit_add_exercise)) }
                         }
                     }

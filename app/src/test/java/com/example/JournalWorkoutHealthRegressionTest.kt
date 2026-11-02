@@ -125,7 +125,7 @@ class JournalWorkoutHealthRegressionTest {
         assertEquals(data.toString(), JSONObject(restored.workout.health240Json!!).toString())
     }
 
-    @Test fun threeSourceCardsStartCollapsedExpandIndependentlyAndReadOnlyTheirOwnProvider() {
+    @Test fun threeSourceCardsStartCollapsedAllowOneOpenAndReadOnlyTheirOwnProvider() {
         val before = seed(health = response().put("windowStart", start).put("windowEnd", end))
         val native = NativeWorkoutHealth(context, db)
         val request = awaitNative { native.prepare(before.workout) }
@@ -160,22 +160,26 @@ class JournalWorkoutHealthRegressionTest {
         compose.onNodeWithTag("journal_provider_health_connect").performClick()
         list.performScrollToNode(hasTestTag("journal_hc_averageHeartRate_value"))
         compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertTextEquals("120 bpm")
-        list.performScrollToNode(hasTestTag("journal_provider_samsung_health"))
-        compose.onNodeWithTag("journal_provider_samsung_health").performClick()
-        list.performScrollToNode(hasTestTag("journal_samsung_averageHeartRate_value"))
-        compose.onNodeWithTag("journal_samsung_averageHeartRate_value").assertTextEquals("155 bpm")
-        list.performScrollToNode(hasTestTag("journal_hc_averageHeartRate_value"))
-        compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertTextEquals("120 bpm")
         list.performScrollToNode(hasTestTag("journal_hc_health_refresh"))
         compose.onNodeWithTag("journal_hc_health_refresh").performClick()
-        list.performScrollToNode(hasTestTag("journal_samsung_health_refresh"))
-        compose.onNodeWithTag("journal_samsung_health_refresh").performClick()
-        assertEquals(listOf(HealthJournalStore.HC, HealthJournalStore.SAMSUNG), reads)
-        list.performScrollToNode(hasTestTag("journal_provider_health_connect"))
-        compose.onNodeWithTag("journal_provider_health_connect").performClick()
+        list.performScrollToNode(hasTestTag("journal_provider_samsung_health"))
+        compose.onNodeWithTag("journal_provider_samsung_health").performClick()
         compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertDoesNotExist()
         list.performScrollToNode(hasTestTag("journal_samsung_averageHeartRate_value"))
         compose.onNodeWithTag("journal_samsung_averageHeartRate_value").assertTextEquals("155 bpm")
+        list.performScrollToNode(hasTestTag("journal_samsung_health_refresh"))
+        compose.onNodeWithTag("journal_samsung_health_refresh").performClick()
+        assertEquals(listOf(HealthJournalStore.HC, HealthJournalStore.SAMSUNG), reads)
+        list.performScrollToNode(hasTestTag("journal_provider_wear"))
+        compose.onNodeWithTag("journal_provider_wear").performClick()
+        compose.onNodeWithTag("journal_hc_averageHeartRate_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_samsung_averageHeartRate_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_wear_totalCalories_value").assertExists()
+        list.performScrollToNode(hasTestTag("journal_provider_wear"))
+        compose.onNodeWithTag("journal_provider_wear").performClick()
+        compose.onNodeWithTag("journal_wear_totalCalories_value").assertDoesNotExist()
+        compose.onNodeWithTag("journal_health_source_group").assertExists()
+
     }
 
     @Test fun sourceCardExpansionSurvivesRestorationWithoutOpeningOtherSources() {

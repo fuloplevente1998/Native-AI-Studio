@@ -1,5 +1,7 @@
 package com.repforge.app.ui.navigation
 
+import com.repforge.app.ui.theme.trainPilotBorder
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -151,7 +153,7 @@ internal fun NativeTopNavigation(route: String, settingsOrigin: String, language
                         else Modifier.weight(1f)).heightIn(min = 56.dp)
                         .clip(shape)
                         .background(if (active) colors.selectedSurface else colors.card)
-                        .border(if (active) 1.5.dp else 1.dp,
+                        .trainPilotBorder(if (active) 1.5.dp else 1.dp,
                             if (active) colors.accentText else colors.line, shape)
                         .selectable(selected = active, enabled = enabled, role = Role.Tab) { onSelect(destination) }
                         .testTag("navigation_$destination")
