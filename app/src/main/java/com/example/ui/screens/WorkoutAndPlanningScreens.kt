@@ -1740,7 +1740,7 @@ fun CalendarPlannerScreen(
                             color = Color(0xFF171E27),
                             modifier = Modifier
                                 .size(44.dp)
-                                .border(1.dp, Color(0xFF252E3B), RoundedCornerShape(12.dp))
+                                .trainPilotBorder(1.dp, Color(0xFF252E3B), RoundedCornerShape(12.dp))
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { onSelectMonth(displayedYearMonth.minusMonths(1).toString()) }
                         ) {
@@ -1765,7 +1765,7 @@ fun CalendarPlannerScreen(
                                 color = Color(0xFF171E27),
                                 modifier = Modifier
                                     .size(44.dp)
-                                    .border(1.dp, Color(0xFF252E3B), RoundedCornerShape(12.dp))
+                                    .trainPilotBorder(1.dp, Color(0xFF252E3B), RoundedCornerShape(12.dp))
                                     .clip(RoundedCornerShape(12.dp))
                                     .clickable { onSelectMonth(displayedYearMonth.plusMonths(1).toString()) }
                             ) {
@@ -2192,7 +2192,7 @@ fun CalendarPlannerScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 20.dp)
-                    .border(1.dp, Color(0xFF242E3D), RoundedCornerShape(24.dp))
+                    .trainPilotBorder(1.dp, Color(0xFF242E3D), RoundedCornerShape(24.dp))
             ) {
                 Column(
                     modifier = Modifier
