@@ -834,9 +834,10 @@ internal class HealthJournalStore(context: Context) :
                 }
                 if (hc != null) hc!!.put("sleepSessions", sleepSessions(db, dayStr, ""))
                 val preferredProvider = meta(db, "provider", HC)
-                if (hc == null && old == null && !(preferredProvider == SAMSUNG && samsung != null) && ble == null) {
-                    continue
-                }
+                val hasSelectedProvider = if (preferredProvider == SAMSUNG) samsung != null
+                    else hc != null || old != null
+                val explicitWatchSteps = ble != null && meta(db, "logWatchSteps", "false").toBoolean()
+                if (!hasSelectedProvider && !explicitWatchSteps) continue
                 val out = HealthProviderProjection.day(hc, samsung, old, preferredProvider)
                 if (ble != null && meta(db, "logWatchSteps", "false").toBoolean() && (primary == BLE || out.isNull("steps"))) {
                     out.put("steps", ble!!.get("steps"))
@@ -1124,7 +1125,10 @@ internal class HealthJournalStore(context: Context) :
                                     }
                                 }
                             }
-                            if (hc == null && legacy == null && (preferred != SAMSUNG || samsung == null)) continue
+                            // Journal days must reflect the selected provider; other
+                            // channels retain their own historical rows for explicit inspection.
+                            if ((preferred == SAMSUNG && samsung == null) ||
+                                (preferred != SAMSUNG && hc == null && legacy == null)) continue
                             if (hc != null) hc!!.put("sleepSessions", sleepSessions(db, date, ""))
                             val selected = HealthProviderProjection.day(hc, samsung, legacy, preferred).put("day", date)
                             if (!selected.has("source")) {
