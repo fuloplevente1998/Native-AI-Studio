@@ -1,5 +1,18 @@
 # TrainPilot – külön ChatGPT/Codex chateknek kiosztható feladatok
 
+## Felülíró integrációs állapot – 1–6 elkészült
+
+A felhasználó kérésére az 1–3 itt befejezve, a külön chatek 4–6. javításai is
+integrálva. #28 main merge: `2d7171b9cce7762553e053ab98b9828d3e7f2fc5`.
+PR-forrás: `c965d01e08bcd0cf6d77ea02e407005b266398b8`, Actions `41529082323`
+SUCCESS; letöltött nyers XML **315 = 139 telefon + 176 Wear**, nulla failure/error/skip.
+A HC-olvasás diagnózisa elkészült; a készülékes üresség oka még nem bizonyított.
+A kész kódokat ne implementáld újra. A kiadott APK-pár legfrissebb bizonyítékát és
+linkjeit az aktuális átadó legfelső blokkjából vedd. A 8. feladat, naplózott edzés
+valódi törlése, külön marad; az aktív/szüneteltetett edzés elvetése már kész.
+
+Az alábbi kiosztás **történeti munkaterv**, nem az aktuális befejezetlenség listája.
+
 # Közös utasítás – minden chatnek
 
 Repo: https://github.com/fuloplevente1998/Native-AI-Studio

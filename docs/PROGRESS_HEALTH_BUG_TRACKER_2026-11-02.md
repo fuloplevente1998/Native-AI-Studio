@@ -1,5 +1,16 @@
 # Natív készülékes hibák és javítások, 2026-11-02
 
+## Aktuális 1–6 integráció – #28 / 2741
+
+A 2d7171b mainforrás tartalmazza a közös keretek/forrásharmonika, volumenábra,
+szüneteltetett edzés elvetése, térképmód/végpontok, Home duplikált blokk eltávolítása
+és HC frissolvasás-diagnózis javításait. PR CI 41529082323 SUCCESS; nyers XML
+315 teszt (139 telefon +176 Wear), nulla hiba/kihagyás. Main signed 41530039869 SUCCESS, letöltött XML szintén 315/315; állandó kulcsos 2741 APK-pár Drive-ra feltöltve és méret/szülő readbackkel ellenőrizve. Kiadási bizonyíték és APK-linkek
+az aktuális átadó legfelső blokkjában. A HC készülékes üresség okát ez nem bizonyítja.
+#19 nyitva a fizikai elfogadáshoz; a 8. naplózottedzés-törlés külön feladat.
+
+## Történeti ellenőrzőlista
+
 A 2026-11-02-i készülékes visszajelzések közös követője. Kiindulás: a mainre került AI Studio-frissítés és #18 után kiadott, állandó kulcsos `35d9d64` APK (255 sikeres JVM-teszt). A lenti problémákat a felhasználó készüléken jelezte; a korábbi teszteredmény nem jelenti ezek elfogadását.
 
 ## Elfogadási lista
