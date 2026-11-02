@@ -687,7 +687,7 @@ fun HealthTabScreen(
                                             style = MaterialTheme.typography.labelLarge, color = palette.textPrimary)
                                         Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.primary)
                                     }
-                                    Text(if (steps) "%,d".format(java.util.Locale.US, weeklyStepsCurrent).replace(',', ' ')
+                                    Text(if (steps) { if (goalDays.none { it.stepsAvailable }) "—" else "%,d".format(java.util.Locale.US, weeklyStepsCurrent).replace(',', ' ') }
                                         else "$weeklyMinutesCurrent perc", style = MaterialTheme.typography.headlineMedium,
                                         color = palette.textPrimary, modifier = Modifier.testTag("health_weekly_${tag}_total"))
                                     Text(if (steps) "Cél: $weeklyStepsTarget" else "Cél: $weeklyMinutesTarget perc",
@@ -696,24 +696,35 @@ fun HealthTabScreen(
                                         modifier = Modifier.fillMaxWidth(), color = palette.primary, trackColor = palette.surfaceElevated)
                                     if (steps) Text("${goalDays.count { it.stepsAvailable }}/7 napi adat • $primaryProviderName",
                                         style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                    AnimatedVisibility(visible = expanded) {
-                                        Column(Modifier.fillMaxWidth().testTag("health_weekly_${tag}_days"),
-                                            verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            for (day in goalDays) {
-                                                HorizontalDivider(color = palette.cardBorder)
-                                                Text(day.dayLabelHu, style = MaterialTheme.typography.labelLarge, color = palette.textPrimary)
-                                                Text(if (steps) { if (day.stepsAvailable) "${day.steps} lépés" else "Nincs napi lépésadat" }
-                                                    else "${day.workoutMinutes} perc • ${day.workoutCount} edzés",
-                                                    modifier = Modifier.testTag("health_weekly_${tag}_${day.dateIso}"),
-                                                    style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
-                                                if (steps) Text(day.stepsSourceLabelHu, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                                else {
-                                                    Text("Room edzésnapló • aktív idő", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                                    uiState.loggedWorkouts.filter { it.localWorkoutDate()?.toString() == day.dateIso }.forEach { workout ->
-                                                        Text("${workout.titleHu}: ${workout.durationMinutes} perc",
-                                                            style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                                    }
-                                                }
+                                }
+                            }
+                        }
+                    }
+
+                    // Details reserve a full-width row beneath both summary cards.
+                    for (steps in listOf(true, false)) {
+                        val expanded = if (steps) uiState.expandedWeeklySteps else uiState.expandedWeeklyWorkouts
+                        val tag = if (steps) "steps" else "minutes"
+                        AnimatedVisibility(visible = expanded) {
+                            Surface(shape = RoundedCornerShape(18.dp), color = palette.surfaceElevated,
+                                modifier = Modifier.fillMaxWidth().testTag("health_weekly_${tag}_days")
+                                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))) {
+                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(if (steps) "Heti lépésszám • napi bontás" else "Aktív edzésidő • napi bontás",
+                                        style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
+                                    for (day in goalDays) {
+                                        HorizontalDivider(color = palette.cardBorder)
+                                        Text(day.dayLabelHu, style = MaterialTheme.typography.labelLarge, color = palette.textPrimary)
+                                        Text(if (steps) { if (day.stepsAvailable) "${day.steps} lépés" else "Nincs napi lépésadat" }
+                                            else "${day.workoutMinutes} perc • ${day.workoutCount} edzés",
+                                            modifier = Modifier.testTag("health_weekly_${tag}_${day.dateIso}"),
+                                            style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
+                                        if (steps) Text(day.stepsSourceLabelHu, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                        else {
+                                            Text("Room edzésnapló • aktív idő", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                            uiState.loggedWorkouts.filter { it.localWorkoutDate()?.toString() == day.dateIso }.forEach { workout ->
+                                                Text("${workout.titleHu}: ${workout.durationMinutes} perc",
+                                                    style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
                                             }
                                         }
                                     }

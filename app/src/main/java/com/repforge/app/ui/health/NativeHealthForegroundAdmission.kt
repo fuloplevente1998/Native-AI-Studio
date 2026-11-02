@@ -32,48 +32,71 @@ internal object NativeHealthForegroundAdmission {
         frames: List<JSONObject?>
     ): Boolean =
         replacementReady && executionReady && ownershipStage !in ownershipTransitions &&
-            frames.filterNotNull().none { frame ->
-                frame.optBoolean("active") || frame.optBoolean("workoutPaused") ||
-                    frame.optBoolean("finalizationPending") || frame.optBoolean("discardPending")
-            }
+            frameBlock(frames) == null
+
+    internal enum class Block(val message: String) {
+        RESTORE("Adat-visszaállítás vagy adatcsere van folyamatban. Várd meg a befejezését, majd frissíts újra."),
+        BACKUP("Biztonsági mentés van folyamatban. A napi szinkron utána indítható."),
+        HANDOVER("Az órás átadás/visszavétel még nincs lezárva. Várd meg a visszaigazolást."),
+        FINALIZING("Az edzés mentése vagy elvetése még nincs lezárva. Fejezd be a műveletet az edzés képernyőjén."),
+        ACTIVE("Folyamatban lévő vagy szüneteltetett edzés van. A teljes napi szinkron az edzés lezárása után indítható."),
+        UNREADABLE("A natív edzés- vagy adatcsereállapot nem olvasható. A szinkron biztonsági okból nem indult el.")
+    }
+
+    /** Project out only an explicit inactive frame from an authoritative terminal source.
+     * endExecution() / OwnershipJournal.close() deliberately retain the old flags for recovery.
+     * No stored frame, recovery marker or measurement is deleted or rewritten here.
+     */
+    internal fun admissionFrame(frame: JSONObject?, terminalSource: Boolean): JSONObject? =
+        frame?.takeUnless { terminalSource && it.opt("active") == false }
+
+    private fun frameBlock(frames: List<JSONObject?>): Block? {
+        if (frames.filterNotNull().any { it.optBoolean("finalizationPending") || it.optBoolean("discardPending") }) return Block.FINALIZING
+        if (frames.filterNotNull().any { it.optBoolean("active") || it.optBoolean("workoutPaused") }) return Block.ACTIVE
+        return null
+    }
 
     /** No metadata lock, provider IPC or coroutine hop in this main-only section. */
-    fun safeOnMain(context: Context): Boolean {
+    fun mainBlockReason(context: Context): Block? {
         check(Looper.myLooper() == Looper.getMainLooper()) { "Foreground admission requires main looper" }
         return try {
             val execution = PhoneWorkoutExecution.store(context)
-            eligible(
-                replacementReady = true,
-                executionReady = !execution.commandsSuspended() && !execution.restoreBlocked(),
-                ownershipStage = "",
-                frames = listOf(execution.snapshot())
-            )
-        } catch (_: Exception) {
-            false // Fail closed for unreadable execution state.
-        }
+            if (execution.restoreBlocked()) Block.RESTORE
+            else {
+                val frameReason = frameBlock(listOf(admissionFrame(execution.snapshot(), terminalSource = true)))
+                when {
+                    frameReason == Block.FINALIZING -> frameReason
+                    execution.commandsSuspended() -> Block.HANDOVER
+                    else -> frameReason
+                }
+            }
+        } catch (_: Exception) { Block.UNREADABLE }
     }
 
+    fun safeOnMain(context: Context): Boolean = mainBlockReason(context) == null
+
     /** Room/restore/backup/ownership checks are legal on an SDK reader's IO thread. */
-    fun safeOffMain(context: Context): Boolean {
-        return try {
-        if (!NativeHealthBackupGate.available() || NativeDataReplacement.blocked(context)) return false
-        if (HealthJournalStore.get(context).pendingRestore().isNotEmpty()) return false
-        val ownership = PhoneOwnership193.journal(context).read()
-        eligible(
-            replacementReady = true,
-            executionReady = true,
-            ownershipStage = ownership.optString("stage"),
-            frames = listOf(ActiveWorkoutStore.current(context), ownership.optJSONObject("snapshot"))
-        )
-    } catch (_: Exception) {
-        false
+    fun offMainBlockReason(context: Context): Block? = try {
+        when {
+            !NativeHealthBackupGate.available() -> Block.BACKUP
+            NativeDataReplacement.blocked(context) -> Block.RESTORE
+            HealthJournalStore.get(context).pendingRestore().isNotEmpty() -> Block.RESTORE
+            else -> {
+                val ownership = PhoneOwnership193.journal(context).read()
+                val stage = ownership.optString("stage")
+                if (stage in ownershipTransitions) Block.HANDOVER
+                else frameBlock(listOf(ActiveWorkoutStore.current(context),
+                    admissionFrame(ownership.optJSONObject("snapshot"), terminalSource = stage == "closed")))
+            }
         }
-    }
+    } catch (_: Exception) { Block.UNREADABLE }
+
+    fun safeOffMain(context: Context): Boolean = offMainBlockReason(context) == null
 
     /** Outside ALL metadata locks; only the main-looper execution probe changes dispatcher. */
     suspend fun requireMainAdmission(context: Context) {
-        val safe = withContext(Dispatchers.Main.immediate) { safeOnMain(context) }
-        check(safe) { "Workout execution or restore blocks foreground Health refresh" }
+        val reason = withContext(Dispatchers.Main.immediate) { mainBlockReason(context) }
+        check(reason == null) { reason!!.message }
     }
 
     /**
@@ -92,7 +115,7 @@ internal object NativeHealthForegroundAdmission {
             NativeDataReplacement.mutate(context) {
                 NativeHealthBackupGate.publish {
                     check(safeOffMain(context)) {
-                        "Workout ownership, restore or backup blocks Health publication"
+                        offMainBlockReason(context)?.message ?: "Az egészségadatok közzététele közben az állapot megváltozott."
                     }
                     requireIdentity()
                     writer()

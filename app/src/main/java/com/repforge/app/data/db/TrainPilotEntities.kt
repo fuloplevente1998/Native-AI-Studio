@@ -394,3 +394,8 @@ data class CardioSetProjection(
     val exerciseHasDistance: Boolean,
     val exerciseHasPositiveDistance: Boolean
 )
+
+/** Scalar paged input for saved personal records; no history JSON, GPS or photos. */
+data class SavedExerciseRecordRow(val setRowId: Long, val exerciseId: String, val nameHu: String,
+    val nameEn: String, val repUnit: String, val measurementType: String, val weight: Double?,
+    val reps: String, val leftSeconds: Int?, val rightSeconds: Int?, val distanceMeters: Double?)

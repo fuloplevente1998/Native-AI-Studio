@@ -387,7 +387,9 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                 val visibleGeneration = screenGeneration
                 val selected = historyQuery.day.toString()
                 // PhoneWorkoutExecution.store is MAIN-ONLY; never call it inside IO/mutate.
-                val executionSafe = NativeHealthForegroundAdmission.safeOnMain(context)
+                val executionBlock = NativeHealthForegroundAdmission.mainBlockReason(context)
+                val executionSafe = executionBlock == null
+                var publicationBlock: NativeHealthForegroundAdmission.Block? = null
                 val prepared = withContext(Dispatchers.IO) {
                     val hcPermitted = Build.VERSION.SDK_INT >= 34 && HealthConnectRepository.isSupported(context) &&
                         HealthConnectRepository.anyReadAllowed(context)
@@ -400,13 +402,14 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                             HealthJournalStore.SAMSUNG -> samsungPermitted
                             else -> false
                         }
+                        publicationBlock = NativeHealthForegroundAdmission.offMainBlockReason(context)
                         Triple(
                             NativeHealthAutoRefreshGate.Snapshot(provider,
                                 if (trigger == NativeHealthAutoRefreshGate.Trigger.AUTO) LocalDate.now().toString()
                                 else selected,
                                 healthStore.generation(), visibleGeneration),
                             prefs.optBoolean("autoOnOpen", false),
-                            permitted && NativeHealthForegroundAdmission.safeOffMain(context)
+                            permitted && publicationBlock == null
                         )
                     }
                 }
@@ -417,8 +420,8 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                 if (ticket == null) {
                     if (trigger == NativeHealthAutoRefreshGate.Trigger.MANUAL) _uiState.update { it.copy(syncFailed = true, syncOutcome = "BLOCKED",
                         syncMessage = "${com.repforge.app.NativeWorkoutHealthSource.label(snapshot.provider)}: a szinkron nem indult el • " +
-                            if (!executionSafe) "aktív edzés, átadás vagy adatcsere védi a munkamenetet; az edzés képernyőjén külön, csak olvasási lekérés használható"
-                            else "hiányzó szolgáltató/engedély vagy másik folyamatban lévő művelet") }
+                            (executionBlock?.message ?: publicationBlock?.message
+                                ?: "Hiányzó szolgáltató/engedély vagy másik folyamatban lévő művelet.")) }
                     return@launch
                 }
                 val activeTicket = ticket!!
@@ -438,7 +441,7 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                     // Synchronous guard runs on provider IO threads; main-only execution is
                     // checked by NativeHealthRefresh *before* each protected publication.
                     check(NativeHealthForegroundAdmission.safeOffMain(context)) {
-                        "Workout ownership, restore or backup blocks Health refresh"
+                        NativeHealthForegroundAdmission.offMainBlockReason(context)?.message ?: "Az egészségügyi szinkron állapota megváltozott."
                     }
                     if (trigger == NativeHealthAutoRefreshGate.Trigger.AUTO)
                         check(day == LocalDate.now()) { "Local health day changed while refreshing" }

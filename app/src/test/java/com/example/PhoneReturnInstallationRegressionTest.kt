@@ -175,6 +175,9 @@ class PhoneReturnInstallationRegressionTest {
                 catch (_: java.util.concurrent.TimeoutException) { }
             }
             future.get()
+            // Terminal execution/ownership snapshots keep old pause flags for recovery.
+            assertTrue(com.repforge.app.ui.health.NativeHealthForegroundAdmission.safeOnMain(context))
+            assertTrue(com.repforge.app.ui.health.NativeHealthForegroundAdmission.safeOffMain(context))
         } finally { worker.shutdownNow(); database.close() }
     }
 

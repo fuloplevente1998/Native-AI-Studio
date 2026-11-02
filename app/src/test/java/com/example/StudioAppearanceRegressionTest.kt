@@ -156,6 +156,15 @@ class StudioAppearanceRegressionTest {
         list.performScrollToNode(hasTestTag("health_weekly_minutes_card"))
         compose.onNodeWithTag("health_weekly_minutes_card").performClick()
         compose.onNodeWithTag("health_weekly_minutes_days", useUnmergedTree = true).assertExists()
+        val left = compose.onNodeWithTag("health_weekly_steps_card").getUnclippedBoundsInRoot()
+        val right = compose.onNodeWithTag("health_weekly_minutes_card").getUnclippedBoundsInRoot()
+        for (tag in listOf("steps", "minutes")) {
+            val panel = compose.onNodeWithTag("health_weekly_${tag}_days", useUnmergedTree = true).getUnclippedBoundsInRoot()
+            assertEquals(left.left, panel.left)
+            assertEquals(right.right, panel.right)
+            assertTrue(panel.width > left.width * 1.8f)
+        }
+        compose.onNodeWithTag("health_weekly_steps_total", useUnmergedTree = true).assertTextEquals("—")
         compose.runOnIdle { assertTrue(steps); assertTrue(workouts) }
     }
 }

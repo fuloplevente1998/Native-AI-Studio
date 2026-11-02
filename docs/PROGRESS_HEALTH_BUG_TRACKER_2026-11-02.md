@@ -34,3 +34,11 @@ A #20 implementálja a fenti pontokat. A `5df8374a65f81dc759ecfb6e8e96a936698344
 ## Main és teljes ellenőrzés
 
 A #20 mainre merge-elve: `3572e2086cc741cc42bc2c6929c786b0772bf91c`. Teljes signed Actions `41451874030` SUCCESS, letöltött XML: **270 teszt (101 telefon + 169 Wear), 0 failure/error/skip**. Telefon és óra tényleges release APK-ja `0.1.0-beta / 2737`, változatlan állandó signerrel; APK-hash, méret, source checkout és a TrainPilot Native mappa ellenőrizve. Letöltések az aktuális AI Studio-átadóban. A többi checkbox készülékes elfogadáshoz nyitott; nem azt jelenti, hogy a mainbe került kódot újra kell írni.
+
+## Következő készülékes javítás – 2026-11-02
+
+- Mentett edzés után a lezárt execution/ownership pillanatképben megmaradó pause/finalization jelző ne blokkolja örökre az egészségszinkront. Csak kifejezetten inaktív, hiteles lezárt pillanatkép hagyható figyelmen kívül; aktív edzés, sikertelen mentés, átadás, restore és adatcsere védelme megmarad. Magyar, egyértelmű inline diagnosztika, ismételt sikerjelzés nélkül.
+- Heti célok: a két önálló lenyitás a két fejléc alatt teljes szélességet kap.
+- A Fejlődés harmadik füle Statisztikák: Személyes rekordok és Kardióstatisztika, a meglévő natív PR-/kardiómotorral, tényleges mentett sorozatokból és napi provider-cache-ből.
+- Üres naptári nap: önálló tájékoztató sor, két egyenlő szélességű hozzáadásgomb, egyetlen visszavonás.
+- Következő belső build: 2738, látható verzió továbbra is 0.1.0-beta. Célzott és teljes ellenőrzés még folyamatban; ez a szakasz nem készülékes elfogadás.

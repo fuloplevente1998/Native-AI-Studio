@@ -50,6 +50,7 @@ data class ProgressUiState(
     val photosError: Boolean = false,
     val language: String = "hu",
     val loading: Boolean = true,
+    val dataRevision: Long = 0L,
     val loadError: Boolean = false,
     val selectedCardioId: String = NativeCardioModel.ALL_ACTIVITIES,
     val cardio: CardioModelResult? = null,
@@ -109,6 +110,7 @@ class ProgressViewModel(application: Application) : AndroidViewModel(application
         // Unlike a count-based cache, this responds to same-count in-place edits.
         viewModelScope.launch {
             NativeProgressQuery.invalidations(db).collect {
+                _uiState.update { it.copy(dataRevision = it.dataRevision + 1) }
                 loadProgressData()
                 reloadCardio()
             }

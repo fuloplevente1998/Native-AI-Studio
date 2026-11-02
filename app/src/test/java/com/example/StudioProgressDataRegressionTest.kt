@@ -129,4 +129,30 @@ class StudioProgressDataRegressionTest {
         assertTrue(model.uiState.value.dailyHealthAvailableFields.isEmpty())
         assertEquals(0, model.uiState.value.dailySteps)
     }
+    @Test fun savedRecordListUsesEveryMeasuredExerciseAndTheCanonicalPrTypes() {
+        native {
+            fun exercise(id: String, unit: String, measurement: String, vararg rows: JSONObject) = JSONObject()
+                .put("id", id).put("name", id).put("hu", id).put("repUnit", unit).put("measurementType", measurement)
+                .put("sets", JSONArray(rows.toList()))
+            fun set(weight: Double, reps: String, done: Boolean = true) = JSONObject()
+                .put("weight", weight).put("reps", reps).put("done", done)
+            val start = java.time.Instant.now().minusSeconds(3600)
+            val raw = JSONObject().put("id", "typed-records").put("key", "typed-records")
+                .put("started", start.toString()).put("finished", start.plusSeconds(600).toString())
+                .put("exercises", JSONArray().put(exercise("fixture-weight", "ism.", "reps", set(5.5, "10"), set(999.0, "99", false)))
+                    .put(exercise("fixture-body", "ism.", "reps", set(0.0, "12")))
+                    .put(exercise("fixture-timed", "mp", "time", set(0.0, "45")))
+                    .put(exercise("side-plank", "mp/oldal", "time", set(0.0, "0").put("leftSeconds", 30).put("rightSeconds", 40)))
+                    .put(exercise("fixture-bike", "km", "distance", set(0.0, "1757").put("distanceMeters", 1623))))
+            LegacyWebViewMigrator(context, db, store).saveWorkoutJsonToRoom(raw)
+            val records = PersonalRecordCalculator226.savedExerciseBests(db).associateBy { it.exerciseId }
+            assertEquals(5, records.size)
+            assertEquals(5.5, records.getValue("fixture-weight").weightKg!!, 0.001)
+            assertEquals(12, records.getValue("fixture-body").repetitions)
+            assertEquals(45, records.getValue("fixture-timed").seconds)
+            assertEquals(40, records.getValue("side-plank").seconds)
+            assertEquals(1623.0, records.getValue("fixture-bike").distanceMeters!!, 0.001)
+        }
+    }
+
 }

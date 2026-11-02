@@ -11,6 +11,10 @@ import org.json.JSONObject
 import kotlin.math.max
 import kotlin.math.roundToInt
 
+data class SavedExerciseBest(val exerciseId: String, val nameHu: String, val nameEn: String,
+    val repUnit: String, val measurementType: String, val weightKg: Double?, val repetitions: Int?,
+    val seconds: Int?, val distanceMeters: Double?)
+
 /**
  * #226 / #234: Personal Record detector for finished workouts.
  * Compares the new workout's completed sets against prior history and produces
@@ -61,6 +65,26 @@ internal object PersonalRecordCalculator226 {
             }
         }
         return evaluate(newWorkout, prior)
+    }
+
+    /** Uses the same accumulator as canonical PR badges; bounded reads from saved, non-deleted sets. */
+    suspend fun savedExerciseBests(database: TrainPilotDatabase): List<SavedExerciseBest> = database.withTransaction {
+        val best = PriorRecords()
+        val names = linkedMapOf<String, com.repforge.app.data.db.SavedExerciseRecordRow>()
+        var after = Long.MIN_VALUE
+        do {
+            val rows = database.workoutHistoryDao().pageSavedExerciseRecords(after, PAGE)
+            for (row in rows) {
+                names[row.exerciseId] = row
+                best.accept(PersonalRecordSet226(row.setRowId, row.exerciseId, row.repUnit, row.weight,
+                    row.reps, row.leftSeconds, row.rightSeconds, row.distanceMeters))
+            }
+            if (rows.size < PAGE) break
+            after = rows.last().setRowId
+        } while (true)
+        names.values.map { row -> SavedExerciseBest(row.exerciseId, row.nameHu, row.nameEn, row.repUnit,
+            row.measurementType, best.weight[row.exerciseId]?.takeIf { it.isFinite() }, best.reps[row.exerciseId],
+            best.seconds[row.exerciseId], best.distance[row.exerciseId]?.takeIf { it.isFinite() }) }
     }
 
     private class PriorRecords {

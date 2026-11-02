@@ -257,6 +257,9 @@ data class TrainPilotUiState(
     val statsSubTab: Int = 0, // 0 = Személyes rekordok, 1 = Kardióstatisztika
     val cardioFilterStepsMode: Boolean = false, // false = Minden mozgás, true = Napi aktivitás / lépések
     val prRecords: List<PrRecordEntry> = emptyList(),
+    val savedExerciseBests: List<com.repforge.app.SavedExerciseBest> = emptyList(),
+    val savedRecordsLoading: Boolean = true,
+    val savedRecordsError: Boolean = false,
     val videoModalExerciseTitle: String? = null,
     val realMuscleLoads: List<com.example.ui.components.MuscleLoadItem> = emptyList(),
     val muscleLoadPeriodDays: Int = 90,
@@ -271,6 +274,7 @@ data class TrainPilotUiState(
     val expandedHealthJournal: Boolean = false,
     val expandedHealthConnect: Boolean = false,
     val weeklyHealthDays: List<WeeklyHealthDaySummary> = emptyList(),
+    val dailyActivityDays: List<WeeklyHealthDaySummary> = emptyList(),
     val weeklyTotalSteps: Int = 0,
     val weeklyTotalCaloriesKcal: Int = 0,
     val weeklyTotalDistanceKm: Float = 0f,
@@ -313,6 +317,8 @@ class TrainPilotViewModel : ViewModel() {
     private var nativeDatabase: TrainPilotDatabase? = null
     private var nativeScope: CoroutineScope? = null
     private var nativeObserversJob: Job? = null
+    private var personalRecordsJob: Job? = null
+    private var personalRecordsRevision = 0L
     @Volatile private var watchHandoffBusy = false
     private fun watchJournal(): JSONObject = nativeContext?.let { context ->
         runCatching { PhoneOwnership193.journal(context).read() }
@@ -1401,6 +1407,7 @@ class TrainPilotViewModel : ViewModel() {
             // 7. Load real muscle load summary from Room
             loadMuscleLoadSummary(progressPeriodDays(_uiState.value.selectedProgressRangeIndex))
             _uiState.value.selectedLogWorkoutId.takeIf { it.isNotBlank() }?.let(::loadWorkoutMuscleSummary)
+            reloadPersonalRecords()
         }
     }
 
@@ -3335,8 +3342,30 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     // Progress / Fejlődés Actions
+    fun reloadPersonalRecords() {
+        val db = nativeDatabase ?: return
+        val scope = nativeScope ?: return
+        val revision = ++personalRecordsRevision
+        personalRecordsJob?.cancel()
+        _uiState.update { it.copy(savedRecordsLoading = true, savedRecordsError = false) }
+        personalRecordsJob = scope.launch(Dispatchers.IO) {
+            try {
+                val records = com.repforge.app.PersonalRecordCalculator226.savedExerciseBests(db)
+                withContext(Dispatchers.Main) {
+                    if (revision == personalRecordsRevision) _uiState.update {
+                        it.copy(savedExerciseBests = records, savedRecordsLoading = false, savedRecordsError = false)
+                    }
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) {
+                if (revision == personalRecordsRevision) _uiState.update { it.copy(savedRecordsLoading = false, savedRecordsError = true) }
+            }
+        }
+    }
+
     fun selectProgressMainSection(section: Int) {
         _uiState.update { it.copy(progressMainSection = section) }
+        if (section == 2) reloadPersonalRecords()
     }
 
     fun selectProgressExercise(name: String) {
@@ -3556,7 +3585,7 @@ class TrainPilotViewModel : ViewModel() {
 
     fun updateHealthSyncStatus(busy: Boolean, partial: Boolean = false, failed: Boolean = false, message: String) {
         _uiState.update { it.copy(healthSyncBusy = busy, healthSyncPartial = partial,
-            healthSyncFailed = failed, healthSyncMessage = message, statusBannerMessage = message) }
+            healthSyncFailed = failed, healthSyncMessage = message) }
     }
 
     fun reloadHealthJournal() {
@@ -3645,7 +3674,7 @@ class TrainPilotViewModel : ViewModel() {
                 var sleepDaysCount = 0
                 val discoveredSources = linkedSetOf<String>()
 
-                for (offset in 6 downTo 0) {
+                for (offset in 13 downTo 0) {
                     val d = today.minusDays(offset.toLong())
                     val dayObj = runCatching { com.repforge.app.NativeHealthProviderData.day(store, provider, d) }.getOrNull()
                     val dStepsRaw = dayObj?.optDouble("steps", Double.NaN) ?: Double.NaN
@@ -3674,6 +3703,7 @@ class TrainPilotViewModel : ViewModel() {
                         workoutCountForDay > 0 -> "Room edzésnapló (aktív edzésintervallumok)"
                         else -> "Nincs rögzített adat"
                     }
+                    if (offset <= 6) {
                     if (hasHealthRow) discoveredSources.add(formatProviderLabelHu(dayChannel, stepOriginPkg))
                     if (workoutCountForDay > 0) discoveredSources.add("Room edzésnapló (aktív edzésidő)")
 
@@ -3683,6 +3713,8 @@ class TrainPilotViewModel : ViewModel() {
                     if (dSleepMin.isFinite() && dSleepMin > 0) {
                         sumSleepMin += dSleepMin
                         sleepDaysCount++
+                    }
+
                     }
 
                     weeklyDaysList.add(
@@ -3762,7 +3794,8 @@ class TrainPilotViewModel : ViewModel() {
                             dailyDistanceKm = distKmToday,
                             coachReadinessScore = computedReadiness,
                             trainPilotReadinessScore = computedReadiness,
-                            weeklyHealthDays = weeklyDaysList,
+                            weeklyHealthDays = weeklyDaysList.takeLast(7),
+                            dailyActivityDays = weeklyDaysList,
                             weeklyTotalSteps = sumSteps,
                             weeklyTotalCaloriesKcal = sumKcal,
                             weeklyTotalDistanceKm = (sumDistMeters / 1000.0).toFloat(),

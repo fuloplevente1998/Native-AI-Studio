@@ -94,7 +94,8 @@ jobs:
               --tests 'com.example.JournalWorkoutHealthRegressionTest' \
               --tests 'com.example.LegacyRestoreEvidenceRegressionTest' \
               --tests 'com.example.PhoneReturnInstallationRegressionTest' \
-              --tests 'com.example.HealthProviderSelectionRegressionTest'
+              --tests 'com.example.HealthProviderSelectionRegressionTest' \
+              --tests 'com.example.HealthSyncAdmissionRegressionTest'
           else
             gradle --no-daemon --stacktrace --continue :app:assembleDebug :app:testDebugUnitTest :wear:assembleDebug :wear:assembleOptimized :wear:testDebugUnitTest :shared:testDebugUnitTest
           fi
