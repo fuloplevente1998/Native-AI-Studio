@@ -379,10 +379,7 @@ fun HealthTabScreen(
                             }
                         }
                         Column(modifier = Modifier.weight(1f)) {
-                            Row(
-                                verticalAlignment = Alignment.Bottom,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(
                                     text = "Mai állapot",
                                     style = MaterialTheme.typography.titleLarge,
