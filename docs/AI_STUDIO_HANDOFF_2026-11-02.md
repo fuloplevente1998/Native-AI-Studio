@@ -1,5 +1,25 @@
 # TrainPilot Native – aktuális AI Studio átadás, 2026-11-02
 
+## Aktuális checkpoint: #25 / 2740, valamint Codex Spec Kit #26
+
+A napi egészségképernyő #19-ben jelzett hat javítása a #25 alatt mainre került: `5300efdabb6ff019b842d13898d21aaae11e0d3c`. A Samsung pulzussorozat fordítási névütközését a `d220cfc37b12dce3c518f8aadd584e5a647ea268` javította. PR CI `41513584412` SUCCESS: letöltött nyers XML 296/296, nulla failure/error/skip.
+
+Teljes main signed Actions [41514520016](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41514520016) SUCCESS, ugyanazon rögzített main-forrás. Letöltött nyers XML: **296 = 120 telefon + 176 Wear**, nulla failure/error/skip. Tényleges APK-pár: **2740 / 0.1.0-beta**, `com.TrainPilot.com`, változatlan állandó signer SHA256 `a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6`. Maps konfiguráció/pair/capability ellenőrizve. Ez még nem fizikai Samsung/HC/Wear elfogadás.
+
+- [Telefon APK](https://drive.google.com/file/d/1qm3emR0lSQjXjzizPuynEjf8A6X8qtd9/view)
+- [Wear APK](https://drive.google.com/file/d/1avYIZfY4ClPb5JqfXR2EyUJQLS_YJNwg/view)
+- Eredeti signed artifact: `13175931207`; teljes nyers tesztjelentés: `13175756491`.
+
+- phone: 19481259 bájt; SHA256 `d2c7da1e350d6fe11c5f1933e552e8f2333c14b9c9df86077aba5d277bea6e66`.
+- wear: 4636863 bájt; SHA256 `968733a2eca126ba28b2174a622b740d2aa483362f8a355fe51c30cc2b6f370c`.
+
+A két külön APK a TrainPilot Native `1ywHgrManynjV9uNvZfVncOmCr3SbHIb9` mappába került; méret/szülő külön metadata-readback igazolva. Korábbi APK-k megmaradtak. Nincs adattörlés, kulcscsere vagy Play/GitHub release.
+
+A #25 a dátum melletti frissítést, a kalóriarészletek lenyitását, a valódi időbélyeges pulzussorozatot és hiányjelzést, az ébredés napjára rendelt nappali/éjszakai alvásszakaszok átfedésmentes összegét, a kompakt heti sorokat és a szinkronállapot frissítését implementálja. Ne kezdd újra; készülékes visszajelzés alapján folytasd.
+
+A #26 mainre került (`3a077f8`): hivatalos Spec Kit 1.2.6 Codex-integráció és csomagolt bug kiegészítő, TrainPilot constitution, magyar útmutató: [SPEC_KIT_CODEX.md](SPEC_KIT_CODEX.md). Csak fejlesztési skillek/dokumentumok, az APK alkalmazáskódja változatlan. Integrációs status OK, shell syntax és diff ellenőrizve. Új Codex-menetben a `$speckit-bug-assess`, `$speckit-bug-fix`, `$speckit-bug-test` használható. Nem futott automatikus bug-fix workflow és nem történt készülékes elfogadás. Alügynököt a felhasználó nem kért.
+
+
 Ez az elsődleges checkpoint. A 2026-11-01-es átadó és a korábbi PR-leírások történeti háttérként használhatók; a kulcsok, Maps, tesztszám és APK-k tekintetében az alábbi állapot az irányadó.
 
 ## Legfrissebb igazolt checkpoint – #24 / 2739 (2026-11-02)
