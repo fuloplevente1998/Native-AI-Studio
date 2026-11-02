@@ -439,8 +439,6 @@ fun HomeScreen(
             }
         }
 
-        com.example.ui.components.StudioDailyHealthStatus(state)
-
         // 6. 2x2 VITALS & READINESS BENTO GRID (Mockup 1/4 #1: Alvás, Nyugalmi pulzus, Lépések, Samsung energia) + Expandable Dropdown Card
         var expandedHomeVitalKey by remember { mutableStateOf<String?>(null) }
 
