@@ -2,6 +2,10 @@ name: TrainPilot persistent signed APK pair
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/trainpilot-persistent-signing.yml'
 
 permissions:
   contents: read
