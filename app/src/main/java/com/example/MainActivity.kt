@@ -728,7 +728,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 viewModel.updateProgressionSettings(style, rule, gentle)
                             },
                             onNavigateToSubScreen = { viewModel.navigateToSubScreen(it) },
-                            onShowBanner = { viewModel.showBannerMessage(it) }
+                            onShowBanner = { viewModel.showBannerMessage(it) },
+                            onCloudSyncCompleted = { viewModel.refreshAfterCloudSync(context) }
                         )
                     }
 
@@ -758,7 +759,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             },
                             onImportBackup = { uri ->
                                 viewModel.importBackup(context, uri)
-                            }
+                            },
+                            onCloudSyncCompleted = { viewModel.refreshAfterCloudSync(context) }
                         )
                     }
 

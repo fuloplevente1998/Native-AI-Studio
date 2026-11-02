@@ -411,16 +411,18 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.width(14.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = state.watchName,
+                        text = if (state.watchAppAvailable) state.watchName else "Nincs csatlakoztatott Wear OS óra",
                         style = MaterialTheme.typography.titleMedium,
                         color = palette.textPrimary
                     )
                     Text(
-                        text = if (state.watchConnected) {
-                            if (state.watchBatteryPercent in 0..100) strings.connectedWithBattery(state.watchBatteryPercent)
-                            else "Csatlakoztatva • töltöttség nem érhető el"
-                        } else {
-                            "Offline"
+                        text = when {
+                            state.watchAppAvailable -> {
+                                if (state.watchBatteryPercent in 0..100) strings.connectedWithBattery(state.watchBatteryPercent)
+                                else "Csatlakoztatva • TrainPilot óraapp elérhető"
+                            }
+                            state.watchConnected -> "Wear OS rendszerkapcsolat • TrainPilot óraapp nincs telepítve"
+                            else -> "Offline • Nincs párosított óraalkalmazás"
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = palette.textSecondary
@@ -430,7 +432,7 @@ fun HomeScreen(
                     modifier = Modifier
                         .size(14.dp)
                         .clip(CircleShape)
-                        .background(if (state.watchConnected) palette.success else palette.warning)
+                        .background(if (state.watchAppAvailable) palette.success else palette.warning)
                 )
             }
         }
@@ -786,7 +788,7 @@ fun HomeScreen(
                                         color = palette.textSecondary
                                     )
                                     Text(
-                                        text = "${state.coachReadinessScore}/100",
+                                        text = if (state.coachReadinessScore > 0) "${state.coachReadinessScore}/100" else "—",
                                         style = MaterialTheme.typography.titleLarge,
                                         color = palette.textPrimary
                                     )

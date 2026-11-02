@@ -13,7 +13,7 @@ phone = pathlib.Path("app/build/outputs/apk/release/app-release.apk" if release 
 if not phone.is_file():
     print("No debug phone APK produced; configuration evidence unavailable.")
     raise SystemExit(1 if release else 0)
-sdk = pathlib.Path(os.environ["ANDROID_HOME"])
+sdk = pathlib.Path(os.environ.get("ANDROID_HOME") or os.environ["ANDROID_SDK_ROOT"])
 analyzer = shutil.which("apkanalyzer") or str(next(sdk.glob("cmdline-tools/*/bin/apkanalyzer")))
 signer_tool = sdk / "build-tools/36.0.0/apksigner"
 android = "{http://schemas.android.com/apk/res/android}"
@@ -38,7 +38,12 @@ def inspect(apk):
 manifest, result = inspect(phone)
 key = next((n.get(android + "value", "") for n in manifest.findall("application/meta-data")
             if n.get(android + "name") == "com.google.android.geo.API_KEY"), "")
-result["mapsApiKeyConfigured"] = bool(key.strip()) and not key.startswith("${") and key not in {"YOUR_API_KEY", "DEFAULT_API_KEY"}
+result["mapsApiKeyConfigured"] = (
+    bool(key.strip())
+    and not key.startswith("${")
+    and not key.startswith("@string/0x")
+    and key not in {"YOUR_API_KEY", "DEFAULT_API_KEY"}
+)
 result["ciCheckout"] = os.environ.get("GITHUB_SHA")
 wear_debug = pathlib.Path("wear/build/outputs/apk/debug/wear-debug.apk")
 wear = pathlib.Path("wear/build/outputs/apk/release/wear-release.apk" if release else "wear/build/outputs/apk/optimized/wear-optimized.apk")

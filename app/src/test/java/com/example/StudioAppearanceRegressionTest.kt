@@ -82,4 +82,81 @@ class StudioAppearanceRegressionTest {
         compose.onNodeWithTag("settings_themes_group").assertDoesNotExist()
         compose.runOnIdle { assertEquals(9, selected) }
     }
+
+    @Test fun settingsExposesGoogleCloudLoginAndDriveCalendarControls() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        context.getSharedPreferences("repforge-google", android.content.Context.MODE_PRIVATE).edit().clear().commit()
+        compose.setContent {
+            TrainPilotTheme {
+                SettingsMainScreen(
+                    uiState = TrainPilotUiState(),
+                    strings = TrainPilotStrings.forLanguage(AppLanguage.HU),
+                    onBack = {},
+                    onOpenPalettePicker = {},
+                    onSelectLanguage = {},
+                    onCycleRestTimer = {},
+                    onToggleSoundAlert = {},
+                    onToggleProgressionModal = {},
+                    onSaveProgression = { _, _, _ -> },
+                    onNavigateToSubScreen = {},
+                    onShowBanner = {}
+                )
+            }
+        }
+        compose.onNodeWithTag("studio_google_cloud_card").assertExists()
+        compose.onNodeWithTag("settings_google_login_btn").assertExists()
+    }
+
+    @Test fun multiSelectEquipmentInPlannerGeneratesMatchingWorkoutPlan() {
+        val vm = com.example.ui.viewmodel.TrainPilotViewModel()
+        val multiEquipment = "Saját testsúly, Egykezes kézisúlyzó (1 db), Kézisúlyzó pár (2 db), Kétkezes rúd (Súlyzórúd), Stabil támaszték / Fal / Szék"
+        vm.saveInitialProfileAndPlan(
+            heightCm = 180,
+            weightKg = 82f,
+            goalHu = "Izomépítés",
+            experienceHu = "Középhaladó",
+            locationHu = "Otthon",
+            equipmentHu = multiEquipment,
+            daysPerWeek = 4,
+            durationMin = 60,
+            excludedMuscles = emptySet(),
+            excludedExercises = emptySet()
+        )
+        val state = vm.uiState.value
+        assertEquals(multiEquipment, state.userSelectedEquipmentHu)
+        val generated = state.programs.first { it.isActive }
+        val allGeneratedExercises = generated.days.flatMap { it.exercises }
+        assertTrue(allGeneratedExercises.isNotEmpty())
+        val machineExerciseIds = setOf("lat-pulldown", "seated-cable-row", "face-pull", "cable-fly", "triceps-pushdown", "leg-press", "leg-extension", "leg-curl", "cable-crunch")
+        assertTrue(allGeneratedExercises.none { it.id in machineExerciseIds })
+    }
+
+    @Test fun healthWeeklySummaryExpandsWithSourceAttributionAndNoDemoWatchOnFreshInstall() {
+        var expandedWeekly by mutableStateOf(false)
+        compose.setContent {
+            TrainPilotTheme {
+                com.example.ui.screens.HealthTabScreen(
+                    uiState = TrainPilotUiState(expandedHealthWeeklySummary = expandedWeekly),
+                    strings = TrainPilotStrings.forLanguage(AppLanguage.HU),
+                    onToggleHealthSection = { if (it == "weekly") expandedWeekly = !expandedWeekly },
+                    onSelectWeightRange = {},
+                    onToggleAddWeightDialog = {},
+                    onSaveNewWeight = { _, _ -> },
+                    onTogglePrimaryHealthSource = {},
+                    onTriggerHealthSync = {},
+                    onNavigateToSubScreen = {},
+                    onOpenPalettePicker = {},
+                    onOpenGoalsDialog = {}
+                )
+            }
+        }
+        val list = compose.onNodeWithTag("health_tab_screen")
+        list.performScrollToNode(hasTestTag("health_weekly_summary_toggle"))
+        compose.onNodeWithTag("health_weekly_expanded_section").assertDoesNotExist()
+        compose.onNodeWithTag("health_weekly_summary_toggle").performClick()
+        compose.runOnIdle { assertTrue(expandedWeekly) }
+        compose.onNodeWithTag("health_weekly_expanded_section").assertExists()
+        compose.onNodeWithText("Adatforrások és begyűjtés módja").assertExists()
+    }
 }
+

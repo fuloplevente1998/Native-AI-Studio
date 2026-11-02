@@ -76,6 +76,18 @@ data class NavRoute(
     val subScreen: SubScreen = SubScreen.NONE
 )
 
+data class WeeklyHealthDaySummary(
+    val dateIso: String,
+    val dayLabelHu: String,
+    val steps: Int,
+    val activeCaloriesKcal: Int,
+    val sleepLabel: String,
+    val workoutMinutes: Int,
+    val workoutCount: Int,
+    val sourceLabelHu: String,
+    val stepOriginPackage: String = ""
+)
+
 data class TrainPilotUiState(
     // Theme & Localization & Accessibility
     val selectedPaletteId: Int = 1, // Default: 01 • Grafit & Arany
@@ -101,6 +113,13 @@ data class TrainPilotUiState(
     val sleepHoursDecimal: String = "—",
     val restingHrBpm: Int = 0,
     val currentHrBpm: Int = 0,
+    val maxHrBpm: Int = 0,
+    val minHrBpm: Int = 0,
+    val hrvRmssdMs: Float = 0f,
+    val bloodPressureLabel: String = "—",
+    val bloodGlucoseLabel: String = "—",
+    val respiratoryRateLabel: String = "—",
+    val dailyDistanceKm: Float = 0f,
     val dailySteps: Int = 0,
     val stepsGoal: Int = 10000,
     val activeCaloriesKcal: Int = 0,
@@ -113,10 +132,11 @@ data class TrainPilotUiState(
     val samsungGrantedCount: Int = -1, val samsungPermissionCount: Int = com.repforge.app.SamsungHealthRepository.PERMISSION_KEYS.size,
     val lastHealthReadLabel: String = "—",
     val samsungEnergyScore: Int = 0,
+    val trainPilotReadinessScore: Int = 0,
     val coachReadinessScore: Int = 0,
 
     // Watch & Sync State (Mockup 4/4 #2 + main)
-    val watchName: String = "Wear OS óra",
+    val watchName: String = "Nincs csatlakoztatott Wear OS óra",
     val watchConnected: Boolean = false,
     val watchAppAvailable: Boolean = false,
     val watchBatteryPercent: Int = -1,
@@ -230,11 +250,19 @@ data class TrainPilotUiState(
     val muscleLoadPeriodDays: Int = 90,
 
     // Health / Egészség State (Mockup 3/4 #5 + full main Egészség)
+    val expandedHealthWeeklySummary: Boolean = false,
     val expandedHealthPulseTrend: Boolean = false,
     val expandedHealthWeightLog: Boolean = false,
     val expandedHealthExtraData: Boolean = false,
     val expandedHealthJournal: Boolean = false,
     val expandedHealthConnect: Boolean = false,
+    val weeklyHealthDays: List<WeeklyHealthDaySummary> = emptyList(),
+    val weeklyTotalSteps: Int = 0,
+    val weeklyTotalCaloriesKcal: Int = 0,
+    val weeklyTotalDistanceKm: Float = 0f,
+    val weeklyAvgSleepLabel: String = "—",
+    val weeklyDataSourcesSummary: String = "Health Connect / Samsung Health + Room edzésnapló",
+    val dailySourceModeLabel: String = "Automatikus (legteljesebb napi lépésforrás)",
     val selectedWeightRangeIndex: Int = 1, // 0=7d, 1=30d, 2=3m, 3=1y, 4=All
     val currentBodyWeightKg: Float = 0f,
     val bodyWeightLogs: List<BodyWeightLogItem> = emptyList(),
@@ -2394,6 +2422,113 @@ class TrainPilotViewModel : ViewModel() {
         persistCanonicalActiveSessionAsync()
     }
 
+    private val plannerNeedsByExerciseId: Map<String, List<String>> by lazy {
+        runCatching {
+            val stream = javaClass.getResourceAsStream("/native-planner-main-7473.json") ?: return@runCatching emptyMap()
+            val root = JSONObject(stream.bufferedReader().use { it.readText() })
+            val needsObj = root.optJSONObject("needs") ?: return@runCatching emptyMap()
+            buildMap<String, List<String>> {
+                val keys = needsObj.keys()
+                while (keys.hasNext()) {
+                    val k = keys.next()
+                    val arr = needsObj.optJSONArray(k)
+                    val list = (0 until (arr?.length() ?: 0)).mapNotNull { idx -> arr?.optString(idx)?.takeIf { it.isNotBlank() } }
+                    put(k, list)
+                }
+            }
+        }.getOrDefault(emptyMap())
+    }
+
+    private fun parseEquipmentSelectionToGearKeys(equipmentHu: String): Pair<Set<String>, Boolean> {
+        val tokens = equipmentHu.split(',').map { it.trim().lowercase() }.filter { it.isNotBlank() }
+        val gear = linkedSetOf<String>()
+        var includeBodyweight = tokens.isEmpty()
+        tokens.forEach { t ->
+            if (t.contains("saját testsúly") || t == "bodyweight") {
+                includeBodyweight = true
+            }
+            if (t.contains("egykezes") || t.contains("1 db") || t == "dumbbell") {
+                gear.add("dumbbell")
+            }
+            if (t.contains("kézisúlyzó pár") || t.contains("2 db") || t.contains("kézisúlyzó és pad") || t == "dumbbells") {
+                gear.add("dumbbell")
+                gear.add("dumbbells")
+            }
+            if (t.contains("kétkezes rúd") || t.contains("súlyzórúd") || t == "barbell") {
+                gear.add("barbell")
+            }
+            if (t.contains("pad") || t.contains("szék") || t.contains("kanapé") || t == "bench") {
+                gear.add("bench")
+                gear.add("support")
+            }
+            if (t.contains("stabil") || t.contains("támasz") || t.contains("fal") || t == "support") {
+                gear.add("support")
+                gear.add("bench")
+            }
+            if (t.contains("fellépő") || t.contains("doboz") || t.contains("lépcső") || t == "step") {
+                gear.add("step")
+            }
+            if (t.contains("húzódzkodó") || t == "pullupbar") {
+                gear.add("pullupbar")
+            }
+            if (t.contains("tolódzkodó") || t == "dipbars") {
+                gear.add("dipbars")
+            }
+            if (t.contains("gumiszalag") || t.contains("ellenállás") || t == "bands") {
+                gear.add("bands")
+            }
+            if (t.contains("kettlebell")) {
+                gear.add("kettlebell")
+            }
+            if (t.contains("edzőtermi") || t.contains("csigás") || t.contains("gépek") || t == "machines") {
+                gear.add("machines")
+            }
+            if (t.contains("teljes edzőterem")) {
+                includeBodyweight = true
+                gear.addAll(listOf("dumbbell", "dumbbells", "barbell", "bench", "support", "step", "pullupbar", "dipbars", "bands", "kettlebell", "machines"))
+            }
+            if (t.contains("otthoni alap")) {
+                includeBodyweight = true
+                gear.addAll(listOf("dumbbell", "dumbbells", "bands", "pullupbar", "support", "bench"))
+            }
+        }
+        return gear to includeBodyweight
+    }
+
+    private fun exerciseMatchesSelectedGear(ex: ExerciseItem, gear: Set<String>, includeBodyweight: Boolean): Boolean {
+        val canonicalNeeds = plannerNeedsByExerciseId[ex.id]
+        if (canonicalNeeds != null) {
+            if (canonicalNeeds.isEmpty()) {
+                return includeBodyweight || gear.isEmpty()
+            }
+            return canonicalNeeds.all { req ->
+                req in gear || (req == "dumbbell" && "dumbbells" in gear) || (req == "bench" && "support" in gear) || (req == "support" && "bench" in gear)
+            }
+        }
+        val eqHu = ex.equipmentHu.lowercase()
+        if (eqHu.contains("saját testsúly")) return includeBodyweight || gear.isEmpty()
+        if (eqHu.contains("rúd")) return "barbell" in gear
+        if (eqHu.contains("kézisúlyzó")) return "dumbbell" in gear || "dumbbells" in gear
+        if (eqHu.contains("kettlebell")) return "kettlebell" in gear
+        if (eqHu.contains("gumiszalag")) return "bands" in gear
+        if (eqHu.contains("csigás") || eqHu.contains("gép")) return "machines" in gear
+        return true
+    }
+
+    private fun exerciseEquipmentPriorityScore(ex: ExerciseItem, gear: Set<String>, includeBodyweight: Boolean): Int {
+        val canonicalNeeds = plannerNeedsByExerciseId[ex.id] ?: emptyList()
+        var score = 0
+        if (canonicalNeeds.isNotEmpty() && canonicalNeeds.all { it in gear || (it == "dumbbell" && "dumbbells" in gear) }) {
+            score += 4 + canonicalNeeds.size * 2
+        } else if (canonicalNeeds.isEmpty() && includeBodyweight) {
+            score += 3
+        }
+        if ("bench" in canonicalNeeds || "support" in canonicalNeeds) score += 2
+        if ("barbell" in canonicalNeeds && "barbell" in gear) score += 3
+        if (("dumbbells" in canonicalNeeds || "dumbbell" in canonicalNeeds) && ("dumbbells" in gear || "dumbbell" in gear)) score += 2
+        return score
+    }
+
     fun saveInitialProfileAndPlan(
         heightCm: Int,
         weightKg: Float,
@@ -2406,26 +2541,74 @@ class TrainPilotViewModel : ViewModel() {
         excludedMuscles: Set<String>,
         excludedExercises: Set<String>
     ) {
+        val (selectedGear, includeBodyweight) = parseEquipmentSelectionToGearKeys(equipmentHu)
+        val perDayCapacity = com.repforge.app.NativePlannerPolicy.capacity(durationMin).coerceIn(4, 7)
         _uiState.update { state ->
             val generatedProgramId = "custom_plan_" + System.currentTimeMillis()
-            val dayAExercises = state.exercises.filter { ex ->
+            val baseFiltered = state.exercises.filter { ex ->
                 ex.nameHu !in excludedExercises &&
+                ex.id !in excludedExercises &&
                 (excludedMuscles.isEmpty() || !excludedMuscles.any { ex.primaryMusclesHu.contains(it, ignoreCase = true) })
-            }.take(5).ifEmpty { state.exercises.take(5) }
+            }
+            val equipmentMatched = baseFiltered.filter { ex ->
+                exerciseMatchesSelectedGear(ex, selectedGear, includeBodyweight)
+            }.sortedByDescending { ex ->
+                exerciseEquipmentPriorityScore(ex, selectedGear, includeBodyweight)
+            }.ifEmpty { baseFiltered }
 
-            val dayBExercises = state.exercises.filter { ex ->
-                ex.nameHu !in excludedExercises &&
-                ex !in dayAExercises &&
-                (excludedMuscles.isEmpty() || !excludedMuscles.any { ex.primaryMusclesHu.contains(it, ignoreCase = true) })
-            }.take(5).ifEmpty { state.exercises.drop(5).take(5) }
+            val dayAExercises = mutableListOf<ExerciseItem>()
+            val preferredCategoriesA = listOf(
+                ExerciseCategory.LEGS,
+                ExerciseCategory.CHEST,
+                ExerciseCategory.BACK,
+                ExerciseCategory.SHOULDERS,
+                ExerciseCategory.ARMS,
+                ExerciseCategory.CORE
+            )
+            for (cat in preferredCategoriesA) {
+                if (dayAExercises.size >= perDayCapacity) break
+                val candidate = equipmentMatched.firstOrNull { it.category == cat && it !in dayAExercises }
+                if (candidate != null) dayAExercises.add(candidate)
+            }
+            for (ex in equipmentMatched) {
+                if (dayAExercises.size >= perDayCapacity) break
+                if (ex !in dayAExercises) dayAExercises.add(ex)
+            }
+            val finalDayA = dayAExercises.ifEmpty { state.exercises.take(perDayCapacity) }
+
+            val remainingForB = equipmentMatched.filter { it !in finalDayA }
+            val dayBExercises = mutableListOf<ExerciseItem>()
+            for (cat in preferredCategoriesA) {
+                if (dayBExercises.size >= perDayCapacity) break
+                val candidate = remainingForB.firstOrNull { it.category == cat && it !in dayBExercises }
+                if (candidate != null) dayBExercises.add(candidate)
+            }
+            for (ex in remainingForB) {
+                if (dayBExercises.size >= perDayCapacity) break
+                if (ex !in dayBExercises) dayBExercises.add(ex)
+            }
+            if (dayBExercises.size < perDayCapacity) {
+                for (ex in equipmentMatched) {
+                    if (dayBExercises.size >= perDayCapacity) break
+                    if (ex !in dayBExercises) dayBExercises.add(ex)
+                }
+            }
+            val finalDayB = dayBExercises.ifEmpty { state.exercises.drop(perDayCapacity).take(perDayCapacity).ifEmpty { finalDayA } }
+
+            val gearSummaryTokens = equipmentHu.split(',').map { it.trim() }.filter { it.isNotBlank() }
+            val shortGearTag = when {
+                gearSummaryTokens.size > 2 -> "${gearSummaryTokens.take(2).joinToString(" + ")} (+${gearSummaryTokens.size - 2})"
+                gearSummaryTokens.isNotEmpty() -> gearSummaryTokens.joinToString(" + ")
+                else -> locationHu
+            }
 
             val newProgram = TrainingProgramModel(
                 id = generatedProgramId,
                 nameHu = "Egyéni $goalHu Terv ($locationHu)",
                 nameEn = "Personalized $goalHu Plan",
-                subtitleHu = "$experienceHu • Heti $daysPerWeek nap • $durationMin perc",
+                subtitleHu = "$experienceHu • Heti $daysPerWeek nap • $durationMin perc • $shortGearTag",
                 subtitleEn = "$experienceHu • $daysPerWeek days/week",
-                tagsHu = listOf(goalHu, locationHu, "Egyéni"),
+                tagsHu = listOf(goalHu, locationHu, shortGearTag, "Egyéni").distinct(),
                 isCustom = true,
                 isActive = true,
                 days = listOf(
@@ -2435,7 +2618,7 @@ class TrainPilotViewModel : ViewModel() {
                         titleHu = "A nap • Fő fókusz",
                         titleEn = "Day A",
                         durationMinutes = durationMin,
-                        exercises = dayAExercises
+                        exercises = finalDayA
                     ),
                     com.example.model.ProgramDayModel(
                         id = "${generatedProgramId}_dayB",
@@ -2443,7 +2626,7 @@ class TrainPilotViewModel : ViewModel() {
                         titleHu = "B nap • Kiegészítő fókusz",
                         titleEn = "Day B",
                         durationMinutes = durationMin,
-                        exercises = dayBExercises
+                        exercises = finalDayB
                     )
                 )
             )
@@ -3192,6 +3375,7 @@ class TrainPilotViewModel : ViewModel() {
     fun toggleHealthSection(section: String) {
         _uiState.update { state ->
             when (section) {
+                "weekly" -> state.copy(expandedHealthWeeklySummary = !state.expandedHealthWeeklySummary)
                 "pulse" -> state.copy(expandedHealthPulseTrend = !state.expandedHealthPulseTrend)
                 "weight" -> state.copy(expandedHealthWeightLog = !state.expandedHealthWeightLog)
                 "extra" -> state.copy(expandedHealthExtraData = !state.expandedHealthExtraData)
@@ -3321,6 +3505,26 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
+    private fun formatProviderLabelHu(channel: String, originPkg: String = ""): String {
+        val base = when (channel) {
+            HealthJournalStore.SAMSUNG -> "Samsung Health"
+            HealthJournalStore.HC -> "Health Connect"
+            HealthJournalStore.BLE -> "Wear OS / BLE óra"
+            HealthJournalStore.LEGACY -> "Helyi egészségnapló"
+            else -> "Nincs szinkronizált adat"
+        }
+        val cleanPkg = originPkg.trim()
+        if (cleanPkg.isBlank()) return base
+        val shortOrigin = when {
+            cleanPkg.contains("shealth", ignoreCase = true) -> "Samsung Health"
+            cleanPkg.contains("google.android.apps.fitness", ignoreCase = true) -> "Google Fit"
+            cleanPkg.contains("wear", ignoreCase = true) -> "Wear OS"
+            cleanPkg.contains("garmin", ignoreCase = true) -> "Garmin"
+            else -> cleanPkg.substringAfterLast('.')
+        }
+        return if (shortOrigin.equals(base, ignoreCase = true)) base else "$base ($shortOrigin)"
+    }
+
     fun reloadHealthJournal() {
         val ctx = nativeContext
         val scope = nativeScope
@@ -3330,37 +3534,196 @@ class TrainPilotViewModel : ViewModel() {
             }
             return
         }
-        _uiState.update { it.copy(dailySteps = 0, currentHrBpm = 0, restingHrBpm = 0, activeCaloriesKcal = 0,
-            sleepDurationLabel = "—", sleepHoursDecimal = "—", samsungEnergyScore = 0, spo2Percent = 0f, vo2Max = 0f) }
+        _uiState.update {
+            it.copy(
+                dailySteps = 0,
+                currentHrBpm = 0,
+                restingHrBpm = 0,
+                maxHrBpm = 0,
+                minHrBpm = 0,
+                activeCaloriesKcal = 0,
+                sleepDurationLabel = "—",
+                sleepHoursDecimal = "—",
+                samsungEnergyScore = 0,
+                spo2Percent = 0f,
+                vo2Max = 0f,
+                hrvRmssdMs = 0f,
+                bloodPressureLabel = "—",
+                bloodGlucoseLabel = "—",
+                respiratoryRateLabel = "—",
+                dailyDistanceKm = 0f
+            )
+        }
         scope.launch(Dispatchers.IO) {
             try {
                 val store = HealthJournalStore.get(ctx)
-                val todayStr = LocalDate.now().toString()
-                val provider = store.preferences().optString("provider", HealthJournalStore.HC)
+                val prefs = store.preferences()
+                val provider = prefs.optString("provider", HealthJournalStore.HC)
+                val hcDailySourceRaw = prefs.optString("hcDailySource", "auto")
+                val dailySourceModeHu = when (hcDailySourceRaw) {
+                    "auto", "" -> "Automatikus (legteljesebb egyedi forrás, duplikáció nélkül)"
+                    "priority" -> "Prioritásos forrásválasztás"
+                    com.repforge.app.HealthDailySource.SAMSUNG -> "Rögzített forrás: Samsung Health"
+                    else -> "Rögzített csomag: $hcDailySourceRaw"
+                }
                 val generation = store.generation()
-                val todayData = com.repforge.app.NativeHealthProviderData.day(store, provider, LocalDate.now())
+                val today = LocalDate.now()
+                val todayData = com.repforge.app.NativeHealthProviderData.day(store, provider, today)
 
                 val stepsDbl = todayData?.optDouble("steps", Double.NaN) ?: Double.NaN
                 val pulseDbl = todayData?.optDouble("averageHeartRate", Double.NaN) ?: Double.NaN
                 val restingDbl = todayData?.optDouble("restingHeartRate", Double.NaN) ?: Double.NaN
+                val maxHrDbl = todayData?.optDouble("maxHeartRate", Double.NaN) ?: Double.NaN
+                val minHrDbl = todayData?.optDouble("minHeartRate", Double.NaN) ?: Double.NaN
                 val caloriesDbl = todayData?.optDouble("activeCalories", Double.NaN) ?: Double.NaN
                 val sleepMinDbl = todayData?.optDouble("sleepMinutes", Double.NaN) ?: Double.NaN
+                val hrvDbl = todayData?.optDouble("hrvRmssdMs", Double.NaN) ?: Double.NaN
+                val sysDbl = todayData?.optDouble("bloodPressureSystolic", Double.NaN) ?: Double.NaN
+                val diaDbl = todayData?.optDouble("bloodPressureDiastolic", Double.NaN) ?: Double.NaN
+                val gluDbl = todayData?.optDouble("bloodGlucoseMmolL", Double.NaN) ?: Double.NaN
+                val respDbl = todayData?.optDouble("respiratoryRate", Double.NaN) ?: Double.NaN
+                val distMetersDbl = todayData?.optDouble("distanceMeters", Double.NaN) ?: Double.NaN
+                val bodyFatDbl = todayData?.optDouble("bodyFatPercent", Double.NaN) ?: Double.NaN
+                val energyDbl = todayData?.optDouble("energyScore", Double.NaN) ?: Double.NaN
 
-                val hasData = (stepsDbl.isFinite() && stepsDbl > 0) || (pulseDbl.isFinite() && pulseDbl > 0) || (sleepMinDbl.isFinite() && sleepMinDbl > 0)
+                val bpLabel = if (sysDbl.isFinite() && sysDbl > 0 && diaDbl.isFinite() && diaDbl > 0) {
+                    "${sysDbl.roundToInt()}/${diaDbl.roundToInt()} Hgmm"
+                } else "—"
+                val gluLabel = if (gluDbl.isFinite() && gluDbl > 0) {
+                    String.format(java.util.Locale.US, "%.1f mmol/l", gluDbl).replace('.', ',')
+                } else "—"
+                val respLabel = if (respDbl.isFinite() && respDbl > 0) {
+                    "${respDbl.roundToInt()} /perc"
+                } else "—"
+                val distKmToday = if (distMetersDbl.isFinite() && distMetersDbl > 0) (distMetersDbl / 1000.0).toFloat() else 0f
+
+                // Build 7-day breakdown & source attribution
+                val currentWorkouts = _uiState.value.loggedWorkouts
+                val dayFmt = DateTimeFormatter.ofPattern("MM. dd. (EEE)", java.util.Locale("hu", "HU"))
+                val weeklyDaysList = mutableListOf<WeeklyHealthDaySummary>()
+                var sumSteps = 0
+                var sumKcal = 0
+                var sumDistMeters = 0.0
+                var sumSleepMin = 0.0
+                var sleepDaysCount = 0
+                val discoveredSources = linkedSetOf<String>()
+
+                for (offset in 6 downTo 0) {
+                    val d = today.minusDays(offset.toLong())
+                    val dayKey = d.toString()
+                    val dayObj = runCatching { com.repforge.app.NativeHealthProviderData.day(store, provider, d) }.getOrNull()
+                    val dSteps = dayObj?.optDouble("steps", Double.NaN)?.takeIf { it.isFinite() && it >= 0 }?.toInt() ?: 0
+                    val dKcal = dayObj?.optDouble("activeCalories", Double.NaN)?.takeIf { it.isFinite() && it >= 0 }?.toInt() ?: 0
+                    val dDistM = dayObj?.optDouble("distanceMeters", Double.NaN)?.takeIf { it.isFinite() && it >= 0 } ?: 0.0
+                    val dSleepMin = dayObj?.optDouble("sleepMinutes", Double.NaN)?.takeIf { it.isFinite() && it > 0 } ?: Double.NaN
+                    val dSleepLabel = if (dSleepMin.isFinite()) {
+                        String.format("%d ó %d p", (dSleepMin / 60).toInt(), (dSleepMin % 60).toInt())
+                    } else "—"
+
+                    val workoutsForDay = currentWorkouts.filter { w ->
+                        w.savedStartIso.startsWith(dayKey) || w.dateLabelHu.startsWith(dayKey)
+                    }
+                    val workoutMinForDay = workoutsForDay.sumOf { it.durationMinutes.coerceAtLeast(0) }
+                    val workoutCountForDay = workoutsForDay.size
+
+                    val hasHealthRow = dayObj != null && (dSteps > 0 || dKcal > 0 || dSleepMin.isFinite() ||
+                        dayObj.optDouble("averageHeartRate", 0.0) > 0.0 || dayObj.optDouble("restingHeartRate", 0.0) > 0.0)
+                    val stepOriginPkg = dayObj?.optString("stepsOrigin", "")?.ifBlank { dayObj.optString("activityOrigin", "") }.orEmpty()
+                    val dayChannel = dayObj?.optString("channel", provider).orEmpty()
+                    val sourceLabelHu = when {
+                        hasHealthRow && workoutCountForDay > 0 -> "${formatProviderLabelHu(dayChannel, stepOriginPkg)} + Room edzésnapló"
+                        hasHealthRow -> formatProviderLabelHu(dayChannel, stepOriginPkg)
+                        workoutCountForDay > 0 -> "Room edzésnapló (aktív edzésintervallumok)"
+                        else -> "Nincs rögzített adat"
+                    }
+                    if (hasHealthRow) discoveredSources.add(formatProviderLabelHu(dayChannel, stepOriginPkg))
+                    if (workoutCountForDay > 0) discoveredSources.add("Room edzésnapló (aktív edzésidő)")
+
+                    sumSteps += dSteps
+                    sumKcal += dKcal
+                    sumDistMeters += dDistM
+                    if (dSleepMin.isFinite() && dSleepMin > 0) {
+                        sumSleepMin += dSleepMin
+                        sleepDaysCount++
+                    }
+
+                    weeklyDaysList.add(
+                        WeeklyHealthDaySummary(
+                            dateIso = dayKey,
+                            dayLabelHu = if (d == today) "Ma (${d.format(dayFmt)})" else d.format(dayFmt),
+                            steps = dSteps,
+                            activeCaloriesKcal = dKcal,
+                            sleepLabel = dSleepLabel,
+                            workoutMinutes = workoutMinForDay,
+                            workoutCount = workoutCountForDay,
+                            sourceLabelHu = sourceLabelHu,
+                            stepOriginPackage = stepOriginPkg
+                        )
+                    )
+                }
+
+                val avgSleepHu = if (sleepDaysCount > 0) {
+                    val avgMin = (sumSleepMin / sleepDaysCount).roundToInt()
+                    String.format("%d ó %d p", avgMin / 60, avgMin % 60)
+                } else "—"
+
+                val primaryProviderHu = if (provider == HealthJournalStore.SAMSUNG) "Samsung Health" else "Health Connect"
+                val sourcesSummaryHu = if (discoveredSources.isNotEmpty()) {
+                    discoveredSources.joinToString(" • ")
+                } else {
+                    "$primaryProviderHu (nincs szinkronizált mérés az elmúlt 7 napban)"
+                }
+
+                // Compute real readiness score if real health metrics exist
+                val computedReadiness = when {
+                    energyDbl.isFinite() && energyDbl > 0 -> energyDbl.roundToInt().coerceIn(1, 100)
+                    sleepMinDbl.isFinite() && sleepMinDbl > 0 -> {
+                        val sleepScore = ((sleepMinDbl / 450.0) * 60.0).roundToInt().coerceIn(20, 65)
+                        val hrBonus = if (restingDbl.isFinite() && restingDbl in 40.0..95.0) {
+                            ((85.0 - restingDbl) * 0.6).roundToInt().coerceIn(5, 25)
+                        } else 15
+                        val hrvBonus = if (hrvDbl.isFinite() && hrvDbl > 0) {
+                            (hrvDbl * 0.2).roundToInt().coerceIn(2, 10)
+                        } else 0
+                        (sleepScore + hrBonus + hrvBonus).coerceIn(1, 100)
+                    }
+                    restingDbl.isFinite() && restingDbl > 0 -> {
+                        (100 - (restingDbl.roundToInt() - 50).coerceIn(0, 45)).coerceIn(35, 90)
+                    }
+                    else -> 0
+                }
 
                 withContext(Dispatchers.Main) {
                     if (store.generation() != generation || store.preferences().optString("provider", HealthJournalStore.HC) != provider) return@withContext
                     _uiState.update { st ->
                         st.copy(
+                            primaryHealthSourceSamsung = provider == HealthJournalStore.SAMSUNG,
                             dailySteps = if (stepsDbl.isFinite() && stepsDbl >= 0) stepsDbl.toInt() else 0,
                             currentHrBpm = if (pulseDbl.isFinite() && pulseDbl > 0) pulseDbl.toInt() else 0,
                             restingHrBpm = if (restingDbl.isFinite() && restingDbl > 0) restingDbl.toInt() else 0,
+                            maxHrBpm = if (maxHrDbl.isFinite() && maxHrDbl > 0) maxHrDbl.toInt() else 0,
+                            minHrBpm = if (minHrDbl.isFinite() && minHrDbl > 0) minHrDbl.toInt() else 0,
                             activeCaloriesKcal = if (caloriesDbl.isFinite() && caloriesDbl > 0) caloriesDbl.toInt() else 0,
                             sleepDurationLabel = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) String.format("%d ó %d p", (sleepMinDbl / 60).toInt(), (sleepMinDbl % 60).toInt()) else "—",
                             sleepHoursDecimal = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) "${((sleepMinDbl / 60.0) * 10.0).roundToInt() / 10.0} h" else "—",
-                            samsungEnergyScore = todayData?.optDouble("energyScore", Double.NaN)?.takeIf { it.isFinite() && it >= 0 }?.toInt() ?: 0,
+                            samsungEnergyScore = if (energyDbl.isFinite() && energyDbl >= 0) energyDbl.toInt() else 0,
                             spo2Percent = todayData?.optDouble("oxygenSaturationPercent", Double.NaN)?.takeIf { it.isFinite() && it > 0 }?.toFloat() ?: 0f,
                             vo2Max = todayData?.optDouble("vo2Max", Double.NaN)?.takeIf { it.isFinite() && it > 0 }?.toFloat() ?: 0f,
+                            bodyFatPercent = if (bodyFatDbl.isFinite() && bodyFatDbl > 0) bodyFatDbl.toFloat() else st.bodyFatPercent,
+                            hrvRmssdMs = if (hrvDbl.isFinite() && hrvDbl > 0) hrvDbl.toFloat() else 0f,
+                            bloodPressureLabel = bpLabel,
+                            bloodGlucoseLabel = gluLabel,
+                            respiratoryRateLabel = respLabel,
+                            dailyDistanceKm = distKmToday,
+                            coachReadinessScore = computedReadiness,
+                            trainPilotReadinessScore = computedReadiness,
+                            weeklyHealthDays = weeklyDaysList,
+                            weeklyTotalSteps = sumSteps,
+                            weeklyTotalCaloriesKcal = sumKcal,
+                            weeklyTotalDistanceKm = (sumDistMeters / 1000.0).toFloat(),
+                            weeklyAvgSleepLabel = avgSleepHu,
+                            weeklyDataSourcesSummary = sourcesSummaryHu,
+                            dailySourceModeLabel = dailySourceModeHu,
                             statusBannerMessage = st.statusBannerMessage
                         )
                     }
@@ -3545,6 +3908,13 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
+    fun refreshAfterCloudSync(context: Context) {
+        val scope = nativeScope ?: return
+        val db = nativeDatabase ?: return
+        val store = nativeSettingsStore ?: return
+        bindNativeEnvironment(context, store, db, scope)
+    }
+
     fun toggleSoundAlert(enabled: Boolean) {
         _uiState.update { it.copy(soundAlertEnabled = enabled) }
         val store = nativeSettingsStore
@@ -3635,16 +4005,18 @@ class TrainPilotViewModel : ViewModel() {
         val pending = watchHandoffBusy || com.repforge.app.NativeWatchHandoffReceipt.pending(frame, journal)
         val confirmed = frame?.let { com.repforge.app.NativeWatchHandoffReceipt.confirmed(
             it, journal, it.optString("workoutId"), it.optString("timerOwner")) } == true
+        val companionReady = companionAvailable && watchNames.size == 1
         _uiState.update { it.copy(permissionGpsEnabled = access.optBoolean("gps"),
             permissionCentralLocEnabled = access.optBoolean("location"), permissionNotificationsEnabled = access.optBoolean("notifications"),
             permissionHealthConnectEnabled = access.optInt("healthGranted") > 0,
             healthGrantedCount = access.optInt("healthGranted"), healthPermissionCount = access.optInt("healthTotal"),
             watchControlPending = pending,
             phoneControlsWorkout = (frame == null || frame.optString("timerOwner", "phone") == "phone") && !pending && !com.repforge.app.NativePhoneReturnInstallation.requiresInstallation(frame),
-            watchAppAvailable = companionAvailable && watchNames.size == 1,
-            watchConnected = watchNames.isNotEmpty(), watchName = watchNames.firstOrNull() ?: "Nincs csatlakoztatott Wear OS óra",
+            watchAppAvailable = companionReady,
+            watchConnected = watchNames.isNotEmpty(),
+            watchName = if (companionReady) watchNames.single() else "Nincs csatlakoztatott Wear OS óra",
             watchBatteryPercent = -1,
-            lastWatchSyncLabel = if (watchNames.isEmpty()) "Nincs órakapcsolat"
+            lastWatchSyncLabel = if (!companionReady) "Nincs órakapcsolat"
                 else if (confirmed) "Tulajdonosi ACK igazolva"
                 else if (it.lastWatchSyncLabel in setOf("—", "Nincs órakapcsolat", "Nincs óra kapcsolat")) "Még nincs igazolt adatszinkron" else it.lastWatchSyncLabel) }
     }
