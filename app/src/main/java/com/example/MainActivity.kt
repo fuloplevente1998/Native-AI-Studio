@@ -966,8 +966,9 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 }
                                 androidx.compose.runtime.LaunchedEffect(health.statusMessage, health.lastSyncAt, health.lastReadAt, health.provider, health.healthRefreshing, health.syncMessage, health.syncFailed, health.syncPartial) {
                                     health.statusMessage?.let(viewModel::showBannerMessage)
-                                    viewModel.updateHealthSyncStatus(health.healthRefreshing, partial = health.syncPartial,
-                                        failed = health.syncFailed, message = health.syncMessage)
+                                    if (health.healthRefreshing || health.syncMessage.isNotBlank())
+                                        viewModel.updateHealthSyncStatus(health.healthRefreshing, partial = health.syncPartial,
+                                            failed = health.syncFailed, message = health.syncMessage)
                                     if (!health.healthRefreshing) viewModel.reloadHealthJournal()
                                 }
                                 HealthTabScreen(

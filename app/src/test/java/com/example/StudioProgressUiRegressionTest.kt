@@ -80,13 +80,16 @@ class StudioProgressUiRegressionTest {
                 TrainPilotTheme { StudioDailyHealthStatus(state) }
             }
         }
-        compose.onNodeWithTag("daily_health_values").assertTextContains("7000")
+        compose.onNodeWithTag("daily_health_values").assertTextEquals("Napi lépés: 7000 • Aktív energia: 1000 kcal")
         compose.onNodeWithText("Összes energia (nyugalmival): 1500 kcal").assertExists()
         compose.onNodeWithTag("daily_health_sync").performClick()
         assertEquals(HealthJournalStore.SAMSUNG, requested)
         compose.runOnIdle { state = state.copy(dailyHealthAvailableFields = emptySet(), healthSyncFailed = true, healthSyncMessage = "Engedély visszavonva") }
-        compose.onNodeWithTag("daily_health_values").assertTextContains("még nincs lekérve")
+        compose.onNodeWithTag("daily_health_values").assertTextContains("még nincs lekérve", substring = true)
         compose.onNodeWithTag("daily_health_sync_status").assertTextEquals("Engedély visszavonva")
+        compose.runOnIdle { state = state.copy(dailyHealthDate = LocalDate.now().minusDays(1).toString(),
+            dailyHealthAvailableFields = setOf("steps"), dailySteps = 7000) }
+        compose.onNodeWithTag("daily_health_values").assertTextContains("még nincs lekérve", substring = true)
     }
     @Test fun stickyHandoverUsesRealDirectionAndDisablesPendingCommands() {
         var calls = 0

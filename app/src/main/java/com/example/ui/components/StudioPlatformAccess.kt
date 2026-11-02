@@ -97,8 +97,14 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
     }
     LaunchedEffect(owner) {
         owner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            launch { refreshSamsung() }
-            while (isActive) { refresh(); delay(5_000) }
+            launch { refreshSamsung(); model.reloadHealthJournal() }
+            var cacheDay = java.time.LocalDate.now()
+            while (isActive) {
+                refresh()
+                val nowDay = java.time.LocalDate.now()
+                if (nowDay != cacheDay) { cacheDay = nowDay; model.reloadHealthJournal() }
+                delay(5_000)
+            }
         }
     }
     fun startHealthAction(provider: String, permissionOnly: Boolean = false) {
