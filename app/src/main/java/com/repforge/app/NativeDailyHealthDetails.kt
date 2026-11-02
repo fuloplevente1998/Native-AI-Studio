@@ -11,7 +11,7 @@ import kotlin.math.min
  * Presentation-only projections of the ONE selected provider's persisted daily result.
  * Missing readings remain unknown; no cross-provider merge and no changes to Room/backup data.
  */
-internal object NativeDailyHealthDetails {
+object NativeDailyHealthDetails {
     data class PulsePoint(val timeIso: String, val bpm: Int, val source: String)
 
     fun pulseSeries(day: JSONObject?, limit: Int = 48): List<PulsePoint> {
