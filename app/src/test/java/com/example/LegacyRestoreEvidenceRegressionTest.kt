@@ -108,7 +108,8 @@ class LegacyRestoreEvidenceRegressionTest {
         } catch (error: androidx.compose.ui.test.ComposeTimeoutException) {
             throw AssertionError("Restored photo is indexed but controller did not publish it: ${model.uiState.value}", error)
         }
-        compose.waitUntil(10_000) { compose.onAllNodesWithTag("progress_photo_image_$photo").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("progress_photo_image_$photo", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("progress_photo_image_$photo", useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithTag("progress_photo_$photo").performClick()
         compose.onNodeWithTag("progress_photo_detail").assertExists()
         compose.onNodeWithText("Edzés: Restored workout", substring = true).assertExists()
