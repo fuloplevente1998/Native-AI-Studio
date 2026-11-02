@@ -415,9 +415,6 @@ fun HealthTabScreen(
                         }
                     }
 
-                    com.example.ui.components.StudioDailyHealthStatus(uiState,
-                        showRefreshButton = false, showTotalEnergy = false)
-
                     var expandedTodayTileKey by remember { mutableStateOf<String?>(null) }
 
                     // Row 1 of 3 tiles: Alvás | Aktív kalória | Pulzus
@@ -1521,6 +1518,20 @@ fun HealthTabScreen(
                     text = "Az elérhető adatok a választott szolgáltatótól és a tényleges engedélyektől függenek.",
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary
+                )
+                // Show source-scoped verification here, not above the six daily measurement tiles.
+                val selectedProviderSyncTime = remember(uiState.dailyHealthLastSyncIso) {
+                    runCatching {
+                        java.time.format.DateTimeFormatter.ofPattern("yyyy.MM.dd. HH:mm")
+                            .withZone(java.time.ZoneId.systemDefault())
+                            .format(java.time.Instant.parse(uiState.dailyHealthLastSyncIso))
+                    }.getOrDefault("Még nincs igazolt szinkron")
+                }
+                Text(
+                    text = "Kiválasztott forrás: ${uiState.dailyHealthSourceLabel} • Utolsó sikeres szinkron: $selectedProviderSyncTime",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = palette.textSecondary,
+                    modifier = Modifier.testTag("health_selected_provider_last_sync")
                 )
             }
         }
