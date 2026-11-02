@@ -53,7 +53,10 @@ internal fun StudioStatisticsScreen(state: TrainPilotUiState, onSelectTab: (Int)
     LaunchedEffect(model) {
         while (true) { delay(60_000); model.onCardioCalendarTick() }
     }
-    StudioStatisticsContent(state, native, onSelectTab, onStepsMode,
+    StudioStatisticsContent(state, native, { index ->
+        if (index == 1) model.selectCardioActivity(NativeCardioModel.ALL_ACTIVITIES)
+        onSelectTab(index)
+    }, onStepsMode,
         onExercise = { id -> model.selectExercise(id); model.selectCardioActivity(id) },
         onActivity = model::selectCardioActivity, onRetry = model::retryCardio,
         onRefreshRecords = onRefreshRecords)
@@ -175,9 +178,25 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
             Text("Napi aktivitás", color = palette.textPrimary, style = MaterialTheme.typography.titleMedium)
             Text("Teljes napi lépések, egy kiválasztott forrásból. Ha az edzésen kívüli rész nem különíthető el, gondolatjelet mutatunk.",
                 color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
-            Text("Mai összes lépés: ${total(today, today.plusDays(1))}", color = palette.textPrimary)
-            Text("Heti lépések: ${total(weekStart, today.plusDays(1))}", color = palette.textPrimary)
-            Text("Előző hét: ${total(previous, weekStart)}", color = palette.textPrimary)
+            val todayDay = days.firstOrNull { it.dateIso == today.toString() }
+            val outside = if (todayDay?.stepsAvailable == true && todayDay.workoutCount == 0)
+                number.format(todayDay.steps) else "—"
+            listOf(
+                listOf("Mai összes lépés" to total(today, today.plusDays(1)), "Edzésen kívül" to outside),
+                listOf("Heti lépések" to total(weekStart, today.plusDays(1)), "Előző hét" to total(previous, weekStart))
+            ).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    row.forEach { (label, value) ->
+                        Surface(shape = MaterialTheme.shapes.large, color = palette.surfaceElevated,
+                            modifier = Modifier.weight(1f).border(1.dp, palette.cardBorder, MaterialTheme.shapes.large)) {
+                            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(label, color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
+                                Text(value, color = palette.textPrimary, style = MaterialTheme.typography.headlineSmall)
+                            }
+                        }
+                    }
+                }
+            }
             Text("Szinkronizált napok: ${days.count { it.stepsAvailable }}/${days.size}", color = palette.textSecondary)
             OutlinedButton(onClick = { refresh(if (state.primaryHealthSourceSamsung) HealthJournalStore.SAMSUNG else HealthJournalStore.HC) },
                 enabled = !state.healthSyncBusy, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Lépésadatok frissítése") }

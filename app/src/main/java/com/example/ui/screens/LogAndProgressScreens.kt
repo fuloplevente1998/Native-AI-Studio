@@ -1296,7 +1296,7 @@ fun LogRouteMapScreen(
 }
 
 /**
- * 4. FEJLŐDÉS (Kompakt `main` Fejlődés & Statisztikák + Mockup 3/4 #4 1RM Erőnlét)
+ * 4. FEJLŐDÉS – natív fejlődés, napló és statisztikák
  * Minden fő kártya ráfér a képernyőre, és koppintásra lenyílik / becsukódik!
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -1319,7 +1319,7 @@ fun ProgressTabScreen(
     onRefreshRecords: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
-    // 3 al-oldal a Fejlődés oldalon belül: 1. 📈 Fejlődés | 2. 📄 Napló | 3. 🏋️ Erő & 1RM
+    // 3 al-oldal a Fejlődés oldalon belül: 1. 📈 Fejlődés | 2. 📄 Napló | 3. 📊 Statisztikák
     val statisticsLabel = com.repforge.app.ui.text.nativeResources(androidx.compose.ui.platform.LocalContext.current,
         uiState.language.name.lowercase()).getString(com.repforge.app.R.string.journal_statistics)
     val sections = listOf("📈 ${strings.navProgress}", "📄 ${strings.navLog}", "📊 $statisticsLabel")
