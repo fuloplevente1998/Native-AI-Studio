@@ -17,6 +17,7 @@ import com.example.model.ExerciseItem
 import com.example.model.ExerciseSetItem
 import com.example.model.HomeDemoMode
 import com.example.model.LoggedWorkoutEntry
+import com.example.model.localWorkoutDate
 import com.example.model.MainTab
 import com.example.model.PrRecordEntry
 import com.example.model.TrainingProgramModel
@@ -30,6 +31,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.CancellationException
 import com.repforge.app.NativeDataReplacement
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -298,6 +301,7 @@ class TrainPilotViewModel : ViewModel() {
     private var nativeSettingsStore: TrainPilotSettingsStore? = null
     private var nativeDatabase: TrainPilotDatabase? = null
     private var nativeScope: CoroutineScope? = null
+    private var nativeObserversJob: Job? = null
     @Volatile private var watchHandoffBusy = false
     private fun watchJournal(): JSONObject = nativeContext?.let { context ->
         runCatching { PhoneOwnership193.journal(context).read() }
@@ -921,13 +925,18 @@ class TrainPilotViewModel : ViewModel() {
         nativeDatabase = database
         nativeScope = scope
 
-        scope.launch {
+        // Replace observers on an explicit rebind; cloud refresh only reloads data.
+        nativeObserversJob?.cancel()
+        val observersJob = SupervisorJob(scope.coroutineContext[Job])
+        nativeObserversJob = observersJob
+        val observersScope = CoroutineScope(scope.coroutineContext + observersJob)
+        observersScope.launch {
             settingsStore.settingsFlow.map { it.healthBackupConsent }.distinctUntilChanged().collect { consent ->
                 _uiState.update { it.copy(includeHealthInBackup = consent) }
             }
         }
 
-        scope.launch(Dispatchers.Main.immediate) {
+        observersScope.launch(Dispatchers.Main.immediate) {
             ActiveWorkoutStore.snapshotFlow.collect { frame ->
                 if (frame?.optBoolean("active") == true) _uiState.update { state ->
                     if (state.activeWorkoutId != frame.optString("workoutId")) return@update state
@@ -958,6 +967,15 @@ class TrainPilotViewModel : ViewModel() {
             }
         }
 
+        reloadNativeEnvironment(context, settingsStore, database, scope)
+    }
+
+    private fun reloadNativeEnvironment(
+        context: Context,
+        settingsStore: TrainPilotSettingsStore,
+        database: TrainPilotDatabase,
+        scope: CoroutineScope
+    ) {
         scope.launch(Dispatchers.IO) {
             // Seed catalog into Room DB
             try {
@@ -3610,7 +3628,6 @@ class TrainPilotViewModel : ViewModel() {
 
                 for (offset in 6 downTo 0) {
                     val d = today.minusDays(offset.toLong())
-                    val dayKey = d.toString()
                     val dayObj = runCatching { com.repforge.app.NativeHealthProviderData.day(store, provider, d) }.getOrNull()
                     val dSteps = dayObj?.optDouble("steps", Double.NaN)?.takeIf { it.isFinite() && it >= 0 }?.toInt() ?: 0
                     val dKcal = dayObj?.optDouble("activeCalories", Double.NaN)?.takeIf { it.isFinite() && it >= 0 }?.toInt() ?: 0
@@ -3621,7 +3638,7 @@ class TrainPilotViewModel : ViewModel() {
                     } else "—"
 
                     val workoutsForDay = currentWorkouts.filter { w ->
-                        w.savedStartIso.startsWith(dayKey) || w.dateLabelHu.startsWith(dayKey)
+                        w.localWorkoutDate() == d
                     }
                     val workoutMinForDay = workoutsForDay.sumOf { it.durationMinutes.coerceAtLeast(0) }
                     val workoutCountForDay = workoutsForDay.size
@@ -3649,7 +3666,7 @@ class TrainPilotViewModel : ViewModel() {
 
                     weeklyDaysList.add(
                         WeeklyHealthDaySummary(
-                            dateIso = dayKey,
+                            dateIso = d.toString(),
                             dayLabelHu = if (d == today) "Ma (${d.format(dayFmt)})" else d.format(dayFmt),
                             steps = dSteps,
                             activeCaloriesKcal = dKcal,
@@ -3912,7 +3929,7 @@ class TrainPilotViewModel : ViewModel() {
         val scope = nativeScope ?: return
         val db = nativeDatabase ?: return
         val store = nativeSettingsStore ?: return
-        bindNativeEnvironment(context, store, db, scope)
+        reloadNativeEnvironment(context, store, db, scope)
     }
 
     fun toggleSoundAlert(enabled: Boolean) {

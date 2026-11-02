@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.model.workoutsInWeekEnding
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -1721,29 +1723,19 @@ private fun MainProgressVolumeAndMuscleSection(
     // Real 12-week and 7-week volume series computed from loggedWorkouts
     val compactVolumeBars = remember(uiState.loggedWorkouts, today) {
         (0..11).map { idx ->
-            val weekStart = today.minusWeeks((11 - idx).toLong())
-            val weekEnd = weekStart.plusDays(6)
-            val kgForWeek = uiState.loggedWorkouts.filter { w ->
-                val rawDate = w.savedStartIso.take(10).ifBlank { w.dateLabelHu.take(10) }
-                val parsed = runCatching { java.time.LocalDate.parse(rawDate) }.getOrNull()
-                if (parsed != null) !parsed.isBefore(weekStart) && !parsed.isAfter(weekEnd)
-                else idx == 11
-            }.sumOf { it.totalVolumeKg }
+            val weekEnd = today.minusWeeks((11 - idx).toLong())
+            val weekStart = weekEnd.minusDays(6)
+            val kgForWeek = uiState.loggedWorkouts.workoutsInWeekEnding(weekEnd).sumOf { it.totalVolumeKg }
             "${weekStart.dayOfMonth}" to kgForWeek
         }
     }
 
     val expandedWeeklyBars = remember(uiState.loggedWorkouts, today) {
         (0..6).map { idx ->
-            val weekStart = today.minusWeeks((6 - idx).toLong())
-            val weekEnd = weekStart.plusDays(6)
+            val weekEnd = today.minusWeeks((6 - idx).toLong())
+            val weekStart = weekEnd.minusDays(6)
             val label = weekStart.format(shortFmt)
-            val kgForWeek = uiState.loggedWorkouts.filter { w ->
-                val rawDate = w.savedStartIso.take(10).ifBlank { w.dateLabelHu.take(10) }
-                val parsed = runCatching { java.time.LocalDate.parse(rawDate) }.getOrNull()
-                if (parsed != null) !parsed.isBefore(weekStart) && !parsed.isAfter(weekEnd)
-                else idx == 6
-            }.sumOf { it.totalVolumeKg }
+            val kgForWeek = uiState.loggedWorkouts.workoutsInWeekEnding(weekEnd).sumOf { it.totalVolumeKg }
             label to kgForWeek
         }
     }
@@ -2676,12 +2668,12 @@ private fun MainStatisticsRecordsAndCardioSection(
                 }
             }
 
-            val totalCardioKm = uiState.loggedWorkouts.sumOf { it.distanceKm.toDouble() }.toFloat()
+            val totalCardioKm = uiState.loggedWorkouts.workoutsInWeekEnding(java.time.LocalDate.now())
+                .sumOf { it.distanceKm.toDouble() }.toFloat()
             val totalCardioMin = uiState.loggedWorkouts.filter { it.isOutdoorRun || it.distanceKm > 0f }.sumOf { it.durationMinutes }
             val latestPace = uiState.loggedWorkouts.firstOrNull { it.paceLabel != "—" }?.paceLabel ?: "—"
             val avgSteps7d = if (uiState.weeklyHealthDays.isNotEmpty()) {
-                val activeStepDays = uiState.weeklyHealthDays.count { it.steps > 0 }
-                if (activeStepDays > 0) uiState.weeklyTotalSteps / activeStepDays else 0
+                uiState.weeklyTotalSteps / 7
             } else uiState.dailySteps
             val goalMetDays = uiState.weeklyHealthDays.count { it.steps >= uiState.stepsGoal && uiState.stepsGoal > 0 }
 
@@ -2729,14 +2721,9 @@ private fun MainStatisticsRecordsAndCardioSection(
                     val todayDate = remember { java.time.LocalDate.now() }
                     val weekLabelFmt = remember { java.time.format.DateTimeFormatter.ofPattern("yyyy. MMM d.", java.util.Locale("hu", "HU")) }
                     val rawWeekDistances = (7 downTo 0).map { wIdx ->
-                        val wStart = todayDate.minusWeeks(wIdx.toLong())
-                        val wEnd = wStart.plusDays(6)
-                        val km = uiState.loggedWorkouts.filter { w ->
-                            val rawDate = w.savedStartIso.take(10).ifBlank { w.dateLabelHu.take(10) }
-                            val parsed = runCatching { java.time.LocalDate.parse(rawDate) }.getOrNull()
-                            if (parsed != null) !parsed.isBefore(wStart) && !parsed.isAfter(wEnd)
-                            else wIdx == 0
-                        }.sumOf { it.distanceKm.toDouble() }.toFloat()
+                        val wEnd = todayDate.minusWeeks(wIdx.toLong())
+                        val wStart = wEnd.minusDays(6)
+                        val km = uiState.loggedWorkouts.workoutsInWeekEnding(wEnd).sumOf { it.distanceKm.toDouble() }.toFloat()
                         wStart.format(weekLabelFmt) to km
                     }
                     val maxWeekKm = (rawWeekDistances.maxOfOrNull { it.second } ?: 0f).coerceAtLeast(1f)
