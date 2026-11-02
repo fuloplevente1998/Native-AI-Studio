@@ -111,6 +111,10 @@ object WearSyncRepository {
                     check(!NativeDataReplacement.blocked(appContext)) { "Adat-visszaállítás vagy törlés van folyamatban." }
                     val action = command.optString("action")
                     val db = TrainPilotDatabase.getInstance(appContext)
+                    if (NativeWatchDiscardAdmission.rejectsResurrection(db, command)) {
+                        WearCommandReceipts.complete(appContext, command, "superseded", uri)
+                        return@mutate
+                    }
                     if (action == "discardWorkout") {
                         when (NativeWatchDiscardAdmission.reconcile(appContext, db, command)) {
                             NativeWatchDiscardAdmission.Decision.ALREADY_DISCARDED,

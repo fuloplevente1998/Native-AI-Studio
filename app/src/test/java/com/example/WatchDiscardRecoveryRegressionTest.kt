@@ -75,6 +75,10 @@ class WatchDiscardRecoveryRegressionTest {
         assertEquals(NativeWatchDiscardAdmission.Decision.ALREADY_DISCARDED,
             native { NativeWatchDiscardAdmission.resolve(context, db, orphan()) })
         assertEquals(1, native { db.workoutHistoryDao().getTombstones().size })
+        for (action in listOf("startWorkout", "startQuickWorkout", "addQuickExercise", "watchAutomationState", "resumeWorkout")) {
+            assertTrue(native { NativeWatchDiscardAdmission.rejectsResurrection(db, command.put("action", action)) })
+            assertFalse(native { NativeWatchDiscardAdmission.rejectsResurrection(db, command.put("workoutId", "new").put("action", action)) })
+        }
         assertEquals(current, ActiveWorkoutStore.current(context)!!.toString())
         assertEquals(engine, PhoneWorkoutExecution.store(context).snapshot()!!.toString())
     }
@@ -97,6 +101,7 @@ class WatchDiscardRecoveryRegressionTest {
     }
     @Test fun orphanDiscardNeedsExplicitConfirmationAndBoundSnapshotAndTransportIdentity() {
         assertTrue(NativeWatchDiscardAdmission.orphanProof(orphan()))
+        assertTrue(NativeWatchDiscardAdmission.orphanProof(orphan().apply { getJSONObject("finalSnapshot").put("timerOwner", "phone") }))
         for ((key, value) in listOf("confirmed" to false, "ownerEpoch193" to 1, "_uri" to "wear://watch-node/other"))
             assertFalse(key, NativeWatchDiscardAdmission.orphanProof(orphan().put(key, value)))
         assertFalse(NativeWatchDiscardAdmission.orphanProof(orphan().apply { getJSONObject("finalSnapshot").put("workoutId", "new") }))

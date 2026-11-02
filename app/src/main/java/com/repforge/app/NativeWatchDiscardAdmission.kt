@@ -39,10 +39,15 @@ internal object NativeWatchDiscardAdmission {
             command.optLong("sequence") > 0 && uri.scheme == "wear" && GpsRoutePacket193.id(uri.host) &&
             uri.path == WearCommandListenerService.COMMAND_PATH_PREFIX + command.optString("commandId") &&
             frame.optString("workoutId") == command.optString("workoutId") &&
-            frame.optInt("ownershipProtocol193") == 1 && WorkoutOwnership193.owns(frame, "watch") &&
+            frame.optInt("ownershipProtocol193") == 1 && frame.optString("timerOwner") in setOf("phone", "watch") &&
+            WorkoutOwnership193.owns(frame, frame.optString("timerOwner")) &&
             frame.optLong("ownerEpoch193", -1L) >= 0L &&
             command.optLong("ownerEpoch193", -1L) == frame.optLong("ownerEpoch193")
     }
+
+    suspend fun rejectsResurrection(db: TrainPilotDatabase, command: JSONObject): Boolean =
+        command.optString("action") in setOf("startWorkout", "startQuickWorkout", "addQuickExercise", "watchAutomationState", "resumeWorkout") &&
+            db.workoutHistoryDao().isTombstoned(command.optString("workoutId"), JSONObject.quote(command.optString("workoutId")))
 
     /** Called under the existing replacement lease; only the targeted deletion marker/journal can change. */
     suspend fun reconcile(context: Context, db: TrainPilotDatabase, command: JSONObject): Decision {
