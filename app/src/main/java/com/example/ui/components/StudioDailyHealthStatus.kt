@@ -19,7 +19,7 @@ internal val LocalSyncDailyHealth = staticCompositionLocalOf<(String) -> Unit> {
 
 /** Same current-day source and sync state on Home and Health. No workout-window fallback. */
 @Composable
-internal fun StudioDailyHealthStatus(state: TrainPilotUiState) {
+internal fun StudioDailyHealthStatus(state: TrainPilotUiState, showRefreshButton: Boolean = true, showTotalEnergy: Boolean = true) {
     val palette = LocalTrainPilotPalette.current
     val request = LocalSyncDailyHealth.current
     val current = state.dailyHealthDate == LocalDate.now().toString()
@@ -30,7 +30,7 @@ internal fun StudioDailyHealthStatus(state: TrainPilotUiState) {
         Row(Modifier.fillMaxWidth()) {
             Text("Mai adatok • ${state.dailyHealthSourceLabel}", color = palette.textPrimary,
                 style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-            TextButton(onClick = { request(if (state.primaryHealthSourceSamsung) HealthJournalStore.SAMSUNG else HealthJournalStore.HC) },
+            if (showRefreshButton) TextButton(onClick = { request(if (state.primaryHealthSourceSamsung) HealthJournalStore.SAMSUNG else HealthJournalStore.HC) },
                 enabled = !state.healthSyncBusy, modifier = Modifier.testTag("daily_health_sync")) {
                 Text(if (state.healthSyncBusy) "Szinkron…" else "Frissítés")
             }
@@ -40,7 +40,7 @@ internal fun StudioDailyHealthStatus(state: TrainPilotUiState) {
             else "Napi lépés: ${if ("steps" in fields) state.dailySteps.toString() else "—"} • " +
                 "Aktív energia: ${if ("activeCalories" in fields) "${state.activeCaloriesKcal} kcal" else "—"}",
             modifier = Modifier.testTag("daily_health_values"), style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
-        if ("totalCalories" in fields) Text("Összes energia (nyugalmival): ${state.totalCaloriesKcal} kcal",
+        if (showTotalEnergy && "totalCalories" in fields) Text("Összes energia (nyugalmival): ${state.totalCaloriesKcal} kcal",
             style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
         if (state.healthSyncMessage.isNotBlank()) Text(state.healthSyncMessage,
             modifier = Modifier.testTag("daily_health_sync_status"), style = MaterialTheme.typography.bodySmall,

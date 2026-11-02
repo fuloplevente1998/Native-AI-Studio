@@ -169,6 +169,7 @@ fun HealthTabScreen(
     onRequestHealthPermissions: () -> Unit = { onNavigateToSubScreen(SubScreen.PERMISSIONS_SCREEN) }
 ) {
     val palette = LocalTrainPilotPalette.current
+    val requestDailyHealthSync = com.example.ui.components.LocalSyncDailyHealth.current
     val today = remember { java.time.LocalDate.now() }
     val todayHuLabel = remember(today) {
         today.format(java.time.format.DateTimeFormatter.ofPattern("yyyy. MMM d.", java.util.Locale("hu", "HU")))
@@ -378,10 +379,7 @@ fun HealthTabScreen(
                             }
                         }
                         Column(modifier = Modifier.weight(1f)) {
-                            Row(
-                                verticalAlignment = Alignment.Bottom,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(
                                     text = "Mai állapot",
                                     style = MaterialTheme.typography.titleLarge,
@@ -402,9 +400,19 @@ fun HealthTabScreen(
                                 color = palette.textSecondary
                             )
                         }
+                        IconButton(
+                            onClick = { requestDailyHealthSync(if (uiState.primaryHealthSourceSamsung)
+                                com.repforge.app.HealthJournalStore.SAMSUNG else com.repforge.app.HealthJournalStore.HC) },
+                            enabled = !uiState.healthSyncBusy,
+                            modifier = Modifier.testTag("health_today_header_sync")
+                        ) {
+                            Icon(Icons.Default.Sync, contentDescription = "Mai egészségadatok frissítése",
+                                tint = palette.primary)
+                        }
                     }
 
-                    com.example.ui.components.StudioDailyHealthStatus(uiState)
+                    com.example.ui.components.StudioDailyHealthStatus(uiState,
+                        showRefreshButton = false, showTotalEnergy = false)
 
                     var expandedTodayTileKey by remember { mutableStateOf<String?>(null) }
 
@@ -429,7 +437,6 @@ fun HealthTabScreen(
                             value = if ("activeCalories" in uiState.dailyHealthAvailableFields) "${uiState.activeCaloriesKcal} kcal" else "—",
                             onClick = {
                                 expandedTodayTileKey = if (expandedTodayTileKey == "calories") null else "calories"
-                                onToggleHealthSection("extra")
                             },
                             modifier = Modifier.weight(1f)
                         )
@@ -483,6 +490,13 @@ fun HealthTabScreen(
                     // Expandable Detail Dropdown Card when any of the 6 "Mai állapot" tiles is tapped
                     androidx.compose.animation.AnimatedVisibility(visible = expandedTodayTileKey != null) {
                         val activeKey = expandedTodayTileKey ?: "sleep"
+                        val currentDaily = uiState.dailyHealthDate == today.toString()
+                        val activeEnergy = if (currentDaily && "activeCalories" in uiState.dailyHealthAvailableFields)
+                            "${uiState.activeCaloriesKcal} kcal" else "—"
+                        val totalEnergy = if (currentDaily && "totalCalories" in uiState.dailyHealthAvailableFields)
+                            "${uiState.totalCaloriesKcal} kcal" else "—"
+                        val heartRange = if (currentDaily && uiState.minHrBpm > 0 && uiState.maxHrBpm > 0)
+                            "${uiState.minHrBpm}–${uiState.maxHrBpm} bpm" else "nincs lekért napi tartomány"
                         Surface(
                             shape = RoundedCornerShape(16.dp),
                             color = palette.background.copy(alpha = 0.75f),
@@ -497,14 +511,14 @@ fun HealthTabScreen(
                             ) {
                                 val (titleStr, onActionClick) = when (activeKey) {
                                     "calories" -> listOf(
-                                        "Aktív kalória részletek • ${uiState.activeCaloriesKcal} kcal",
-                                        "Edzés + napi mozgás: ${uiState.activeCaloriesKcal} kcal | Alapanyagcsere: nincs mért adat",
+                                        "Aktív kalória részletek • $activeEnergy",
+                                        "Aktív energia: $activeEnergy • Teljes napi energia (nyugalmival): $totalEnergy",
                                         "További Health-adatok megnyitása lent"
                                     ) to { onToggleHealthSection("extra") }
                                     "pulse" -> listOf(
-                                        "Pulzus részletek • Aktuális: ${if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"}",
-                                        "Nyugalmi pulzus: ${uiState.restingHrBpm} bpm | Napi tartomány: nincs mért adat",
-                                        "24 órás Pulzustrend megtekintése lent"
+                                        "Pulzus részletek • Napi átlag: ${if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"}",
+                                        "Nyugalmi: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Tartomány: $heartRange",
+                                        "Korábbi mai pulzusmérések megtekintése lent"
                                     ) to { onToggleHealthSection("pulse") }
                                     "steps" -> listOf(
                                         "Lépések részletek • ${uiState.dailySteps} / ${uiState.stepsGoal}",
@@ -563,6 +577,19 @@ fun HealthTabScreen(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textPrimary
                                 )
+                                if (activeKey == "pulse") {
+                                    Text("Korábbi mai mérések", style = MaterialTheme.typography.labelSmall,
+                                        color = palette.textSecondary, modifier = Modifier.testTag("health_today_pulse_history_label"))
+                                    if (uiState.dailyPulseHistory.isEmpty()) Text("Nincs lekért időbélyeges pulzusmérés",
+                                        color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
+                                    uiState.dailyPulseHistory.takeLast(8).asReversed().forEach { reading ->
+                                        val stamp = runCatching { java.time.Instant.parse(reading.timeIso)
+                                            .atZone(java.time.ZoneId.systemDefault())
+                                            .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) }.getOrDefault("—")
+                                        Text("$stamp • ${reading.bpm} bpm", style = MaterialTheme.typography.bodySmall,
+                                            color = palette.textPrimary, modifier = Modifier.testTag("health_today_pulse_sample"))
+                                    }
+                                }
                                 Surface(
                                     shape = RoundedCornerShape(10.dp),
                                     color = palette.primary.copy(alpha = 0.16f),
@@ -713,19 +740,28 @@ fun HealthTabScreen(
                                     Text(if (steps) "Heti lépésszám • napi bontás" else "Aktív edzésidő • napi bontás",
                                         style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
                                     for (day in goalDays) {
+                                        val dayWorkouts = if (steps) emptyList() else
+                                            uiState.loggedWorkouts.filter { it.localWorkoutDate()?.toString() == day.dateIso }
                                         HorizontalDivider(color = palette.cardBorder)
-                                        Text(day.dayLabelHu, style = MaterialTheme.typography.labelLarge, color = palette.textPrimary)
-                                        Text(if (steps) { if (day.stepsAvailable) "${day.steps} lépés" else "Nincs napi lépésadat" }
-                                            else "${day.workoutMinutes} perc • ${day.workoutCount} edzés",
-                                            modifier = Modifier.testTag("health_weekly_${tag}_${day.dateIso}"),
-                                            style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
-                                        if (steps) Text(day.stepsSourceLabelHu, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                        else {
-                                            Text("Room edzésnapló • aktív idő", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                            uiState.loggedWorkouts.filter { it.localWorkoutDate()?.toString() == day.dateIso }.forEach { workout ->
-                                                Text("${workout.titleHu}: ${workout.durationMinutes} perc",
-                                                    style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                        Row(Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                                                Text(day.dayLabelHu, style = MaterialTheme.typography.labelLarge,
+                                                    color = palette.textPrimary)
+                                                Text(if (steps) day.stepsSourceLabelHu else
+                                                    if (dayWorkouts.isEmpty()) "Room edzésnapló • nincs mai edzés"
+                                                    else "Room • " + dayWorkouts.joinToString(" · ") {
+                                                        "${it.titleHu}: ${it.durationMinutes} perc"
+                                                    },
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = palette.textSecondary, maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis)
                                             }
+                                            Text(if (steps) { if (day.stepsAvailable) "${day.steps} lépés" else "—" }
+                                                else "${day.workoutMinutes} perc • ${day.workoutCount} edzés",
+                                                modifier = Modifier.testTag("health_weekly_${tag}_${day.dateIso}"),
+                                                style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
                                         }
                                     }
                                 }
@@ -776,7 +812,7 @@ fun HealthTabScreen(
                                         color = palette.textPrimary
                                     )
                                     val restLbl = if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"
-                                    val peakLbl = if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"
+                                    val peakLbl = if (uiState.maxHrBpm > 0) "${uiState.maxHrBpm} bpm" else "—"
                                     Text(
                                         text = "Nyugalmi: $restLbl • Csúcs: $peakLbl",
                                         style = MaterialTheme.typography.bodySmall,
@@ -823,9 +859,32 @@ fun HealthTabScreen(
                                     .border(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
                                     .clickable { onToggleHealthSection("pulse") }
                             ) {
-                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Text("Nincs lekért pulzus-idősor", color = palette.textSecondary,
-                                        style = MaterialTheme.typography.bodySmall)
+                                if (uiState.dailyPulseHistory.size < 2) {
+                                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                        Text(if (uiState.dailyPulseHistory.isEmpty()) "Nincs lekért pulzus-idősor"
+                                            else "Egy időbélyeges pulzusmérés érhető el",
+                                            color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
+                                    }
+                                } else {
+                                    val readings = uiState.dailyPulseHistory
+                                    Canvas(Modifier.fillMaxSize().padding(horizontal = 9.dp, vertical = 7.dp)
+                                        .testTag("health_pulse_real_trend")) {
+                                        val first = java.time.Instant.parse(readings.first().timeIso).toEpochMilli()
+                                        val last = java.time.Instant.parse(readings.last().timeIso).toEpochMilli()
+                                        val delta = (last - first).coerceAtLeast(1L).toFloat()
+                                        val lowest = readings.minOf { it.bpm }.toFloat()
+                                        val spread = (readings.maxOf { it.bpm } - readings.minOf { it.bpm })
+                                            .toFloat().coerceAtLeast(1f)
+                                        val line = Path()
+                                        readings.forEachIndexed { index, sample ->
+                                            val time = java.time.Instant.parse(sample.timeIso).toEpochMilli()
+                                            val x = ((time - first) / delta).coerceIn(0f, 1f) * size.width
+                                            val y = size.height - (sample.bpm - lowest) / spread * size.height
+                                            if (index == 0) line.moveTo(x, y) else line.lineTo(x, y)
+                                        }
+                                        drawPath(line, color = Color(0xFFEF4444),
+                                            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
+                                    }
                                 }
                             }
 
