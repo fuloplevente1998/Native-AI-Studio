@@ -263,6 +263,7 @@ data class TrainPilotUiState(
     val savedRecordsLoading: Boolean = true,
     val savedRecordsError: Boolean = false,
     val videoModalExerciseTitle: String? = null,
+    val videoModalExerciseId: String? = null,
     val realMuscleLoads: List<com.example.ui.components.MuscleLoadItem> = emptyList(),
     val muscleLoadPeriodDays: Int = 90,
     val logWorkoutMuscleLoads: List<com.example.ui.components.MuscleLoadItem> = emptyList(),
@@ -3402,12 +3403,16 @@ class TrainPilotViewModel : ViewModel() {
         _uiState.update { it.copy(cardioFilterStepsMode = stepsMode) }
     }
 
-    fun openExerciseVideoModal(exerciseTitle: String) {
-        _uiState.update { it.copy(videoModalExerciseTitle = exerciseTitle) }
+    fun openExerciseVideoModal(exerciseTitle: String, exerciseId: String? = null) {
+        _uiState.update {
+            it.copy(videoModalExerciseTitle = exerciseTitle, videoModalExerciseId = exerciseId)
+        }
     }
 
     fun closeExerciseVideoModal() {
-        _uiState.update { it.copy(videoModalExerciseTitle = null) }
+        _uiState.update {
+            it.copy(videoModalExerciseTitle = null, videoModalExerciseId = null)
+        }
     }
 
     // Health / Egészség Actions

@@ -1231,7 +1231,7 @@ fun ProgramEditorScreen(
                                     color = palette.textSecondary
                                 )
                             }
-                            SmallExerciseVideoButton(exerciseName = ex.localizedName(state.language))
+                            SmallExerciseVideoButton(exerciseName = ex.localizedName(state.language), exerciseId = ex.id)
                             Spacer(modifier = Modifier.width(4.dp))
                             Box(
                                 contentAlignment = Alignment.Center,
@@ -2744,7 +2744,8 @@ fun ExerciseLibraryScreen(
                         // Video popup button (opens modal dialog ONLY when clicked)
                         SmallExerciseVideoButton(
                             exerciseName = ex.localizedName(state.language),
-                            compactIconOnly = true
+                            compactIconOnly = true,
+                            exerciseId = ex.id
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         // Compact Add to workout queue button (+)
@@ -2862,7 +2863,7 @@ fun ExerciseDetailScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    SmallExerciseVideoButton(exerciseName = exercise.localizedName(state.language))
+                    SmallExerciseVideoButton(exerciseName = exercise.localizedName(state.language), exerciseId = exercise.id)
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = palette.primary.copy(alpha = 0.18f),
@@ -2876,12 +2877,6 @@ fun ExerciseDetailScreen(
                         )
                     }
                 }
-            }
-
-            val (youtubeVideoId, _) = remember(exercise.id, exercise.nameHu) {
-                com.example.ui.components.resolveCatalogExerciseVideoAndNotes(
-                    exercise.id.ifBlank { exercise.nameHu }
-                )
             }
 
             // Anatomical & Posture Illustration Card (Embedded video is NOT auto-opened inline; clicking the video button opens the popup dialog!)
@@ -2982,7 +2977,7 @@ fun ExerciseDetailScreen(
                             modifier = Modifier
                                 .trainPilotBorder(1.dp, palette.primary, RoundedCornerShape(8.dp))
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable { openVideoModal(exercise.localizedName(state.language)) }
+                                .clickable { openVideoModal(exercise.localizedName(state.language), exercise.id) }
                                 .testTag("exercise_detail_popup_video_chip")
                         ) {
                             Text(
