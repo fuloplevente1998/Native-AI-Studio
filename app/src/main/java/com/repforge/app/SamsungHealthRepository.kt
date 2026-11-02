@@ -147,7 +147,18 @@ object SamsungHealthRepository {
         val result = reader.workout(range[0], range[1]).put("provider", HealthJournalStore.SAMSUNG)
         guard()
         check(SamsungSdkReader.open(context) { guard() }.granted == reader.granted) { "Samsung Health engedélyei megváltoztak." }
-        result.put("partial", (result.optJSONArray("failedFields")?.length() ?: 0) > 0)
+        val failures = result.optJSONArray("failedFields") ?: org.json.JSONArray().also { result.put("failedFields", it) }
+        val errors = result.optJSONObject("errors") ?: JSONObject().also { result.put("errors", it) }
+        val granted = reader.grantedKeys()
+        for ((permission, fields) in mapOf(
+            "READ_STEPS" to listOf("steps"),
+            "READ_HEART_RATE" to listOf("averageHeartRate", "minHeartRate", "maxHeartRate", "heartRateSamples"),
+            "READ_EXERCISE" to listOf("workoutCalories", "exerciseMinutes")
+        )) if (permission !in granted) for (field in fields) {
+            failures.put(field)
+            errors.put(field, "PERMISSION_DENIED")
+        }
+        result.put("partial", failures.length() > 0)
     }
 
     suspend fun readHealthDay(
