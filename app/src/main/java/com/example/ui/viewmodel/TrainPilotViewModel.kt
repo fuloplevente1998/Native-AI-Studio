@@ -122,6 +122,8 @@ data class TrainPilotUiState(
     val currentHrBpm: Int = 0,
     val maxHrBpm: Int = 0,
     val minHrBpm: Int = 0,
+    val dailyPulseHistory: List<com.repforge.app.NativeDailyHealthDetails.PulsePoint> = emptyList(),
+    val dailyPulseSampleCount: Int = 0,
     val hrvRmssdMs: Float = 0f,
     val bloodPressureLabel: String = "—",
     val bloodGlucoseLabel: String = "—",
@@ -3604,6 +3606,7 @@ class TrainPilotViewModel : ViewModel() {
                 restingHrBpm = 0,
                 maxHrBpm = 0,
                 minHrBpm = 0,
+                dailyPulseHistory = emptyList(), dailyPulseSampleCount = 0,
                 activeCaloriesKcal = 0, totalCaloriesKcal = 0, dailyHealthDate = "", dailyHealthAvailableFields = emptySet(),
                 sleepDurationLabel = "—",
                 sleepHoursDecimal = "—",
@@ -3633,8 +3636,14 @@ class TrainPilotViewModel : ViewModel() {
                 val today = LocalDate.now()
                 val todayData = com.repforge.app.NativeHealthProviderData.day(store, provider, today)
 
-                val availableFields = setOf("steps", "activeCalories", "totalCalories", "sleepMinutes", "averageHeartRate", "restingHeartRate")
-                    .filter { key -> todayData?.optDouble(key, Double.NaN)?.let { it.isFinite() && it >= 0 } == true }.toSet()
+                val todaySleepMin = com.repforge.app.NativeDailyHealthDetails.sleepMinutes(
+                    todayData, today, java.time.ZoneId.systemDefault(), Instant.now()) ?: Double.NaN
+                val todayPulseHistory = com.repforge.app.NativeDailyHealthDetails.pulseSeries(todayData)
+                val availableFields = (setOf("steps", "activeCalories", "totalCalories", "averageHeartRate",
+                    "restingHeartRate", "minHeartRate", "maxHeartRate", "heartRateSamples")
+                    .filter { key -> todayData?.optDouble(key, Double.NaN)?.let { it.isFinite() && it >= 0 } == true } +
+                    (if (todaySleepMin.isFinite() && todaySleepMin > 0) listOf("sleepMinutes") else emptyList()) +
+                    (if (todayPulseHistory.isNotEmpty()) listOf("heartRateSeries") else emptyList())).toSet()
                 val lastProviderSync = store.nativeSyncLastSuccess(provider)
                 val stepsDbl = todayData?.optDouble("steps", Double.NaN) ?: Double.NaN
                 val pulseDbl = todayData?.optDouble("averageHeartRate", Double.NaN) ?: Double.NaN
@@ -3642,7 +3651,7 @@ class TrainPilotViewModel : ViewModel() {
                 val maxHrDbl = todayData?.optDouble("maxHeartRate", Double.NaN) ?: Double.NaN
                 val minHrDbl = todayData?.optDouble("minHeartRate", Double.NaN) ?: Double.NaN
                 val caloriesDbl = todayData?.optDouble("activeCalories", Double.NaN) ?: Double.NaN
-                val sleepMinDbl = todayData?.optDouble("sleepMinutes", Double.NaN) ?: Double.NaN
+                val sleepMinDbl = todaySleepMin
                 val hrvDbl = todayData?.optDouble("hrvRmssdMs", Double.NaN) ?: Double.NaN
                 val sysDbl = todayData?.optDouble("bloodPressureSystolic", Double.NaN) ?: Double.NaN
                 val diaDbl = todayData?.optDouble("bloodPressureDiastolic", Double.NaN) ?: Double.NaN
@@ -3682,7 +3691,8 @@ class TrainPilotViewModel : ViewModel() {
                     val dSteps = if (stepsAvailable) dStepsRaw.toInt() else 0
                     val dKcal = dayObj?.optDouble("activeCalories", Double.NaN)?.takeIf { it.isFinite() && it >= 0 }?.toInt() ?: 0
                     val dDistM = dayObj?.optDouble("distanceMeters", Double.NaN)?.takeIf { it.isFinite() && it >= 0 } ?: 0.0
-                    val dSleepMin = dayObj?.optDouble("sleepMinutes", Double.NaN)?.takeIf { it.isFinite() && it > 0 } ?: Double.NaN
+                    val dSleepMin = com.repforge.app.NativeDailyHealthDetails.sleepMinutes(
+                        dayObj, d, java.time.ZoneId.systemDefault(), Instant.now()) ?: Double.NaN
                     val dSleepLabel = if (dSleepMin.isFinite()) {
                         String.format("%d ó %d p", (dSleepMin / 60).toInt(), (dSleepMin % 60).toInt())
                     } else "—"
@@ -3780,6 +3790,8 @@ class TrainPilotViewModel : ViewModel() {
                             restingHrBpm = if (restingDbl.isFinite() && restingDbl > 0) restingDbl.toInt() else 0,
                             maxHrBpm = if (maxHrDbl.isFinite() && maxHrDbl > 0) maxHrDbl.toInt() else 0,
                             minHrBpm = if (minHrDbl.isFinite() && minHrDbl > 0) minHrDbl.toInt() else 0,
+                            dailyPulseHistory = todayPulseHistory,
+                            dailyPulseSampleCount = todayData?.optInt("heartRateSamples", 0)?.coerceAtLeast(0) ?: 0,
                             activeCaloriesKcal = if (caloriesDbl.isFinite() && caloriesDbl > 0) caloriesDbl.toInt() else 0,
                             sleepDurationLabel = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) String.format("%d ó %d p", (sleepMinDbl / 60).toInt(), (sleepMinDbl % 60).toInt()) else "—",
                             sleepHoursDecimal = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) "${((sleepMinDbl / 60.0) * 10.0).roundToInt() / 10.0} h" else "—",
