@@ -60,7 +60,7 @@ class StudioPausedWorkoutDiscardRegressionTest {
         try {
             model.bindNativeEnvironment(context, com.repforge.app.data.store.TrainPilotSettingsStore(context), db, scope)
             val id = frame.getString("workoutId")
-            await { model.uiState.value.activeWorkoutId == id }
+            await { model.uiState.value.activeWorkoutId == id && !model.uiState.value.savedRecordsLoading }
             model.stopActiveWorkoutSession(id)
             await { !model.uiState.value.isSavingWorkout && !model.uiState.value.isWorkoutSessionActive }
             assertFalse(ActiveWorkoutStore.current(context)!!.optBoolean("active"))
@@ -77,7 +77,7 @@ class StudioPausedWorkoutDiscardRegressionTest {
         try {
             model.bindNativeEnvironment(context, com.repforge.app.data.store.TrainPilotSettingsStore(context), db, scope)
             val id = frame.getString("workoutId")
-            await { model.uiState.value.activeWorkoutId == id }
+            await { model.uiState.value.activeWorkoutId == id && !model.uiState.value.savedRecordsLoading }
             model.stopActiveWorkoutSession("stale-other-workout")
             await { !model.uiState.value.isSavingWorkout }
             assertTrue(ActiveWorkoutStore.current(context)!!.optBoolean("active"))

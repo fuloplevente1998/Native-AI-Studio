@@ -53,7 +53,8 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     val date = remember(locale) { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
         .withLocale(locale).withZone(ZoneId.systemDefault()) }
     fun time(value: String) = runCatching { date.format(Instant.parse(value)) }.getOrDefault("—")
-    var expandedSource by rememberSaveable(workout.id) { mutableStateOf<String?>(null) }
+    // Do not restore the previous version's independent Boolean slots as a String state.
+    var expandedSource by rememberSaveable(workout.id, key = "journal_source_v2_${workout.id}") { mutableStateOf<String?>(null) }
     val wearExpanded = expandedSource == "wear"
     val samsungExpanded = expandedSource == HealthJournalStore.SAMSUNG
     val hcExpanded = expandedSource == HealthJournalStore.HC
