@@ -152,14 +152,31 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
         com.example.ui.components.LocalOpenWorkoutHealth provides { showLiveHealth = true },
         com.example.ui.components.LocalRequestWorkoutHealthPermission provides { provider -> requestPlatformPermission(if (provider == com.repforge.app.HealthJournalStore.SAMSUNG) "samsung_permission" else "hc_permission") },
         com.example.ui.components.LocalSyncDailyHealth provides { provider -> requestPlatformPermission(if (provider == com.repforge.app.HealthJournalStore.SAMSUNG) "samsung" else "hc") },
-        LocalOpenExerciseVideo provides { exTitle -> viewModel.openExerciseVideoModal(exTitle) }
+        LocalOpenExerciseVideo provides { exTitle, exId -> viewModel.openExerciseVideoModal(exTitle, exId) }
     ) {
         if (showLiveHealth) com.example.ui.components.StudioLiveWorkoutHealthDialog { showLiveHealth = false }
 
         // 0. Embedded YouTube Exercise Video Modal Dialog
         uiState.videoModalExerciseTitle?.let { exTitle ->
+            val requestedId = uiState.videoModalExerciseId
+            // Prefer the exact exercise selected in the workout; name-only buttons
+            // may resolve only an unambiguous exact localized name.
+            val selectedExercise = if (requestedId != null) {
+                uiState.exercises.firstOrNull { it.id == requestedId }
+            } else {
+                uiState.exercises.filter { ex ->
+                    listOf(ex.nameHu, ex.nameEn, ex.nameDe, ex.nameRo)
+                        .any { it.equals(exTitle, ignoreCase = true) }
+                }.singleOrNull()
+            }
             ExerciseYouTubeVideoModalDialog(
                 exerciseTitle = exTitle,
+                exerciseId = selectedExercise?.id ?: requestedId,
+                storedVideoUrl = selectedExercise?.videoUrl,
+                isCustom = selectedExercise?.isCustom == true,
+                selectedNotesHu = selectedExercise?.stepsHu
+                    ?.joinToString(" ")
+                    ?.takeIf { it.isNotBlank() },
                 onDismiss = { viewModel.closeExerciseVideoModal() }
             )
         }
