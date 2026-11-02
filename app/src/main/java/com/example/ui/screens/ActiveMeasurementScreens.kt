@@ -408,7 +408,8 @@ fun ActiveStrengthWorkoutScreen(
                 SubScreenTopBar(
                     title = "${uiState.activeWorkoutTitleHu} • ${currentExerciseIdx + 1} / $totalExercisesCount gyakorlat",
                     onBack = onBack,
-                    onOpenSettings = onOpenSettings
+                    onOpenSettings = onOpenSettings,
+                    rightExtraContent = { com.example.ui.components.StudioWorkoutHealthAction() }
                 )
 
                 // Horizontal Exercise Sequence Pills (shows all exercises in the planned/queued workout)
@@ -1594,7 +1595,8 @@ fun ActiveTimedWorkoutScreen(
                 SubScreenTopBar(
                     title = "${uiState.activeWorkoutTitleHu} • ${currentIdx + 1} / $totalCount gyakorlat",
                     onBack = onBack,
-                    onOpenSettings = onOpenSettings
+                    onOpenSettings = onOpenSettings,
+                    rightExtraContent = { com.example.ui.components.StudioWorkoutHealthAction() }
                 )
             }
             item {
@@ -2157,7 +2159,8 @@ fun ActiveBilateralWorkoutScreen(
                 SubScreenTopBar(
                     title = "$exerciseTitle • Kétoldali stopper",
                     onBack = onBack,
-                    onOpenSettings = onOpenSettings
+                    onOpenSettings = onOpenSettings,
+                    rightExtraContent = { com.example.ui.components.StudioWorkoutHealthAction() }
                 )
             }
 
@@ -3329,7 +3332,8 @@ fun IntervalSettingsScreen(
             SubScreenTopBar(
                 title = "Intervallumok beállítása",
                 onBack = onBack,
-                onOpenSettings = onOpenSettings
+                onOpenSettings = onOpenSettings,
+                    rightExtraContent = { com.example.ui.components.StudioWorkoutHealthAction() }
             )
         }
         item {
@@ -3560,6 +3564,8 @@ fun WorkoutSummaryScreen(
                 color = palette.textSecondary
             )
         }
+        item { com.example.ui.components.StudioWorkoutHealthAction() }
+
 
         item {
             Row(

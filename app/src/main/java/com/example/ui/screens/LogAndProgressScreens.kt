@@ -1164,13 +1164,13 @@ fun LogWorkoutDetailScreen(
                         MockupHealthConnectBadge(modifier = Modifier.size(34.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Health Connect",
+                                text = "Egészségadatok",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.textPrimary
                             )
                             Text(
-                                text = if (workout.sourceHealthConnect) "Edzésadat elérhető" else "Nincs edzésadat",
+                                text = "Samsung Health / Health Connect",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.secondary
                             )

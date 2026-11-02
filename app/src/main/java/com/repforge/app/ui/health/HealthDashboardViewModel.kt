@@ -68,6 +68,11 @@ data class HealthDashboardUiState(
     val metrics: List<HealthMetricItemUiModel> = emptyList(),
     val sleepSessionsSummaryText: String = "—",
     val lastSyncAt: String = "—",
+    val lastReadAt: String = "—",
+    val samsungGrantedCount: Int = -1,
+    val syncOutcome: String = "NONE",
+    val syncMessage: String = "",
+    val providerReadDetails: String = "",
     val bleState: BleDiscoveryUiState = BleDiscoveryUiState(),
     val hcSupported: Boolean = false,
     val hcGranted: Boolean = false,
@@ -105,6 +110,24 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
     private var manualSamsungPermissionVisible = false
     private var healthRecordDetailVisible = false
 
+    fun refreshSamsungGrants(activity: Activity?) {
+        if (activity == null) return
+        viewModelScope.launch {
+            val keys = runCatching { SamsungHealthRepository.readGrantScope(context) {
+                check((activity as? androidx.lifecycle.LifecycleOwner)?.lifecycle?.currentState?.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) == true)
+            } }.getOrElse { error ->
+                if (error is CancellationException) throw error
+                emptySet()
+            }
+            _uiState.update { it.copy(samsungGrantedCount = keys.size) }
+        }
+    }
+
+    fun requestSamsungPermissions(activity: Activity?) {
+        if (activity == null || _uiState.value.provider != HealthJournalStore.SAMSUNG) return
+        refresh(activity, requestSamsungPermission = true)
+    }
+
     fun cancelHealthSync() {
         providerJob?.cancel()
         _uiState.update { it.copy(syncCancelled = true) }
@@ -112,6 +135,7 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
     }
 
     fun syncHealth(activity: Activity?, full: Boolean = false) {
+        if (activity == null) { _uiState.update { it.copy(syncFailed = true, syncOutcome = "FAILED", syncMessage = "Látható egészségképernyő szükséges.") }; return }
         if (activity != null) {
             _uiState.update { it.copy(syncRetryFull = full) }
             launchRefresh(activity, NativeHealthAutoRefreshGate.Trigger.MANUAL,
@@ -213,11 +237,12 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                     com.repforge.app.NativeDataReplacement.mutate(context) {
                         val language = com.repforge.app.data.store.TrainPilotSettingsStore(context).current().language
                         val prefs = healthStore.preferences()
-                        val page = NativeHealthHistory(healthStore).load(query)
+                        val page = NativeHealthHistory(healthStore).load(if (query.channel == "journal")
+                            query.copy(channel = prefs.optString("provider", HealthJournalStore.HC)) else query)
                         Triple(
                             Triple(language, prefs, page),
                             access,
-                            background to healthStore.nativeSyncLastSuccess()
+                            background to healthStore.nativeSyncLastSuccess(prefs.optString("provider", HealthJournalStore.HC))
                         )
                     }
                 }
@@ -240,6 +265,10 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                     sleepSessionsSummaryText = text.getString(com.repforge.app.R.string.health_history_sleep,
                         page.selected.optJSONArray("sleepSessions")?.length() ?: 0),
                     lastSyncAt = loaded.third.second,
+                    lastReadAt = page.selected.optString("readAt", page.selected.optString("syncedAt", "—")),
+                    providerReadDetails = page.selected.optJSONObject("errors")?.let { errors ->
+                        errors.keys().asSequence().map { errors.optString(it) }.filter(String::isNotBlank).distinct().joinToString(", ")
+                    }.orEmpty(),
                     hcSupported = access[0], hcGranted = access[1], samsungInstalled = access[2], samsungAvailable = access[3])
                 // The first visible open can occur while preferences are still loading.
                 if (allowAutoRefresh && screenVisible && _uiState.value.activeTab == "journal" && !healthRecordDetailVisible) {
@@ -275,6 +304,7 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
 
     fun setProvider(newProvider: String, activity: Activity? = null) {
         if (newProvider !in setOf(HealthJournalStore.HC, HealthJournalStore.SAMSUNG)) return
+        if (newProvider == _uiState.value.provider) return
         val previousRead = providerJob
         invalidateRefresh()
         if (newProvider == HealthJournalStore.SAMSUNG) samsungPermissionPending = true
@@ -285,7 +315,9 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                         healthStore.setPreferences(JSONObject().put("provider", newProvider))
                     }
                 }
-                _uiState.update { it.copy(provider = newProvider) }
+                historyQuery = historyQuery.copy(channel = newProvider)
+                _uiState.update { it.copy(provider = newProvider, metrics = emptyList(), lastSyncAt = "—", lastReadAt = "—",
+                    syncOutcome = "NONE", syncMessage = "") }
                 loadHealthDashboard()
                 // Explicit provider selection owns the permission prompt even when an old
                 // automatic operation was cancelled while waiting for the SDK.
@@ -383,7 +415,10 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                 ticket = refreshGate.begin(trigger, SystemClock.elapsedRealtime(), prepared.second,
                     prepared.third, executionSafe && prepared.third, snapshot)
                 if (ticket == null) {
-                    if (trigger == NativeHealthAutoRefreshGate.Trigger.MANUAL) _uiState.update { it.copy(syncFailed = true) }
+                    if (trigger == NativeHealthAutoRefreshGate.Trigger.MANUAL) _uiState.update { it.copy(syncFailed = true, syncOutcome = "BLOCKED",
+                        syncMessage = "${com.repforge.app.NativeWorkoutHealthSource.label(snapshot.provider)}: a szinkron nem indult el • " +
+                            if (!executionSafe) "aktív edzés, átadás vagy adatcsere védi a munkamenetet; az edzés képernyőjén külön, csak olvasási lekérés használható"
+                            else "hiányzó szolgáltató/engedély vagy másik folyamatban lévő művelet") }
                     return@launch
                 }
                 val activeTicket = ticket!!
@@ -392,7 +427,8 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                 val day = if (trigger == NativeHealthAutoRefreshGate.Trigger.AUTO) LocalDate.now()
                     else historyQuery.day
                 _uiState.update { it.copy(healthRefreshing = true, syncFailed = false, syncPartial = false,
-                    syncCancelled = false, syncCompleted = 0, syncTotal = 0, syncPages = 0, syncStage = "PREPARING") }
+                    syncCancelled = false, syncCompleted = 0, syncTotal = 0, syncPages = 0, syncStage = "PREPARING",
+                    syncOutcome = "RUNNING", syncMessage = "${com.repforge.app.NativeWorkoutHealthSource.label(snapshot.provider)}: szinkronizálás…") }
                 val guard = {
                     check(screenVisible && screenActivity?.get() === activity && _uiState.value.activeTab == "journal" &&
                         !healthRecordDetailVisible && historyQuery.day.toString() == selected &&
@@ -421,18 +457,29 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                             syncTotal = value.total, syncPages = value.pages) }
                     }, onPermissionFinished = { manualSamsungPermissionVisible = false }, requireScreenGuard = guard)
                 val partial = result.getOrNull()?.optBoolean("partial") == true
-                _uiState.update { it.copy(syncFailed = result.isFailure, syncPartial = partial) }
+                val failure = result.exceptionOrNull()
+                val providerLabel = com.repforge.app.NativeWorkoutHealthSource.label(snapshot.provider)
+                val detail = failure?.let {
+                    if (snapshot.provider == HealthJournalStore.SAMSUNG) "${SamsungHealthRepository.errorCode(it)} • ${it.message.orEmpty().take(180)}"
+                    else it.message.orEmpty().take(180)
+                }
+                _uiState.update { it.copy(syncFailed = result.isFailure, syncPartial = partial,
+                    syncOutcome = if (failure != null) "FAILED" else if (partial) "PARTIAL" else "SUCCESS",
+                    syncMessage = "$providerLabel: " + if (failure != null) "sikertelen • $detail"
+                        else if (partial) "részleges szinkron; ellenőrizd az engedélyeket és a forrás hibáit"
+                        else "sikeres szinkron") }
                 if (screenVisible && screenGeneration == visibleGeneration && historyQuery.day.toString() == selected) {
                     if (trigger == NativeHealthAutoRefreshGate.Trigger.MANUAL) {
                         val text = com.repforge.app.ui.text.nativeResources(context, _uiState.value.language)
                         _uiState.update { it.copy(statusMessage = text.getString(if (result.isSuccess && !partial)
                             com.repforge.app.R.string.health_read_completed else com.repforge.app.R.string.coach_refresh_failed)) }
                     }
+                    refreshSamsungGrants(activity)
                     loadHealthDashboard(allowAutoRefresh = false) // Durable partial days remain visible; history selection/source/filter are retained.
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) {
-                _uiState.update { it.copy(syncFailed = true) }
+            catch (failure: Exception) {
+                _uiState.update { it.copy(syncFailed = true, syncOutcome = "FAILED", syncMessage = "${com.repforge.app.NativeWorkoutHealthSource.label(it.provider)}: ${if (it.provider == HealthJournalStore.SAMSUNG) SamsungHealthRepository.errorCode(failure) else "READ_FAILED"} • ${failure.message.orEmpty().take(180)}") }
                 if (trigger == NativeHealthAutoRefreshGate.Trigger.MANUAL && screenVisible) {
                     val text = com.repforge.app.ui.text.nativeResources(context, _uiState.value.language)
                     _uiState.update { it.copy(statusMessage = text.getString(com.repforge.app.R.string.coach_refresh_failed)) }

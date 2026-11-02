@@ -642,7 +642,7 @@ internal class HealthJournalStore(context: Context) :
                     }
                 }
                 if (legacy != null) {
-                    for (key in arrayOf("lastSyncAt", "lastFullSyncAt", "lastAttemptAt")) {
+                    for (key in arrayOf("lastSyncAt", "lastFullSyncAt", "lastAttemptAt", "lastSyncAt_$HC", "lastSyncAt_$SAMSUNG")) {
                         if (legacy.has(key) && !legacy.isNull(key)) {
                             putMeta(db, key, legacy.getString(key))
                         }
@@ -738,8 +738,9 @@ internal class HealthJournalStore(context: Context) :
         days
     }
 
-    internal fun nativeSyncLastSuccess(): String = synchronized(LOCK) {
-        meta(readableDatabase, "lastSyncAt", "—")
+    internal fun nativeSyncLastSuccess(provider: String? = null): String = synchronized(LOCK) {
+        if (provider == null) meta(readableDatabase, "lastSyncAt", "—")
+        else { require(provider in setOf(HC, SAMSUNG)); meta(readableDatabase, "lastSyncAt_$provider", "—") }
     }
 
     /** Only this private key contains SDK tokens. Export/projection use explicit whitelists. */
@@ -769,6 +770,7 @@ internal class HealthJournalStore(context: Context) :
                 .put("revision", expectedRevision + 1).put("scope", checkpoint.scope)
                 .put("token", checkpoint.token).put("initialized", true).toString())
             putMeta(db, "lastSyncAt", at)
+            putMeta(db, "lastSyncAt_$provider", at)
             if (full) putMeta(db, "lastFullSyncAt", at)
             null
         }
@@ -786,7 +788,7 @@ internal class HealthJournalStore(context: Context) :
     fun syncMeta(meta: JSONObject) {
         transaction { db ->
             writable(db, generation())
-            for (key in arrayOf("lastSyncAt", "lastFullSyncAt", "lastAttemptAt")) {
+            for (key in arrayOf("lastSyncAt", "lastFullSyncAt", "lastAttemptAt", "lastSyncAt_$HC", "lastSyncAt_$SAMSUNG")) {
                 if (meta.has(key) && !meta.isNull(key)) {
                     putMeta(db, key, meta.getString(key))
                 }
@@ -854,7 +856,7 @@ internal class HealthJournalStore(context: Context) :
                 .put("preferences", preferences())
                 .put("nativeJournal", true)
                 .put("warnings", JSONArray())
-            for (key in arrayOf("lastSyncAt", "lastFullSyncAt", "lastAttemptAt")) {
+            for (key in arrayOf("lastSyncAt", "lastFullSyncAt", "lastAttemptAt", "lastSyncAt_$HC", "lastSyncAt_$SAMSUNG")) {
                 val value = meta(db, key, "")
                 out.put(key, if (value.isEmpty()) JSONObject.NULL else value)
             }
@@ -1183,7 +1185,7 @@ internal class HealthJournalStore(context: Context) :
                 }
             }
             val sync = JSONObject()
-            for (key in arrayOf("lastSyncAt", "lastFullSyncAt", "lastAttemptAt")) {
+            for (key in arrayOf("lastSyncAt", "lastFullSyncAt", "lastAttemptAt", "lastSyncAt_$HC", "lastSyncAt_$SAMSUNG")) {
                 val value = meta(db, key, "")
                 if (value.isNotEmpty()) sync.put(key, value)
             }
@@ -1232,7 +1234,7 @@ internal class HealthJournalStore(context: Context) :
             saveDay(db, d.getString("day"), channel, source, d.getJSONObject("data"))
         }
         val sync = snapshot.optJSONObject("syncMeta")
-        for (key in arrayOf("lastSyncAt", "lastFullSyncAt", "lastAttemptAt")) {
+        for (key in arrayOf("lastSyncAt", "lastFullSyncAt", "lastAttemptAt", "lastSyncAt_$HC", "lastSyncAt_$SAMSUNG")) {
             if (sync != null && !sync.isNull(key)) {
                 putMeta(db, key, sync.getString(key))
             } else {

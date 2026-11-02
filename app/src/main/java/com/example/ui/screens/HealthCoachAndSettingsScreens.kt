@@ -143,7 +143,9 @@ fun HealthTabScreen(
     onNavigateToSubScreen: (SubScreen) -> Unit,
     onOpenPalettePicker: () -> Unit,
     onOpenGoalsDialog: () -> Unit = {},
-    onDeleteWeightLog: (String) -> Unit = {}
+    onDeleteWeightLog: (String) -> Unit = {},
+    onSelectHealthSource: (Boolean) -> Unit = { onTogglePrimaryHealthSource() },
+    onRequestHealthPermissions: () -> Unit = { onNavigateToSubScreen(SubScreen.PERMISSIONS_SCREEN) }
 ) {
     val palette = LocalTrainPilotPalette.current
     val today = remember { java.time.LocalDate.now() }
@@ -498,7 +500,7 @@ fun HealthTabScreen(
                                     ) to { onNavigateToSubScreen(SubScreen.COACH_DETAIL) }
                                     else -> listOf(
                                         "Alvás részletek • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})",
-                                        "Mélyalvás: 1 ó 45 p • REM: 1 ó 50 p • Minőség: Jó",
+                                        "Alvásfázisok: nincs lekért adat",
                                         "Egészségnapló megnyitása lent"
                                     ) to { onToggleHealthSection("journal") }
                                 }
@@ -867,38 +869,9 @@ fun HealthTabScreen(
                                     .border(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
                                     .clickable { onToggleHealthSection("pulse") }
                             ) {
-                                Canvas(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                                ) {
-                                    val values = if (uiState.currentHrBpm > 0) {
-                                        listOf(55f, 56f, 62f, 88f, 70f, 79f, 58f, 54f)
-                                    } else {
-                                        listOf(55f, 56f, 60f, 78f, 65f, 72f, 57f, 55f)
-                                    }
-                                    val minV = 50f
-                                    val maxV = 95f
-                                    val pts = values.mapIndexed { idx, v ->
-                                        val x = (idx.toFloat() / (values.size - 1)) * size.width
-                                        val norm = (v - minV) / (maxV - minV)
-                                        val y = size.height - norm * size.height
-                                        Offset(x, y)
-                                    }
-                                    val path = Path()
-                                    pts.forEachIndexed { i, pt ->
-                                        if (i == 0) path.moveTo(pt.x, pt.y)
-                                        else {
-                                            val prev = pts[i - 1]
-                                            val cx = (prev.x + pt.x) / 2f
-                                            path.cubicTo(cx, prev.y, cx, pt.y, pt.x, pt.y)
-                                        }
-                                    }
-                                    drawPath(
-                                        path = path,
-                                        color = Color(0xFFEF4444),
-                                        style = Stroke(width = 2.6.dp.toPx(), cap = StrokeCap.Round)
-                                    )
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Text("Nincs lekért pulzus-idősor", color = palette.textSecondary,
+                                        style = MaterialTheme.typography.bodySmall)
                                 }
                             }
 
@@ -945,17 +918,17 @@ fun HealthTabScreen(
                                         ) {
                                             PulseInnerBox(
                                                 label = "Max. pulzus",
-                                                value = if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm + 25} bpm" else "—",
+                                                value = "—",
                                                 modifier = Modifier.weight(1f)
                                             )
                                             PulseInnerBox(
                                                 label = "Min. pulzus",
-                                                value = if (uiState.restingHrBpm > 0) "${(uiState.restingHrBpm - 6).coerceAtLeast(45)} bpm" else "—",
+                                                value = "—",
                                                 modifier = Modifier.weight(1f)
                                             )
                                         }
                                         Text(
-                                            text = "Health Connect / Samsung Health",
+                                            text = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = palette.textSecondary
                                         )
@@ -1408,18 +1381,18 @@ fun HealthTabScreen(
                 onToggle = { onToggleHealthSection("extra") }
             ) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SummarySmallPill("Vérnyomás", "118/76 Hgmm", Modifier.weight(1f))
-                    SummarySmallPill("Vércukor", "5,1 mmol/L", Modifier.weight(1f))
+                    SummarySmallPill("Vérnyomás", "—", Modifier.weight(1f))
+                    SummarySmallPill("Vércukor", "—", Modifier.weight(1f))
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SummarySmallPill("Légzésszám", "14,2 /perc", Modifier.weight(1f))
-                    SummarySmallPill("Távolság (ma)", "5,24 km", Modifier.weight(1f))
+                    SummarySmallPill("Légzésszám", "—", Modifier.weight(1f))
+                    SummarySmallPill("Távolság (ma)", "—", Modifier.weight(1f))
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SummarySmallPill("Véroxigén (SpO₂)", "97,0 %", Modifier.weight(1f))
-                    SummarySmallPill("Testhőmérséklet", "36,5 °C", Modifier.weight(1f))
+                    SummarySmallPill("Véroxigén (SpO₂)", if (uiState.spo2Percent > 0) "${uiState.spo2Percent} %" else "—", Modifier.weight(1f))
+                    SummarySmallPill("Testhőmérséklet", "—", Modifier.weight(1f))
                 }
             }
         }
@@ -1434,9 +1407,11 @@ fun HealthTabScreen(
                 onToggle = { onToggleHealthSection("journal") }
             ) {
                 val journalDays = listOf(
-                    "2026. okt. 27." to "Alvás: 6,2 h • Pulzus: 65 bpm • Lépések: 6 734 • 292 kcal",
-                    "2026. okt. 26." to "Alvás: 9,4 h • Pulzus: 61 bpm • Lépések: 6 036 • 235 kcal",
-                    "2026. okt. 25." to "Alvás: 4,2 h • Pulzus: 63 bpm • Lépések: 9 919 • 392 kcal"
+                    today.toString() to ("${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} • " +
+                        "Alvás: ${uiState.sleepDurationLabel} • " +
+                        "Pulzus: ${if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"} • " +
+                        "Lépések: ${if (uiState.dailySteps > 0) uiState.dailySteps.toString() else "—"} • " +
+                        "Kalória: ${if (uiState.activeCaloriesKcal > 0) "${uiState.activeCaloriesKcal} kcal" else "—"}")
                 )
                 journalDays.forEach { (d, summary) ->
                     Surface(
@@ -1459,7 +1434,7 @@ fun HealthTabScreen(
         item {
             ExpandableHealthSectionCard(
                 icon = Icons.Default.Link,
-                title = "Health Connect",
+                title = "Egészségadat-források",
                 subtitle = "Adatforrások, engedélyek és szinkron",
                 expanded = uiState.expandedHealthConnect,
                 onToggle = { onToggleHealthSection("connect") },
@@ -1481,11 +1456,15 @@ fun HealthTabScreen(
                                 color = if (uiState.primaryHealthSourceSamsung) palette.primary else palette.cardBorder,
                                 shape = RoundedCornerShape(14.dp)
                             )
-                            .clickable { onTogglePrimaryHealthSource() }
+                            .clickable { onSelectHealthSource(true) }
+                            .testTag("health_provider_samsung")
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
                             Text("Samsung Health", fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text("● Közvetlen (1/2)", style = MaterialTheme.typography.labelSmall, color = palette.success)
+                            Text(if (uiState.samsungGrantedCount < 0) "Engedély még nem igazolt"
+                                else "${uiState.samsungGrantedCount}/${uiState.samsungPermissionCount} adatkör",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (uiState.samsungGrantedCount > 0) palette.success else palette.textSecondary)
                         }
                     }
                     Surface(
@@ -1498,17 +1477,18 @@ fun HealthTabScreen(
                                 color = if (!uiState.primaryHealthSourceSamsung) palette.primary else palette.cardBorder,
                                 shape = RoundedCornerShape(14.dp)
                             )
-                            .clickable { onTogglePrimaryHealthSource() }
+                            .clickable { onSelectHealthSource(false) }
+                            .testTag("health_provider_connect")
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
                             Text("Health Connect", fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text("● ${uiState.healthGrantedCount}/${uiState.healthPermissionCount} engedély", style = MaterialTheme.typography.labelSmall, color = palette.success)
+                            Text("● ${uiState.healthGrantedCount}/${uiState.healthPermissionCount} engedély", style = MaterialTheme.typography.labelSmall, color = if (uiState.healthGrantedCount > 0) palette.success else palette.textSecondary)
                         }
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Olvasott adatok: Lépések, Pulzus, Alvás, Aktív kalória, Testsúly, Testzsír, SpO₂, VO₂max, Edzések.",
+                    text = "Az elérhető adatok a választott szolgáltatótól és a tényleges engedélyektől függenek.",
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary
                 )
@@ -1570,12 +1550,12 @@ fun HealthTabScreen(
                             .height(52.dp)
                             .border(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(16.dp))
                             .clip(RoundedCornerShape(16.dp))
-                            .clickable { onTriggerHealthSync() }
+                            .clickable(enabled = !uiState.healthSyncBusy) { onTriggerHealthSync() }
                             .testTag("health_sync_button")
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
-                                text = strings.syncAction,
+                                text = if (uiState.healthSyncBusy) "Szinkronizálás…" else strings.syncAction,
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.textPrimary
@@ -1590,7 +1570,7 @@ fun HealthTabScreen(
                             .height(52.dp)
                             .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                             .clip(RoundedCornerShape(16.dp))
-                            .clickable { onNavigateToSubScreen(SubScreen.PERMISSIONS_SCREEN) }
+                            .clickable { onRequestHealthPermissions() }
                             .testTag("health_open_permissions_button")
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -1605,10 +1585,14 @@ fun HealthTabScreen(
                 }
 
                 Text(
-                    text = "Utolsó igazolt szinkron: ${uiState.lastHealthSyncLabel}",
+                    text = "${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} • utolsó teljes szinkron: ${uiState.lastHealthSyncLabel}",
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary
                 )
+                if (uiState.healthSyncMessage.isNotBlank()) Text(uiState.healthSyncMessage,
+                    color = if (uiState.healthSyncFailed) palette.danger else if (uiState.healthSyncPartial) palette.warning else palette.textPrimary,
+                    modifier = Modifier.testTag("health_sync_result"))
+                Text("Utolsó adatolvasás: ${uiState.lastHealthReadLabel}", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                 Text(
                     text = uiState.healthProviderStatus,
                     style = MaterialTheme.typography.bodySmall,

@@ -23,4 +23,7 @@
     <string name="journal_health_max_speed">Maximum speed</string>
     <string name="journal_health_separate_energy">Total energy measured by the watch and Health Connect active energy are separate measurements. They are not added together.</string>
     <string name="journal_health_permissions">Health Connect permissions</string>
+    <string name="journal_health_read">Read workout data</string>
+    <string name="journal_samsung_permission">Samsung Health heart-rate or exercise read permission is required.</string>
+    <string name="journal_samsung_unavailable">Direct Samsung Health SDK access is unavailable.</string>
 </resources>

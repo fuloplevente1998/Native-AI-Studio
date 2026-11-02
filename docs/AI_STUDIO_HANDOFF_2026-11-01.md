@@ -238,3 +238,18 @@ A következő javítások külön ágon/PR-ban készüljenek, ne közvetlen main
 Minden érdemi javítás után releváns teszt, majd Actions build/nyers jelentés.
 Ne merge-ölj vagy publikálj release-t automatikusan új felhasználói felhatalmazás nélkül.
 A már megadott felhatalmazáson belül önállóan dolgozz; ne állj meg újabb általános auditnál.
+
+
+### Samsung / Health Connect kiválasztása – #13
+
+A #12 utáni egészségadat-forrás javítás részletei:
+[HEALTH_PROVIDER_SELECTION_2026-11-01.md](HEALTH_PROVIDER_SELECTION_2026-11-01.md).
+A napi lekérés és a naplóban tárolt összesítés forrásonként elkülönül; a régi lapos
+HC dokumentum olvasható marad. Az aktív edzés szív gombja külön, csak olvasási SDK
+lekérdezés: nem edzésátadás, nem Room-mentés és nem Wear-szenzoradat létrehozása.
+A Health oldal megmaradt mintagörbéje/mintanapjai és számított minimum/maximum
+pulzusa eltávolítva. A hiányzó idősor és mérés nincs helyettesítve kitalált értékkel.
+Az aktuális CI, nyers teszteredmény és APK-bizonyíték a #13 PR leírásában követendő:
+https://github.com/fuloplevente1998/Native-AI-Studio/pull/13
+Valós Samsung SDK olvasás és a megfelelő app/cert SDK-regisztráció csak készüléken
+igazolható; a szolgáltató jelenléte és az engedélyszám nem bizonyít szinkronsikert.

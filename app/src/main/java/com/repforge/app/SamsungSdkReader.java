@@ -316,7 +316,9 @@ final class SamsungSdkReader {
             return out;
         }
         JSONObject workout(Instant start, Instant end) throws Exception {
-            JSONObject out = base(start, end); heart(out, start, end);
+            JSONObject out = base(start, end);
+            safe(DataTypes.STEPS, () -> number(out, "steps", aggregate(DataType.StepsType.TOTAL, start, end)), "steps");
+            heart(out, start, end);
             out.put("workoutEnergyVersion", 1); out.put("workoutEnergyProvider", HealthJournalStore.SAMSUNG);
             out.put("workoutCalories", JSONObject.NULL);
             safe(DataTypes.EXERCISE, () -> {

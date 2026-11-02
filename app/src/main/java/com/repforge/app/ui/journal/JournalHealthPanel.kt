@@ -22,12 +22,14 @@ import java.util.Locale
 /** The two providers are explicit separate panels, never added together or silently substituted. */
 @Composable
 internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android.content.res.Resources,
-    language: String, refreshing: Boolean, error: Int?, enabled: Boolean, refresh: () -> Unit) {
+    language: String, refreshing: Boolean, error: Int?, enabled: Boolean,
+    provider: String = com.repforge.app.HealthJournalStore.HC, status: String? = null,
+    selectProvider: (String) -> Unit = {}, refresh: () -> Unit) {
     val colors = LocalTrainPilotColors.current
     val workout = detail.workout
     val raw = remember(workout.rawJson) { parseHealth(workout.rawJson) }
     val wear = remember(workout.wearMetricsJson) { parseHealth(workout.wearMetricsJson) }
-    val health = remember(workout.health240Json) { parseHealth(workout.health240Json) }
+    val health = remember(workout.health240Json, provider) { com.repforge.app.NativeWorkoutHealthSource.snapshot(parseHealth(workout.health240Json), provider) }
     val current = health != null && NativeWorkoutHealth.matchesWindow(health, workout)
     val locale = remember(language) { Locale.forLanguageTag(language) }
     val number = remember(locale) { NumberFormat.getNumberInstance(locale).apply { maximumFractionDigits = 1 } }
@@ -35,6 +37,13 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
         .withLocale(locale).withZone(ZoneId.systemDefault()) }
     fun time(value: String) = runCatching { date.format(Instant.parse(value)) }.getOrDefault("—")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            for (source in listOf(com.repforge.app.HealthJournalStore.SAMSUNG, com.repforge.app.HealthJournalStore.HC)) {
+                FilterChip(selected = provider == source, onClick = { selectProvider(source) },
+                    label = { Text(com.repforge.app.NativeWorkoutHealthSource.label(source)) },
+                    modifier = Modifier.weight(1f).testTag("journal_provider_$source"))
+            }
+        }
         Card(colors = CardDefaults.cardColors(containerColor = colors.card), modifier = Modifier.fillMaxWidth().border(1.25.dp, colors.emphasisBorder, MaterialTheme.shapes.medium).testTag("journal_health_wear")) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(text.getString(R.string.journal_health_wear), style = MaterialTheme.typography.titleMedium)
@@ -53,14 +62,14 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
         }
         Card(colors = CardDefaults.cardColors(containerColor = colors.card), modifier = Modifier.fillMaxWidth().border(1.25.dp, colors.emphasisBorder, MaterialTheme.shapes.medium).testTag("journal_health_hc")) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Health Connect", style = MaterialTheme.typography.titleMedium)
+                Text(com.repforge.app.NativeWorkoutHealthSource.label(provider), style = MaterialTheme.typography.titleMedium)
                 Text("${text.getString(R.string.journal_health_window)}: ${time(workout.started)} – ${time(workout.finished)}")
                 if (!current) Text(text.getString(if (health == null) R.string.journal_health_missing else R.string.journal_health_stale),
                     color = colors.muted, modifier = Modifier.testTag("journal_health_status"))
                 else {
                     val data = health!!
                     val metrics = NativeWorkoutHealth.metrics(data, false)
-                    JournalHealthMetrics(metrics, "hc", text, number)
+                    JournalHealthMetrics(metrics, if (provider == com.repforge.app.HealthJournalStore.HC) "hc" else "samsung", text, number)
                     if (metrics.isEmpty()) Text(text.getString(R.string.journal_health_empty), color = colors.muted)
                     if (data.optBoolean("partial") || (data.optJSONArray("warnings")?.length() ?: 0) > 0)
                         Text(text.getString(R.string.journal_health_partial), color = colors.muted)
@@ -74,8 +83,13 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                 }
                 OutlinedButton(onClick = refresh, enabled = enabled && !refreshing,
                     modifier = Modifier.fillMaxWidth().border(1.25.dp, colors.emphasisBorder, MaterialTheme.shapes.medium).testTag("journal_health_refresh")) {
-                    Text(text.getString(if (refreshing) R.string.journal_health_refreshing else R.string.journal_health_refresh))
+                    Text(if (refreshing) text.getString(R.string.journal_health_refreshing) else "${com.repforge.app.NativeWorkoutHealthSource.label(provider)} • ${text.getString(R.string.journal_health_read)}")
                 }
+                health?.optJSONObject("errors")?.let { errors ->
+                    val codes = errors.keys().asSequence().map { errors.optString(it) }.filter(String::isNotBlank).distinct().toList()
+                    if (codes.isNotEmpty()) Text("${com.repforge.app.NativeWorkoutHealthSource.label(provider)}: ${codes.joinToString()}", color = colors.dangerText)
+                }
+                status?.let { Text(it, color = colors.muted, modifier = Modifier.testTag("journal_health_result")) }
                 error?.let { Text(text.getString(it), color = colors.dangerText, modifier = Modifier.testTag("journal_health_error")) }
             }
         }
@@ -86,7 +100,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
 private fun parseHealth(raw: String?): JSONObject? = raw?.let { runCatching { JSONObject(it) }.getOrNull() }
 
 @Composable
-private fun JournalHealthMetrics(metrics: Map<String, Double>, source: String, text: android.content.res.Resources, number: NumberFormat) {
+internal fun JournalHealthMetrics(metrics: Map<String, Double>, source: String, text: android.content.res.Resources, number: NumberFormat) {
     val colors = LocalTrainPilotColors.current
     for ((key, rawValue) in metrics) {
         val label = when (key) {

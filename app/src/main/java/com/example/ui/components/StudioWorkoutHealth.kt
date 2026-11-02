@@ -42,7 +42,7 @@ internal fun studioWorkoutHealthContent(
     val palette = LocalTrainPilotPalette.current
     val text = remember(context, language) { nativeResources(context, language) }
     var resumed by remember(owner) { mutableStateOf(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) }
-    var attempted by rememberSaveable(workoutId) { mutableStateOf(false) }
+    var attempted by rememberSaveable(workoutId, state.healthProvider) { mutableStateOf(false) }
     DisposableEffect(owner) {
         val observer = LifecycleEventObserver { _, _ -> resumed = owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) }
         owner.lifecycle.addObserver(observer)
@@ -53,13 +53,16 @@ internal fun studioWorkoutHealthContent(
         onDispose { model.closeDetails() }
     }
     val detail = state.detail?.takeIf { it.workout.id == workoutId }
-    LaunchedEffect(detail?.workout, resumed) {
+    LaunchedEffect(detail?.workout, resumed, state.healthProvider) {
         val workout = detail?.workout ?: return@LaunchedEffect
-        val cached = workout.health240Json?.let { runCatching { org.json.JSONObject(it) }.getOrNull() }
+        val document = workout.health240Json?.let { runCatching { org.json.JSONObject(it) }.getOrNull() }
+        val cached = com.repforge.app.NativeWorkoutHealthSource.snapshot(document, state.healthProvider)
         val hasHealthMetrics = cached != null && NativeWorkoutHealth.matchesWindow(cached, workout) &&
             NativeWorkoutHealth.metrics(cached, false).isNotEmpty()
         val wear = workout.wearMetricsJson?.let { runCatching { org.json.JSONObject(it) }.getOrNull() }
-        onSources(workout.id, wear != null && NativeWorkoutHealth.metrics(wear, true).isNotEmpty(), hasHealthMetrics)
+        val hc = com.repforge.app.NativeWorkoutHealthSource.snapshot(document, com.repforge.app.HealthJournalStore.HC)
+        onSources(workout.id, wear != null && NativeWorkoutHealth.metrics(wear, true).isNotEmpty(),
+            hc != null && NativeWorkoutHealth.matchesWindow(hc, workout) && NativeWorkoutHealth.metrics(hc, false).isNotEmpty())
         // Health Connect can receive watch/Samsung records after the workout was saved.
         // A previous empty response must not suppress future foreground refresh attempts.
         if (resumed && !attempted && !hasHealthMetrics) {
@@ -79,12 +82,18 @@ internal fun studioWorkoutHealthContent(
         CompositionLocalProvider(LocalTrainPilotColors provides nativeColors) {
             if (detail != null) {
                 Column(Modifier.fillMaxWidth().testTag("studio_workout_health")) {
-                    JournalHealthPanel(detail, text, language, state.healthRefreshing, state.healthError, !state.deleting) {
+                    JournalHealthPanel(detail, text, language, state.healthRefreshing, state.healthError, !state.deleting,
+                        provider = state.healthProvider, status = state.healthStatus, selectProvider = model::selectWorkoutHealthProvider) {
                         model.refreshWorkoutHealth(activity)
                     }
-                    if (state.healthError == R.string.journal_health_permission) {
-                        OutlinedButton(onClick = requestPermissions, modifier = Modifier.fillMaxWidth().testTag("journal_health_permissions")) {
-                            Text(text.getString(R.string.journal_health_permissions))
+                    if (state.healthError in setOf(R.string.journal_health_permission, R.string.journal_samsung_permission)) {
+                        OutlinedButton(onClick = {
+                            attempted = false
+                            if (state.healthProvider == com.repforge.app.HealthJournalStore.SAMSUNG && activity != null)
+                                model.requestSamsungWorkoutPermission(activity)
+                            else requestPermissions()
+                        }, modifier = Modifier.fillMaxWidth().testTag("journal_health_permissions")) {
+                            Text(if (state.healthProvider == com.repforge.app.HealthJournalStore.SAMSUNG) "Samsung Health • ${text.getString(R.string.journal_health_permissions)}" else text.getString(R.string.journal_health_permissions))
                         }
                     }
                 }
@@ -96,7 +105,7 @@ internal fun studioWorkoutHealthContent(
     }
 }
 
-private fun Context.healthActivity(): Activity? {
+internal fun Context.healthActivity(): Activity? {
     var current = this
     while (current is ContextWrapper) {
         if (current is Activity) return current
