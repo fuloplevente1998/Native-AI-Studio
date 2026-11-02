@@ -46,13 +46,16 @@ fun ExerciseYouTubeVideoModalDialog(
     exerciseId: String? = null,
     storedVideoUrl: String? = null,
     isCustom: Boolean = false,
-    selectedNotesHu: String? = null
+    selectedNotesHu: String? = null,
+    allowCatalogByTitle: Boolean = true
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
     val context = LocalContext.current
-    val details = remember(exerciseTitle, exerciseId, storedVideoUrl, isCustom, selectedNotesHu) {
-        resolveExerciseVideoAndNotes(exerciseTitle, exerciseId, storedVideoUrl, isCustom, selectedNotesHu)
+    val details = remember(exerciseTitle, exerciseId, storedVideoUrl, isCustom, selectedNotesHu, allowCatalogByTitle) {
+        resolveExerciseVideoAndNotes(
+            exerciseTitle, exerciseId, storedVideoUrl, isCustom, selectedNotesHu, allowCatalogByTitle
+        )
     }
     var openError by remember(details.link.externalUrl) { mutableStateOf<String?>(null) }
     var copied by remember(details.link.externalUrl) { mutableStateOf(false) }
