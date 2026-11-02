@@ -966,9 +966,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onDispose { nativeHealth.healthScreenHidden(activity) }
                                 }
                                 androidx.compose.runtime.LaunchedEffect(health.statusMessage, health.lastSyncAt, health.lastReadAt, health.provider, health.healthRefreshing, health.syncMessage, health.syncFailed, health.syncPartial) {
-                                    if (health.healthRefreshing || health.syncMessage.isNotBlank())
-                                        viewModel.updateHealthSyncStatus(health.healthRefreshing, partial = health.syncPartial,
-                                            failed = health.syncFailed, message = health.syncMessage)
+                                    // Always clear a completed native refresh, even if its terminal message is empty.
+                                    // An old busy flag must not disable the daily header action indefinitely.
+                                    viewModel.updateHealthSyncStatus(health.healthRefreshing, partial = health.syncPartial,
+                                        failed = health.syncFailed, message = health.syncMessage)
                                     if (!health.healthRefreshing) viewModel.reloadHealthJournal()
                                 }
                                 HealthTabScreen(
