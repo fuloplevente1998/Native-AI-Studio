@@ -16,7 +16,7 @@ A 2026-11-02-i készülékes visszajelzések közös követője. Kiindulás: a m
 - [ ] **Edzés közbeni felugró súgók:** az alsó, vezérlőgombot takaró rutin snackbar/útmutató üzenetek (pl. gyakorlat befejezése, következő gyakorlat) megszűnnek. A felső következőgyakorlat-jelzés megmarad; érdemi hiba nem veszhet el.
 - [ ] **Edzés közbeni rögzített vezérlés:** az aktív edzésben görgetéstől független helyen legyen elérhető az Átadás órára / Visszavétel telefonra. A tényleges meglévő átadási parancsokat és ACK/ownership/paused/install védelmeket használja, ne pusztán kapcsolót váltson vagy másik képernyőre vigyen.
 - [ ] **Béta verzió:** látható verzió `0.1.0-beta`, mindkét APK belső Android buildszáma `2737`. A belső kód nem indulhat 1-ről, mert a telepített 2736-ra adattörlés nélkül frissíthetőnek kell maradnia. Appazonosító és állandó signer változatlan.
-- [ ] **Kapu és átadás:** célzott regressziók + teljes telefon/Wear Actions; nyers XML ellenőrzés. Mainbe merge után állandó saját kulcsos APK-pár, változatlan appId/verzió/signer, hash/metadata-ellenőrzés és feltöltés a TrainPilot Native Drive-mappába. Friss AI Studio-átadó és folytatóprompt.
+- [ ] **Kapu és átadás:** célzott regressziók + teljes telefon/Wear Actions; nyers XML ellenőrzés. Mainbe merge után állandó saját kulcsos APK-pár, kért új bétaverzió és változatlan appId/signer, hash/metadata-ellenőrzés és feltöltés a TrainPilot Native Drive-mappába. Friss AI Studio-átadó és folytatóprompt.
 
 ## Megőrzendő szerződések
 
@@ -26,3 +26,7 @@ A javítás folyamatban van. A checklist csak nyers teszt-/APK-bizonyíték utá
 
 
 GitHub-követő: #19; javító PR: #20.
+
+## Kód- és célzott ellenőrzési állapot
+
+A #20 implementálja a fenti pontokat. A `5df8374a65f81dc759ecfb6e8e96a936698344ff` alkalmazásforráson az Actions `41450724814` SUCCESS: letöltött nyers XML-ben 43 teszt, nulla hiba/kihagyás. Ez célzott ellenőrzés, nem teljes suite. A checkboxok a teljes/készülékes elfogadáshoz maradnak; a kódot ne valósítsd újra pusztán az üres checkbox miatt. A felhasználó kérése szerint innen mainre merge és teljes main-Actions következik.
