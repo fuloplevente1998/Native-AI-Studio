@@ -1,5 +1,7 @@
 package com.repforge.app.ui.calendar
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -61,14 +63,14 @@ internal fun CalendarScreen(starting: Boolean, onStart: (CalendarScheduleEntity)
                         val date = state.month.atDay(number)
                         if (date == state.day) Button(onClick = { model.selectDay(date) }, enabled = !busy,
                             modifier = Modifier.heightIn(min = 48.dp)) { Text(number.toString()) }
-                        else OutlinedButton(onClick = { model.selectDay(date) }, enabled = !busy,
+                        else TrainPilotOutlinedButton(onClick = { model.selectDay(date) }, enabled = !busy,
                             modifier = Modifier.heightIn(min = 48.dp)) { Text(number.toString()) }
                     }
                 }
                 Text(state.day.format(dateFormat), color = colors.text)
                 Button(onClick = { editing = null; editorOpen = true }, enabled = !busy && state.programs.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(words[3]) }
-                OutlinedButton(onClick = { plannerOpen = true }, enabled = !busy && plannerReady,
+                TrainPilotOutlinedButton(onClick = { plannerOpen = true }, enabled = !busy && plannerReady,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("calendar_planner_open")) {
                     Text(strings.getString(R.string.calendar_planner_title))
                 }
@@ -150,7 +152,7 @@ private fun CalendarEditor(state: CalendarUiState, row: CalendarScheduleEntity?,
             OutlinedTextField(value = time, onValueChange = { time = it }, label = { Text(words[18] + " (HH:mm)") }, enabled = !busy, singleLine = true)
             OutlinedTextField(value = minutes, onValueChange = { minutes = it }, label = { Text(words[19] + " (10–240)") }, enabled = !busy, singleLine = true)
             Box {
-                OutlinedButton(onClick = { programMenu = true }, enabled = !busy) { Text(program?.program?.let { name(it.nameHu, it.nameEn, it.nameDe, it.nameRo) } ?: words[20]) }
+                TrainPilotOutlinedButton(onClick = { programMenu = true }, enabled = !busy) { Text(program?.program?.let { name(it.nameHu, it.nameEn, it.nameDe, it.nameRo) } ?: words[20]) }
                 DropdownMenu(expanded = programMenu, onDismissRequest = { programMenu = false }) {
                     state.programs.forEach { p -> DropdownMenuItem(text = { Text(name(p.program.nameHu, p.program.nameEn, p.program.nameDe, p.program.nameRo)) }, onClick = {
                         programId = p.program.id; dayId = p.days.firstOrNull()?.dayId.orEmpty(); programMenu = false
@@ -158,7 +160,7 @@ private fun CalendarEditor(state: CalendarUiState, row: CalendarScheduleEntity?,
                 }
             }
             Box {
-                OutlinedButton(onClick = { dayMenu = true }, enabled = !busy && program != null) { Text(day?.let { name(it.nameHu, it.nameEn, it.nameDe, it.nameRo) } ?: words[21]) }
+                TrainPilotOutlinedButton(onClick = { dayMenu = true }, enabled = !busy && program != null) { Text(day?.let { name(it.nameHu, it.nameEn, it.nameDe, it.nameRo) } ?: words[21]) }
                 DropdownMenu(expanded = dayMenu, onDismissRequest = { dayMenu = false }) {
                     program?.days.orEmpty().forEach { d -> DropdownMenuItem(text = { Text(name(d.nameHu, d.nameEn, d.nameDe, d.nameRo)) }, onClick = { dayId = d.dayId; dayMenu = false }) }
                 }

@@ -1,5 +1,7 @@
 package com.repforge.app.ui.workout
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
 import android.Manifest
 import android.app.Activity
 import android.content.Context
@@ -156,7 +158,7 @@ internal fun NativeGpsPermissionRecoveryDialog(
                 Text(strings.getString(message), modifier = Modifier.testTag("gps_recovery_reason"),
                     color = colors.text)
                 if (NativeGpsPermissionRecovery.settingsIntent(context, blocker) != null) {
-                    OutlinedButton(
+                    TrainPilotOutlinedButton(
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("gps_recovery_settings"),
                         onClick = onSettings
                     ) { Text(strings.getString(if (blocker == NativeGpsPermissionBlocker.LOCATION_OFF)

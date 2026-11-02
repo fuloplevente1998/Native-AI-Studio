@@ -1,5 +1,11 @@
 package com.example.ui.screens
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
+import com.repforge.app.ui.theme.TrainPilotFrames
+
+import com.repforge.app.ui.theme.trainPilotBorder
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -129,7 +135,7 @@ fun WorkoutTabScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
-                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 .clickable { onOpenQuickWorkout() }
                 .testTag("workout_tab_quick_card")
         ) {
@@ -176,7 +182,7 @@ fun WorkoutTabScreen(
                 color = palette.surface,
                 modifier = Modifier
                     .weight(1f)
-                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .clickable { onOpenExerciseLibrary() }
                     .testTag("workout_tab_exercise_picker")
             ) {
@@ -236,7 +242,7 @@ fun WorkoutTabScreen(
                 color = palette.surface,
                 modifier = Modifier
                     .weight(1f)
-                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .clickable { onOpenOutdoorWorkout() }
                     .testTag("workout_tab_outdoor_card")
             ) {
@@ -381,7 +387,7 @@ fun WorkoutTabScreen(
                         color = palette.surface,
                         modifier = Modifier
                             .weight(1f)
-                            .border(
+                            .trainPilotBorder(
                                 width = if (isPrimaryDay) 1.5.dp else 1.dp,
                                 color = if (isPrimaryDay) palette.primary else palette.cardBorder,
                                 shape = RoundedCornerShape(18.dp)
@@ -467,7 +473,7 @@ fun WorkoutTabScreen(
                 color = palette.surface,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                     .clickable { onOpenProgressionModal() }
             ) {
                 Row(
@@ -502,7 +508,7 @@ fun WorkoutTabScreen(
                 color = palette.surface,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .padding(20.dp)
             ) {
                 Column(
@@ -552,7 +558,7 @@ private fun ShortcutSquareCard(
         color = palette.surface,
         modifier = modifier
             .heightIn(min = 48.dp)
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
             .clickable { onClick() }
     ) {
         Column(
@@ -654,7 +660,7 @@ fun ProgramsListScreen(
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showCreateCustomProgramDialog = false }) {
+                TrainPilotOutlinedButton(onClick = { showCreateCustomProgramDialog = false }) {
                     Text(strings.cancelBtn, color = palette.textPrimary)
                 }
             }
@@ -699,7 +705,7 @@ fun ProgramsListScreen(
                 color = palette.surface,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(24.dp))
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(24.dp))
             ) {
                 Row(modifier = Modifier.padding(4.dp)) {
                     val builtinCount = state.programs.count { !it.isCustom }
@@ -746,7 +752,7 @@ fun ProgramsListScreen(
                     color = palette.surface,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.5.dp, palette.primary, RoundedCornerShape(18.dp))
+                        .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(18.dp))
                         .clickable { onOpenProgramEditor(activeProgram.id) }
                 ) {
                     Row(
@@ -829,7 +835,7 @@ fun ProgramsListScreen(
                     color = palette.surface,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                 ) {
                     Column(
                         modifier = Modifier.padding(18.dp),
@@ -865,7 +871,7 @@ fun ProgramsListScreen(
                     color = palette.surface,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                         .clickable { onOpenProgramEditor(program.id) }
                 ) {
                     Row(
@@ -990,7 +996,7 @@ fun ProgramsListScreen(
                     Text("Új egyedi program", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                 }
 
-                OutlinedButton(
+                TrainPilotOutlinedButton(
                     onClick = onOpenAddCustomExercise,
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier
@@ -1004,7 +1010,7 @@ fun ProgramsListScreen(
                 }
             }
 
-            OutlinedButton(
+            TrainPilotOutlinedButton(
                 onClick = { onOpenProgramEditor(activeProgram?.id ?: "") },
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
@@ -1024,7 +1030,7 @@ fun ProgramsListScreen(
                 )
             }
 
-            OutlinedButton(
+            TrainPilotOutlinedButton(
                 onClick = onOpenExerciseLibrary,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
@@ -1106,7 +1112,7 @@ fun ProgramEditorScreen(
                         modifier = Modifier
                             .weight(1f)
                             .heightIn(min = 48.dp)
-                            .border(
+                            .trainPilotBorder(
                                 1.dp,
                                 if (selected) palette.primary else palette.cardBorder,
                                 RoundedCornerShape(12.dp)
@@ -1142,7 +1148,7 @@ fun ProgramEditorScreen(
                     color = palette.surface,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(
+                        .trainPilotBorder(
                             width = if (isExpanded) 1.5.dp else 1.dp,
                             color = if (isExpanded) palette.primary else palette.cardBorder,
                             shape = RoundedCornerShape(16.dp)
@@ -1304,7 +1310,7 @@ fun ProgramEditorScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    OutlinedButton(
+                                    TrainPilotOutlinedButton(
                                         onClick = { onToggleExpandExercise(ex.id) },
                                         modifier = Modifier
                                             .weight(1f)
@@ -1336,7 +1342,7 @@ fun ProgramEditorScreen(
             }
 
             // + Gyakorlat hozzáadása a könyvtárból & + Új egyedi gyakorlat létrehozása
-            OutlinedButton(
+            TrainPilotOutlinedButton(
                 onClick = onOpenExerciseLibrary,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
@@ -1348,7 +1354,7 @@ fun ProgramEditorScreen(
                 Text(strings.addExerciseAction, color = palette.textPrimary)
             }
 
-            OutlinedButton(
+            TrainPilotOutlinedButton(
                 onClick = onOpenAddCustomExercise,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
@@ -1410,7 +1416,7 @@ private fun EditorStepperBox(
             color = palette.surfaceElevated,
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
         ) {
             Row(
                 modifier = Modifier
@@ -1559,7 +1565,7 @@ fun CalendarPlannerScreen(
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { editingEvent = null }) {
+                TrainPilotOutlinedButton(onClick = { editingEvent = null }) {
                     Text("Mégse", color = palette.textPrimary)
                 }
             }
@@ -1622,7 +1628,7 @@ fun CalendarPlannerScreen(
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { movingEvent = null }) {
+                TrainPilotOutlinedButton(onClick = { movingEvent = null }) {
                     Text("Mégse", color = palette.textPrimary)
                 }
             }
@@ -1694,7 +1700,7 @@ fun CalendarPlannerScreen(
                 }
             },
             confirmButton = {
-                OutlinedButton(onClick = { activeFieldDialog = null }) {
+                TrainPilotOutlinedButton(onClick = { activeFieldDialog = null }) {
                     Text("Bezárás", color = palette.textPrimary)
                 }
             }
@@ -1717,7 +1723,7 @@ fun CalendarPlannerScreen(
                 color = Color(0xFF0E131A),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(
                     modifier = Modifier.padding(12.dp),
@@ -1734,7 +1740,7 @@ fun CalendarPlannerScreen(
                             color = Color(0xFF171E27),
                             modifier = Modifier
                                 .size(44.dp)
-                                .border(1.dp, Color(0xFF252E3B), RoundedCornerShape(12.dp))
+                                .trainPilotBorder(1.dp, Color(0xFF252E3B), RoundedCornerShape(12.dp))
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { onSelectMonth(displayedYearMonth.minusMonths(1).toString()) }
                         ) {
@@ -1759,7 +1765,7 @@ fun CalendarPlannerScreen(
                                 color = Color(0xFF171E27),
                                 modifier = Modifier
                                     .size(44.dp)
-                                    .border(1.dp, Color(0xFF252E3B), RoundedCornerShape(12.dp))
+                                    .trainPilotBorder(1.dp, Color(0xFF252E3B), RoundedCornerShape(12.dp))
                                     .clip(RoundedCornerShape(12.dp))
                                     .clickable { onSelectMonth(displayedYearMonth.plusMonths(1).toString()) }
                             ) {
@@ -1842,7 +1848,7 @@ fun CalendarPlannerScreen(
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .height(42.dp)
-                                                .border(
+                                                .trainPilotBorder(
                                                     width = if (isSelected) 1.8.dp else 1.dp,
                                                     color = if (isSelected) palette.primary else Color(0xFF222B38),
                                                     shape = RoundedCornerShape(10.dp)
@@ -1899,7 +1905,7 @@ fun CalendarPlannerScreen(
                 color = Color(0xFF121820),
                 modifier = Modifier
                     .fillMaxWidth().testTag("calendar_day_actions")
-                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(
                     modifier = Modifier.padding(14.dp),
@@ -1921,7 +1927,7 @@ fun CalendarPlannerScreen(
                                 shape = RoundedCornerShape(8.dp),
                                 color = palette.primary.copy(alpha = 0.16f),
                                 modifier = Modifier
-                                    .border(1.dp, palette.primary, RoundedCornerShape(8.dp))
+                                    .trainPilotBorder(1.dp, palette.primary, RoundedCornerShape(8.dp))
                                     .clip(RoundedCornerShape(8.dp))
                                     .heightIn(min = 48.dp).testTag("calendar_undo_action").clickable { onUndoCalendarAction() }
                             ) {
@@ -1940,7 +1946,7 @@ fun CalendarPlannerScreen(
                             color = palette.textSecondary, modifier = Modifier.fillMaxWidth().testTag("calendar_empty_day"))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             for (split in listOf("A", "B")) {
-                                OutlinedButton(onClick = {
+                                TrainPilotOutlinedButton(onClick = {
                                     onAddPlannedWorkoutOnDay(state.selectedCalendarDay, split, state.planningTime, state.planningDurationMin)
                                 }, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("calendar_add_$split")) {
                                     Text("+ Alap $split")
@@ -2033,7 +2039,7 @@ fun CalendarPlannerScreen(
                 color = Color(0xFF0E131A),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -2186,7 +2192,7 @@ fun CalendarPlannerScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 20.dp)
-                    .border(1.dp, Color(0xFF242E3D), RoundedCornerShape(24.dp))
+                    .trainPilotBorder(1.dp, Color(0xFF242E3D), RoundedCornerShape(24.dp))
             ) {
                 Column(
                     modifier = Modifier
@@ -2382,7 +2388,7 @@ private fun PlannerFieldTile(
                 color = Color(0xFF141B24),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(
+                    .trainPilotBorder(
                         1.dp,
                         if (expanded) palette.primary else Color(0xFF242E3D),
                         RoundedCornerShape(14.dp)
@@ -2433,7 +2439,7 @@ private fun PlannerFieldTile(
                     onDismissRequest = { expanded = false },
                     containerColor = Color(0xFF0E131A),
                     shape = RoundedCornerShape(12.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, palette.primary.copy(alpha = 0.7f)),
+                    border = TrainPilotFrames.stroke(1.dp, palette.primary.copy(alpha = 0.7f)),
                     modifier = Modifier
                         .heightIn(max = 260.dp)
                 ) {
@@ -2556,7 +2562,7 @@ fun ExerciseLibraryScreen(
                         color = if (selected) palette.primary else palette.surface,
                         modifier = Modifier
                             .heightIn(min = 36.dp)
-                            .border(
+                            .trainPilotBorder(
                                 1.dp,
                                 if (selected) palette.primary else palette.cardBorder,
                                 RoundedCornerShape(16.dp)
@@ -2594,7 +2600,7 @@ fun ExerciseLibraryScreen(
                     shape = RoundedCornerShape(10.dp),
                     color = palette.primary.copy(alpha = 0.15f),
                     modifier = Modifier
-                        .border(1.dp, palette.primary, RoundedCornerShape(10.dp))
+                        .trainPilotBorder(1.dp, palette.primary, RoundedCornerShape(10.dp))
                         .clip(RoundedCornerShape(10.dp))
                         .clickable { onOpenAddCustomExercise() }
                         .testTag("exercise_library_add_custom_button")
@@ -2626,7 +2632,7 @@ fun ExerciseLibraryScreen(
                     color = palette.primary.copy(alpha = 0.14f),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.5.dp, palette.primary, RoundedCornerShape(14.dp))
+                        .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(14.dp))
                 ) {
                     Row(
                         modifier = Modifier
@@ -2677,7 +2683,7 @@ fun ExerciseLibraryScreen(
                     color = palette.surface,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(
+                        .trainPilotBorder(
                             if (inQueue) 1.5.dp else 1.dp,
                             if (inQueue) palette.primary else palette.cardBorder,
                             RoundedCornerShape(14.dp)
@@ -2745,7 +2751,7 @@ fun ExerciseLibraryScreen(
                             color = if (inQueue) palette.primary else palette.surfaceElevated,
                             modifier = Modifier
                                 .size(32.dp)
-                                .border(
+                                .trainPilotBorder(
                                     1.dp,
                                     if (inQueue) palette.primary else palette.cardBorder,
                                     RoundedCornerShape(8.dp)
@@ -2858,7 +2864,7 @@ fun ExerciseDetailScreen(
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = palette.primary.copy(alpha = 0.18f),
-                        modifier = Modifier.border(1.dp, palette.primary, RoundedCornerShape(12.dp))
+                        modifier = Modifier.trainPilotBorder(1.dp, palette.primary, RoundedCornerShape(12.dp))
                     ) {
                         Text(
                             text = exercise.category.localized(state.language),
@@ -2883,7 +2889,7 @@ fun ExerciseDetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(190.dp)
-                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
                     .clip(RoundedCornerShape(20.dp))
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
@@ -2972,7 +2978,7 @@ fun ExerciseDetailScreen(
                             shape = RoundedCornerShape(8.dp),
                             color = palette.primary.copy(alpha = 0.22f),
                             modifier = Modifier
-                                .border(1.dp, palette.primary, RoundedCornerShape(8.dp))
+                                .trainPilotBorder(1.dp, palette.primary, RoundedCornerShape(8.dp))
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable { openVideoModal(exercise.localizedName(state.language)) }
                                 .testTag("exercise_detail_popup_video_chip")
@@ -2995,7 +3001,7 @@ fun ExerciseDetailScreen(
                 color = palette.surface,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
             ) {
                 Column(
                     modifier = Modifier.padding(14.dp),
@@ -3070,7 +3076,7 @@ fun ExerciseDetailScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                OutlinedButton(
+                TrainPilotOutlinedButton(
                     onClick = { onAddExerciseToWorkout(exercise) },
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier
@@ -3201,7 +3207,7 @@ fun AddCustomExerciseModalDialog(
                         color = palette.surface,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
+                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { categoryDropdownOpen = true }
                     ) {
@@ -3251,7 +3257,7 @@ fun AddCustomExerciseModalDialog(
                         color = palette.surface,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
+                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { equipmentDropdownOpen = true }
                     ) {
@@ -3359,7 +3365,7 @@ fun AddCustomExerciseModalDialog(
             }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
+            TrainPilotOutlinedButton(onClick = onDismiss) {
                 Text("Mégse", color = palette.textPrimary)
             }
         }

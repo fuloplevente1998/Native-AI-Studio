@@ -1,5 +1,7 @@
 package com.repforge.app.ui.settings
 
+import com.repforge.app.ui.theme.TrainPilotFrames
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,7 +36,7 @@ internal fun NativeLanguagePicker(language: String, enabled: Boolean, onSelect: 
     val strings = nativeResources(LocalContext.current, language)
     Card(Modifier.fillMaxWidth().testTag("settings_language_picker"), shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = colors.card),
-        border = BorderStroke(1.dp, colors.line)) {
+        border = TrainPilotFrames.stroke(1.dp, colors.line)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(strings.getString(R.string.native_language_title), color = colors.text,
                 style = MaterialTheme.typography.titleLarge)
@@ -47,7 +49,7 @@ internal fun NativeLanguagePicker(language: String, enabled: Boolean, onSelect: 
                     val selected = language == code
                     Surface(shape = RoundedCornerShape(12.dp),
                         color = if (selected) colors.selectedSurface else colors.card,
-                        border = BorderStroke(if (selected) 2.dp else 1.dp,
+                        border = TrainPilotFrames.stroke(if (selected) 2.dp else 1.dp,
                             if (selected) colors.selectedBorder else colors.line)) {
                         Column(Modifier.heightIn(min = 48.dp).testTag("settings_language_$code")
                             .selectable(selected = selected, enabled = enabled, role = Role.RadioButton,

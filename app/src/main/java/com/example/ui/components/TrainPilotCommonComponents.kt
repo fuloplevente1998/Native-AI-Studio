@@ -1,5 +1,11 @@
 package com.example.ui.components
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
+import com.repforge.app.ui.theme.TrainPilotFrames
+
+import com.repforge.app.ui.theme.trainPilotBorder
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -155,7 +161,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
         color = palette.background,
         modifier = Modifier
             .fillMaxWidth()
-            .border(width = 0.5.dp, color = palette.cardBorder.copy(alpha = 0.5f))
+            .trainPilotBorder(width = 0.5.dp, color = palette.cardBorder.copy(alpha = 0.5f))
     ) {
         Column(
             modifier = Modifier
@@ -209,7 +215,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         color = if (isCalendarActive) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
                             .size(44.dp)
-                            .border(1.dp, if (isCalendarActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
+                            .trainPilotBorder(1.dp, if (isCalendarActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
                             .clickable { onSelectTab(MainTab.CALENDAR) }
                             .testTag("top_bar_calendar_button")
@@ -233,7 +239,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         color = if (isCoachActive) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
                             .size(44.dp)
-                            .border(1.dp, if (isCoachActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
+                            .trainPilotBorder(1.dp, if (isCoachActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
                             .clickable { onSelectTab(MainTab.COACH) }
                             .testTag("top_bar_coach_button")
@@ -257,7 +263,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         color = if (isSettingsActive) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
                             .size(44.dp)
-                            .border(1.dp, if (isSettingsActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
+                            .trainPilotBorder(1.dp, if (isSettingsActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
                             .clickable { onOpenSettings() }
                             .testTag("top_bar_settings_button")
@@ -390,7 +396,7 @@ private fun TopNavPillItem(
         modifier = modifier
             .then(glowModifier)
             .heightIn(min = 48.dp)
-            .border(
+            .trainPilotBorder(
                 width = if (selected) 2.dp else 1.dp,
                 color = if (selected) palette.primary else palette.cardBorder,
                 shape = RoundedCornerShape(12.dp)
@@ -514,7 +520,7 @@ fun TrainPilotBottomNavigationBar(
         tonalElevation = 8.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .border(width = 1.dp, color = palette.cardBorder.copy(alpha = 0.6f))
+            .trainPilotBorder(width = 1.dp, color = palette.cardBorder.copy(alpha = 0.6f))
     ) {
         Row(
             modifier = Modifier
@@ -687,7 +693,7 @@ fun PalettePickerBottomSheet(
                         color = if (active) palette.primary.copy(alpha = 0.22f) else palette.surfaceElevated,
                         modifier = Modifier
                             .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                            .border(
+                            .trainPilotBorder(
                                 width = 1.dp,
                                 color = if (active) palette.primary else palette.cardBorder,
                                 shape = RoundedCornerShape(10.dp)
@@ -712,7 +718,7 @@ fun PalettePickerBottomSheet(
                     color = if (compactPhoneMode) palette.primary.copy(alpha = 0.22f) else palette.surfaceElevated,
                     modifier = Modifier
                         .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                        .border(
+                        .trainPilotBorder(
                             width = 1.dp,
                             color = if (compactPhoneMode) palette.primary else palette.cardBorder,
                             shape = RoundedCornerShape(10.dp)
@@ -754,7 +760,7 @@ fun PalettePickerBottomSheet(
                         color = if (active) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
                             .heightIn(min = 42.dp)
-                            .border(
+                            .trainPilotBorder(
                                 width = 1.dp,
                                 color = if (active) palette.primary else palette.cardBorder,
                                 shape = RoundedCornerShape(20.dp)
@@ -994,7 +1000,7 @@ fun GoalsEditDialog(
             }
         },
         dismissButton = {
-            OutlinedButton(
+            TrainPilotOutlinedButton(
                 onClick = onDismiss,
                 modifier = Modifier.heightIn(min = 48.dp)
             ) {
@@ -1191,7 +1197,7 @@ fun PersonalPlannerModalDialog(
                 color = palette.surface,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(
+                    .trainPilotBorder(
                         1.dp,
                         if (isOpen) palette.primary else palette.cardBorder,
                         RoundedCornerShape(12.dp)
@@ -1239,7 +1245,7 @@ fun PersonalPlannerModalDialog(
                 onDismissRequest = { openDropdownKey = null },
                 containerColor = palette.background,
                 shape = RoundedCornerShape(12.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, palette.primary.copy(alpha = 0.7f)),
+                border = TrainPilotFrames.stroke(1.dp, palette.primary.copy(alpha = 0.7f)),
                 modifier = Modifier
                     .widthIn(min = 210.dp, max = 290.dp)
                     .heightIn(max = 260.dp)
@@ -1314,7 +1320,7 @@ fun PersonalPlannerModalDialog(
                     shape = RoundedCornerShape(16.dp),
                     color = Color.Transparent,
                     modifier = Modifier
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                         .clip(RoundedCornerShape(16.dp))
                         .clickable { onDismiss() }
                         .testTag("planner_skip_btn")
@@ -1368,7 +1374,7 @@ fun PersonalPlannerModalDialog(
                     color = palette.surfaceElevated,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                 ) {
                     Column(
                         modifier = Modifier.padding(12.dp),
@@ -1420,7 +1426,7 @@ fun PersonalPlannerModalDialog(
                     color = palette.surfaceElevated,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                 ) {
                     Column(
                         modifier = Modifier.padding(12.dp),
@@ -1448,7 +1454,7 @@ fun PersonalPlannerModalDialog(
                                 color = palette.surface,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .border(
+                                    .trainPilotBorder(
                                         1.dp,
                                         if (isEquipmentOpen) palette.primary else palette.cardBorder,
                                         RoundedCornerShape(12.dp)
@@ -1494,7 +1500,7 @@ fun PersonalPlannerModalDialog(
                                 onDismissRequest = { openDropdownKey = null },
                                 containerColor = palette.background,
                                 shape = RoundedCornerShape(12.dp),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, palette.primary.copy(alpha = 0.7f)),
+                                border = TrainPilotFrames.stroke(1.dp, palette.primary.copy(alpha = 0.7f)),
                                 modifier = Modifier
                                     .widthIn(min = 250.dp, max = 320.dp)
                                     .heightIn(max = 320.dp)
@@ -1511,7 +1517,7 @@ fun PersonalPlannerModalDialog(
                                                     modifier = Modifier
                                                         .size(20.dp)
                                                         .clip(RoundedCornerShape(4.dp))
-                                                        .border(
+                                                        .trainPilotBorder(
                                                             1.5.dp,
                                                             if (isChecked) palette.primary else palette.textSecondary,
                                                             RoundedCornerShape(4.dp)
@@ -1569,7 +1575,7 @@ fun PersonalPlannerModalDialog(
                                             color = if (isChecked) palette.primary.copy(alpha = 0.18f) else palette.surface,
                                             modifier = Modifier
                                                 .weight(1f)
-                                                .border(
+                                                .trainPilotBorder(
                                                     width = if (isChecked) 1.5.dp else 1.dp,
                                                     color = if (isChecked) palette.primary else palette.cardBorder,
                                                     shape = RoundedCornerShape(10.dp)
@@ -1620,7 +1626,7 @@ fun PersonalPlannerModalDialog(
                     color = palette.surfaceElevated,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                 ) {
                     Column(
                         modifier = Modifier.padding(12.dp),
@@ -1768,7 +1774,7 @@ fun PersonalPlannerModalDialog(
                                                     modifier = Modifier
                                                         .size(20.dp)
                                                         .clip(RoundedCornerShape(4.dp))
-                                                        .border(
+                                                        .trainPilotBorder(
                                                             1.5.dp,
                                                             if (isChecked) palette.primary else palette.textSecondary,
                                                             RoundedCornerShape(4.dp)
@@ -1871,7 +1877,7 @@ fun PersonalPlannerModalDialog(
                                                     modifier = Modifier
                                                         .size(20.dp)
                                                         .clip(RoundedCornerShape(4.dp))
-                                                        .border(
+                                                        .trainPilotBorder(
                                                             1.5.dp,
                                                             if (isChecked) palette.primary else palette.textSecondary,
                                                             RoundedCornerShape(4.dp)
@@ -2028,7 +2034,7 @@ fun QuickWorkoutSheet(
                     color = palette.primary.copy(alpha = 0.16f),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
+                        .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
                 ) {
                     Column(
                         modifier = Modifier.padding(12.dp),
@@ -2076,7 +2082,7 @@ fun QuickWorkoutSheet(
                 color = palette.surfaceElevated,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
             ) {
                 Column(
                     modifier = Modifier.padding(12.dp),
@@ -2122,7 +2128,7 @@ fun QuickWorkoutSheet(
                             color = palette.surface,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .border(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(12.dp))
+                                .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(12.dp))
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { strengthDropdownOpen = true }
                         ) {
@@ -2206,7 +2212,7 @@ fun QuickWorkoutSheet(
                 color = palette.surfaceElevated,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
             ) {
                 Column(
                     modifier = Modifier.padding(12.dp),
@@ -2251,7 +2257,7 @@ fun QuickWorkoutSheet(
                             color = palette.surface,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .border(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(12.dp))
+                                .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(12.dp))
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { timedDropdownOpen = true }
                         ) {
@@ -2355,7 +2361,7 @@ private fun QuickOptionRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
-            .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
             .clickable { onClick() }
     ) {
         Row(
@@ -2595,7 +2601,7 @@ fun ExerciseYouTubeVideoModalDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(210.dp)
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                         .clip(RoundedCornerShape(14.dp))
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
@@ -2743,7 +2749,7 @@ fun ExerciseYouTubeVideoModalDialog(
                     color = palette.surfaceElevated,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
+                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                 ) {
                     Column(
                         modifier = Modifier.padding(10.dp),

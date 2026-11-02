@@ -1,0 +1,203 @@
+# TrainPilot – külön ChatGPT/Codex chateknek kiosztható feladatok
+
+# Közös utasítás – minden chatnek
+
+Repo: https://github.com/fuloplevente1998/Native-AI-Studio
+Integrációs ág / draft PR: `fix/unified-frame-hierarchy`, #28.
+Már elmentett munkakód: `50d707c` (nem kész, nem igazolt APK). Ebből a snapshotból
+vagy az integrációs ág legfrissebb, ellenőrzött állapotából készíts saját ágat és
+külön worktree-t. A feladat-PR célága az integrációs ág legyen, ne automatikusan main.
+A jelenlegi main 2740-es APK-ja az utolsó kiadott, 296 teszttel igazolt csomag.
+
+Olvasd el az aktuális átadót, #19-et, #28-at, a `.specify/memory/constitution.md`-t
+és `docs/FRAME_DESIGN_SYSTEM.md`-t. A már megkezdett kódot ellenőrizd és fejezd be;
+ne implementáld újra pusztán egy nyitott készülékes checkbox miatt.
+Csak a kiosztott területen dolgozz. Közös fájl módosítását jelezd az integrátornak.
+Alügynököt ne indíts. Magyarul kommunikálj. Natív Compose/Room/DataStore/motor,
+ownership/ACK, finalization, tombstone és backup/restore védelmek maradjanak.
+Ne törölj adatot, ne adj össze provideradatokat, ne használj kitalált mérést.
+Verziót, signert, titkokat és kiadási workflow-t ne módosíts önállóan. Android-build
+és teszt a meglévő Actionsből; ne állíts sikeresnek folyamatban levő futást.
+A main merge, közös buildszám és a végleges signed APK-pár az integrátor feladata.
+
+A „régi app” a korábbi WebView-változat neve. A referenciaképek számai kizárólag
+példák; nem kerülhetnek mérési adatként a termékbe.
+
+
+# Referenciaképek – a felhasználó ebben a beszélgetésben küldte
+
+A képfájlok nem állnak külön fájlként rendelkezésre ebben a munkakörnyezetben.
+E csomag nem tartalmaz képernyőképeket: az alábbi képeket az eredeti üzenetből
+kell az érintett új chathez mellékelni. A külön, korábban feltöltött backup ZIP
+személyes mentés és fotók, nem a felületi referenciaképek gyűjteménye.
+
+| Kép | Azonosítás | Szerep | Chat |
+|---|---|---|---|
+| A | 21:22, natív Fejlődés/edzésrészlet: WearOS + Samsung + HC mind nyitva | Javítandó állapot, ne ezt másold | 1 |
+| B | 21:25, régi app Kezdőlap: Személyes edzéstervező / Mai állapot, finom belső keretek | Kívánt kerethierarchia | 1 |
+| C | 21:29, régi app 30 nap: 13 085 kg, oszlopok 4, 11, 18, 25, 1 | Heti csoportok és kompakt ábra | 2 |
+| D | 21:29, régi app 1 nap: 1254 kg, egy keskeny középső oszlop | Egy napi oszlop helyes szélessége | 2 |
+| E | 21:40, natív világos Google Maps, Bábonymegyer környéke | Jelenlegi állapot; sötét kapcsoló + végpontok hiányoznak | 4 |
+| F | 21:41, natív Kezdőlap: Folytatás, Gyors edzés, Galaxy Watch7, majd keret nélküli Mai adatok blokk | Elvetés hiánya és eltávolítandó adatblokk | 3, 5 |
+
+A 3 hónapos görgetéshez külön kép nem kell: a felhasználó pontosította, hogy minden
+oszlop egy hét, oldalra görgethető, megnyitáskor a legújabb hetek látszanak.
+A régi app kódjában a `showLatestBucket()` ezt `scrollLeft = scrollWidth - clientWidth`
+beállítással végzi: időrend marad balról jobbra, a kezdeti nézet a jobb szélen áll.
+
+---
+
+# Chat 1 – Keretrendszer és adatforrás-harmonika
+
+Referencia: A (hibás natív) + B (kívánt régi megjelenés).
+
+A teljes telefonos felületen külső oldal-/csoportkeret legyen hangsúlyosabb,
+belső paneleké vékonyabb, gomboké halványabb. Kiinduló közös értékek: 1 dp / 0,75 dp /
+0,5 dp. Az eredeti CSS-ben több 1 px-es keret van, de a density/zoom miatt nem
+feltétlenül azonos a fizikai megjelenés. A hiba-/fókuszjelzések olvashatósága maradjon.
+A három egészségforrásból egyszerre csak egy nyílhat; másik nyitása zárja az előzőt,
+ugyanarra kattintás mindet zárja. Egy közös csoportkeret, vékony gombkeretek,
+erős külön tartalomkeret nélkül. Forrásadatok és műveletek elkülönülnek.
+
+Megkezdve: TrainPilotFrames.kt, TrainPilotOutlinedButton.kt, MainActivity közös host,
+JournalHealthPanel.kt, a meglévő telefonos keretek migrációja és Journal regresszió.
+Ezeket ellenőrizd, ne készíts új párhuzamos rendszert. Elsődleges fájltulajdon:
+`com/repforge/app/ui/theme/TrainPilotFrames.kt`, `TrainPilotOutlinedButton.kt`,
+`ui/journal/JournalHealthPanel.kt`, keretrendszer-dokumentum és kapcsolódó tesztek.
+A HomeScreen és LogAndProgressScreens tartalmi átalakítását egyeztesd a 2/3/5. chattel.
+Elfogadás: egy nyitott panel, helyes restore/providerértékek; minden fő útvonalon
+következetes keret, nagy betűméretnél is használható gombok.
+
+---
+
+# Chat 2 – Volumengrafikon a régi app működésével
+
+Referencia: C + D. A felhasználó pontos elvárása:
+- 1 nap: egy nap egy oszlop, keskeny és középen, nem teljes grafikon-szélességű.
+- 7 nap: egy oszlop egy nap.
+- 30 nap és 3 hó: egy oszlop egyheti összesítés; az intervallum szélén részleges hét lehet.
+- 3 hónap: vízszintesen görgethető; kezdetben a jobb szél, a legfrissebb hetek látszanak.
+Az időrendet ne fordítsd meg. Ne ugorjon vissza újra a legfrissebbre minden kézi
+kiválasztáskor. Valódi napi szűrés, fejlécösszeg és oszlopösszeg egyezzen. Szép,
+adatból számolt tengely, finom rács, olvasható dátumok; hiányból ne legyen ál-oszlop.
+
+Megkezdve: StudioProgressWindow.kt, StudioVolumeChart.kt, kapcsolódó Window/UI tesztek
+és a LogAndProgressScreens hívási pontjai. Elsődleges tulajdon e komponensek;
+a képernyő nagy közös fájljában csak a volumenrészhez nyúlj. Ellenőrizd a legutolsó
+részleges hetet, időzónát/DST-t, a keskeny egynapos ábrát és a kezdeti jobb oldali scrollt.
+
+---
+
+# Chat 3 – Elvetés a Folytatás mellett
+
+Referencia: F felső része (most csak Folytatás van).
+Szüneteltetett / félbehagyott aktív edzésnél a Folytatás mellett legyen Elvetés gomb.
+Az elvetés kérjen megerősítést. Csak az akkor megjelenített edzést érintheti;
+időközben új edzésre váltás nem törölhet másikat. Mégse semmit nem változtat.
+Órás tulajdon, pending átadás, mentés/adatcsere esetén a meglévő védelmek érvényesek.
+Korábban mentett edzés nem törölhető ezzel az aktív-edzés művelettel.
+
+Megkezdve: StudioPausedWorkoutActions.kt; HomeScreen/MainActivity bekötés;
+TrainPilotViewModel.stopActiveWorkoutSession(expectedWorkoutId) azonosítóellenőrzése.
+A valódi művelet a meglévő TrainPilotWorkoutFinalization.discardWorkout marad.
+Elsődleges tulajdon az új komponens és annak tesztjei; a HomeScreen adatblokkja az 5.
+chaté. ViewModelben csak az elvetési metódust módosítsd, ha szükséges.
+Teszt: megerősítés előtt nincs callback, Mégse nem töröl, megerősítés egyszer,
+azonosítóváltás és tiltott állapot nem enged rossz törlést, tárolási hiba nem állít sikert.
+
+---
+
+# Chat 4 – Térkép sötét kapcsolóval és végpontokkal
+
+Referencia: E (jelenlegi natív világos térkép, nem kész sötét referenciaterv).
+Külön kapcsolóval lehessen sötét/világos térképstílust választani. Jelölje a tényleges
+rögzített útvonal első és utolsó pontját, eltérő, jól látható jelöléssel. Egyetlen pont
+vagy azonos rajt/cél esetén ne állítson két külön helyet. Üres útvonalnál nincs kitalált
+hely/útvonal. Az útvonal szünet-/tulajdonosváltási réseit tilos egyenes vonallal összekötni.
+A meglévő Google Maps konfiguráció, jogi logó, kamerakezelés és privát koordináták védelme
+maradjon. Stílusváltás ne változtassa meg a mentett GPS-adatot vagy indítson új mérést.
+
+Még nincs implementálva. Elsődleges fájl: AnatomicalBodyAndMapComponents.kt /
+NativeWorkoutRouteMapBox, a map-style resource, szükség esetén a meglévő DataStore helyi
+UI-beállítása. A komponens a napló és az aktív mérés térképén is működjön.
+A LogAndProgressScreens.kt nagy közös fájlját csak egyeztetve módosítsd. Maps-kulcsot ne cserélj.
+
+---
+
+# Chat 5 – Keret nélküli Mai adatok blokk eltávolítása a Kezdőlapról
+
+Referencia: F, a Galaxy Watch kártya alatti „Mai adatok • Samsung Health” és az alatta
+levő szinkronidő/lépés/aktív és teljes energia/státusz sorok.
+Ez a rész a Kezdőlapon ne jelenjen meg. A tényleges egészségkártyák (alvás, pulzus,
+lépések stb.) maradjanak. A részletes adat a megfelelő Egészség oldali lenyitásokból
+legyen elérhető; ezek a felhasználó szerint már megfelelően működnek.
+
+Még nincs implementálva. Elsődleges tulajdon: HomeScreen.kt ezen adatblokkja.
+A StudioDailyHealthStatus közös komponenst ne töröld és ne rontsd el az Egészség oldali
+használatát; ne állítsd le az adatolvasást és ne töröld a cache-t. A 3. chat által
+bekötött Folytatás/Elvetés részt őrizd meg. Teszt: a Kezdőlapon eltűnt a duplikált
+szövegblokk, a kártyák és az Egészség oldali részletek/forrásadatok megmaradtak.
+
+---
+
+# Chat 6 – Health Connect üres eredmény, külön diagnózis
+
+Ez a #19-ben külön rögzített megfigyelés, nem igazolt ok: Health Connect kijelölésével
+nem volt adat; Samsung Healthre váltás és szinkron után azonnal működött.
+Ellenőrizd a tényleges grantokat, Samsung→HC adatmegosztást, kiválasztott origint,
+helyi napi dátumablakot, provider-cache váltást és az üres eredmény/hiba megkülönböztetését.
+Ne állíts automatikusan alkalmazáshibát, ha HC-ben nincs forrásadat. Ne adj össze
+SH és HC értékeket, és ne legyen csendes fallback. A már működő Samsung adatút maradjon.
+
+Külön vizsgálati ág, a javítás előtt rögzített ok és reprodukció szükséges. Referencia:
+#19 készülékes kommentek; F csak a működő Samsung út megfigyelése, HC-hibát nem bizonyít.
+Elsődleges terület: HealthConnectRepository, provider-/grant/cache réteg. A 3. chat
+elvetési ViewModel-részét és a többi UI-feladatot ne módosítsd.
+
+---
+
+# Integrátor – a külön feladatok összefésülése
+
+Fogadd a külön PR-okat az integrációs ágra, ellenőrizd a közös fájlok konfliktusait és
+az aktuális #28 CI-t. Az alap munkakód még nem igazolt. Ne olvassz össze pusztán azért,
+mert egy előző SHA másik buildje sikeres volt. Egységes keretrendszer és elnevezés legyen.
+A végleges PR címe/leírása a végső működést fedje le.
+
+Futtasd a releváns regressziókat, majd a teljes telefon/Wear Actions-t, olvasd a nyers
+XML-t. A felhasználó korábban engedélyezte a kész, ellenőrzött javítás mainre vitelét.
+Ezután mainről állandó kulcsos teljes signed build. A jelenlegi munkakód 2741-re léptet;
+a feladat-chatek ne léptessék külön a verziót. Maradjon com.TrainPilot.com / 0.1.0-beta,
+ugyanaz a signer mindkét APK-ban. Ellenőrizd a forrás-SHA-t, manifestet, verziót, signer-
+és fájlhash-t; a két külön APK a TrainPilot Native Drive-mappába kerüljön, méret/szülő
+readbackkel. Frissítsd az átadót/promptot/#19-et. Eszközös elfogadás csak a felhasználó
+valódi tesztjével kész. A 2740-es APK ettől külön, korábban igazolt kiadás.
+
+---
+
+# Chat 8 – Naplózott edzés valódi törlése
+
+Ez külön feladat a 3. chat aktív/szüneteltetett edzésének elvetésétől.
+A naplózott edzés részletein legyen Edzés törlése gomb és megerősítő párbeszéd.
+A törlés valóban távolítsa el a kiválasztott mentett edzést a Room tárolóból és a
+hozzá tartozó, más adathoz nem szükséges sorozat-/gyakorlat-/fotó-/GPS adatokat és
+helyi fájlokat. Nem elegendő a listából vagy a memóriabeli UI-ból elrejteni.
+Más edzés, megosztott fájl vagy másik aktív session nem sérülhet. Siker után a napló,
+statisztikák, PR-/volumen-/kardióösszesítések a tényleges maradék tárolt adatokból frissüljenek.
+
+Meglévő kiindulás: JournalViewModel.requestDeleteWorkout/cancelDeleteWorkout/
+confirmDeleteWorkout és WorkoutHistoryDao.deleteWorkoutByIdOrKey. A backend Room-
+tranzakcióban töröl és tombstone-t ír, de a Studio képernyőn nincs bekötött törlés.
+Ne csak a gombot kösd be: auditáld a kapcsolt helyi fájlok valódi takarítását is,
+az SQL cascade önmagában nem bizonyítja a fotó/GPS fájl eltávolítását.
+Használd újra a meglévő privát fotó-/route-/szinkrontörlési mechanizmusokat.
+A minimális tartós törlési jelző megmarad a régi sync/import példányból történő
+visszaéledés megakadályozásához; a felhasználó nem egy új archív másolatot kér.
+Egy korábban külön exportált ZIP-et ez nem ír át; ennek eltüntetését ne állítsd.
+
+Elsődleges tulajdon: JournalViewModel törlési út, szükséges tároló-/fájltakarítás,
+LogAndProgressScreens edzésrészletének törlési gombja és MainActivity bekötése.
+A 2. chat grafikonrészét és a 3. chat aktív-session elvetését ne írd felül.
+Teszt: Mégse nem módosít; csak azonosított mentett edzés törölhető; újranyitás/újraindítás
+után sincs a tárolóban; nincs fölös helyi fájl; megosztott/idegen adat megmarad;
+a régi sync nem hozza vissza; SQL-/fájlhiba nem mutathat teljes, hamis sikert.
+Külön referencia nem szükséges: az elvárt működés a fenti, gombhely a naplózott edzés részlete.

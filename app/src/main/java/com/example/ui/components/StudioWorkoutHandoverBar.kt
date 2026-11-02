@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -23,7 +25,7 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
             Text(if (!state.isWorkoutSessionActive) "Nincs aktív natív edzés" else if (state.watchControlPending) "Átadás visszaigazolására vár…"
                 else if (state.phoneControlsWorkout) "Telefon vezérli" else "Óra vezérli / telefonos visszavétel szükséges",
                 modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
-            OutlinedButton(onClick = onToggle,
+            TrainPilotOutlinedButton(onClick = onToggle,
                 enabled = state.isWorkoutSessionActive && !state.watchControlPending && !state.isSavingWorkout && (!state.phoneControlsWorkout || state.watchAppAvailable),
                 modifier = Modifier.heightIn(min = 48.dp).testTag("workout_handover_action")) {
                 Text(if (state.watchControlPending) "ACK-ra vár…"

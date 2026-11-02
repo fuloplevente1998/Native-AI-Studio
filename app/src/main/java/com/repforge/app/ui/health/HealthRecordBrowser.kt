@@ -1,5 +1,7 @@
 package com.repforge.app.ui.health
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
 import android.app.DatePickerDialog
 
 import androidx.compose.foundation.background
@@ -157,14 +159,14 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column(Modifier.weight(1f)) {
                     Text(resources.getString(R.string.health_range_from), color = colors.muted)
-                    OutlinedButton(onClick = { pickDate(draftFrom) { draftFrom = it } },
+                    TrainPilotOutlinedButton(onClick = { pickDate(draftFrom) { draftFrom = it } },
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("health_range_from")) {
                         Text(draftFrom.toString())
                     }
                 }
                 Column(Modifier.weight(1f)) {
                     Text(resources.getString(R.string.health_range_to), color = colors.muted)
-                    OutlinedButton(onClick = { pickDate(draftTo) { draftTo = it } },
+                    TrainPilotOutlinedButton(onClick = { pickDate(draftTo) { draftTo = it } },
                         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("health_range_to")) {
                         Text(draftTo.toString())
                     }

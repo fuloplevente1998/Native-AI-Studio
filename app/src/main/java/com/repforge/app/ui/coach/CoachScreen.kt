@@ -1,5 +1,7 @@
 package com.repforge.app.ui.coach
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
 import android.content.res.Resources
 import com.repforge.app.R
 import androidx.compose.foundation.layout.*
@@ -135,7 +137,7 @@ internal fun CoachScreen(starting: Boolean, onStart: (String, String, String?) -
                         advice.nextReps.joinToString(" / ") { value(it) }), color = colors.text)
                     if (advice.action == "variation") advice.variation?.let {
                         Text(NativeCoachAdviceText.variation(text, it), color = colors.text)
-                        OutlinedButton(onClick = { model.previewVariation(row.id) }, enabled = !state.variationBusy && !starting,
+                        TrainPilotOutlinedButton(onClick = { model.previewVariation(row.id) }, enabled = !state.variationBusy && !starting,
                             modifier = Modifier.testTag("coach_variation_${row.id}")) {
                             Text(text.getString(com.repforge.app.R.string.coach_variation_preview))
                         }
@@ -148,7 +150,7 @@ internal fun CoachScreen(starting: Boolean, onStart: (String, String, String?) -
         }
         if (state.variationSaved) item {
             Text(text.getString(com.repforge.app.R.string.coach_variation_saved), color = colors.text)
-            OutlinedButton(onClick = onPrograms) { Text(text.getString(com.repforge.app.R.string.coach_variation_programs)) }
+            TrainPilotOutlinedButton(onClick = onPrograms) { Text(text.getString(com.repforge.app.R.string.coach_variation_programs)) }
         }
         if (state.exercises.isNotEmpty()) item {
             Text(text.getString(com.repforge.app.R.string.coach_advice_read_only), color = colors.muted)
@@ -156,16 +158,16 @@ internal fun CoachScreen(starting: Boolean, onStart: (String, String, String?) -
         item {
             if (state.refreshFailed) Text(text.getString(com.repforge.app.R.string.coach_refresh_failed), color = colors.dangerText,
                 modifier = Modifier.testTag("coach_refresh_failed"))
-            OutlinedButton(onClick = { model.refreshHealth(context as? android.app.Activity) },
+            TrainPilotOutlinedButton(onClick = { model.refreshHealth(context as? android.app.Activity) },
                 enabled = !state.loading && !state.refreshing,
                 modifier = Modifier.fillMaxWidth().testTag("coach_refresh_health")) {
                 if (state.refreshing) CircularProgressIndicator(Modifier.size(20.dp))
                 else Text(text.getString(com.repforge.app.R.string.coach_refresh_health))
             }
         }
-        item { OutlinedButton(onClick = model::reload, enabled = !state.loading, modifier = Modifier.fillMaxWidth()) { Text(words[17]) } }
-        item { OutlinedButton(onClick = onHealth, modifier = Modifier.fillMaxWidth()) { Text(words[18]) } }
-        item { OutlinedButton(onClick = onProgress, modifier = Modifier.fillMaxWidth()) { Text(words[19]) } }
+        item { TrainPilotOutlinedButton(onClick = model::reload, enabled = !state.loading, modifier = Modifier.fillMaxWidth()) { Text(words[17]) } }
+        item { TrainPilotOutlinedButton(onClick = onHealth, modifier = Modifier.fillMaxWidth()) { Text(words[18]) } }
+        item { TrainPilotOutlinedButton(onClick = onProgress, modifier = Modifier.fillMaxWidth()) { Text(words[19]) } }
         item { Text(words[20], color = colors.muted); Spacer(Modifier.height(96.dp)) }
     }
 }

@@ -15,7 +15,7 @@ internal data class StudioProgressWindow(val days: Int, val end: LocalDate = Loc
     fun workouts(rows: List<LoggedWorkoutEntry>, zone: ZoneId = ZoneId.systemDefault()) =
         rows.filter { contains(it.localWorkoutDate(zone)) }
     fun volumes(rows: List<LoggedWorkoutEntry>, zone: ZoneId = ZoneId.systemDefault()): List<Pair<String, Int>> {
-        val step = if (days == 90) 7 else 1
+        val step = if (days >= 30) 7 else 1
         val dated = workouts(rows, zone).groupBy { it.localWorkoutDate(zone) }
         val format = DateTimeFormatter.ofPattern("MM.dd.", Locale.ROOT)
         return (0 until days step step).map { offset ->
@@ -26,4 +26,12 @@ internal data class StudioProgressWindow(val days: Int, val end: LocalDate = Loc
             first.format(format) to kg
         }
     }
+}
+
+/** Four readable ticks above the real maximum; never changes measured bar values. */
+internal fun volumeAxisMaximum(maximum: Int): Long {
+    val raw = maximum.coerceAtLeast(1) / 4.0
+    val magnitude = Math.pow(10.0, kotlin.math.floor(kotlin.math.log10(raw)))
+    val step = listOf(1.0, 2.0, 2.5, 5.0, 10.0).first { it * magnitude >= raw }
+    return kotlin.math.ceil(step * magnitude).toLong().coerceAtLeast(1) * 4L
 }

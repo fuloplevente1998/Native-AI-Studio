@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
 import android.app.Activity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -56,7 +58,7 @@ internal val LocalOpenWorkoutHealth = staticCompositionLocalOf<() -> Unit> { {} 
                 FilterChip(selected = provider == source, enabled = !busy,
                     onClick = { provider = source; result = null; message = "" }, label = { Text(NativeWorkoutHealthSource.label(source)) })
             }
-            OutlinedButton(enabled = !busy, onClick = { requestPermission(provider) }) {
+            TrainPilotOutlinedButton(enabled = !busy, onClick = { requestPermission(provider) }) {
                 Text("${NativeWorkoutHealthSource.label(provider)} • engedélyek")
             }
             result?.let { data ->

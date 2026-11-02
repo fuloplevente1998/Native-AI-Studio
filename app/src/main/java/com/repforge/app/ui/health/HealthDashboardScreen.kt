@@ -1,4 +1,10 @@
 package com.repforge.app.ui.health
+
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
+import com.repforge.app.ui.theme.TrainPilotFrames
+
+import com.repforge.app.ui.theme.trainPilotBorder
 import android.app.Activity
 import android.Manifest
 import android.os.Build
@@ -382,6 +388,10 @@ fun HealthJournalTabContent(
                         if (state.dailySourcePreference !in (listOf("auto", "priority") + state.dailySourceOptions))
                             Text(state.dailySourcePreference, color = colors.muted)
                         Text(text.getString(com.repforge.app.R.string.health_daily_source_hint), color = colors.muted)
+                        if (state.providerReadDetails.isNotBlank()) {
+                            Text(state.providerReadDetails, color = colors.muted, fontSize = 11.sp,
+                                modifier = Modifier.testTag("health_connect_read_diagnosis"))
+                        }
                         if (state.sourceSaveFailed) Text(text.getString(com.repforge.app.R.string.metadata_write_failed), color = colors.danger)
                     }
                     if (state.historyPartial) Text(com.repforge.app.ui.text.nativeResources(LocalContext.current, state.language)
@@ -614,7 +624,7 @@ fun BleDiscoveryTabContent(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = colors.card),
-                border = androidx.compose.foundation.BorderStroke(1.dp, colors.line)
+                border = TrainPilotFrames.stroke(1.dp, colors.line)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
@@ -667,7 +677,7 @@ fun BleDiscoveryTabContent(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = colors.card2),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, colors.accent.copy(alpha = 0.5f))
+                    border = TrainPilotFrames.stroke(1.dp, colors.accent.copy(alpha = 0.5f))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(
@@ -690,7 +700,7 @@ fun BleDiscoveryTabContent(
                                     Text(if (ble.liveHeartRateBpm != null) "${ble.liveHeartRateBpm} bpm" else "—", color = Color(0xFFEF5350), fontSize = 22.sp, fontWeight = FontWeight.Bold)
                                     if (ble.heartSupported && ble.state != "monitoring") {
                                         Spacer(Modifier.height(6.dp))
-                                        OutlinedButton(onClick = { bleRepo.startHeartRate() }) {
+                                        TrainPilotOutlinedButton(onClick = { bleRepo.startHeartRate() }) {
                                             Text(strings.getString(R.string.native_health_ble_listen), fontSize = 10.sp)
                                         }
                                     }
@@ -704,7 +714,7 @@ fun BleDiscoveryTabContent(
                                     Text(if (ble.rdfitProbe.stepsCount != null) strings.getString(R.string.native_health_ble_steps_count, ble.rdfitProbe.stepsCount) else if (ble.rdfitProbe.batteryPercent != null) "${ble.rdfitProbe.batteryPercent}%" else "—", color = colors.accentText, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                                     if (ble.probeSupported && ble.state != "probing") {
                                         Spacer(Modifier.height(6.dp))
-                                        OutlinedButton(onClick = { bleRepo.readRdfitData() }) {
+                                        TrainPilotOutlinedButton(onClick = { bleRepo.readRdfitData() }) {
                                             Text(strings.getString(R.string.native_health_ble_request), fontSize = 10.sp)
                                         }
                                     }
@@ -776,7 +786,7 @@ fun BleDiscoveryTabContent(
                 modifier = Modifier.fillMaxWidth().clickable { bleRepo.connect(dev.id) },
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = colors.card),
-                border = androidx.compose.foundation.BorderStroke(1.dp, if (dev.remembered) colors.accent else colors.line)
+                border = TrainPilotFrames.stroke(1.dp, if (dev.remembered) colors.accent else colors.line)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(14.dp),
@@ -817,7 +827,7 @@ fun ProviderChoiceChip(
             .height(42.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(if (isSelected) colors.accent else colors.card2)
-            .border(1.dp, if (isSelected) colors.accent else colors.line, RoundedCornerShape(10.dp))
+            .trainPilotBorder(1.dp, if (isSelected) colors.accent else colors.line, RoundedCornerShape(10.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 8.dp),
         contentAlignment = Alignment.Center

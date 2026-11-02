@@ -1,5 +1,11 @@
 package com.example.ui.screens
 
+import com.example.model.volumeAxisMaximum
+
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
+import com.repforge.app.ui.theme.trainPilotBorder
+
 import com.example.model.workoutsInWeekEnding
 import com.example.model.StudioProgressWindow
 import com.example.model.progressPeriodDays
@@ -222,7 +228,7 @@ fun LogTabScreen(
                 }
             },
             dismissButton = {
-                OutlinedButton(
+                TrainPilotOutlinedButton(
                     onClick = {
                         intervalStartDay = null
                         intervalEndDay = null
@@ -277,7 +283,7 @@ fun LogTabScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .size(40.dp)
-                        .border(1.dp, palette.cardBorder, CircleShape)
+                        .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
                         .clip(CircleShape)
                         .clickable {
                             filterAllMonths = false
@@ -301,7 +307,7 @@ fun LogTabScreen(
                     modifier = Modifier
                         .weight(1f)
                         .padding(horizontal = 10.dp)
-                        .border(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                        .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
                         .clip(RoundedCornerShape(14.dp))
                         .clickable { showInlineCalendar = !showInlineCalendar }
                         .testTag("log_month_picker_button")
@@ -340,7 +346,7 @@ fun LogTabScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .size(40.dp)
-                        .border(1.dp, palette.cardBorder, CircleShape)
+                        .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
                         .clip(CircleShape)
                         .clickable {
                             filterAllMonths = false
@@ -369,7 +375,7 @@ fun LogTabScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                        .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 ) {
                     Column(
                         modifier = Modifier.padding(12.dp),
@@ -402,7 +408,7 @@ fun LogTabScreen(
                                     shape = RoundedCornerShape(10.dp),
                                     color = palette.surfaceElevated,
                                     modifier = Modifier
-                                        .border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                                         .clip(RoundedCornerShape(10.dp))
                                         .clickable {
                                             currentYearMonth = java.time.YearMonth.from(today)
@@ -424,7 +430,7 @@ fun LogTabScreen(
                                     shape = RoundedCornerShape(10.dp),
                                     color = palette.surfaceElevated,
                                     modifier = Modifier
-                                        .border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                                         .clip(RoundedCornerShape(10.dp))
                                         .clickable {
                                             intervalStartDay = null
@@ -493,7 +499,7 @@ fun LogTabScreen(
                                                 },
                                                 modifier = Modifier
                                                     .size(36.dp)
-                                                    .border(
+                                                    .trainPilotBorder(
                                                         width = if (isToday || isStartOrEnd) 1.5.dp else 1.dp,
                                                         color = when {
                                                             isStartOrEnd || isToday -> palette.primary
@@ -554,7 +560,7 @@ fun LogTabScreen(
                         shape = RoundedCornerShape(10.dp),
                         color = palette.primary.copy(alpha = 0.16f),
                         modifier = Modifier
-                            .border(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(10.dp))
+                            .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
                             .clickable {
                                 val firstStrength = filteredLogs.firstOrNull { !it.isOutdoorRun } ?: filteredLogs.firstOrNull()
@@ -594,7 +600,7 @@ fun LogTabScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 16.dp)
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                 ) {
                     Column(
                         modifier = Modifier.padding(20.dp),
@@ -657,7 +663,7 @@ private fun LogWorkoutCard(
         color = palette.surfaceCard,
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
+            .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
             .clickable { onOpenDetailAlways() }
             .testTag("log_card_${entry.id}")
@@ -747,7 +753,7 @@ private fun LogWorkoutCard(
                             .size(44.dp)
                             .clip(RoundedCornerShape(10.dp))
                             .background(Color(0xFF121C26))
-                            .border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                             .clickable { onClick() },
                         contentAlignment = Alignment.Center
                     ) {
@@ -820,7 +826,7 @@ fun LogWorkoutDetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 24.dp)
-                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     .padding(24.dp)
             ) {
                 Column(
@@ -859,7 +865,7 @@ fun LogWorkoutDetailScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
                     .testTag("journal_detail_header")
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
@@ -944,7 +950,7 @@ fun LogWorkoutDetailScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                        .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                         .clip(RoundedCornerShape(18.dp))
                         .clickable { onToggleExpandedExercise(index) }
                 ) {
@@ -1030,7 +1036,7 @@ fun LogWorkoutDetailScreen(
                     Surface(
                         shape = RoundedCornerShape(18.dp),
                         color = palette.surfaceCard,
-                        modifier = Modifier.fillMaxWidth().border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                        modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("Kültéri edzés mért adatai", style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
@@ -1058,7 +1064,7 @@ fun LogWorkoutDetailScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                        .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Adatforrás és szinkron napló", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
@@ -1080,7 +1086,7 @@ fun LogWorkoutDetailScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                OutlinedButton(
+                TrainPilotOutlinedButton(
                     onClick = onOpenPhotos,
                     enabled = workout.photoCount > 0,
                     shape = RoundedCornerShape(14.dp),
@@ -1093,7 +1099,7 @@ fun LogWorkoutDetailScreen(
                     Spacer(modifier = Modifier.width(6.dp))
                     Text("Fotók (${workout.photoCount})", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
                 }
-                OutlinedButton(
+                TrainPilotOutlinedButton(
                     onClick = onOpenRouteMap,
                     enabled = workout.routeKeys.isNotEmpty(),
                     shape = RoundedCornerShape(14.dp),
@@ -1126,7 +1132,7 @@ fun LogWorkoutDetailScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .weight(1f)
-                        .border(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
+                        .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
                         .clip(RoundedCornerShape(16.dp))
                         .clickable { onOpenWatchSync() }
                         .testTag("log_detail_open_watch_sync")
@@ -1157,7 +1163,7 @@ fun LogWorkoutDetailScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .weight(1f)
-                        .border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                         .clip(RoundedCornerShape(16.dp))
                         .clickable { onOpenHealthTab() }
                         .testTag("log_detail_open_health_connect")
@@ -1236,7 +1242,7 @@ fun LogRouteMapScreen(
             color = palette.surfaceCard,
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
+                .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(
@@ -1337,7 +1343,7 @@ fun ProgressTabScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 6.dp)
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
         ) {
             Row(
                 modifier = Modifier
@@ -1352,7 +1358,7 @@ fun ProgressTabScreen(
                         color = if (selected) palette.primary.copy(alpha = 0.22f) else Color.Transparent,
                         modifier = Modifier
                             .weight(1f)
-                            .border(
+                            .trainPilotBorder(
                                 width = if (selected) 1.dp else 0.dp,
                                 color = if (selected) palette.primary else Color.Transparent,
                                 shape = RoundedCornerShape(10.dp)
@@ -1446,11 +1452,7 @@ internal fun MainProgressVolumeAndMuscleSection(
     val period = StudioProgressWindow(progressPeriodDays(uiState.selectedProgressRangeIndex), today)
     val periodWorkouts = remember(uiState.loggedWorkouts, period) { period.workouts(uiState.loggedWorkouts) }
     val volumeBars = remember(uiState.loggedWorkouts, period) { period.volumes(uiState.loggedWorkouts) }
-    val compactVolumeBars = volumeBars
     val expandedWeeklyBars = volumeBars
-    val maxVolume = (volumeBars.maxOfOrNull { it.second } ?: 0).coerceAtLeast(1)
-    val axisMax = kotlin.math.ceil(maxVolume / 4.0).toInt().coerceAtLeast(1) * 4
-    val axisLabels = (4 downTo 0).map { (axisMax * it / 4).toString() }
     val loggedTotalKg = periodWorkouts.sumOf { it.totalVolumeKg }
     val totalVolumeText = "%,d kg".format(java.util.Locale.US, loggedTotalKg).replace(',', ' ')
     val dateSubtitle = "${period.start.format(huFmt)} – ${period.end.format(huFmt)}"
@@ -1470,7 +1472,7 @@ internal fun MainProgressVolumeAndMuscleSection(
             color = palette.surfaceCard,
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(20.dp))
+                .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(20.dp))
                 .testTag("progress_total_volume_card")
         ) {
             Column(modifier = Modifier.padding(14.dp)) {
@@ -1547,7 +1549,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(42.dp)
-                                    .border(
+                                    .trainPilotBorder(
                                         width = 1.dp,
                                         color = if (isSel) palette.primary else palette.cardBorder,
                                         shape = RoundedCornerShape(12.dp)
@@ -1584,10 +1586,10 @@ internal fun MainProgressVolumeAndMuscleSection(
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = palette.surfaceElevated,
-                            modifier = Modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
+                            modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                         ) {
                             Text(
-                                text = if (period.days == 90) "Heti bontás" else "Napi bontás",
+                                text = if (period.days >= 30) "Heti bontás" else "Napi bontás",
                                 modifier = Modifier.testTag("progress_volume_bucket_unit").padding(horizontal = 12.dp, vertical = 6.dp),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = palette.textSecondary
@@ -1597,81 +1599,7 @@ internal fun MainProgressVolumeAndMuscleSection(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // 3. Large Full-Width Bar Chart (8000 / 6000 / 4000 / 2000 / 0 + wide rounded gold bars)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(165.dp)
-                    ) {
-                        // Horizontal grid lines + Y-axis labels
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(135.dp),
-                            verticalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            axisLabels.forEach { yLbl ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = yLbl,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = palette.textSecondary,
-                                        modifier = Modifier.width(38.dp),
-                                        textAlign = androidx.compose.ui.text.style.TextAlign.End
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    HorizontalDivider(
-                                        color = palette.cardBorder.copy(alpha = 0.55f),
-                                        thickness = 0.8.dp,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                            }
-                        }
-
-                        // Bars + X-axis date labels aligned to the chart area
-                        Row(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(start = 46.dp, top = 6.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.Bottom
-                        ) {
-                            expandedWeeklyBars.forEachIndexed { idx, (weekLbl, kg) ->
-                                val isBarSelected = uiState.selectedVolumeBarIndex == idx
-                                val ratio = (kg.toFloat() / axisMax).coerceIn(0f, 1f)
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxHeight()
-                                        .clickable { onSelectVolumeBar(idx) },
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Bottom
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height((122 * ratio).dp)
-                                            .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-                                            .background(
-                                                if (isBarSelected) palette.primary
-                                                else palette.primary.copy(alpha = if (kg == 0) 0.25f else 0.88f)
-                                            )
-                                    )
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(
-                                        text = if (volumeBars.size > 14) weekLbl.substring(3, 5) else weekLbl,
-                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                        color = if (isBarSelected) palette.primary else palette.textSecondary,
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    StudioVolumeChart(volumeBars, period, uiState.selectedVolumeBarIndex, true, onSelectVolumeBar)
 
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -1708,7 +1636,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                         modifier = Modifier
                                             .weight(1f)
                                             .height(38.dp)
-                                            .border(
+                                            .trainPilotBorder(
                                                 width = 1.dp,
                                                 color = if (isSel) palette.primary else palette.cardBorder,
                                                 shape = RoundedCornerShape(11.dp)
@@ -1739,7 +1667,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                         modifier = Modifier
                                             .weight(1f)
                                             .height(38.dp)
-                                            .border(
+                                            .trainPilotBorder(
                                                 width = 1.dp,
                                                 color = if (isSel) palette.primary else palette.cardBorder,
                                                 shape = RoundedCornerShape(11.dp)
@@ -1760,69 +1688,10 @@ internal fun MainProgressVolumeAndMuscleSection(
                             }
                         }
 
-                        Row(
-                            modifier = Modifier
-                                .weight(0.55f)
-                                .height(86.dp)
-                                .clickable { expandedVolumeDetails = true },
-                            verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .height(72.dp)
-                                    .padding(bottom = 12.dp),
-                                verticalArrangement = Arrangement.SpaceBetween,
-                                horizontalAlignment = Alignment.End
-                            ) {
-                                axisLabels.forEach { yLbl ->
-                                    Text(
-                                        text = yLbl,
-                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
-                                        color = palette.textSecondary
-                                    )
-                                }
-                            }
-
-                            Row(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(82.dp),
-                                horizontalArrangement = Arrangement.spacedBy(3.dp),
-                                verticalAlignment = Alignment.Bottom
-                            ) {
-                                compactVolumeBars.forEachIndexed { idx, (dayLbl, kg) ->
-                                    val isBarSelected = uiState.selectedVolumeBarIndex == idx
-                                    val ratio = (kg.toFloat() / axisMax).coerceIn(0f, 1f)
-                                    Column(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clickable {
-                                                onSelectVolumeBar(idx)
-                                                expandedVolumeDetails = true
-                                            },
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Bottom
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height((62 * ratio).dp)
-                                                .clip(RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp))
-                                                .background(
-                                                    if (isBarSelected) palette.primary
-                                                    else palette.primary.copy(alpha = if (kg == 0) 0.25f else 0.82f)
-                                                )
-                                        )
-                                        Spacer(modifier = Modifier.height(3.dp))
-                                        Text(
-                                            text = if (volumeBars.size > 14) dayLbl.substring(3, 5) else dayLbl,
-                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.5.sp),
-                                            color = if (isBarSelected) palette.primary else palette.textSecondary,
-                                            maxLines = 1
-                                        )
-                                    }
-                                }
+                        Box(Modifier.weight(0.55f).height(96.dp)) {
+                            StudioVolumeChart(volumeBars, period, uiState.selectedVolumeBarIndex, false) { index ->
+                                onSelectVolumeBar(index)
+                                expandedVolumeDetails = true
                             }
                         }
                     }
@@ -1889,7 +1758,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(18.dp))
+                    .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(18.dp))
             ) {
                 Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     when (uiState.expandedStatsCardIndex) {
@@ -2075,7 +1944,7 @@ internal fun MainProgressVolumeAndMuscleSection(
             color = palette.surfaceCard,
             modifier = Modifier
                 .fillMaxWidth()
-                .border(
+                .trainPilotBorder(
                     width = 1.dp,
                     color = if (expandedAdviceDetails) palette.primary else palette.cardBorder,
                     shape = RoundedCornerShape(18.dp)
@@ -2181,7 +2050,7 @@ private fun ExpandableStatSummaryTile(
         shape = RoundedCornerShape(16.dp),
         color = palette.surfaceCard,
         modifier = modifier
-            .border(
+            .trainPilotBorder(
                 width = if (selected) 1.5.dp else 1.dp,
                 color = if (selected) palette.primary else palette.cardBorder,
                 shape = RoundedCornerShape(16.dp)

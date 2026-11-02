@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -86,7 +88,7 @@ internal fun studioWorkoutHealthContent(
                         provider = state.healthProvider, status = state.healthStatus, selectProvider = model::selectWorkoutHealthProvider,
                         permissions = { _ ->
                             if (state.healthError in setOf(R.string.journal_health_permission, R.string.journal_samsung_permission)) {
-                                OutlinedButton(onClick = {
+                                TrainPilotOutlinedButton(onClick = {
                                     attempted = false
                                     if (state.healthProvider == com.repforge.app.HealthJournalStore.SAMSUNG && activity != null)
                                         model.requestSamsungWorkoutPermission(activity)

@@ -1,5 +1,7 @@
 package com.repforge.app.ui.components
 
+import com.repforge.app.ui.theme.TrainPilotFrames
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,7 +34,7 @@ fun TrainPilotSurfaceCard(
 ) {
     val colors = LocalTrainPilotColors.current
     val shape = RoundedCornerShape(TrainPilotDimensions.CardRadius)
-    val border = BorderStroke(if (selected) 2.dp else 1.dp,
+    val border = TrainPilotFrames.stroke(if (selected) 2.dp else 1.dp,
         if (selected) colors.selectedBorder else colors.line)
     val cardModifier = if (selected) modifier.semantics { this.selected = true } else modifier
     val fill = if (selected) colors.selectedSurface else colors.card
@@ -62,7 +64,7 @@ fun TrainPilotIconBadge(icon: ImageVector, modifier: Modifier = Modifier) {
     val colors = LocalTrainPilotColors.current
     Surface(modifier.size(36.dp), shape = RoundedCornerShape(10.dp),
         color = colors.selectedSurface, contentColor = colors.accentText,
-        border = BorderStroke(1.dp, colors.line)) {
+        border = TrainPilotFrames.stroke(1.dp, colors.line)) {
         Box(contentAlignment = Alignment.Center) {
             Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
         }
@@ -85,7 +87,7 @@ fun trainPilotMetricIcon(key: String): ImageVector = when (key) {
 fun TrainPilotMetricSurface(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val colors = LocalTrainPilotColors.current
     Surface(modifier, shape = RoundedCornerShape(14.dp), color = colors.card2,
-        contentColor = colors.text, border = BorderStroke(1.dp, colors.line)) {
+        contentColor = colors.text, border = TrainPilotFrames.stroke(1.dp, colors.line)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp), content = content)
     }
 }
@@ -128,7 +130,7 @@ private fun TrainPilotPanel(modifier: Modifier, fill: Color, outline: Color,
     radius: Int, focus: Color?, content: @Composable ColumnScope.() -> Unit) {
     val colors = LocalTrainPilotColors.current
     Surface(modifier, shape = RoundedCornerShape(radius.dp), color = fill,
-        contentColor = colors.text, border = BorderStroke(1.dp, outline)) {
+        contentColor = colors.text, border = TrainPilotFrames.stroke(1.dp, outline)) {
         Column(Modifier.background(Brush.verticalGradient(
             if (focus != null) listOf(colors.card2.copy(alpha = .65f), fill) else listOf(fill, fill)
         )).padding(TrainPilotDimensions.Page),
@@ -140,7 +142,7 @@ private fun TrainPilotPanel(modifier: Modifier, fill: Color, outline: Color,
 fun TrainPilotStatusBadge(text: String, modifier: Modifier = Modifier) {
     val colors = LocalTrainPilotColors.current
     Surface(modifier, shape = RoundedCornerShape(8.dp), color = colors.selectedSurface,
-        contentColor = colors.accentText, border = BorderStroke(1.dp, colors.line)) {
+        contentColor = colors.accentText, border = TrainPilotFrames.stroke(1.dp, colors.line)) {
         Text(text, Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"))
     }

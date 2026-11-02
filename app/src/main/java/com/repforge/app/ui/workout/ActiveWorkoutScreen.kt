@@ -1,4 +1,10 @@
 package com.repforge.app.ui.workout
+
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
+import com.repforge.app.ui.theme.TrainPilotFrames
+
+import com.repforge.app.ui.theme.trainPilotBorder
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import androidx.lifecycle.viewModelScope
@@ -385,7 +391,7 @@ fun ActiveWorkoutScreen(
                             Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(strings.getString(R.string.native_modes_title),
                                     color = colors.text, fontWeight = FontWeight.Bold)
-                                OutlinedButton(onClick = { viewModel.previewTrainingModeWeight(ex.exerciseId) },
+                                TrainPilotOutlinedButton(onClick = { viewModel.previewTrainingModeWeight(ex.exerciseId) },
                                     modifier = Modifier.fillMaxWidth().testTag("training_mode_coach_preview"),
                                     enabled = !state.modeProposalLoading && !state.isFinishing &&
                                         !state.isPaused && state.timerOwner == "phone") {
@@ -445,7 +451,7 @@ fun ActiveWorkoutScreen(
                                         .size(64.dp)
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(colors.card)
-                                        .border(1.dp, colors.line, RoundedCornerShape(8.dp))
+                                        .trainPilotBorder(1.dp, colors.line, RoundedCornerShape(8.dp))
                                 ) {
                                     IconButton(
                                         onClick = { viewModel.deletePhoto(photo.id) },
@@ -756,7 +762,7 @@ fun ExerciseCardItem(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = colors.card),
-        border = androidx.compose.foundation.BorderStroke(1.dp, colors.line)
+        border = TrainPilotFrames.stroke(1.dp, colors.line)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
@@ -1112,7 +1118,7 @@ fun RestTimerFloatingBar(
     val context = LocalContext.current
     val strings = remember(context, language) { nativeResources(context, language) }
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.card2)
-        .border(1.dp, colors.emphasisBorder, RoundedCornerShape(14.dp)).padding(horizontal = 12.dp, vertical = 4.dp)) {
+        .trainPilotBorder(1.dp, colors.emphasisBorder, RoundedCornerShape(14.dp)).padding(horizontal = 12.dp, vertical = 4.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("⏱ ${remainingSec / 60}:${(remainingSec % 60).toString().padStart(2, '0')}",
                 color = colors.accentText, fontSize = 16.sp, fontWeight = FontWeight.Bold)

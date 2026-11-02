@@ -1,5 +1,9 @@
 package com.example.ui.screens
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
+import com.repforge.app.ui.theme.trainPilotBorder
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -86,7 +90,7 @@ internal fun OutdoorGpsDashboard(
                     } else Surface(shape = RoundedCornerShape(20.dp), color = palette.surfaceCard,
                         modifier = Modifier.fillMaxWidth()
                             .then(if (scrollSecondary) Modifier.height(220.dp) else Modifier.weight(1f))
-                            .border(1.dp, palette.primary.copy(alpha = 0.45f), RoundedCornerShape(20.dp))) {
+                            .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.45f), RoundedCornerShape(20.dp))) {
                         Column(Modifier.padding(6.dp)) {
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                 ActivityPicker(state, actions, Modifier.weight(1f))
@@ -117,7 +121,7 @@ private fun DashboardHeader(state: OutdoorGpsDisplay, actions: OutdoorGpsActions
     val copy = outdoorCopy(state.language)
     val palette = LocalTrainPilotPalette.current
     Surface(shape = RoundedCornerShape(16.dp), color = palette.surfaceCard,
-        modifier = Modifier.border(1.25.dp, palette.sectionBorder, RoundedCornerShape(16.dp))) {
+        modifier = Modifier.trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(16.dp))) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             if (fullscreen) {
                 com.example.ui.components.TrainPilotRedCloseButton(actions.back, testTag = "gps_close_fullscreen")
@@ -199,7 +203,7 @@ private fun MetricsPanel(state: OutdoorGpsDisplay, strings: LocalizedStrings, sh
 private fun MetricTile(metric: Triple<String, String, String>, highlighted: Boolean, modifier: Modifier) {
     val palette = LocalTrainPilotPalette.current
     Surface(shape = RoundedCornerShape(12.dp), color = palette.background,
-        modifier = modifier.border(1.dp, if (highlighted) palette.primary.copy(alpha = 0.5f) else palette.cardBorder,
+        modifier = modifier.trainPilotBorder(1.dp, if (highlighted) palette.primary.copy(alpha = 0.5f) else palette.cardBorder,
             RoundedCornerShape(12.dp))) {
         Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
             Text(metric.first, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
@@ -222,13 +226,13 @@ private fun DashboardControls(state: OutdoorGpsDisplay, strings: LocalizedString
                 Text(if (state.gpsEnabled) copy.gpsStart else copy.indoorStart)
             } else {
                 val pause: @Composable (Modifier) -> Unit = { modifier ->
-                    OutlinedButton(actions.pause, modifier.heightIn(min = 48.dp).testTag("gps_pause_resume_btn"),
+                    TrainPilotOutlinedButton(actions.pause, modifier.heightIn(min = 48.dp).testTag("gps_pause_resume_btn"),
                         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)) {
                         Text(if (state.paused) strings.continueBtn else copy.pause)
                     }
                 }
                 val lap: @Composable (Modifier) -> Unit = { modifier ->
-                    OutlinedButton(actions.lap, modifier.heightIn(min = 48.dp).testTag("gps_lap_btn"),
+                    TrainPilotOutlinedButton(actions.lap, modifier.heightIn(min = 48.dp).testTag("gps_lap_btn"),
                         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)) { Text("+ ${copy.lap} (${state.lapCount})") }
                 }
                 val finish: @Composable (Modifier) -> Unit = { modifier ->

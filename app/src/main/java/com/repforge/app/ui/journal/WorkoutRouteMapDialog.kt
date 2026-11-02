@@ -1,4 +1,6 @@
 package com.repforge.app.ui.journal
+
+import com.repforge.app.ui.theme.TrainPilotFrames
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.width
@@ -75,7 +77,7 @@ fun WorkoutRouteMapDialog(route: RouteCoordinatesUiModel, onDismiss: () -> Unit,
                     modifier = Modifier.fillMaxWidth().weight(1f).testTag("route_map_canvas"),
                     shape = RoundedCornerShape(20.dp),
                     color = colors.card2,
-                    border = BorderStroke(1.dp, colors.selectedBorder)
+                    border = TrainPilotFrames.stroke(1.dp, colors.selectedBorder)
                 ) {
                     Box(Modifier.fillMaxSize().padding(8.dp)) {
                         // Preserve the individual GPS segments; gaps never become a drawn path.

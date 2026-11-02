@@ -1,5 +1,11 @@
 package com.example.ui.screens
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
+import com.repforge.app.ui.theme.TrainPilotFrames
+
+import com.repforge.app.ui.theme.trainPilotBorder
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -357,7 +363,7 @@ fun ActiveStrengthWorkoutScreen(
                 }
             },
             dismissButton = {
-                OutlinedButton(
+                TrainPilotOutlinedButton(
                     onClick = { editingSet = null },
                     shape = RoundedCornerShape(10.dp)
                 ) {
@@ -432,7 +438,7 @@ fun ActiveStrengthWorkoutScreen(
                                     else -> palette.surfaceElevated
                                 },
                                 modifier = Modifier
-                                    .border(
+                                    .trainPilotBorder(
                                         width = 1.dp,
                                         color = when {
                                             isCurrent -> palette.primary
@@ -504,7 +510,7 @@ fun ActiveStrengthWorkoutScreen(
                             properties = PopupProperties(focusable = true),
                             modifier = Modifier
                                 .background(palette.surfaceElevated)
-                                .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                         ) {
                             DropdownMenuItem(
                                 text = {
@@ -569,7 +575,7 @@ fun ActiveStrengthWorkoutScreen(
                             shape = RoundedCornerShape(12.dp),
                             color = palette.surfaceElevated,
                             modifier = Modifier
-                                .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
+                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { onOpenExerciseDetail(currentExerciseId) }
                         ) {
@@ -622,7 +628,7 @@ fun ActiveStrengthWorkoutScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(
+                    .trainPilotBorder(
                         width = if (isActiveSet) 1.5.dp else 1.dp,
                         color = if (isActiveSet) palette.primary else palette.cardBorder,
                         shape = RoundedCornerShape(16.dp)
@@ -667,7 +673,7 @@ fun ActiveStrengthWorkoutScreen(
                                 .weight(1f)
                                 .height(38.dp)
                                 .padding(horizontal = 2.dp)
-                                .border(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
+                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable {
                                     editingSet = setItem
@@ -694,7 +700,7 @@ fun ActiveStrengthWorkoutScreen(
                                 .weight(1f)
                                 .height(38.dp)
                                 .padding(horizontal = 2.dp)
-                                .border(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
+                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable {
                                     editingSet = setItem
@@ -721,7 +727,7 @@ fun ActiveStrengthWorkoutScreen(
                                 .weight(0.9f)
                                 .height(38.dp)
                                 .padding(horizontal = 2.dp)
-                                .border(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
+                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable {
                                     val nextRir = if (setItem.rir >= 3) 0 else setItem.rir + 1
@@ -743,7 +749,7 @@ fun ActiveStrengthWorkoutScreen(
                             color = if (setItem.completed) palette.primary else palette.surfaceElevated,
                             modifier = Modifier
                                 .size(width = 40.dp, height = 38.dp)
-                                .border(1.dp, if (setItem.completed) palette.primary else palette.cardBorder, RoundedCornerShape(8.dp))
+                                .trainPilotBorder(1.dp, if (setItem.completed) palette.primary else palette.cardBorder, RoundedCornerShape(8.dp))
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable { onToggleSetCompleted(setItem.setNumber) }
                                 .testTag("toggle_set_${setItem.setNumber}")
@@ -804,7 +810,7 @@ fun ActiveStrengthWorkoutScreen(
 
         // Add new set button
         item {
-            OutlinedButton(
+            TrainPilotOutlinedButton(
                 onClick = onAddSet,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -971,7 +977,7 @@ fun ActiveStrengthWorkoutScreen(
                                 shape = RoundedCornerShape(10.dp),
                                 color = palette.surfaceElevated,
                                 modifier = Modifier
-                                    .border(1.dp, if (modeDropdownOpen) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
+                                    .trainPilotBorder(1.dp, if (modeDropdownOpen) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
                                     .clip(RoundedCornerShape(10.dp))
                                     .clickable { modeDropdownOpen = !modeDropdownOpen }
                                     .testTag("coach_engine_mode_dropdown_btn")
@@ -1005,7 +1011,7 @@ fun ActiveStrengthWorkoutScreen(
                                 onDismissRequest = { modeDropdownOpen = false },
                                 containerColor = palette.background,
                                 shape = RoundedCornerShape(12.dp),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, palette.primary.copy(alpha = 0.7f))
+                                border = TrainPilotFrames.stroke(1.dp, palette.primary.copy(alpha = 0.7f))
                             ) {
                                 listOf(
                                     "RIR-alapú autoreguláció",
@@ -1100,7 +1106,7 @@ fun ActiveStrengthWorkoutScreen(
                         color = palette.background,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
+                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                     ) {
                         Column(
                             modifier = Modifier.padding(10.dp),
@@ -1162,7 +1168,7 @@ fun ActiveStrengthWorkoutScreen(
             color = palette.surfaceElevated,
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
                 .pointerInput(isRestTimerLargeMode) {
                     detectVerticalDragGestures { _, dragAmount ->
                         if (dragAmount < -12f) {
@@ -1187,7 +1193,7 @@ fun ActiveStrengthWorkoutScreen(
                         color = palette.surfaceCard,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(
+                            .trainPilotBorder(
                                 width = 1.dp,
                                 color = if (uiState.restTimerRunning) palette.primary else palette.cardBorder,
                                 shape = RoundedCornerShape(14.dp)
@@ -1272,7 +1278,7 @@ fun ActiveStrengthWorkoutScreen(
                         color = palette.surfaceCard,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(1.5.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(18.dp))
+                            .trainPilotBorder(1.5.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(18.dp))
                             .testTag("sticky_rest_timer_large")
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
@@ -1376,7 +1382,7 @@ fun ActiveStrengthWorkoutScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                OutlinedButton(
+                                TrainPilotOutlinedButton(
                                     onClick = { onAdjustRestTimer(-15) },
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.weight(1f).height(40.dp),
@@ -1384,7 +1390,7 @@ fun ActiveStrengthWorkoutScreen(
                                 ) {
                                     Text("-15 mp", color = palette.textPrimary, fontWeight = FontWeight.Bold)
                                 }
-                                OutlinedButton(
+                                TrainPilotOutlinedButton(
                                     onClick = { onAdjustRestTimer(15) },
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.weight(1f).height(40.dp),
@@ -1417,7 +1423,7 @@ fun ActiveStrengthWorkoutScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    OutlinedButton(
+                    TrainPilotOutlinedButton(
                         onClick = onPreviousExercise,
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier
@@ -1475,7 +1481,7 @@ private fun SetValuePill(
         color = palette.background.copy(alpha = 0.65f),
         modifier = Modifier
             .width(64.dp)
-            .border(
+            .trainPilotBorder(
                 width = 1.dp,
                 color = if (highlighted) palette.primary else palette.cardBorder,
                 shape = RoundedCornerShape(10.dp)
@@ -1606,7 +1612,7 @@ fun ActiveTimedWorkoutScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
+                        .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1676,7 +1682,7 @@ fun ActiveTimedWorkoutScreen(
                                     properties = PopupProperties(focusable = true),
                                     modifier = Modifier
                                         .background(palette.surfaceElevated)
-                                        .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                                 ) {
                                     DropdownMenuItem(
                                         text = {
@@ -1802,7 +1808,7 @@ fun ActiveTimedWorkoutScreen(
                                 fontWeight = FontWeight.Bold
                             )
                         }
-                        OutlinedButton(
+                        TrainPilotOutlinedButton(
                             onClick = {
                                 target?.let(nativeModel::resetSetStopwatch)
                             },
@@ -1851,7 +1857,7 @@ fun ActiveTimedWorkoutScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -1895,7 +1901,7 @@ fun ActiveTimedWorkoutScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -1938,7 +1944,7 @@ fun ActiveTimedWorkoutScreen(
             color = palette.surfaceElevated,
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
+                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
         ) {
             val hasNext = currentIdx + 1 < totalCount
             Row(
@@ -1948,7 +1954,7 @@ fun ActiveTimedWorkoutScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedButton(
+                TrainPilotOutlinedButton(
                     onClick = onPreviousExercise,
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.weight(1f).height(48.dp)
@@ -2172,7 +2178,7 @@ fun ActiveBilateralWorkoutScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
+                        .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
                 ) {
                     Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(
@@ -2224,7 +2230,7 @@ fun ActiveBilateralWorkoutScreen(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(8.dp))
                                         .clickable { showExerciseDropdown = true }
-                                        .border(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
+                                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                 ) {
                                     Text(
                                         text = "Gyakorlat váltása ▾",
@@ -2286,7 +2292,7 @@ fun ActiveBilateralWorkoutScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(
+                        .trainPilotBorder(
                             width = if (leftRunning) 2.dp else 1.dp,
                             color = if (leftRunning) palette.primary else palette.cardBorder,
                             shape = RoundedCornerShape(20.dp)
@@ -2341,7 +2347,7 @@ fun ActiveBilateralWorkoutScreen(
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
                                 color = palette.surfaceElevated,
-                                modifier = Modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                                modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                             ) {
                                 StudioTimerReadout(
                                     seconds = leftSec,
@@ -2435,7 +2441,7 @@ fun ActiveBilateralWorkoutScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(
+                        .trainPilotBorder(
                             width = if (rightRunning) 2.dp else 1.dp,
                             color = if (rightRunning) palette.primary else palette.cardBorder,
                             shape = RoundedCornerShape(20.dp)
@@ -2490,7 +2496,7 @@ fun ActiveBilateralWorkoutScreen(
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
                                 color = palette.surfaceElevated,
-                                modifier = Modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                                modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                             ) {
                                 StudioTimerReadout(
                                     seconds = rightSec,
@@ -2582,7 +2588,7 @@ fun ActiveBilateralWorkoutScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
+                        .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
                 ) {
                     Column(
                         modifier = Modifier.padding(14.dp),
@@ -2636,7 +2642,7 @@ fun ActiveBilateralWorkoutScreen(
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(14.dp))
                                     .clickable { selectedTargetSetNumber = setItem.setNumber }
-                                    .border(
+                                    .trainPilotBorder(
                                         width = if (isSelectedTarget) 1.5.dp else 1.dp,
                                         color = when {
                                             setItem.completed -> palette.success.copy(alpha = 0.5f)
@@ -2685,7 +2691,7 @@ fun ActiveBilateralWorkoutScreen(
                                                 selectedTargetSetNumber = setItem.setNumber
                                                 editingBilateralSet = setItem
                                             }
-                                            .border(
+                                            .trainPilotBorder(
                                                 1.dp,
                                                 if (setItem.leftRecorded || setItem.completed) palette.success else palette.cardBorder,
                                                 RoundedCornerShape(10.dp)
@@ -2721,7 +2727,7 @@ fun ActiveBilateralWorkoutScreen(
                                                 selectedTargetSetNumber = setItem.setNumber
                                                 editingBilateralSet = setItem
                                             }
-                                            .border(
+                                            .trainPilotBorder(
                                                 1.dp,
                                                 if (setItem.rightRecorded || setItem.completed) palette.success else palette.cardBorder,
                                                 RoundedCornerShape(10.dp)
@@ -2753,7 +2759,7 @@ fun ActiveBilateralWorkoutScreen(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(8.dp))
                                             .clickable { editingBilateralSet = setItem }
-                                            .border(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
+                                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                     ) {
                                         Text(
                                             text = "RIR ${setItem.rir}",
@@ -2771,7 +2777,7 @@ fun ActiveBilateralWorkoutScreen(
                                             .size(38.dp)
                                             .clip(RoundedCornerShape(10.dp))
                                             .clickable { onToggleSetCompleted(setItem.setNumber) }
-                                            .border(
+                                            .trainPilotBorder(
                                                 1.dp,
                                                 if (setItem.completed) palette.success else palette.cardBorder,
                                                 RoundedCornerShape(10.dp)
@@ -2804,7 +2810,7 @@ fun ActiveBilateralWorkoutScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                        .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 ) {
                     Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Row(
@@ -2851,7 +2857,7 @@ fun ActiveBilateralWorkoutScreen(
             color = palette.surfaceElevated,
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, palette.cardBorder, RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
+                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
         ) {
             Column(
                 modifier = Modifier
@@ -2865,7 +2871,7 @@ fun ActiveBilateralWorkoutScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(
+                        .trainPilotBorder(
                             1.dp,
                             if (uiState.restTimerRunning) palette.primary else palette.cardBorder,
                             RoundedCornerShape(12.dp)
@@ -2930,7 +2936,7 @@ fun ActiveBilateralWorkoutScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedButton(
+                    TrainPilotOutlinedButton(
                         onClick = onPreviousExercise,
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier
@@ -3367,7 +3373,7 @@ fun IntervalSettingsScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(
@@ -3426,7 +3432,7 @@ private fun IntervalStepperCard(
         color = palette.surfaceCard,
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+            .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
     ) {
         Row(
             modifier = Modifier
@@ -3586,7 +3592,7 @@ fun WorkoutSummaryScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
@@ -3653,7 +3659,7 @@ fun WorkoutSummaryScreen(
                 Text(strings.saveAction, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(8.dp))
-            OutlinedButton(
+            TrainPilotOutlinedButton(
                 onClick = onPauseAndExit,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
@@ -3665,7 +3671,7 @@ fun WorkoutSummaryScreen(
                 Text(strings.pauseAndExitAction, color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
             }
             Spacer(modifier = Modifier.height(8.dp))
-            OutlinedButton(
+            TrainPilotOutlinedButton(
                 onClick = onDiscardWorkout,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
@@ -3690,7 +3696,7 @@ private fun SummaryStatTile(
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = palette.surfaceCard,
-        modifier = modifier.border(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+        modifier = modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(label, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)

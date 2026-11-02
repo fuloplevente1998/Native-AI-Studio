@@ -1,5 +1,7 @@
 package com.repforge.app.ui.progress
 
+import com.repforge.app.ui.theme.TrainPilotFrames
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -43,7 +45,7 @@ internal fun NativeCardioProgressPanel(state: ProgressUiState,
     Card(Modifier.fillMaxWidth().testTag("progress_cardio"),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = colors.card),
-        border = androidx.compose.foundation.BorderStroke(1.dp, colors.line)) {
+        border = TrainPilotFrames.stroke(1.dp, colors.line)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(strings.getString(R.string.cardio_progress_title),
                 color = colors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)

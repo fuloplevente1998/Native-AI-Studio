@@ -1,5 +1,9 @@
 package com.example.ui.screens
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
+import com.repforge.app.ui.theme.trainPilotBorder
+
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -102,7 +106,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                     else -> state.savedExerciseBests.forEach { record ->
                         val expanded = selectedRecord == record.exerciseId
                         Surface(shape = MaterialTheme.shapes.large, color = palette.surfaceCard,
-                            modifier = Modifier.fillMaxWidth().border(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
+                            modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
                                 .testTag("statistics_record_${record.exerciseId}")) {
                             Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable {
@@ -138,7 +142,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                 }
             } else {
                 Text(strings.cardioStatsSubTab, style = MaterialTheme.typography.titleLarge, color = palette.textPrimary)
-                OutlinedButton(onClick = { onStepsMode(!state.cardioFilterStepsMode) }, modifier = Modifier.fillMaxWidth()) {
+                TrainPilotOutlinedButton(onClick = { onStepsMode(!state.cardioFilterStepsMode) }, modifier = Modifier.fillMaxWidth()) {
                     Text(if (state.cardioFilterStepsMode) "Napi aktivitás / lépések" else "Minden mozgás")
                 }
                 if (!state.cardioFilterStepsMode) NativeCardioProgressPanel(native, onActivity, onRetry)
@@ -173,7 +177,7 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
         return if (available.isEmpty()) "—" else number.format(available.sumOf { it.steps })
     }
     Surface(shape = MaterialTheme.shapes.large, color = palette.surfaceCard,
-        modifier = Modifier.fillMaxWidth().border(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
+        modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
             .testTag("statistics_daily_activity")) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Napi aktivitás", color = palette.textPrimary, style = MaterialTheme.typography.titleMedium)
@@ -189,7 +193,7 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     row.forEach { (label, value) ->
                         Surface(shape = MaterialTheme.shapes.large, color = palette.surfaceElevated,
-                            modifier = Modifier.weight(1f).border(1.dp, palette.cardBorder, MaterialTheme.shapes.large)) {
+                            modifier = Modifier.weight(1f).trainPilotBorder(1.dp, palette.cardBorder, MaterialTheme.shapes.large)) {
                             Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(label, color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
                                 Text(value, color = palette.textPrimary, style = MaterialTheme.typography.headlineSmall)
@@ -199,7 +203,7 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
                 }
             }
             Text("Szinkronizált napok: ${days.count { it.stepsAvailable }}/${days.size}", color = palette.textSecondary)
-            OutlinedButton(onClick = { refresh(if (state.primaryHealthSourceSamsung) HealthJournalStore.SAMSUNG else HealthJournalStore.HC) },
+            TrainPilotOutlinedButton(onClick = { refresh(if (state.primaryHealthSourceSamsung) HealthJournalStore.SAMSUNG else HealthJournalStore.HC) },
                 enabled = !state.healthSyncBusy, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Lépésadatok frissítése") }
             Row(Modifier.fillMaxWidth()) {
                 Text("Dátum / forrás", Modifier.weight(1f), color = palette.textSecondary)

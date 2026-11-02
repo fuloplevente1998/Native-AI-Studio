@@ -891,6 +891,9 @@ object HealthConnectRepository {
 
             p.requireForeground()
             out.put("readAt", Instant.now().toString())
+            // Preserve the fresh-read evidence separately from older metrics retained on a
+            // partial journal merge. No fallback and no fabricated zero-measurements.
+            out.put("hcReadDiagnosis", HealthConnectReadDiagnosis.inspect(out, preferred))
             if (p.epoch != null) {
                 p.publishRead {
                     HealthJournalStore.get(p.getContext()).healthDay(

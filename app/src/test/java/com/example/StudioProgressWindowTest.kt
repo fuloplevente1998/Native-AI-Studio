@@ -20,7 +20,7 @@ class StudioProgressWindowTest {
             val period = StudioProgressWindow(progressPeriodDays(index), today)
             assertEquals(expected[index], period.workouts(rows, zone).sumOf { it.totalVolumeKg })
             assertEquals(expected[index], period.volumes(rows, zone).sumOf { it.second })
-            assertEquals(listOf(1, 7, 30, 13)[index], period.volumes(rows, zone).size)
+            assertEquals(listOf(1, 7, 5, 13)[index], period.volumes(rows, zone).size)
         }
     }
     @Test fun oldestIncludedDayAndLastPartialWeekAreNeitherLostNorDuplicated() {
@@ -29,6 +29,18 @@ class StudioProgressWindowTest {
         assertEquals(333, period.volumes(edge, zone).sumOf { it.second })
         assertEquals(111, period.volumes(edge, zone).first().second)
         assertEquals(222, period.volumes(edge, zone).last().second)
+    }
+    @Test fun monthlyWeeklyBucketsKeepBoundaryDaysAndAxisUsesReadableTicks() {
+        val month = StudioProgressWindow(30, today)
+        val values = month.volumes(listOf(row(29, 111), row(23, 222), row(22, 333), row(0, 444), row(30, 999)), zone)
+        assertEquals(5, values.size)
+        assertEquals(333, values.first().second)
+        assertEquals(333, values[1].second)
+        assertEquals(444, values.last().second)
+        assertEquals(1110, values.sumOf { it.second })
+        assertEquals(2000L, volumeAxisMaximum(1254))
+        assertEquals(4000L, volumeAxisMaximum(3187))
+        assertTrue(volumeAxisMaximum(0) > 0)
     }
     @Test fun localDayQueryBoundsFollowDstAndIncludeTheEntireEndDay() {
         val day = StudioProgressWindow(1, LocalDate.of(2026, 10, 25))

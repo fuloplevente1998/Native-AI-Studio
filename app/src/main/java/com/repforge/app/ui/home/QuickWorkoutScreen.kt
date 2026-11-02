@@ -1,5 +1,7 @@
 package com.repforge.app.ui.home
 
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
@@ -95,7 +97,7 @@ internal fun QuickWorkoutScreen(outdoorOnly: Boolean, starting: Boolean,
             else -> LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(list, key = { it.id }) { ex ->
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedButton(onClick = { selected = ex }, enabled = !starting,
+                        TrainPilotOutlinedButton(onClick = { selected = ex }, enabled = !starting,
                             modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("exercise_select_${ex.id}")) { Text(name(ex)) }
                         TextButton(onClick = {
                             if (favoriteSaving || starting) return@TextButton
