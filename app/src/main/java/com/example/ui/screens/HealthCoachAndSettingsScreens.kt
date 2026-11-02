@@ -494,6 +494,13 @@ fun HealthTabScreen(
                     // Expandable Detail Dropdown Card when any of the 6 "Mai állapot" tiles is tapped
                     androidx.compose.animation.AnimatedVisibility(visible = expandedTodayTileKey != null) {
                         val activeKey = expandedTodayTileKey ?: "sleep"
+                        val currentDaily = uiState.dailyHealthDate == today.toString()
+                        val activeEnergy = if (currentDaily && "activeCalories" in uiState.dailyHealthAvailableFields)
+                            "${uiState.activeCaloriesKcal} kcal" else "—"
+                        val totalEnergy = if (currentDaily && "totalCalories" in uiState.dailyHealthAvailableFields)
+                            "${uiState.totalCaloriesKcal} kcal" else "—"
+                        val heartRange = if (currentDaily && uiState.minHrBpm > 0 && uiState.maxHrBpm > 0)
+                            "${uiState.minHrBpm}–${uiState.maxHrBpm} bpm" else "nincs lekért napi tartomány"
                         Surface(
                             shape = RoundedCornerShape(16.dp),
                             color = palette.background.copy(alpha = 0.75f),
@@ -508,14 +515,14 @@ fun HealthTabScreen(
                             ) {
                                 val (titleStr, onActionClick) = when (activeKey) {
                                     "calories" -> listOf(
-                                        "Aktív kalória részletek • ${uiState.activeCaloriesKcal} kcal",
-                                        "Edzés + napi mozgás: ${uiState.activeCaloriesKcal} kcal | Alapanyagcsere: nincs mért adat",
+                                        "Aktív kalória részletek • $activeEnergy",
+                                        "Aktív energia: $activeEnergy • Teljes napi energia (nyugalmival): $totalEnergy",
                                         "További Health-adatok megnyitása lent"
                                     ) to { onToggleHealthSection("extra") }
                                     "pulse" -> listOf(
-                                        "Pulzus részletek • Aktuális: ${if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"}",
-                                        "Nyugalmi pulzus: ${uiState.restingHrBpm} bpm | Napi tartomány: nincs mért adat",
-                                        "24 órás Pulzustrend megtekintése lent"
+                                        "Pulzus részletek • Napi átlag: ${if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"}",
+                                        "Nyugalmi: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Tartomány: $heartRange",
+                                        "Korábbi mai pulzusmérések megtekintése lent"
                                     ) to { onToggleHealthSection("pulse") }
                                     "steps" -> listOf(
                                         "Lépések részletek • ${uiState.dailySteps} / ${uiState.stepsGoal}",
