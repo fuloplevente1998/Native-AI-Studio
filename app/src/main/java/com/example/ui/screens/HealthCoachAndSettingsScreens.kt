@@ -169,6 +169,7 @@ fun HealthTabScreen(
     onRequestHealthPermissions: () -> Unit = { onNavigateToSubScreen(SubScreen.PERMISSIONS_SCREEN) }
 ) {
     val palette = LocalTrainPilotPalette.current
+    val requestDailyHealthSync = com.example.ui.components.LocalSyncDailyHealth.current
     val today = remember { java.time.LocalDate.now() }
     val todayHuLabel = remember(today) {
         today.format(java.time.format.DateTimeFormatter.ofPattern("yyyy. MMM d.", java.util.Locale("hu", "HU")))
@@ -402,9 +403,19 @@ fun HealthTabScreen(
                                 color = palette.textSecondary
                             )
                         }
+                        IconButton(
+                            onClick = { requestDailyHealthSync(if (uiState.primaryHealthSourceSamsung)
+                                com.repforge.app.HealthJournalStore.SAMSUNG else com.repforge.app.HealthJournalStore.HC) },
+                            enabled = !uiState.healthSyncBusy,
+                            modifier = Modifier.testTag("health_today_header_sync")
+                        ) {
+                            Icon(Icons.Default.Sync, contentDescription = "Mai egészségadatok frissítése",
+                                tint = palette.primary)
+                        }
                     }
 
-                    com.example.ui.components.StudioDailyHealthStatus(uiState)
+                    com.example.ui.components.StudioDailyHealthStatus(uiState,
+                        showRefreshButton = false, showTotalEnergy = false)
 
                     var expandedTodayTileKey by remember { mutableStateOf<String?>(null) }
 
