@@ -796,7 +796,9 @@ object HealthConnectRepository {
                     .put("source", source)
             }
             val pulseHistory = JSONArray()
-            for (point in pulsePoints.values.sortedBy { it.optString("time") }.takeLast(96)) pulseHistory.put(point)
+            val orderedPulse = pulsePoints.values.sortedBy { it.optString("time") }
+            val countPulse = min(96, orderedPulse.size)
+            for (i in 0 until countPulse) pulseHistory.put(orderedPulse[if (countPulse == 1) 0 else (i * (orderedPulse.size - 1.0) / (countPulse - 1.0)).toInt()])
             out.put("heartRateSeries", pulseHistory)
             putLongAgg(out, "restingHeartRate", p, m, time, "READ_RESTING_HEART_RATE", RestingHeartRateRecord.BPM_AVG, warnings)
             p.origin = activityOrigin
