@@ -87,6 +87,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import com.example.ui.components.watchinfo.StudioWatchInformationCard
+import com.example.ui.components.healthreadings.HealthPulseWeekRows
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -474,8 +475,8 @@ fun HealthTabScreen(
                                         "Edzésnapló részletek megnyitása >"
                                     ) to { uiState.loggedWorkouts.workoutsOn(today).firstOrNull()?.id?.let(onOpenLoggedWorkout) }
                                     "recovery" -> listOf(
-                                        "Regeneráció & Készenlét • ${uiState.coachReadinessScore}/100",
-                                        "Samsung Energia: ${uiState.samsungEnergyScore}/100 • Javaslat: 1–2 RIR kontrollált terhelés",
+                                        "Regeneráció & Készenlét • ${uiState.todayRecoveryReading?.displayScoreHu ?: "—"}",
+                                        uiState.todayRecoveryReading?.explanationHu ?: "Nincs igazolt regenerációs mérés.",
                                         "TrainPilot Coach megnyitása >"
                                     ) to { onNavigateToSubScreen(SubScreen.COACH_DETAIL) }
                                     else -> listOf(
@@ -1395,6 +1396,12 @@ fun HealthTabScreen(
                             Text(summary, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                         }
                     }
+                }
+                val weeklyPulse = uiState.weeklyHealthDays.mapNotNull { it.pulse }
+                if (weeklyPulse.isNotEmpty()) {
+                    Text("Pulzus – elmúlt 7 nap", style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                    HealthPulseWeekRows(weeklyPulse)
                 }
             }
         }
