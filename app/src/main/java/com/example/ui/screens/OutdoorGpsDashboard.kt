@@ -24,6 +24,11 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalView
+import android.graphics.Rect
+import android.os.Build
+import android.view.WindowInsets
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -37,12 +42,34 @@ import com.example.ui.theme.LocalTrainPilotPalette
 internal val LocalOutdoorMapContentPadding = staticCompositionLocalOf { PaddingValues(0.dp) }
 
 /**
- * Use the Dialog's system-fitted content window as the viewport. A manually enlarged
- * edge-to-edge window can be taller than the visible display on real devices even
- * when its Compose children agree about their bounds. System bars are fitted by the
- * window, not subtracted again by a nested Compose inset modifier.
- * Closing this window never changes the native workout.
+ * The Android 16 device can report a fullscreen Dialog Compose root taller than the
+ * physically visible display. Constrain the *content*, rather than assuming that
+ * decorFitsSystemWindows protects the bottom action buttons.
  */
+internal data class OutdoorVisibleViewportPx(val topInset: Int, val height: Int)
+
+internal fun outdoorVisibleViewportPx(
+    hostHeight: Int,
+    viewTopOnScreen: Int,
+    visibleTopOnScreen: Int,
+    visibleBottomOnScreen: Int,
+    navigationBarBottom: Int,
+    bottomReserve: Int
+): OutdoorVisibleViewportPx {
+    if (hostHeight <= 0) return OutdoorVisibleViewportPx(0, 0)
+    val topInset = (visibleTopOnScreen - viewTopOnScreen).coerceIn(0, hostHeight - 1)
+    val displayBottom = if (visibleBottomOnScreen > visibleTopOnScreen)
+        visibleBottomOnScreen else viewTopOnScreen + hostHeight
+    // On edge-to-edge devices getWindowVisibleDisplayFrame can include the gesture bar.
+    // Cap by the actual root-window inset as a second independent safety boundary.
+    val safeBottom = minOf(displayBottom,
+        viewTopOnScreen + hostHeight - navigationBarBottom.coerceAtLeast(0))
+    val remaining = (safeBottom - viewTopOnScreen - topInset - bottomReserve.coerceAtLeast(0))
+        .coerceIn(1, hostHeight - topInset)
+    return OutdoorVisibleViewportPx(topInset, remaining)
+}
+
+/** Closing the map never changes the native workout. */
 @Composable
 internal fun OutdoorGpsFullscreenDialog(
     state: OutdoorGpsDisplay,
@@ -56,19 +83,45 @@ internal fun OutdoorGpsFullscreenDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = true)
     ) {
         val palette = LocalTrainPilotPalette.current
-        Box(
+        val view = LocalView.current
+        val density = LocalDensity.current
+        var visibleViewport by remember(view) { mutableStateOf<OutdoorVisibleViewportPx?>(null) }
+        BoxWithConstraints(
             Modifier.fillMaxSize()
                 .background(palette.background)
+                .onGloballyPositioned { coordinates ->
+                    val visible = Rect()
+                    val viewLocation = IntArray(2)
+                    view.getWindowVisibleDisplayFrame(visible)
+                    view.getLocationOnScreen(viewLocation)
+                    val bottomInset = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        view.rootWindowInsets?.getInsets(WindowInsets.Type.navigationBars())?.bottom ?: 0
+                    } else 0
+                    val reserve = with(density) { 12.dp.roundToPx() }
+                    val next = outdoorVisibleViewportPx(
+                        coordinates.size.height, viewLocation[1], visible.top, visible.bottom,
+                        bottomInset, reserve
+                    )
+                    if (visibleViewport != next) visibleViewport = next
+                }
                 .testTag("outdoor_dialog_safe_host")
         ) {
-            OutdoorGpsDashboard(
-                state = state,
-                strings = strings,
-                actions = actions.copy(back = onDismissRequest),
-                modifier = Modifier.fillMaxSize(),
-                fullscreen = true,
-                mapContent = mapContent
-            )
+            val top = visibleViewport?.let { with(density) { it.topInset.toDp() } } ?: 0.dp
+            val safeHeight = visibleViewport?.let { with(density) { it.height.toDp() } }
+                ?.coerceAtMost(maxHeight) ?: maxHeight
+            Box(
+                Modifier.fillMaxWidth().offset(y = top).height(safeHeight)
+                    .testTag("outdoor_dialog_visible_viewport")
+            ) {
+                OutdoorGpsDashboard(
+                    state = state,
+                    strings = strings,
+                    actions = actions.copy(back = onDismissRequest),
+                    modifier = Modifier.fillMaxSize(),
+                    fullscreen = true,
+                    mapContent = mapContent
+                )
+            }
         }
     }
 }
