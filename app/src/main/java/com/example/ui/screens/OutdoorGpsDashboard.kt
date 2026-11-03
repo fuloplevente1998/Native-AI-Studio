@@ -218,7 +218,8 @@ internal fun OutdoorGpsDashboard(
                         Column(Modifier.padding(6.dp)) {
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                 ActivityPicker(state, actions, Modifier.weight(1f))
-                                Text("GPS", style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
+                                Text("GPS", modifier = Modifier.padding(end = 8.dp),
+                                    style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
                                 Switch(state.gpsEnabled, actions.setGpsEnabled, modifier = Modifier.testTag("outdoor_gps_toggle"))
                             }
                             Box(Modifier.fillMaxWidth().weight(1f).testTag("outdoor_compact_map_viewport")) {

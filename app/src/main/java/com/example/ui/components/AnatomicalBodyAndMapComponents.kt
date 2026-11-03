@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.repforge.app.ui.theme.trainPilotSoftGlow
+
 import com.repforge.app.ui.theme.trainPilotBorder
 
 import androidx.compose.foundation.Canvas
@@ -137,6 +139,7 @@ fun AnatomicalMuscleHeatmapCard(
         color = palette.surfaceCard,
         modifier = Modifier
             .fillMaxWidth()
+                .trainPilotSoftGlow(palette.primary, RoundedCornerShape(20.dp), 3.dp)
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
             .testTag("anatomical_muscle_heatmap_card")
     ) {

@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.repforge.app.ui.theme.trainPilotSoftGlow
+
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
@@ -1672,6 +1674,7 @@ private fun ExpandableHealthSectionCard(
         color = palette.surfaceCard,
         modifier = Modifier
             .fillMaxWidth()
+            .trainPilotSoftGlow(palette.primary, RoundedCornerShape(20.dp), 3.dp)
             .trainPilotBorder(1.dp, if (expanded) palette.primary.copy(alpha = 0.6f) else palette.cardBorder, RoundedCornerShape(20.dp))
     ) {
         Column(modifier = Modifier.padding(14.dp)) {

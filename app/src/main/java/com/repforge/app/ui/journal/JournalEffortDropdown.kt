@@ -18,7 +18,8 @@ import com.repforge.app.ui.theme.TrainPilotFrames
 
 @Composable
 internal fun JournalEffortDropdown(selected: String?, choices: List<Pair<String, String>>, prompt: String,
-    enabled: Boolean, onSelect: (String) -> Unit) {
+    enabled: Boolean, onSelect: (String) -> Unit, tag: String = "journal_editor_feedback_selector",
+    optionTagPrefix: String = "journal_editor_feedback") {
     val colors = LocalTrainPilotColors.current
     var expanded by remember { mutableStateOf(false) }
     val answer = choices.firstOrNull { it.first == selected || (selected == "right" && it.first == "good") }
@@ -27,7 +28,7 @@ internal fun JournalEffortDropdown(selected: String?, choices: List<Pair<String,
             shape = RoundedCornerShape(12.dp),
             color = if (answer != null) colors.accent.copy(alpha = 0.16f) else colors.card2,
             border = TrainPilotFrames.stroke(0.75.dp, if (answer != null) colors.accent else colors.line),
-            modifier = Modifier.fillMaxWidth().testTag("journal_editor_feedback_selector")) {
+            modifier = Modifier.fillMaxWidth().testTag(tag)) {
             Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (answer != null) Icon(Icons.Default.Check, null, tint = colors.accent, modifier = Modifier.size(20.dp))
@@ -46,7 +47,7 @@ internal fun JournalEffortDropdown(selected: String?, choices: List<Pair<String,
                     onClick = { onSelect(key); expanded = false },
                     modifier = Modifier.heightIn(min = 48.dp)
                         .background(if (chosen) colors.accent.copy(alpha = 0.16f) else colors.card)
-                        .testTag("journal_editor_feedback_$key"))
+                        .testTag("${optionTagPrefix}_$key"))
             }
         }
     }

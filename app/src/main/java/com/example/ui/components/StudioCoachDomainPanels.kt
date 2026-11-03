@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.repforge.app.ui.theme.trainPilotSoftGlow
+
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
 import androidx.compose.foundation.clickable
@@ -99,6 +101,7 @@ internal fun StudioCoachNextTrainingCard(
     val shape = RoundedCornerShape(18.dp)
     Surface(color = palette.tintedSurface(0.12f), shape = shape,
         modifier = Modifier.fillMaxWidth().testTag("studio_coach_target")
+            .trainPilotSoftGlow(palette.primary, shape, 4.dp)
             .trainPilotBorder(2.dp, palette.primary.copy(alpha = 0.85f), shape)) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,

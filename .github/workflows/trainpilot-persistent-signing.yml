@@ -1,5 +1,5 @@
 name: TrainPilot persistent signed APK pair
-# 2747: trigger persistent release signing from main after verified GPS, journal and muscle UI fixes (#87 #88).
+# 2748: signed main after UI, theme, journal, metrics and exercise-feedback validation.
 
 on:
   workflow_dispatch:

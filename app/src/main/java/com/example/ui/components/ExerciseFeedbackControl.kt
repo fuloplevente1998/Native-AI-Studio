@@ -16,7 +16,6 @@ import com.repforge.app.StudioWorkoutFeedback
 import com.repforge.app.ui.text.nativeResources
 
 /** Optional, compact feedback; expand only the exercise being answered. */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ExerciseFeedbackControl(effort: String?, note: String, language: String,
     onEffort: (String?) -> Unit, onNote: (String) -> Unit, title: String = "",
@@ -37,16 +36,14 @@ internal fun ExerciseFeedbackControl(effort: String?, note: String, language: St
             }
             if (expanded) {
                 if (effortLocked) Text(text.getString(R.string.journal_feedback_locked), style = MaterialTheme.typography.bodySmall)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    labels.forEachIndexed { index, label ->
-                        FilterChip(selected = selected == index, onClick = { onEffort(StudioWorkoutFeedback.efforts[index]) },
-                            enabled = enabled && !effortLocked, label = { Text(text.getString(label)) },
-                            modifier = Modifier.heightIn(min = 48.dp).testTag("${tag}_$index"))
-                    }
-                    TextButton(onClick = { onEffort(null) }, enabled = enabled && !effortLocked && effort != null,
-                        modifier = Modifier.testTag("${tag}_clear")) {
-                        Text(when (language) { "en" -> "Clear answer"; "de" -> "Antwort löschen"; "ro" -> "Șterge răspunsul"; else -> "Válasz törlése" })
-                    }
+                com.repforge.app.ui.journal.JournalEffortDropdown(
+                    selected = effort, choices = labels.mapIndexed { index, label ->
+                        StudioWorkoutFeedback.efforts[index] to text.getString(label) },
+                    prompt = text.getString(R.string.journal_feedback), enabled = enabled && !effortLocked,
+                    onSelect = { onEffort(it) }, tag = "${tag}_selector", optionTagPrefix = tag)
+                TextButton(onClick = { onEffort(null) }, enabled = enabled && !effortLocked && effort != null,
+                    modifier = Modifier.testTag("${tag}_clear")) {
+                    Text(when (language) { "en" -> "Clear answer"; "de" -> "Antwort löschen"; "ro" -> "Șterge răspunsul"; else -> "Válasz törlése" })
                 }
                 OutlinedTextField(note, { onNote(it.take(3000)) }, enabled = enabled,
                     label = { Text(when (language) { "en" -> "Exercise note"; "de" -> "Übungsnotiz"; "ro" -> "Notiță exercițiu"; else -> "Gyakorlatjegyzet" }) },
