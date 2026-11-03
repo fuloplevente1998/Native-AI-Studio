@@ -38,7 +38,8 @@ fun exerciseVideoPlayerEvent(current: ExerciseVideoLoad, event: String): Exercis
         event == "ready" -> if (current == ExerciseVideoLoad.Loading) ExerciseVideoLoad.Ready else current
         event == "starting" -> ExerciseVideoLoad.Starting
         event == "playing" -> ExerciseVideoLoad.Playing
-        event == "paused" -> ExerciseVideoLoad.Ready
+        event == "paused" -> if (current == ExerciseVideoLoad.Playing || current == ExerciseVideoLoad.Starting)
+            ExerciseVideoLoad.Ready else current
         event == "blocked" -> ExerciseVideoLoad.Failed(
             "A YouTube blokkolta az indítást. Próbáld a belső böngészőt."
         )
@@ -117,7 +118,7 @@ fun exerciseYouTubeEmbedHtml(videoId: String): String {
                         document.getElementById("cover").hidden = true;
                         tpReport("playing");
                       }
-                      if (event.data === 2) tpReport("paused");
+                      if (event.data === 0 || event.data === 2) tpReport("paused");
                     },
                     onAutoplayBlocked: function () { tpReport("blocked"); },
                     onError: function (event) { tpReport("error:" + event.data); }

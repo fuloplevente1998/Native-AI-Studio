@@ -64,6 +64,7 @@ class InAppVideoPolicyTest {
     }
     @Test fun apiReadyIsNotPlaybackAndCannotUndoFailureOrPlayInProgress() {
         var state: ExerciseVideoLoad = ExerciseVideoLoad.Loading
+        assertEquals(state, exerciseVideoPlayerEvent(state, "paused"))
         state = exerciseVideoPlayerEvent(state, "ready")
         assertEquals(ExerciseVideoLoad.Ready, state)
         state = exerciseVideoPlayerEvent(state, "starting")

@@ -300,7 +300,7 @@ fun ExerciseYouTubeVideoModalDialog(
                         )
                     ) { Text(strings.closeAction, fontWeight = FontWeight.Bold) }
                 }
-        }
+            }
         }
     }
 }
