@@ -1,4 +1,4 @@
-# Készülékes javítások: #43–#45, #47–#48
+# A 2743-as készülékes javítások
 
 A 2742-es készülékes visszajelzések alapján; az alkalmazásazonosító és az állandó signer változatlan, a következő build 2743 /0.1.0-beta.
 
@@ -8,7 +8,7 @@ A 2742-es készülékes visszajelzések alapján; az alkalmazásazonosító és 
 - #47: Home órakártya / Kapcsolt eszközök megnyitása és órakártya/Frissítés valódi, csak olvasó kérés/választ indít. Node- és requestId-egyezés után jelenik meg akkumulátor/eszköz/verzió; timeout és ismeretlen akkumulátor külön látszik. Nincs edzés-, ownership- vagy Health-parancs. Mindkét új APK szükséges a fizikai próbához.
 - #48: korlátozott kompakt térképmagasság; teljes képernyőn a fejléc, idő, X, adatok és primer vezérlők a térképen belüli overlayek, safeDrawing rendszerinsetekkel. A Google térképmargója helyet foglal a fejlécnek és alsó overlaynek; a kicsi térképen gesztusos zoom marad.
 
-Regressziók: valódi Room/privátfájl-törlés, idegen hivatkozás, változott cél és megszakadt takarítás helyreállítása; Studio megerősítés/Mégse/célváltás; naptár tényleges világos/sötét rajzolása; órakártya callback/busy, kérésazonosító és ismeretlen akkumulátor; kompakt magasság és teljes képernyős gombok térképen belüli láthatósága. Actions és nyers XML eredménye a futás után rögzítendő. A fizikai megjelenés, valódi telefon–óra válasz és fájltörlés készülékes elfogadása külön marad.
+Regressziók: valódi Room/privátfájl-törlés, idegen hivatkozás, változott cél és megszakadt takarítás helyreállítása; Studio megerősítés/Mégse/célváltás; naptár tényleges világos/sötét rajzolása; órakártya callback/busy, kérésazonosító és ismeretlen akkumulátor; kompakt magasság és teljes képernyős gombok térképen belüli láthatósága. PR CI 41561039880 és main signed 41561684993 SUCCESS; mindkét letöltött XML 358/358 (182 telefon +176 Wear), nulla hiba/kihagyás. A tényleges állandó kulcsos 2743-as APK-pár Drive-ra feltöltve és metadata-readbackkel ellenőrizve; forrás/link/hash az aktuális átadóban. A fizikai megjelenés, valódi telefon–óra válasz és fájltörlés készülékes elfogadása külön marad.
 
 A képi referenciák az eredeti beszélgetés 01:51-es világos naptár és 02:05-ös GPS-képei. A repo nem tartalmazza a képfájlokat.
 

@@ -1,5 +1,7 @@
 # UI #34 – Kisebb kártyaközi térközök az egész appban
 
+**Felülíró állapot – 2743:** implementálva, #39 mainen. Ez történeti feladatleírás; a kész kódot ne írd újra. A készülékes elfogadást az aktuális átadó és tesztlista szerint ellenőrizd.
+
 ## Feladat
 
 Hibajegy: https://github.com/fuloplevente1998/Native-AI-Studio/issues/34
