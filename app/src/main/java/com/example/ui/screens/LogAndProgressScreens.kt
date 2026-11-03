@@ -122,8 +122,12 @@ fun LogTabScreen(
     onOpenWorkoutDetail: (String) -> Unit,
     onOpenRouteMap: () -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenPalettePicker: () -> Unit
+    onOpenPalettePicker: () -> Unit,
+    onDeletedWorkout: (String) -> Unit = {}
 ) {
+    val deleteModel: com.repforge.app.ui.journal.JournalViewModel = androidx.lifecycle.viewmodel.compose.viewModel(key = "studio-history-list-deletion")
+    val deleteState by deleteModel.uiState.collectAsState()
+    com.example.ui.components.StudioWorkoutDeleteConfirmation(null, onDeletedWorkout, deleteModel)
     val palette = LocalTrainPilotPalette.current
     val today = remember { java.time.LocalDate.now() }
     var currentYearMonth by remember { mutableStateOf(java.time.YearMonth.from(today)) }
@@ -647,7 +651,8 @@ fun LogTabScreen(
                         onOpenWorkoutDetail(logEntry.id)
                     }
                 },
-                onOpenDetailAlways = { onOpenWorkoutDetail(logEntry.id) }
+                onOpenDetailAlways = { onOpenWorkoutDetail(logEntry.id) },
+                onDelete = { deleteModel.requestDeleteWorkout(logEntry.id) }, deleteEnabled = !deleteState.deleting
             )
         }
     }
@@ -657,7 +662,9 @@ fun LogTabScreen(
 private fun LogWorkoutCard(
     entry: LoggedWorkoutEntry,
     onClick: () -> Unit,
-    onOpenDetailAlways: () -> Unit
+    onOpenDetailAlways: () -> Unit,
+    onDelete: () -> Unit,
+    deleteEnabled: Boolean
 ) {
     val palette = LocalTrainPilotPalette.current
     Surface(
@@ -701,6 +708,7 @@ private fun LogWorkoutCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = entry.titleHu,
+                        modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = palette.textPrimary
@@ -730,6 +738,8 @@ private fun LogWorkoutCard(
                     overflow = TextOverflow.Ellipsis
                 )
             }
+
+            com.example.ui.components.TrainPilotDeleteIcon(onDelete, deleteEnabled, "journal_list_delete_${entry.id}")
 
             Column(
                 horizontalAlignment = Alignment.End,
@@ -1326,7 +1336,8 @@ fun ProgressTabScreen(
     onOpenPalettePicker: () -> Unit,
     onSearchChange: (String) -> Unit = {},
     onOpenRouteMap: () -> Unit = {},
-    onRefreshRecords: () -> Unit = {}
+    onRefreshRecords: () -> Unit = {},
+    onDeletedWorkout: (String) -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     // 3 al-oldal a Fejlődés oldalon belül: 1. 📈 Fejlődés | 2. 📄 Napló | 3. 📊 Statisztikák
@@ -1418,7 +1429,8 @@ fun ProgressTabScreen(
                     onOpenWorkoutDetail = onOpenWorkoutDetail,
                     onOpenRouteMap = onOpenRouteMap,
                     onOpenSettings = onOpenSettings,
-                    onOpenPalettePicker = onOpenPalettePicker
+                    onOpenPalettePicker = onOpenPalettePicker,
+                    onDeletedWorkout = onDeletedWorkout
                 )
             }
 
