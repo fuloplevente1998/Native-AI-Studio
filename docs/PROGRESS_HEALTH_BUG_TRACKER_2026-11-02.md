@@ -12,7 +12,7 @@ Elsődleges állapot: [CURRENT_STATUS.md](CURRENT_STATUS.md). Funkcióparitás �
 | #48 | Új Dialog/mini méret #67-ben, nyitott | Friss APK-val Indítás/Pause/Kör/Befejezés mind látható |
 | #60 | Alap órainfó bekötés kész, kompakt átrendezés hiányzik | Név+Sync fejléc, két kisebb blokk egymás mellett |
 | #61 | Energy 0–Coach javítva #77-ben, nyitott rész | Samsung téves permission-üzenet |
-| #68 / #70 | #77 mainen, CI402; implementációként lezárva | Friss aláírt APK és készülékes próba |
+| #68 / #70 | #77 mainen, CI402; implementációként lezárva | Friss aláírt APK átadva (41599072569, nyers402); készülékes próba |
 | #69 | RIR/root-feedback szerződés javítva; részleges | Gyakorlatonkénti/utólagos feedback és régi formátumok, #73 |
 | #71–#75 | Forrásauditból rögzített backlog | Egészségböngésző, CRUD/kedvencek, naplószerkesztés, preset/auto, teljes lokalizáció |
 | BLE | Felhasználó sztornózta | Nem fejlesztendő, adat nem törlendő |

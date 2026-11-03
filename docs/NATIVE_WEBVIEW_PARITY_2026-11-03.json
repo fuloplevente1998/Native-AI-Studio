@@ -118,5 +118,15 @@
     "errors": 0,
     "skipped": 0,
     "deviceAccepted": false
+  },
+  "signedDelivery": {
+    "source": "81da2f7d3190ff5a558e2a07ccf1fe54104c90e8",
+    "run": 41599072569,
+    "signedArtifact": 13213214357,
+    "rawXmlArtifact": 13213399004,
+    "tests": 402,
+    "phoneUrl": "https://drive.google.com/file/d/1Vy6uZlUSbY-6uxxkUhEo9Cu1bkc2wcsL/view?usp=drivesdk",
+    "proof": "COACH_PREFILL_SIGNED_BUILD_2026-11-03.json",
+    "deviceAccepted": false
   }
 }

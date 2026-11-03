@@ -12,6 +12,10 @@ Ez az elsődleges belépési pont. A régi dátumozott átadók történeti megf
 
 ## APK – külön állapot a main kódjától
 
+**Legfrissebb telefonos APK, Coach + előtöltés:** [TrainPilot-Native-2744-81da2f7-telefon-Coach-elotoltes.apk](https://drive.google.com/file/d/1Vy6uZlUSbY-6uxxkUhEo9Cu1bkc2wcsL/view?usp=drivesdk). A [signed main build 41599072569](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41599072569) SUCCESS, pontos forrás `81da2f7d3190ff5a558e2a07ccf1fe54104c90e8`. Letöltött nyers XML: **402 =226 telefon +176 Wear**, 0 failure/error/skipped. Signed artifact `13213214357`, raw XML `13213399004`; package/verzió, állandó signer, Maps/pair és mindkét APK-hash ellenőrizve. Telefon: **19 580 104 bájt**, SHA256 `4552dc295b2d7a6e2b3f2c1392e22bfe38d958c2d8607b18fc4c1525cc29ae49`. Drive-méret és szülőmappa visszaolvasva. [Gépi bizonyíték](COACH_PREFILL_SIGNED_BUILD_2026-11-03.json). **Elég a telefonos app frissítése**; #67/#77 csak telefonos alkalmazáskódot változtatott, órás telepítés nem szükséges. Fizikai elfogadás még nincs igazolva.
+
+### Korábban, a Coach-fejlesztés előtt átadott APK
+
 A #67-et tartalmazó aláírt main build [41591380374](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41591380374) SUCCESS, pontos forrás `deebfddd7f0259e589e9791582ad6d2d38fcf4e2`. Letöltött nyers XML: **395 =219 telefon +176 Wear**, 0 failure/error/skipped. Signed artifact `13210208864`, raw XML `13210463700`. Package/verzió, állandó signer, Maps/pair és APK-hash ellenőrizve. A #76 dokumentációs main-merge után az alkalmazásfa változatlan.
 
 **Telefonos APK átadva:** [TrainPilot-Native-2744-deebfdd-telefon.apk](https://drive.google.com/file/d/1Ap5ysNwA8ZA35xV-Zidx_JeKqxlwHLP-/view?usp=drivesdk), 19 563 720 bájt, SHA256 `f82cd35ccd057e53ebc2e92e325dd8f2e48cfe291158e8674d2e5f8cc889ed33`. Drive-méret/szülőmappa külön visszaolvasva: `1ywHgrManynjV9uNvZfVncOmCr3SbHIb9`. Korábbi fájlok megmaradtak. Az órás APK is ugyanazon buildben ellenőrzött (4 636 863 bájt, SHA256 `f6b73f685ce444e1886a8660dfeb107839ac9b1b0546b2522fde53a5573dd753`), de a felhasználó most csak a telefon frissítését kérte, új órás telepítés nem szükséges. A Coach/előző alkalom bekötés még nem része ennek az átadott APK-nak.
@@ -23,7 +27,7 @@ Korábbi igazolt aláírt build: 41580088708, forrás `56301f7d68016f3074c366ff4
 ## Jóváhagyott munka és megmaradó backlog
 
 1. A #67 aláírt telefonos APK átadása kész. A felhasználó ezt megkapta a Coach/előző alkalom fejlesztése ELŐTT.
-2. #70 Coach és #68 előtöltés **kódban/CI-ben kész, mainen**, implementációként lezárva. A legújabb, ezeket tartalmazó aláírt main build [41599072569](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41599072569) az `81da2f7...` forrásból indult; állapota az APK-szakaszban kerül rögzítésre. Fizikai elfogadás nem állított.
+2. #70 Coach és #68 előtöltés **kódban/CI-ben kész, mainen**, implementációként lezárva. A legújabb, ezeket tartalmazó aláírt main build **41599072569 SUCCESS**, nyers402; az ellenőrzött telefonos APK átadva, lásd az APK-szakaszt. Fizikai elfogadás nem állított.
 3. #69 alap RIR/root-feedback szerződése javítva; a teljes gyakorlatonkénti/utólagos feedback és régi formátumok áttekintése még nyitott, adatot tömegesen nem írunk át. #61 Energy 0 része javítva, Samsung permission-üzenet része még nyitott.
 4. #71–#75 és a #60 kompakt órakártya csak backlog; más új implementációt most nem kezdünk. #35/#48/#59 készülékes visszaigazolásra vár.
 5. **BLE-kezelő sztornó**, a felhasználó kifejezett kérése. Nem fejlesztendő, meglévő adat/backend törlése sem feladat.
