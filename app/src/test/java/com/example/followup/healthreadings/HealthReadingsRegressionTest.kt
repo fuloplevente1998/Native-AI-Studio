@@ -103,8 +103,8 @@ class HealthReadingsRegressionTest {
         assertNull(values[2].averageBpm)
         assertEquals(ReadingState.NOT_SYNCED, values[2].state)
         // Tomorrow can be present in storage but must not produce a future measurement.
-        assertEquals(ReadingState.AVAILABLE, values[3].state)
-        assertEquals(88.0, values[3].averageBpm!!, 0.001)
+        assertEquals(ReadingState.NOT_SYNCED, values[3].state)
+        assertNull(values[3].averageBpm)
     }
 
     @Test fun revokedHeartGrantDoesNotLeakCachedPulseIntoUi() {
@@ -195,11 +195,16 @@ class HealthReadingsRegressionTest {
     }
 
     @Test fun deniedEnergyGrantIsSeparateFromSdkError() {
-        val denied = row(samsung).put("permissions", JSONObject().put("READ_ENERGY_SCORE", false))
+        val denied = row(samsung).put("energyScore", 87)
+            .put("energyScoreTime", "2026-11-02T18:00:00Z")
+            .put("energyScoreSource", "samsung_health")
+            .put("permissions", JSONObject().put("READ_ENERGY_SCORE", false))
         val failure = row(samsung).put("permissions", JSONObject().put("READ_ENERGY_SCORE", true))
             .put("errors", JSONObject().put("energyScore", "SAMSUNG_HEALTH_1001"))
-        assertEquals(ReadingState.PERMISSION_DENIED,
-            HealthReadingsProjection.recoveryToday(samsung, listOf(denied), emptyList(), now, ZoneOffset.UTC).state)
+        val deniedResult = HealthReadingsProjection.recoveryToday(samsung, listOf(denied), emptyList(), now, ZoneOffset.UTC)
+        assertEquals(ReadingState.PERMISSION_DENIED, deniedResult.state)
+        assertNull(deniedResult.samsungEnergy)
+        assertNull(deniedResult.score)
         assertEquals(ReadingState.READ_ERROR,
             HealthReadingsProjection.recoveryToday(samsung, listOf(failure), emptyList(), now, ZoneOffset.UTC).state)
     }
