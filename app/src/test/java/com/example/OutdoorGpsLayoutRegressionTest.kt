@@ -99,11 +99,11 @@ class OutdoorGpsLayoutRegressionTest {
         }
     }
 
-    @Test fun compactPhoneKeepsAllActionsVisibleWithoutScrolling() {
+    @Test fun shortPhoneScrollsSecondaryContentWhileActionsStayVisible() {
         show(360, 480)
         assertControlsVisible()
         val body = compose.onNodeWithTag("outdoor_dashboard_body").fetchSemanticsNode()
-        assertFalse(body.config.contains(SemanticsActions.ScrollBy))
+        assertTrue(body.config.contains(SemanticsActions.ScrollBy))
         compose.onNodeWithTag("gps_pause_resume_btn").performClick()
         compose.onNodeWithTag("gps_finish_workout_btn").performClick()
         assertEquals(1, paused)
@@ -132,6 +132,8 @@ class OutdoorGpsLayoutRegressionTest {
         assertTrue(bounds.bottom - bounds.top <= 300.dp)
         val map = compose.onNodeWithTag("outdoor_compact_map_viewport").getUnclippedBoundsInRoot()
         assertTrue("Actual map remains useful after the GPS row", map.bottom - map.top >= 180.dp)
+        assertFalse(compose.onNodeWithTag("outdoor_dashboard_body").fetchSemanticsNode()
+            .config.contains(SemanticsActions.ScrollBy))
         assertControlsVisible()
     }
 
