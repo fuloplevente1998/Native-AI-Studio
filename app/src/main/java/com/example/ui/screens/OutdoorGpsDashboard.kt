@@ -1,10 +1,7 @@
 package com.example.ui.screens
 
-import android.view.WindowManager
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.DialogWindowProvider
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
@@ -40,11 +37,11 @@ import com.example.ui.theme.LocalTrainPilotPalette
 internal val LocalOutdoorMapContentPadding = staticCompositionLocalOf { PaddingValues(0.dp) }
 
 /**
- * A real edge-to-edge dialog host: disabling the platform width cap alone does not
- * guarantee MATCH_PARENT *height*. The safe-drawing inset belongs inside the full
- * window, so the overlay receives the actual remaining viewport constraints.
- *
- * Closing the dialog never invokes start/pause/finish or changes native GPS state.
+ * Use the Dialog's system-fitted content window as the viewport. A manually enlarged
+ * edge-to-edge window can be taller than the visible display on real devices even
+ * when its Compose children agree about their bounds. System bars are fitted by the
+ * window, not subtracted again by a nested Compose inset modifier.
+ * Closing this window never changes the native workout.
  */
 @Composable
 internal fun OutdoorGpsFullscreenDialog(
@@ -56,21 +53,12 @@ internal fun OutdoorGpsFullscreenDialog(
 ) {
     Dialog(
         onDismissRequest = onDismissRequest,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = true)
     ) {
-        val dialogView = LocalView.current
-        DisposableEffect(dialogView) {
-            (dialogView.parent as? DialogWindowProvider)?.window?.setLayout(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.MATCH_PARENT
-            )
-            onDispose { }
-        }
         val palette = LocalTrainPilotPalette.current
         Box(
             Modifier.fillMaxSize()
                 .background(palette.background)
-                .windowInsetsPadding(WindowInsets.safeDrawing)
                 .testTag("outdoor_dialog_safe_host")
         ) {
             OutdoorGpsDashboard(
@@ -159,8 +147,10 @@ internal fun OutdoorGpsDashboard(
             return@BoxWithConstraints
         }
         // The compact map has a bounded height; metrics and pinned actions get the remaining space.
-        val scrollSecondary = maxHeight < 360.dp || LocalDensity.current.fontScale > 1.35f || state.error.isNotBlank()
-        val compactMapHeight = (maxHeight * 0.28f).coerceIn(120.dp, 180.dp)
+        val scrollSecondary = maxHeight < 560.dp || LocalDensity.current.fontScale > 1.35f || state.error.isNotBlank()
+        // This card also contains the activity/GPS row (~56 dp). Reserve enough
+        // height for the *map itself*, instead of counting that row as map area.
+        val compactMapHeight = (maxHeight * 0.40f).coerceIn(210.dp, 300.dp)
         Column(Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             DashboardHeader(state, actions, fullscreen)
             Column(
@@ -178,7 +168,7 @@ internal fun OutdoorGpsDashboard(
                                 Text("GPS", style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
                                 Switch(state.gpsEnabled, actions.setGpsEnabled, modifier = Modifier.testTag("outdoor_gps_toggle"))
                             }
-                            Box(Modifier.fillMaxWidth().weight(1f)) {
+                            Box(Modifier.fillMaxWidth().weight(1f).testTag("outdoor_compact_map_viewport")) {
                                 mapContent(Modifier.fillMaxSize())
                                 FilledTonalIconButton(onClick = actions.expandMap,
                                     modifier = Modifier.align(Alignment.TopStart).padding(4.dp).size(48.dp)
