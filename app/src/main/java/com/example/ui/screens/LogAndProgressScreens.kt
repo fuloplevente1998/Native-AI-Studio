@@ -270,43 +270,8 @@ fun LogTabScreen(
         contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
-        // 48dp high search: keep the editable field and search keyboard action.
         item {
-            val shape = RoundedCornerShape(14.dp)
-            Row(
-                modifier = Modifier.fillMaxWidth().height(48.dp)
-                    .clip(shape)
-                    .background(palette.surfaceCard)
-                    .border(1.dp, palette.cardBorder, shape)
-                    .padding(horizontal = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = null,
-                    tint = palette.textSecondary,
-                    modifier = Modifier.size(18.dp)
-                )
-                BasicTextField(
-                    value = uiState.logSearchQuery,
-                    onValueChange = onSearchChange,
-                    modifier = Modifier.weight(1f).height(48.dp).testTag("log_search_input"),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    cursorBrush = SolidColor(palette.primary),
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = palette.textPrimary),
-                    decorationBox = { innerTextField ->
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
-                            if (uiState.logSearchQuery.isEmpty()) {
-                                Text(strings.logSearchHint, color = palette.textMuted,
-                                    style = MaterialTheme.typography.bodyMedium)
-                            }
-                            innerTextField()
-                        }
-                    }
-                )
-            }
+            CompactJournalSearchField(uiState.logSearchQuery, onSearchChange, strings.logSearchHint)
         }
 
         // Interactive Month & Date selector row (< | 📅 2026. október v | >)
@@ -687,6 +652,51 @@ fun LogTabScreen(
                 onDelete = { deleteModel.requestDeleteWorkout(logEntry.id) }, deleteEnabled = !deleteState.deleting
             )
         }
+    }
+}
+
+/** Compact, independently testable search that keeps the keyboard text-input semantics. */
+@Composable
+internal fun CompactJournalSearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String
+) {
+    val palette = LocalTrainPilotPalette.current
+    val shape = RoundedCornerShape(14.dp)
+    Row(
+        modifier = Modifier.fillMaxWidth().height(48.dp)
+            .clip(shape)
+            .background(palette.surfaceCard)
+            .border(1.dp, palette.cardBorder, shape)
+            .padding(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = null,
+            tint = palette.textSecondary,
+            modifier = Modifier.size(18.dp)
+        )
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.weight(1f).height(48.dp).testTag("log_search_input"),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            cursorBrush = SolidColor(palette.primary),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(color = palette.textPrimary),
+            decorationBox = { innerTextField ->
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
+                    if (value.isEmpty()) {
+                        Text(placeholder, color = palette.textMuted,
+                            style = MaterialTheme.typography.bodyMedium)
+                    }
+                    innerTextField()
+                }
+            }
+        )
     }
 }
 
