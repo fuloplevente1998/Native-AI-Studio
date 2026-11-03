@@ -17,10 +17,13 @@ class InAppVideoPolicyTest {
 
     @Test fun embedUsesOnlyTheSelectedVerifiedId() {
         val html = exerciseYouTubeEmbedHtml(selected)
-        assertTrue(html.contains("https://www.youtube-nocookie.com"))
-        assertTrue(html.contains("videoId: \"$selected\""))
-        assertTrue(html.contains("origin: \"$EXERCISE_VIDEO_ORIGIN\""))
-        assertTrue(html.contains("▶ Lejátszás"))
+        assertTrue(html.contains("https://www.youtube.com/embed/$selected"))
+        assertTrue(html.contains("origin=https%3A%2F%2Fcom.trainpilot.com"))
+        assertTrue(html.contains("autoplay=0"))
+        assertTrue(html.contains("playsinline=1"))
+        assertTrue(html.contains("rel=0"))
+        assertFalse(html.contains("tpPlayer.playVideo"))
+        assertFalse(html.contains("id=\"cover\""))
         assertFalse(html.contains("pSHjTRCQxIw"))
         assertTrue(html.contains("trainpilot-video:"))
         assertTrue(html.contains("function tpPause()"))

@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
+
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import android.app.Activity
@@ -53,10 +55,13 @@ internal val LocalOpenWorkoutHealth = staticCompositionLocalOf<() -> Unit> { {} 
         }
     }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Csak lekérés: az edzésvezérlés és a mérések állapota nem változik.")
-            for (source in listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC)) {
-                FilterChip(selected = provider == source, enabled = !busy,
-                    onClick = { provider = source; result = null; message = "" }, label = { Text(NativeWorkoutHealthSource.label(source)) })
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                for (source in listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC)) {
+                    FilterChip(selected = provider == source, enabled = !busy,
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                        onClick = { provider = source; result = null; message = "" },
+                        label = { Text(NativeWorkoutHealthSource.label(source)) })
+                }
             }
             TrainPilotOutlinedButton(enabled = !busy, onClick = { requestPermission(provider) }) {
                 Text("${NativeWorkoutHealthSource.label(provider)} • engedélyek")

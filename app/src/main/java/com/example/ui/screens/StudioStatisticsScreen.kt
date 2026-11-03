@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -82,8 +83,8 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
             dangerText = palette.danger, success = palette.success, emphasisBorder = palette.sectionBorder)
     }
     CompositionLocalProvider(LocalTrainPilotColors provides colors) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)
-            .testTag("studio_statistics_screen"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 4.dp)
+            .testTag("studio_statistics_screen"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(strings.personalRecordsSubTab, strings.cardioStatsSubTab).forEachIndexed { index, label ->
                     FilterChip(selected = state.statsSubTab == index, onClick = { onSelectTab(index) },
@@ -92,10 +93,6 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                 }
             }
             if (state.statsSubTab == 0) {
-                Text(strings.personalRecordsSubTab, style = MaterialTheme.typography.titleLarge,
-                    color = palette.textPrimary, modifier = Modifier.testTag("statistics_records_title"))
-                Text("Minden naplózott, mért gyakorlat a terhelés típusának megfelelő statisztikával.",
-                    style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                 when {
                     state.savedRecordsLoading -> Text("Rekordok betöltése…", color = palette.textSecondary)
                     state.savedRecordsError -> {
@@ -108,14 +105,15 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                         Surface(shape = MaterialTheme.shapes.large, color = palette.surfaceCard,
                             modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
                                 .testTag("statistics_record_${record.exerciseId}")) {
-                            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable {
                                     selectedRecord = if (expanded) null else record.exerciseId
                                     if (!expanded) onExercise(record.exerciseId)
                                 }, verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
                                         Text(if (state.language.name == "HU") record.nameHu else record.nameEn,
-                                            color = palette.textPrimary, style = MaterialTheme.typography.titleMedium)
+                                            color = palette.textPrimary, style = MaterialTheme.typography.titleMedium,
+                                            maxLines = 2, overflow = TextOverflow.Ellipsis)
                                         Text(savedRecordLabel(record, number), color = palette.textSecondary,
                                             style = MaterialTheme.typography.bodySmall)
                                     }
@@ -141,7 +139,6 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                     }
                 }
             } else {
-                Text(strings.cardioStatsSubTab, style = MaterialTheme.typography.titleLarge, color = palette.textPrimary)
                 TrainPilotOutlinedButton(onClick = { onStepsMode(!state.cardioFilterStepsMode) }, modifier = Modifier.fillMaxWidth()) {
                     Text(if (state.cardioFilterStepsMode) "Napi aktivitás / lépések" else "Minden mozgás")
                 }
@@ -165,6 +162,7 @@ internal fun savedRecordLabel(record: SavedExerciseBest, number: NumberFormat): 
 private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberFormat) {
     val palette = LocalTrainPilotPalette.current
     val refresh = LocalSyncDailyHealth.current
+    var explanationOpen by rememberSaveable { mutableStateOf(false) }
     val today = LocalDate.now()
     val weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
     val previous = weekStart.minusWeeks(1)
@@ -179,10 +177,7 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
     Surface(shape = MaterialTheme.shapes.large, color = palette.surfaceCard,
         modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
             .testTag("statistics_daily_activity")) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Napi aktivitás", color = palette.textPrimary, style = MaterialTheme.typography.titleMedium)
-            Text("Teljes napi lépések, egy kiválasztott forrásból. Ha az edzésen kívüli rész nem különíthető el, gondolatjelet mutatunk.",
-                color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
+        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             val todayDay = days.firstOrNull { it.dateIso == today.toString() }
             val outside = if (todayDay?.stepsAvailable == true && todayDay.workoutCount == 0)
                 number.format(todayDay.steps) else "—"
@@ -190,11 +185,11 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
                 listOf("Mai összes lépés" to total(today, today.plusDays(1)), "Edzésen kívül" to outside),
                 listOf("Heti lépések" to total(weekStart, today.plusDays(1)), "Előző hét" to total(previous, weekStart))
             ).forEach { row ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     row.forEach { (label, value) ->
                         Surface(shape = MaterialTheme.shapes.large, color = palette.surfaceElevated,
                             modifier = Modifier.weight(1f).trainPilotBorder(1.dp, palette.cardBorder, MaterialTheme.shapes.large)) {
-                            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                 Text(label, color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
                                 Text(value, color = palette.textPrimary, style = MaterialTheme.typography.headlineSmall)
                             }
@@ -202,9 +197,17 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
                     }
                 }
             }
-            Text("Szinkronizált napok: ${days.count { it.stepsAvailable }}/${days.size}", color = palette.textSecondary)
+            Text("Szinkronizált napok: ${days.count { it.stepsAvailable }}/${days.size}",
+                color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
             TrainPilotOutlinedButton(onClick = { refresh(if (state.primaryHealthSourceSamsung) HealthJournalStore.SAMSUNG else HealthJournalStore.HC) },
                 enabled = !state.healthSyncBusy, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Lépésadatok frissítése") }
+            TextButton(onClick = { explanationOpen = !explanationOpen },
+                modifier = Modifier.heightIn(min = 48.dp).testTag("statistics_activity_explanation")) {
+                Text(if (explanationOpen) "Magyarázat bezárása" else "Mit jelentenek az adatok?")
+            }
+            if (explanationOpen) Text(
+                "Teljes napi lépések, egy kiválasztott forrásból. Ha az edzésen kívüli rész nem különíthető el, gondolatjelet mutatunk.",
+                color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
             Row(Modifier.fillMaxWidth()) {
                 Text("Dátum / forrás", Modifier.weight(1f), color = palette.textSecondary)
                 Text("Összes / edzésen kívül", color = palette.textSecondary)

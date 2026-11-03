@@ -156,13 +156,14 @@ class StudioProgressUiRegressionTest {
         }
         compose.onNodeWithTag("statistics_subtab_0").assertDoesNotExist()
         compose.onNodeWithText("📊 Statisztikák").performClick()
-        compose.onNodeWithTag("statistics_records_title").assertExists()
+        compose.onNodeWithTag("statistics_records_title").assertDoesNotExist()
+        compose.onNodeWithTag("statistics_subtab_0").assertExists()
         compose.onNodeWithTag("statistics_record_row").assertExists()
         compose.onNodeWithTag("statistics_subtab_1").performClick()
         compose.onNodeWithTag("statistics_daily_activity").assertExists()
         compose.onAllNodes(hasText(TrainPilotStrings.forLanguage(AppLanguage.HU).strength1RmTab, substring = true)).assertCountEquals(0)
     }
-    @Test fun emptyCalendarDayKeepsNormalHeightAndHasOneUndoWithTwoUsableActions() {
+    @Test fun calendarDayActionsOpenAsAnOverlayAndKeepUndoAndPlanningAccessible() {
         val adds = mutableListOf<String>()
         var undos = 0
         compose.setContent {
@@ -172,19 +173,28 @@ class StudioProgressUiRegressionTest {
                         state = TrainPilotUiState(selectedCalendarDay = 2, calendarEvents = emptyList(), calendarUndoStack = listOf(emptyList())),
                         onBack = {}, onOpenSettings = {}, onSelectDay = {}, onOpenReplanModal = {},
                         onApplyReplan = { _, _ -> }, onOpenWorkoutDetail = {},
-                        onAddPlannedWorkoutOnDay = { day, split, _, _ -> assertEquals(2, day); adds += split },
+                        onAddPlannedWorkoutOnDay = { day, split, _, _ -> assertEquals(5, day); adds += split },
                         onUndoCalendarAction = { undos++ })
                 }
             }
         }
-        compose.onNodeWithTag("calendar_day_actions").performScrollTo()
+        compose.onNodeWithTag("calendar_day_dialog").assertDoesNotExist()
+        compose.onNodeWithTag("calendar_day_actions").assertDoesNotExist()
+        compose.onNodeWithTag("calendar_undo_action").performClick()
+        assertEquals(1, undos)
+        compose.onNodeWithTag("calendar_day_5").performClick()
+        compose.onNodeWithTag("calendar_day_dialog").assertExists()
         compose.onNodeWithTag("calendar_empty_day").assertExists()
         val bounds = compose.onNodeWithTag("calendar_day_actions").getUnclippedBoundsInRoot()
         assertTrue((bounds.bottom - bounds.top) < 260.dp)
         compose.onAllNodesWithTag("calendar_undo_action").assertCountEquals(1)
         compose.onNodeWithTag("calendar_add_A").performClick()
         compose.onNodeWithTag("calendar_add_B").performClick()
-        compose.onNodeWithTag("calendar_undo_action").performClick()
+        compose.onNodeWithTag("calendar_day_dialog_close").performClick()
+        compose.onNodeWithTag("calendar_day_dialog").assertDoesNotExist()
+        compose.onNodeWithTag("calendar_planning_open").performClick()
+        compose.onNodeWithTag("calendar_planning_dialog").assertExists()
+        compose.onNodeWithTag("calendar_planning_dialog_close").performClick()
         assertEquals(listOf("A", "B"), adds); assertEquals(1, undos)
     }
 

@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*

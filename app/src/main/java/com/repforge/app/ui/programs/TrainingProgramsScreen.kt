@@ -247,7 +247,7 @@ internal fun TrainingProgramsScreen(
         )
     }
     state.modeStatus?.let { message ->
-        androidx.compose.material3.AlertDialog(
+        com.example.ui.components.TrainPilotAlertDialog(
             onDismissRequest = viewModel::clearModeStatus,
             title = { Text(strings.getString(R.string.native_modes_title), color = colors.text) },
             text = { Text(message, color = colors.muted) },
@@ -281,7 +281,7 @@ internal fun TrainingProgramsScreen(
             }.orEmpty().ifBlank { ex?.nameHu ?: id }
             "${index + 1}. $localized ($id)"
         }.joinToString("\n")
-        androidx.compose.material3.AlertDialog(
+        com.example.ui.components.TrainPilotAlertDialog(
             onDismissRequest = viewModel::dismissRestoreDay,
             title = { Text(strings.getString(R.string.native_program_actions_title, preview.dayId),
                 color = colors.text) },

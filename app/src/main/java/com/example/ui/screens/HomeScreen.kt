@@ -3,6 +3,7 @@ package com.example.ui.screens
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
 import com.repforge.app.ui.theme.trainPilotBorder
+import com.repforge.app.ui.theme.trainPilotSoftGlow
 
 import com.example.model.localWorkoutDate
 
@@ -121,6 +122,7 @@ fun HomeScreen(
             color = palette.surface,
             modifier = Modifier
                 .fillMaxWidth()
+                .trainPilotSoftGlow(palette.primary, RoundedCornerShape(14.dp), 3.dp)
                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                 .clickable { onOpenPersonalPlanner() }
                 .testTag("home_personal_planner_mini_card")
@@ -194,6 +196,7 @@ fun HomeScreen(
             color = palette.surface,
             modifier = Modifier
                 .fillMaxWidth()
+                .trainPilotSoftGlow(palette.primary, RoundedCornerShape(20.dp))
                 .trainPilotBorder(
                     width = 1.dp,
                     brush = Brush.linearGradient(
@@ -218,8 +221,8 @@ fun HomeScreen(
                             )
                         )
                     )
-                    .padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -230,7 +233,7 @@ fun HomeScreen(
                         shape = RoundedCornerShape(14.dp),
                         color = palette.primary.copy(alpha = 0.14f),
                         modifier = Modifier
-                            .size(56.dp)
+                            .size(44.dp)
                             .trainPilotBorder(
                                 width = 1.dp,
                                 color = palette.primary.copy(alpha = 0.3f),
@@ -247,7 +250,7 @@ fun HomeScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.width(14.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
 
                     Column(
                         modifier = Modifier.weight(1f),
@@ -286,7 +289,7 @@ fun HomeScreen(
 
                         Text(
                             text = if (state.isWorkoutSessionActive) state.activeWorkoutTitleHu else currentDay?.localizedTitle(state.language) ?: "Teljes test A",
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.titleMedium,
                             color = palette.textPrimary
                         )
 
@@ -339,113 +342,30 @@ fun HomeScreen(
             }
         }
 
-        // 4. QUICK WORKOUT CARD (Mockup 1/4 #1: "Gyors edzés • Indíts egy rövid edzést most >")
-        Surface(
-            shape = RoundedCornerShape(18.dp),
-            color = palette.surface,
-            modifier = Modifier
-                .fillMaxWidth()
-                .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                .clickable { onOpenQuickWorkout() }
-                .testTag("home_quick_workout_card")
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = palette.surfaceElevated,
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.DirectionsRun,
-                            contentDescription = null,
-                            tint = palette.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(14.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = strings.quickWorkoutTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = palette.textPrimary
-                    )
-                    Text(
-                        text = strings.quickWorkoutSub,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = palette.textSecondary
-                    )
-                }
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = palette.textSecondary
-                )
-            }
-        }
+        com.example.ui.components.HomeCoachAdviceCard(state, strings, onOpenCoachReadiness)
 
-        // 5. WEAR OS WATCH CARD (Mockup 1/4 #1: "Wear OS connection")
-        Surface(
-            shape = RoundedCornerShape(18.dp),
-            color = palette.surface,
-            modifier = Modifier
-                .fillMaxWidth()
-                .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                .clickable(enabled = !state.watchInfoLoading) { onOpenWatchAndSync() }
-                .testTag("home_watch_status_card")
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = palette.surfaceElevated,
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Watch,
-                            contentDescription = null,
-                            tint = palette.textPrimary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val sideBySide = maxWidth >= 300.dp && androidx.compose.ui.platform.LocalDensity.current.fontScale <= 1.3f
+            val quick: @Composable (Modifier) -> Unit = { card ->
+                HomeCompactShortcut(card.testTag("home_quick_workout_card"), Icons.AutoMirrored.Filled.DirectionsRun,
+                    strings.quickWorkoutTitle, strings.quickWorkoutSub, onOpenQuickWorkout)
+            }
+            val watch: @Composable (Modifier) -> Unit = { card ->
+                val status = when {
+                    state.watchInfoLoading -> "Óraadatok lekérése…"
+                    state.watchAppAvailable && state.watchBatteryPercent in 0..100 -> strings.connectedWithBattery(state.watchBatteryPercent)
+                    state.watchAppAvailable -> "TrainPilot óraapp elérhető"
+                    state.watchConnected -> "Wear OS kapcsolat • óraapp nem igazolt"
+                    else -> "Nincs órakapcsolat"
                 }
-                Spacer(modifier = Modifier.width(14.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = if (state.watchAppAvailable) state.watchName else "Nincs csatlakoztatott Wear OS óra",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = palette.textPrimary
-                    )
-                    Text(
-                        text = when {
-                            state.watchAppAvailable -> {
-                                if (state.watchInfoLoading) "Óraadatok lekérése…" else if (state.watchBatteryPercent in 0..100) strings.connectedWithBattery(state.watchBatteryPercent)
-                                else "Csatlakoztatva • TrainPilot óraapp elérhető"
-                            }
-                            state.watchConnected -> "Wear OS rendszerkapcsolat • TrainPilot óraapp nincs telepítve"
-                            else -> "Offline • Nincs párosított óraalkalmazás"
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = palette.textSecondary
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .size(14.dp)
-                        .clip(CircleShape)
-                        .background(if (state.watchAppAvailable) palette.success else palette.warning)
-                )
+                HomeCompactShortcut(card.testTag("home_watch_status_card"), Icons.Default.Watch,
+                    if (state.watchAppAvailable) state.watchName else "Órakapcsolat", status, onOpenWatchAndSync,
+                    enabled = !state.watchInfoLoading, connected = state.watchAppAvailable)
+            }
+            if (sideBySide) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardRowGap)) {
+                quick(Modifier.weight(1f)); watch(Modifier.weight(1f))
+            } else Column(verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)) {
+                quick(Modifier.fillMaxWidth()); watch(Modifier.fillMaxWidth())
             }
         }
 
@@ -512,27 +432,31 @@ fun HomeScreen(
                     }
                 }
 
-                Surface(shape = RoundedCornerShape(18.dp), color = palette.surface,
-                    modifier = Modifier.fillMaxWidth()
-                        .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.45f), RoundedCornerShape(18.dp))
-                        .clickable { onOpenCoachReadiness() }.testTag("home_coach_advice_card")) {
-                    Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Default.AutoAwesome, null, tint = palette.primary, modifier = Modifier.size(20.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(strings.coachSuggestionHeader, color = palette.primary, style = MaterialTheme.typography.labelMedium)
-                            Text(when {
-                                state.coachReadinessScore <= 0 && state.todayRecoveryReading?.coachScore == null -> "Még nincs elég friss adat. A Coach oldalon megnézheted a részleteket."
-                                state.coachReadinessScore < 55 -> "${state.coachReadinessScore}/100 • Ma könnyebb terhelés és regeneráció javasolt."
-                                state.coachReadinessScore < 75 -> "${state.coachReadinessScore}/100 • Kissé visszafogott terhelés javasolt."
-                                else -> "${state.coachReadinessScore}/100 • Tartható a szokásos edzésterhelés."
-                            }, color = palette.textPrimary, style = MaterialTheme.typography.bodySmall, maxLines = 2,
-                                overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("home_coach_summary"))
-                        }
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.primary)
-                    }
-                }
+
             }
+        }
+    }
+}
+
+@Composable
+private fun HomeCompactShortcut(modifier: Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String, subtitle: String, onClick: () -> Unit, enabled: Boolean = true, connected: Boolean? = null) {
+    val p = LocalTrainPilotPalette.current
+    val shape = RoundedCornerShape(16.dp)
+    Surface(color = p.surface, shape = shape,
+        modifier = modifier.trainPilotSoftGlow(p.primary, shape, 3.dp)
+            .trainPilotBorder(1.dp, Brush.linearGradient(listOf(p.sectionBorder, p.cardBorder)), shape)
+            .clickable(enabled = enabled, onClick = onClick)) {
+        Column(Modifier.fillMaxWidth().heightIn(min = 88.dp).padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Icon(icon, null, tint = p.primary, modifier = Modifier.size(20.dp))
+                Text(title, color = p.textPrimary, style = MaterialTheme.typography.titleSmall,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                if (connected != null) Box(Modifier.size(7.dp).clip(CircleShape)
+                    .background(if (connected) p.success else p.warning))
+            }
+            Text(subtitle, color = p.textSecondary, style = MaterialTheme.typography.labelSmall,
+                maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
     }
 }

@@ -254,7 +254,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
             var gentleMode by androidx.compose.runtime.remember(uiState.beginnerGentleProfileActive) {
                 androidx.compose.runtime.mutableStateOf(uiState.beginnerGentleProfileActive)
             }
-            androidx.compose.material3.AlertDialog(
+            com.example.ui.components.TrainPilotAlertDialog(
                 onDismissRequest = { viewModel.toggleProgressionModal(false) },
                 containerColor = palette.surface,
                 titleContentColor = palette.textPrimary,

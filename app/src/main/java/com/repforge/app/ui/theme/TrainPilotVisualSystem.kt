@@ -25,8 +25,8 @@ object TrainPilotDimensions {
  */
 object TrainPilotCardSpacing {
     val ScreenGutter = 12.dp
-    val CardGap = 8.dp
-    val CardRowGap = 8.dp
+    val CardGap = 6.dp
+    val CardRowGap = 6.dp
 }
 
 val TrainPilotShapes = Shapes(
