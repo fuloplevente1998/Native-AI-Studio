@@ -15,6 +15,8 @@ import com.example.model.StudioProgressWindow
 import com.example.model.progressPeriodDays
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -71,7 +73,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -87,6 +88,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -95,6 +97,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.sp
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -267,25 +270,8 @@ fun LogTabScreen(
         contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
-        // Search bar
         item {
-            OutlinedTextField(
-                value = uiState.logSearchQuery,
-                onValueChange = onSearchChange,
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = null,
-                        tint = palette.textSecondary
-                    )
-                },
-                placeholder = { Text(strings.logSearchHint, color = palette.textMuted) },
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("log_search_input")
-            )
+            CompactJournalSearchField(uiState.logSearchQuery, onSearchChange, strings.logSearchHint)
         }
 
         // Interactive Month & Date selector row (< | 📅 2026. október v | >)
@@ -669,8 +655,53 @@ fun LogTabScreen(
     }
 }
 
+/** Compact, independently testable search that keeps the keyboard text-input semantics. */
 @Composable
-private fun LogWorkoutCard(
+internal fun CompactJournalSearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String
+) {
+    val palette = LocalTrainPilotPalette.current
+    val shape = RoundedCornerShape(14.dp)
+    Row(
+        modifier = Modifier.fillMaxWidth().height(48.dp)
+            .clip(shape)
+            .background(palette.surfaceCard)
+            .border(1.dp, palette.cardBorder, shape)
+            .padding(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = null,
+            tint = palette.textSecondary,
+            modifier = Modifier.size(18.dp)
+        )
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.weight(1f).height(48.dp).testTag("log_search_input"),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            cursorBrush = SolidColor(palette.primary),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(color = palette.textPrimary),
+            decorationBox = { innerTextField ->
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
+                    if (value.isEmpty()) {
+                        Text(placeholder, color = palette.textMuted,
+                            style = MaterialTheme.typography.bodyMedium)
+                    }
+                    innerTextField()
+                }
+            }
+        )
+    }
+}
+
+@Composable
+internal fun LogWorkoutCard(
     entry: LoggedWorkoutEntry,
     onClick: () -> Unit,
     onOpenDetailAlways: () -> Unit,
@@ -678,132 +709,70 @@ private fun LogWorkoutCard(
     deleteEnabled: Boolean
 ) {
     val palette = LocalTrainPilotPalette.current
+    val shape = RoundedCornerShape(16.dp)
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        shape = shape,
         color = palette.surfaceCard,
-        modifier = Modifier
-            .fillMaxWidth()
-            .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
-            .clip(RoundedCornerShape(20.dp))
+        modifier = Modifier.fillMaxWidth()
+            .trainPilotBorder(1.dp, palette.sectionBorder, shape)
+            .clip(shape)
             .clickable { onOpenDetailAlways() }
             .testTag("log_card_${entry.id}")
     ) {
         Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (entry.isOutdoorRun) palette.success.copy(alpha = 0.16f)
-                        else palette.primary.copy(alpha = 0.16f)
-                    ),
+                modifier = Modifier.size(36.dp).clip(CircleShape)
+                    .background(if (entry.isOutdoorRun) palette.success.copy(alpha = 0.16f)
+                        else palette.primary.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (entry.isOutdoorRun) Icons.AutoMirrored.Filled.DirectionsRun else Icons.Default.FitnessCenter,
+                    imageVector = if (entry.isOutdoorRun) Icons.AutoMirrored.Filled.DirectionsRun
+                        else Icons.Default.FitnessCenter,
                     contentDescription = null,
                     tint = if (entry.isOutdoorRun) palette.success else palette.primary,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = entry.dateLabelHu,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = palette.textSecondary
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = entry.titleHu,
-                        modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = palette.textPrimary
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = palette.success,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-                Text(
-                    text = if (entry.isOutdoorRun) {
-                        "${entry.distanceKm} km • ${entry.workTimeLabel} • ${entry.paceLabel}"
-                    } else {
-                        "${entry.durationMinutes} perc • ${entry.totalSets} sorozat • ${entry.totalVolumeKg} kg"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = palette.textPrimary
-                )
-                Text(
-                    text = entry.summaryExercisesHu,
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(1.dp)
+            ) {
+                Text(entry.dateLabelHu,
                     style = MaterialTheme.typography.labelSmall,
                     color = palette.textSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(entry.titleHu,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = palette.textPrimary,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    text = if (entry.isOutdoorRun) {
+                        "${entry.durationMinutes} perc · ${entry.distanceKm} km · ${entry.paceLabel}"
+                    } else {
+                        "${entry.durationMinutes} perc · ${entry.totalSets} sorozat · ${entry.totalVolumeKg} kg"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = palette.textSecondary,
+                    maxLines = 2
                 )
             }
-
-            com.example.ui.components.TrainPilotDeleteIcon(onDelete, deleteEnabled, "journal_list_delete_${entry.id}")
-
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                if (entry.hasPr) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = palette.primary
-                    ) {
-                        Text(
-                            text = "PR",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = palette.onPrimary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                        )
-                    }
-                } else if (entry.isOutdoorRun && entry.routeKeys.isNotEmpty()) {
-                    // An icon, not an invented route thumbnail; tapping opens the stored route.
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFF121C26))
-                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
-                            .clickable { onClick() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(imageVector = Icons.Default.Map, contentDescription = "Rögzített útvonal megnyitása",
-                            tint = palette.success, modifier = Modifier.size(26.dp))
-                    }
+            com.example.ui.components.TrainPilotDeleteIcon(
+                onDelete, deleteEnabled, "journal_list_delete_${entry.id}", compactVisual = true
+            )
+            if (entry.isOutdoorRun && entry.routeKeys.isNotEmpty()) {
+                IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) {
+                    Icon(Icons.Default.Map, contentDescription = "Rögzített útvonal megnyitása",
+                        tint = palette.success, modifier = Modifier.size(18.dp))
                 }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .clickable { onOpenDetailAlways() }
-                        .padding(horizontal = 4.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "Részletek",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = palette.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = palette.primary,
-                        modifier = Modifier.size(14.dp)
-                    )
-                }
+            } else {
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null,
+                    tint = palette.primary, modifier = Modifier.size(16.dp))
             }
         }
     }

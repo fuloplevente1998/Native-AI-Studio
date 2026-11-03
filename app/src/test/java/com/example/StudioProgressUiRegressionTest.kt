@@ -97,6 +97,26 @@ class StudioProgressUiRegressionTest {
         compose.onNodeWithTag("progress_anatomy_layer_chest", useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag("progress_anatomy_layer_legs", useUnmergedTree = true).assertExists()
     }
+    @Test fun sixMuscleLabelsRemainOneLineAndAdviceHasCompactRoom() {
+        val labels = listOf(
+            "chest" to "Mellizom", "back" to "Hátizom", "shoulders" to "Vállizom",
+            "arms" to "Karizmok", "core" to "Törzs/Has", "legs" to "Lábizmok"
+        )
+        val loads = labels.map { (id, label) ->
+            MuscleLoadItem(id, label, "3 sorozat", 60, 0.6f, "Közepes", emptyList(), "")
+        }
+        compose.setContent { TrainPilotTheme {
+            Box(Modifier.width(360.dp)) { AnatomicalMuscleHeatmapCard(realMuscleLoads = loads) }
+        } }
+        val card = compose.onNodeWithTag("anatomical_muscle_heatmap_card").getUnclippedBoundsInRoot()
+        assertTrue("Six labels must not inflate the progress card", card.bottom - card.top < 290.dp)
+        val back = compose.onNodeWithText("Hátizom", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertTrue("Hátizom should fit without wrapping", back.bottom - back.top < 24.dp)
+        compose.onNodeWithTag("muscle_explanation_text").assertDoesNotExist()
+        compose.onNodeWithTag("muscle_explanation_toggle").performClick()
+        compose.onNodeWithTag("muscle_explanation_text").assertExists()
+    }
+
     @Test fun dailyStatusUsesActualProviderAndDistinguishesUnknownFromZeroAndFailure() {
         var requested = ""
         var state by mutableStateOf(TrainPilotUiState(primaryHealthSourceSamsung = true, dailyHealthDate = LocalDate.now().toString(),

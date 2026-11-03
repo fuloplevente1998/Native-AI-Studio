@@ -3,6 +3,7 @@ package com.example
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.example.ui.components.StudioCoachRecommendations
+import com.example.ui.components.StudioCoachNextTrainingCard
 import com.example.ui.theme.TrainPilotTheme
 import com.repforge.app.StudioWorkoutFeedback
 import com.repforge.app.ui.coach.*
@@ -45,6 +46,32 @@ class StudioCoachDomainRegressionTest {
         } }
         compose.onNodeWithTag("studio_coach_start_target").performClick()
         assertEquals(0, starts); assertEquals(1, calendar)
+    }
+
+    @Test fun nextDayCardHighlightsRealProgramAndCalendarGate() {
+        var calendar = 0
+        var started = 0
+        val target = CoachTarget("p", "a", "A", upcoming = true, programTitle = "Otthoni A/B – Alap")
+        compose.setContent { TrainPilotTheme {
+            StudioCoachNextTrainingCard(CoachUiState(loading = false, target = target),
+                { _, _, _ -> started++ }, { calendar++ })
+        } }
+        compose.onNodeWithTag("studio_coach_target").assertExists()
+        compose.onNodeWithTag("studio_coach_program_name").assertTextEquals("Otthoni A/B – Alap")
+        compose.onNodeWithTag("studio_coach_day_badge").assertExists()
+        compose.onNodeWithText("A").assertExists()
+        compose.onNodeWithTag("studio_coach_start_target").performClick()
+        assertEquals(1, calendar)
+        assertEquals(0, started)
+    }
+
+    @Test fun laterExerciseAdviceDoesNotDuplicateHighlightedNextDay() {
+        compose.setContent { TrainPilotTheme {
+            StudioCoachRecommendations(CoachUiState(loading = false,
+                target = CoachTarget("p", "a", "A", programTitle = "Alap")),
+                { _, _, _ -> }, {}, {}, {}, {}, {}, showTarget = false)
+        } }
+        compose.onNodeWithTag("studio_coach_target").assertDoesNotExist()
     }
 
     @Test fun absentFeedbackIsAbsentAndPainUsesCanonicalMachineFields() {

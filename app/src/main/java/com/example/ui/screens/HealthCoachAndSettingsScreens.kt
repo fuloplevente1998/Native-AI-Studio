@@ -1991,6 +1991,13 @@ internal fun CoachDetailScreen(
             }
         }
 
+        // Put the next actionable day immediately after readiness, before supplementary signals.
+        item {
+            com.example.ui.components.StudioCoachNextTrainingCard(
+                nativeState, onStartCoachTarget, onOpenCalendar
+            )
+        }
+
         // Kulcsjelek Card
         item {
             Surface(
@@ -2020,7 +2027,8 @@ internal fun CoachDetailScreen(
         item {
             com.example.ui.components.StudioCoachRecommendations(nativeState,
                 onStartCoachTarget, onOpenCalendar, onOpenExerciseDetail,
-                model::previewVariation, model::closeVariation, model::saveVariation)
+                model::previewVariation, model::closeVariation, model::saveVariation,
+                showTarget = false)
         }
     }
 }

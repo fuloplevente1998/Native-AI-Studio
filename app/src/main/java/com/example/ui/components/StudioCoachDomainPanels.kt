@@ -10,6 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.theme.LocalTrainPilotPalette
@@ -27,7 +29,8 @@ internal fun StudioCoachRecommendations(
     onExercise: (String) -> Unit,
     onPreviewVariation: (String) -> Unit,
     onCloseVariation: () -> Unit,
-    onSaveVariation: () -> Unit
+    onSaveVariation: () -> Unit,
+    showTarget: Boolean = true
 ) {
     val palette = LocalTrainPilotPalette.current
     val text = nativeResources(LocalContext.current, state.language)
@@ -42,24 +45,7 @@ internal fun StudioCoachRecommendations(
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (state.loading) CircularProgressIndicator(Modifier.size(24.dp))
         if (state.error) Text("A Coach adatai nem frissíthetők. A korábbi kijelzés nem friss mérés.", color = palette.danger)
-        state.target?.let { target ->
-            Surface(color = palette.surfaceCard, shape = RoundedCornerShape(18.dp),
-                modifier = Modifier.fillMaxWidth().testTag("studio_coach_target")
-                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))) {
-                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Következő edzés", style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
-                    Text(target.title, color = palette.textPrimary)
-                    target.schedule?.let { Text(it.date, color = palette.textSecondary) }
-                    Button(enabled = !state.loading && !state.error,
-                        onClick = { if (target.upcoming) onCalendar() else onStart(target.programId, target.dayId, target.schedule?.id) },
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("studio_coach_start_target")) {
-                        Text(if (target.upcoming) "Megnyitás a naptárban" else "A javasolt edzés indítása")
-                    }
-                }
-            }
-        }
-        if (!state.loading && state.target == null && !state.error)
-            Text("Nincs elérhető programnap. Válassz aktív programot.", color = palette.textSecondary)
+        if (showTarget) StudioCoachNextTrainingCard(state, onStart, onCalendar)
         state.exercises.forEach { row ->
             Surface(color = palette.surfaceCard, shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth().testTag("studio_coach_advice_${row.id}")
@@ -89,6 +75,79 @@ internal fun StudioCoachRecommendations(
         }
         if (state.variationFailed) Text("A gyakorlatváltozat nem menthető; frissítsd az adatokat.", color = palette.danger)
         if (state.variationSaved) Text("A gyakorlatváltozat elmentve.", color = palette.success)
+    }
+}
+
+/** The next real program day is the primary Coach action, not a secondary status tile. */
+@Composable
+internal fun StudioCoachNextTrainingCard(
+    state: CoachUiState,
+    onStart: (String, String, String?) -> Unit,
+    onCalendar: () -> Unit
+) {
+    val palette = LocalTrainPilotPalette.current
+    val target = state.target
+    if (target == null) {
+        if (!state.loading && !state.error) {
+            Text("Nincs elérhető programnap. Válassz aktív programot.", color = palette.textSecondary)
+        }
+        return
+    }
+    // Do not invent an A/B badge from a UUID; prefer the actual day title.
+    val letterDay = target.title.trim().takeIf { it.length in 1..2 }
+        ?: target.dayId.uppercase().takeIf { it in setOf("A", "B", "C", "D") }
+    val shape = RoundedCornerShape(18.dp)
+    Surface(color = palette.primary.copy(alpha = 0.12f), shape = shape,
+        modifier = Modifier.fillMaxWidth().testTag("studio_coach_target")
+            .trainPilotBorder(2.dp, palette.primary.copy(alpha = 0.85f), shape)) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween) {
+                Surface(color = palette.primary.copy(alpha = 0.20f), shape = RoundedCornerShape(50.dp)) {
+                    Text("KÖVETKEZŐ EDZÉSNAP", color = palette.primary,
+                        style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp))
+                }
+                if (target.upcoming) Text("TERVEZETT", color = palette.textSecondary,
+                    style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            }
+            Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(target.programTitle.ifBlank { "Következő edzés" },
+                        style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold,
+                        color = palette.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.testTag("studio_coach_program_name"))
+                    Text(if (letterDay == null) target.title else "Edzésnap: ${target.title}",
+                        style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary,
+                        maxLines = 2, modifier = Modifier.testTag("studio_coach_day_name"))
+                    target.schedule?.let {
+                        Text(it.date, style = MaterialTheme.typography.bodySmall,
+                            color = palette.textSecondary, modifier = Modifier.testTag("studio_coach_next_date"))
+                    }
+                }
+                if (letterDay != null) {
+                    Surface(color = palette.primary.copy(alpha = 0.16f),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.trainPilotBorder(1.25.dp, palette.primary,
+                            RoundedCornerShape(16.dp)).testTag("studio_coach_day_badge")) {
+                        Box(Modifier.sizeIn(minWidth = 58.dp, minHeight = 58.dp).padding(8.dp),
+                            contentAlignment = androidx.compose.ui.Alignment.Center) {
+                            Text(letterDay, style = MaterialTheme.typography.headlineLarge,
+                                fontWeight = FontWeight.Black, color = palette.primary)
+                        }
+                    }
+                }
+            }
+            Button(enabled = !state.loading && !state.error,
+                onClick = { if (target.upcoming) onCalendar()
+                    else onStart(target.programId, target.dayId, target.schedule?.id) },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    .testTag("studio_coach_start_target")) {
+                Text(if (target.upcoming) "Megnyitás a naptárban" else "A következő edzés indítása",
+                    fontWeight = FontWeight.Bold)
+            }
+        }
     }
 }
 
