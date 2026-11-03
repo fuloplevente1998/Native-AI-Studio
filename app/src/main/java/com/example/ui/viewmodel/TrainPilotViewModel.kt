@@ -63,6 +63,8 @@ import com.repforge.app.data.store.TrainPilotSettingsStore
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import com.example.model.watchinfo.WatchInfoCardData
+import com.example.model.watchinfo.WatchInfoStatus
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -158,6 +160,7 @@ data class TrainPilotUiState(
     val watchInfoLoading: Boolean = false,
     val watchInfoMessage: String = "",
     val watchDeviceDetails: String = "",
+    val watchInfoCardData: WatchInfoCardData = WatchInfoCardData(),
     val phoneControlsWorkout: Boolean = true,
     val watchControlPending: Boolean = false,
     val offlineContinuationEnabled: Boolean = true,
@@ -4139,8 +4142,13 @@ class TrainPilotViewModel : ViewModel() {
     fun requestWatchDeviceInfo() {
         val context = nativeContext ?: return
         val scope = nativeScope ?: return
+        // Keep the single in-flight native request and its node/nonce/timeout protections.
         if (_uiState.value.watchInfoLoading) return
-        _uiState.update { it.copy(watchInfoLoading = true, watchInfoMessage = "Óraadatok lekérése…") }
+        _uiState.update { it.copy(
+            watchInfoLoading = true, watchInfoMessage = "Óraadatok lekérése…",
+            watchInfoCardData = it.watchInfoCardData.copy(
+                loading = true, status = "Óraadatok lekérése…", statusKind = WatchInfoStatus.IDLE)
+        ) }
         scope.launch {
             try {
                 val result = com.repforge.app.NativeWatchDeviceInfo.request(context)
@@ -4148,17 +4156,35 @@ class TrainPilotViewModel : ViewModel() {
                 val battery = if (data.isNull("battery")) -1 else
                     com.repforge.shared.WatchDeviceInfo.battery(data.optInt("battery", -1)) ?: -1
                 val time = java.time.LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
-                _uiState.update { it.copy(watchName = result.nodeName, watchConnected = true, watchAppAvailable = true,
+                val verifiedCard = WatchInfoCardData.fromVerifiedReply(
+                    nodeName = result.nodeName, reply = data,
+                    connected = true, appAvailable = true,
+                    status = "Óraadatok frissítve: $time",
+                    statusKind = WatchInfoStatus.SUCCESS, lastSync = time)
+                _uiState.update { it.copy(
+                    watchInfoCardData = verifiedCard,
+                    watchName = result.nodeName, watchConnected = true, watchAppAvailable = true,
                     watchBatteryPercent = battery, watchInfoMessage = "Óraadatok frissítve: $time",
-                    watchDeviceDetails = listOf(data.optString("model"), data.optString("os").takeIf { it.isNotBlank() }?.let { "Android $it" },
+                    watchDeviceDetails = listOf(data.optString("model"),
+                        data.optString("os").takeIf { it.isNotBlank() }?.let { "Android $it" },
                         data.optString("appVersion").takeIf { it.isNotBlank() && it != "null" }?.let { "TrainPilot $it" })
                         .filterNotNull().filter(String::isNotBlank).joinToString(" • "),
                     lastWatchSyncLabel = "Óraadatok: $time") }
             } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
-                _uiState.update { it.copy(watchInfoMessage = "Az óra nem válaszolt. Ellenőrizd az órakapcsolatot és frissítsd az óraappot is.") }
+                val msg = "Az óra nem válaszolt. Ellenőrizd az órakapcsolatot és frissítsd az óraappot is."
+                _uiState.update { it.copy(watchInfoMessage = msg,
+                    watchInfoCardData = it.watchInfoCardData.copy(
+                        status = msg, statusKind = WatchInfoStatus.TIMEOUT, loading = false)) }
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (error: Exception) { _uiState.update { it.copy(watchInfoMessage = error.message ?: "Az óraadatok nem kérhetők le.") } }
-            finally { _uiState.update { it.copy(watchInfoLoading = false) } }
+            catch (error: Exception) {
+                val msg = error.message ?: "Az óraadatok nem kérhetők le."
+                _uiState.update { it.copy(watchInfoMessage = msg,
+                    watchInfoCardData = it.watchInfoCardData.copy(
+                        status = msg, statusKind = WatchInfoStatus.ERROR, loading = false)) }
+            } finally {
+                _uiState.update { it.copy(watchInfoLoading = false,
+                    watchInfoCardData = it.watchInfoCardData.copy(loading = false)) }
+            }
         }
     }
 
@@ -4169,19 +4195,34 @@ class TrainPilotViewModel : ViewModel() {
         val confirmed = frame?.let { com.repforge.app.NativeWatchHandoffReceipt.confirmed(
             it, journal, it.optString("workoutId"), it.optString("timerOwner")) } == true
         val companionReady = companionAvailable && watchNames.size == 1
-        _uiState.update { it.copy(permissionGpsEnabled = access.optBoolean("gps"),
-            permissionCentralLocEnabled = access.optBoolean("location"), permissionNotificationsEnabled = access.optBoolean("notifications"),
-            permissionHealthConnectEnabled = access.optInt("healthGranted") > 0,
-            healthGrantedCount = access.optInt("healthGranted"), healthPermissionCount = access.optInt("healthTotal"),
-            watchControlPending = pending,
-            phoneControlsWorkout = (frame == null || frame.optString("timerOwner", "phone") == "phone") && !pending && !com.repforge.app.NativePhoneReturnInstallation.requiresInstallation(frame),
-            watchAppAvailable = companionReady,
-            watchConnected = watchNames.isNotEmpty(),
-            watchName = if (companionReady) watchNames.single() else "Nincs csatlakoztatott Wear OS óra",
-            watchBatteryPercent = -1,
-            lastWatchSyncLabel = if (!companionReady) "Nincs órakapcsolat"
-                else if (confirmed) "Tulajdonosi ACK igazolva"
-                else if (it.lastWatchSyncLabel in setOf("—", "Nincs órakapcsolat", "Nincs óra kapcsolat")) "Még nincs igazolt adatszinkron" else it.lastWatchSyncLabel) }
+        _uiState.update {
+            val oldCard = it.watchInfoCardData
+            val sameNode = companionReady && oldCard.name == watchNames.singleOrNull() && oldCard.appAvailable
+            val nextCard = if (sameNode) oldCard.copy(connected = true, appAvailable = true)
+                else WatchInfoCardData(
+                    connected = watchNames.isNotEmpty(),
+                    appAvailable = companionReady,
+                    name = watchNames.singleOrNull()
+                )
+            it.copy(permissionGpsEnabled = access.optBoolean("gps"),
+                permissionCentralLocEnabled = access.optBoolean("location"),
+                permissionNotificationsEnabled = access.optBoolean("notifications"),
+                permissionHealthConnectEnabled = access.optInt("healthGranted") > 0,
+                healthGrantedCount = access.optInt("healthGranted"),
+                healthPermissionCount = access.optInt("healthTotal"),
+                watchControlPending = pending,
+                phoneControlsWorkout = (frame == null || frame.optString("timerOwner", "phone") == "phone") &&
+                    !pending && !com.repforge.app.NativePhoneReturnInstallation.requiresInstallation(frame),
+                watchAppAvailable = companionReady,
+                watchConnected = watchNames.isNotEmpty(),
+                watchName = if (companionReady) watchNames.single() else "Nincs csatlakoztatott Wear OS óra",
+                watchInfoCardData = nextCard,
+                watchBatteryPercent = if (sameNode) it.watchBatteryPercent else -1,
+                lastWatchSyncLabel = if (!companionReady) "Nincs órakapcsolat"
+                    else if (confirmed) "Tulajdonosi ACK igazolva"
+                    else if (it.lastWatchSyncLabel in setOf("—", "Nincs órakapcsolat", "Nincs óra kapcsolat"))
+                        "Még nincs igazolt adatszinkron" else it.lastWatchSyncLabel)
+        }
     }
 
     fun updateSamsungAccess(granted: Boolean) { _uiState.update { it.copy(permissionSamsungHealthEnabled = granted) } }
