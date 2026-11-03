@@ -50,6 +50,9 @@ internal class NativeCoachTargets(private val db: TrainPilotDatabase) {
         }
         val index = last?.let { row -> ordered.indexOfFirst { it.dayId == row.dayId } } ?: -1
         val day = ordered[(index + 1).coerceAtLeast(0) % ordered.size]
-        return CoachTarget(program.program.id, day.dayId, title(day.nameHu, day.nameEn, day.nameDe, day.nameRo))
+        return CoachTarget(program.program.id, day.dayId,
+            title(day.nameHu, day.nameEn, day.nameDe, day.nameRo),
+            programTitle = title(program.program.nameHu, program.program.nameEn,
+                program.program.nameDe, program.program.nameRo))
     }
 }
