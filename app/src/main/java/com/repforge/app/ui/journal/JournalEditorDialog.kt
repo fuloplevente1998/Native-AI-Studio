@@ -105,6 +105,13 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_editor_feedback_$effort"))
                             }
                         }
+                        item {
+                            OutlinedTextField(draft.note, { onChange(draft.copy(note = it)) },
+                                label = { Text(when (language) {
+                                    "en" -> "Workout note"; "de" -> "Trainingsnotiz"; "ro" -> "Notiță antrenament"; else -> "Edzésjegyzet"
+                                }) }, enabled = !state.saving, minLines = 2,
+                                modifier = Modifier.fillMaxWidth().testTag("journal_editor_note"))
+                        }
                         draft.exercises.forEachIndexed { e, exercise ->
                             val source = exercise.originalIndex?.let { original.getJSONObject(it) }
                             val library = state.catalog.firstOrNull { it.id == exercise.id }

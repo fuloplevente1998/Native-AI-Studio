@@ -243,11 +243,12 @@ class StudioPrefillBindingRegressionTest {
             val ex = draft.exercises.first()
             val changed = ex.copy(sets = ex.sets.mapIndexed { index, set ->
                 if (index == 0) set.copy(weight = "27.5", reps = "7", rir = "0") else set })
-            NativeJournalEditor.save(context, db, opened, draft.copy(exercises = listOf(changed), feedbackEffort = "pain"))
+            NativeJournalEditor.save(context, db, opened, draft.copy(exercises = listOf(changed), feedbackEffort = "pain", note = "Kézzel javított napló"))
             val saved = db.workoutHistoryDao().getWorkoutWithDetailsById(detail.workout.id)!!
             val json = JSONObject(saved.workout.rawJson)
             assertEquals(detail.workout.id, saved.workout.id)
             assertEquals("pain", json.getJSONObject("feedback").getString("rating"))
+            assertEquals("Kézzel javított napló", json.getJSONObject("feedback").getString("note"))
             val set = json.getJSONArray("exercises").getJSONObject(0).getJSONArray("sets").getJSONObject(0)
             assertEquals(27.5, set.getDouble("weight"), 0.001)
             assertEquals("7", set.getString("reps")); assertEquals(0, set.getInt("actualRir"))
