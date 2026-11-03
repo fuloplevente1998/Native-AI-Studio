@@ -30,7 +30,7 @@ for module, directory in sources.items():
         for key, value in numbers.items():
             counts[key] += value
             report["total"][key] += value
-    source_dir = pathlib.Path(module) / "src" / "test"
+    source_dir = pathlib.Path("app" if module == "phone" else module) / "src" / "test"
     has_test_sources = any(file.suffix in {".kt", ".java"} for file in source_dir.rglob("*")) if source_dir.is_dir() else False
     counts["noSource"] = not has_test_sources
     report["modules"][module] = counts
