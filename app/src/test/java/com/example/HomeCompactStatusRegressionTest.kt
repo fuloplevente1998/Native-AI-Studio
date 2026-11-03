@@ -12,6 +12,9 @@ import com.example.model.*
 import com.example.ui.screens.HomeScreen
 import com.example.ui.theme.TrainPilotTheme
 import com.example.ui.viewmodel.TrainPilotUiState
+import com.repforge.app.healthreadings.PulseDayReading
+import com.repforge.app.healthreadings.ReadingState
+import com.repforge.app.HealthJournalStore
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -31,7 +34,15 @@ class HomeCompactStatusRegressionTest {
         val state = TrainPilotUiState(profileComplete = true, programs = listOf(program),
             watchName = "Real Watch", watchConnected = true, watchAppAvailable = true,
             dailySteps = 100, activeCaloriesKcal = 37, currentHrBpm = 61, restingHrBpm = 55,
-            dailyHealthAvailableFields = setOf("steps", "activeCalories"))
+            dailyHealthAvailableFields = setOf("steps", "activeCalories"),
+            todayPulseReading = PulseDayReading(
+                day = java.time.LocalDate.now(),
+                provider = HealthJournalStore.HC,
+                state = ReadingState.AVAILABLE,
+                averageBpm = 61.0,
+                averageDescriptionHu = "HC napi aggregált átlag",
+                explanationHu = "Valós forrás szerinti napi aggregáció"
+            ))
         var coach = 0
         var health = 0
         compose.setContent { TrainPilotTheme {
