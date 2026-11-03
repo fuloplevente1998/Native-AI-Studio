@@ -137,4 +137,36 @@ class ExerciseVideoResolverTest {
         assertEquals(ExerciseVideoState.MISSING, result.link.state)
         assertFalse(result.notesHu.isBlank())
     }
+
+    @Test fun securityPolicyRejectsUnsafeHttpsTargetsAndPorts() {
+        listOf(
+            "https://localhost/video",
+            "https://127.0.0.1/video",
+            "https://192.168.1.10/video",
+            "https://private.local/video",
+            "https://service.internal/video",
+            "https://www.youtube.com:8443/watch?v=$gobletId",
+            "https://abc..example.com/video",
+            "https://-bad.example.com/video",
+            "https://user@example.com/video",
+            "https://example.com\\@evil.example/path",
+            "https://example.com:9999/watch"
+        ).forEach { source ->
+            assertNull(source, safeExternalExerciseVideoUrl(source))
+        }
+        assertEquals(
+            "https://vimeo.com/12345",
+            safeExternalExerciseVideoUrl("https://vimeo.com/12345")
+        )
+    }
+
+    @Test fun untrustedYouTubeHostCannotBecomeEmbeddedPlayer() {
+        val stored = "https://www.youtube.com.evil.example/watch?v=$gobletId"
+        assertNull(parseYouTubeVideoId(stored))
+        val resolved = resolveExerciseVideoLink(stored, "https://youtu.be/$plankId", false)
+        assertEquals(ExerciseVideoState.EXTERNAL_ONLY, resolved.state)
+        assertNull(resolved.youtubeId)
+        assertEquals(stored, resolved.externalUrl)
+    }
+
 }

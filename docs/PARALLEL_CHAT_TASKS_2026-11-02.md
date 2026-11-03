@@ -1,3 +1,9 @@
+## Legfrissebb munkakiosztás – 2026-11-03, PR #58
+
+A Coach rövid összefoglalója és a piros, naplólistából is elérhető edzéstörlés a [#58 PR](https://github.com/fuloplevente1998/Native-AI-Studio/pull/58) része; CI-ellenőrzés folyamatban. Ebből most nincs új APK vagy verzióemelés, az utolsó kiadott pár 2743.
+
+A többi munkán itt nem dolgozunk: [négy külön fejlesztői feladat és integrátor](chat-tasks-independent-2743/README.md), [kizárólagos fájltulajdon](chat-tasks-independent-2743/FAJLTULAJDON.md). Nyitott: #59 appon belüli videó, #60 óraadatok két blokkban, #61 pulzus/regeneráció adatútja, újranyitott #48 nagy térkép a friss készülékes képek alapján. Az 1–4 párhuzamosan készülhet; a közös képernyőket/ViewModelt kizárólag az 5. integrátor köti be az átadások után. A korábbi #48-kész jelölést ez az új megfigyelés felülírja; a JVM-ellenőrzés nem készülékes elfogadás.
+
 # TrainPilot – külön ChatGPT/Codex chateknek kiosztható feladatok
 
 ## Aktuális checkpoint – 2743, a készülékes javítások mainen

@@ -50,6 +50,7 @@ class HomeCompactStatusRegressionTest {
         val viewport = compose.onNodeWithTag("home_viewport").getUnclippedBoundsInRoot()
         val card = compose.onNodeWithTag("home_coach_advice_card").assertIsDisplayed()
         assertTrue("Coach should fit without scrolling at default size", card.getUnclippedBoundsInRoot().bottom <= viewport.bottom)
+        compose.onNodeWithTag("home_coach_summary", useUnmergedTree = true).assertTextContains("friss adat", substring = true)
         card.performClick(); assertEquals(1, coach)
         compose.onNodeWithTag("home_today_calories").performClick(); assertEquals(1, health)
     }

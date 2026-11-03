@@ -361,4 +361,55 @@ class JournalWorkoutHealthRegressionTest {
         assertNotNull(awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById(second.workout.id) })
     }
 
+    @Test fun listDeletionConfirmsTheClickedRowWithoutOpeningTheDetailPage() {
+        val first = seed("list-delete-first")
+        val second = seed("list-delete-second")
+        var rows by androidx.compose.runtime.mutableStateOf(listOf(first, second).map { detail ->
+            LoggedWorkoutEntry(detail.workout.id, "2026.11.01", "Edzés", 45, "45:00", "—", 1, 150, "Futás",
+                savedStartIso = detail.workout.started)
+        })
+        var opened = 0
+        var deleted = ""
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.LogTabScreen(TrainPilotUiState(loggedWorkouts = rows),
+                TrainPilotStrings.forLanguage(AppLanguage.HU), {}, { opened++ }, {}, {}, {},
+                onDeletedWorkout = { id -> deleted = id; rows = rows.filterNot { it.id == id } })
+        } }
+        compose.onNodeWithTag("journal_list_delete_${first.workout.id}").performClick()
+        compose.waitUntil(10_000) {
+            shadowOf(Looper.getMainLooper()).idle()
+            compose.onAllNodesWithTag("journal_cancel_delete").fetchSemanticsNodes().isNotEmpty()
+        }
+        assertEquals(0, opened)
+        compose.onNodeWithTag("journal_cancel_delete").performClick()
+        assertNotNull(awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById(first.workout.id) })
+        compose.onNodeWithTag("journal_list_delete_${first.workout.id}").performClick()
+        compose.waitUntil(10_000) {
+            shadowOf(Looper.getMainLooper()).idle()
+            compose.onAllNodesWithTag("journal_confirm_delete").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("journal_confirm_delete").performClick()
+        compose.waitUntil(10_000) { shadowOf(Looper.getMainLooper()).idle(); deleted == first.workout.id }
+        assertNull(awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById(first.workout.id) })
+        assertNotNull(awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById(second.workout.id) })
+        compose.onNodeWithTag("log_card_${first.workout.id}").assertDoesNotExist()
+        compose.onNodeWithTag("log_card_${second.workout.id}").assertExists()
+        assertEquals(0, opened)
+    }
+
+    @Test fun listDeletionShowsAnErrorIfTheRecordHasAlreadyDisappeared() {
+        val entry = LoggedWorkoutEntry("missing-row", "2026.11.01", "Edzés", 20, "20:00", "—", 1, 100, "", savedStartIso = start)
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.LogTabScreen(TrainPilotUiState(loggedWorkouts = listOf(entry)),
+                TrainPilotStrings.forLanguage(AppLanguage.HU), {}, {}, {}, {}, {})
+        } }
+        compose.onNodeWithTag("journal_list_delete_missing-row").performClick()
+        compose.waitUntil(10_000) {
+            shadowOf(Looper.getMainLooper()).idle()
+            compose.onAllNodesWithTag("journal_list_delete_error").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("journal_confirm_delete").assertDoesNotExist()
+        assertTrue(awaitNative { db.workoutHistoryDao().getTombstones().isEmpty() })
+    }
+
 }

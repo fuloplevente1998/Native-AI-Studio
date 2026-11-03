@@ -10,19 +10,24 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.repforge.app.ui.journal.JournalViewModel
-import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 @Composable
 internal fun StudioLoggedWorkoutDeleteActions(workoutId: String, onDeleted: (String) -> Unit,
     model: JournalViewModel = viewModel(key = "studio-workout-health")) {
     val state by model.uiState.collectAsStateWithLifecycle()
-    val palette = LocalTrainPilotPalette.current
-    val pending = state.workoutToDelete?.takeIf { it.workout.id == workoutId }
-    TrainPilotOutlinedButton(
+    TrainPilotDeleteButton(onClick = model::requestDeleteWorkout,
         enabled = !state.deleting && state.detail?.workout?.id == workoutId && state.selectedWorkoutId == workoutId,
-        onClick = model::requestDeleteWorkout,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_delete_workout")
-    ) { Text("Edzés törlése", color = palette.danger) }
+        modifier = Modifier.fillMaxWidth().testTag("journal_delete_workout"))
+    StudioWorkoutDeleteConfirmation(workoutId, onDeleted, model)
+}
+
+/** One confirmation and the same durable native operation for both list and details. */
+@Composable
+internal fun StudioWorkoutDeleteConfirmation(workoutId: String?, onDeleted: (String) -> Unit,
+    model: JournalViewModel) {
+    val state by model.uiState.collectAsStateWithLifecycle()
+    val palette = LocalTrainPilotPalette.current
+    val pending = state.workoutToDelete?.takeIf { workoutId == null || it.workout.id == workoutId }
     if (pending != null) AlertDialog(
         onDismissRequest = model::cancelDeleteWorkout,
         title = { Text("Edzés törlése?") },

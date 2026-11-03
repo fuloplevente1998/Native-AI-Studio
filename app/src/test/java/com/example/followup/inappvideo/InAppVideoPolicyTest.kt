@@ -1,0 +1,60 @@
+package com.example.followup.inappvideo
+
+import com.example.ui.components.inappvideo.ExerciseVideoMode
+import com.example.ui.components.inappvideo.allowedInAppVideoNavigation
+import com.example.ui.components.inappvideo.embeddedYouTubeError
+import com.example.ui.components.inappvideo.exerciseYouTubeEmbedHtml
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class InAppVideoPolicyTest {
+    private val selected = "MeIiIdhvXT4"
+
+    @Test fun embedUsesOnlyTheSelectedVerifiedId() {
+        val html = exerciseYouTubeEmbedHtml(selected)
+        assertTrue(html.contains("youtube-nocookie.com/embed/$selected"))
+        assertFalse(html.contains("pSHjTRCQxIw"))
+        assertTrue(html.contains("enablejsapi=1"))
+        assertTrue(html.contains("trainpilot-video:"))
+        assertTrue(html.contains("function tpPause()"))
+        assertFalse(html.contains("addJavascriptInterface"))
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun embedRejectsUnverifiedIdToPreventHtmlScriptInjection() {
+        exerciseYouTubeEmbedHtml("bad\" onload=\"alert(1)")
+    }
+
+    @Test fun browserOnlyAllowsExplicitHttpsPublicDomainNavigation() {
+        assertTrue(allowedInAppVideoNavigation("https://www.youtube.com/watch?v=$selected"))
+        assertTrue(allowedInAppVideoNavigation("https://vimeo.com/123456"))
+        listOf(
+            "http://www.youtube.com/watch?v=$selected",
+            "intent://example/#Intent",
+            "file:///sdcard/secret",
+            "content://provider/secret",
+            "javascript:alert(1)",
+            "data:text/html,hello",
+            "https://127.0.0.1/watch",
+            "https://localhost/watch",
+            "https://example.com:8080/watch",
+            "https://user:pass@example.com/video",
+            " https://vimeo.com/123456 "
+        ).forEach { assertFalse(it, allowedInAppVideoNavigation(it)) }
+    }
+
+    @Test fun blockedUnavailableAndUnknownPlayerErrorsAreExplicit() {
+        for (code in listOf(2, 5, 100, 101, 150, 153, 999)) {
+            assertFalse("Error $code must not be silent", embeddedYouTubeError(code).isBlank())
+        }
+        assertEquals(embeddedYouTubeError(101), embeddedYouTubeError(150))
+        assertTrue(embeddedYouTubeError(100).contains("eltávolításra"))
+        assertTrue(embeddedYouTubeError(153).contains("azonosítását"))
+    }
+
+    @Test fun modeNamesDistinguishEmbedFromRealInAppBrowser() {
+        assertFalse(ExerciseVideoMode.EMBED == ExerciseVideoMode.BROWSER)
+    }
+}
