@@ -2928,7 +2928,7 @@ class TrainPilotViewModel : ViewModel() {
     private fun admitSummaryFeedback(): Boolean {
         val context = nativeContext ?: return false
         val id = _uiState.value.activeWorkoutId
-        if (id.isBlank() || !_uiState.value.isWorkoutSessionActive) return false
+        if (id.isBlank() || !_uiState.value.isWorkoutSessionActive || _uiState.value.isSavingWorkout) return false
         val same = summaryFeedbackOwnerId == id &&
             runCatching { requireNotNull(summaryFeedbackTicket).requireCurrent(context) }.isSuccess
         if (!same) {
@@ -2970,7 +2970,7 @@ class TrainPilotViewModel : ViewModel() {
             exerciseFeedbackOwnerId = stateBefore.activeWorkoutId
         }
         _uiState.update { state ->
-            if (!state.isWorkoutSessionActive || state.activeWorkoutId.isBlank() ||
+            if (state.isSavingWorkout || !state.isWorkoutSessionActive || state.activeWorkoutId.isBlank() ||
                 state.activeWorkoutExercises.none { it.id == id } || (index != null && index !in -1..5)) state
             else {
                 val same = ticketValid && state.exerciseFeedbackWorkoutId == state.activeWorkoutId

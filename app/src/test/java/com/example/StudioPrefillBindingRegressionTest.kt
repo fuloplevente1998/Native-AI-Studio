@@ -234,6 +234,39 @@ class StudioPrefillBindingRegressionTest {
         assertFalse(exercise.id in native { NativeExerciseFavorites.load(db) })
     }
 
+    @Test fun summaryExerciseFeedbackSurvivesCanonicalFinalizationAndDoesNotBindToTheNextWorkout() {
+        val model = model()
+        model.startCoachWorkout("studio-test", "b", null)
+        await { model.uiState.value.isWorkoutSessionActive }
+        val workoutId = model.uiState.value.activeWorkoutId
+        val setId = ActiveWorkoutStore.current(context)!!.getJSONArray("exercises").getJSONObject(0)
+            .getJSONArray("sets").getJSONObject(0).getString("setId")
+        model.updateSetValuesExact(1, 25f, 8, 0)
+        await { model.uiState.value.activeSets.first().reps == 8 && model.uiState.value.activeSets.first().actualRirProvided }
+        model.toggleSetCompleted(1)
+        await { model.uiState.value.activeSets.first().completed }
+        model.updateExerciseFeedback(exercise.id, index = 5, note = "Térdfájdalom")
+        assertEquals(workoutId, model.uiState.value.exerciseFeedbackWorkoutId)
+        model.finishAndSaveWorkout()
+        await { !model.uiState.value.isSavingWorkout && !model.uiState.value.isWorkoutSessionActive }
+        val saved = native { db.workoutHistoryDao().getWorkoutWithDetailsById(workoutId)!! }
+        val raw = JSONObject(saved.workout.rawJson)
+        val ex = raw.getJSONArray("exercises").getJSONObject(0)
+        assertEquals("pain", ex.getString("effort"))
+        assertEquals("Térdfájdalom", ex.getJSONObject("feedback").getString("note"))
+        val set = ex.getJSONArray("sets").getJSONObject(0)
+        assertEquals(setId, set.getString("setId")); assertEquals(0, set.getInt("actualRir"))
+        assertEquals(25.0, set.getDouble("weight"), 0.0)
+        assertFalse(raw.has("studioExerciseFeedback"))
+        model.startCoachWorkout("studio-test", "b", null)
+        await { model.uiState.value.isWorkoutSessionActive && model.uiState.value.activeWorkoutId != workoutId }
+        val next = ActiveWorkoutStore.current(context)!!
+        StudioWorkoutFeedback.attachExerciseEdits(next, model.uiState.value.exerciseFeedbackWorkoutId,
+            model.uiState.value.exerciseFeedbackChoices, model.uiState.value.exerciseFeedbackNotes)
+        assertFalse(next.has("studioExerciseFeedback"))
+        assertFalse(next.getJSONArray("exercises").getJSONObject(0).has("effort"))
+    }
+
     @Test fun nativeJournalEditorPersistsManualSetsAndFeedbackWithTheSameWorkoutId() {
         seedPrevious()
         native {

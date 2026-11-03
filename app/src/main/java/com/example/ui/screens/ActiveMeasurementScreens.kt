@@ -3329,6 +3329,7 @@ fun WorkoutSummaryScreen(
                         uiState.exerciseFeedbackChoices[exercise.id] ?: -1) else null,
                     note = if (same) uiState.exerciseFeedbackNotes[exercise.id].orEmpty() else "",
                     language = uiState.language.name.lowercase(), title = exercise.nameHu,
+                    enabled = !uiState.isSavingWorkout,
                     onEffort = { onExerciseEffort(exercise.id, com.repforge.app.StudioWorkoutFeedback.efforts.indexOf(it)) },
                     onNote = { onExerciseNote(exercise.id, it) }, tag = "summary_feedback_${exercise.id}")
             }
