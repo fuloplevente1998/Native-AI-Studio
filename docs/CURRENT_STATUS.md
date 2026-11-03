@@ -2,6 +2,10 @@
 
 Ez az elsődleges belépési pont. A régi dátumozott átadók történeti megfigyelések; a lentiek felülírják a bennük szereplő „aktuális”, „még nincs implementálva” és régi APK kijelentéseket.
 
+## Új közös javítócsomag – #79
+
+A felhasználó a fekete YouTube-videó jelzése után a beleférő javításokat egy közös APK-ban kéri. Az új implementáció és egyben végzendő tesztlista: [NATIVE_TEST_BATCH_2026-11-03.md](NATIVE_TEST_BATCH_2026-11-03.md). A videó/kompakt óraadat/Samsung permission és program-/sajátgyakorlat-/naplószerkesztés most implementálva, a teljes végleges CI és új aláírt APK még ellenőrzés alatt. A részletes egészségböngésző bekötése részleges #71. Ez felülírja az alábbi korábbi backlog-jelzéseket ezeknél a pontoknál. **A korábban átadott81da2f7 APK ezt a csomagot még nem tartalmazza.** BLE sztornó, #69/#71 teljes maradéka, #74/#75 nem kész. Fizikai elfogadás nincs állítva.
+
 ## Kód és ellenőrzés
 
 - Main alkalmazásforrás: **`81da2f7d3190ff5a558e2a07ccf1fe54104c90e8`** (#77). Tesztelt PR-head: `eae9d6042d48998d9e9e21681443257aa8427897`; app/Wear/shared/scripts/workflow fák egyeznek.
