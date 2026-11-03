@@ -65,4 +65,24 @@ class HomeCompactStatusRegressionTest {
         card.performClick(); assertEquals(1, coach)
         compose.onNodeWithTag("home_today_calories").performClick(); assertEquals(1, health)
     }
+    @Test fun dailyPulseTrendOpensFromTodayTileWithoutRepeatedSummaryRows() {
+        val state = TrainPilotUiState(todayPulseReading = PulseDayReading(
+            java.time.LocalDate.now(), HealthJournalStore.HC, ReadingState.AVAILABLE,
+            averageBpm = 70.0, explanationHu = "DIAGNOSTIC_NOT_IN_COLLAPSED_SUMMARY"))
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.HealthTabScreen(
+                uiState = state, strings = TrainPilotStrings.forLanguage(AppLanguage.HU),
+                onToggleHealthSection = {}, onSelectWeightRange = {},
+                onToggleAddWeightDialog = {}, onSaveNewWeight = { _, _ -> },
+                onTogglePrimaryHealthSource = {}, onTriggerHealthSync = {},
+                onNavigateToSubScreen = {}, onOpenPalettePicker = {})
+        } }
+        compose.onNodeWithText("DIAGNOSTIC_NOT_IN_COLLAPSED_SUMMARY").assertDoesNotExist()
+        compose.onNodeWithTag("health_pulse_trend_header").assertDoesNotExist()
+        compose.onNodeWithTag("health_today_pulse").performClick()
+        compose.onNodeWithTag("health_today_tile_expanded_card").assertExists()
+        compose.onNodeWithTag("health_pulse_trend_header").assertExists()
+        compose.onNodeWithTag("health_today_pulse").performClick()
+        compose.onNodeWithTag("health_pulse_trend_header").assertDoesNotExist()
+    }
 }
