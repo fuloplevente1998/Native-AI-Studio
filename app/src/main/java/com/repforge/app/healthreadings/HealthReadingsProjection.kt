@@ -77,6 +77,8 @@ object HealthReadingsProjection {
         if (raw == null) return empty(ReadingState.NOT_SYNCED, "Nincs eltárolt napi olvasás ennél az adatforrásnál.")
         if (!matches(raw, provider, day))
             return empty(ReadingState.WRONG_DAY_OR_PROVIDER, "Az adat másik naphoz vagy adatforráshoz tartozik; nem jeleníthető meg.")
+        if (day.atStartOfDay(zone).toInstant().isAfter(now))
+            return empty(ReadingState.NOT_SYNCED, "Jövőbeli napra nem jeleníthető meg pulzusmérés.")
 
         val permissions = raw.optJSONObject("permissions")
         val pulseDenied = permissions?.has("READ_HEART_RATE") == true && !permissions.optBoolean("READ_HEART_RATE")
@@ -178,7 +180,9 @@ object HealthReadingsProjection {
         }.map { original ->
             JSONObject(original.toString()).also { safe ->
                 // Even an accidentally copied Samsung value must not enter an HC calculation.
-                if (provider != HealthJournalStore.SAMSUNG) {
+                if (provider != HealthJournalStore.SAMSUNG ||
+                    metricState(safe, "energyScore", "READ_ENERGY_SCORE", true) in
+                    setOf(ReadingState.PERMISSION_DENIED, ReadingState.READ_ERROR)) {
                     safe.remove("energyScore")
                     safe.remove("energyScoreTime")
                     safe.remove("energyScoreSource")
