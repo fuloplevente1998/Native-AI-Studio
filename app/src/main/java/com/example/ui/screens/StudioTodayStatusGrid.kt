@@ -12,8 +12,6 @@ import com.example.model.workoutsOn
 import com.example.ui.viewmodel.TrainPilotUiState
 import java.time.LocalDate
 import kotlin.math.roundToInt
-import com.example.ui.components.healthreadings.HealthPulseDayRow
-import com.example.ui.components.healthreadings.HealthRecoveryRow
 import com.repforge.app.healthreadings.RecoverySource
 
 /** The same six measured/projected values on Home and Health; no second calculation path. */
@@ -59,10 +57,6 @@ internal fun StudioTodayStatusGrid(state: TrainPilotUiState, compact: Boolean = 
                     modifier = Modifier.weight(1f).heightIn(min = if (compact) 64.dp else 76.dp)
                         .testTag("${if (compact) "home" else "health"}_today_$key"), compact = compact)
             }
-        }
-        if (!compact) {
-            state.todayPulseReading?.let { HealthPulseDayRow(it) }
-            state.todayRecoveryReading?.let { HealthRecoveryRow(it) }
         }
     }
 }

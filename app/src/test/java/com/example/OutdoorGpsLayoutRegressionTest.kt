@@ -36,13 +36,15 @@ import org.robolectric.annotation.LooperMode
 @LooperMode(LooperMode.Mode.PAUSED)
 class OutdoorGpsLayoutRegressionTest {
     @get:Rule val compose = createComposeRule()
+    private var started = 0
     private var finished = 0
     private var dialogClosed = 0
     private var paused = 0
     private var selected = ""
+    private var dialogContentView: android.view.View? = null
     private val state = OutdoorGpsDisplay("Kültéri futás", "Élő GPS-jel (2 pont • ±4 m)",
         true, true, false, "00:38", "0,00 km", "— /km", "— kcal", "♥ — bpm", 2, 1, "", "")
-    private val actions get() = OutdoorGpsActions({}, {}, { selected = it }, {}, {},
+    private val actions get() = OutdoorGpsActions({}, {}, { selected = it }, {}, { started++ },
         { paused++ }, {}, { finished++ }, {})
 
     private fun show(width: Int, height: Int, font: Float = 1f, fullscreen: Boolean = false,
@@ -75,6 +77,7 @@ class OutdoorGpsLayoutRegressionTest {
                         actions = actions,
                         onDismissRequest = { dialogClosed++ },
                         mapContent = { mapModifier ->
+                            dialogContentView = androidx.compose.ui.platform.LocalView.current
                             Box(mapModifier.background(Color.Black).testTag("real_dialog_map_fixture"))
                         }
                     )
@@ -126,7 +129,9 @@ class OutdoorGpsLayoutRegressionTest {
     @Test fun compactMapLeavesRoomForDataInsteadOfGrowingWithTheScreen() {
         show(393, 780)
         val bounds = compose.onNodeWithTag("outdoor_compact_map_card").getUnclippedBoundsInRoot()
-        assertTrue(bounds.bottom - bounds.top <= 180.dp)
+        assertTrue(bounds.bottom - bounds.top <= 300.dp)
+        val map = compose.onNodeWithTag("outdoor_compact_map_viewport").getUnclippedBoundsInRoot()
+        assertTrue("Actual map remains useful after the GPS row", map.bottom - map.top >= 180.dp)
         assertControlsVisible()
     }
 
@@ -179,6 +184,23 @@ class OutdoorGpsLayoutRegressionTest {
         }
         compose.onNodeWithTag("gps_finish_workout_btn").performClick()
         assertEquals(1, finished)
+    }
+
+    @Test fun readyDialogStartButtonFitsAndroidVisibleDisplayNotJustComposeRoot() {
+        showInRealDialog(display = state.copy(started = false))
+        val start = compose.onNodeWithTag("gps_start_workout_btn").assertIsDisplayed()
+        val view = requireNotNull(dialogContentView)
+        val visible = android.graphics.Rect()
+        val origin = IntArray(2)
+        compose.runOnIdle {
+            view.getWindowVisibleDisplayFrame(visible)
+            view.getLocationOnScreen(origin)
+        }
+        val bounds = start.fetchSemanticsNode().boundsInRoot
+        assertTrue("Start fits Android visible display top", origin[1] + bounds.top >= visible.top)
+        assertTrue("Start fits Android visible display bottom", origin[1] + bounds.bottom <= visible.bottom)
+        start.performClick()
+        assertEquals(1, started)
     }
 
     @Test fun activityChoicesRemainAvailableBeforeStarting() {

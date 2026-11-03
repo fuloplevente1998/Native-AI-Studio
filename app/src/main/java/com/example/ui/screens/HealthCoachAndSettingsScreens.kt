@@ -460,7 +460,7 @@ fun HealthTabScreen(
                                         "További Health-adatok megnyitása lent"
                                     ) to { onToggleHealthSection("extra") }
                                     "pulse" -> listOf(
-                                        "Pulzus részletek • Napi átlag: ${if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"}",
+                                        "Mai pulzus",
                                         "Nyugalmi: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Tartomány: $heartRange",
                                         "Korábbi mai pulzusmérések megtekintése lent"
                                     ) to { onToggleHealthSection("pulse") }
@@ -516,25 +516,217 @@ fun HealthTabScreen(
                                         )
                                     }
                                 }
-                                Text(
+                                if (activeKey != "pulse") Text(
                                     text = titleStr[1],
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textPrimary
                                 )
                                 if (activeKey == "pulse") {
-                                    Text("Korábbi mai mérések", style = MaterialTheme.typography.labelSmall,
-                                        color = palette.textSecondary, modifier = Modifier.testTag("health_today_pulse_history_label"))
-                                    if (uiState.dailyPulseHistory.isEmpty()) Text("Nincs lekért időbélyeges pulzusmérés",
-                                        color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
-                                    uiState.dailyPulseHistory.takeLast(8).asReversed().forEach { reading ->
-                                        val stamp = runCatching { java.time.Instant.parse(reading.timeIso)
-                                            .atZone(java.time.ZoneId.systemDefault())
-                                            .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) }.getOrDefault("—")
-                                        Text("$stamp • ${reading.bpm} bpm", style = MaterialTheme.typography.bodySmall,
-                                            color = palette.textPrimary, modifier = Modifier.testTag("health_today_pulse_sample"))
+                                    Surface(
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = palette.background.copy(alpha = 0.55f),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .trainPilotBorder(
+                                                width = 1.dp,
+                                                color = if (uiState.expandedHealthPulseTrend) palette.primary.copy(alpha = 0.55f) else palette.cardBorder,
+                                                shape = RoundedCornerShape(20.dp)
+                                            )
+                                    ) {
+                                        Column(modifier = Modifier.padding(12.dp)) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable { onToggleHealthSection("pulse") }
+                                                    .testTag("health_pulse_trend_header"),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                            ) {
+                                                Surface(
+                                                    shape = CircleShape,
+                                                    color = Color(0xFFEF4444).copy(alpha = 0.16f),
+                                                    modifier = Modifier.size(40.dp)
+                                                ) {
+                                                    Box(contentAlignment = Alignment.Center) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Favorite,
+                                                            contentDescription = null,
+                                                            tint = Color(0xFFEF4444),
+                                                            modifier = Modifier.size(20.dp)
+                                                        )
+                                                    }
+                                                }
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = "24 órás pulzustrend",
+                                                        style = MaterialTheme.typography.titleMedium,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = palette.textPrimary
+                                                    )
+                                                    val restLbl = if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"
+                                                    val peakLbl = if (uiState.maxHrBpm > 0) "${uiState.maxHrBpm} bpm" else "—"
+                                                    Text(
+                                                        text = "Nyugalmi: $restLbl • Csúcs: $peakLbl",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = palette.textSecondary,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                }
+                                                Surface(
+                                                    shape = RoundedCornerShape(16.dp),
+                                                    color = palette.surfaceCard,
+                                                    modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                                                ) {
+                                                    Row(
+                                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = "Részletek",
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = palette.primary
+                                                        )
+                                                        Icon(
+                                                            imageVector = if (uiState.expandedHealthPulseTrend) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                                            contentDescription = null,
+                                                            tint = palette.primary,
+                                                            modifier = Modifier.size(16.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(10.dp))
+
+                                            // Full-width dark sparkline box with red wave curve (Screenshot 9)
+                                            Surface(
+                                                shape = RoundedCornerShape(14.dp),
+                                                color = palette.surfaceCard.copy(alpha = 0.7f),
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(54.dp)
+                                                    .trainPilotBorder(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+                                                    .clickable { onToggleHealthSection("pulse") }
+                                            ) {
+                                                if (uiState.dailyPulseHistory.size < 2) {
+                                                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                                        Text(if (uiState.dailyPulseHistory.isEmpty()) "Nincs lekért pulzus-idősor"
+                                                            else "Egy időbélyeges pulzusmérés érhető el",
+                                                            color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
+                                                    }
+                                                } else {
+                                                    val readings = uiState.dailyPulseHistory
+                                                    Canvas(Modifier.fillMaxSize().padding(horizontal = 9.dp, vertical = 7.dp)
+                                                        .testTag("health_pulse_real_trend")) {
+                                                        val first = java.time.Instant.parse(readings.first().timeIso).toEpochMilli()
+                                                        val last = java.time.Instant.parse(readings.last().timeIso).toEpochMilli()
+                                                        val delta = (last - first).coerceAtLeast(1L).toFloat()
+                                                        val lowest = readings.minOf { it.bpm }.toFloat()
+                                                        val spread = (readings.maxOf { it.bpm } - readings.minOf { it.bpm })
+                                                            .toFloat().coerceAtLeast(1f)
+                                                        val line = Path()
+                                                        readings.forEachIndexed { index, sample ->
+                                                            val time = java.time.Instant.parse(sample.timeIso).toEpochMilli()
+                                                            val x = ((time - first) / delta).coerceIn(0f, 1f) * size.width
+                                                            val y = size.height - (sample.bpm - lowest) / spread * size.height
+                                                            if (index == 0) line.moveTo(x, y) else line.lineTo(x, y)
+                                                        }
+                                                        drawPath(line, color = Color(0xFFEF4444),
+                                                            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
+                                                    }
+                                                }
+                                            }
+
+                                            if (uiState.expandedHealthPulseTrend) {
+                                                Spacer(modifier = Modifier.height(12.dp))
+                                                HorizontalDivider(color = palette.cardBorder)
+                                                Spacer(modifier = Modifier.height(12.dp))
+
+                                                Surface(
+                                                    shape = RoundedCornerShape(16.dp),
+                                                    color = palette.surfaceCard,
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                                                ) {
+                                                    Column(
+                                                        modifier = Modifier.padding(14.dp),
+                                                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = "Mai pulzus",
+                                                            style = MaterialTheme.typography.titleMedium,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = palette.textPrimary
+                                                        )
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                        ) {
+                                                            PulseInnerBox(
+                                                                label = "Átlagpulzus",
+                                                                value = if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—",
+                                                                modifier = Modifier.weight(1f)
+                                                            )
+                                                            PulseInnerBox(
+                                                                label = "Nyugalmi pulzus",
+                                                                value = if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—",
+                                                                modifier = Modifier.weight(1f)
+                                                            )
+                                                        }
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                        ) {
+                                                            PulseInnerBox(
+                                                                label = "Max. pulzus",
+                                                                value = if (uiState.maxHrBpm > 0) "${uiState.maxHrBpm} bpm" else "—",
+                                                                modifier = Modifier.weight(1f)
+                                                            )
+                                                            PulseInnerBox(
+                                                                label = "Min. pulzus",
+                                                                value = if (uiState.minHrBpm > 0) "${uiState.minHrBpm} bpm" else "—",
+                                                                modifier = Modifier.weight(1f)
+                                                            )
+                                                        }
+                                                        Text(
+                                                            text = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect",
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = palette.textSecondary
+                                                        )
+                                                    }
+                                                }
+
+                                                Spacer(modifier = Modifier.height(10.dp))
+
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clickable { onNavigateToSubScreen(SubScreen.COACH_DETAIL) }
+                                                        .padding(vertical = 4.dp),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = "Regenerációs előzmények",
+                                                        style = MaterialTheme.typography.titleSmall,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = palette.textPrimary
+                                                    )
+                                                    Icon(
+                                                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                                        contentDescription = null,
+                                                        tint = palette.primary
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
                                 }
-                                Surface(
+                                if (activeKey != "pulse") Surface(
                                     shape = RoundedCornerShape(10.dp),
                                     color = palette.primary.copy(alpha = 0.16f),
                                     modifier = Modifier
@@ -708,211 +900,6 @@ fun HealthTabScreen(
                                                 style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
                                         }
                                     }
-                                }
-                            }
-                        }
-                    }
-
-                    // Expandable Inner Card 1 inside Weekly Section: "24 órás pulzustrend" (Screenshot 9 style + full expanded details)
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = palette.background.copy(alpha = 0.55f),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .trainPilotBorder(
-                                width = 1.dp,
-                                color = if (uiState.expandedHealthPulseTrend) palette.primary.copy(alpha = 0.55f) else palette.cardBorder,
-                                shape = RoundedCornerShape(20.dp)
-                            )
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onToggleHealthSection("pulse") }
-                                    .testTag("health_pulse_trend_header"),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = Color(0xFFEF4444).copy(alpha = 0.16f),
-                                    modifier = Modifier.size(40.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = Icons.Default.Favorite,
-                                            contentDescription = null,
-                                            tint = Color(0xFFEF4444),
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "24 órás pulzustrend",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = palette.textPrimary
-                                    )
-                                    val restLbl = if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"
-                                    val peakLbl = if (uiState.maxHrBpm > 0) "${uiState.maxHrBpm} bpm" else "—"
-                                    Text(
-                                        text = "Nyugalmi: $restLbl • Csúcs: $peakLbl",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = palette.textSecondary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = palette.surfaceCard,
-                                    modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Text(
-                                            text = "Részletek",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = palette.primary
-                                        )
-                                        Icon(
-                                            imageVector = if (uiState.expandedHealthPulseTrend) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                            contentDescription = null,
-                                            tint = palette.primary,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            // Full-width dark sparkline box with red wave curve (Screenshot 9)
-                            Surface(
-                                shape = RoundedCornerShape(14.dp),
-                                color = palette.surfaceCard.copy(alpha = 0.7f),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(54.dp)
-                                    .trainPilotBorder(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
-                                    .clickable { onToggleHealthSection("pulse") }
-                            ) {
-                                if (uiState.dailyPulseHistory.size < 2) {
-                                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                        Text(if (uiState.dailyPulseHistory.isEmpty()) "Nincs lekért pulzus-idősor"
-                                            else "Egy időbélyeges pulzusmérés érhető el",
-                                            color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
-                                    }
-                                } else {
-                                    val readings = uiState.dailyPulseHistory
-                                    Canvas(Modifier.fillMaxSize().padding(horizontal = 9.dp, vertical = 7.dp)
-                                        .testTag("health_pulse_real_trend")) {
-                                        val first = java.time.Instant.parse(readings.first().timeIso).toEpochMilli()
-                                        val last = java.time.Instant.parse(readings.last().timeIso).toEpochMilli()
-                                        val delta = (last - first).coerceAtLeast(1L).toFloat()
-                                        val lowest = readings.minOf { it.bpm }.toFloat()
-                                        val spread = (readings.maxOf { it.bpm } - readings.minOf { it.bpm })
-                                            .toFloat().coerceAtLeast(1f)
-                                        val line = Path()
-                                        readings.forEachIndexed { index, sample ->
-                                            val time = java.time.Instant.parse(sample.timeIso).toEpochMilli()
-                                            val x = ((time - first) / delta).coerceIn(0f, 1f) * size.width
-                                            val y = size.height - (sample.bpm - lowest) / spread * size.height
-                                            if (index == 0) line.moveTo(x, y) else line.lineTo(x, y)
-                                        }
-                                        drawPath(line, color = Color(0xFFEF4444),
-                                            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
-                                    }
-                                }
-                            }
-
-                            if (uiState.expandedHealthPulseTrend) {
-                                Spacer(modifier = Modifier.height(12.dp))
-                                HorizontalDivider(color = palette.cardBorder)
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = palette.surfaceCard,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(14.dp),
-                                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                                    ) {
-                                        Text(
-                                            text = "Mai pulzus",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = palette.textPrimary
-                                        )
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            PulseInnerBox(
-                                                label = "Átlagpulzus",
-                                                value = if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—",
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                            PulseInnerBox(
-                                                label = "Nyugalmi pulzus",
-                                                value = if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—",
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                        }
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            PulseInnerBox(
-                                                label = "Max. pulzus",
-                                                value = if (uiState.maxHrBpm > 0) "${uiState.maxHrBpm} bpm" else "—",
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                            PulseInnerBox(
-                                                label = "Min. pulzus",
-                                                value = if (uiState.minHrBpm > 0) "${uiState.minHrBpm} bpm" else "—",
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                        }
-                                        Text(
-                                            text = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = palette.textSecondary
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(10.dp))
-
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { onNavigateToSubScreen(SubScreen.COACH_DETAIL) }
-                                        .padding(vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Regenerációs előzmények",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = palette.textPrimary
-                                    )
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                        contentDescription = null,
-                                        tint = palette.primary
-                                    )
                                 }
                             }
                         }
