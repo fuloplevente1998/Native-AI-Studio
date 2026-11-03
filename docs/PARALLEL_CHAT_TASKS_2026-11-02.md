@@ -1,5 +1,24 @@
 # TrainPilot – külön ChatGPT/Codex chateknek kiosztható feladatok
 
+## Aktuális készülékes teszt – 2026-11-03, PR #38–#41
+
+A main `3f3195a` tartalmazza a #38–#41-et és a #42 2742-es kiadást. A felhasználó
+az összevont APK-t teszteli. A #34 térközjavítás (#39), #35 Egészség szövegblokk (#38),
+#11 videójavítás (#40) és a providerizoláció (#41) **implementálva**, készülékes
+elfogadásuk a mostani teszt feladata. A HC eredeti ürességének oka továbbra sem bizonyított.
+
+Nyitott munkák:
+
+- [#43 – Naplózott edzés törlése](https://github.com/fuloplevente1998/Native-AI-Studio/issues/43): a korábbi 8. feladat; a Studio részletnézet gombja és a teljes tartós törlés auditja még hiányzik. Ez nem az aktív edzés kész Elvetés művelete.
+- [#44 – Világos naptár](https://github.com/fuloplevente1998/Native-AI-Studio/issues/44): a világos appban sötét naptárpanelek és rossz kontraszt, felhasználói referencia 01:51-es kép.
+- [#45 – Térkép alapértelmezett témakövetése](https://github.com/fuloplevente1998/Native-AI-Studio/issues/45): alapból az app világos/sötét módját kövesse; kézi kapcsoló megmarad. Ez új igény, a jelenlegi külön mentett kapcsoló még nem követi a témát.
+- HC készülékes okfeltárás: a #41 providerkeveredési hibajavítása nem bizonyítja a Samsung→HC adatmegosztás vagy a HC-üresség konkrét okát.
+
+Tesztsor: [DEVICE_TEST_CHECKLIST_2026-11-03.md](DEVICE_TEST_CHECKLIST_2026-11-03.md).
+A régebbi „#34/#35/#11 még nincs implementálva” státuszok történeti állapotok.
+
+## Korábbi állapotok
+
 Önálló, külön chatnek átadható MD-fájlok: [nyitott feladatok indexe](chat-tasks-open-2741/README.md). Minden feladat a közös munkaszabályokat is tartalmazza.
 
 ## Aktuális munkalista – a 2741-es kiadás utáni visszajelzésekkel

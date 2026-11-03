@@ -1,3 +1,5 @@
+Frissítés 2026-11-03: #34/#35/#11 implementálva (#39/#38/#40); a HC providerizoláció #41 is mainen, az eredeti HC-üresség fizikai oka még nyitott. Az alábbi feladatfájlok korábbi kiosztási leírások, nem aktuális státuszok. A naplózott edzés törlése #43 (régi 8. feladat); új hibák #44 világos naptár és #45 térkép témakövetése. Aktuális lista: [munkalista](../PARALLEL_CHAT_TASKS_2026-11-02.md).
+
 # Nyitott munkák – külön chatnek átadható fájlok
 
 Minden feladatfájl önálló: tartalmazza a közös háttér- és munkaszabályokat is.
