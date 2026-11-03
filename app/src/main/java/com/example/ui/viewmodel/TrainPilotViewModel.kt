@@ -541,7 +541,10 @@ class TrainPilotViewModel : ViewModel() {
         programWriteError = null
         val context = nativeContext ?: return
         val ticket = try { com.repforge.app.NativeDataReplacement.continuationForCurrentData(context) }
-            catch (error: Exception) { _uiState.update { it.copy(statusBannerMessage = error.message) }; return }
+            catch (error: Exception) {
+                programWriteError = error.message ?: "A terv nem menthető."
+                _uiState.update { it.copy(statusBannerMessage = programWriteError) }; return
+            }
         programWriteJob = scope.launch(Dispatchers.IO) {
             programWriteMutex.withLock {
             if (revision != programWriteRevision) return@withLock

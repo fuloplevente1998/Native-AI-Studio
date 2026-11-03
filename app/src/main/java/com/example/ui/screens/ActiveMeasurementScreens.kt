@@ -197,7 +197,7 @@ fun ActiveStrengthWorkoutScreen(
     onOpenSettings: () -> Unit,
     onSelectMeasurementMode: (SubScreen) -> Unit,
     onToggleSetCompleted: (Int) -> Unit,
-    onAdjustSetValues: (Int, Float, Int, Int?) -> Unit,
+    onAdjustSetValues: (Int, Float, Int, Int) -> Unit,
     onUndoLastSet: () -> Unit,
     onAdjustRestTimer: (Int) -> Unit,
     onToggleRestRunning: () -> Unit,
@@ -732,8 +732,8 @@ fun ActiveStrengthWorkoutScreen(
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable {
-                                    val nextRir = if (setItem.rir >= 3) 0 else setItem.rir + 1
-                                    onAdjustSetValues(setItem.setNumber, 0f, 0, nextRir - setItem.rir)
+                                    val nextRir = if (!setItem.actualRirProvided || setItem.rir >= 3) 0 else setItem.rir + 1
+                                    onUpdateSetValuesExact(setItem.setNumber, setItem.weightKg, setItem.reps, nextRir)
                                 }
                         ) {
                             Box(contentAlignment = Alignment.Center) {

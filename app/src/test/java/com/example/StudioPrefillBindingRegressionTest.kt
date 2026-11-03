@@ -50,7 +50,8 @@ class StudioPrefillBindingRegressionTest {
             db.exerciseLibraryDao().upsertExercises(TrainPilotDatabase.defaultExercises())
             val template = TrainPilotDatabase.defaultPrograms().first.first()
             val program = template.copy(id = "studio-test", nameHu = "Tesztprogram", nameEn = "Test",
-                builtin = false, generated = false, rawJson = JSONObject().put("id", "studio-test").toString())
+                builtin = false, generated = false, sourceType = "imported", sourceTemplateId = "original-template", templateVersion = 7,
+                rawJson = JSONObject().put("id", "studio-test").put("customUnknown", "keep-raw").toString())
             val dayA = ProgramDayEntity("studio-test:a", "studio-test", "a", "A nap", "A", "A", "A", 0,
                 JSONArray().put(JSONObject().put("id", exercise.id).put("sets", 2).put("reps", "8–12").put("weightKg", 33)).toString())
             val dayB = dayA.copy(compositeId = "studio-test:b", dayId = "b", nameHu = "B nap", sortOrder = 1)
@@ -139,6 +140,28 @@ class StudioPrefillBindingRegressionTest {
         assertEquals(0, ActiveWorkoutStore.current(context)!!.getJSONArray("exercises").getJSONObject(0).getJSONArray("sets").getJSONObject(0).getInt("actualRir"))
         model.updateSetValuesExact(1, 17.5f, 12, null)
         await { ActiveWorkoutStore.current(context)?.getJSONArray("exercises")?.getJSONObject(0)?.getJSONArray("sets")?.getJSONObject(0)?.has("actualRir") == false }
+    }
+
+    @Test fun noHistoryKeepsPrescriptionsAndProgramMetadataWithoutInventingMeasurements() {
+        val model = model()
+        val first = model.uiState.value.programs.first { it.id == "studio-test" }.days.first().exercises.first()
+        assertEquals(33f, first.defaultWeightKg)
+        assertEquals("8–12", first.targetRepsText)
+        model.activateProgram("studio-test")
+        model.startPlannedWorkout("studio-test", 1)
+        await { model.uiState.value.isWorkoutSessionActive }
+        val frame = requireNotNull(ActiveWorkoutStore.current(context))
+        assertEquals("b", frame.getString("dayId"))
+        val ex = frame.getJSONArray("exercises").getJSONObject(0)
+        assertEquals("8–12", ex.getJSONObject("prescription").getString("reps"))
+        assertEquals(2, ex.getJSONArray("sets").length())
+        val set = ex.getJSONArray("sets").getJSONObject(0)
+        assertEquals(33.0, set.getDouble("weight"), 0.001)
+        assertEquals("", set.getString("reps")); assertFalse(set.getBoolean("done")); assertFalse(set.has("actualRir"))
+        val saved = native { db.programDao().getProgramWithDaysById("studio-test")!!.program }
+        assertEquals("keep-raw", JSONObject(saved.rawJson).getString("customUnknown"))
+        assertEquals("imported", saved.sourceType); assertEquals("original-template", saved.sourceTemplateId)
+        assertEquals(7, saved.templateVersion)
     }
 
     @Test fun coachReadsOnlyTheSelectedProviderAndTreatsVerifiedSamsungZeroAsData() {
