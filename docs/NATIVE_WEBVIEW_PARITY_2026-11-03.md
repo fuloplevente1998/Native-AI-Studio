@@ -1,6 +1,6 @@
 # WebView main → Native Studio: funkcióparitás, 2026-11-03
 
-**Frissítés #77 után:** #68 előtöltés és #70 Coach bekötés implementálva, main81da2f7; igazolt402 teszt (0 failure/error/skipped). #69 RIR/root-feedback alap javítva, teljes paritása részleges. A további hiányok továbbra is backlog, BLE sztornó. Az alábbi részletek auditkori tünetét a soronkénti státusz értelmezi.
+**Frissítés #79 után:** #68/#70 már #77-ben kész; #72 program-/sajátgyakorlat-/kedvenc és #73 naplószerkesztés most bekötve, #60 kompakt óra és #61 Samsung permission javítva. #59 készülékes videóhiba javítása CI/APK kész, elfogadás nyitott. #71 rekordböngésző részben bekötve; teljes26 metrikás összesítő, #69 maradéka, #74/#75 még nyitott. CI41670555328 nyers411, nulla hiba/kihagyás, signed41671892820; [aktuális átadó](CURRENT_STATUS.md). Az alábbi forráshelyek/auditkori tünetek történeti kiindulópontok, a soronkénti státusz felülírja őket.
 
 ## Forrás és az audit határa
 
@@ -15,15 +15,15 @@
 | Terület | A mostani natív kód helyzete | Fennmaradó határ |
 |---|---|---|
 | Profil, saját terv alapjai | Tartós profil, aktív program, terv-előnézet/generálás és elfogadás létezik | A régi history128/variáció minden ágának megőrzése külön audit; nem új onboarding készítése |
-| Programok és könyvtár | Létrehozás, aktiválás, keresés/kategória, gyakorlat-hozzáadás, sorrend és prescription szerkesztése | A teljes CRUD és kedvencek lent külön hiány |
+| Programok és könyvtár | Létrehozás, aktiválás, keresés/kategória, gyakorlat-hozzáadás, sorrend és prescription szerkesztése | #79-ben bekötve, készülékes elfogadás külön |
 | Edzés és életciklus | Natív session, explicit pause/resume, aktív intervallumok, idő/kétoldali/GPS és tartós finalizálás/mentés/elvetés | Előtöltés, RIR/effort, preset/auto kapcsolat lent; nem új motor |
-| Napló és törlés | Valós Room lista/részlet, piros listatörlés és megerősített fizikai törlés, fotók, útvonal, Health-források | Szerkesztő és utólagos feedback lent; törlést nem kell újraírni |
+| Napló és törlés | Valós Room lista/részlet, piros listatörlés és megerősített fizikai törlés, fotók, útvonal, Health-források | #79-ben natív szerkesztő/jegyzet/feedback; teljes per-exercise feedback #69 |
 | Fejlődés | Dátumozott volumen, idő/edzésszám/PR/izomterhelés; napi/heti oszlopok, előző időszak százalék | Gyakorlatonként minden régi grafikon/1RM/részletszűrő teljessége nincs teljesen újraminősítve |
 | Egészség | Külön provider, grant/szinkron állapot, mai és heti adatok, pulzus/recovery projekció | Teljes dátumböngésző/26 metrika, valamint #61 konkrét hibái lent |
 | Testsúly, fotók | Dátumos testsúlymentés/törlés, fotó hozzáadás/nézet/törlés és importvédelem létezik | Saját régi mentés és fizikai kamera/picker/restarthoz külön elfogadás |
 | Naptár | Havi napok, helyi ISO dátum, tervezés/újratervezés, törlés/Undo és Google adapter létezik | Valós OAuth/Google-naptár és minden ütemezési variáns külön készülékes próba |
 | Videó | Ellenőrzött URL, belső YouTube/WebView és belső böngészős fallback mainen | #59 tényleges lejátszás/háttérhang/beágyazási hibák készülékes ellenőrzése |
-| Wear | Eredeti ownership/ACK/offline motor, mérések, Tile/komplikáció; valós órainfó DTO/Sync a telefonon | #60 kompakt UI még hiányzik; valós páros elfogadás külön |
+| Wear | Eredeti ownership/ACK/offline motor, mérések, Tile/komplikáció; valós órainfó DTO/Sync a telefonon | #60 kompakt UI #79-ben; valós páros elfogadás külön |
 | Mentés/Drive | JSON/ZIP streamelt import/export, privát fotók, health consent, redo/replacement/tombstone létezik | Saját mentés, valódi process kill, Drive/OAuth és hibatűrés fizikai ellenőrzése |
 | Témák, nyelvek | Témakövető naptár/térkép, témák és nyelvválasztó létezik, #67 kompakt Settings | Négy nyelv teljes felületi lokalizációja hiányos; #75 |
 
@@ -45,7 +45,7 @@ A startPlannedWorkout/startWorkoutWithExercises a buildDefaultSetsForExercise é
 
 ### 2. P1 – Opcionális tényleges RIR és kanonikus fájdalom/effort visszajelzés — [69](https://github.com/fuloplevente1998/Native-AI-Studio/issues/69)
 
-**Most: részben implementálva #77-ben (opcionális RIR, root-feedback, pain); további feedback-paritás #69/#73-ban nyitott.**
+**Most: részben implementálva #77-ben (opcionális RIR, root-feedback, pain); további gyakorlatonkénti feedback-paritás #69-ben nyitott; a naplószerkesztő és edzésjegyzet #79-ben bekötve.**
 
 **Régi viselkedés:** `www/app.js:20241 tp197RirSave; 16869 TrainPilotWorkoutFeedback`. Inventory: B15, B16, C03.
 
@@ -73,6 +73,8 @@ A Studio Coach nem használja a CoachViewModel/NativeCoachAdviceRepository telje
 
 ### 4. P2 – Teljes egészségnapló, dátumszűrő és metrikarészletek elérése a Studio felületen — [71](https://github.com/fuloplevente1998/Native-AI-Studio/issues/71)
 
+**Most: Részben implementálva #79-ben: dátumtartomány/rekordböngésző/alvásszakasz; teljes26 metrikás összesítő még nyitott.**
+
 **Régi viselkedés:** `www/app.js:16075 recordHtml; NativeHealthMetrics 26 kulcsa`. Inventory: D01–D04, D07, D14.
 
 **Mostani bizonyíték:** `app/src/main/java/com/repforge/app/ui/health/HealthRecordBrowser.kt; app/src/main/java/com/repforge/app/ui/health/NativeHealthMetrics.kt; app/src/main/java/com/example/ui/screens/HealthCoachAndSettingsScreens.kt`.
@@ -85,6 +87,8 @@ A Studio főleg mai és 7/14 napos összesítéseket mutat. A teljes dátumtól/
 
 ### 5. P2 – Program- és sajátgyakorlat-műveletek valódi bekötése, kedvencek — [72](https://github.com/fuloplevente1998/Native-AI-Studio/issues/72)
 
+**Most: Implementálva #79-ben: valódi program-/nap-/gyakorlatműveletek és tartós kedvencek, kanonikus védelmekkel.**
+
 **Régi viselkedés:** `www/app.js:1540 rf144Favorites; program- és exercise-kezelők`. Inventory: A07, A08, A12, A13.
 
 **Mostani bizonyíték:** `app/src/main/java/com/example/ui/screens/WorkoutAndPlanningScreens.kt:1380; app/src/main/java/com/example/MainActivity.kt:475–566`.
@@ -93,9 +97,11 @@ A programtörlés feliratos művelet jelenleg onBack-et hív. A Studio útvonalo
 
 **Elvárt eredmény:** Minden felsorolt művelet valódi Room-módosítás, hibánál nincs hamis siker; aktív session/import/szinkron és beépített elemek védelme. Kedvencek backupban megmaradnak. Meglévő napló gyakorlatreferenciái nem sérülhetnek.
 
-**Megrendelési állapot:** A felhasználónak felsorolva; most csak backlog, nincs implementációs felhatalmazás ebben a körben.
+**Megrendelési állapot:** A felhasználó közös tesztcsomagként kérte, #79-ben implementálva.
 
 ### 6. P2 – Naplózott edzés valódi szerkesztése és utólagos visszajelzés a Studio részletben — [73](https://github.com/fuloplevente1998/Native-AI-Studio/issues/73)
+
+**Most: Implementálva #79-ben: a natív naplószerkesztő, edzésjegyzet és utólagos visszajelzés bekötve.**
 
 **Régi viselkedés:** `www/app.js naplórészletek és TrainPilotWorkoutFeedback`. Inventory: C02, C03.
 
@@ -105,7 +111,7 @@ A Studio naplórészletben a natív törlés/Health/fotó/útvonal elérhető, d
 
 **Elvárt eredmény:** Mentett sets/reps/súly/tényleges RIR és megjegyzés/visszajelzés tudatos szerkesztése, előnézet/megerősítés a meglévő natív szerkesztőn. Cache/PR/Coach frissüljön, idők/ownership/health nem találhatók ki.
 
-**Megrendelési állapot:** Csak rögzítés; #57 törlés funkcióját nem kell újraírni.
+**Megrendelési állapot:** Közös tesztcsomagként kérve és #79-ben bekötve; #57 törlése megmarad.
 
 ### 7. P2 – Intervallum-/automata beállítások tartós és kanonikus motorbekötése — [74](https://github.com/fuloplevente1998/Native-AI-Studio/issues/74)
 
@@ -137,8 +143,8 @@ A teljes `NativeHealthMetrics.definitions` 26 kulcsa már létezik a háttérben
 
 ## Külön, már rögzített új észrevételek
 
-- #60: a mostani két egymás alatti órablokk túl magas. Kompakt fejléc és két egymás melletti belső panel kell. **Nem kész**, csak a javaslat és a követelmény rögzített.
-- #61: Samsung pulzusnál a téves engedélyhiány-jelzés továbbra is nyitott; a hiteles Energy=0 és Coach score eltérését #77 javítja. Az eredeti készülékes adathiány okát ez sem bizonyítja.
+- #60: kompakt fejléc és két egymás melletti belső panel #79-ben implementálva, készülékes elfogadás külön.
+- #61: a téves Samsung nyugalmi engedélyhiány-jelzés #79-ben javítva; Energy0–Coach #77-ben javítva. Az eredeti készülékes adathiány tényleges oka továbbra sem bizonyított.
 - #48 és #35: #67 javítás mainen; friss APK-s visszateszt szükséges. A korábbi 2744-es készülékképek a megelőző megoldást cáfolták, nem a most átadandó #67-et igazolják.
 
 ## Sztornózott és nem megrendelt terület
@@ -151,6 +157,6 @@ A teljes `NativeHealthMetrics.definitions` 26 kulcsa már létezik a háttérben
 
 A felhasználó sorrendje teljesült: **#67 aláírt telefonos APK átadva → #70 Coach + #68 előtöltés mainen**, a szükséges #69 adatértelmezési feltételekkel. A kész kódot ne implementáld újra. A kanonikus motor, valódi program/nap-azonosság, kézi/draft-védelem és provider-izoláció megmarad. A régi `dayId=session` rekordot nem szabad találomra egy A/B naphoz rendelni.
 
-A többi #71–#75 most csak backlog. Ugyanazt a `TrainPilotViewModel.kt`, `MainActivity.kt` vagy `HealthCoachAndSettingsScreens.kt` fájlt érintő feladatok nem adhatók párhuzamosan több chatnek közös írásra; új kiosztásnál ismét teljes fájltulajdon kell. Már mainen lévő #58/#62–#67 kódot ne cherry-pickelj újra. Alügynök nincs kérve.
+A #72/#73 most #79-ben megvalósítva; #71 részleges, #74/#75 és #69 maradéka külön nyitott. Ugyanazt a `TrainPilotViewModel.kt`, `MainActivity.kt` vagy `HealthCoachAndSettingsScreens.kt` fájlt érintő feladatok nem adhatók párhuzamosan több chatnek közös írásra; új kiosztásnál ismét teljes fájltulajdon kell. Már mainen lévő #58/#62–#67 kódot ne cherry-pickelj újra. Alügynök nincs kérve.
 
 A következő implementáció szükséges regressziói: megfelelő gyakorlat másik programnapról is; eltérő loadType/repUnit kizárása; gyors edzés; importált/hiányos/lejárt/törölt előzmény; sorozatonként eltérő súly; bodyweight/time/GPS kizárás; nincs örökölt actualRir/done; kézi érték/draft/ownership/restore megőrzése; Coach által jelzett nap indul; pain/hard korlátozás és hiányzó provider-adat. Teljes Android/Wear build és nyers XML a tényleges SHA-ra, majd külön készülékes elfogadás.

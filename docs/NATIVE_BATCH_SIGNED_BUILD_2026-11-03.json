@@ -1,0 +1,47 @@
+{
+  "source": "d69c77e41692f7c2c171e400358772439bff35ea",
+  "tests": {
+    "tests": 411,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "modules": {
+    "phone": 235,
+    "wear": 176
+  },
+  "apks": [
+    {
+      "platform": "phone",
+      "bytes": 19629256,
+      "sha256": "f8f3c76006cd7e5d01b937318e1f62fc9a7bd19a5f1076ed4b7b270c24f1c069"
+    },
+    {
+      "platform": "wear",
+      "bytes": 4636863,
+      "sha256": "0e01e69487ff3e34d3185573d88bacef2d71dc37dcd2b24b0af1c5ab5f9a74b5"
+    }
+  ],
+  "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+  "mapsApiKeyConfigured": true,
+  "run": 41671892820,
+  "runUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41671892820",
+  "signedArtifact": 13249613432,
+  "rawXmlArtifact": 13249743121,
+  "versionCode": 2744,
+  "versionName": "0.1.0-beta",
+  "applicationId": "com.TrainPilot.com",
+  "pairIdentityVerified": true,
+  "wearCompanionCapabilityRetained": true,
+  "wearHardwareRequired": true,
+  "deviceAccepted": false,
+  "phoneDelivery": {
+    "id": "1EBiZCJ7hEiGi5QHw87umNLZbEEmTgcVu",
+    "url": "https://drive.google.com/file/d/1EBiZCJ7hEiGi5QHw87umNLZbEEmTgcVu/view?usp=drivesdk",
+    "name": "TrainPilot-Native-2744-d69c77e-telefon-javitocsomag.apk",
+    "bytes": 19629256,
+    "parent": "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9",
+    "sizeAndParentReadbackVerified": true,
+    "wearUpdateRequired": false
+  }
+}

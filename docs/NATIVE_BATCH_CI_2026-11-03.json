@@ -1,0 +1,19 @@
+{
+  "source": "18b828e17e45a2b67ea6e864c04fe72685b46a6c",
+  "run": 41670555328,
+  "rawXmlArtifact": 13248017996,
+  "tests": {
+    "tests": 411,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "modules": {
+    "phone": 235,
+    "wear": 176
+  },
+  "inlineJavaScriptTests": 7,
+  "deviceAccepted": false,
+  "mainMerge": "d69c77e41692f7c2c171e400358772439bff35ea",
+  "appTreeEqual": true
+}

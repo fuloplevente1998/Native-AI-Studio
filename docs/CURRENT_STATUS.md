@@ -1,46 +1,33 @@
 # TrainPilot Native – aktuális állapot, 2026-11-03
 
-Ez az elsődleges belépési pont. A régi dátumozott átadók történeti megfigyelések; a lentiek felülírják a bennük szereplő „aktuális”, „még nincs implementálva” és régi APK kijelentéseket.
+Ez az elsődleges átadó. A felhasználó a beleférő javításokat egyetlen telefonos APK-ban kérte, közös készülékes próbára. A régebbi átadók és a korábbi „backlog / nincs bekötve” kijelentések történetiek; a lentiek az aktuális állapot.
 
-## Új közös javítócsomag – #79
+## Legfrissebb telefonos APK
 
-A felhasználó a fekete YouTube-videó jelzése után a beleférő javításokat egy közös APK-ban kéri. Az új implementáció és egyben végzendő tesztlista: [NATIVE_TEST_BATCH_2026-11-03.md](NATIVE_TEST_BATCH_2026-11-03.md). A videó/kompakt óraadat/Samsung permission és program-/sajátgyakorlat-/naplószerkesztés most implementálva, a teljes végleges CI és új aláírt APK még ellenőrzés alatt. A részletes egészségböngésző bekötése részleges #71. Ez felülírja az alábbi korábbi backlog-jelzéseket ezeknél a pontoknál. **A korábban átadott81da2f7 APK ezt a csomagot még nem tartalmazza.** BLE sztornó, #69/#71 teljes maradéka, #74/#75 nem kész. Fizikai elfogadás nincs állítva.
+**[A közös javítócsomag letöltése](https://drive.google.com/file/d/1EBiZCJ7hEiGi5QHw87umNLZbEEmTgcVu/view?usp=drivesdk)**. Elég a telefonos appot frissíteni; Wear- és shared-forrás nem változott, órás újratelepítés nem szükséges. VersionCode2744, versionName0.1.0-beta, package `com.TrainPilot.com`, az állandó signer változatlan.
 
-## Kód és ellenőrzés
+Alkalmazásforrás: `d69c77e41692f7c2c171e400358772439bff35ea` (#79 main-merge), tesztelt PR-head `18b828e17e45a2b67ea6e864c04fe72685b46a6c`; alkalmazás/Wear/shared/scripts/workflow fák egyeznek. A dokumentációs utókövetés ezeket nem módosítja.
 
-- Main alkalmazásforrás: **`81da2f7d3190ff5a558e2a07ccf1fe54104c90e8`** (#77). Tesztelt PR-head: `eae9d6042d48998d9e9e21681443257aa8427897`; app/Wear/shared/scripts/workflow fák egyeznek.
-- [Actions 41598444479](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41598444479) SUCCESS; letöltött nyers XML: **402 =226 telefon +176 Wear**, 0 failure/error/skipped, artifact `13213141866` és tényleges source-SHA visszaellenőrizve.
-- #77: a kanonikus Coach/target/advice/readiness és előző megfelelő alkalom súly-/ismétlés-előtöltése a Studio UI-ba kötve. Valódi program/nap indul, jövőbeli cél a naptárba visz. A #228 előtöltő programtól/naptól függetlenül azonos ID/loadType/repUnit alapján működik; nincs örökölt actualRir/done/idő/GPS. Stable ID, kézi érték és eredeti napló megmarad. A hiányzó RIR és tényleges 0 külön, a hat visszajelzés kanonikus machine érték. Fájdalom/alacsony készenlét a szövegben is korlátoz; nincs helyi fake súly/RIR számítás. [Részletek](COACH_PREFILL_IMPLEMENTATION_2026-11-03.md).
-- Korábbi #67 appforrás: `deebfddd7f0259e589e9791582ad6d2d38fcf4e2`, tesztelt PR-head `c0a9862aaadf1e3d4ad20bc12420f8d828114c2d`; Actions 41589518841, nyers395 =219 telefon+176Wear, 0 failure/error/skipped. A mini/fullscreen térkép, Mai állapot pulzustrend/szöveg és Settings fejléc/csoport javítása innen származik. Ezeket ne kezdd újra.
-- #58/#62–#66: Coach rövid kivonat, piros részlet-/listatörlés, belső videó, valós órainfó, pulzus/recovery projekció, témakövetés, naptár, valós naplóadat és volumen-százalék már létezik.
+- [Teljes Android CI 41670555328](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41670555328) SUCCESS. Letöltött nyers XML: **411 = 235 telefon + 176 Wear**, 0 failure/error/skipped, forrás-SHA ellenőrizve. A tényleges inline lejátszóscript **7 eseménytesztje** külön sikeres. [CI-bizonyíték](NATIVE_BATCH_CI_2026-11-03.json).
+- [Aláírt main build 41671892820](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41671892820) SUCCESS; pontos forrás `d69c77e41692f7c2c171e400358772439bff35ea`; letöltött signed metadata és nyers XML ellenőrizve. Mindkét APK package/verzió/signer/Maps/pair/capability/hash ellenőrzése sikeres. Telefon: **19629256 bájt**, SHA256 `f8f3c76006cd7e5d01b937318e1f62fc9a7bd19a5f1076ed4b7b270c24f1c069`. A feltöltött Drive-fájl méretét és a meglévő mappát visszaolvastuk; csak a telefonos fájlt adtuk át. [Aláírt bizonyíték](NATIVE_BATCH_SIGNED_BUILD_2026-11-03.json).
 
-## APK – külön állapot a main kódjától
+## Mi került a közös csomagba
 
-**Legfrissebb telefonos APK, Coach + előtöltés:** [TrainPilot-Native-2744-81da2f7-telefon-Coach-elotoltes.apk](https://drive.google.com/file/d/1Vy6uZlUSbY-6uxxkUhEo9Cu1bkc2wcsL/view?usp=drivesdk). A [signed main build 41599072569](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41599072569) SUCCESS, pontos forrás `81da2f7d3190ff5a558e2a07ccf1fe54104c90e8`. Letöltött nyers XML: **402 =226 telefon +176 Wear**, 0 failure/error/skipped. Signed artifact `13213214357`, raw XML `13213399004`; package/verzió, állandó signer, Maps/pair és mindkét APK-hash ellenőrizve. Telefon: **19 580 104 bájt**, SHA256 `4552dc295b2d7a6e2b3f2c1392e22bfe38d958c2d8607b18fc4c1525cc29ae49`. Drive-méret és szülőmappa visszaolvasva. [Gépi bizonyíték](COACH_PREFILL_SIGNED_BUILD_2026-11-03.json). **Elég a telefonos app frissítése**; #67/#77 csak telefonos alkalmazáskódot változtatott, órás telepítés nem szükséges. Fizikai elfogadás még nincs igazolva.
+- #59: YouTube előnézet és explicit Lejátszás, appazonos origin/referrer, iframe-cookie/minimumméret, elakadt/blokkolt indítás és késői callback korrekt hibája; használható belső böngésző. A készülékes fekete kép javításának elfogadása még nyitott, a pontos eredeti ok nincs bizonyítottnak nevezve.
+- #60: kompakt órakártya, név+Sync fejléc és két kisebb, normál méretnél egymás melletti panel; keskeny/nagy betűs tördelés, valós óraadatok.
+- #61: a Samsung nem támogatott nyugalmi pulzusa nem engedélyhiány; valódi megtagadás és SDK-hiba külön marad. A #77 Energy0 javítása megmarad. Ez nem bizonyítja, hogy az adott órán minden metrika rendelkezésre áll.
+- #72: valódi programcopy/delete, nap hozzáadás/törlés, napból gyakorlateltávolítás, névmentés; meglévő sajátgyakorlat-szerkesztő/törlés és tartós kedvencek/szűrés. A bevált natív átrendezés és helyi súly/ismétlés/pihenő minta megmarad. Beépített tervből saját másolat, eredeti/napló/naptár/aktív-edzés/restore védelmekkel.
+- #73: valódi natív naplószerkesztő: sorozatok, súly/ismétlés/tényleges RIR, időpontok, edzésjegyzet és utólagos visszajelzés. Azonos edzés-ID, CAS/tombstone/restore, régi megjegyzés és már alkalmazott feedback védelme; siker után Studio napló/PR/Coach frissül.
+- #71 részleges: a meglévő részletes egészségrekord-böngésző a Studio egészségnaplóból elérhető, a kiválasztott HC/Samsung csatornán; dátumtartomány, eredet/típus, lapozás, alvásszakasz/sorozat-részletek. A teljes26 metrikás összesítő még külön feladat.
 
-### Korábban, a Coach-fejlesztés előtt átadott APK
+**[A közös telefonos tesztlista](NATIVE_TEST_BATCH_2026-11-03.md)**. Implementáció, CI, APK-átadás és fizikai elfogadás külön állapot; készülékes sikert még nem állítunk. #59 és a korábbi #35/#48 felhasználói visszatesztre nyitott.
 
-A #67-et tartalmazó aláírt main build [41591380374](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41591380374) SUCCESS, pontos forrás `deebfddd7f0259e589e9791582ad6d2d38fcf4e2`. Letöltött nyers XML: **395 =219 telefon +176 Wear**, 0 failure/error/skipped. Signed artifact `13210208864`, raw XML `13210463700`. Package/verzió, állandó signer, Maps/pair és APK-hash ellenőrizve. A #76 dokumentációs main-merge után az alkalmazásfa változatlan.
+## Ami még nincs teljesen kész
 
-**Telefonos APK átadva:** [TrainPilot-Native-2744-deebfdd-telefon.apk](https://drive.google.com/file/d/1Ap5ysNwA8ZA35xV-Zidx_JeKqxlwHLP-/view?usp=drivesdk), 19 563 720 bájt, SHA256 `f82cd35ccd057e53ebc2e92e325dd8f2e48cfe291158e8674d2e5f8cc889ed33`. Drive-méret/szülőmappa külön visszaolvasva: `1ywHgrManynjV9uNvZfVncOmCr3SbHIb9`. Korábbi fájlok megmaradtak. Az órás APK is ugyanazon buildben ellenőrzött (4 636 863 bájt, SHA256 `f6b73f685ce444e1886a8660dfeb107839ac9b1b0546b2522fde53a5573dd753`), de a felhasználó most csak a telefon frissítését kérte, új órás telepítés nem szükséges. A Coach/előző alkalom bekötés még nem része ennek az átadott APK-nak.
+#69 teljes gyakorlatonkénti/utólagos visszajelzés-paritás és régi formátumok auditja; #71 teljes26 metrikás összesítő; #74 preset/intervallum/automata motor tartós bekötésének maradéka; #75 teljes HU/EN/DE/RO felület. Ezért a teljes app még nem nevezhető teljes paritásúnak. **BLE-kezelő sztornó**, meglévő backend/adat nem törlendő. [Paritásaudit](NATIVE_WEBVIEW_PARITY_2026-11-03.md), [hibakövető](PROGRESS_HEALTH_BUG_TRACKER_2026-11-02.md).
 
-A #67 csak telefonos fájlokat változtatott. Ehhez önmagában az órás appot nem kell frissíteni. A workflow technikailag párt épít és ellenőrzi a package/signer/pair szerződést; ez nem jelent kötelező órás újratelepítést. Verzió most 2744 /0.1.0-beta, package mindkettőn `com.TrainPilot.com`, állandó signer változatlan. Nincs automatikus verzióemelés.
+## Korábbi igazolt átadások
 
-Korábbi igazolt aláírt build: 41580088708, forrás `56301f7d68016f3074c366ff4162617adf75e8cd`, 393 teszt; EZ MÉG NEM TARTALMAZZA #67-et. A régi 2743-as Drive-linkek történeti kiadások, nem a legfrissebb javítások.
+A #77 Coach/előző megfelelő alkalom súly-/ismétlés-előtöltés mainen és a mostani APK-ban is megmarad. [Megvalósítás](COACH_PREFILL_IMPLEMENTATION_2026-11-03.md), korábbi appsource81da2f7, CI402 és [signed proof](COACH_PREFILL_SIGNED_BUILD_2026-11-03.json). A még korábbi #67 térkép/Mai állapot/Settings forrásdeebfdd, CI395 és [első telefonos átadás](MAIN_TEST_BUILD_2026-11-03_2744.json) történetileg megőrzött. Ezek az idősebb APK-k nem tartalmazzák a mostani #79 javításait.
 
-## Jóváhagyott munka és megmaradó backlog
-
-1. A #67 aláírt telefonos APK átadása kész. A felhasználó ezt megkapta a Coach/előző alkalom fejlesztése ELŐTT.
-2. #70 Coach és #68 előtöltés **kódban/CI-ben kész, mainen**, implementációként lezárva. A legújabb, ezeket tartalmazó aláírt main build **41599072569 SUCCESS**, nyers402; az ellenőrzött telefonos APK átadva, lásd az APK-szakaszt. Fizikai elfogadás nem állított.
-3. #69 alap RIR/root-feedback szerződése javítva; a teljes gyakorlatonkénti/utólagos feedback és régi formátumok áttekintése még nyitott, adatot tömegesen nem írunk át. #61 Energy 0 része javítva, Samsung permission-üzenet része még nyitott.
-4. #71–#75 és a #60 kompakt órakártya backlog. A program-/gyakorlatműveletek a meglévő natív átrendezés és helyi súly/ismétlés/pihenő szerkesztés mintáját kövessék. #35/#48 készülékes visszaigazolásra vár. **#59 új készülékes hibajelzés: fekete YouTube-kép „készen áll” üzenettel; [javítás és ellenőrzési állapot](YOUTUBE_BLACK_PLAYER_2026-11-03.md).** A korábban átadott81da2f7 APK ezt a javítást még nem tartalmazza.
-5. **BLE-kezelő sztornó**, a felhasználó kifejezett kérése. Nem fejlesztendő, meglévő adat/backend törlése sem feladat.
-
-A funkcióhiányok forráshoz kötött listája: [WebView–natív paritásaudit](NATIVE_WEBVIEW_PARITY_2026-11-03.md).
-Aktuális készülékes nyitott pontok: [hibakövető](PROGRESS_HEALTH_BUG_TRACKER_2026-11-02.md).
-
-## Megőrzendő szerződések
-
-Studio Compose arculat, egyetlen natív motor és Room/DataStore. Nincs második DB, háttérben néma ownership-váltás, hamis siker vagy kitalált mérés. ACK/epoch, explicit Folytatás, finalization, restore/replacement, tombstone, default-off egészségmentési consent és privát GPS/fotó védelem megmarad. [Constitution](../.specify/memory/constitution.md), [keretek](FRAME_DESIGN_SYSTEM.md).
-
-A CI kódot/fixture-t igazol. A Maps valódi ablak, YouTube-lejátszás, Samsung/HC-hozzáférés, Wear átadás és a saját mentés készülékes elfogadása külön bizonyíték; hiányuk nem jelenti automatikusan a már kész backend hiányát. Alügynök nincs kérve. GitHub Actions a teljes build/regresszió helye; kulcsot, jelszót ne kérj és ne naplózz.
+A Studio Compose arculat, egyetlen natív motor/Room/DataStore, tulajdonos/ACK/epoch/explicit resume/finalization/replacement/tombstone, alapból kikapcsolt health backup-consent és privát GPS/fotó védelem változatlan. [Constitution](../.specify/memory/constitution.md). Teljes Android build/regresszió GitHub Actionsben, kulcsot nem kérünk és nem naplózunk. Alügynök nincs kérve.

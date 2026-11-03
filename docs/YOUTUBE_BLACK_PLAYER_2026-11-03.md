@@ -18,6 +18,6 @@ Edzés, időzítő, tároló, tulajdonos/ACK/epoch, program, katalógusvideó-v�
 
 ## Ellenőrzés
 
-A tényleges beágyazott JavaScript 7 hálózat nélküli eseménytesztje sikeres (`node --test scripts/test_exercise_video_player.mjs`): nincs autoplay, kattintás indít, kizárólag playing rejti az előnézetet, hiba után késői callback nem tesz kész állapotba, blokkolt indítás hiba. A teszt nem állít valós YouTube-lejátszást. Két JVM-regresszió az állapotsorrendet, késői callbacket, hibamegőrzést és a package/origin egyezést vizsgálja. Android build/teljes JVM CI: a javítás PR-jában rögzítendő, még nem igazolt.
+A tényleges beágyazott JavaScript 7 hálózat nélküli eseménytesztje sikeres (`node --test scripts/test_exercise_video_player.mjs`): nincs autoplay, kattintás indít, kizárólag playing rejti az előnézetet, hiba után késői callback nem tesz kész állapotba, blokkolt indítás hiba. A teszt nem állít valós YouTube-lejátszást. Két JVM-regresszió az állapotsorrendet, késői callbacket, hibamegőrzést és a package/origin egyezést vizsgálja. A végleges közös csomag CI41670555328 SUCCESS, letöltött nyers411, nulla failure/error/skipped. Signed41671892820 és telefonos APK átadva; [bizonyíték](CURRENT_STATUS.md).
 
 Készülékes elfogadás még nyitott: a jelzett videó és másik gyakorlat, Lejátszás, pause/resume, fullscreen, X/Bezárás és háttérbe lépés után nincs hang; beágyazási/hálózati hiba és a belső böngészős YouTube-oldal/consent használható. A pontos fekete-kép ok készülékes visszateszt nélkül nem tekinthető bizonyítottnak.
