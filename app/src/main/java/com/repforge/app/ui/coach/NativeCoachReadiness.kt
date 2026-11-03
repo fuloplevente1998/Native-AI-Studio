@@ -30,6 +30,8 @@ internal object NativeCoachReadiness {
         var loadParts = 0
         var pain = false
         for (workout in recent) {
+            if (workout.optJSONObject("feedback")?.optString("rating") == "pain" ||
+                workout.optJSONObject("feedback")?.optString("effort") == "pain") pain = true
             val exercises = workout.optJSONArray("exercises") ?: continue
             for (i in 0 until exercises.length()) {
                 val exercise = exercises.optJSONObject(i) ?: continue
@@ -75,7 +77,7 @@ internal object NativeCoachReadiness {
     private fun validEnergy(reading: JSONObject?, now: Instant, zone: ZoneId): Triple<Double, String, String>? {
         reading ?: return null
         val value = number(reading, "energyScore") ?: return null
-        if (value <= 0 || value > 100) return null
+        if (value < 0 || value > 100) return null
         val source = reading.optString("energyScoreSource").ifBlank { reading.optJSONObject("metricProviders")?.optString("energyScore").orEmpty() }
         if (source !in setOf("samsung_health", "com.sec.android.app.shealth")) return null
         val stamp = reading.optString("energyScoreTime")

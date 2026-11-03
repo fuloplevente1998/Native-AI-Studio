@@ -203,7 +203,7 @@ fun ActiveStrengthWorkoutScreen(
     onToggleRestRunning: () -> Unit,
     onSkipRest: () -> Unit,
     onOpenExerciseDetail: (String) -> Unit,
-    onUpdateSetValuesExact: (Int, Float, Int, Int) -> Unit = { _, _, _, _ -> },
+    onUpdateSetValuesExact: (Int, Float, Int, Int?) -> Unit = { _, _, _, _ -> },
     onDeleteSet: (Int) -> Unit = {},
     onAddSet: () -> Unit = {},
     onToggleAutoMode: (Boolean) -> Unit = {},
@@ -351,7 +351,7 @@ fun ActiveStrengthWorkoutScreen(
                     onClick = {
                         val kg = editWeightText.toFloatOrNull() ?: targetSet.weightKg
                         val reps = editRepsText.toIntOrNull() ?: targetSet.reps
-                        val rir = editRirText.toIntOrNull() ?: targetSet.rir
+                        val rir = editRirText.toIntOrNull()
                         onUpdateSetValuesExact(targetSet.setNumber, kg, reps, rir)
                         editingSet = null
                     },
@@ -681,7 +681,7 @@ fun ActiveStrengthWorkoutScreen(
                                     editingSet = setItem
                                     editWeightText = setItem.weightKg.toString()
                                     editRepsText = setItem.reps.toString()
-                                    editRirText = setItem.rir.toString()
+                                    editRirText = if (setItem.actualRirProvided) setItem.rir.toString() else ""
                                 }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
@@ -708,7 +708,7 @@ fun ActiveStrengthWorkoutScreen(
                                     editingSet = setItem
                                     editWeightText = setItem.weightKg.toString()
                                     editRepsText = setItem.reps.toString()
-                                    editRirText = setItem.rir.toString()
+                                    editRirText = if (setItem.actualRirProvided) setItem.rir.toString() else ""
                                 }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
@@ -732,13 +732,13 @@ fun ActiveStrengthWorkoutScreen(
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable {
-                                    val nextRir = if (setItem.rir >= 3) 0 else setItem.rir + 1
-                                    onAdjustSetValues(setItem.setNumber, 0f, 0, nextRir - setItem.rir)
+                                    val nextRir = if (!setItem.actualRirProvided || setItem.rir >= 3) 0 else setItem.rir + 1
+                                    onUpdateSetValuesExact(setItem.setNumber, setItem.weightKg, setItem.reps, nextRir)
                                 }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
-                                    text = if (setItem.rir > 0) "${setItem.rir}" else "0",
+                                    text = if (setItem.actualRirProvided) "${setItem.rir}" else "—",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = if (setItem.rir > 0) palette.textPrimary else palette.textSecondary
                                 )
@@ -825,341 +825,8 @@ fun ActiveStrengthWorkoutScreen(
             }
         }
 
-        // TrainPilot Coach & Valós RIR / Progressziós Motor javaslat kártya
-        item {
-            var selectedEngineMode by remember(uiState.progressionRuleHu) {
-                mutableStateOf(
-                    when {
-                        uiState.progressionRuleHu.contains("Lineáris", ignoreCase = true) -> "Lineáris progresszió"
-                        uiState.progressionRuleHu.contains("Dupla", ignoreCase = true) -> "Dupla progresszió (8–12 ism.)"
-                        else -> "RIR-alapú autoreguláció"
-                    }
-                )
-            }
-            var modeDropdownOpen by remember { mutableStateOf(false) }
-
-            val baseWeight = uiState.activeSets.firstOrNull()?.weightKg ?: 16f
-            val minReps = uiState.activeSets.minOfOrNull { it.reps } ?: 10
-            val maxReps = uiState.activeSets.maxOfOrNull { it.reps } ?: 10
-            val observedMinRir = uiState.activeSets.minOfOrNull { it.rir } ?: 2
-            val observedAvgRir = if (uiState.activeSets.isNotEmpty()) {
-                uiState.activeSets.map { it.rir }.average()
-            } else 2.0
-            val completedCount = uiState.activeSets.count { it.completed }
-            val historyCount = uiState.loggedWorkouts.size
-            val readinessScore = when {
-                uiState.coachReadinessScore > 0 -> uiState.coachReadinessScore
-                uiState.samsungEnergyScore > 0 -> uiState.samsungEnergyScore
-                else -> 0
-            }
-            val readinessLabel = if (readinessScore > 0) "$readinessScore/100" else "—"
-
-            data class LiveCoachCalc(
-                val actionTitle: String,
-                val suggestedWeightKg: Float,
-                val suggestedReps: Int,
-                val suggestedRir: Int,
-                val reasonText: String,
-                val accentColor: Color
-            )
-
-            val engineCalc = when {
-                readinessScore in 1..54 -> LiveCoachCalc(
-                    actionTitle = "Könnyített terhelés (Regeneráció)",
-                    suggestedWeightKg = (baseWeight - 2.5f).coerceAtLeast(0f),
-                    suggestedReps = minReps.coerceAtMost(10),
-                    suggestedRir = 2,
-                    reasonText = "Alacsony napi készenlét ($readinessLabel) miatt a Coach motor visszafogott terhelést és 2–3 RIR tartalékot javasol.",
-                    accentColor = palette.secondary
-                )
-                selectedEngineMode.startsWith("RIR") -> when {
-                    observedMinRir >= 3 -> LiveCoachCalc(
-                        actionTitle = "Súlyemelés javasolt (+2.5 kg)",
-                        suggestedWeightKg = baseWeight + 2.5f,
-                        suggestedReps = minReps,
-                        suggestedRir = 2,
-                        reasonText = "Magas RIR tartalék (min. RIR $observedMinRir > cél 1–2 RIR). A motor +2.5 kg emelést számolt (${baseWeight} kg → ${baseWeight + 2.5f} kg) 2 RIR megtartásával.",
-                        accentColor = palette.success
-                    )
-                    observedMinRir == 0 -> LiveCoachCalc(
-                        actionTitle = "Terhelés korrekció (-2.5 kg • RIR 0)",
-                        suggestedWeightKg = (baseWeight - 2.5f).coerceAtLeast(0f),
-                        suggestedReps = minReps,
-                        suggestedRir = 2,
-                        reasonText = "Elérted a bukást (RIR 0 < cél 1–2 RIR). A túledzés elkerüléséhez a motor ${(baseWeight - 2.5f).coerceAtLeast(0f)} kg-ot és 1–2 RIR tartalékot javasol.",
-                        accentColor = palette.danger
-                    )
-                    else -> LiveCoachCalc(
-                        actionTitle = "Céltartományban (1–2 RIR) • +1 ism.",
-                        suggestedWeightKg = baseWeight,
-                        suggestedReps = (minReps + 1).coerceAtMost(20),
-                        suggestedRir = observedMinRir,
-                        reasonText = "A sorozatok RIR értéke pontosan a célzott 1–2 RIR zónában van (átlag RIR: ${String.format("%.1f", observedAvgRir)}). Tartsd a ${baseWeight} kg súlyt és lépj ${(minReps + 1).coerceAtMost(20)} ismétlésre.",
-                        accentColor = palette.primary
-                    )
-                }
-                selectedEngineMode.startsWith("Dupla") -> {
-                    if (minReps >= 12 && observedMinRir >= 1) {
-                        LiveCoachCalc(
-                            actionTitle = "Felső határ elérve (12 ism.) → +2.5 kg",
-                            suggestedWeightKg = baseWeight + 2.5f,
-                            suggestedReps = 8,
-                            suggestedRir = 2,
-                            reasonText = "Minden sorozat elérte a 12 ismétlést biztonságos tartalékkal (RIR $observedMinRir). Dupla progresszió szerint lépj ${baseWeight + 2.5f} kg-ra 8 ismétléssel!",
-                            accentColor = palette.success
-                        )
-                    } else {
-                        LiveCoachCalc(
-                            actionTitle = "Ismétlésszám építése (+1 ism.)",
-                            suggestedWeightKg = baseWeight,
-                            suggestedReps = (minReps + 1).coerceAtMost(12),
-                            suggestedRir = 2,
-                            reasonText = "Jelenlegi sorozatok: ${minReps}–${maxReps} ism. (${baseWeight} kg). A dupla progressziós motor a súly tartását és +1 ismétlést (${(minReps + 1).coerceAtMost(12)} ism.) javasol 12 ismétlésig.",
-                            accentColor = palette.primary
-                        )
-                    }
-                }
-                else -> {
-                    if (minReps >= 8 && observedMinRir >= 1) {
-                        LiveCoachCalc(
-                            actionTitle = "Lineáris súlyemelés (+2.5 kg)",
-                            suggestedWeightKg = baseWeight + 2.5f,
-                            suggestedReps = minReps,
-                            suggestedRir = 2,
-                            reasonText = "Stabil teljesítmény (${minReps} ism., RIR $observedMinRir, készenlét $readinessLabel). A lineáris motor +2.5 kg súlyemelést javasol (${baseWeight} kg → ${baseWeight + 2.5f} kg).",
-                            accentColor = palette.success
-                        )
-                    } else {
-                        LiveCoachCalc(
-                            actionTitle = "Alapsúly stabilizálása (${baseWeight} kg)",
-                            suggestedWeightKg = baseWeight,
-                            suggestedReps = minReps.coerceAtLeast(8),
-                            suggestedRir = 2,
-                            reasonText = "Érd el a stabil min. 8 ismétlést 1–2 RIR tartalékkal a következő lineáris súlyemelés előtt.",
-                            accentColor = palette.primary
-                        )
-                    }
-                }
-            }
-
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, engineCalc.accentColor.copy(alpha = 0.55f), RoundedCornerShape(18.dp))
-                    .testTag("active_workout_coach_engine_card")
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "TrainPilot Coach • RIR & Progressziós Motor",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = palette.primary
-                            )
-                            Text(
-                                text = "Előzmény: $historyCount edzés • Kész: $completedCount/${uiState.activeSets.size} sorozat • Készenlét: $readinessLabel",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = palette.textSecondary
-                            )
-                        }
-
-                        // Floating dropdown selector for progression mode (opens on top of content)
-                        Box {
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = palette.surfaceElevated,
-                                modifier = Modifier
-                                    .trainPilotBorder(1.dp, if (modeDropdownOpen) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .clickable { modeDropdownOpen = !modeDropdownOpen }
-                                    .testTag("coach_engine_mode_dropdown_btn")
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Text(
-                                        text = when {
-                                            selectedEngineMode.startsWith("RIR") -> "RIR-mód"
-                                            selectedEngineMode.startsWith("Dupla") -> "Dupla prog."
-                                            else -> "Lineáris"
-                                        },
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = palette.textPrimary
-                                    )
-                                    Icon(
-                                        imageVector = if (modeDropdownOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                        contentDescription = null,
-                                        tint = palette.primary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-
-                            androidx.compose.material3.DropdownMenu(
-                                expanded = modeDropdownOpen,
-                                onDismissRequest = { modeDropdownOpen = false },
-                                containerColor = palette.background,
-                                shape = RoundedCornerShape(12.dp),
-                                border = TrainPilotFrames.stroke(1.dp, palette.primary.copy(alpha = 0.7f))
-                            ) {
-                                listOf(
-                                    "RIR-alapú autoreguláció",
-                                    "Dupla progresszió (8–12 ism.)",
-                                    "Lineáris progresszió"
-                                ).forEach { modeOption ->
-                                    val isSel = selectedEngineMode == modeOption
-                                    androidx.compose.material3.DropdownMenuItem(
-                                        text = {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Text(
-                                                    text = modeOption,
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
-                                                    color = if (isSel) palette.primary else palette.textPrimary
-                                                )
-                                                if (isSel) {
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Text("✓", color = palette.primary, fontWeight = FontWeight.Bold)
-                                                }
-                                            }
-                                        },
-                                        onClick = {
-                                            selectedEngineMode = modeOption
-                                            modeDropdownOpen = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // Live telemetry badges: Alapsúly -> Javasolt | Átlag RIR | Cél ismétlés
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = palette.surfaceElevated,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Column(modifier = Modifier.padding(8.dp)) {
-                                Text("Súly javaslat", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                Text(
-                                    text = "${baseWeight} → ${engineCalc.suggestedWeightKg} kg",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = engineCalc.accentColor
-                                )
-                            }
-                        }
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = palette.surfaceElevated,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Column(modifier = Modifier.padding(8.dp)) {
-                                Text("RIR analízis", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                Text(
-                                    text = "Átl. ${String.format("%.1f", observedAvgRir)} (Cél: ${engineCalc.suggestedRir})",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = palette.textPrimary
-                                )
-                            }
-                        }
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = palette.surfaceElevated,
-                            modifier = Modifier.weight(0.9f)
-                        ) {
-                            Column(modifier = Modifier.padding(8.dp)) {
-                                Text("Cél ism.", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                Text(
-                                    text = "${engineCalc.suggestedReps} ism.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = palette.primary
-                                )
-                            }
-                        }
-                    }
-
-                    // Recommendation summary & explanation
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = palette.background,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(10.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = engineCalc.actionTitle,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = engineCalc.accentColor
-                            )
-                            Text(
-                                text = engineCalc.reasonText,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = palette.textSecondary
-                            )
-                        }
-                    }
-
-                    // Apply Coach recommendation button
-                    Button(
-                        onClick = {
-                            val targets = uiState.activeSets.filter { !it.completed }.ifEmpty { uiState.activeSets }
-                            targets.forEach { s ->
-                                onUpdateSetValuesExact(
-                                    s.setNumber,
-                                    engineCalc.suggestedWeightKg,
-                                    engineCalc.suggestedReps,
-                                    engineCalc.suggestedRir
-                                )
-                            }
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = palette.primary,
-                            contentColor = palette.onPrimary
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp)
-                            .testTag("apply_coach_engine_advice_btn")
-                    ) {
-                        Text(
-                            text = "Coach javaslat alkalmazása (${engineCalc.suggestedWeightKg} kg × ${engineCalc.suggestedReps} • RIR ${engineCalc.suggestedRir})",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-        }
+        // Canonical history-based preview and explicit approval; no local progress formula.
+        item { com.example.ui.components.StudioWorkoutCoachPanel(uiState.selectedExerciseId) }
 
         }
 
@@ -1996,7 +1663,7 @@ fun ActiveBilateralWorkoutScreen(
     onOpenSettings: () -> Unit,
     onSelectMeasurementMode: (SubScreen) -> Unit,
     onRecordBilateralSide: (Boolean, Int, Int?) -> Unit = { _, _, _ -> },
-    onUpdateBilateralSetExact: (Int, Int, Int, Int) -> Unit = { _, _, _, _ -> },
+    onUpdateBilateralSetExact: (Int, Int, Int, Int?) -> Unit = { _, _, _, _ -> },
     onToggleSetCompleted: (Int) -> Unit = {},
     onAddSet: () -> Unit = {},
     onDeleteSet: (Int) -> Unit = {},
@@ -2047,7 +1714,7 @@ fun ActiveBilateralWorkoutScreen(
     editingBilateralSet?.let { setToEdit ->
         var editLeftText by remember(setToEdit) { mutableStateOf(setToEdit.leftSec.toString()) }
         var editRightText by remember(setToEdit) { mutableStateOf(setToEdit.rightSec.toString()) }
-        var editRirText by remember(setToEdit) { mutableStateOf(setToEdit.rir.toString()) }
+        var editRirText by remember(setToEdit) { mutableStateOf(if (setToEdit.actualRirProvided) setToEdit.rir.toString() else "") }
 
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { editingBilateralSet = null },
@@ -2132,7 +1799,7 @@ fun ActiveBilateralWorkoutScreen(
                     onClick = {
                         val lSec = editLeftText.toIntOrNull() ?: setToEdit.leftSec
                         val rSec = editRightText.toIntOrNull() ?: setToEdit.rightSec
-                        val rirVal = editRirText.toIntOrNull() ?: setToEdit.rir
+                        val rirVal = editRirText.toIntOrNull()
                         onUpdateBilateralSetExact(setToEdit.setNumber, lSec, rSec, rirVal)
                         editingBilateralSet = null
                     },
@@ -2770,7 +2437,7 @@ fun ActiveBilateralWorkoutScreen(
                                             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                     ) {
                                         Text(
-                                            text = "RIR ${setItem.rir}",
+                                            text = if (setItem.actualRirProvided) "RIR ${setItem.rir}" else "RIR —",
                                             style = MaterialTheme.typography.labelSmall,
                                             color = palette.textSecondary,
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp)

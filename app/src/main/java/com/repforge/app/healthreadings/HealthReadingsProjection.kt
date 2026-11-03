@@ -174,33 +174,7 @@ object HealthReadingsProjection {
     ): RecoveryDayReading {
         requireProvider(provider)
         val today = now.atZone(zone).toLocalDate()
-        val ownDays = days.filter { row ->
-            val date = runCatching { LocalDate.parse(row.optString("day")) }.getOrNull()
-            date != null && !date.isAfter(today) && matches(row, provider, date)
-        }.map { original ->
-            JSONObject(original.toString()).also { safe ->
-                // Even an accidentally copied Samsung value must not enter an HC calculation.
-                if (provider != HealthJournalStore.SAMSUNG ||
-                    metricState(safe, "energyScore", "READ_ENERGY_SCORE", true) in
-                    setOf(ReadingState.PERMISSION_DENIED, ReadingState.READ_ERROR)) {
-                    safe.remove("energyScore")
-                    safe.remove("energyScoreTime")
-                    safe.remove("energyScoreSource")
-                }
-                val grants = safe.optJSONObject("permissions")
-                val failures = errorFields(safe)
-                if (grants?.has("READ_SLEEP") == true && !grants.optBoolean("READ_SLEEP") ||
-                    "sleepMinutes" in failures) {
-                    for (key in listOf("sleepSessions", "sleepMinutes", "sleepStart", "sleepEnd", "sleepSource"))
-                        safe.remove(key)
-                }
-                if (grants?.has("READ_HEART_RATE_VARIABILITY") == true &&
-                    !grants.optBoolean("READ_HEART_RATE_VARIABILITY") || "hrvRmssdMs" in failures) {
-                    for (key in listOf("hrvRmssdMs", "hrvTime", "hrvSource", "hrvBaselineMs"))
-                        safe.remove(key)
-                }
-            }
-        }
+        val ownDays = validatedRecoveryDays(provider, days, now, zone)
         val current = ownDays.firstOrNull { it.optString("day") == today.toString() }
             ?: return RecoveryDayReading(today, provider, ReadingState.NOT_SYNCED, RecoverySource.NONE,
                 null, null, null, null, null, "Nincs kiválasztott forrásból származó mai napi adat.")
@@ -249,6 +223,40 @@ object HealthReadingsProjection {
         return RecoveryDayReading(today, provider, finalState, source, selectedScore,
             calculation.score, calculation.samsungScore ?: if (verifiedZeroAt != null) 0.0 else null,
             calculation.samsungTime ?: verifiedZeroAt, calculation.trainpilotScore, explanation)
+    }
+
+    /** Canonical input admission shared by Home recovery and the actual Coach motor. */
+    internal fun validatedRecoveryDays(provider: String, days: List<JSONObject>, now: Instant,
+        zone: ZoneId): List<JSONObject> {
+        requireProvider(provider)
+        val today = now.atZone(zone).toLocalDate()
+        return days.filter { row ->
+            val date = runCatching { LocalDate.parse(row.optString("day")) }.getOrNull()
+            date != null && !date.isAfter(today) && matches(row, provider, date)
+        }.map { original ->
+            JSONObject(original.toString()).also { safe ->
+                // Even an accidentally copied Samsung value must not enter an HC calculation.
+                if (provider != HealthJournalStore.SAMSUNG ||
+                    metricState(safe, "energyScore", "READ_ENERGY_SCORE", true) in
+                    setOf(ReadingState.PERMISSION_DENIED, ReadingState.READ_ERROR)) {
+                    safe.remove("energyScore")
+                    safe.remove("energyScoreTime")
+                    safe.remove("energyScoreSource")
+                }
+                val grants = safe.optJSONObject("permissions")
+                val failures = errorFields(safe)
+                if (grants?.has("READ_SLEEP") == true && !grants.optBoolean("READ_SLEEP") ||
+                    "sleepMinutes" in failures) {
+                    for (key in listOf("sleepSessions", "sleepMinutes", "sleepStart", "sleepEnd", "sleepSource"))
+                        safe.remove(key)
+                }
+                if (grants?.has("READ_HEART_RATE_VARIABILITY") == true &&
+                    !grants.optBoolean("READ_HEART_RATE_VARIABILITY") || "hrvRmssdMs" in failures) {
+                    for (key in listOf("hrvRmssdMs", "hrvTime", "hrvSource", "hrvBaselineMs"))
+                        safe.remove(key)
+                }
+            }
+        }
     }
 
     private fun recoveryStatus(raw: JSONObject, provider: String): ReadingState {

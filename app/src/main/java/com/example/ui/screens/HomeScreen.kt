@@ -522,7 +522,7 @@ fun HomeScreen(
                         Column(Modifier.weight(1f)) {
                             Text(strings.coachSuggestionHeader, color = palette.primary, style = MaterialTheme.typography.labelMedium)
                             Text(when {
-                                state.coachReadinessScore <= 0 -> "Még nincs elég friss adat. A Coach oldalon megnézheted a részleteket."
+                                state.coachReadinessScore <= 0 && state.todayRecoveryReading?.coachScore == null -> "Még nincs elég friss adat. A Coach oldalon megnézheted a részleteket."
                                 state.coachReadinessScore < 55 -> "${state.coachReadinessScore}/100 • Ma könnyebb terhelés és regeneráció javasolt."
                                 state.coachReadinessScore < 75 -> "${state.coachReadinessScore}/100 • Kissé visszafogott terhelés javasolt."
                                 else -> "${state.coachReadinessScore}/100 • Tartható a szokásos edzésterhelés."

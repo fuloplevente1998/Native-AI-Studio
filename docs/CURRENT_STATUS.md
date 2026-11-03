@@ -11,7 +11,9 @@ Ez az elsődleges belépési pont. A régi dátumozott átadók történeti megf
 
 ## APK – külön állapot a main kódjától
 
-A felhasználó először a #67 telefonos APK-ját kérte, és csak UTÁNA a Coach/előző edzés előtöltés implementációját. Az aláírt main build [41591380374](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41591380374) a `deebfddd...` forrásból indult; a dokumentum létrehozásakor még fut. Amíg az artifact/meta/raw XML nincs visszaellenőrizve és a telefonos APK nincs átadva, ne állíts sikeres átadást.
+A #67-et tartalmazó aláírt main build [41591380374](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41591380374) SUCCESS, pontos forrás `deebfddd7f0259e589e9791582ad6d2d38fcf4e2`. Letöltött nyers XML: **395 =219 telefon +176 Wear**, 0 failure/error/skipped. Signed artifact `13210208864`, raw XML `13210463700`. Package/verzió, állandó signer, Maps/pair és APK-hash ellenőrizve. A #76 dokumentációs main-merge után az alkalmazásfa változatlan.
+
+**Telefonos APK átadva:** [TrainPilot-Native-2744-deebfdd-telefon.apk](https://drive.google.com/file/d/1Ap5ysNwA8ZA35xV-Zidx_JeKqxlwHLP-/view?usp=drivesdk), 19 563 720 bájt, SHA256 `f82cd35ccd057e53ebc2e92e325dd8f2e48cfe291158e8674d2e5f8cc889ed33`. Drive-méret/szülőmappa külön visszaolvasva: `1ywHgrManynjV9uNvZfVncOmCr3SbHIb9`. Korábbi fájlok megmaradtak. Az órás APK is ugyanazon buildben ellenőrzött (4 636 863 bájt, SHA256 `f6b73f685ce444e1886a8660dfeb107839ac9b1b0546b2522fde53a5573dd753`), de a felhasználó most csak a telefon frissítését kérte, új órás telepítés nem szükséges. A Coach/előző alkalom bekötés még nem része ennek az átadott APK-nak.
 
 A #67 csak telefonos fájlokat változtatott. Ehhez önmagában az órás appot nem kell frissíteni. A workflow technikailag párt épít és ellenőrzi a package/signer/pair szerződést; ez nem jelent kötelező órás újratelepítést. Verzió most 2744 /0.1.0-beta, package mindkettőn `com.TrainPilot.com`, állandó signer változatlan. Nincs automatikus verzióemelés.
 
@@ -19,7 +21,7 @@ Korábbi igazolt aláírt build: 41580088708, forrás `56301f7d68016f3074c366ff4
 
 ## Következő jóváhagyott munka
 
-1. A fenti aláírt telefonos APK ellenőrzése és átadása a meglévő TrainPilot Native Drive-mappában; korábbi fájlok megmaradnak.
+1. A fenti aláírt telefonos APK átadása kész; a következő két funkció fejlesztése megkezdhető.
 2. [#70 – Coach valódi bekötése](https://github.com/fuloplevente1998/Native-AI-Studio/issues/70), és [#68 – előző megfelelő edzésből súly/ismétlés előtöltése](https://github.com/fuloplevente1998/Native-AI-Studio/issues/68). A szükséges RIR/effort szerződést #69 alapján megőrizni/javítani; nem lehet kitalált RIR-ből vagy elvesző fájdalomjelzésből progressziót számolni.
 3. A többi paritáshiány csak rögzített backlog. A program-/gyakorlatműveletek, teljes egészségböngésző, intervallum- és nyelvi teljesség nem kapott most implementációs felhatalmazást.
 4. **BLE-kezelő sztornó**, a felhasználó kifejezett kérése. Nem fejlesztendő, nem kell új hibajegy; meglévő backend/adat törlése sem feladat.

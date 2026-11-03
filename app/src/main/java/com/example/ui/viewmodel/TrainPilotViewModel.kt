@@ -252,7 +252,7 @@ data class TrainPilotUiState(
     val outdoorDistanceKm: Float = 0f,
     val outdoorElapsedLabel: String = "00:00",
     val outdoorPaceLabel: String = "0:00",
-    val workoutSummaryMoodIndex: Int = 2, // 2 = "Pont jó"
+    val workoutSummaryMoodIndex: Int = -1, // No feedback until explicitly chosen.
     val workoutSummaryNote: String = "",
 
     // Log / Diary State (Mockup 3/4 #1..#3 + main)
@@ -328,6 +328,10 @@ class TrainPilotViewModel : ViewModel() {
 
     private var nativeContext: Context? = null
     private val calendarWriteMutex = Mutex()
+    private val programWriteMutex = Mutex()
+    @Volatile private var programWriteRevision = 0L
+    private var programWriteJob: Job? = null
+    @Volatile private var programWriteError: String? = null
     @Volatile private var calendarWriteRevision = 0L
     private var nativeSettingsStore: TrainPilotSettingsStore? = null
     private var nativeDatabase: TrainPilotDatabase? = null
@@ -465,7 +469,9 @@ class TrainPilotViewModel : ViewModel() {
             coachStatusHu = "Normál terhelés",
             coachHintHu = parsedSteps.firstOrNull() ?: "Kezdj könnyebben; ma ne erőltesd a progressziót.",
             videoUrl = entity.videoUrl.orEmpty(),
-            isCustom = entity.custom
+            isCustom = entity.custom,
+            loadType = entity.loadType, repUnit = entity.repUnit, measurementType = entity.measurementType,
+            targetRepsText = entity.defaultReps
         )
     }
 
@@ -531,10 +537,23 @@ class TrainPilotViewModel : ViewModel() {
         val currentPrograms = _uiState.value.programs
         if (currentPrograms.isEmpty()) return
         val nowMs = System.currentTimeMillis()
-        scope.launch(Dispatchers.IO) {
+        val revision = ++programWriteRevision
+        programWriteError = null
+        val context = nativeContext ?: return
+        val ticket = try { com.repforge.app.NativeDataReplacement.continuationForCurrentData(context) }
+            catch (error: Exception) {
+                programWriteError = error.message ?: "A terv nem menthető."
+                _uiState.update { it.copy(statusBannerMessage = programWriteError) }; return
+            }
+        programWriteJob = scope.launch(Dispatchers.IO) {
+            programWriteMutex.withLock {
+            if (revision != programWriteRevision) return@withLock
             runCatching {
+                com.repforge.app.NativeDataReplacement.mutate(context) {
+                ticket.requireCurrent(context)
                 currentPrograms.forEachIndexed { pIdx, prog ->
-                    val rawProgJson = JSONObject().apply {
+                    val existing = db.programDao().getProgramWithDaysById(prog.id)?.program
+                    val rawProgJson = JSONObject(existing?.rawJson ?: "{}").apply {
                         put("id", prog.id)
                         put("nameHu", prog.nameHu)
                         put("nameEn", prog.nameEn)
@@ -542,7 +561,7 @@ class TrainPilotViewModel : ViewModel() {
                         put("isActive", prog.isActive)
                         put("isCustom", prog.isCustom)
                     }
-                    val progEntity = ProgramEntity(
+                    val created = ProgramEntity(
                         id = prog.id,
                         nameHu = prog.nameHu,
                         nameEn = prog.nameEn,
@@ -561,6 +580,9 @@ class TrainPilotViewModel : ViewModel() {
                         updatedAt = nowMs,
                         rawJson = rawProgJson.toString()
                     )
+                    val progEntity = existing?.copy(nameHu = prog.nameHu, nameEn = prog.nameEn,
+                        description = prog.subtitleHu, sortOrder = pIdx, updatedAt = nowMs,
+                        rawJson = rawProgJson.toString()) ?: created
                     val progDays = prog.days.mapIndexed { dIdx, day ->
                         val dayKey = day.id.substringAfter("${prog.id}:").ifBlank { "day_${dIdx + 1}" }
                         val compositeId = if (day.id.contains(":")) day.id else "${prog.id}:$dayKey"
@@ -570,9 +592,9 @@ class TrainPilotViewModel : ViewModel() {
                                 JSONObject().apply {
                                     put("id", ex.id)
                                     put("sets", ex.defaultSets)
-                                    put("reps", ex.defaultReps)
-                                    put("weightKg", ex.defaultWeightKg.toDouble())
-                                    put("restSec", ex.defaultRestSec)
+                                    put("reps", ex.targetRepsText.ifBlank { ex.defaultReps.toString() })
+                                    put("weight", ex.defaultWeightKg.toDouble())
+                                    put("rest", ex.defaultRestSec)
                                 }
                             )
                         }
@@ -590,6 +612,7 @@ class TrainPilotViewModel : ViewModel() {
                     }
                     db.programDao().saveProgramWithDays(progEntity, progDays)
                 }
+                currentPrograms.firstOrNull { it.isActive }?.let { nativeSettingsStore?.setActiveProgramId(it.id) }
                 if (profile != null) {
                     val store = checkNotNull(nativeSettingsStore)
                     val merged = JSONObject(store.current().profileJson)
@@ -601,9 +624,12 @@ class TrainPilotViewModel : ViewModel() {
                     _uiState.update { it.copy(profileComplete = true,
                         statusBannerMessage = "Profil és egyéni terv tartósan elmentve.") }
                 }
+                }
             }.onFailure { failure ->
                 if (failure is kotlinx.coroutines.CancellationException) throw failure
+                if (revision == programWriteRevision) programWriteError = "A terv/profil mentése nem sikerült. Próbáld újra."
                 _uiState.update { it.copy(statusBannerMessage = "A terv/profil mentése nem sikerült. Próbáld újra.") }
+            }
             }
         }
     }
@@ -728,20 +754,32 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     private fun mapCatalogPrograms(exercisesMap: Map<String, ExerciseItem>): List<TrainingProgramModel> {
-        return try {
-            val (programs, days) = TrainPilotDatabase.defaultPrograms()
-            programs.mapIndexed { pIdx, prog ->
+        val (programs, days) = TrainPilotDatabase.defaultPrograms()
+        return mapProgramRows(programs, days, exercisesMap)
+    }
+
+    private fun mapProgramRows(programs: List<ProgramEntity>, days: List<ProgramDayEntity>,
+        exercisesMap: Map<String, ExerciseItem>, activeId: String? = null): List<TrainingProgramModel> {
+        val explicitActive = programs.any { runCatching { JSONObject(it.rawJson).optBoolean("isActive") }.getOrDefault(false) }
+        return programs.mapIndexed { pIdx, prog ->
                 val progDays = days.filter { it.programId == prog.id }.mapIndexed { dIdx, dayEntity ->
-                    val exIds = try {
+                    val dayExercises = runCatching {
+                        val recipes = JSONObject(prog.rawJson).optJSONObject("prescriptions") ?: JSONObject()
                         val arr = JSONArray(dayEntity.exercisesJson)
                         (0 until arr.length()).mapNotNull { i ->
-                            val itm = arr.get(i)
-                            if (itm is JSONObject) itm.optString("id") else itm.toString()
+                            val item = arr.get(i)
+                            val id = if (item is JSONObject) item.optString("id") else item.toString()
+                            val source = exercisesMap[id] ?: return@mapNotNull null
+                            val rx = JSONObject(recipes.optJSONObject(id)?.toString() ?: "{}")
+                            if (item is JSONObject) item.keys().forEach { key -> if (key != "id") rx.put(key, item.get(key)) }
+                            val target = rx.optString("reps", source.targetRepsText.ifBlank { source.defaultReps.toString() })
+                            source.copy(defaultSets = rx.optInt("sets", source.defaultSets),
+                                defaultReps = Regex("[0-9]+").find(target)?.value?.toIntOrNull() ?: source.defaultReps,
+                                targetRepsText = target,
+                                defaultWeightKg = rx.optDouble("weight", rx.optDouble("weightKg", source.defaultWeightKg.toDouble())).toFloat(),
+                                defaultRestSec = rx.optInt("rest", rx.optInt("restSec", source.defaultRestSec)))
                         }
-                    } catch (_: Throwable) { emptyList<String>() }
-                    val dayExercises = exIds.mapNotNull { exercisesMap[it] }.ifEmpty {
-                        exercisesMap.values.take(6)
-                    }
+                    }.getOrElse { emptyList() }
                     com.example.model.ProgramDayModel(
                         id = dayEntity.compositeId,
                         dayCode = when (dIdx) { 0 -> "A nap"; 1 -> "B nap"; 2 -> "C nap"; else -> "D nap" },
@@ -762,11 +800,11 @@ class TrainPilotViewModel : ViewModel() {
                     subtitleEn = prog.description.ifBlank { "${progDays.size} workout days" },
                     tagsHu = listOf(locHu, lvlHu),
                     isCustom = !prog.builtin,
-                    isActive = (pIdx == 0),
+                    isActive = if (activeId != null && programs.any { it.id == activeId }) prog.id == activeId
+                        else if (explicitActive) JSONObject(prog.rawJson).optBoolean("isActive") else pIdx == 0,
                     days = progDays
                 )
             }
-        } catch (_: Throwable) { DemoDataProvider.defaultPrograms }
     }
 
     private fun targetSubScreenForExercise(ex: ExerciseItem?): SubScreen {
@@ -794,7 +832,8 @@ class TrainPilotViewModel : ViewModel() {
                 leftSec = defaultSideSec,
                 rightSec = defaultSideSec,
                 leftRecorded = false,
-                rightRecorded = false
+                rightRecorded = false,
+                id = UUID.randomUUID().toString()
             )
         }
     }
@@ -816,13 +855,13 @@ class TrainPilotViewModel : ViewModel() {
             val setsArray = JSONArray()
             setsForEx.forEachIndexed { idx, s ->
                 setsArray.put(JSONObject().apply {
-                    put("setId", "${exItem.id}_set_${s.setNumber}")
+                    put("setId", s.id.ifBlank { "${exItem.id}_set_${s.setNumber}" })
                     put("set", idx + 1)
                     put("setNumber", s.setNumber)
                     put("weight", s.weightKg.toDouble())
                     put("reps", s.reps.toString())
                     put("done", s.completed)
-                    put("actualRir", s.rir)
+                    if (s.actualRirProvided) put("actualRir", s.rir)
                     put("leftSec", s.leftSec)
                     put("rightSec", s.rightSec)
                     put("leftRecorded", s.leftRecorded)
@@ -835,19 +874,19 @@ class TrainPilotViewModel : ViewModel() {
                 put("name", exItem.nameHu)
                 put("nameHu", exItem.nameHu)
                 put("nameEn", exItem.nameEn)
-                put("loadType", if (exItem.defaultWeightKg <= 0f) "bodyweight" else "weight")
-                put("repUnit", when {
+                put("loadType", exItem.loadType.ifBlank { if (exItem.defaultWeightKg <= 0f) "bodyweight" else "weight" })
+                put("repUnit", exItem.repUnit.ifBlank { when {
                     exItem.id == "outdoor_run_ex" && state.outdoorGpsEnabled -> "km"
                     exItem.isBilateral -> "mp/oldal"
                     exItem.isTimed -> "sec"
                     else -> "reps"
-                })
-                put("measurementType", when {
+                } })
+                put("measurementType", exItem.measurementType.ifBlank { when {
                     exItem.id == "outdoor_run_ex" && state.outdoorGpsEnabled -> "distance"
                     exItem.isBilateral -> "bilateral_time"
                     exItem.isTimed -> "time"
                     else -> "reps"
-                })
+                } })
                 put("orderIndex", exIdx)
                 put("sets", setsArray)
             })
@@ -969,6 +1008,15 @@ class TrainPilotViewModel : ViewModel() {
             }
         }
 
+        observersScope.launch {
+            settingsStore.settingsFlow.map { it.trainingModes197Json }.distinctUntilChanged().collect { raw ->
+                val mode = com.repforge.app.data.store.NativeTrainingModes.globalChoice(raw)
+                _uiState.update { it.copy(
+                    trainingStyleHu = if (mode.trainingStyle == "hit") "HIT-inspirált" else "Normál hipertrófia",
+                    progressionRuleHu = when (mode.progressionMode) { "linear" -> "Lineáris progresszió"; "rir" -> "RIR/Coach"; else -> "Dupla progresszió" }) }
+            }
+        }
+
         observersScope.launch(Dispatchers.Main.immediate) {
             ActiveWorkoutStore.snapshotFlow.collect { frame ->
                 if (frame?.optBoolean("active") == true) _uiState.update { state ->
@@ -983,6 +1031,7 @@ class TrainPilotViewModel : ViewModel() {
                             ExerciseSetItem(setNumber = row.optInt("setNumber", rowIndex + 1),
                                 weightKg = row.optDouble("weight", 0.0).toFloat(), reps = row.optString("reps").toDoubleOrNull()?.toInt() ?: 0,
                                 rir = row.optInt("actualRir", 2), completed = row.optBoolean("done"),
+                                id = row.optString("setId"), actualRirProvided = row.has("actualRir") && !row.isNull("actualRir"),
                                 leftSec = row.optInt("leftSeconds", row.optInt("leftSec", 0)),
                                 rightSec = row.optInt("rightSeconds", row.optInt("rightSec", 0)),
                                 leftRecorded = row.optInt("leftSeconds") > 0 || row.optBoolean("leftRecorded"),
@@ -1052,63 +1101,9 @@ class TrainPilotViewModel : ViewModel() {
             // 3. Read real programs and days from Room ProgramDao (with custom exercise prescriptions & active flag)
             val mappedPrograms = try {
                 val dbPrograms = database.programDao().getProgramsWithDays()
-                if (dbPrograms.isNotEmpty()) {
-                    val anyExplicitActive = dbPrograms.any {
-                        runCatching { JSONObject(it.program.rawJson).optBoolean("isActive", false) }.getOrDefault(false)
-                    }
-                    dbPrograms.mapIndexed { pIdx, pwd ->
-                        val prog = pwd.program
-                        val rawProgJson = runCatching { JSONObject(prog.rawJson) }.getOrNull()
-                        val isActiveProg = if (anyExplicitActive) {
-                            rawProgJson?.optBoolean("isActive", false) == true
-                        } else {
-                            pIdx == 0
-                        }
-                        val days = pwd.days.mapIndexed { dIdx, dayEntity ->
-                            val dayExercises = try {
-                                val arr = JSONArray(dayEntity.exercisesJson)
-                                (0 until arr.length()).mapNotNull { i ->
-                                    val itm = arr.get(i)
-                                    if (itm is JSONObject) {
-                                        val exId = itm.optString("id")
-                                        val baseEx = exercisesMap[exId] ?: return@mapNotNull null
-                                        baseEx.copy(
-                                            defaultSets = itm.optInt("sets", baseEx.defaultSets).coerceAtLeast(1),
-                                            defaultReps = itm.optInt("reps", baseEx.defaultReps).coerceAtLeast(1),
-                                            defaultWeightKg = itm.optDouble("weightKg", baseEx.defaultWeightKg.toDouble()).toFloat(),
-                                            defaultRestSec = itm.optInt("restSec", baseEx.defaultRestSec).coerceAtLeast(15)
-                                        )
-                                    } else {
-                                        exercisesMap[itm.toString()]
-                                    }
-                                }
-                            } catch (_: Throwable) { emptyList() }.ifEmpty {
-                                mappedExercises.take(6)
-                            }
-                            com.example.model.ProgramDayModel(
-                                id = dayEntity.compositeId,
-                                dayCode = when (dIdx) { 0 -> "A nap"; 1 -> "B nap"; 2 -> "C nap"; else -> "D nap" },
-                                titleHu = dayEntity.nameHu.ifBlank { "Edzésnap ${dIdx + 1}" },
-                                titleEn = dayEntity.nameEn.ifBlank { "Day ${dIdx + 1}" },
-                                durationMinutes = 60,
-                                exercises = dayExercises
-                            )
-                        }
-                        val locHu = prog.location.ifBlank { "Otthon / Edzőterem" }
-                        val lvlHu = prog.level.ifBlank { "Kezdő" }
-                        TrainingProgramModel(
-                            id = prog.id,
-                            nameHu = prog.nameHu.ifBlank { prog.nameEn }.ifBlank { "Edzésterv ${pIdx + 1}" },
-                            nameEn = prog.nameEn.ifBlank { prog.nameHu }.ifBlank { "Program ${pIdx + 1}" },
-                            subtitleHu = prog.description.ifBlank { "$locHu • $lvlHu • ${days.size} edzésnap" },
-                            subtitleEn = prog.description.ifBlank { "${days.size} workout days" },
-                            tagsHu = listOf(locHu, lvlHu),
-                            isCustom = !prog.builtin,
-                            isActive = isActiveProg,
-                            days = days
-                        )
-                    }
-                } else mapCatalogPrograms(exercisesMap)
+                if (dbPrograms.isNotEmpty()) mapProgramRows(dbPrograms.map { it.program },
+                    dbPrograms.flatMap { it.days }, exercisesMap, savedNativeSettings.activeProgramId)
+                else mapCatalogPrograms(exercisesMap)
             } catch (_: Throwable) { mapCatalogPrograms(exercisesMap) }
 
             // 4. Read all body weight entries from Room sorted by user-entered dayKey
@@ -1215,7 +1210,7 @@ class TrainPilotViewModel : ViewModel() {
                                 setNumber = if (sEntity.setNumber > 0) sEntity.setNumber else (sIdx + 1),
                                 weightKg = (sEntity.weight ?: 0.0).toFloat(),
                                 reps = sEntity.reps.toIntOrNull() ?: 0,
-                                rir = sEntity.actualRir ?: 2,
+                                rir = sEntity.actualRir ?: 2, actualRirProvided = sEntity.actualRir != null,
                                 completed = sEntity.done,
                                 distanceMeters = sEntity.distanceMeters
                             )
@@ -1326,7 +1321,8 @@ class TrainPilotViewModel : ViewModel() {
                                             setNumber = sObj.optInt("setNumber", sObj.optInt("set", sIdx + 1)),
                                             weightKg = sObj.optDouble("weight", catalogEx.defaultWeightKg.toDouble()).toFloat(),
                                             reps = sObj.optString("reps").toIntOrNull() ?: catalogEx.defaultReps,
-                                            rir = sObj.optInt("actualRir", 2),
+                                            rir = sObj.optInt("actualRir", 2), id = sObj.optString("setId"),
+                                            actualRirProvided = sObj.has("actualRir") && !sObj.isNull("actualRir"),
                                             completed = doneFlag,
                                             leftSec = lSec,
                                             rightSec = rSec,
@@ -1718,7 +1714,7 @@ class TrainPilotViewModel : ViewModel() {
                                     if (ex.id != exerciseId) ex
                                     else ex.copy(
                                         defaultSets = sets.coerceIn(1, 10),
-                                        defaultReps = reps.coerceIn(1, 50),
+                                        defaultReps = reps.coerceIn(1, 50), targetRepsText = reps.coerceIn(1, 50).toString(),
                                         defaultWeightKg = weightKg.coerceAtLeast(0f),
                                         defaultRestSec = restSec.coerceIn(15, 300)
                                     )
@@ -2292,7 +2288,8 @@ class TrainPilotViewModel : ViewModel() {
                     s.copy(
                         weightKg = (s.weightKg + deltaWeight).coerceAtLeast(0f),
                         reps = (s.reps + deltaReps).coerceIn(1, 50),
-                        rir = (s.rir + deltaRir).coerceIn(0, 10)
+                        rir = (s.rir + deltaRir).coerceIn(0, 10),
+                        actualRirProvided = s.actualRirProvided || deltaRir != 0
                     )
                 } else s
             }
@@ -2308,14 +2305,14 @@ class TrainPilotViewModel : ViewModel() {
         persistCanonicalActiveSessionAsync()
     }
 
-    fun updateSetValuesExact(setNumber: Int, weightKg: Float, reps: Int, rir: Int) {
+    fun updateSetValuesExact(setNumber: Int, weightKg: Float, reps: Int, rir: Int?) {
         _uiState.update { state ->
             val updated = state.activeSets.map { s ->
                 if (s.setNumber == setNumber) {
                     s.copy(
                         weightKg = weightKg.coerceAtLeast(0f),
                         reps = reps.coerceIn(1, 100),
-                        rir = rir.coerceIn(0, 10)
+                        rir = rir?.coerceIn(0, 10) ?: s.rir, actualRirProvided = rir != null
                     )
                 } else s
             }
@@ -2331,18 +2328,18 @@ class TrainPilotViewModel : ViewModel() {
         persistCanonicalActiveSessionAsync()
     }
 
-    fun updateBilateralSetExact(setNumber: Int, leftSec: Int, rightSec: Int, rir: Int) {
+    fun updateBilateralSetExact(setNumber: Int, leftSec: Int, rightSec: Int, rir: Int?) {
         _uiState.update { state ->
             val cleanLeft = leftSec.coerceIn(1, 600)
             val cleanRight = rightSec.coerceIn(1, 600)
-            val cleanRir = rir.coerceIn(0, 10)
+            val cleanRir = rir?.coerceIn(0, 10)
             val updated = state.activeSets.map { s ->
                 if (s.setNumber == setNumber) {
                     s.copy(
                         leftSec = cleanLeft,
                         rightSec = cleanRight,
                         reps = maxOf(cleanLeft, cleanRight),
-                        rir = cleanRir,
+                        rir = cleanRir ?: s.rir, actualRirProvided = rir != null,
                         leftRecorded = true,
                         rightRecorded = true
                     )
@@ -2453,6 +2450,7 @@ class TrainPilotViewModel : ViewModel() {
                 completed = false,
                 leftSec = lastSet?.leftSec ?: 30,
                 rightSec = lastSet?.rightSec ?: 30,
+                id = UUID.randomUUID().toString(),
                 leftRecorded = false,
                 rightRecorded = false
             )
@@ -2765,90 +2763,99 @@ class TrainPilotViewModel : ViewModel() {
         _uiState.update { it.copy(workoutSummaryNote = note) }
     }
 
+    private var nativeStartJob: kotlinx.coroutines.Job? = null
+
     fun startPlannedWorkout(programId: String? = null, dayIndex: Int = 0) {
-        val currentState = _uiState.value
-        if (currentState.isWorkoutSessionActive && currentState.workoutStartedEpochMs > 0L) {
-            returnToActiveWorkout()
-            _uiState.update { it.copy(statusBannerMessage = "Már van egy futó edzésed! Szüneteltesd vagy fejezd be a váltás előtt.") }
+        val state = _uiState.value
+        val program = state.programs.firstOrNull { it.id == programId }
+            ?: state.programs.firstOrNull { it.isActive }
+        val day = program?.days?.getOrNull(dayIndex)
+        if (program == null || day == null) {
+            _uiState.update { it.copy(statusBannerMessage = "Az edzésprogram vagy nap nem található.") }
             return
         }
-        val nowMs = System.currentTimeMillis()
-        val newWorkoutId = UUID.randomUUID().toString()
-        _uiState.update { state ->
-            val prog = if (programId != null) {
-                state.programs.find { it.id == programId }
-            } else {
-                state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
-            }
-            val day = prog?.days?.getOrNull(dayIndex) ?: prog?.days?.firstOrNull()
-            // Filter out outdoor run pseudo-exercise if starting a planned gym program day
-            val rawDayExs = day?.exercises?.ifEmpty { state.exercises.filter { !it.isTimed && it.id != "outdoor_run_ex" }.take(6) }
-                ?: state.exercises.filter { !it.isTimed && it.id != "outdoor_run_ex" }.take(6)
-            val dayExercises = rawDayExs.filter { it.id != "outdoor_run_ex" }
-                .ifEmpty { state.exercises.filter { !it.isTimed }.take(6) }
-            val firstEx = dayExercises.firstOrNull()
-            val setsMap = dayExercises.associate { ex -> ex.id to buildDefaultSetsForExercise(ex) }
-            val firstSets = if (firstEx != null) setsMap[firstEx.id] ?: buildDefaultSetsForExercise(firstEx) else state.activeSets
-            val targetSub = targetSubScreenForExercise(firstEx)
-            val back = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16)
-            state.copy(
-                isWorkoutSessionActive = true,
-                activeWorkoutId = newWorkoutId,
-                workoutStartedEpochMs = nowMs,
-                activeWorkoutSubScreen = targetSub,
-                activeWorkoutTitleHu = if (prog != null && day != null) "${prog.nameHu} • ${day.dayCode}" else "Tervezett edzés",
-                activeWorkoutExercises = dayExercises,
-                activeExerciseIndex = 0,
-                selectedExerciseId = firstEx?.id ?: state.selectedExerciseId,
-                activeSets = firstSets,
-                activeSetsByExerciseId = setsMap,
-                outdoorDistanceKm = 0f,
-                outdoorElapsedLabel = "00:00",
-                timedCurrentSec = 0,
-                currentSubScreen = targetSub,
-                backStack = back,
-                showQuickWorkoutSheet = false,
-                statusBannerMessage = null
-            )
+        startCanonicalWorkout {
+            val db = requireNotNull(nativeDatabase)
+            val saved = withContext(Dispatchers.IO) { db.programDao().getProgramWithDaysById(program.id) }
+            val nativeDay = saved?.days?.singleOrNull { it.compositeId == day.id || it.dayId == day.id }
+                ?: error("Az edzésnap megváltozott. Nyisd meg újra a programot.")
+            com.repforge.app.NativeWorkoutSession.startProgramWorkout(requireNotNull(nativeContext),
+                program.id, nativeDay.dayId, database = db, automaticEnabled = state.autoModeEnabled).snapshot
         }
-        persistCanonicalActiveSessionAsync(installNew = true)
+    }
+
+    fun startCoachWorkout(programId: String, dayId: String, scheduleId: String?) {
+        startCanonicalWorkout {
+            com.repforge.app.NativeWorkoutSession.startProgramWorkout(requireNotNull(nativeContext),
+                programId, dayId, scheduleId, database = requireNotNull(nativeDatabase),
+                automaticEnabled = _uiState.value.autoModeEnabled).snapshot
+        }
     }
 
     fun startWorkoutWithExercises(exercisesToRun: List<ExerciseItem>, titleHu: String = "Gyors edzés") {
         if (exercisesToRun.isEmpty()) return
-        val currentState = _uiState.value
-        if (currentState.isWorkoutSessionActive && currentState.workoutStartedEpochMs > 0L) {
+        startCanonicalWorkout {
+            com.repforge.app.NativeWorkoutSession.startQuickExercises(requireNotNull(nativeContext),
+                exercisesToRun.map { it.id }, titleHu, _uiState.value.autoModeEnabled,
+                requireNotNull(nativeDatabase))
+        }
+    }
+
+    private fun startCanonicalWorkout(start: suspend () -> JSONObject) {
+        if (nativeStartJob?.isActive == true) return
+        if (_uiState.value.isWorkoutSessionActive && _uiState.value.workoutStartedEpochMs > 0) {
             returnToActiveWorkout()
-            _uiState.update { it.copy(statusBannerMessage = "Már van egy futó edzésed! Szüneteltesd vagy fejezd be a váltás előtt.") }
             return
         }
-        val nowMs = System.currentTimeMillis()
-        val newWorkoutId = UUID.randomUUID().toString()
-        _uiState.update { state ->
-            val firstEx = exercisesToRun.first()
-            val setsMap = exercisesToRun.associate { ex -> ex.id to buildDefaultSetsForExercise(ex) }
-            val firstSets = setsMap[firstEx.id] ?: buildDefaultSetsForExercise(firstEx)
-            val targetSub = targetSubScreenForExercise(firstEx)
-            val back = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16)
-            state.copy(
-                isWorkoutSessionActive = true,
-                activeWorkoutId = newWorkoutId,
-                workoutStartedEpochMs = nowMs,
-                activeWorkoutSubScreen = targetSub,
-                activeWorkoutTitleHu = titleHu,
-                activeWorkoutExercises = exercisesToRun,
-                activeExerciseIndex = 0,
-                selectedExerciseId = firstEx.id,
-                activeSets = firstSets,
-                activeSetsByExerciseId = setsMap,
-                timedCurrentSec = 0,
-                currentSubScreen = targetSub,
-                backStack = back,
-                showQuickWorkoutSheet = false,
-                statusBannerMessage = null
-            )
+        val scope = nativeScope ?: return
+        nativeStartJob = scope.launch(Dispatchers.Main.immediate) {
+            try {
+                programWriteJob?.join()
+                check(programWriteError == null) { requireNotNull(programWriteError) }
+                val frame = start() // Canonical engine commits before the UI advertises a workout.
+                val ids = frame.getJSONArray("exercises")
+                val library = withContext(Dispatchers.IO) {
+                    requireNotNull(nativeDatabase).exerciseLibraryDao().getAllExercises().associateBy { it.id }
+                }
+                val exercises = (0 until ids.length()).map { index ->
+                    val raw = ids.getJSONObject(index)
+                    mapExerciseEntity(requireNotNull(library[raw.getString("id")]))
+                }
+                val sets = (0 until ids.length()).associate { index ->
+                    val raw = ids.getJSONObject(index)
+                    val rows = raw.getJSONArray("sets")
+                    raw.getString("id") to (0 until rows.length()).map { rowIndex ->
+                        val row = rows.getJSONObject(rowIndex)
+                        ExerciseSetItem(rowIndex + 1, row.optDouble("weight", 0.0).toFloat(),
+                            row.optString("reps").toIntOrNull() ?: 0, row.optInt("actualRir", 2), row.optBoolean("done"),
+                            leftSec = row.optInt("leftSeconds", row.optInt("leftSec", exercises[index].targetSeconds)),
+                            rightSec = row.optInt("rightSeconds", row.optInt("rightSec", exercises[index].targetSeconds)),
+                            leftRecorded = row.optInt("leftSeconds") > 0 || row.optBoolean("leftRecorded"),
+                            rightRecorded = row.optInt("rightSeconds") > 0 || row.optBoolean("rightRecorded"),
+                            id = row.getString("setId"), actualRirProvided = row.has("actualRir") && !row.isNull("actualRir"))
+                    }
+                }
+                val currentIndex = frame.optInt("currentExercise").coerceIn(exercises.indices)
+                val first = exercises[currentIndex]
+                val target = targetSubScreenForExercise(first)
+                _uiState.update { state -> state.copy(
+                    isWorkoutSessionActive = true, activeWorkoutId = frame.getString("workoutId"),
+                    workoutStartedEpochMs = Instant.parse(frame.getString("started")).toEpochMilli(),
+                    activeWorkoutSubScreen = target, activeWorkoutTitleHu = frame.optString("programName"),
+                    activeWorkoutExercises = exercises, activeExerciseIndex = currentIndex, selectedExerciseId = first.id,
+                    activeSets = sets.getValue(first.id), activeSetsByExerciseId = sets,
+                    phoneControlsWorkout = frame.optString("timerOwner", "phone") == "phone" &&
+                        !com.repforge.app.NativePhoneReturnInstallation.requiresInstallation(frame) &&
+                        !com.repforge.app.NativeWatchHandoffReceipt.pending(frame, watchJournal()),
+                    watchControlPending = watchHandoffBusy || com.repforge.app.NativeWatchHandoffReceipt.pending(frame, watchJournal()),
+                    currentSubScreen = target, showQuickWorkoutSheet = false, timedCurrentSec = 0,
+                    backStack = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16),
+                    statusBannerMessage = null) }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (error: Exception) {
+                _uiState.update { it.copy(statusBannerMessage = error.message ?: "Az edzés nem indítható.") }
+            }
         }
-        persistCanonicalActiveSessionAsync(installNew = true)
     }
 
     fun startQuickStrengthWithExercise(exercise: ExerciseItem) {
@@ -3211,10 +3218,8 @@ class TrainPilotViewModel : ViewModel() {
                     check(completed > 0 || com.repforge.app.StudioOutdoorFinish.canSaveTimeOnly(current)) {
                         "Nincs hitelesen mért idő vagy rögzített sorozat. A mérés elvethető, de üres edzés nem menthető."
                     }
-                    if (state.workoutSummaryNote.isNotBlank() || state.workoutSummaryMoodIndex >= 0)
-                        current.put("feedback", JSONObject().put("note", state.workoutSummaryNote)
-                            .put("effort", listOf("könnyű", "mérsékelt", "pont jó", "nehéz", "maximális")
-                                .getOrElse(state.workoutSummaryMoodIndex) { "" }).put("updatedAt", System.currentTimeMillis()))
+                    com.repforge.app.StudioWorkoutFeedback.chosen(state.workoutSummaryMoodIndex,
+                        state.workoutSummaryNote, System.currentTimeMillis())?.let { current.put("feedback", it) }
                     current
                 }
                 val workoutId = activeToFinalize.getString("workoutId")
@@ -3248,7 +3253,7 @@ class TrainPilotViewModel : ViewModel() {
                                 setNumber = if (sEntity.setNumber > 0) sEntity.setNumber else (sIdx + 1),
                                 weightKg = (sEntity.weight ?: 0.0).toFloat(),
                                 reps = sEntity.reps.toIntOrNull() ?: 0,
-                                rir = sEntity.actualRir ?: 2,
+                                rir = sEntity.actualRir ?: 2, actualRirProvided = sEntity.actualRir != null,
                                 completed = sEntity.done,
                                 distanceMeters = sEntity.distanceMeters
                             )
@@ -4121,14 +4126,22 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun updateProgressionSettings(styleHu: String, ruleHu: String, gentleBeginner: Boolean) {
-        _uiState.update {
-            it.copy(
-                trainingStyleHu = styleHu,
-                progressionRuleHu = ruleHu,
-                beginnerGentleProfileActive = gentleBeginner,
-                showProgressionModal = false,
-                statusBannerMessage = "Progresszió: $styleHu • $ruleHu"
-            )
+        val scope = nativeScope ?: return
+        val store = nativeSettingsStore ?: return
+        scope.launch {
+            try {
+                val saved = store.current()
+                val proposal = com.repforge.app.data.store.NativeTrainingModeChange.prepare(
+                    saved.trainingModes197Json, saved.activeProgramId, "global", null,
+                    if (styleHu.contains("HIT", true)) "hit" else "normal",
+                    when { ruleHu.contains("Lineáris", true) -> "linear"; ruleHu.contains("RIR", true) || ruleHu.contains("Coach", true) -> "rir"; else -> "double" })
+                check(com.repforge.app.data.store.NativeTrainingModeChange.approve(store, proposal)) {
+                    "A progresszió beállításai megváltoztak. Nyisd meg újra a beállítást."
+                }
+                _uiState.update { it.copy(beginnerGentleProfileActive = gentleBeginner,
+                    showProgressionModal = false, statusBannerMessage = "A progresszió beállításai tartósan elmentve.") }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (error: Exception) { _uiState.update { it.copy(statusBannerMessage = error.message ?: "A progresszió nem menthető.") } }
         }
     }
 

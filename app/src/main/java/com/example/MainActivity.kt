@@ -747,7 +747,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onStartSuggestedWorkout = {
                                 viewModel.startPlannedWorkout()
                             },
-                            onOpenExerciseDetail = { exId -> viewModel.openExerciseDetail(exId) }
+                            onOpenExerciseDetail = { exId -> viewModel.openExerciseDetail(exId) },
+                            onStartCoachTarget = viewModel::startCoachWorkout,
+                            onOpenCalendar = { viewModel.selectTab(MainTab.CALENDAR) },
+                            onCoachProgramChanged = { viewModel.refreshAfterCloudSync(context) }
                         )
                     }
 
@@ -950,7 +953,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onStartSuggestedWorkout = {
                                         viewModel.startPlannedWorkout()
                                     },
-                                    onOpenExerciseDetail = { exId -> viewModel.openExerciseDetail(exId) }
+                                    onOpenExerciseDetail = { exId -> viewModel.openExerciseDetail(exId) },
+                                onStartCoachTarget = viewModel::startCoachWorkout,
+                                onOpenCalendar = { viewModel.selectTab(MainTab.CALENDAR) },
+                            onCoachProgramChanged = { viewModel.refreshAfterCloudSync(context) }
                                 )
                             }
 
