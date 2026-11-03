@@ -1,5 +1,5 @@
 name: TrainPilot persistent signed APK pair
-# 2745: build and verify the existing-key signed phone/Wear release after merged PR #81 validation.
+# 2746: trigger existing-key protected signing from main after verified compact UI #85.
 
 on:
   workflow_dispatch:
