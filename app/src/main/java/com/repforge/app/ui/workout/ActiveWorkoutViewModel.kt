@@ -931,19 +931,15 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
         val now = Instant.now()
         val zone = ZoneId.systemDefault()
         val date = now.atZone(zone).toLocalDate()
-        val page = HealthJournalStore.get(context).page(date.minusDays(14).toString(),
-            date.toString(), "journal", "", 0L, 0L, 1)
-        val days = page.optJSONArray("days")
-        val realDays = (0 until (days?.length() ?: 0)).mapNotNull { days?.optJSONObject(it) }
-        val signals = NativeCoachSignals.fromDays(realDays, date, zone)
-        val history = database.workoutHistoryDao().getCoachRecentHistory(
-            now.minus(Duration.ofDays(14)).toEpochMilli(), now.toEpochMilli()).map { JSONObject(it) }
-        val readiness = NativeCoachReadiness.calculate(signals.recovery, signals.daily, history, now, zone)
+        val selected = com.repforge.app.ui.coach.NativeSelectedCoachReadings.load(context, database, now, zone)
+        val readiness = selected.readiness
         val rows = NativeCoachAdviceRepository(database).load(
             CoachTarget(programId, dayId, frame.optString("dayName")), settings, readiness, now)
         val selectedId = frame.optJSONArray("exercises")?.optJSONObject(frame.optInt("currentExercise"))?.optString("id")
             ?: return null
-        return rows.singleOrNull { it.id == selectedId }?.let { it to settings.trainingModes197Json }
+        return rows.singleOrNull { it.id == selectedId }?.let {
+            it.copy(sourceFingerprint = it.sourceFingerprint + "|provider:" + selected.provider) to settings.trainingModes197Json
+        }
     }
 
     /** Preview never writes; the saved ticket is invalidated by any frame/owner/config/history change. */

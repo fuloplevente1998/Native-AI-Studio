@@ -1,0 +1,35 @@
+{
+  "source": "deebfddd7f0259e589e9791582ad6d2d38fcf4e2",
+  "tests": {
+    "tests": 395,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "modules": {
+    "phone": 219,
+    "wear": 176
+  },
+  "apks": [
+    {
+      "platform": "phone",
+      "bytes": 19563720,
+      "sha256": "f82cd35ccd057e53ebc2e92e325dd8f2e48cfe291158e8674d2e5f8cc889ed33"
+    },
+    {
+      "platform": "wear",
+      "bytes": 4636863,
+      "sha256": "f6b73f685ce444e1886a8660dfeb107839ac9b1b0546b2522fde53a5573dd753"
+    }
+  ],
+  "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+  "mapsApiKeyConfigured": true,
+  "run": 41591380374,
+  "signedArtifact": 13210208864,
+  "rawXmlArtifact": 13210463700,
+  "phoneDriveId": "1Ap5ysNwA8ZA35xV-Zidx_JeKqxlwHLP-",
+  "phoneDriveUrl": "https://drive.google.com/file/d/1Ap5ysNwA8ZA35xV-Zidx_JeKqxlwHLP-/view?usp=drivesdk",
+  "phoneDriveParent": "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9",
+  "driveReadbackVerified": true,
+  "deviceAcceptance": false
+}

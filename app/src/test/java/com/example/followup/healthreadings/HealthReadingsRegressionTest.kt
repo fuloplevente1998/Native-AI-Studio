@@ -174,6 +174,7 @@ class HealthReadingsRegressionTest {
         assertEquals(RecoverySource.SAMSUNG_ENERGY, zeroReading.source)
         assertEquals(0.0, zeroReading.score!!, 0.001)
         assertEquals(0.0, zeroReading.samsungEnergy!!, 0.001)
+        assertEquals(0.0, zeroReading.coachScore!!, 0.001)
     }
 
     @Test fun healthConnectCannotInheritSamsungScoreEmbeddedInWrongRow() {

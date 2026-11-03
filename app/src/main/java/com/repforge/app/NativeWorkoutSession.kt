@@ -27,7 +27,8 @@ internal object NativeWorkoutSession {
     /** The initial GPS choice applies only to the starting activity, never to recovery or a later exercise. */
     suspend fun startProgramWorkout(context: Context, requestedProgramId: String?, dayId: String, scheduleId: String? = null,
         gpsActivityId: String? = null, recordRoute: Boolean = false,
-        database: TrainPilotDatabase = TrainPilotDatabase.getInstance(context)): Launch = startLock.withLock {
+        database: TrainPilotDatabase = TrainPilotDatabase.getInstance(context),
+        automaticEnabled: Boolean? = null): Launch = startLock.withLock {
         val app = context.applicationContext
         // Never replace an existing phone session or a watch-owned mirror on a repeated tap.
         withContext(Dispatchers.Main.immediate) { recoverActive(app) }?.let { return@withLock Launch(it) }
@@ -61,6 +62,8 @@ internal object NativeWorkoutSession {
                 val source = requireNotNull(library[id]) { "Hiányzó gyakorlat: $id" }
                 val rx = JSONObject(prescriptions.optJSONObject(id)?.toString() ?: "{}")
                 if (item is JSONObject) for (key in item.keys()) if (key != "id") rx.put(key, item.get(key))
+                if (!rx.has("weight") && rx.has("weightKg")) rx.put("weight", rx.get("weightKg"))
+                if (!rx.has("rest") && rx.has("restSec")) rx.put("rest", rx.get("restSec"))
                 val exercise = buildExercise(db, source, settings, rx)
                 exercises.put(exercise)
             }
@@ -76,7 +79,7 @@ internal object NativeWorkoutSession {
                 .put("started", now).put("activeIntervals", JSONArray().put(JSONObject().put("start", now).put("end", JSONObject.NULL)))
                 .put("currentExercise", 0).put("timerOwner", "phone").put("workoutPaused", false)
                 .put("restEndAt", 0).put("restSeconds", settings.restSeconds).put("language", settings.language)
-                .put("automaticEnabled", true).put("timerConfig", settings.timerConfiguration())
+                .put("automaticEnabled", automaticEnabled ?: true).put("timerConfig", settings.timerConfiguration())
                 .put("exercises", exercises).put("originDevice", "phone")
                 .also { frame -> expectedSchedule?.let { frame.put("scheduleId", it.id) } }
         }
@@ -98,6 +101,29 @@ internal object NativeWorkoutSession {
         if (saved.optString("workoutId") != candidate.optString("workoutId")) return@withLock Launch(saved)
         if (gpsActivityId != null) TrainPilotSettingsStore(app).setGpsStartChoice(gpsActivityId, recordRoute)
         Launch(saved, if (recordRoute) NativeOutdoorStart.target(saved, gpsActivityId!!) else null)
+    }
+
+    /** Multi-exercise Studio quick start uses the same durable engine and accepted #228 prefill. */
+    suspend fun startQuickExercises(context: Context, exerciseIds: List<String>, title: String,
+        automaticEnabled: Boolean, database: TrainPilotDatabase = TrainPilotDatabase.getInstance(context)): JSONObject = startLock.withLock {
+        val app = context.applicationContext
+        withContext(Dispatchers.Main.immediate) { recoverActive(app) }?.let { return@withLock it }
+        require(exerciseIds.isNotEmpty() && exerciseIds.size == exerciseIds.distinct().size)
+        val candidate = withContext(Dispatchers.IO) {
+            check(database.keyValueDocumentDao().getDocument("draft") == null) {
+                "A korábbi félbehagyott edzés megmaradt. Előbb folytasd vagy rendezd azt."
+            }
+            val settings = TrainPilotSettingsStore(app).current()
+            val exercises = JSONArray()
+            for (id in exerciseIds) {
+                val source = requireNotNull(database.exerciseLibraryDao().getExerciseById(id)) { "Hiányzó gyakorlat: $id" }
+                exercises.put(buildExercise(database, source, settings))
+            }
+            quickCandidate(exercises.getJSONObject(0), settings)
+                .put("exercises", exercises).put("automaticEnabled", automaticEnabled)
+                .put("programName", title).put("dayName", title)
+        }
+        withContext(NonCancellable + Dispatchers.Main.immediate) { installPrepared(app, candidate) }
     }
 
     /** Only an explicit successful new start returns a GPS intent. Never persisted/replayed on recovery. */

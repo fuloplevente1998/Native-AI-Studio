@@ -78,7 +78,9 @@ data class ExerciseSetItem(
     val rightSec: Int = 30,
     val leftRecorded: Boolean = false,
     val rightRecorded: Boolean = false,
-    val distanceMeters: Double? = null
+    val distanceMeters: Double? = null,
+    val id: String = "",
+    val actualRirProvided: Boolean = false
 )
 
 data class ExerciseItem(
@@ -104,7 +106,11 @@ data class ExerciseItem(
     val coachStatusHu: String = "Normál terhelés",
     val coachHintHu: String = "Stabil technika, 1–2 RIR tartalékkal.",
     val videoUrl: String = "",
-    val isCustom: Boolean = false
+    val isCustom: Boolean = false,
+    val loadType: String = "",
+    val repUnit: String = "",
+    val measurementType: String = "",
+    val targetRepsText: String = ""
 ) {
     fun localizedName(lang: AppLanguage): String = when (lang) {
         AppLanguage.HU -> nameHu

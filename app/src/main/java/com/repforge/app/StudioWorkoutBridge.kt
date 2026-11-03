@@ -19,6 +19,12 @@ internal object StudioWorkoutBridge {
             val exercise = exercises.getJSONObject(i)
             val oldExercise = (0 until originalExercises.length()).map { originalExercises.getJSONObject(it) }
                 .firstOrNull { it.optString("id") == exercise.optString("id") }
+            if (oldExercise != null) {
+                for (key in oldExercise.keys()) if (!exercise.has(key)) exercise.put(key, oldExercise.get(key))
+                // These come from the durable exercise, not Studio's old display guesses.
+                for (key in listOf("loadType", "repUnit", "measurementType", "prescription", "targetReps"))
+                    if (oldExercise.has(key)) exercise.put(key, oldExercise.get(key))
+            }
             val sets = exercise.getJSONArray("sets")
             for (j in 0 until sets.length()) {
                 val update = sets.getJSONObject(j)
@@ -28,6 +34,7 @@ internal object StudioWorkoutBridge {
                 if (old != null) {
                     val merged = JSONObject(old.toString())
                     update.keys().forEach { merged.put(it, update.get(it)) }
+                    if (!update.has("actualRir")) merged.remove("actualRir")
                     sets.put(j, merged)
                 }
             }

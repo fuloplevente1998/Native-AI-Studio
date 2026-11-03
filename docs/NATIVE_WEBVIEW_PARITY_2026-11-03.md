@@ -35,7 +35,7 @@
 
 A startPlannedWorkout/startWorkoutWithExercises a buildDefaultSetsForExercise értékeit használja. A régi megfelelő alkalom súlya és ismétlése nem kerül át. A kanonikus session dayId jelenleg session, ezért valódi program/nap-azonosság és legacy-kompatibilitás is kell.
 
-**Elvárt eredmény:** Csak megfelelő, mentett és teljesített erősítő alkalomból öröklődjön súly és ismétlés, sorozatonként. Gyors és tervezett indítás; új/saját/importált gyakorlat. Kézi módosítás és aktív draft megmarad. RIR, done, idő, GPS, ownership nem öröklődik. Valós program/nap-azonosság, legacy fallback csak bizonyítható egyezésnél.
+**Elvárt eredmény:** Programtól/naptól függetlenül, azonos gyakorlat-ID/loadType/repUnit mellett megfelelő, mentett és teljesített erősítő alkalomból öröklődjön súly és ismétlés, sorozatonként. Gyors és tervezett indítás; új/saját/importált gyakorlat. Kézi módosítás és aktív draft megmarad. RIR, done, idő, GPS, ownership nem öröklődik. Valós program/nap-azonosság, legacy fallback csak bizonyítható egyezésnél.
 
 **Megrendelési állapot:** A felhasználó kérte: a mostani APK átadása UTÁN implementáljuk.
 
@@ -145,4 +145,4 @@ A felhasználó sorrendje: **#67 aláírt telefonos APK átadása → #70 Coach 
 
 A többi #71–#75 most csak backlog. Ugyanazt a `TrainPilotViewModel.kt`, `MainActivity.kt` vagy `HealthCoachAndSettingsScreens.kt` fájlt érintő feladatok nem adhatók párhuzamosan több chatnek közös írásra; új kiosztásnál ismét teljes fájltulajdon kell. Már mainen lévő #58/#62–#67 kódot ne cherry-pickelj újra. Alügynök nincs kérve.
 
-A következő implementáció szükséges regressziói: megfelelő és idegen programnap; gyors edzés; importált/hiányos/lejárt/törölt előzmény; sorozatonként eltérő súly; bodyweight/time/GPS kizárás; nincs örökölt actualRir/done; kézi érték/draft/ownership/restore megőrzése; Coach által jelzett nap indul; pain/hard korlátozás és hiányzó provider-adat. Teljes Android/Wear build és nyers XML a tényleges SHA-ra, majd külön készülékes elfogadás.
+A következő implementáció szükséges regressziói: megfelelő gyakorlat másik programnapról is; eltérő loadType/repUnit kizárása; gyors edzés; importált/hiányos/lejárt/törölt előzmény; sorozatonként eltérő súly; bodyweight/time/GPS kizárás; nincs örökölt actualRir/done; kézi érték/draft/ownership/restore megőrzése; Coach által jelzett nap indul; pain/hard korlátozás és hiányzó provider-adat. Teljes Android/Wear build és nyers XML a tényleges SHA-ra, majd külön készülékes elfogadás.

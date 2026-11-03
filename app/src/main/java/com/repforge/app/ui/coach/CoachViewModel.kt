@@ -20,7 +20,7 @@ internal data class CoachUiState(val loading: Boolean = true, val error: Boolean
     val refreshing: Boolean = false, val refreshFailed: Boolean = false,
     val variationPreview: NativeCoachVariation.Preview? = null, val variationBusy: Boolean = false,
     val variationFailed: Boolean = false, val variationSaved: Boolean = false,
-    val exercises: List<CoachExerciseAdvice> = emptyList())
+    val exercises: List<CoachExerciseAdvice> = emptyList(), val provider: String = "")
 
 /** Reads canonical provider projections and a bounded history slice; never fabricates Health samples. */
 internal class CoachViewModel(application: Application) : AndroidViewModel(application) {
@@ -43,7 +43,10 @@ internal class CoachViewModel(application: Application) : AndroidViewModel(appli
             finally { _state.value = _state.value.copy(variationBusy = false) }
         }
     }
-    fun closeVariation() { if (!_state.value.variationBusy) _state.value = _state.value.copy(variationPreview = null, variationFailed = false) }
+    fun closeVariation() { if (!_state.value.variationBusy) {
+        _state.value = _state.value.copy(variationPreview = null, variationFailed = false)
+        reload()
+    } }
     fun saveVariation() {
         val preview = _state.value.variationPreview ?: return
         if (_state.value.variationBusy) return
@@ -56,7 +59,10 @@ internal class CoachViewModel(application: Application) : AndroidViewModel(appli
                 catch (_: Exception) { /* Durable program remains available; normal Wear sync retries. */ }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { _state.value = _state.value.copy(variationFailed = true) }
-            finally { _state.value = _state.value.copy(variationBusy = false) }
+            finally {
+                _state.value = _state.value.copy(variationBusy = false)
+                if (_state.value.variationSaved) reload()
+            }
         }
     }
     fun refreshHealth(activity: android.app.Activity?) {
@@ -74,7 +80,10 @@ internal class CoachViewModel(application: Application) : AndroidViewModel(appli
         }
     }
     fun reload() {
-        if (loading?.isActive == true || _state.value.variationBusy || _state.value.variationPreview != null) return
+        if (_state.value.variationBusy || _state.value.variationPreview != null) return
+        loading?.cancel()
+        val provider = HealthJournalStore.get(app).preferences().optString("provider", HealthJournalStore.HC)
+        if (_state.value.provider != provider) _state.value = _state.value.copy(readiness = null, exercises = emptyList())
         loading = viewModelScope.launch {
             _state.value = _state.value.copy(loading = true, error = false)
             try {
@@ -82,16 +91,16 @@ internal class CoachViewModel(application: Application) : AndroidViewModel(appli
                     com.repforge.app.NativeDataReplacement.mutate(app) {
                     val settings = TrainPilotSettingsStore(app).current()
                     val now = Instant.now(); val zone = ZoneId.systemDefault(); val today = now.atZone(zone).toLocalDate()
-                    val page = HealthJournalStore.get(app).page(today.minusDays(14).toString(), today.toString(), "journal", "", 0, 0, 1)
-                    val array = page.optJSONArray("days")
-                    val days = (0 until (array?.length() ?: 0)).mapNotNull { array?.optJSONObject(it) }
-                    val signals = NativeCoachSignals.fromDays(days, today, zone)
-                    val history = db.workoutHistoryDao().getCoachRecentHistory(now.minus(Duration.ofDays(14)).toEpochMilli(), now.toEpochMilli()).map { JSONObject(it) }
+                    val selected = NativeSelectedCoachReadings.load(app, db, now, zone)
                     val target = NativeCoachTargets(db).select(settings.activeProgramId, settings.language, now, zone)
-                    val readiness = NativeCoachReadiness.calculate(signals.recovery, signals.daily, history, now, zone)
+                    val readiness = selected.readiness
                     val advice = NativeCoachAdviceRepository(db).load(target, settings, readiness, now)
+                    check(HealthJournalStore.get(app).preferences().optString("provider", HealthJournalStore.HC) == selected.provider) {
+                        "Az egészségadat-forrás megváltozott. Frissítsd a Coach adatait."
+                    }
                     CoachUiState(false, false, settings.language, readiness, target,
-                        refreshing = _state.value.refreshing, refreshFailed = _state.value.refreshFailed, exercises = advice)
+                        refreshing = _state.value.refreshing, refreshFailed = _state.value.refreshFailed, exercises = advice, provider = selected.provider,
+                        variationSaved = _state.value.variationSaved)
                     }
                 }
             } catch (cancelled: CancellationException) { throw cancelled }

@@ -1767,18 +1767,29 @@ private fun SummarySmallPill(label: String, value: String, modifier: Modifier = 
  * 6. COACH (Mockup 3/4 #6 + main TrainPilot Coach)
  */
 @Composable
-fun CoachDetailScreen(
+internal fun CoachDetailScreen(
     uiState: TrainPilotUiState,
     strings: LocalizedStrings,
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
     onStartSuggestedWorkout: () -> Unit,
-    onOpenExerciseDetail: (String) -> Unit
+    onOpenExerciseDetail: (String) -> Unit,
+    onStartCoachTarget: (String, String, String?) -> Unit = { _, _, _ -> onStartSuggestedWorkout() },
+    onOpenCalendar: () -> Unit = {},
+    onCoachProgramChanged: () -> Unit = {},
+    model: com.repforge.app.ui.coach.CoachViewModel = androidx.lifecycle.viewmodel.compose.viewModel(key = "studio-canonical-coach")
 ) {
     val palette = LocalTrainPilotPalette.current
-    val displayScore = uiState.coachReadinessScore.coerceIn(0, 100)
-    val samsungScore = uiState.samsungEnergyScore.coerceIn(0, 100)
-    val ownReadinessScore = uiState.trainPilotReadinessScore.coerceIn(0, 100)
+    val nativeState by model.state.collectAsStateWithLifecycle()
+    LaunchedEffect(nativeState.variationSaved) { if (nativeState.variationSaved) onCoachProgramChanged() }
+    val readiness = nativeState.readiness
+    val hasScore = readiness?.score != null
+    val displayScore = readiness?.score?.toInt()?.coerceIn(0, 100) ?: 0
+    val samsungScore = readiness?.samsungScore?.toInt()?.coerceIn(0, 100) ?: 0
+    val ownReadinessScore = readiness?.trainpilotScore ?: 0
+    LaunchedEffect(uiState.loggedWorkouts, uiState.programs, uiState.dailyHealthLastSyncIso, uiState.primaryHealthSourceSamsung) {
+        model.reload()
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -1822,13 +1833,13 @@ fun CoachDetailScreen(
                         val statusBadgeText = when {
                             displayScore >= 75 -> "OPTIMÁLIS KÉSZENLÉT"
                             displayScore >= 50 -> "MÉRSÉKELT KÉSZENLÉT"
-                            displayScore > 0 -> "PIHENÉS JAVASOLT"
+                            hasScore -> "PIHENÉS JAVASOLT"
                             else -> "NINCS MÉRT ADAT"
                         }
                         val statusBadgeColor = when {
                             displayScore >= 75 -> palette.success
                             displayScore >= 50 -> palette.primary
-                            displayScore > 0 -> palette.warning
+                            hasScore -> palette.warning
                             else -> palette.textSecondary
                         }
                         Surface(
@@ -1857,7 +1868,7 @@ fun CoachDetailScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             val trackCol = palette.surfaceElevated
-                            val ringCol = if (displayScore > 0) palette.success else palette.cardBorder
+                            val ringCol = if (hasScore) palette.success else palette.cardBorder
                             Canvas(modifier = Modifier.size(98.dp)) {
                                 drawArc(
                                     color = trackCol,
@@ -1866,7 +1877,7 @@ fun CoachDetailScreen(
                                     useCenter = false,
                                     style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
                                 )
-                                if (displayScore > 0) {
+                                if (hasScore) {
                                     drawArc(
                                         color = ringCol,
                                         startAngle = 135f,
@@ -1878,7 +1889,7 @@ fun CoachDetailScreen(
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    text = if (displayScore > 0) "$displayScore" else "—",
+                                    text = if (hasScore) "$displayScore" else "—",
                                     style = MaterialTheme.typography.headlineLarge,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = palette.textPrimary
@@ -1899,7 +1910,7 @@ fun CoachDetailScreen(
                                 color = palette.primary
                             )
                             Text(
-                                text = if (displayScore > 0) {
+                                text = if (hasScore) {
                                     "A napi regeneráció és az akut izomterhelés alapján ma teljes értékű edzés végezhető 1–2 RIR tartalékkal."
                                 } else {
                                     "Szinkronizáld a Health Connect vagy Samsung Health adatokat a mai személyre szabott készenléti érték kiszámításához."
@@ -1933,15 +1944,15 @@ fun CoachDetailScreen(
                             Column(modifier = Modifier.padding(10.dp)) {
                                 Text("1. Mai Samsung...", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
                                 Text(
-                                    text = if (samsungScore > 0) "$samsungScore / 100" else "—",
+                                    text = if (readiness?.samsungScore != null) "$samsungScore / 100" else "—",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary
                                 )
                                 Text(
-                                    text = if (samsungScore > 0) "Samsung Health" else "Nincs adat",
+                                    text = if (readiness?.samsungScore != null) "Samsung Health" else "Nincs adat",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = if (samsungScore > 0) palette.success else palette.textSecondary
+                                    color = if (readiness?.samsungScore != null) palette.success else palette.textSecondary
                                 )
                             }
                         }
@@ -1955,7 +1966,7 @@ fun CoachDetailScreen(
                             Column(modifier = Modifier.padding(10.dp)) {
                                 Text("2. TrainPilot saját...", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
                                 Text(
-                                    text = if (ownReadinessScore > 0) "$ownReadinessScore / 100" else "—",
+                                    text = if (readiness?.trainpilotScore != null) "$ownReadinessScore / 100" else "—",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary
@@ -1973,7 +1984,7 @@ fun CoachDetailScreen(
                             Column(modifier = Modifier.padding(10.dp)) {
                                 Text("3. Terheléssel...", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
                                 Text(
-                                    text = if (displayScore > 0) "$displayScore / 100" else "—",
+                                    text = if (hasScore) "$displayScore / 100" else "—",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.primary
@@ -1998,73 +2009,20 @@ fun CoachDetailScreen(
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Kulcsjelek", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                        Text("Élő szinkron", style = MaterialTheme.typography.labelMedium, color = palette.primary)
+                        Text(if (nativeState.provider == com.repforge.app.HealthJournalStore.SAMSUNG) "Samsung Health" else "Health Connect", style = MaterialTheme.typography.labelMedium, color = palette.primary)
                     }
-                    CoachSignalRow("Alvás", uiState.sleepDurationLabel, palette.success)
-                    CoachSignalRow("Nyugalmi pulzus", if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—", palette.success)
-                    CoachSignalRow("HRV (RMSSD)", if (uiState.hrvRmssdMs > 0f) "${uiState.hrvRmssdMs.roundToInt()} ms" else "—", palette.primary)
+                    CoachSignalRow("Alvás", readiness?.sleepMinutes?.let { "${it.toInt() / 60} ó ${it.toInt() % 60} p" } ?: "—", palette.success)
+                    CoachSignalRow("Nyugalmi pulzus", uiState.todayPulseReading?.takeIf { it.provider == nativeState.provider }?.restingBpm?.let { "${it.toInt()} bpm" } ?: "—", palette.success)
+                    CoachSignalRow("HRV (RMSSD)", readiness?.hrvMs?.let { "${it.toInt()} ms" } ?: "—", palette.primary)
                     CoachSignalRow("Rögzített edzések", "${uiState.loggedWorkouts.size} db", palette.primary)
                 }
             }
         }
 
-        // Javasolt edzés Card
         item {
-            val activeProgram = uiState.programs.firstOrNull { it.isActive } ?: uiState.programs.firstOrNull()
-            val nextDay = activeProgram?.days?.firstOrNull()
-            val suggestedExercises = nextDay?.exercises?.take(3).orEmpty().ifEmpty { uiState.activeWorkoutExercises.take(3) }
-            Surface(
-                shape = RoundedCornerShape(22.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Javasolt edzés (MAI JAVASLAT)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(CircleShape)
-                                .background(palette.primary.copy(alpha = 0.16f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(imageVector = Icons.Default.FitnessCenter, contentDescription = null, tint = palette.primary)
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = if (activeProgram != null) "${activeProgram.nameHu} • ${nextDay?.dayCode ?: "A nap"}" else "Személyre szabott edzés",
-                                fontWeight = FontWeight.Bold,
-                                color = palette.textPrimary
-                            )
-                            Text("Felszereléshez igazított terv • ~ ${uiState.userWorkoutDurationMin} perc", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
-                        }
-                    }
-
-                    suggestedExercises.forEach { ex ->
-                        CoachExerciseAdviceRow(ex.nameHu, "${ex.defaultSets}×${ex.defaultReps} • ${ex.equipmentHu}", palette.success) {
-                            onOpenExerciseDetail(ex.id)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Button(
-                        onClick = onStartSuggestedWorkout,
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                            .testTag("coach_start_workout_button")
-                    ) {
-                        Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Edzés indítása", fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
+            com.example.ui.components.StudioCoachRecommendations(nativeState,
+                onStartCoachTarget, onOpenCalendar, onOpenExerciseDetail,
+                model::previewVariation, model::closeVariation, model::saveVariation)
         }
     }
 }
