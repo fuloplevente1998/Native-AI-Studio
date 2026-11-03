@@ -340,6 +340,7 @@ class TrainPilotViewModel : ViewModel() {
     private var nativeDatabase: TrainPilotDatabase? = null
     private var nativeScope: CoroutineScope? = null
     private var nativeReloadJob: Job? = null
+    private var programEditorContinuation: com.repforge.app.NativeDataReplacement.Continuation? = null
     private var nativeObserversJob: Job? = null
     private var personalRecordsJob: Job? = null
     private var personalRecordsRevision = 0L
@@ -1672,6 +1673,8 @@ class TrainPilotViewModel : ViewModel() {
 
     private fun mutateStudioLibrary(
         success: String,
+        editor: Boolean = false,
+        selectLastDay: Boolean = false,
         action: suspend (Context, TrainPilotDatabase, TrainPilotSettingsStore) -> String?
     ) {
         if (_uiState.value.libraryMutationBusy) return
@@ -1681,6 +1684,7 @@ class TrainPilotViewModel : ViewModel() {
         val scope = nativeScope ?: return
         val ticket = try { com.repforge.app.NativeDataReplacement.continuationForCurrentData(context) }
             catch (_: Exception) { return }
+        val editorTicket = if (editor) programEditorContinuation ?: ticket else null
         nativeReloadJob?.cancel()
         _uiState.update { it.copy(libraryMutationBusy = true) }
         scope.launch {
@@ -1690,6 +1694,7 @@ class TrainPilotViewModel : ViewModel() {
                     programWriteMutex.withLock {
                         com.repforge.app.NativeDataReplacement.mutate(context) {
                             ticket.requireCurrent(context)
+                            editorTicket?.requireCurrent(context)
                             action(context, db, store)
                         }
                     }
@@ -1707,7 +1712,10 @@ class TrainPilotViewModel : ViewModel() {
                     val missing = programs.none { it.id == editing }
                     state.copy(exercises = exercises, programs = programs, favoriteExerciseIds = loaded.third,
                         editingProgramId = if (missing) programs.firstOrNull()?.id.orEmpty() else editing,
-                        editingDayIndex = if (focus != null) state.editingDayIndex.coerceIn(0,
+                        programsTabCustomOnly = if (focus != null && focus != state.editingProgramId &&
+                            programs.any { it.id == focus && it.isCustom }) true else state.programsTabCustomOnly,
+                        editingDayIndex = if (selectLastDay) (programs.firstOrNull { it.id == focus }?.days?.lastIndex ?: 0).coerceAtLeast(0)
+                            else if (focus != null) state.editingDayIndex.coerceIn(0,
                             (programs.firstOrNull { it.id == focus }?.days?.lastIndex ?: 0).coerceAtLeast(0)) else state.editingDayIndex,
                         currentSubScreen = if (missing && state.currentSubScreen == SubScreen.PROGRAM_EDITOR)
                             SubScreen.PROGRAMS_LIST else state.currentSubScreen,
@@ -1735,13 +1743,14 @@ class TrainPilotViewModel : ViewModel() {
 
     private fun editStudioProgram(
         success: String,
+        selectLastDay: Boolean = false,
         change: (com.repforge.app.NativeProgramEditor.Draft, String?) -> com.repforge.app.NativeProgramEditor.Draft
     ) {
         val state = _uiState.value
         val programId = state.editingProgramId
         val dayKey = state.programs.firstOrNull { it.id == programId }?.days?.getOrNull(state.editingDayIndex)?.id
         val language = state.language.name.lowercase(java.util.Locale.ROOT)
-        mutateStudioLibrary(success) { context, db, _ ->
+        mutateStudioLibrary(success, editor = true, selectLastDay = selectLastDay) { context, db, _ ->
             val opened = requireNotNull(db.programDao().getProgramWithDaysById(programId))
             val rawDayId = opened.days.firstOrNull { it.compositeId == dayKey || it.dayId == dayKey }?.dayId
             val draft = change(com.repforge.app.NativeProgramEditor.from(opened, language), rawDayId)
@@ -1755,7 +1764,7 @@ class TrainPilotViewModel : ViewModel() {
 
     fun copyEditorProgram() {
         val state = _uiState.value
-        mutateStudioLibrary("Saját programmásolat elkészült. Aktiválás a programlistában.") { context, db, _ ->
+        mutateStudioLibrary("Saját programmásolat elkészült. Aktiválás a programlistában.", editor = true) { context, db, _ ->
             val opened = requireNotNull(db.programDao().getProgramWithDaysById(state.editingProgramId))
             val language = state.language.name.lowercase(java.util.Locale.ROOT)
             val draft = com.repforge.app.NativeProgramEditor.from(opened, language)
@@ -1766,14 +1775,14 @@ class TrainPilotViewModel : ViewModel() {
 
     fun deleteEditorProgram() {
         val id = _uiState.value.editingProgramId
-        mutateStudioLibrary("Program végleg törölve a tárból.") { context, db, store ->
+        mutateStudioLibrary("Program végleg törölve a tárból.", editor = true) { context, db, store ->
             com.repforge.app.NativeProgramEditor.delete(context, db,
                 requireNotNull(db.programDao().getProgramWithDaysById(id)), store)
             null
         }
     }
 
-    fun addEditorDay(name: String) = editStudioProgram("Edzésnap hozzáadva.") { draft, _ ->
+    fun addEditorDay(name: String) = editStudioProgram("Edzésnap hozzáadva.", selectLastDay = true) { draft, _ ->
         com.repforge.app.NativeProgramEditor.addDay(draft, name.trim())
     }
 
@@ -1817,6 +1826,9 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun openProgramEditor(programId: String, dayIndex: Int = 0) {
+        programEditorContinuation = nativeContext?.let {
+            runCatching { com.repforge.app.NativeDataReplacement.continuationForCurrentData(it) }.getOrNull()
+        }
         _uiState.update {
             val back = (it.backStack + NavRoute(it.currentTab, it.currentSubScreen)).takeLast(16)
             it.copy(

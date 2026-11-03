@@ -201,6 +201,8 @@ class StudioPrefillBindingRegressionTest {
         model.addEditorDay("Új nap")
         await { !model.uiState.value.libraryMutationBusy }
         assertEquals(3, native { db.programDao().getProgramWithDaysById(copyId)!! }.days.size)
+        assertEquals(2, model.uiState.value.editingDayIndex)
+        assertTrue(model.uiState.value.programsTabCustomOnly)
         model.selectEditingDayIndex(2)
         model.deleteEditorDay()
         await { !model.uiState.value.libraryMutationBusy }
