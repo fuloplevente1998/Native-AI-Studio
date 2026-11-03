@@ -171,14 +171,12 @@ class OutdoorGpsLayoutRegressionTest {
     fun realDialogKeepsFinishReachableOnSmallWindowWithLargeFont() {
         showInRealDialog(font = 1.8f)
         val bounds = compose.onNodeWithTag("outdoor_fullscreen_map_bounds").getUnclippedBoundsInRoot()
-        for (tag in listOf("gps_close_fullscreen", "gps_start_workout_btn")) {
-            // The started=false case is covered separately; live session keeps Finish visible.
-            if (tag == "gps_start_workout_btn") continue
+        for (tag in listOf("gps_close_fullscreen", "gps_elapsed_timer_text",
+            "gps_pause_resume_btn", "gps_lap_btn", "gps_finish_workout_btn")) {
             val rect = compose.onNodeWithTag(tag).assertIsDisplayed().getUnclippedBoundsInRoot()
-            assertTrue(rect.top >= bounds.top && rect.bottom <= bounds.bottom)
+            assertTrue("$tag fits the actual small Dialog", rect.top >= bounds.top &&
+                rect.bottom <= bounds.bottom && rect.left >= bounds.left && rect.right <= bounds.right)
         }
-        val finish = compose.onNodeWithTag("gps_finish_workout_btn").assertIsDisplayed().getUnclippedBoundsInRoot()
-        assertTrue(finish.bottom <= bounds.bottom)
         compose.onNodeWithTag("gps_finish_workout_btn").performClick()
         assertEquals(1, finished)
     }
