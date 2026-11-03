@@ -1,14 +1,15 @@
 {
   "schema": "native-webview-parity-2026-11-03.v1",
   "webviewMain": "5f026a56b9b6d33c84afa77eb3927b11f0bd6f6a",
-  "nativeAppSource": "d69c77e41692f7c2c171e400358772439bff35ea",
+  "nativeAppSource": "f74133a1bb1e690ce56166c1f0370582e4eedbc6",
   "method": "Feature-level static source and reachable Studio entrypoint review; not a complete 107-point device revalidation",
   "approvedAfterApk": [
     "coach",
     "prefill"
   ],
   "cancelled": [
-    "BLE manager E09/E10 and B14 BLE part"
+    "BLE manager E09/E10 and B14 BLE part",
+    "Automata/intervallum további bekötés #74"
   ],
   "items": [
     {
@@ -33,7 +34,10 @@
       "symptom": "A Studio minden új sorozathoz rir=2 értéket ad és actualRir-ként menti, külön megadási jel nélkül. A feedback magyar effort szöveg, míg a kanonikus Coach feedback.rating és gépi pain/hard értéket vizsgál.",
       "acceptance": "A hiányzó actualRir maradjon hiányzó; mért 0 külön kezelve. A felhasználó kifejezett RIR-je megmarad export/import/restart során. A pain/hard és a többi kanonikus effort-állapot eljusson a Coach-hoz, régi adatok migrációja adatvesztés nélkül. A RIR-cél nem tényleges mérés.",
       "scope": "A Coach bekötésével közös szerződés; nem szabad párhuzamosan átírni ugyanazt a VM-et.",
-      "status": "partially-implemented"
+      "status": "implemented-ci-verified",
+      "implementedIn": "PR90 / 2748",
+      "deviceAccepted": false,
+      "remaining": "Legacy format audit and device acceptance"
     },
     {
       "key": "coach",
@@ -57,7 +61,10 @@
       "symptom": "A Studio főleg mai és 7/14 napos összesítéseket mutat. A teljes dátumtól/dátumig lapozó, nyers rekord, alvásszakasz és mind a 26 metrika részletezője nincs elérhetően bekötve. Ezekhez natív háttérkomponens már van.",
       "acceptance": "Dátumszűrés és lapozás valódi tárolón; forrás/időbélyeg/hiány/hiba helyes; összes támogatott metrika és alvásszakasz hozzáférhető. Nincs fake érték, nincs provider-keverés. A mai kártyák kompaktak maradnak.",
       "scope": "Rekordböngésző bekötve #79-ben; teljes26 metrikás összesítő még nyitott.",
-      "status": "partially-implemented"
+      "status": "implemented-ci-verified",
+      "implementedIn": "PR90 / 2748",
+      "deviceAccepted": false,
+      "remaining": "Device acceptance; availability depends on actual provider data/support"
     },
     {
       "key": "program-crud",
@@ -93,7 +100,7 @@
       "symptom": "Az updateIntervalSettings és toggleAutoMode a Studio UiState-et írja; a teljes globális/edzésenkénti preset és kanonikus setTimerDefaults kapcsolat hiányos. Az alap natív stopper/szünet/folytatás meglétét ez nem vitatja.",
       "acceptance": "A kiválasztott munka/pihenő/kör/auto mód valódi motorhoz és tartós presethez jusson, restart/programváltás után helyesen; hang/haptika jogosultság és háttéridő megmarad. Ne legyen második időzítő.",
       "scope": "Nem része a mostani közös csomagnak; külön befejezendő.",
-      "status": "backlog"
+      "status": "cancelled-by-user"
     },
     {
       "key": "languages",
@@ -110,20 +117,64 @@
   ],
   "auditNativeSource": "deebfddd7f0259e589e9791582ad6d2d38fcf4e2",
   "verification": {
-    "source": "18b828e17e45a2b67ea6e864c04fe72685b46a6c",
-    "run": 41670555328,
-    "rawXmlArtifact": 13248017996,
-    "tests": 411,
+    "source": "f74133a1bb1e690ce56166c1f0370582e4eedbc6",
+    "run": 41721740450,
+    "signedRun": 41723677980,
+    "rawXmlArtifact": 13273164123,
+    "tests": 428,
     "failures": 0,
     "errors": 0,
     "skipped": 0,
     "deviceAccepted": false
   },
   "signedDelivery": {
-    "source": "d69c77e41692f7c2c171e400358772439bff35ea",
-    "run": 41671892820,
-    "phoneUrl": "https://drive.google.com/file/d/1EBiZCJ7hEiGi5QHw87umNLZbEEmTgcVu/view?usp=drivesdk",
-    "proof": "NATIVE_BATCH_SIGNED_BUILD_2026-11-03.json",
-    "deviceAccepted": false
-  }
+    "source": "f74133a1bb1e690ce56166c1f0370582e4eedbc6",
+    "run": 41723677980,
+    "versionCode": 2748,
+    "applicationId": "com.TrainPilot.com",
+    "versionName": "0.1.0-beta",
+    "tests": {
+      "tests": 428,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "modules": {
+      "phone": 252,
+      "wear": 176
+    },
+    "apks": [
+      {
+        "platform": "phone",
+        "file": "app-release.apk",
+        "bytes": 19743944,
+        "sha256": "f3f1aae2306142fbf47d52f2240a864b54843bb85294e3b5fd6e346eafb7c832",
+        "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6"
+      },
+      {
+        "platform": "wear",
+        "file": "wear-release.apk",
+        "bytes": 4636863,
+        "sha256": "333ddc0e0b46020aa67a60821f0fc794083f19b2c02354efc72c9d7dbc8f7e30",
+        "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6"
+      }
+    ],
+    "mapsApiKeyConfigured": true,
+    "dataLayerPairIdentityVerified": true,
+    "wearCompanionCapabilityRetained": true,
+    "wearHardwareRequired": true,
+    "phoneDownload": "https://drive.google.com/file/d/1SquNqT68gJtxt5zGQUuqlPlVU-_kEr9C/view?usp=drivesdk",
+    "pullRequest": "https://github.com/fuloplevente1998/Native-AI-Studio/pull/90",
+    "prRun": 41721740450,
+    "prHead": "a98260c122159530e6af6f0f6b9b16358a756a36",
+    "prCiCheckout": "db3b344fac8d92c7008f74e57f4b02d9a75c3815",
+    "prRawXmlArtifact": 13273164123,
+    "signedApkArtifact": 13275710096,
+    "signedRawXmlArtifact": 13275740013,
+    "videoJsTests": 7,
+    "deviceAccepted": false,
+    "phoneUploadVerified": true
+  },
+  "currentRelease": "2748",
+  "remainingWork": "docs/REMAINING_WORK_AFTER_2748.md"
 }

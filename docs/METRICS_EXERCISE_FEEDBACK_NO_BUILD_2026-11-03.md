@@ -1,5 +1,7 @@
 # Teljes metrikaböngésző és gyakorlatonkénti visszajelzés – forráskód
 
+**Frissítés: a felhasználó később engedélyezte a közös buildet.** PR90 mainen, a 2748-as aláírt telefonos APK átadva; PR és signed main CI nyers428 tesztje hibamentes. Az alábbi „még nem fordított / nincs a 2747-ben” szöveg a korábbi munkafázist rögzíti, nem a mostani állapot. Jelenlegi bizonyíték: [CURRENT_STATUS.md](CURRENT_STATUS.md).
+
 A felhasználó a kompakt UI után ezt a két feladatot kérte. Ez a következő, **még nem fordított forráscsomag**; a külön átadott 2747-es PR89 APK nem tartalmazza. A kérés szerint ebben a körben nem indítunk új Android/Gradle/JVM buildet. Automata/intervallum további bekötés #74 sztornó, BLE szintén; a meglévő működő motort nem töröljük. Adatvédelmi tájékoztató #82 később.
 
 ## Teljes metrikalista (#71)

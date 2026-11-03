@@ -1,0 +1,48 @@
+{
+  "source": "f74133a1bb1e690ce56166c1f0370582e4eedbc6",
+  "run": 41723677980,
+  "versionCode": 2748,
+  "applicationId": "com.TrainPilot.com",
+  "versionName": "0.1.0-beta",
+  "tests": {
+    "tests": 428,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "modules": {
+    "phone": 252,
+    "wear": 176
+  },
+  "apks": [
+    {
+      "platform": "phone",
+      "file": "app-release.apk",
+      "bytes": 19743944,
+      "sha256": "f3f1aae2306142fbf47d52f2240a864b54843bb85294e3b5fd6e346eafb7c832",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6"
+    },
+    {
+      "platform": "wear",
+      "file": "wear-release.apk",
+      "bytes": 4636863,
+      "sha256": "333ddc0e0b46020aa67a60821f0fc794083f19b2c02354efc72c9d7dbc8f7e30",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6"
+    }
+  ],
+  "mapsApiKeyConfigured": true,
+  "dataLayerPairIdentityVerified": true,
+  "wearCompanionCapabilityRetained": true,
+  "wearHardwareRequired": true,
+  "phoneDownload": "https://drive.google.com/file/d/1SquNqT68gJtxt5zGQUuqlPlVU-_kEr9C/view?usp=drivesdk",
+  "pullRequest": "https://github.com/fuloplevente1998/Native-AI-Studio/pull/90",
+  "prRun": 41721740450,
+  "prHead": "a98260c122159530e6af6f0f6b9b16358a756a36",
+  "prCiCheckout": "db3b344fac8d92c7008f74e57f4b02d9a75c3815",
+  "prRawXmlArtifact": 13273164123,
+  "signedApkArtifact": 13275710096,
+  "signedRawXmlArtifact": 13275740013,
+  "videoJsTests": 7,
+  "deviceAccepted": false,
+  "phoneUploadVerified": true
+}
