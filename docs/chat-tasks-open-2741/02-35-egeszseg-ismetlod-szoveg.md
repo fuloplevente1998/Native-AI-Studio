@@ -1,5 +1,7 @@
 # UI #35 – Az Egészség oldal ismétlődő szövegblokkjának eltávolítása
 
+**Felülíró állapot – 2743:** implementálva, #38 mainen. Ez történeti feladatleírás; a kész kódot ne írd újra. A készülékes elfogadást az aktuális átadó és tesztlista szerint ellenőrizd.
+
 ## Feladat
 
 Hibajegy: https://github.com/fuloplevente1998/Native-AI-Studio/issues/35

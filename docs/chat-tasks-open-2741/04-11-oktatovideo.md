@@ -1,5 +1,7 @@
 # Videó #11 – Nem induló oktatóvideók
 
+**Felülíró állapot – 2743:** implementálva, #40 mainen. Ez történeti feladatleírás; a kész kódot ne írd újra. A készülékes elfogadást az aktuális átadó és tesztlista szerint ellenőrizd.
+
 ## Feladat
 
 Hibajegy: https://github.com/fuloplevente1998/Native-AI-Studio/issues/11

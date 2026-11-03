@@ -1,5 +1,7 @@
 # 8. feladat – Naplózott edzés valódi törlése
 
+**Felülíró állapot – 2743:** implementálva, #49 mainen. Ez történeti feladatleírás; a kész kódot ne írd újra. A készülékes elfogadást az aktuális átadó és tesztlista szerint ellenőrizd.
+
 ## Feladat
 
 A naplózott/mentett edzés részletein legyen **Edzés törlése** gomb és megerősítés. A kijelölt edzés valóban törlődjön a tartós tárból, ne csak a listából vagy memóriából tűnjön el.

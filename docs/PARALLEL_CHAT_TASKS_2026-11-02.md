@@ -1,5 +1,50 @@
 # TrainPilot – külön ChatGPT/Codex chateknek kiosztható feladatok
 
+## Aktuális checkpoint – 2743, a készülékes javítások mainen
+
+PR #49 appforrás: `b0d315a1cf70ab65a48ce4e2bdec4a71d027216c`.
+Main merge: `a8605b0b5c2e68ef11a7ec224ad912a232f61bbc`, azonos app/Wear/shared/scripts/workflow fákkal.
+PR Actions [41561039880](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41561039880) SUCCESS;
+letöltött nyers XML **358 = 182 telefon + 176 Wear**, nulla failure/error/skip,
+artifact `13197675023`.
+
+Teljes main signed Actions [41561684993](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41561684993)
+**SUCCESS**, ugyanazon appforrásból. Letöltött nyers XML: **358 = 182 telefon + 176 Wear**, 0 failure/error/skip.
+Verzió **2743 /0.1.0-beta**, mindkét package `com.TrainPilot.com`, változatlan állandó signer SHA256
+`a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6`.
+APK/metadata hash, package/verzió, Maps/pair/capability/hardware flag és a tényleges új device-info
+DEX-útvonal mindkét APK-ban ellenőrizve. Signed artifact `13197093085`, jelentés `13197887370`.
+
+- [Telefon APK](https://drive.google.com/file/d/1SJMkiTMbUm3NjWa12JFEcIpGgQuBrOrj/view): 19514564 bájt; SHA256 `fb1bd01ad6cf0e9c1faa6fb571de673fd9c40bfe9bc7c0a0d1f9962cbea54b44`.
+- [Wear APK](https://drive.google.com/file/d/1t8gyLDIyYTqlMpeOqzPN5P3on7VCThjK/view): 4636863 bájt; SHA256 `be5e05397d2dfd5f147aee95f0980a914fa27c3622a708af2251639f5bfec8b1`.
+
+Mindkét külön APK a meglévő TrainPilot Native `1ywHgrManynjV9uNvZfVncOmCr3SbHIb9` mappában;
+a bájtméret és szülőmappa külön Drive metadata-readbackkel igazolt. Korábbi fájlok megmaradtak,
+nincs kulcscsere, adattörlés vagy Play/GitHub release. Fizikai elfogadás még nem igazolt.
+
+
+Implementált (ne oszd ki újra):
+
+| Hibajegy | Kész kódjavítás |
+|---|---|
+| #43 / korábbi 8. feladat | Megerősített mentettedzés-törlés a Studio részletben; tényleges Room/privátfájl-törlés, minimális tombstone és tartós/újrapróbálható takarítási nyugta; megosztott/aktív adatok védelme |
+| #44 | Világos/sötét naptár, napcellák, műveletek és tervező az app palettájával |
+| #45 | Térkép alapból app-téma szerint; korábbi valóban mentett kézi mód megmarad, App témája gombbal visszaállítható a követés |
+| #47 | Órakoppintás / Kapcsolt eszközök / Frissítés valódi, csak olvasó Wear kérés/válasz; egyező node/requestId, valódi akkumulátor/eszköz/verzió, hiány/timeout állapot |
+| #48 | Kisebb kompakt térkép; fullscreen fejléc/idő/X/primer vezérlők a térképen belül, safe insetekkel és mért overlayméretű Google-margókkal |
+| #50 | Google Cloud összecsukható a Studio/natív Beállításokban; műveleti hibák/visszajelzések és consent megmarad |
+| #51 | Home/Egészség közös 3×2 Mai állapot, kompakt Home és Coach-navigáció; normál elférés, nagy betű/szűk ablak esetén hozzáférhető görgetés |
+| #52 | GPS újraindítás új natív ID-val/idővel, natív eredmény nélküli fantom UI nélkül; aktív Home-kártya a saját sessionjét mutatja/nyitja a kijelölt programtól függetlenül; stale elvetés védelme marad |
+| #53 | Import/mentés/törlés után valódi helyi napi/heti edzésszám, naptári hét hétfőtől máig; nem a teljes napló mérete. A 28 korábbi rekord nem törlődik/íródik át |
+| #54 | Tényleges volumen-százalék az előző, azonos hosszúságú 1/7/30/90 naphoz; előjel/irány/szín, előző pozitív volumen hiányában „—” |
+
+Készülékes elfogadás külön: [tesztlista](DEVICE_TEST_CHECKLIST_2026-11-03.md).
+Az órás lekérés új válaszadójához **mindkét 2743-as APK-t telepíteni kell**.
+A HC eredeti ürességének fizikai oka továbbra sem bizonyított; a már kész #41 providerizolációt ne írd újra.
+A korábbi „nyitott/kiosztható” 8. feladat és #43–#54 státuszok történetiek.
+
+## Korábbi checkpointok és készülékes megfigyelések
+
 ## Aktuális készülékes teszt – 2026-11-03, PR #38–#41
 
 A main `3f3195a` tartalmazza a #38–#41-et és a #42 2742-es kiadást. A felhasználó
