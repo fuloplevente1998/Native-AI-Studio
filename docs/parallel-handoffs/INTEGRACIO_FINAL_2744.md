@@ -1,3 +1,5 @@
+> Történeti feladat/átadás. Az aktuális státusz és a felhasználó legújabb sorrendje: [CURRENT_STATUS.md](../CURRENT_STATUS.md). A már mainen lévő kódot ne implementáld vagy merge-eld újra.
+
 # TrainPilot 2744 – közös integrációs átadás
 
 ## Forrás és hatókör

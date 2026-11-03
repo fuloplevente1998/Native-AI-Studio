@@ -1,3 +1,5 @@
+> Történeti feladat/átadás. Az aktuális státusz és a felhasználó legújabb sorrendje: [CURRENT_STATUS.md](CURRENT_STATUS.md). A már mainen lévő kódot ne implementáld vagy merge-eld újra.
+
 # Native audit implementation
 
 Baseline: Native-AI-Studio main960b4f733ab57b1e95281451f19c1b2f3263782d.

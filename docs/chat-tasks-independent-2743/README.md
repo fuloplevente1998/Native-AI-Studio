@@ -1,3 +1,5 @@
+> Történeti feladat/átadás. Az aktuális státusz és a felhasználó legújabb sorrendje: [CURRENT_STATUS.md](../CURRENT_STATUS.md). A már mainen lévő kódot ne implementáld vagy merge-eld újra.
+
 # TrainPilot – négy külön fejlesztői chat és egy integrátor
 
 **Most nincs további app-implementáció ezen a körön belül.** A már majdnem kész Coach-preview és piros/listabeli törlés #58-ban külön elkészül/ellenőrzés alatt. A többi munkát az alábbiak szerint add külön chateknek.

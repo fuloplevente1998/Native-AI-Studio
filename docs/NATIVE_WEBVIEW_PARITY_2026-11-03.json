@@ -1,0 +1,103 @@
+{
+  "schema": "native-webview-parity-2026-11-03.v1",
+  "webviewMain": "5f026a56b9b6d33c84afa77eb3927b11f0bd6f6a",
+  "nativeAppSource": "deebfddd7f0259e589e9791582ad6d2d38fcf4e2",
+  "method": "Feature-level static source and reachable Studio entrypoint review; not a complete 107-point device revalidation",
+  "approvedAfterApk": [
+    "coach",
+    "prefill"
+  ],
+  "cancelled": [
+    "BLE manager E09/E10 and B14 BLE part"
+  ],
+  "items": [
+    {
+      "key": "prefill",
+      "title": "P1 – Előző megfelelő edzés súly-/ismétlés-előtöltése a Studio indításban",
+      "url": "https://github.com/fuloplevente1998/Native-AI-Studio/issues/68",
+      "inventory": "B01, A10",
+      "legacy": "www/app.js:812–885, tp228PrefillSets",
+      "native": "app/src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt:784, 2789, 2829",
+      "symptom": "A startPlannedWorkout/startWorkoutWithExercises a buildDefaultSetsForExercise értékeit használja. A régi megfelelő alkalom súlya és ismétlése nem kerül át. A kanonikus session dayId jelenleg session, ezért valódi program/nap-azonosság és legacy-kompatibilitás is kell.",
+      "acceptance": "Csak megfelelő, mentett és teljesített erősítő alkalomból öröklődjön súly és ismétlés, sorozatonként. Gyors és tervezett indítás; új/saját/importált gyakorlat. Kézi módosítás és aktív draft megmarad. RIR, done, idő, GPS, ownership nem öröklődik. Valós program/nap-azonosság, legacy fallback csak bizonyítható egyezésnél.",
+      "scope": "A felhasználó kérte: a mostani APK átadása UTÁN implementáljuk."
+    },
+    {
+      "key": "feedback",
+      "title": "P1 – Opcionális tényleges RIR és kanonikus fájdalom/effort visszajelzés",
+      "url": "https://github.com/fuloplevente1998/Native-AI-Studio/issues/69",
+      "inventory": "B15, B16, C03",
+      "legacy": "www/app.js:20241 tp197RirSave; 16869 TrainPilotWorkoutFeedback",
+      "native": "app/src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt:784, 825, 3215",
+      "symptom": "A Studio minden új sorozathoz rir=2 értéket ad és actualRir-ként menti, külön megadási jel nélkül. A feedback magyar effort szöveg, míg a kanonikus Coach feedback.rating és gépi pain/hard értéket vizsgál.",
+      "acceptance": "A hiányzó actualRir maradjon hiányzó; mért 0 külön kezelve. A felhasználó kifejezett RIR-je megmarad export/import/restart során. A pain/hard és a többi kanonikus effort-állapot eljusson a Coach-hoz, régi adatok migrációja adatvesztés nélkül. A RIR-cél nem tényleges mérés.",
+      "scope": "A Coach bekötésével közös szerződés; nem szabad párhuzamosan átírni ugyanazt a VM-et."
+    },
+    {
+      "key": "coach",
+      "title": "P1 – Valódi Coach tanácsok, következő nap és tartós progresszió bekötése",
+      "url": "https://github.com/fuloplevente1998/Native-AI-Studio/issues/70",
+      "inventory": "C11–C14, E17",
+      "legacy": "www/app.js:3514 rf233ExerciseAdvice; 19989 tp197UiRequestSave",
+      "native": "app/src/main/java/com/example/ui/screens/HealthCoachAndSettingsScreens.kt:1770; app/src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt:4123",
+      "symptom": "A Studio Coach nem használja a CoachViewModel/NativeCoachAdviceRepository teljes tanácslistáját, az ajánlott nap az első nap. Az updateProgressionSettings csak UiState-et módosít. A kanonikus motor és NativeTrainingModePicker már létezik, új motort nem kell írni.",
+      "acceptance": "Adatalapú gyakorlatonkénti ajánlás és indok; NativeCoachTargets szerinti valódi program/nap/naptári cél. A kijelzett nap induljon. Szolgáltató- és frissességvédelem; fájdalom/terhelés megmarad. Módok valós mentése, előnézet és tudatos elfogadás. Adathiánynál nincs kitalált tanács. Studio arculat megmarad.",
+      "scope": "A felhasználó kérte: az APK átadása UTÁN implementáljuk. Előtöltéssel összehangolt munka."
+    },
+    {
+      "key": "health-browser",
+      "title": "P2 – Teljes egészségnapló, dátumszűrő és metrikarészletek elérése a Studio felületen",
+      "url": "https://github.com/fuloplevente1998/Native-AI-Studio/issues/71",
+      "inventory": "D01–D04, D07, D14",
+      "legacy": "www/app.js:16075 recordHtml; NativeHealthMetrics 26 kulcsa",
+      "native": "app/src/main/java/com/repforge/app/ui/health/HealthRecordBrowser.kt; app/src/main/java/com/repforge/app/ui/health/NativeHealthMetrics.kt; app/src/main/java/com/example/ui/screens/HealthCoachAndSettingsScreens.kt",
+      "symptom": "A Studio főleg mai és 7/14 napos összesítéseket mutat. A teljes dátumtól/dátumig lapozó, nyers rekord, alvásszakasz és mind a 26 metrika részletezője nincs elérhetően bekötve. Ezekhez natív háttérkomponens már van.",
+      "acceptance": "Dátumszűrés és lapozás valódi tárolón; forrás/időbélyeg/hiány/hiba helyes; összes támogatott metrika és alvásszakasz hozzáférhető. Nincs fake érték, nincs provider-keverés. A mai kártyák kompaktak maradnak.",
+      "scope": "Rögzített backlog, most nem kezdjük el."
+    },
+    {
+      "key": "program-crud",
+      "title": "P2 – Program- és sajátgyakorlat-műveletek valódi bekötése, kedvencek",
+      "url": "https://github.com/fuloplevente1998/Native-AI-Studio/issues/72",
+      "inventory": "A07, A08, A12, A13",
+      "legacy": "www/app.js:1540 rf144Favorites; program- és exercise-kezelők",
+      "native": "app/src/main/java/com/example/ui/screens/WorkoutAndPlanningScreens.kt:1380; app/src/main/java/com/example/MainActivity.kt:475–566",
+      "symptom": "A programtörlés feliratos művelet jelenleg onBack-et hív. A Studio útvonalon nincs teljes programmásolás/törlés, nap hozzáadás/törlés, gyakorlateltávolítás a napból, meglévő saját gyakorlat szerkesztés/törlés és tartós kedvenckezelés. Létrehozás/aktiválás/sorrend/prescription-szerkesztés már létezik.",
+      "acceptance": "Minden felsorolt művelet valódi Room-módosítás, hibánál nincs hamis siker; aktív session/import/szinkron és beépített elemek védelme. Kedvencek backupban megmaradnak. Meglévő napló gyakorlatreferenciái nem sérülhetnek.",
+      "scope": "A felhasználónak felsorolva; most csak backlog, nincs implementációs felhatalmazás ebben a körben."
+    },
+    {
+      "key": "journal-edit",
+      "title": "P2 – Naplózott edzés valódi szerkesztése és utólagos visszajelzés a Studio részletben",
+      "url": "https://github.com/fuloplevente1998/Native-AI-Studio/issues/73",
+      "inventory": "C02, C03",
+      "legacy": "www/app.js naplórészletek és TrainPilotWorkoutFeedback",
+      "native": "app/src/main/java/com/example/MainActivity.kt:709–730; app/src/main/java/com/repforge/app/ui/journal/JournalEditorDialog.kt",
+      "symptom": "A Studio naplórészletben a natív törlés/Health/fotó/útvonal elérhető, de a létező JournalEditorDialog/openEditor szerkesztési út nincs bekötve. A meglévő visszajelzés szerkesztése sem teljes.",
+      "acceptance": "Mentett sets/reps/súly/tényleges RIR és megjegyzés/visszajelzés tudatos szerkesztése, előnézet/megerősítés a meglévő natív szerkesztőn. Cache/PR/Coach frissüljön, idők/ownership/health nem találhatók ki.",
+      "scope": "Csak rögzítés; #57 törlés funkcióját nem kell újraírni."
+    },
+    {
+      "key": "timers",
+      "title": "P2 – Intervallum-/automata beállítások tartós és kanonikus motorbekötése",
+      "url": "https://github.com/fuloplevente1998/Native-AI-Studio/issues/74",
+      "inventory": "B07–B09, E17",
+      "legacy": "www/app.js:18631 interval config",
+      "native": "app/src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt:2746; app/src/main/java/com/repforge/app/data/store/TrainPilotSettingsStore.kt:256",
+      "symptom": "Az updateIntervalSettings és toggleAutoMode a Studio UiState-et írja; a teljes globális/edzésenkénti preset és kanonikus setTimerDefaults kapcsolat hiányos. Az alap natív stopper/szünet/folytatás meglétét ez nem vitatja.",
+      "acceptance": "A kiválasztott munka/pihenő/kör/auto mód valódi motorhoz és tartós presethez jusson, restart/programváltás után helyesen; hang/haptika jogosultság és háttéridő megmarad. Ne legyen második időzítő.",
+      "scope": "A pontos preset/start útvonal külön megvalósítási auditot igényel; most backlog."
+    },
+    {
+      "key": "languages",
+      "title": "P2 – Studio teljes HU/EN/DE/RO lokalizációjának befejezése",
+      "url": "https://github.com/fuloplevente1998/Native-AI-Studio/issues/75",
+      "inventory": "E16",
+      "legacy": "www/app.js tp149T, 4 nyelv",
+      "native": "app/src/main/java/com/example/ui/screens/HealthCoachAndSettingsScreens.kt; app/src/main/java/com/example/ui/screens/WorkoutAndPlanningScreens.kt",
+      "symptom": "Nyelvválasztás és sok fordítás már van, de több látható képernyőszöveg közvetlen magyar literal; a teljes négy nyelv paritása nincs kész.",
+      "acceptance": "Minden felhasználói felirat és állapot lokalizált, dátum/számformátum helyes, hosszú DE/RO feliratok és nagy betű használható. Nem pusztán a négy nyelvgomb léte számít késznek.",
+      "scope": "Rögzítés, most nem implementáljuk."
+    }
+  ]
+}
