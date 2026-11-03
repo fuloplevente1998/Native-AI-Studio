@@ -6,6 +6,7 @@ import android.net.http.SslError
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.webkit.CookieManager
 import android.webkit.ConsoleMessage
 import android.webkit.GeolocationPermissions
 import android.webkit.PermissionRequest
@@ -99,20 +100,24 @@ fun SecureExerciseVideoWebView(
                         safeBrowsingEnabled = true
                     }
 
+                    // The selected video's iframe is a third-party origin. Without this,
+                    // YouTube consent/session cookies may fail in Android WebView.
+                    CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+                    var playerLoad: ExerciseVideoLoad = ExerciseVideoLoad.Loading
                     var loadFailed = false
                     fun failure(message: String) {
                         loadFailed = true
-                        latestLoad(ExerciseVideoLoad.Failed(message))
+                        playerLoad = ExerciseVideoLoad.Failed(message)
+                        latestLoad(playerLoad)
                     }
                     fun processPlayerEvent(value: String) {
                         if (mode != ExerciseVideoMode.EMBED ||
                             !value.startsWith("trainpilot-video:")) return
-                        when (val event = value.removePrefix("trainpilot-video:")) {
-                            "ready", "paused" -> latestLoad(ExerciseVideoLoad.Ready)
-                            "playing" -> latestLoad(ExerciseVideoLoad.Playing)
-                            else -> if (event.startsWith("error:")) {
-                                failure(embeddedYouTubeError(event.removePrefix("error:").toIntOrNull() ?: 0))
-                            }
+                        val next = exerciseVideoPlayerEvent(playerLoad, value.removePrefix("trainpilot-video:"))
+                        if (next != playerLoad) {
+                            playerLoad = next
+                            if (next is ExerciseVideoLoad.Failed) loadFailed = true
+                            latestLoad(next)
                         }
                     }
 
@@ -218,7 +223,7 @@ fun SecureExerciseVideoWebView(
 
                     if (mode == ExerciseVideoMode.EMBED && youtubeId != null) {
                         loadDataWithBaseURL(
-                            "https://appassets.androidplatform.net/",
+                            "$EXERCISE_VIDEO_ORIGIN/",
                             exerciseYouTubeEmbedHtml(youtubeId), "text/html", "UTF-8", null
                         )
                     } else if (mode == ExerciseVideoMode.BROWSER && allowedInAppVideoNavigation(url)) {

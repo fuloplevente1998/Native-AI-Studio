@@ -29,7 +29,7 @@ Korábbi igazolt aláírt build: 41580088708, forrás `56301f7d68016f3074c366ff4
 1. A #67 aláírt telefonos APK átadása kész. A felhasználó ezt megkapta a Coach/előző alkalom fejlesztése ELŐTT.
 2. #70 Coach és #68 előtöltés **kódban/CI-ben kész, mainen**, implementációként lezárva. A legújabb, ezeket tartalmazó aláírt main build **41599072569 SUCCESS**, nyers402; az ellenőrzött telefonos APK átadva, lásd az APK-szakaszt. Fizikai elfogadás nem állított.
 3. #69 alap RIR/root-feedback szerződése javítva; a teljes gyakorlatonkénti/utólagos feedback és régi formátumok áttekintése még nyitott, adatot tömegesen nem írunk át. #61 Energy 0 része javítva, Samsung permission-üzenet része még nyitott.
-4. #71–#75 és a #60 kompakt órakártya csak backlog; más új implementációt most nem kezdünk. #35/#48/#59 készülékes visszaigazolásra vár.
+4. #71–#75 és a #60 kompakt órakártya backlog. A program-/gyakorlatműveletek a meglévő natív átrendezés és helyi súly/ismétlés/pihenő szerkesztés mintáját kövessék. #35/#48 készülékes visszaigazolásra vár. **#59 új készülékes hibajelzés: fekete YouTube-kép „készen áll” üzenettel; [javítás és ellenőrzési állapot](YOUTUBE_BLACK_PLAYER_2026-11-03.md).** A korábban átadott81da2f7 APK ezt a javítást még nem tartalmazza.
 5. **BLE-kezelő sztornó**, a felhasználó kifejezett kérése. Nem fejlesztendő, meglévő adat/backend törlése sem feladat.
 
 A funkcióhiányok forráshoz kötött listája: [WebView–natív paritásaudit](NATIVE_WEBVIEW_PARITY_2026-11-03.md).
