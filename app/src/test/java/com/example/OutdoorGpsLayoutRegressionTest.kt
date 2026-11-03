@@ -102,6 +102,29 @@ class OutdoorGpsLayoutRegressionTest {
         assertEquals(1, finished)
     }
 
+    @Test fun compactMapLeavesRoomForDataInsteadOfGrowingWithTheScreen() {
+        show(393, 780)
+        val bounds = compose.onNodeWithTag("outdoor_compact_map_card").getUnclippedBoundsInRoot()
+        assertTrue(bounds.bottom - bounds.top <= 220.dp)
+        assertControlsVisible()
+    }
+
+    @Test fun fullscreenTimerCloseAndAllActionsAreInsideTheMap() {
+        show(393, 700, fullscreen = true)
+        val map = compose.onNodeWithTag("map_fixture").getUnclippedBoundsInRoot()
+        for (tag in listOf("gps_close_fullscreen", "gps_elapsed_timer_text", "gps_pause_resume_btn", "gps_lap_btn", "gps_finish_workout_btn")) {
+            val bounds = compose.onNodeWithTag(tag).assertIsDisplayed().getUnclippedBoundsInRoot()
+            assertTrue(tag, bounds.top >= map.top && bounds.bottom <= map.bottom && bounds.left >= map.left && bounds.right <= map.right)
+        }
+    }
+
+    @Test fun fullscreenAlsoKeepsActionsReachableWithLargeText() {
+        show(320, 480, font = 2f, fullscreen = true)
+        assertControlsVisible(bottomInset = 32)
+        compose.onNodeWithTag("gps_close_fullscreen").assertIsDisplayed()
+        compose.onNodeWithTag("gps_elapsed_timer_text").assertIsDisplayed()
+    }
+
     @Test fun activityChoicesRemainAvailableBeforeStarting() {
         show(360, 480, display = state.copy(started = false))
         compose.onNodeWithTag("gps_start_workout_btn").assertIsDisplayed()

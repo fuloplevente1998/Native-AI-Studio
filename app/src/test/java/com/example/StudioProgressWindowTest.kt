@@ -46,4 +46,19 @@ class StudioProgressWindowTest {
         val day = StudioProgressWindow(1, LocalDate.of(2026, 10, 25))
         assertEquals(Duration.ofHours(25).toMillis(), day.toEpoch(zone) - day.fromEpoch(zone) + 1)
     }
+    @Test fun changesCompareAdjacentEqualLengthPeriodsForAllFourRanges() {
+        for (days in listOf(1, 7, 30, 90)) {
+            val period = StudioProgressWindow(days, today)
+            assertEquals(period.start.minusDays(1), period.previous().end)
+            assertEquals(50L, period.volumeChangePercent(listOf(row(0, 1500), row(days, 1000), row(days * 2, 9000)), zone))
+            assertEquals(-50L, period.volumeChangePercent(listOf(row(0, 500), row(days, 1000)), zone))
+            assertEquals(0L, period.volumeChangePercent(listOf(row(0, 1000), row(days, 1000)), zone))
+            assertEquals(-100L, period.volumeChangePercent(listOf(row(days, 1000)), zone))
+        }
+    }
+    @Test fun noPreviousVolumeDoesNotInventAPercentage() {
+        assertNull(StudioProgressWindow(7, today).volumeChangePercent(listOf(row(0, 1000)), zone))
+        assertNull(StudioProgressWindow(7, today).volumeChangePercent(emptyList(), zone))
+    }
+
 }

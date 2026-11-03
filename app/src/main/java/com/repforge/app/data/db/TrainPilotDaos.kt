@@ -412,6 +412,17 @@ interface WorkoutHistoryDao {
     @Query("DELETE FROM workout_photos WHERE workoutHistoryId = :workoutId")
     suspend fun deletePhotosForWorkout(workoutId: String)
 
+    @Query("DELETE FROM workout_history WHERE id = :id")
+    suspend fun deleteWorkoutById(id: String)
+
+    @Query("SELECT * FROM history_tombstones WHERE primaryId = :id LIMIT 1")
+    suspend fun getHistoryTombstone(id: String): HistoryTombstoneEntity?
+
+    @Query("""SELECT EXISTS(SELECT 1 FROM workout_history WHERE INSTR(rawJson, :quoted) > 0)
+        OR EXISTS(SELECT 1 FROM workout_photos WHERE id = :value)
+        OR EXISTS(SELECT 1 FROM workout_history_sets WHERE gpsRouteKey163 = :value OR gpsRouteKey193 = :value)""")
+    suspend fun hasHistoryAssetReference(value: String, quoted: String): Boolean
+
     @Query("DELETE FROM workout_history WHERE id = :workoutId OR workoutKey = :workoutId")
     suspend fun deleteWorkoutByIdOrKey(workoutId: String)
 
@@ -546,6 +557,9 @@ interface CalendarScheduleDao {
 
 @Dao
 interface KeyValueDocumentDao {
+    @Query("SELECT * FROM kv_documents WHERE doc_key GLOB 'native:historyCleanup:*'")
+    suspend fun getHistoryCleanupDocuments(): List<KeyValueDocumentEntity>
+
     @Query("SELECT * FROM kv_documents WHERE doc_key GLOB 'native:weightTombstone18:*' ORDER BY doc_key")
     suspend fun getWeightTombstoneDocuments(): List<KeyValueDocumentEntity>
 

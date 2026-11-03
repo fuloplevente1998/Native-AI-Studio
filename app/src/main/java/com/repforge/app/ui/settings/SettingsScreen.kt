@@ -4,6 +4,7 @@ import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import com.repforge.app.ui.theme.TrainPilotFrames
 
+import androidx.compose.foundation.layout.heightIn
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -94,6 +95,7 @@ fun SettingsScreen(
     val googleConsent by viewModel.googleConsent.collectAsStateWithLifecycle()
     NativeGoogleConsentLauncher(googleConsent, viewModel::takeGoogleConsent,
         viewModel::completeGoogleConsent, viewModel::failGoogleConsent)
+    var cloudExpanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var profileOpen by remember { mutableStateOf(false) }
     var openedProfileJson by remember { mutableStateOf("{}") }
     var openedTimerJson by remember { mutableStateOf<String?>(null) }
@@ -198,11 +200,13 @@ fun SettingsScreen(
                 border = TrainPilotFrames.stroke(1.dp, colors.line)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { cloudExpanded = !cloudExpanded }
+                        .testTag("native_google_expand"), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.CloudSync, contentDescription = null, tint = colors.accentText, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text(strings.getString(R.string.native_settings_cloud_title), color = colors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(strings.getString(R.string.native_settings_cloud_title) + if (cloudExpanded) " ▴" else " ▾", color = colors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
+                    if (cloudExpanded) {
                     Spacer(Modifier.height(10.dp))
 
                     if (gs.connectedEmail.isNotEmpty()) {
@@ -255,6 +259,7 @@ fun SettingsScreen(
                         ) {
                             Text(strings.getString(R.string.native_settings_google_login), color = colors.onAccent, fontWeight = FontWeight.Bold)
                         }
+                    }
                     }
                     NativeGoogleMaintenanceFeedback(state.settings.language, state.maintenanceOutcome, state.maintenanceCompleted)
                     if (gs.isBusy) {

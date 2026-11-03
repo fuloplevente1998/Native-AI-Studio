@@ -724,6 +724,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onOpenRouteMap = { viewModel.navigateToSubScreen(SubScreen.LOG_ROUTE_MAP) },
                             onOpenWatchSync = { viewModel.navigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
                             onOpenHealthTab = { viewModel.selectLogDetailTab(2) },
+                            deleteActions = { com.example.ui.components.StudioLoggedWorkoutDeleteActions(
+                                uiState.selectedLogWorkoutId, viewModel::onLoggedWorkoutDeleted) },
                             workoutHealth = workoutHealth
                         )
                     }
@@ -770,11 +772,13 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     }
 
                     SubScreen.WATCH_AND_SYNC -> {
+                        androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.requestWatchDeviceInfo() }
                         WatchAndSyncScreen(
                             uiState = uiState,
                             strings = strings,
                             onBack = { viewModel.navigateBack() },
                             onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
+                            onRefreshWatchInfo = viewModel::requestWatchDeviceInfo,
                             onToggleControlMode = { viewModel.toggleWatchControlMode(context as? android.app.Activity) },
                             onRequestPermission = requestPlatformPermission,
                             onShowBanner = { viewModel.showBannerMessage(it) }
@@ -838,11 +842,15 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                         }
                                     },
                                     onOpenProgramDayDetails = {
-                                        val activeProg = uiState.programs.firstOrNull { it.isActive } ?: uiState.programs.firstOrNull()
-                                        viewModel.openProgramEditor(activeProg?.id ?: "home_ab_basic", 0)
+                                        if (uiState.isWorkoutSessionActive) viewModel.returnToActiveWorkout()
+                                        else {
+                                            val activeProg = uiState.programs.firstOrNull { it.isActive } ?: uiState.programs.firstOrNull()
+                                            viewModel.openProgramEditor(activeProg?.id ?: "home_ab_basic", 0)
+                                        }
                                     },
                                     onOpenQuickWorkout = { viewModel.toggleQuickWorkoutSheet(true) },
-                                    onOpenWatchAndSync = { viewModel.navigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
+                                    onOpenHealthToday = { viewModel.selectTab(MainTab.HEALTH) },
+                                    onOpenWatchAndSync = { viewModel.requestWatchDeviceInfo(); viewModel.navigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
                                     onOpenHealthSleep = {
                                         viewModel.openHealthAndExpand(journal = true)
                                     },
@@ -1001,6 +1009,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     if (!health.healthRefreshing) viewModel.reloadHealthJournal()
                                 }
                                 HealthTabScreen(
+                                    onOpenLoggedWorkout = viewModel::openLogWorkoutDetail,
                                     uiState = uiState.copy(primaryHealthSourceSamsung = health.provider == com.repforge.app.HealthJournalStore.SAMSUNG,
                                         lastHealthSyncLabel = health.lastSyncAt, lastHealthReadLabel = health.lastReadAt,
                                         samsungGrantedCount = health.samsungGrantedCount,

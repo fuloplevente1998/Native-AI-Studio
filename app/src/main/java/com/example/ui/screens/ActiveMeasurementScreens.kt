@@ -3300,8 +3300,11 @@ fun ActiveOutdoorGpsScreen(
         expandMap = { isFullscreenMapOpen = true }
     )
     val routeMap: @Composable (Modifier) -> Unit = { modifier ->
+        val mapPadding = LocalOutdoorMapContentPadding.current
         NativeWorkoutRouteMapBox(modifier = modifier, interactiveControls = true,
-            routeKeys = listOf(routeOwnerKey), refreshToken = realGpsFixesCount)
+            routeKeys = listOf(routeOwnerKey), refreshToken = realGpsFixesCount,
+            showZoomControls = mapPadding.calculateTopPadding() > 0.dp,
+            mapContentPadding = mapPadding)
     }
     OutdoorGpsDashboard(display, strings, actions, mapContent = routeMap)
     if (isFullscreenMapOpen) {

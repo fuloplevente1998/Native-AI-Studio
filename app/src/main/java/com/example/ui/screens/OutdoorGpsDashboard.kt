@@ -17,8 +17,10 @@ import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -28,6 +30,8 @@ import androidx.compose.ui.unit.sp
 import com.example.model.AppLanguage
 import com.example.localization.LocalizedStrings
 import com.example.ui.theme.LocalTrainPilotPalette
+
+internal val LocalOutdoorMapContentPadding = staticCompositionLocalOf { PaddingValues(0.dp) }
 
 /** Display projection only; timing, GPS, ownership and finalization stay in the native engine. */
 internal data class OutdoorGpsDisplay(
@@ -73,9 +77,36 @@ internal fun OutdoorGpsDashboard(
     val palette = LocalTrainPilotPalette.current
     BoxWithConstraints(modifier.fillMaxSize().background(palette.background)
         .testTag(if (fullscreen) "fullscreen_map_overlay" else "active_outdoor_gps_screen")) {
-        // Preserve accessible text sizes. Short/large-font windows can scroll the secondary
-        // content, while pause/finish remain pinned and reachable in the available viewport.
+        val viewportHeight = maxHeight
+        if (fullscreen) {
+            val density = LocalDensity.current
+            var headerHeight by remember { mutableIntStateOf(80) }
+            var footerHeight by remember { mutableIntStateOf(210) }
+            val mapPadding = with(density) { PaddingValues(top = headerHeight.toDp() + 12.dp,
+                bottom = footerHeight.toDp() + 12.dp) }
+            Box(Modifier.fillMaxSize().clipToBounds().testTag("outdoor_fullscreen_map_bounds")) {
+                CompositionLocalProvider(LocalOutdoorMapContentPadding provides mapPadding) {
+                    mapContent(Modifier.fillMaxSize())
+                }
+                Column(Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.onSizeChanged { headerHeight = it.height }) { DashboardHeader(state, actions, true) }
+                    Spacer(Modifier.weight(1f))
+                    Column(Modifier.onSizeChanged { footerHeight = it.height }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Column(Modifier.heightIn(max = viewportHeight * 0.28f)
+                            .verticalScroll(rememberScrollState())) {
+                            MetricsPanel(state, strings, showTimer = false)
+                            if (state.error.isNotBlank()) Text(state.error, color = palette.danger,
+                                modifier = Modifier.testTag("outdoor_finish_error"))
+                        }
+                        DashboardControls(state, strings, actions)
+                    }
+                }
+            }
+            return@BoxWithConstraints
+        }
+        // The compact map has a bounded height; metrics and pinned actions get the remaining space.
         val scrollSecondary = maxHeight < 360.dp || LocalDensity.current.fontScale > 1.35f || state.error.isNotBlank()
+        val compactMapHeight = (maxHeight * 0.34f).coerceIn(140.dp, 220.dp)
         Column(Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             DashboardHeader(state, actions, fullscreen)
             Column(
@@ -89,7 +120,7 @@ internal fun OutdoorGpsDashboard(
                         }
                     } else Surface(shape = RoundedCornerShape(20.dp), color = palette.surfaceCard,
                         modifier = Modifier.fillMaxWidth()
-                            .then(if (scrollSecondary) Modifier.height(220.dp) else Modifier.weight(1f))
+                            .height(compactMapHeight).testTag("outdoor_compact_map_card")
                             .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.45f), RoundedCornerShape(20.dp))) {
                         Column(Modifier.padding(6.dp)) {
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -100,7 +131,7 @@ internal fun OutdoorGpsDashboard(
                             Box(Modifier.fillMaxWidth().weight(1f)) {
                                 mapContent(Modifier.fillMaxSize())
                                 FilledTonalIconButton(onClick = actions.expandMap,
-                                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(48.dp)
+                                    modifier = Modifier.align(Alignment.TopStart).padding(4.dp).size(48.dp)
                                         .testTag("expand_map_fullscreen_btn")) {
                                     Icon(Icons.Default.Fullscreen, contentDescription = outdoorCopy(state.language).fullscreen)
                                 }

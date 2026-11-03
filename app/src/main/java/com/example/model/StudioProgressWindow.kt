@@ -14,6 +14,13 @@ internal data class StudioProgressWindow(val days: Int, val end: LocalDate = Loc
     fun toEpoch(zone: ZoneId = ZoneId.systemDefault()): Long = end.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
     fun workouts(rows: List<LoggedWorkoutEntry>, zone: ZoneId = ZoneId.systemDefault()) =
         rows.filter { contains(it.localWorkoutDate(zone)) }
+    fun previous(): StudioProgressWindow = StudioProgressWindow(days, start.minusDays(1))
+    fun volumeChangePercent(rows: List<LoggedWorkoutEntry>, zone: ZoneId = ZoneId.systemDefault()): Long? {
+        val previous = previous().workouts(rows, zone).sumOf { it.totalVolumeKg.toLong() }
+        if (previous <= 0L) return null
+        val current = workouts(rows, zone).sumOf { it.totalVolumeKg.toLong() }
+        return Math.round((current - previous) * 100.0 / previous)
+    }
     fun volumes(rows: List<LoggedWorkoutEntry>, zone: ZoneId = ZoneId.systemDefault()): List<Pair<String, Int>> {
         val step = if (days >= 30) 7 else 1
         val dated = workouts(rows, zone).groupBy { it.localWorkoutDate(zone) }

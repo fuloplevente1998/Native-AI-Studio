@@ -14,6 +14,11 @@ class WearDataListenerService : WearableListenerService() {
         WearCommandOutbox.flush(this,true)
     }
     override fun onMessageReceived(event: MessageEvent) {
+        if (event.path == com.repforge.shared.WatchDeviceInfo.REQUEST) {
+            WearDeviceInfo.reply(this, event.sourceNodeId, event.data)
+            return
+        }
+
         if(event.path!=WearWorkoutHandoff.REPLY || event.data.size>100000)return
         if(WearWorkoutHandoff.accept(this,event.data.toString(Charsets.UTF_8)))WearSurfaces.refresh(this)
     }

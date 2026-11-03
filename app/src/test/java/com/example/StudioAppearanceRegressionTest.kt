@@ -104,7 +104,11 @@ class StudioAppearanceRegressionTest {
             }
         }
         compose.onNodeWithTag("studio_google_cloud_card").assertExists()
+        compose.onNodeWithTag("settings_google_login_btn").assertDoesNotExist()
+        compose.onNodeWithTag("settings_google_expand").performScrollTo().performClick()
         compose.onNodeWithTag("settings_google_login_btn").assertExists()
+        compose.onNodeWithTag("settings_google_expand").performClick()
+        compose.onNodeWithTag("settings_google_login_btn").assertDoesNotExist()
     }
 
     @Test fun multiSelectEquipmentInPlannerGeneratesMatchingWorkoutPlan() {

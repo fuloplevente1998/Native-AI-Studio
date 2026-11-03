@@ -323,4 +323,42 @@ class JournalWorkoutHealthRegressionTest {
         compose.onNodeWithTag("top_nav_home").assertIsSelected()
     }
 
+    @Test fun studioDeleteRequiresConfirmationAndReallyDeletesTheSavedWorkout() {
+        val detail = seed()
+        val model = com.repforge.app.ui.journal.JournalViewModel(context as android.app.Application)
+        models.put("delete", model)
+        var deleted = ""
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.components.StudioLoggedWorkoutDeleteActions(detail.workout.id, { deleted = it }, model)
+        } }
+        compose.runOnIdle { model.openDetails(detail.workout.id) }
+        compose.waitUntil(10_000) { shadowOf(Looper.getMainLooper()).idle(); model.uiState.value.detail != null }
+        compose.onNodeWithTag("journal_delete_workout").performClick()
+        compose.onNodeWithTag("journal_cancel_delete").performClick()
+        assertNotNull(awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById(detail.workout.id) })
+        compose.onNodeWithTag("journal_delete_workout").performClick()
+        compose.onNodeWithTag("journal_confirm_delete").performClick()
+        compose.waitUntil(10_000) { shadowOf(Looper.getMainLooper()).idle(); deleted == detail.workout.id }
+        assertNull(awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById(detail.workout.id) })
+        assertNotNull(awaitNative { db.workoutHistoryDao().getHistoryTombstone(detail.workout.id) })
+    }
+
+    @Test fun changingTheSelectedWorkoutCancelsTheOldDeleteConfirmation() {
+        val first = seed("delete-first")
+        val second = seed("delete-second")
+        val model = com.repforge.app.ui.journal.JournalViewModel(context as android.app.Application)
+        models.put("delete-change", model)
+        var selected by androidx.compose.runtime.mutableStateOf(first.workout.id)
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.components.StudioLoggedWorkoutDeleteActions(selected, {}, model)
+        } }
+        compose.runOnIdle { model.openDetails(first.workout.id) }
+        compose.waitUntil(10_000) { shadowOf(Looper.getMainLooper()).idle(); model.uiState.value.detail != null }
+        compose.onNodeWithTag("journal_delete_workout").performClick()
+        compose.runOnIdle { selected = second.workout.id; model.openDetails(second.workout.id) }
+        compose.onNodeWithTag("journal_confirm_delete").assertDoesNotExist()
+        assertNotNull(awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById(first.workout.id) })
+        assertNotNull(awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById(second.workout.id) })
+    }
+
 }

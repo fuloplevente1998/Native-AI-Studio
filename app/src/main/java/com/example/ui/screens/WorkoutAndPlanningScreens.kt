@@ -1722,9 +1722,9 @@ fun CalendarPlannerScreen(
             // 1. EXACT SCREENSHOT 7 CALENDAR CARD
             Surface(
                 shape = RoundedCornerShape(22.dp),
-                color = Color(0xFF0E131A),
+                color = palette.surfaceCard,
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth().testTag("calendar_month_panel")
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(
@@ -1739,10 +1739,10 @@ fun CalendarPlannerScreen(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFF171E27),
+                            color = palette.surfaceElevated,
                             modifier = Modifier
                                 .size(44.dp)
-                                .trainPilotBorder(1.dp, Color(0xFF252E3B), RoundedCornerShape(12.dp))
+                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { onSelectMonth(displayedYearMonth.minusMonths(1).toString()) }
                         ) {
@@ -1764,10 +1764,10 @@ fun CalendarPlannerScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = Color(0xFF171E27),
+                                color = palette.surfaceElevated,
                                 modifier = Modifier
                                     .size(44.dp)
-                                    .trainPilotBorder(1.dp, Color(0xFF252E3B), RoundedCornerShape(12.dp))
+                                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                                     .clip(RoundedCornerShape(12.dp))
                                     .clickable { onSelectMonth(displayedYearMonth.plusMonths(1).toString()) }
                             ) {
@@ -1783,10 +1783,10 @@ fun CalendarPlannerScreen(
                             if (state.currentSubScreen == SubScreen.CALENDAR_PLANNER) {
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = Color(0xFF421C22),
+                                    color = palette.danger.copy(alpha = 0.12f),
                                     modifier = Modifier
                                         .size(42.dp)
-                                        .border(1.dp, Color(0xFF6E2B35), RoundedCornerShape(12.dp))
+                                        .border(1.dp, palette.danger.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                                         .clip(RoundedCornerShape(12.dp))
                                         .clickable { onBack() }
                                 ) {
@@ -1794,7 +1794,7 @@ fun CalendarPlannerScreen(
                                         Text(
                                             text = "✕",
                                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                                            color = Color.White
+                                            color = palette.textPrimary
                                         )
                                     }
                                 }
@@ -1844,15 +1844,15 @@ fun CalendarPlannerScreen(
                                         Surface(
                                             shape = RoundedCornerShape(10.dp),
                                             color = when {
-                                                plannedEv != null -> Color(0xFF1F2733)
-                                                else -> Color(0xFF131922)
+                                                plannedEv != null -> palette.primary.copy(alpha = 0.12f)
+                                                else -> palette.surface
                                             },
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .height(42.dp)
                                                 .trainPilotBorder(
                                                     width = if (isSelected) 1.8.dp else 1.dp,
-                                                    color = if (isSelected) palette.primary else Color(0xFF222B38),
+                                                    color = if (isSelected) palette.primary else palette.cardBorder,
                                                     shape = RoundedCornerShape(10.dp)
                                                 )
                                                 .clip(RoundedCornerShape(10.dp))
@@ -1870,7 +1870,7 @@ fun CalendarPlannerScreen(
                                                     style = MaterialTheme.typography.bodyMedium.copy(
                                                         fontWeight = FontWeight.ExtraBold
                                                     ),
-                                                    color = Color.White
+                                                    color = palette.textPrimary
                                                 )
                                                 when {
                                                     completedEv != null -> {
@@ -1904,7 +1904,7 @@ fun CalendarPlannerScreen(
             // 2. INTERACTIVE DAY ACTIONS CARD (Módosítás, Áthelyezés, Törlés, Visszavonás)
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = Color(0xFF121820),
+                color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth().testTag("calendar_day_actions")
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
@@ -1962,7 +1962,7 @@ fun CalendarPlannerScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(14.dp))
-                                    .background(Color(0xFF171F2A))
+                                    .background(palette.surfaceElevated)
                                     .padding(12.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
@@ -2038,7 +2038,7 @@ fun CalendarPlannerScreen(
             // 3. EXACT SCREENSHOT 7 MONTHLY PLANNER & REPLAN CARD
             Surface(
                 shape = RoundedCornerShape(22.dp),
-                color = Color(0xFF0E131A),
+                color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
@@ -2066,7 +2066,7 @@ fun CalendarPlannerScreen(
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = palette.primary,
-                                contentColor = Color(0xFF14181F)
+                                contentColor = palette.onPrimary
                             )
                         ) {
                             Text(
@@ -2151,7 +2151,7 @@ fun CalendarPlannerScreen(
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = palette.primary,
-                            contentColor = Color(0xFF14181F)
+                            contentColor = palette.onPrimary
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -2190,11 +2190,11 @@ fun CalendarPlannerScreen(
         ) {
             Surface(
                 shape = RoundedCornerShape(24.dp),
-                color = Color(0xFF0E131A),
+                color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 20.dp)
-                    .trainPilotBorder(1.dp, Color(0xFF242E3D), RoundedCornerShape(24.dp))
+                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(24.dp))
             ) {
                 Column(
                     modifier = Modifier
@@ -2212,14 +2212,14 @@ fun CalendarPlannerScreen(
                         Text(
                             text = "Edzések újratervezése",
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-                            color = Color.White
+                            color = palette.textPrimary
                         )
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFF421C22),
+                            color = palette.danger.copy(alpha = 0.12f),
                             modifier = Modifier
                                 .size(42.dp)
-                                .border(1.dp, Color(0xFF6E2B35), RoundedCornerShape(12.dp))
+                                .border(1.dp, palette.danger.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { onOpenReplanModal(false) }
                         ) {
@@ -2227,7 +2227,7 @@ fun CalendarPlannerScreen(
                                 Text(
                                     text = "✕",
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                                    color = Color.White
+                                    color = palette.textPrimary
                                 )
                             }
                         }
@@ -2277,7 +2277,7 @@ fun CalendarPlannerScreen(
                     Text(
                         text = "Program: $selectedProgName",
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
-                        color = Color.White
+                        color = palette.textPrimary
                     )
 
                     // Shifted sessions preview list with dividers matching Screenshot 8
@@ -2300,7 +2300,7 @@ fun CalendarPlannerScreen(
                             Text(
                                 text = splitTitle,
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                                color = Color.White
+                                color = palette.textPrimary
                             )
                             Text(
                                 text = shiftText,
@@ -2308,7 +2308,7 @@ fun CalendarPlannerScreen(
                                 color = palette.textSecondary
                             )
                             Spacer(modifier = Modifier.height(4.dp))
-                            HorizontalDivider(color = Color(0xFF202936))
+                            HorizontalDivider(color = palette.cardBorder)
                         }
                     }
 
@@ -2318,7 +2318,7 @@ fun CalendarPlannerScreen(
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = palette.primary,
-                            contentColor = Color(0xFF14181F)
+                            contentColor = palette.onPrimary
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -2387,12 +2387,12 @@ private fun PlannerFieldTile(
         Box(modifier = Modifier.fillMaxWidth()) {
             Surface(
                 shape = RoundedCornerShape(14.dp),
-                color = Color(0xFF141B24),
+                color = palette.surfaceElevated,
                 modifier = Modifier
                     .fillMaxWidth()
                     .trainPilotBorder(
                         1.dp,
-                        if (expanded) palette.primary else Color(0xFF242E3D),
+                        if (expanded) palette.primary else palette.cardBorder,
                         RoundedCornerShape(14.dp)
                     )
                     .clip(RoundedCornerShape(14.dp))
@@ -2439,7 +2439,7 @@ private fun PlannerFieldTile(
                 androidx.compose.material3.DropdownMenu(
                     expanded = expanded,
                     onDismissRequest = { expanded = false },
-                    containerColor = Color(0xFF0E131A),
+                    containerColor = palette.surfaceCard,
                     shape = RoundedCornerShape(12.dp),
                     border = TrainPilotFrames.stroke(1.dp, palette.primary.copy(alpha = 0.7f)),
                     modifier = Modifier
