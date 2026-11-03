@@ -567,14 +567,18 @@ fun NativeWorkoutRouteMapBox(
     modifier: Modifier = Modifier,
     interactiveControls: Boolean = true,
     routeKeys: List<String> = emptyList(),
-    refreshToken: Int = 0
+    refreshToken: Int = 0,
+    mapContentPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(0.dp),
+    showZoomControls: Boolean = true
 ) {
     val palette = LocalTrainPilotPalette.current
     val context = androidx.compose.ui.platform.LocalContext.current
     val preferences = remember(context) {
         com.repforge.app.data.store.TrainPilotSettingsStore(context.applicationContext)
     }
-    val darkMapMode by preferences.mapDarkModeFlow.collectAsState(initial = false)
+    val mapAppearance by preferences.mapAppearanceFlow.collectAsState(
+        initial = com.repforge.app.data.store.MapAppearance.FOLLOW_APP)
+    val darkMapMode = mapAppearance.isDark(palette.isDark)
     val preferenceScope = rememberCoroutineScope()
     val mapStyle = remember(context, darkMapMode) {
         if (darkMapMode) com.google.android.gms.maps.model.MapStyleOptions.loadRawResourceStyle(
@@ -637,9 +641,10 @@ fun NativeWorkoutRouteMapBox(
                 com.google.maps.android.compose.GoogleMap(
                     modifier = Modifier.fillMaxSize(), cameraPositionState = camera,
                     properties = com.google.maps.android.compose.MapProperties(mapStyleOptions = mapStyle),
+                    contentPadding = mapContentPadding,
                     onMapLoaded = { loaded = true; timedOut = false },
                     uiSettings = com.google.maps.android.compose.MapUiSettings(
-                        zoomControlsEnabled = interactiveControls, scrollGesturesEnabled = interactiveControls,
+                        zoomControlsEnabled = interactiveControls && showZoomControls, scrollGesturesEnabled = interactiveControls,
                         zoomGesturesEnabled = interactiveControls, rotationGesturesEnabled = interactiveControls)
                 ) {
                     // Distinct paused/ownership segments are never connected by a synthetic line.
@@ -667,14 +672,20 @@ fun NativeWorkoutRouteMapBox(
                     }
                 }
             }
-            androidx.compose.material3.FilledTonalButton(
-                onClick = { preferenceScope.launch {
-                    preferences.setMapDarkMode(!darkMapMode)
-                } },
-                modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)
-                    .heightIn(min = 48.dp).testTag("route_map_style_toggle")
-            ) {
-                Text(if (darkMapMode) "Világos térkép" else "Sötét térkép")
+            Column(Modifier.align(Alignment.TopEnd).padding(top = mapContentPadding.calculateTopPadding() + 12.dp, end = 12.dp), horizontalAlignment = Alignment.End) {
+                androidx.compose.material3.FilledTonalButton(
+                    onClick = { preferenceScope.launch {
+                        preferences.setMapAppearance(if (darkMapMode)
+                            com.repforge.app.data.store.MapAppearance.LIGHT else com.repforge.app.data.store.MapAppearance.DARK)
+                    } },
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("route_map_style_toggle")
+                ) { Text(if (darkMapMode) "Világos térkép" else "Sötét térkép") }
+                TextButton(
+                    enabled = mapAppearance != com.repforge.app.data.store.MapAppearance.FOLLOW_APP,
+                    onClick = { preferenceScope.launch {
+                        preferences.setMapAppearance(com.repforge.app.data.store.MapAppearance.FOLLOW_APP)
+                    } }, modifier = Modifier.heightIn(min = 48.dp).testTag("route_map_follow_app")
+                ) { Text("App témája", color = palette.textPrimary) }
             }
             if (!loaded) {
                 Surface(color = palette.surfaceCard.copy(alpha = 0.94f), shape = RoundedCornerShape(12.dp)) {

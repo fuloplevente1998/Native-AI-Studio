@@ -154,6 +154,9 @@ data class TrainPilotUiState(
     val watchConnected: Boolean = false,
     val watchAppAvailable: Boolean = false,
     val watchBatteryPercent: Int = -1,
+    val watchInfoLoading: Boolean = false,
+    val watchInfoMessage: String = "",
+    val watchDeviceDetails: String = "",
     val phoneControlsWorkout: Boolean = true,
     val watchControlPending: Boolean = false,
     val offlineContinuationEnabled: Boolean = true,
@@ -3330,6 +3333,16 @@ class TrainPilotViewModel : ViewModel() {
         loadWorkoutMuscleSummary(workoutId)
     }
 
+    fun onLoggedWorkoutDeleted(id: String) {
+        _uiState.update { state -> state.copy(
+            loggedWorkouts = state.loggedWorkouts.filterNot { it.id == id },
+            selectedLogWorkoutId = if (state.selectedLogWorkoutId == id) "" else state.selectedLogWorkoutId)
+        }
+        if (_uiState.value.currentSubScreen == SubScreen.LOG_WORKOUT_DETAIL && _uiState.value.selectedLogWorkoutId.isBlank())
+            navigateBack()
+        nativeContext?.let(::refreshAfterCloudSync)
+    }
+
     fun updateLoggedWorkoutHealthSources(workoutId: String, wear: Boolean, healthConnect: Boolean) {
         _uiState.update { state -> state.copy(loggedWorkouts = state.loggedWorkouts.map { entry ->
             if (entry.id == workoutId) entry.copy(sourceWatch = wear, sourceHealthConnect = healthConnect) else entry
@@ -4104,6 +4117,32 @@ class TrainPilotViewModel : ViewModel() {
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { _uiState.update { it.copy(statusBannerMessage = "A mentési hozzájárulás nem menthető. Próbáld újra.") } }
             finally { _uiState.update { it.copy(backupHealthConsentSaving = false) } }
+        }
+    }
+
+    fun requestWatchDeviceInfo() {
+        val context = nativeContext ?: return
+        val scope = nativeScope ?: return
+        if (_uiState.value.watchInfoLoading) return
+        _uiState.update { it.copy(watchInfoLoading = true, watchInfoMessage = "Óraadatok lekérése…") }
+        scope.launch {
+            try {
+                val result = com.repforge.app.NativeWatchDeviceInfo.request(context)
+                val data = result.data
+                val battery = if (data.isNull("battery")) -1 else
+                    com.repforge.shared.WatchDeviceInfo.battery(data.optInt("battery", -1)) ?: -1
+                val time = java.time.LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
+                _uiState.update { it.copy(watchName = result.nodeName, watchConnected = true, watchAppAvailable = true,
+                    watchBatteryPercent = battery, watchInfoMessage = "Óraadatok frissítve: $time",
+                    watchDeviceDetails = listOf(data.optString("model"), data.optString("os").takeIf { it.isNotBlank() }?.let { "Android $it" },
+                        data.optString("appVersion").takeIf { it.isNotBlank() && it != "null" }?.let { "TrainPilot $it" })
+                        .filterNotNull().filter(String::isNotBlank).joinToString(" • "),
+                    lastWatchSyncLabel = "Óraadatok: $time") }
+            } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
+                _uiState.update { it.copy(watchInfoMessage = "Az óra nem válaszolt. Ellenőrizd az órakapcsolatot és frissítsd az óraappot is.") }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) { _uiState.update { it.copy(watchInfoMessage = error.message ?: "Az óraadatok nem kérhetők le.") } }
+            finally { _uiState.update { it.copy(watchInfoLoading = false) } }
         }
     }
 

@@ -109,6 +109,7 @@ class TrainPilotSettingsStore(private val context: Context) {
         val KEY_GPS_START_CHOICES_216 = stringPreferencesKey("gpsStartChoices216")
         val KEY_TRAINING_MODES_197 = stringPreferencesKey("trainingModes197")
         val KEY_MAP_DARK_MODE_UI = booleanPreferencesKey("mapDarkModeUi")
+        val KEY_MAP_APPEARANCE_UI = stringPreferencesKey("mapAppearanceUi")
 
         // Effective main 7473b30 palette: final Basic overrides + original Vivid keys.
         val AVAILABLE_THEMES = listOf(
@@ -196,12 +197,17 @@ class TrainPilotSettingsStore(private val context: Context) {
         )
     }
 
-    /** UI-only map appearance. It never changes location tracking or saved route data. */
-    val mapDarkModeFlow: Flow<Boolean> = context.trainPilotDataStore.data.map { it[KEY_MAP_DARK_MODE_UI] ?: false }
+    /** UI only. Existing explicitly saved light/dark choices survive the upgrade. */
+    val mapAppearanceFlow: Flow<MapAppearance> = context.trainPilotDataStore.data.map {
+        MapAppearance.fromStored(it[KEY_MAP_APPEARANCE_UI], it[KEY_MAP_DARK_MODE_UI])
+    }
 
-    suspend fun setMapDarkMode(enabled: Boolean) {
+    suspend fun setMapAppearance(mode: MapAppearance) {
         NativeDataReplacement.mutate(context) {
-            context.trainPilotDataStore.edit { it[KEY_MAP_DARK_MODE_UI] = enabled }
+            context.trainPilotDataStore.edit {
+                it[KEY_MAP_APPEARANCE_UI] = mode.name
+                it.remove(KEY_MAP_DARK_MODE_UI)
+            }
         }
     }
 

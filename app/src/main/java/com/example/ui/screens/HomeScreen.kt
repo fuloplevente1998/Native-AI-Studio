@@ -395,7 +395,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                .clickable { onOpenWatchAndSync() }
+                .clickable(enabled = !state.watchInfoLoading) { onOpenWatchAndSync() }
                 .testTag("home_watch_status_card")
         ) {
             Row(
@@ -428,7 +428,7 @@ fun HomeScreen(
                     Text(
                         text = when {
                             state.watchAppAvailable -> {
-                                if (state.watchBatteryPercent in 0..100) strings.connectedWithBattery(state.watchBatteryPercent)
+                                if (state.watchInfoLoading) "Óraadatok lekérése…" else if (state.watchBatteryPercent in 0..100) strings.connectedWithBattery(state.watchBatteryPercent)
                                 else "Csatlakoztatva • TrainPilot óraapp elérhető"
                             }
                             state.watchConnected -> "Wear OS rendszerkapcsolat • TrainPilot óraapp nincs telepítve"

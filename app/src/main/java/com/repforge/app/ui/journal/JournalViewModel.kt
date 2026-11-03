@@ -54,6 +54,7 @@ data class JournalUiState(
     val routeLoading: Boolean = false, val routeError: Boolean = false,
     val workoutToDelete: WorkoutHistoryWithDetails? = null,
     val deleting: Boolean = false, val operationFailed: Boolean = false,
+    val deletedWorkoutId: String? = null,
     val healthRefreshing: Boolean = false, val healthError: Int? = null,
     val healthProvider: String = com.repforge.app.HealthJournalStore.HC, val healthStatus: String? = null
 )
@@ -77,6 +78,7 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
     private var healthRevision = 0L
     private var healthJob: kotlinx.coroutines.Job? = null
     private val _uiState = MutableStateFlow(JournalUiState())
+    private var deletionTicket: com.repforge.app.NativeDataReplacement.Continuation? = null
     private var editRevision = 0L
     private val _editor = MutableStateFlow<JournalEditState?>(null)
     internal val editor: StateFlow<JournalEditState?> = _editor.asStateFlow()
@@ -84,6 +86,12 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
     val workouts = filters.debounce { if (it.query.isBlank()) 0L else 180L }.flatMapLatest { repository.pages(it) }.cachedIn(viewModelScope)
 
     init {
+        viewModelScope.launch(Dispatchers.IO) {
+            try { com.repforge.app.NativeHistoryDeletion.recover(context, database) }
+            catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (_: Exception) { _uiState.update { it.copy(operationFailed = true) } }
+        }
+
         viewModelScope.launch {
             selected.flatMapLatest { request ->
                 if (request == null) flowOf(DetailResult(null, null))
@@ -108,11 +116,13 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         filters.value = filters.value.copy(month = value, zone = java.time.ZoneId.systemDefault())
     }
     fun openDetails(id: String) {
-        if (_editor.value?.saving == true) return
+        if (_editor.value?.saving == true || _uiState.value.deleting) return
+        deletionTicket = null
         cancelEditor()
         cancelHealthRefresh()
         closeRouteMap()
-        _uiState.update { it.copy(selectedWorkoutId = id, detail = null, detailLoading = true, detailError = false) }
+        _uiState.update { it.copy(selectedWorkoutId = id, detail = null, detailLoading = true, detailError = false,
+            workoutToDelete = null, deletedWorkoutId = null, operationFailed = false) }
         selected.value = DetailRequest(id, ++requestRevision)
     }
     fun closeDetails() {
@@ -236,33 +246,35 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         routeRevision++
         _uiState.update { it.copy(activeRoute = null, routeLoading = false, routeError = false) }
     }
-    fun requestDeleteWorkout() { _uiState.update { it.copy(workoutToDelete = it.detail, operationFailed = false) } }
-    fun cancelDeleteWorkout() { if (!_uiState.value.deleting) _uiState.update { it.copy(workoutToDelete = null) } }
+    fun requestDeleteWorkout() {
+        val state = _uiState.value
+        val detail = state.detail ?: return
+        if (state.deleting || _editor.value != null || state.selectedWorkoutId != detail.workout.id) return
+        try {
+            deletionTicket = com.repforge.app.NativeDataReplacement.continuationForCurrentData(context)
+            _uiState.update { it.copy(workoutToDelete = detail, operationFailed = false) }
+        } catch (_: Exception) { _uiState.update { it.copy(operationFailed = true) } }
+    }
+    fun cancelDeleteWorkout() { if (!_uiState.value.deleting) {
+        deletionTicket = null
+        _uiState.update { it.copy(workoutToDelete = null, operationFailed = false) }
+    } }
     fun clearOperationError() { _uiState.update { it.copy(operationFailed = false) } }
-    fun confirmDeleteWorkout() {
-        val target = _uiState.value.workoutToDelete ?: return
-        if (_uiState.value.deleting) return
-        _uiState.update { it.copy(deleting = true) }
+    fun confirmDeleteWorkout() = confirmDeleteWorkout {}
+    fun confirmDeleteWorkout(onDeleted: (String) -> Unit) {
+        val state = _uiState.value
+        val target = state.workoutToDelete ?: return
+        val ticket = deletionTicket ?: return
+        if (state.deleting || state.selectedWorkoutId != target.workout.id || _editor.value != null) return
+        cancelHealthRefresh()
+        _uiState.update { it.copy(deleting = true, operationFailed = false) }
         viewModelScope.launch {
             try {
-                withContext(Dispatchers.IO) {
-                    com.repforge.app.NativeDataReplacement.mutate(context) {
-                    database.withTransaction {
-                        val current = database.workoutHistoryDao().getWorkoutWithDetails(target.workout.id) ?: return@withTransaction
-                        val w = current.workout
-                        val aliases = listOf(w.id, w.syncId, w.workoutKey).filter { it.isNotBlank() }.distinct()
-                        database.workoutHistoryDao().upsertTombstone(HistoryTombstoneEntity(primaryId = w.id,
-                            workoutKey = w.workoutKey, idsJson = JSONArray(aliases).toString(), deletedAt = System.currentTimeMillis()))
-                        database.workoutHistoryDao().deleteWorkoutByIdOrKey(w.id)
-                    }
-                    // Private route cleanup follows durable deletion; an SQL failure never removes a live route.
-                    if (target.workout.ownershipProtocol193 == 1) runCatching {
-                        GpsRouteLedger193.open(context.noBackupFilesDir).deleteWorkout(target.workout.id)
-                    }
-                    }
-                }
-                _uiState.update { it.copy(deleting = false, workoutToDelete = null) }
+                withContext(Dispatchers.IO) { com.repforge.app.NativeHistoryDeletion.delete(context, database, target, ticket) }
+                _uiState.update { it.copy(deleting = false, workoutToDelete = null, deletedWorkoutId = target.workout.id) }
+                deletionTicket = null
                 closeDetails()
+                runCatching { onDeleted(target.workout.id) }
                 runCatching { WearSyncRepository.publishWatchHomeSnapshot(context) }
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
             catch (_: Exception) { _uiState.update { it.copy(deleting = false, operationFailed = true) } }

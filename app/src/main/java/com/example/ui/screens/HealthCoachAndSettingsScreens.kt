@@ -2727,7 +2727,8 @@ fun WatchAndSyncScreen(
     onOpenSettings: () -> Unit,
     onToggleControlMode: () -> Unit,
     onShowBanner: (String) -> Unit,
-    onRequestPermission: (String) -> Unit = {}
+    onRequestPermission: (String) -> Unit = {},
+    onRefreshWatchInfo: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     LazyColumn(
@@ -2763,6 +2764,8 @@ fun WatchAndSyncScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .trainPilotBorder(1.5.dp, palette.primary.copy(alpha = 0.7f), RoundedCornerShape(22.dp))
+                    .testTag("watch_device_info_card")
+                    .clickable(enabled = !uiState.watchInfoLoading) { onRefreshWatchInfo() }
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -2808,6 +2811,18 @@ fun WatchAndSyncScreen(
                             )
                         }
                     }
+                }
+            }
+        }
+
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (uiState.watchDeviceDetails.isNotBlank()) Text(uiState.watchDeviceDetails, color = palette.textPrimary)
+                if (uiState.watchInfoMessage.isNotBlank()) Text(uiState.watchInfoMessage,
+                    color = palette.textSecondary, modifier = Modifier.testTag("watch_device_info_status"))
+                TrainPilotOutlinedButton(enabled = !uiState.watchInfoLoading, onClick = onRefreshWatchInfo,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("watch_refresh_device_info")) {
+                    Text(if (uiState.watchInfoLoading) "Lekérés…" else "Óraadatok frissítése")
                 }
             }
         }

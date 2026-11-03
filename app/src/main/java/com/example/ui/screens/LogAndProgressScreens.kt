@@ -803,11 +803,11 @@ fun LogWorkoutDetailScreen(
     onOpenRouteMap: () -> Unit,
     onOpenWatchSync: () -> Unit,
     onOpenHealthTab: () -> Unit,
-    workoutHealth: @Composable () -> Unit = {}
+    workoutHealth: @Composable () -> Unit = {},
+    deleteActions: @Composable () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val workout = uiState.loggedWorkouts.find { it.id == uiState.selectedLogWorkoutId }
-        ?: uiState.loggedWorkouts.firstOrNull()
 
     if (workout == null) {
         Column(
@@ -860,6 +860,7 @@ fun LogWorkoutDetailScreen(
         contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
+        item { deleteActions() }
         // Summary Header Card
         item {
             Surface(
