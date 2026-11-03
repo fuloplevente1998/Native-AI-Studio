@@ -84,6 +84,9 @@ jobs:
           keytool -genkeypair -v -keystore debug.keystore             -storepass android -keypass android             -alias androiddebugkey -keyalg RSA -keysize 2048             -validity 10000             -dname 'CN=Android Debug,O=Android,C=US' -noprompt
           # This key is CI-only. A CI APK will not update an APK signed with a different key.
 
+      - name: Verify complete bundled font glyphs and real weights
+        run: python3 scripts/verify_font_glyphs.py
+
       - name: Check embedded video user gesture and failure callbacks
         run: node --test scripts/test_exercise_video_player.mjs
 

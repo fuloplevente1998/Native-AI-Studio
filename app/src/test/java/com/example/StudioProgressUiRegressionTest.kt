@@ -178,7 +178,34 @@ class StudioProgressUiRegressionTest {
         compose.runOnIdle { state = state.copy(watchControlPending = false, phoneControlsWorkout = false, watchAppAvailable = false) }
         compose.onNodeWithTag("workout_handover_action").assertIsEnabled().performClick()
         assertEquals(2, calls)
+        compose.runOnIdle { state = state.copy(phoneControlsWorkout = true, watchAppAvailable = false) }
+        compose.onNodeWithTag("workout_handover_action").assertIsNotEnabled()
+        compose.onNodeWithText("Óravezérlés nem elérhető").assertExists()
+        compose.runOnIdle { state = state.copy(watchAppAvailable = true, isSavingWorkout = true) }
+        compose.onNodeWithTag("workout_handover_action").assertIsNotEnabled()
+        compose.runOnIdle { state = state.copy(isWorkoutSessionActive = false, statusBannerMessage = "Mentési hiba") }
+        compose.onNodeWithTag("workout_handover_action").assertDoesNotExist()
+        compose.onNodeWithTag("workout_inline_status").assertTextEquals("Mentési hiba")
+        compose.runOnIdle { state = state.copy(statusBannerMessage = null) }
+        compose.onNodeWithTag("workout_sticky_handover").assertDoesNotExist()
     }
+    @Test fun handoverAtLargeFontSizeKeepsItsActionInsideTheFrame() {
+        var calls = 0
+        compose.setContent { TrainPilotTheme(fontScaleMultiplier = 1.8f) {
+            Box(Modifier.width(280.dp)) {
+                StudioWorkoutHandoverBar(TrainPilotUiState(isWorkoutSessionActive = true, watchAppAvailable = true),
+                    TrainPilotStrings.forLanguage(AppLanguage.HU)) { calls++ }
+            }
+        } }
+        val action = compose.onNodeWithTag("workout_handover_action")
+        action.assertHeightIsAtLeast(48.dp).assertIsEnabled().performClick()
+        assertEquals(1, calls)
+        val button = action.getUnclippedBoundsInRoot()
+        val panel = compose.onNodeWithTag("workout_sticky_handover").getUnclippedBoundsInRoot()
+        assertTrue(button.left >= panel.left && button.right <= panel.right)
+        assertTrue(button.top >= panel.top && button.bottom <= panel.bottom)
+    }
+
     @Test fun statisticsReplaceStrengthAndAreNotAppendedToTheProgressPage() {
         var state by mutableStateOf(TrainPilotUiState(savedRecordsLoading = false,
             savedExerciseBests = listOf(com.repforge.app.SavedExerciseBest("row", "Evezés", "Row", "ism.", "reps", 12.5, null, null, null))))

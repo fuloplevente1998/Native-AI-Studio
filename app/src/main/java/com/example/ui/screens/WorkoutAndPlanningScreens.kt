@@ -421,13 +421,16 @@ fun WorkoutTabScreen(
                                     size = 34.dp
                                 )
                             }
+                            com.example.ui.components.secondaryWorkoutDayTitle(
+                                day.dayCode, day.localizedTitle(state.language))?.let { distinctTitle ->
                             Text(
-                                text = day.localizedTitle(state.language),
+                                text = distinctTitle,
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = palette.textPrimary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
+                            }
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
                                 color = palette.surfaceElevated
