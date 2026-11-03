@@ -25,7 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 internal fun StudioCoachRecommendations(
     state: CoachUiState,
     onStart: (String, String, String?) -> Unit,
-    onCalendar: () -> Unit,
+    onWorkout: () -> Unit,
     onExercise: (String) -> Unit,
     onPreviewVariation: (String) -> Unit,
     onCloseVariation: () -> Unit,
@@ -45,7 +45,7 @@ internal fun StudioCoachRecommendations(
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (state.loading) CircularProgressIndicator(Modifier.size(24.dp))
         if (state.error) Text("A Coach adatai nem frissíthetők. A korábbi kijelzés nem friss mérés.", color = palette.danger)
-        if (showTarget) StudioCoachNextTrainingCard(state, onStart, onCalendar)
+        if (showTarget) StudioCoachNextTrainingCard(state, onStart, onWorkout)
         state.exercises.forEach { row ->
             Surface(color = palette.surfaceCard, shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth().testTag("studio_coach_advice_${row.id}")
@@ -83,7 +83,7 @@ internal fun StudioCoachRecommendations(
 internal fun StudioCoachNextTrainingCard(
     state: CoachUiState,
     onStart: (String, String, String?) -> Unit,
-    onCalendar: () -> Unit
+    onWorkout: () -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
     val target = state.target
@@ -140,11 +140,10 @@ internal fun StudioCoachNextTrainingCard(
                 }
             }
             Button(enabled = !state.loading && !state.error,
-                onClick = { if (target.upcoming) onCalendar()
-                    else onStart(target.programId, target.dayId, target.schedule?.id) },
+                onClick = onWorkout,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     .testTag("studio_coach_start_target")) {
-                Text(if (target.upcoming) "Megnyitás a naptárban" else "A következő edzés indítása",
+                Text("Megnyitás az Edzés oldalon",
                     fontWeight = FontWeight.Bold)
             }
         }

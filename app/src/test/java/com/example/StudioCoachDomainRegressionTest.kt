@@ -25,43 +25,45 @@ import java.time.ZoneOffset
 class StudioCoachDomainRegressionTest {
     @get:Rule val compose = createComposeRule()
 
-    @Test fun indicatedCoachDayIsTheDayTheStartCallbackReceives() {
+    @Test fun currentCoachDayOpensWorkoutWithoutAutomaticallyStarting() {
         var started = ""
+        var workoutPage = 0
         compose.setContent { TrainPilotTheme {
             StudioCoachRecommendations(CoachUiState(loading = false,
                 target = CoachTarget("actual-program", "b", "B nap")),
-                { p, d, s -> started = "$p:$d:$s" }, {}, {}, {}, {}, {})
+                { p, d, s -> started = "$p:$d:$s" }, { workoutPage++ }, {}, {}, {}, {})
         } }
         compose.onNodeWithTag("studio_coach_start_target").performClick()
-        assertEquals("actual-program:b:null", started)
+        assertEquals("", started)
+        assertEquals(1, workoutPage)
     }
 
-    @Test fun upcomingDayNavigatesToCalendarInsteadOfStartingItEarly() {
+    @Test fun upcomingDayNavigatesToWorkoutInsteadOfStartingItEarly() {
         var starts = 0
-        var calendar = 0
+        var workoutPage = 0
         compose.setContent { TrainPilotTheme {
             StudioCoachRecommendations(CoachUiState(loading = false,
                 target = CoachTarget("p", "b", "B", upcoming = true)),
-                { _, _, _ -> starts++ }, { calendar++ }, {}, {}, {}, {})
+                { _, _, _ -> starts++ }, { workoutPage++ }, {}, {}, {}, {})
         } }
         compose.onNodeWithTag("studio_coach_start_target").performClick()
-        assertEquals(0, starts); assertEquals(1, calendar)
+        assertEquals(0, starts); assertEquals(1, workoutPage)
     }
 
-    @Test fun nextDayCardHighlightsRealProgramAndCalendarGate() {
-        var calendar = 0
+    @Test fun nextDayCardHighlightsRealProgramAndOpensWorkout() {
+        var workoutPage = 0
         var started = 0
         val target = CoachTarget("p", "a", "A", upcoming = true, programTitle = "Otthoni A/B – Alap")
         compose.setContent { TrainPilotTheme {
             StudioCoachNextTrainingCard(CoachUiState(loading = false, target = target),
-                { _, _, _ -> started++ }, { calendar++ })
+                { _, _, _ -> started++ }, { workoutPage++ })
         } }
         compose.onNodeWithTag("studio_coach_target").assertExists()
         compose.onNodeWithTag("studio_coach_program_name").assertTextEquals("Otthoni A/B – Alap")
         compose.onNodeWithTag("studio_coach_day_badge").assertExists()
         compose.onNodeWithText("A").assertExists()
         compose.onNodeWithTag("studio_coach_start_target").performClick()
-        assertEquals(1, calendar)
+        assertEquals(1, workoutPage)
         assertEquals(0, started)
     }
 

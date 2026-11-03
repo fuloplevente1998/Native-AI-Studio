@@ -1773,7 +1773,7 @@ internal fun CoachDetailScreen(
     onStartSuggestedWorkout: () -> Unit,
     onOpenExerciseDetail: (String) -> Unit,
     onStartCoachTarget: (String, String, String?) -> Unit = { _, _, _ -> onStartSuggestedWorkout() },
-    onOpenCalendar: () -> Unit = {},
+    onOpenWorkout: () -> Unit = {},
     onCoachProgramChanged: () -> Unit = {},
     model: com.repforge.app.ui.coach.CoachViewModel = androidx.lifecycle.viewmodel.compose.viewModel(key = "studio-canonical-coach")
 ) {
@@ -1915,13 +1915,6 @@ internal fun CoachDetailScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Text(
-                        text = "Három különálló készenléti mutató (D10 — nem mosható össze):",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = palette.textSecondary
-                    )
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Row(
@@ -1994,7 +1987,7 @@ internal fun CoachDetailScreen(
         // Put the next actionable day immediately after readiness, before supplementary signals.
         item {
             com.example.ui.components.StudioCoachNextTrainingCard(
-                nativeState, onStartCoachTarget, onOpenCalendar
+                nativeState, onStartCoachTarget, onOpenWorkout
             )
         }
 
@@ -2026,7 +2019,7 @@ internal fun CoachDetailScreen(
 
         item {
             com.example.ui.components.StudioCoachRecommendations(nativeState,
-                onStartCoachTarget, onOpenCalendar, onOpenExerciseDetail,
+                onStartCoachTarget, onOpenWorkout, onOpenExerciseDetail,
                 model::previewVariation, model::closeVariation, model::saveVariation,
                 showTarget = false)
         }
