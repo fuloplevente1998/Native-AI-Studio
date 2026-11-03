@@ -1744,7 +1744,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                 title = strings.avgVolumeTitle,
                 value = avgVolumeValue,
                 dashSuffix = "—",
-                subtitle = "súlyzós edzésenként",
+                subtitle = null,
                 selected = uiState.expandedStatsCardIndex == 2,
                 onClick = { onSelectExpandedStatsCard(2) },
                 modifier = Modifier.weight(1f)
