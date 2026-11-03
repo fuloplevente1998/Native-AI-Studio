@@ -42,11 +42,13 @@ fun SecureExerciseVideoWebView(
     modifier: Modifier = Modifier,
     onLoad: (ExerciseVideoLoad) -> Unit,
     onLocationChanged: (String) -> Unit,
+    onHistoryChanged: (Boolean) -> Unit,
     onViewChanged: (WebView?) -> Unit
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val latestLoad by rememberUpdatedState(onLoad)
     val latestLocation by rememberUpdatedState(onLocationChanged)
+    val latestHistory by rememberUpdatedState(onHistoryChanged)
     val latestView by rememberUpdatedState(onViewChanged)
     var currentView by remember { mutableStateOf<WebView?>(null) }
 
@@ -179,12 +181,15 @@ fun SecureExerciseVideoWebView(
                             if (mode == ExerciseVideoMode.BROWSER) {
                                 loadFailed = false
                                 latestLoad(ExerciseVideoLoad.Loading)
+                                latestHistory(view.canGoBack())
                                 if (url != null && allowedInAppVideoNavigation(url)) latestLocation(url)
                             }
                         }
                         override fun onPageFinished(view: WebView, url: String?) {
-                            if (mode == ExerciseVideoMode.BROWSER && !loadFailed) {
-                                latestLoad(ExerciseVideoLoad.Ready)
+                            if (mode == ExerciseVideoMode.BROWSER) {
+                                latestHistory(view.canGoBack())
+                                if (url != null && allowedInAppVideoNavigation(url)) latestLocation(url)
+                                if (!loadFailed) latestLoad(ExerciseVideoLoad.Ready)
                             }
                         }
                         override fun onReceivedError(
@@ -232,7 +237,6 @@ fun SecureExerciseVideoWebView(
                 }
                 (webView.webChromeClient as? VideoCleanup)?.closeFullscreen()
                 webView.stopLoading()
-                webView.loadUrl("about:blank") // Stops media; never touches workout state.
                 webView.onPause()
                 webView.removeAllViews()
                 webView.destroy()
