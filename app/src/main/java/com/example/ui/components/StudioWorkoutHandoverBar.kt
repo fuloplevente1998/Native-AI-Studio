@@ -72,12 +72,13 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                 }
                 val fontScale = LocalDensity.current.fontScale
                 BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    val actionMaxWidth = maxWidth * 0.52f
                     if (maxWidth < 300.dp || fontScale > 1.3f) {
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) { statusContent(); action() }
                     } else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Box(Modifier.weight(1f)) { statusContent() }
-                        Box(Modifier.widthIn(max = maxWidth * 0.52f)) { action() }
+                        Box(Modifier.widthIn(max = actionMaxWidth)) { action() }
                     }
                 }
             }

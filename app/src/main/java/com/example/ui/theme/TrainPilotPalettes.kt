@@ -26,8 +26,10 @@ private fun readableThemeSemantic(seed: Color, id: Int, page: Color, card: Color
     for (step in 0..100) {
         val candidate = lerp(seed, destination, step / 100f)
         if (surfaces.all {
-                val first = candidate.luminance(); val second = it.luminance()
-                (maxOf(first, second) + 0.05f) / (minOf(first, second) + 0.05f) >= 4.55f
+                val first = candidate.luminance()
+                val second = it.luminance()
+                val ratio = (maxOf(first, second) + 0.05f) / (minOf(first, second) + 0.05f)
+                ratio >= 4.55f
             }) return candidate
     }
     return destination
