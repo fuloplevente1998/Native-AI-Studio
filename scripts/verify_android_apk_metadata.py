@@ -87,6 +87,6 @@ if release:
     assert len(expected) == 64, "Pinned release certificate missing"
     assert result["signerSha256"].lower() == expected, "Release signer differs from configured persistent key"
     assert result["applicationId"] == "com.TrainPilot.com", "Application identity changed"
-    assert result["versionCode"] == result["wear"]["versionCode"] == "2743", "Package versions differ"
+    assert result["versionCode"] == result["wear"]["versionCode"] == "2744", "Package versions differ"
     assert result["versionName"] == result["wear"]["versionName"] == "0.1.0-beta", "Package versions differ"
     assert result["mapsApiKeyConfigured"], "Maps key not embedded"
