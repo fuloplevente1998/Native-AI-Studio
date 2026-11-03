@@ -59,7 +59,7 @@ data class TrainPilotPalette(
     val sleepAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFF818CF8) else Color(0xFF4F46E5), id, background, surface, surfaceElevated, primary),
     val heartAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFFFB7185) else Color(0xFFE11D48), id, background, surface, surfaceElevated, primary),
     val stepsAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFF34D399) else Color(0xFF059669), id, background, surface, surfaceElevated, primary),
-    val energyAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFFFBBF24) else Color(0xFFD97706)
+    val energyAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFFFBBF24) else Color(0xFFD97706), id, background, surface, surfaceElevated, primary)
 ) {
     // 4 distinct theme families requested by user:
     // 1..8   = Matt témák (valódi matt, alacsony telítettségű, bársonyos felületek)
@@ -111,7 +111,7 @@ object TrainPilotPalettes {
         // 1..8: MATT TÉMÁK (Valódi matt, pasztellesített-tompított színek, bársonyos sötétszürke felületek)
         // =========================================================================
         TrainPilotPalette(
-            id = 1, id, background, surface, surfaceElevated, primary),
+            id = 1,
             key = "graphite_gold",
             nameHu = "Matt Grafit & Óarany (Alap)",
             nameEn = "Matte Graphite & Antique Gold",
