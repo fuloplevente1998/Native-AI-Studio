@@ -105,8 +105,9 @@ internal object NativeJournalEditor {
         require(!duration.isNegative && !duration.isZero && duration <= java.time.Duration.ofHours(24))
         require(finish.toEpochMilli() <= now + 60_000L)
         require(draft.exercises.size in 1..200)
-        require(draft.note.length <= 3000 && draft.note.none { it.isISOControl() && it != '\n' })
         val raw = LegacyWebViewMigrator.workoutJson(detail)
+        if (draft.note != savedNote(raw)) require(draft.note.length <= 3000 &&
+            draft.note.none { it.isISOControl() && it != '\n' })
         val original = raw.getJSONArray("exercises")
         val usedExercises = HashSet<Int>()
         val newIds = HashSet<String>()

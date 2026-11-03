@@ -273,4 +273,25 @@ class StudioPrefillBindingRegressionTest {
         }
     }
 
+    @Test fun journalNotePreservesAppliedFeedbackAndUneditedLegacyAnnotation() {
+        seedPrevious()
+        native {
+            val detail = db.workoutHistoryDao().getWorkoutWithDetailsById("previous-different-program")!!
+            val raw = JSONObject(detail.workout.rawJson).put("feedback", JSONObject()
+                .put("rating", "hard").put("effort", "hard").put("applied", true).put("note", "x".repeat(4000)))
+            LegacyWebViewMigrator(context, db, settings).saveWorkoutJsonToRoom(raw)
+            val original = db.workoutHistoryDao().getWorkoutWithDetailsById(detail.workout.id)!!
+            val draft = NativeJournalEditor.from(original)
+            NativeJournalEditor.save(context, db, NativeJournalEditor.open(context, original), draft)
+            val unchanged = db.workoutHistoryDao().getWorkoutWithDetailsById(detail.workout.id)!!
+            assertEquals("x".repeat(4000), JSONObject(unchanged.workout.rawJson).getJSONObject("feedback").getString("note"))
+            NativeJournalEditor.save(context, db, NativeJournalEditor.open(context, unchanged),
+                NativeJournalEditor.from(unchanged).copy(note = "Saját megjegyzés"))
+            val feedback = JSONObject(db.workoutHistoryDao().getWorkoutWithDetailsById(detail.workout.id)!!.workout.rawJson)
+                .getJSONObject("feedback")
+            assertTrue(feedback.getBoolean("applied")); assertEquals("hard", feedback.getString("rating"))
+            assertEquals("Saját megjegyzés", feedback.getString("note"))
+        }
+    }
+
 }
