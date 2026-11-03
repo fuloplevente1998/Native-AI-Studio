@@ -691,7 +691,7 @@ fun LogTabScreen(
 }
 
 @Composable
-private fun LogWorkoutCard(
+internal fun LogWorkoutCard(
     entry: LoggedWorkoutEntry,
     onClick: () -> Unit,
     onOpenDetailAlways: () -> Unit,
