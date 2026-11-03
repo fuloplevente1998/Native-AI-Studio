@@ -33,13 +33,24 @@ internal fun TrainPilotDeleteButton(onClick: () -> Unit, enabled: Boolean, modif
 }
 
 @Composable
-internal fun TrainPilotDeleteIcon(onClick: () -> Unit, enabled: Boolean, tag: String) {
+internal fun TrainPilotDeleteIcon(
+    onClick: () -> Unit,
+    enabled: Boolean,
+    tag: String,
+    compactVisual: Boolean = false
+) {
     val foreground = if (LocalTrainPilotPalette.current.isDark) Color(0xFFFCA5A5) else Color(0xFFB91C1C)
-    val shape = RoundedCornerShape(11.dp)
-    Box(Modifier.size(48.dp).testTag(tag).clip(shape)
-        .background(Color(0xFFEF4444).copy(alpha = 0.16f))
-        .border(1.dp, Color(0xFFEF4444).copy(alpha = 0.65f), shape)
-        .clickable(enabled = enabled, role = Role.Button, onClick = onClick), contentAlignment = Alignment.Center) {
-        Icon(Icons.Default.Delete, contentDescription = "Edzés törlése", tint = foreground)
+    val visualSize = if (compactVisual) 41.dp else 48.dp // ~15% smaller; touch target stays 48dp.
+    val shape = RoundedCornerShape(if (compactVisual) 9.dp else 11.dp)
+    Box(Modifier.size(48.dp).testTag(tag)
+        .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center) {
+        Box(Modifier.size(visualSize).clip(shape)
+            .background(Color(0xFFEF4444).copy(alpha = 0.16f))
+            .border(1.dp, Color(0xFFEF4444).copy(alpha = 0.65f), shape),
+            contentAlignment = Alignment.Center) {
+            Icon(Icons.Default.Delete, contentDescription = "Edzés törlése", tint = foreground,
+                modifier = Modifier.size(if (compactVisual) 20.dp else 24.dp))
+        }
     }
 }
