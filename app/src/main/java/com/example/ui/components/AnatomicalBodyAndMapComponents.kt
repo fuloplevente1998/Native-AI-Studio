@@ -140,8 +140,8 @@ fun AnatomicalMuscleHeatmapCard(
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
             .testTag("anatomical_muscle_heatmap_card")
     ) {
-        Column(modifier = Modifier.padding(10.dp)) {
-            // Header row: "Izomcsoport-terhelés" + "3 hó" pill button
+        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
+            // Compact header: 41dp visual period pill, but a 48dp tap target.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -154,33 +154,37 @@ fun AnatomicalMuscleHeatmapCard(
                     fontWeight = FontWeight.Bold,
                     color = palette.textPrimary
                 )
-                if (onPeriodSelected != null && periodDays != null) Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = palette.surfaceElevated,
-                    modifier = Modifier
-                        .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable {
-                            onPeriodSelected(periodDayOptions[(selectedPeriodIdx + 1) % periodOptions.size])
-                        }
-                        .testTag("muscle_heatmap_period_pill")
-                ) {
+                if (onPeriodSelected != null && periodDays != null) {
                     Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        modifier = Modifier.size(48.dp)
+                            .testTag("muscle_heatmap_period_pill")
+                            .clickable {
+                                onPeriodSelected(periodDayOptions[(selectedPeriodIdx + 1) % periodOptions.size])
+                            },
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = periodOptions[selectedPeriodIdx],
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = palette.textSecondary
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = palette.surfaceElevated,
+                            modifier = Modifier.size(41.dp)
+                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                                .testTag("muscle_heatmap_period_visual")
+                        ) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = periodOptions[selectedPeriodIdx],
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = palette.textSecondary,
+                                    maxLines = 1
+                                )
+                            }
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            // No extra header-to-chart gap: preserve all 48dp period-control hit area.
 
             // Side-by-Side Row: Left = Front & Back Anatomical Figures, Right = 6 Muscle Progress Bars
             Row(

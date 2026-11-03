@@ -117,6 +117,23 @@ class StudioProgressUiRegressionTest {
         compose.onNodeWithTag("muscle_explanation_text").assertExists()
     }
 
+    @Test fun musclePeriodVisualShrinks15PercentButKeeps48dpTouchTarget() {
+        var selected = 90
+        compose.setContent { TrainPilotTheme {
+            Box(Modifier.width(360.dp)) {
+                AnatomicalMuscleHeatmapCard(periodDays = selected, onPeriodSelected = { selected = it })
+            }
+        } }
+        val hit = compose.onNodeWithTag("muscle_heatmap_period_pill").getUnclippedBoundsInRoot()
+        val visual = compose.onNodeWithTag("muscle_heatmap_period_visual", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertEquals(48.dp, hit.bottom - hit.top)
+        assertEquals(48.dp, hit.right - hit.left)
+        assertEquals(41.dp, visual.bottom - visual.top)
+        assertEquals(41.dp, visual.right - visual.left)
+        compose.onNodeWithTag("muscle_heatmap_period_pill").performClick()
+        compose.runOnIdle { assertEquals(30, selected) }
+    }
+
     @Test fun dailyStatusUsesActualProviderAndDistinguishesUnknownFromZeroAndFailure() {
         var requested = ""
         var state by mutableStateOf(TrainPilotUiState(primaryHealthSourceSamsung = true, dailyHealthDate = LocalDate.now().toString(),

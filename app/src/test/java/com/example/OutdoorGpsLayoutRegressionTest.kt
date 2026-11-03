@@ -188,6 +188,31 @@ class OutdoorGpsLayoutRegressionTest {
         assertEquals(1, finished)
     }
 
+    @Test fun realDisplayFrameConstrictsOversizedDialogRootForBothStartedStates() {
+        val viewport = com.example.ui.screens.outdoorVisibleViewportPx(
+            hostHeight = 1000, viewTopOnScreen = 60, visibleTopOnScreen = 30,
+            visibleBottomOnScreen = 1010, navigationBarBottom = 30, bottomReserve = 12
+        )
+        assertEquals(0, viewport.topInset)
+        assertEquals(938, viewport.height)
+        assertTrue("Fullscreen content must end above the physical display bottom",
+            60 + viewport.topInset + viewport.height <= 1010 - 12)
+        val edgeToEdge = com.example.ui.screens.outdoorVisibleViewportPx(
+            hostHeight = 1000, viewTopOnScreen = 0, visibleTopOnScreen = 30,
+            visibleBottomOnScreen = 1010, navigationBarBottom = 40, bottomReserve = 12
+        )
+        assertEquals(30, edgeToEdge.topInset)
+        assertTrue( edgeToEdge.topInset + edgeToEdge.height <= 1000 - 40 - 12 )
+    }
+
+    @Test fun realDialogStartControlIsInsideSafeViewport() {
+        showInRealDialog(display = state.copy(started = false))
+        val viewport = compose.onNodeWithTag("outdoor_dialog_visible_viewport").getUnclippedBoundsInRoot()
+        val button = compose.onNodeWithTag("gps_start_workout_btn").getUnclippedBoundsInRoot()
+        assertTrue("Start button must fit safely above dialog bottom", button.bottom <= viewport.bottom)
+        assertTrue("Start button must be below dialog top", button.top >= viewport.top)
+    }
+
     @Test fun readyDialogStartButtonFitsAndroidVisibleDisplayNotJustComposeRoot() {
         showInRealDialog(display = state.copy(started = false))
         val start = compose.onNodeWithTag("gps_start_workout_btn").assertIsDisplayed()

@@ -762,18 +762,24 @@ internal fun LogWorkoutCard(
                     maxLines = 2
                 )
             }
+            // A route action belongs to the card content, before the trailing destructive action.
+            if (entry.isOutdoorRun && entry.routeKeys.isNotEmpty()) {
+                IconButton(
+                    onClick = onClick,
+                    modifier = Modifier.size(48.dp).testTag("journal_route_map_${entry.id}")
+                ) {
+                    Icon(
+                        Icons.Default.Map,
+                        contentDescription = "Rögzített útvonal megnyitása",
+                        tint = palette.success,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            // The whole row opens details on a separate screen; a trailing arrow is redundant.
             com.example.ui.components.TrainPilotDeleteIcon(
                 onDelete, deleteEnabled, "journal_list_delete_${entry.id}", compactVisual = true
             )
-            if (entry.isOutdoorRun && entry.routeKeys.isNotEmpty()) {
-                IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) {
-                    Icon(Icons.Default.Map, contentDescription = "Rögzített útvonal megnyitása",
-                        tint = palette.success, modifier = Modifier.size(18.dp))
-                }
-            } else {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null,
-                    tint = palette.primary, modifier = Modifier.size(16.dp))
-            }
         }
     }
 }

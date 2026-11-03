@@ -41,6 +41,30 @@ class StudioCompactJournalUiRegressionTest {
         compose.runOnIdle { assertEquals("Otthoni", query) }
     }
 
+    @Test fun journalMapStaysInsideAndDeleteIsAlwaysTrailing() {
+        var mapCalls = 0
+        var deleteCalls = 0
+        var detailCalls = 0
+        val run = LoggedWorkoutEntry("run", "2026-11-03 18:00", "Gyors futás", 30,
+            "", "", 0, 0, "", isOutdoorRun = true, routeKeys = listOf("p1"))
+        compose.setContent { TrainPilotTheme {
+            Column(Modifier.width(350.dp)) {
+                LogWorkoutCard(run, onClick = { mapCalls++ }, onOpenDetailAlways = { detailCalls++ },
+                    onDelete = { deleteCalls++ }, deleteEnabled = true)
+            }
+        } }
+        val row = compose.onNodeWithTag("log_card_run").getUnclippedBoundsInRoot()
+        val map = compose.onNodeWithTag("journal_route_map_run").getUnclippedBoundsInRoot()
+        val delete = compose.onNodeWithTag("journal_list_delete_run").getUnclippedBoundsInRoot()
+        assertTrue("Map must precede trailing delete", map.right <= delete.left)
+        assertTrue("Delete must be rightmost", delete.right <= row.right && row.right - delete.right < 14.dp)
+        compose.onNodeWithTag("journal_route_map_run").performClick()
+        compose.onNodeWithTag("journal_list_delete_run").performClick()
+        assertEquals(1, mapCalls)
+        assertEquals(1, deleteCalls)
+        assertEquals(0, detailCalls)
+    }
+
     @Test fun loggedWorkoutRowHasOnlyKeyDataAndKeepsDetailAndDeleteActions() {
         var detailCalls = 0
         var deleteCalls = 0
