@@ -2,13 +2,12 @@ package com.repforge.app.ui.journal
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.repforge.app.ui.theme.TrainPilotFrames
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -56,15 +55,8 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
         replaceExercise(e, draft.exercises[e].copy(sets = draft.exercises[e].sets.mapIndexed { i, set -> if (s == i) value else set }))
     }
     Dialog(onDismissRequest = { if (!state.saving) onCancel() }, properties = DialogProperties(
-        usePlatformDefaultWidth = false, dismissOnBackPress = !state.saving, dismissOnClickOutside = false)) {
-        Surface(Modifier.fillMaxSize(), color = colors.bg) {
-            Column(Modifier.fillMaxSize().systemBarsPadding().imePadding().padding(16.dp)) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(text.getString(R.string.journal_edit_title), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-                    IconButton(onClick = onCancel, enabled = !state.saving, modifier = Modifier.testTag("journal_editor_cancel")) {
-                        Icon(Icons.Default.Close, text.getString(R.string.journal_cancel), tint = colors.dangerText)
-                    }
-                }
+        usePlatformDefaultWidth = false, dismissOnBackPress = !state.saving, dismissOnClickOutside = false, decorFitsSystemWindows = true)) {
+        JournalEditorFrame(text.getString(R.string.journal_edit_title), state.saving, onCancel) {
                 if (choosing) {
                     OutlinedTextField(search, { search = it }, modifier = Modifier.fillMaxWidth().testTag("journal_editor_search"),
                         singleLine = true, label = { Text(text.getString(R.string.journal_search)) })
@@ -82,10 +74,11 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                     }
                     TextButton(onClick = { choosing = false }, enabled = !state.saving) { Text(text.getString(R.string.journal_cancel)) }
                 } else {
-                    LazyColumn(Modifier.weight(1f).testTag("journal_editor_list"), verticalArrangement = Arrangement.spacedBy(10.dp),
-                        contentPadding = PaddingValues(vertical = 12.dp)) {
+                    LazyColumn(Modifier.weight(1f).testTag("journal_editor_list"), verticalArrangement = Arrangement.spacedBy(6.dp),
+                        contentPadding = PaddingValues(top = 4.dp, bottom = 12.dp)) {
                         item {
-                            Text(text.getString(R.string.journal_edit_time_hint), color = colors.muted)
+                            Text(text.getString(R.string.journal_edit_time_hint), color = colors.muted,
+                                style = MaterialTheme.typography.labelSmall)
                             JournalEditField(started, { started = it; invalid = false }, text.getString(R.string.journal_edit_started),
                                 "journal_editor_started", !state.saving, KeyboardType.Text)
                             JournalEditField(finished, { finished = it; invalid = false }, text.getString(R.string.journal_edit_finished),
@@ -97,19 +90,17 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                             val choices = listOf("easy" to R.string.journal_effort_easy, "light" to R.string.journal_effort_light,
                                 "good" to R.string.journal_effort_good, "challenging" to R.string.journal_effort_challenging,
                                 "hard" to R.string.journal_effort_hard, "pain" to R.string.journal_effort_pain)
-                            choices.forEach { (effort, label) ->
-                                FilterChip(selected = draft.feedbackEffort == effort || (draft.feedbackEffort == "right" && effort == "good"),
-                                    onClick = { onChange(draft.copy(feedbackEffort = effort)) },
-                                    enabled = !state.saving && !feedbackLocked,
-                                    label = { Text(text.getString(label)) },
-                                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_editor_feedback_$effort"))
-                            }
+                            JournalEffortDropdown(draft.feedbackEffort,
+                                choices.map { (key, label) -> key to text.getString(label) },
+                                text.getString(R.string.journal_feedback), !state.saving && !feedbackLocked,
+                                onSelect = { onChange(draft.copy(feedbackEffort = it)) })
                         }
                         item {
                             OutlinedTextField(draft.note, { onChange(draft.copy(note = it)) },
                                 label = { Text(when (language) {
                                     "en" -> "Workout note"; "de" -> "Trainingsnotiz"; "ro" -> "Notiță antrenament"; else -> "Edzésjegyzet"
-                                }) }, enabled = !state.saving, minLines = 2,
+                                }) }, enabled = !state.saving, minLines = 1, maxLines = 3,
+                                shape = RoundedCornerShape(12.dp), textStyle = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.fillMaxWidth().testTag("journal_editor_note"))
                         }
                         draft.exercises.forEachIndexed { e, exercise ->
@@ -133,7 +124,9 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                             }
                             exercise.sets.forEachIndexed { s, set ->
                                 item {
-                                    Column(Modifier.fillMaxWidth().background(colors.card).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Surface(color = colors.card2, shape = RoundedCornerShape(14.dp),
+                                        border = TrainPilotFrames.stroke(0.75.dp, colors.line)) {
+                                    Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text("${s + 1}.", Modifier.weight(1f))
                                             Checkbox(set.done, { editSet(e, s, set.copy(done = it)) }, enabled = !state.saving,
@@ -157,6 +150,7 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                                             text.getString(R.string.journal_edit_distance), "journal_editor_distance_${e}_$s", !state.saving)
                                         JournalEditField(set.rir, { editSet(e, s, set.copy(rir = it)) }, text.getString(R.string.journal_edit_rir),
                                             "journal_editor_rir_${e}_$s", !state.saving)
+                                    }
                                     }
                                 }
                             }
@@ -182,11 +176,11 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                                 finished = if (finished == local(oldFinish)) oldFinish else OffsetDateTime.parse(finished, format).toInstant().toString())
                         }.getOrNull()
                         if (dates == null) invalid = true else onSave(dates)
-                    }, enabled = !state.saving, modifier = Modifier.fillMaxWidth().testTag("journal_editor_save")) {
+                    }, enabled = !state.saving, shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_editor_save")) {
                         Text(text.getString(if (state.saving) R.string.journal_edit_saving else R.string.journal_edit_save))
                     }
                 }
-            }
         }
     }
 }
@@ -195,5 +189,6 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
 private fun JournalEditField(value: String, change: (String) -> Unit, label: String, tag: String,
     enabled: Boolean, keyboard: KeyboardType = KeyboardType.Decimal) {
     OutlinedTextField(value, change, label = { Text(label) }, singleLine = true, enabled = enabled,
+        shape = RoundedCornerShape(12.dp), textStyle = MaterialTheme.typography.bodyMedium,
         keyboardOptions = KeyboardOptions(keyboardType = keyboard), modifier = Modifier.fillMaxWidth().testTag(tag))
 }
