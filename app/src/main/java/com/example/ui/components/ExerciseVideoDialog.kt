@@ -78,6 +78,7 @@ fun ExerciseYouTubeVideoModalDialog(
     var load by remember(url, mode, retryKey) { mutableStateOf<ExerciseVideoLoad>(ExerciseVideoLoad.Loading) }
     var location by remember(url, mode, retryKey) { mutableStateOf(url.orEmpty()) }
     var webView by remember(url, mode, retryKey) { mutableStateOf<WebView?>(null) }
+    var canBrowserGoBack by remember(url, mode, retryKey) { mutableStateOf(false) }
     var copied by remember(url) { mutableStateOf(false) }
     var copyError by remember(url) { mutableStateOf(false) }
 
@@ -164,6 +165,7 @@ fun ExerciseYouTubeVideoModalDialog(
                                                 modifier = Modifier.fillMaxSize(),
                                                 onLoad = { load = it },
                                                 onLocationChanged = { location = it },
+                                                onHistoryChanged = { canBrowserGoBack = it },
                                                 onViewChanged = { webView = it }
                                             )
                                             when (val state = load) {
@@ -205,7 +207,7 @@ fun ExerciseYouTubeVideoModalDialog(
                                                 Text("Megnyitás a belső böngészőben")
                                             }
                                         } else {
-                                            if (webView?.canGoBack() == true) {
+                                            if (canBrowserGoBack) {
                                                 TrainPilotOutlinedButton(
                                                     onClick = { webView?.goBack() },
                                                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
