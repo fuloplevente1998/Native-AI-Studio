@@ -125,7 +125,7 @@ class StudioProgressUiRegressionTest {
             }
         } }
         val hit = compose.onNodeWithTag("muscle_heatmap_period_pill").getUnclippedBoundsInRoot()
-        val visual = compose.onNodeWithTag("muscle_heatmap_period_visual").getUnclippedBoundsInRoot()
+        val visual = compose.onNodeWithTag("muscle_heatmap_period_visual", useUnmergedTree = true).getUnclippedBoundsInRoot()
         assertEquals(48.dp, hit.bottom - hit.top)
         assertEquals(48.dp, hit.right - hit.left)
         assertEquals(41.dp, visual.bottom - visual.top)
