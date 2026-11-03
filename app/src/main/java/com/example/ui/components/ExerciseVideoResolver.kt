@@ -6,12 +6,15 @@ import java.util.Locale
 
 /** Only exact YouTube IDs or recognised HTTPS YouTube video URLs are embeddable. */
 private val youtubeIdPattern = Regex("^[A-Za-z0-9_-]{11}$")
+private val dnsLabelPattern = Regex("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
+private val ipv4Pattern = Regex("^[0-9]+(?:\\.[0-9]+){3}$")
 
 fun parseYouTubeVideoId(value: String): String? {
     val raw = value.trim()
     if (youtubeIdPattern.matches(raw)) return raw
     val uri = runCatching { URI(raw) }.getOrNull() ?: return null
-    if (!uri.scheme.equals("https", ignoreCase = true) || uri.userInfo != null) return null
+    if (!uri.scheme.equals("https", ignoreCase = true) ||
+        uri.userInfo != null || uri.port !in listOf(-1, 443) || '\\' in raw) return null
     val host = uri.host?.lowercase(Locale.ROOT)?.removePrefix("www.")?.removePrefix("m.")
         ?: return null
     val path = uri.path.orEmpty().trim('/')
@@ -32,14 +35,28 @@ fun parseYouTubeVideoId(value: String): String? {
     return candidate?.takeIf { youtubeIdPattern.matches(it) }
 }
 
-/** Do not dispatch javascript:, file:, intent:, http: or malformed links to other apps. */
+/**
+ * URL must be an absolute, public DNS HTTPS URL without credentials or a
+ * nonstandard port. Reject nonweb schemes, IPs, local hosts and URI tricks.
+ */
 fun safeExternalExerciseVideoUrl(value: String): String? {
     val raw = value.trim()
+    if ('\\' in raw || raw.any { it.isISOControl() }) return null
     val uri = runCatching { URI(raw) }.getOrNull() ?: return null
+    val host = uri.host?.lowercase(Locale.ROOT) ?: return null
+    val labels = host.split('.')
+    val safeHost = host.length <= 253 &&
+        labels.size >= 2 &&
+        labels.all { it.length in 1..63 && dnsLabelPattern.matches(it) } &&
+        !ipv4Pattern.matches(host) &&
+        !host.endsWith(".local") && !host.endsWith(".localhost") &&
+        !host.endsWith(".internal") && !host.endsWith(".test") &&
+        !host.endsWith(".invalid") &&
+        labels.last().any { it in 'a'..'z' }
     return raw.takeIf {
-        uri.scheme.equals("https", ignoreCase = true) &&
-            uri.host?.contains('.') == true &&
-            uri.userInfo == null
+        uri.isAbsolute && uri.scheme.equals("https", ignoreCase = true) &&
+            uri.userInfo == null && uri.port in listOf(-1, 443) &&
+            safeHost
     }
 }
 

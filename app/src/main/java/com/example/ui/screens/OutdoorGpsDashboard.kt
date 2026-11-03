@@ -1,5 +1,11 @@
 package com.example.ui.screens
 
+import android.view.WindowManager
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import com.repforge.app.ui.theme.trainPilotBorder
@@ -32,6 +38,52 @@ import com.example.localization.LocalizedStrings
 import com.example.ui.theme.LocalTrainPilotPalette
 
 internal val LocalOutdoorMapContentPadding = staticCompositionLocalOf { PaddingValues(0.dp) }
+
+/**
+ * A real edge-to-edge dialog host: disabling the platform width cap alone does not
+ * guarantee MATCH_PARENT *height*. The safe-drawing inset belongs inside the full
+ * window, so the overlay receives the actual remaining viewport constraints.
+ *
+ * Closing the dialog never invokes start/pause/finish or changes native GPS state.
+ */
+@Composable
+internal fun OutdoorGpsFullscreenDialog(
+    state: OutdoorGpsDisplay,
+    strings: LocalizedStrings,
+    actions: OutdoorGpsActions,
+    onDismissRequest: () -> Unit,
+    mapContent: @Composable (Modifier) -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+    ) {
+        val dialogView = LocalView.current
+        DisposableEffect(dialogView) {
+            (dialogView.parent as? DialogWindowProvider)?.window?.setLayout(
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.MATCH_PARENT
+            )
+            onDispose { }
+        }
+        val palette = LocalTrainPilotPalette.current
+        Box(
+            Modifier.fillMaxSize()
+                .background(palette.background)
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .testTag("outdoor_dialog_safe_host")
+        ) {
+            OutdoorGpsDashboard(
+                state = state,
+                strings = strings,
+                actions = actions.copy(back = onDismissRequest),
+                modifier = Modifier.fillMaxSize(),
+                fullscreen = true,
+                mapContent = mapContent
+            )
+        }
+    }
+}
 
 /** Display projection only; timing, GPS, ownership and finalization stay in the native engine. */
 internal data class OutdoorGpsDisplay(
@@ -80,10 +132,12 @@ internal fun OutdoorGpsDashboard(
         val viewportHeight = maxHeight
         if (fullscreen) {
             val density = LocalDensity.current
-            var headerHeight by remember { mutableIntStateOf(80) }
-            var footerHeight by remember { mutableIntStateOf(210) }
-            val mapPadding = with(density) { PaddingValues(top = headerHeight.toDp() + 12.dp,
-                bottom = footerHeight.toDp() + 12.dp) }
+            var headerHeight by remember { mutableIntStateOf(0) }
+            var footerHeight by remember { mutableIntStateOf(0) }
+            // Reserve the *measured* overlay space for Google Maps controls/logo.
+            // Never guess a tall fixed footer in pixels; first layout has zero insets.
+            val mapPadding = with(density) { PaddingValues(top = headerHeight.toDp() + 20.dp,
+                bottom = footerHeight.toDp() + 20.dp) }
             Box(Modifier.fillMaxSize().clipToBounds().testTag("outdoor_fullscreen_map_bounds")) {
                 CompositionLocalProvider(LocalOutdoorMapContentPadding provides mapPadding) {
                     mapContent(Modifier.fillMaxSize())
@@ -92,8 +146,8 @@ internal fun OutdoorGpsDashboard(
                     Box(Modifier.onSizeChanged { headerHeight = it.height }) { DashboardHeader(state, actions, true) }
                     Spacer(Modifier.weight(1f))
                     Column(Modifier.onSizeChanged { footerHeight = it.height }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Column(Modifier.heightIn(max = viewportHeight * 0.28f)
-                            .verticalScroll(rememberScrollState())) {
+                        Column(Modifier.heightIn(max = (viewportHeight * 0.24f).coerceIn(52.dp, 180.dp))
+                            .verticalScroll(rememberScrollState()).testTag("outdoor_fullscreen_metrics_scroll")) {
                             MetricsPanel(state, strings, showTimer = false)
                             if (state.error.isNotBlank()) Text(state.error, color = palette.danger,
                                 modifier = Modifier.testTag("outdoor_finish_error"))
@@ -106,7 +160,7 @@ internal fun OutdoorGpsDashboard(
         }
         // The compact map has a bounded height; metrics and pinned actions get the remaining space.
         val scrollSecondary = maxHeight < 360.dp || LocalDensity.current.fontScale > 1.35f || state.error.isNotBlank()
-        val compactMapHeight = (maxHeight * 0.34f).coerceIn(140.dp, 220.dp)
+        val compactMapHeight = (maxHeight * 0.28f).coerceIn(120.dp, 180.dp)
         Column(Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             DashboardHeader(state, actions, fullscreen)
             Column(
@@ -114,11 +168,7 @@ internal fun OutdoorGpsDashboard(
                         .testTag("outdoor_dashboard_body"),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    if (fullscreen) {
-                        Box(Modifier.fillMaxWidth().then(if (scrollSecondary) Modifier.height(220.dp) else Modifier.weight(1f))) {
-                            mapContent(Modifier.fillMaxSize())
-                        }
-                    } else Surface(shape = RoundedCornerShape(20.dp), color = palette.surfaceCard,
+                    Surface(shape = RoundedCornerShape(20.dp), color = palette.surfaceCard,
                         modifier = Modifier.fillMaxWidth()
                             .height(compactMapHeight).testTag("outdoor_compact_map_card")
                             .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.45f), RoundedCornerShape(20.dp))) {

@@ -956,6 +956,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
 
                             MainTab.LOG -> {
                                 ProgressTabScreen(
+                                    onDeletedWorkout = viewModel::onLoggedWorkoutDeleted,
                                     uiState = uiState.copy(progressMainSection = 1),
                                     strings = strings,
                                     onSelectMainSection = { viewModel.selectProgressMainSection(it) },
@@ -976,6 +977,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
 
                             MainTab.PROGRESS -> {
                                 ProgressTabScreen(
+                                    onDeletedWorkout = viewModel::onLoggedWorkoutDeleted,
                                     uiState = uiState,
                                     strings = strings,
                                     onSelectMainSection = { viewModel.selectProgressMainSection(it) },

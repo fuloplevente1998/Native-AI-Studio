@@ -178,7 +178,11 @@ final class SamsungSdkReader {
                 for (HealthDataPoint p : points(DataTypes.HEART_RATE::getReadDataRequestBuilder, start, end)) {
                     List<HeartRate> series = p.getValue(DataType.HeartRateType.SERIES_DATA);
                     if (series != null && !series.isEmpty()) {
-                        for (HeartRate h : series) if (h.getStartTime().isBefore(end) && !h.getEndTime().isBefore(start)) {
+                        // A sample is timestamped by its start, not by a parent interval overlap.
+                        // Exclude pre-midnight and future-day samples at the [start, end) boundary.
+                        for (HeartRate h : series) if (h.getStartTime() != null &&
+                                !h.getStartTime().isBefore(start) && h.getStartTime().isBefore(end) &&
+                                Double.isFinite(h.getHeartRate()) && h.getHeartRate() >= 20 && h.getHeartRate() <= 250) {
                             String key = source(p) + h.getStartTime() + "|" + h.getEndTime();
                             samples.put(key, new double[]{h.getHeartRate(), h.getMin(), h.getMax()});
                             timed.put(key, new JSONObject().put("time", h.getStartTime().toString())
@@ -186,7 +190,7 @@ final class SamsungSdkReader {
                         }
                     } else if (!p.getStartTime().isBefore(start) && p.getStartTime().isBefore(end)) {
                         Float value = p.getValue(DataType.HeartRateType.HEART_RATE);
-                        if (value != null) {
+                        if (value != null && Float.isFinite(value) && value >= 20 && value <= 250) {
                             String key = source(p) + p.getStartTime();
                             samples.put(key, new double[]{value,
                                 p.getValueOrDefault(DataType.HeartRateType.MIN_HEART_RATE, value),

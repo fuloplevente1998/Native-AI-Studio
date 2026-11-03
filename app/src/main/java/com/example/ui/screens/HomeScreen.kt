@@ -521,8 +521,13 @@ fun HomeScreen(
                         Icon(Icons.Default.AutoAwesome, null, tint = palette.primary, modifier = Modifier.size(20.dp))
                         Column(Modifier.weight(1f)) {
                             Text(strings.coachSuggestionHeader, color = palette.primary, style = MaterialTheme.typography.labelMedium)
-                            Text(if (state.coachReadinessScore > 0) "Mai készenlét: ${state.coachReadinessScore}/100" else "Nézd meg a mai javaslatot",
-                                color = palette.textPrimary, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(when {
+                                state.coachReadinessScore <= 0 -> "Még nincs elég friss adat. A Coach oldalon megnézheted a részleteket."
+                                state.coachReadinessScore < 55 -> "${state.coachReadinessScore}/100 • Ma könnyebb terhelés és regeneráció javasolt."
+                                state.coachReadinessScore < 75 -> "${state.coachReadinessScore}/100 • Kissé visszafogott terhelés javasolt."
+                                else -> "${state.coachReadinessScore}/100 • Tartható a szokásos edzésterhelés."
+                            }, color = palette.textPrimary, style = MaterialTheme.typography.bodySmall, maxLines = 2,
+                                overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("home_coach_summary"))
                         }
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.primary)
                     }

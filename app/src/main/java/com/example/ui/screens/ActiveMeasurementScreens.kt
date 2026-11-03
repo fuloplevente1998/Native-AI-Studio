@@ -3308,13 +3308,13 @@ fun ActiveOutdoorGpsScreen(
     }
     OutdoorGpsDashboard(display, strings, actions, mapContent = routeMap)
     if (isFullscreenMapOpen) {
-        Dialog(onDismissRequest = { isFullscreenMapOpen = false }, properties = DialogProperties(
-            usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-            OutdoorGpsDashboard(display, strings,
-                actions.copy(back = { isFullscreenMapOpen = false }),
-                modifier = Modifier.windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.safeDrawing),
-                fullscreen = true, mapContent = routeMap)
-        }
+        OutdoorGpsFullscreenDialog(
+            state = display,
+            strings = strings,
+            actions = actions,
+            onDismissRequest = { isFullscreenMapOpen = false },
+            mapContent = routeMap
+        )
     }
 }
 

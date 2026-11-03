@@ -18,6 +18,7 @@ import com.example.localization.TrainPilotStrings
 import com.example.model.AppLanguage
 import com.example.ui.screens.OutdoorGpsActions
 import com.example.ui.screens.OutdoorGpsDashboard
+import com.example.ui.screens.OutdoorGpsFullscreenDialog
 import com.example.ui.screens.OutdoorGpsDisplay
 import com.example.ui.theme.TrainPilotTheme
 import org.junit.Assert.*
@@ -36,6 +37,7 @@ import org.robolectric.annotation.LooperMode
 class OutdoorGpsLayoutRegressionTest {
     @get:Rule val compose = createComposeRule()
     private var finished = 0
+    private var dialogClosed = 0
     private var paused = 0
     private var selected = ""
     private val state = OutdoorGpsDisplay("Kültéri futás", "Élő GPS-jel (2 pont • ±4 m)",
@@ -57,6 +59,25 @@ class OutdoorGpsLayoutRegressionTest {
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    /** Uses an actual Android Dialog window, not an inset-simulating Box fixture. */
+    private fun showInRealDialog(font: Float = 1f, display: OutdoorGpsDisplay = state) {
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, font)) {
+                TrainPilotTheme {
+                    OutdoorGpsFullscreenDialog(
+                        state = display,
+                        strings = TrainPilotStrings.forLanguage(display.language),
+                        actions = actions,
+                        onDismissRequest = { dialogClosed++ },
+                        mapContent = { mapModifier ->
+                            Box(mapModifier.background(Color.Black).testTag("real_dialog_map_fixture"))
+                        }
+                    )
                 }
             }
         }
@@ -105,7 +126,7 @@ class OutdoorGpsLayoutRegressionTest {
     @Test fun compactMapLeavesRoomForDataInsteadOfGrowingWithTheScreen() {
         show(393, 780)
         val bounds = compose.onNodeWithTag("outdoor_compact_map_card").getUnclippedBoundsInRoot()
-        assertTrue(bounds.bottom - bounds.top <= 220.dp)
+        assertTrue(bounds.bottom - bounds.top <= 180.dp)
         assertControlsVisible()
     }
 
@@ -123,6 +144,41 @@ class OutdoorGpsLayoutRegressionTest {
         assertControlsVisible(bottomInset = 32)
         compose.onNodeWithTag("gps_close_fullscreen").assertIsDisplayed()
         compose.onNodeWithTag("gps_elapsed_timer_text").assertIsDisplayed()
+    }
+
+    @Test fun realDialogWindowContainsHeaderTimerMetricsAndPrimaryActions() {
+        showInRealDialog()
+        val map = compose.onNodeWithTag("outdoor_fullscreen_map_bounds").assertIsDisplayed()
+            .getUnclippedBoundsInRoot()
+        val dialog = compose.onNodeWithTag("outdoor_dialog_safe_host").assertIsDisplayed()
+            .getUnclippedBoundsInRoot()
+        assertTrue("Real Dialog must have a sizeable drawable viewport", map.bottom - map.top > 320.dp)
+        assertTrue("Map stays inside the safe Dialog content", map.top >= dialog.top && map.bottom <= dialog.bottom)
+        for (tag in listOf("gps_close_fullscreen", "gps_elapsed_timer_text",
+            "gps_pause_resume_btn", "gps_lap_btn", "gps_finish_workout_btn")) {
+            val bounds = compose.onNodeWithTag(tag).assertIsDisplayed().getUnclippedBoundsInRoot()
+            assertTrue("$tag lies inside actual Dialog map", bounds.left >= map.left &&
+                bounds.right <= map.right && bounds.top >= map.top && bounds.bottom <= map.bottom)
+        }
+        compose.onNodeWithTag("gps_close_fullscreen").performClick()
+        assertEquals(1, dialogClosed)
+        assertEquals("Closing the map must not finish the workout", 0, finished)
+        assertEquals("Closing the map must not pause the workout", 0, paused)
+    }
+
+    @Test
+    @Config(sdk = [34], qualifiers = "w320dp-h480dp-mdpi")
+    fun realDialogKeepsFinishReachableOnSmallWindowWithLargeFont() {
+        showInRealDialog(font = 1.8f)
+        val bounds = compose.onNodeWithTag("outdoor_fullscreen_map_bounds").getUnclippedBoundsInRoot()
+        for (tag in listOf("gps_close_fullscreen", "gps_elapsed_timer_text",
+            "gps_pause_resume_btn", "gps_lap_btn", "gps_finish_workout_btn")) {
+            val rect = compose.onNodeWithTag(tag).assertIsDisplayed().getUnclippedBoundsInRoot()
+            assertTrue("$tag fits the actual small Dialog", rect.top >= bounds.top &&
+                rect.bottom <= bounds.bottom && rect.left >= bounds.left && rect.right <= bounds.right)
+        }
+        compose.onNodeWithTag("gps_finish_workout_btn").performClick()
+        assertEquals(1, finished)
     }
 
     @Test fun activityChoicesRemainAvailableBeforeStarting() {

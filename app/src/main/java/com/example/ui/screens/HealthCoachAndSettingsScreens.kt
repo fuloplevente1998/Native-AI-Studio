@@ -86,6 +86,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.example.ui.components.watchinfo.StudioWatchInformationCard
+import com.example.ui.components.healthreadings.HealthPulseWeekRows
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -473,8 +475,8 @@ fun HealthTabScreen(
                                         "Edzésnapló részletek megnyitása >"
                                     ) to { uiState.loggedWorkouts.workoutsOn(today).firstOrNull()?.id?.let(onOpenLoggedWorkout) }
                                     "recovery" -> listOf(
-                                        "Regeneráció & Készenlét • ${uiState.coachReadinessScore}/100",
-                                        "Samsung Energia: ${uiState.samsungEnergyScore}/100 • Javaslat: 1–2 RIR kontrollált terhelés",
+                                        "Regeneráció & Készenlét • ${uiState.todayRecoveryReading?.displayScoreHu ?: "—"}",
+                                        uiState.todayRecoveryReading?.explanationHu ?: "Nincs igazolt regenerációs mérés.",
                                         "TrainPilot Coach megnyitása >"
                                     ) to { onNavigateToSubScreen(SubScreen.COACH_DETAIL) }
                                     else -> listOf(
@@ -1394,6 +1396,12 @@ fun HealthTabScreen(
                             Text(summary, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                         }
                     }
+                }
+                val weeklyPulse = uiState.weeklyHealthDays.mapNotNull { it.pulse }
+                if (weeklyPulse.isNotEmpty()) {
+                    Text("Pulzus – elmúlt 7 nap", style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                    HealthPulseWeekRows(weeklyPulse)
                 }
             }
         }
@@ -2698,73 +2706,10 @@ fun WatchAndSyncScreen(
         }
 
         item {
-            Surface(
-                shape = RoundedCornerShape(22.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .trainPilotBorder(1.5.dp, palette.primary.copy(alpha = 0.7f), RoundedCornerShape(22.dp))
-                    .testTag("watch_device_info_card")
-                    .clickable(enabled = !uiState.watchInfoLoading) { onRefreshWatchInfo() }
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        if (uiState.watchAppAvailable) MockupWatchGraphicBadge(size = 64.dp)
-                        else Icon(Icons.Default.Watch, contentDescription = null, tint = palette.textSecondary, modifier = Modifier.size(64.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = if (uiState.watchAppAvailable) uiState.watchName else "Nincs csatlakoztatott Wear OS óra",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = palette.textPrimary
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text(
-                                    text = when {
-                                        uiState.watchAppAvailable -> "● TrainPilot Wear elérhető"
-                                        uiState.watchConnected -> "Wear OS elérhető • TrainPilot Wear még nem igazolt"
-                                        else -> "Nincs órakapcsolat"
-                                    },
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (uiState.watchAppAvailable) palette.success else if (uiState.watchConnected) palette.warning else palette.textSecondary
-                                )
-                                Text(
-                                    text = "Akkumulátor: " + if (uiState.watchBatteryPercent >= 0) "${uiState.watchBatteryPercent}%" else "—",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = palette.textPrimary
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Utolsó igazolt szinkron: ${uiState.lastWatchSyncLabel}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = palette.textSecondary
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (uiState.watchDeviceDetails.isNotBlank()) Text(uiState.watchDeviceDetails, color = palette.textPrimary)
-                if (uiState.watchInfoMessage.isNotBlank()) Text(uiState.watchInfoMessage,
-                    color = palette.textSecondary, modifier = Modifier.testTag("watch_device_info_status"))
-                TrainPilotOutlinedButton(enabled = !uiState.watchInfoLoading, onClick = onRefreshWatchInfo,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("watch_refresh_device_info")) {
-                    Text(if (uiState.watchInfoLoading) "Lekérés…" else "Óraadatok frissítése")
-                }
-            }
+            StudioWatchInformationCard(
+                data = uiState.watchInfoCardData.copy(loading = uiState.watchInfoLoading || uiState.watchInfoCardData.loading),
+                onRefresh = onRefreshWatchInfo
+            )
         }
 
         // Section 2: Aktív edzés vezérlése (Mockup 4/4 #2 side-by-side mode cards + gold button + bullets)

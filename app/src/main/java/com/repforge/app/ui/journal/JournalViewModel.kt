@@ -247,6 +247,18 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         routeRevision++
         _uiState.update { it.copy(activeRoute = null, routeLoading = false, routeError = false) }
     }
+    fun requestDeleteWorkout(id: String) {
+        if (_uiState.value.deleting || id.isBlank()) return
+        openDetails(id)
+        viewModelScope.launch {
+            val loaded = uiState.first { it.selectedWorkoutId != id || !it.detailLoading }
+            if (loaded.selectedWorkoutId == id) {
+                if (loaded.detail != null) requestDeleteWorkout()
+                else _uiState.update { it.copy(operationFailed = true) }
+            }
+        }
+    }
+
     fun requestDeleteWorkout() {
         val state = _uiState.value
         val detail = state.detail ?: return

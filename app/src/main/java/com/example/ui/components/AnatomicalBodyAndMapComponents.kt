@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -66,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.localization.LocalTrainPilotStrings
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.example.ui.components.mapcontrols.MapAppearanceSelector
 
 data class MuscleLoadItem(
     val id: String,
@@ -622,8 +624,12 @@ fun NativeWorkoutRouteMapBox(
             if (!loaded) timedOut = true
         }
     }
-    Box(modifier.clip(RoundedCornerShape(24.dp)).background(palette.background)
+    BoxWithConstraints(modifier.clip(RoundedCornerShape(24.dp)).background(palette.background)
         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(24.dp)), contentAlignment = Alignment.Center) {
+        // Native Google zoom/logo controls must fit between the actual map overlays.
+        // On cramped windows gesture zoom remains enabled; avoid buried +/- buttons.
+        val googleControlsHeight = maxHeight - mapContentPadding.calculateTopPadding() -
+            mapContentPadding.calculateBottomPadding()
         if (!configured || !playServicesAvailable) {
             Text(if (!configured) "Google Maps nincs beállítva. Az útvonal helyben megmarad."
                 else "A térképhez Google Play-szolgáltatások szükségesek. Az útvonal helyben megmarad.",
@@ -644,7 +650,8 @@ fun NativeWorkoutRouteMapBox(
                     contentPadding = mapContentPadding,
                     onMapLoaded = { loaded = true; timedOut = false },
                     uiSettings = com.google.maps.android.compose.MapUiSettings(
-                        zoomControlsEnabled = interactiveControls && showZoomControls, scrollGesturesEnabled = interactiveControls,
+                        zoomControlsEnabled = interactiveControls && showZoomControls && googleControlsHeight >= 180.dp,
+                        scrollGesturesEnabled = interactiveControls,
                         zoomGesturesEnabled = interactiveControls, rotationGesturesEnabled = interactiveControls)
                 ) {
                     // Distinct paused/ownership segments are never connected by a synthetic line.
@@ -672,21 +679,12 @@ fun NativeWorkoutRouteMapBox(
                     }
                 }
             }
-            Column(Modifier.align(Alignment.TopEnd).padding(top = mapContentPadding.calculateTopPadding() + 12.dp, end = 12.dp), horizontalAlignment = Alignment.End) {
-                androidx.compose.material3.FilledTonalButton(
-                    onClick = { preferenceScope.launch {
-                        preferences.setMapAppearance(if (darkMapMode)
-                            com.repforge.app.data.store.MapAppearance.LIGHT else com.repforge.app.data.store.MapAppearance.DARK)
-                    } },
-                    modifier = Modifier.heightIn(min = 48.dp).testTag("route_map_style_toggle")
-                ) { Text(if (darkMapMode) "Világos térkép" else "Sötét térkép") }
-                TextButton(
-                    enabled = mapAppearance != com.repforge.app.data.store.MapAppearance.FOLLOW_APP,
-                    onClick = { preferenceScope.launch {
-                        preferences.setMapAppearance(com.repforge.app.data.store.MapAppearance.FOLLOW_APP)
-                    } }, modifier = Modifier.heightIn(min = 48.dp).testTag("route_map_follow_app")
-                ) { Text("App témája", color = palette.textPrimary) }
-            }
+            MapAppearanceSelector(
+                appearance = mapAppearance,
+                onSelect = { selected -> preferenceScope.launch { preferences.setMapAppearance(selected) } },
+                modifier = Modifier.align(Alignment.TopEnd)
+                    .padding(top = mapContentPadding.calculateTopPadding() + 8.dp, end = 8.dp)
+            )
             if (!loaded) {
                 Surface(color = palette.surfaceCard.copy(alpha = 0.94f), shape = RoundedCornerShape(12.dp)) {
                     Column(Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {

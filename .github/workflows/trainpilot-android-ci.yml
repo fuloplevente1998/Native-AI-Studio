@@ -111,6 +111,13 @@ jobs:
             gradle --no-daemon --stacktrace --continue :app:assembleDebug :app:testDebugUnitTest :wear:assembleDebug :wear:assembleOptimized :wear:testDebugUnitTest :shared:testDebugUnitTest
           fi
 
+      - name: Verify raw phone, Wear and shared JUnit XML test results
+        if: always()
+        shell: bash
+        env:
+          TRAINPILOT_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python3 scripts/verify_junit_xml.py
+
       - name: Report Maps configuration and APK signer without exposing the key
         if: always()
         shell: bash
@@ -164,5 +171,6 @@ jobs:
             wear/build/test-results/
             shared/build/reports/tests/
             shared/build/test-results/
+            app/build/outputs/junit-verification.json
           if-no-files-found: ignore
           retention-days: 7
