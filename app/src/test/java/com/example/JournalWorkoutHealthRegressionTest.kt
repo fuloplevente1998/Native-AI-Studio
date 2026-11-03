@@ -397,4 +397,19 @@ class JournalWorkoutHealthRegressionTest {
         assertEquals(0, opened)
     }
 
+    @Test fun listDeletionShowsAnErrorIfTheRecordHasAlreadyDisappeared() {
+        val entry = LoggedWorkoutEntry("missing-row", "2026.11.01", "Edzés", 20, "20:00", "—", 1, 100, "", savedStartIso = start)
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.LogTabScreen(TrainPilotUiState(loggedWorkouts = listOf(entry)),
+                TrainPilotStrings.forLanguage(AppLanguage.HU), {}, {}, {}, {}, {})
+        } }
+        compose.onNodeWithTag("journal_list_delete_missing-row").performClick()
+        compose.waitUntil(10_000) {
+            shadowOf(Looper.getMainLooper()).idle()
+            compose.onAllNodesWithTag("journal_list_delete_error").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("journal_confirm_delete").assertDoesNotExist()
+        assertTrue(awaitNative { db.workoutHistoryDao().getTombstones().isEmpty() })
+    }
+
 }

@@ -128,6 +128,14 @@ fun LogTabScreen(
     val deleteModel: com.repforge.app.ui.journal.JournalViewModel = androidx.lifecycle.viewmodel.compose.viewModel(key = "studio-history-list-deletion")
     val deleteState by deleteModel.uiState.collectAsState()
     com.example.ui.components.StudioWorkoutDeleteConfirmation(null, onDeletedWorkout, deleteModel)
+    if (deleteState.operationFailed && deleteState.workoutToDelete == null) AlertDialog(
+        onDismissRequest = deleteModel::clearOperationError,
+        title = { Text("Az edzés adatai nem érhetők el") },
+        text = { Text("A napló közben frissülhetett vagy adatcsere van folyamatban. Nyisd meg újra a műveletet.") },
+        confirmButton = { TextButton(onClick = deleteModel::clearOperationError) { Text("Rendben") } },
+        modifier = Modifier.testTag("journal_list_delete_error")
+    )
+
     val palette = LocalTrainPilotPalette.current
     val today = remember { java.time.LocalDate.now() }
     var currentYearMonth by remember { mutableStateOf(java.time.YearMonth.from(today)) }
