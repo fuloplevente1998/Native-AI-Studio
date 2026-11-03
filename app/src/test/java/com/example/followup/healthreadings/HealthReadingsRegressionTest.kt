@@ -231,10 +231,15 @@ class HealthReadingsRegressionTest {
     }
 
     @Test fun healthConnectRecoveryDeniedAndReadErrorRemainDifferent() {
-        val denied = row().put("permissions", JSONObject()
-            .put("READ_SLEEP", false).put("READ_HEART_RATE_VARIABILITY", false))
-        assertEquals(ReadingState.PERMISSION_DENIED, HealthReadingsProjection.recoveryToday(
-            hc, listOf(denied), emptyList(), now, ZoneOffset.UTC).state)
+        val staleSleep = JSONObject().put("source", "hc.origin")
+            .put("start", "2026-11-02T00:00:00Z").put("end", "2026-11-02T07:20:00Z")
+        val denied = row().put("sleepSessions", JSONArray().put(staleSleep))
+            .put("permissions", JSONObject()
+                .put("READ_SLEEP", false).put("READ_HEART_RATE_VARIABILITY", false))
+        val deniedResult = HealthReadingsProjection.recoveryToday(
+            hc, listOf(denied), emptyList(), now, ZoneOffset.UTC)
+        assertEquals(ReadingState.PERMISSION_DENIED, deniedResult.state)
+        assertNull(deniedResult.score)
         val failed = row().put("permissions", JSONObject()
             .put("READ_SLEEP", true).put("READ_HEART_RATE_VARIABILITY", true))
             .put("warnings", JSONArray().put("READ_SLEEP: unavailable"))
