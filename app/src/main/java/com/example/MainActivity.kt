@@ -501,6 +501,12 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onOpenExerciseDetail = { exId -> viewModel.openExerciseDetail(exId) },
                             onOpenExerciseLibrary = { viewModel.navigateToSubScreen(SubScreen.EXERCISE_LIBRARY) },
                             onMoveExercise = { fromIdx, toIdx -> viewModel.moveEditorExercise(fromIdx, toIdx) },
+                            onCopyProgram = viewModel::copyEditorProgram,
+                            onDeleteProgram = viewModel::deleteEditorProgram,
+                            onAddDay = viewModel::addEditorDay,
+                            onDeleteDay = viewModel::deleteEditorDay,
+                            onRemoveExercise = viewModel::removeEditorExercise,
+                            onRenameProgram = viewModel::renameEditorProgram,
                             onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true) }
                         )
                     }
@@ -558,9 +564,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 viewModel.addExerciseToWorkoutQueue(ex)
                                 viewModel.addExerciseToActiveProgramDay(ex)
                             },
-                            onStartQueuedWorkout = {
-                                viewModel.startQueuedWorkout()
-                            }
+                            onStartQueuedWorkout = { viewModel.startQueuedWorkout() },
+                            onToggleFavoritesOnly = viewModel::toggleFavoriteExercisesOnly
                         )
                     }
 
@@ -569,6 +574,15 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             ?: uiState.exercises.firstOrNull()
                         ExerciseDetailScreen(
                             state = uiState,
+                            onToggleFavorite = viewModel::toggleExerciseFavorite,
+                            customExerciseActions = { currentDetailExercise?.takeIf { it.isCustom }?.let { ex ->
+                                com.example.ui.components.StudioCustomExerciseActions(ex.id, uiState.language.name.lowercase(),
+                                    beforeWrite = viewModel::awaitStudioProgramWrites,
+                                    onChanged = { deleted ->
+                                        if (deleted) viewModel.navigateBack()
+                                        viewModel.refreshAfterCloudSync(context)
+                                    })
+                            } },
                             onBack = { viewModel.navigateBack() },
                             onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                             onAddExerciseToWorkout = { ex ->
@@ -724,8 +738,12 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onOpenRouteMap = { viewModel.navigateToSubScreen(SubScreen.LOG_ROUTE_MAP) },
                             onOpenWatchSync = { viewModel.navigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
                             onOpenHealthTab = { viewModel.selectLogDetailTab(2) },
-                            deleteActions = { com.example.ui.components.StudioLoggedWorkoutDeleteActions(
-                                uiState.selectedLogWorkoutId, viewModel::onLoggedWorkoutDeleted) },
+                            deleteActions = {
+                                com.example.ui.components.StudioLoggedWorkoutEditActions(uiState.selectedLogWorkoutId,
+                                    uiState.language.name.lowercase(), onSaved = { viewModel.refreshAfterCloudSync(context) })
+                                com.example.ui.components.StudioLoggedWorkoutDeleteActions(
+                                    uiState.selectedLogWorkoutId, viewModel::onLoggedWorkoutDeleted)
+                            },
                             workoutHealth = workoutHealth
                         )
                     }

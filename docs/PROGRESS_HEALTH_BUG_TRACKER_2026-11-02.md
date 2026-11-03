@@ -7,7 +7,7 @@ Elsődleges állapot: [CURRENT_STATUS.md](CURRENT_STATUS.md). Funkcióparitás �
 | #34 | Közös térközjavítás implementálva, lezárva | Konkrét új képernyőhibák külön jegyben |
 | #56 | Coach rövid kivonat implementálva, lezárva | Teljes Coach bekötés külön #70 |
 | #57 | Piros törlés / listatörlés implementálva, lezárva | Nem újraírandó backend |
-| #59 | Belső videó implementálva, készülékes próba miatt nyitott | Lejátszás, hibák, fullscreen, háttérhang |
+| #59 | Készülékes hiba: fekete videó hamis ready üzenettel; javítás CI-re vár | [Javítás és elfogadás](YOUTUBE_BLACK_PLAYER_2026-11-03.md) |
 | #35 | Ismételt szöveg #67-ben kivezetve, nyitott | Friss APK-s Mai állapot ellenőrzés |
 | #48 | Új Dialog/mini méret #67-ben, nyitott | Friss APK-val Indítás/Pause/Kör/Befejezés mind látható |
 | #60 | Alap órainfó bekötés kész, kompakt átrendezés hiányzik | Név+Sync fejléc, két kisebb blokk egymás mellett |

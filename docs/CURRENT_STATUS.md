@@ -2,6 +2,10 @@
 
 Ez az elsődleges belépési pont. A régi dátumozott átadók történeti megfigyelések; a lentiek felülírják a bennük szereplő „aktuális”, „még nincs implementálva” és régi APK kijelentéseket.
 
+## Új közös javítócsomag – #79
+
+A felhasználó a fekete YouTube-videó jelzése után a beleférő javításokat egy közös APK-ban kéri. Az új implementáció és egyben végzendő tesztlista: [NATIVE_TEST_BATCH_2026-11-03.md](NATIVE_TEST_BATCH_2026-11-03.md). A videó/kompakt óraadat/Samsung permission és program-/sajátgyakorlat-/naplószerkesztés most implementálva, a teljes végleges CI és új aláírt APK még ellenőrzés alatt. A részletes egészségböngésző bekötése részleges #71. Ez felülírja az alábbi korábbi backlog-jelzéseket ezeknél a pontoknál. **A korábban átadott81da2f7 APK ezt a csomagot még nem tartalmazza.** BLE sztornó, #69/#71 teljes maradéka, #74/#75 nem kész. Fizikai elfogadás nincs állítva.
+
 ## Kód és ellenőrzés
 
 - Main alkalmazásforrás: **`81da2f7d3190ff5a558e2a07ccf1fe54104c90e8`** (#77). Tesztelt PR-head: `eae9d6042d48998d9e9e21681443257aa8427897`; app/Wear/shared/scripts/workflow fák egyeznek.
@@ -29,7 +33,7 @@ Korábbi igazolt aláírt build: 41580088708, forrás `56301f7d68016f3074c366ff4
 1. A #67 aláírt telefonos APK átadása kész. A felhasználó ezt megkapta a Coach/előző alkalom fejlesztése ELŐTT.
 2. #70 Coach és #68 előtöltés **kódban/CI-ben kész, mainen**, implementációként lezárva. A legújabb, ezeket tartalmazó aláírt main build **41599072569 SUCCESS**, nyers402; az ellenőrzött telefonos APK átadva, lásd az APK-szakaszt. Fizikai elfogadás nem állított.
 3. #69 alap RIR/root-feedback szerződése javítva; a teljes gyakorlatonkénti/utólagos feedback és régi formátumok áttekintése még nyitott, adatot tömegesen nem írunk át. #61 Energy 0 része javítva, Samsung permission-üzenet része még nyitott.
-4. #71–#75 és a #60 kompakt órakártya csak backlog; más új implementációt most nem kezdünk. #35/#48/#59 készülékes visszaigazolásra vár.
+4. #71–#75 és a #60 kompakt órakártya backlog. A program-/gyakorlatműveletek a meglévő natív átrendezés és helyi súly/ismétlés/pihenő szerkesztés mintáját kövessék. #35/#48 készülékes visszaigazolásra vár. **#59 új készülékes hibajelzés: fekete YouTube-kép „készen áll” üzenettel; [javítás és ellenőrzési állapot](YOUTUBE_BLACK_PLAYER_2026-11-03.md).** A korábban átadott81da2f7 APK ezt a javítást még nem tartalmazza.
 5. **BLE-kezelő sztornó**, a felhasználó kifejezett kérése. Nem fejlesztendő, meglévő adat/backend törlése sem feladat.
 
 A funkcióhiányok forráshoz kötött listája: [WebView–natív paritásaudit](NATIVE_WEBVIEW_PARITY_2026-11-03.md).

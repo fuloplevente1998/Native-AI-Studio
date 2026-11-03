@@ -3,6 +3,7 @@ package com.example.ui.components.watchinfo
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,6 +24,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -52,13 +55,14 @@ fun StudioWatchInformationCard(
         shape = shape,
         color = palette.surfaceCard
     ) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Watch, contentDescription = null,
-                    tint = palette.primary, modifier = Modifier.size(32.dp))
+                    tint = palette.primary, modifier = Modifier.size(26.dp))
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Óraadatok", style = MaterialTheme.typography.titleMedium,
+                    Text(data.name?.takeIf(String::isNotBlank) ?: "Óraadatok", style = MaterialTheme.typography.titleSmall,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis,
                         fontWeight = FontWeight.Bold, color = palette.textPrimary)
                     Text(
                         when {
@@ -90,43 +94,62 @@ fun StudioWatchInformationCard(
                 }
             }
 
-            WatchInfoPanel("Eszköz", "watch_info_device_panel") {
-                WatchInfoField("Név", data.name)
-                WatchInfoField("Modell", data.model)
-                WatchInfoField("Akkumulátor", data.batteryPercent?.let { "${it}%" })
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val sideBySide = maxWidth >= 300.dp && LocalDensity.current.fontScale <= 1.3f
+                val device: @Composable (Modifier) -> Unit = { panel ->
+                    WatchInfoPanel("Eszköz", "watch_info_device_panel", panel) {
+                        WatchInfoField("Modell", data.model)
+                        WatchInfoField("Akku", data.batteryPercent?.let { "${it}%" })
+                    }
+                }
+                val system: @Composable (Modifier) -> Unit = { panel ->
+                    WatchInfoPanel("Rendszer", "watch_info_system_panel", panel) {
+                        WatchInfoField("Android", data.androidVersion)
+                        WatchInfoField("TrainPilot", data.appVersion)
+                        WatchInfoField("Build", data.appBuild?.toString())
+                    }
+                }
+                if (sideBySide) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        device(Modifier.weight(1f))
+                        system(Modifier.weight(1f))
+                    }
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        device(Modifier.fillMaxWidth())
+                        system(Modifier.fillMaxWidth())
+                    }
+                }
             }
-
-            WatchInfoPanel("Rendszer", "watch_info_system_panel") {
-                WatchInfoField("Android", data.androidVersion)
-                WatchInfoField("TrainPilot", data.appVersion)
-                WatchInfoField("Build", data.appBuild?.toString())
-                Text(
-                    text = if (data.loading) "Óraadatok lekérése…"
-                        else data.status?.takeIf(String::isNotBlank) ?: "Még nincs frissítési eredmény.",
-                    modifier = Modifier.testTag("watch_device_info_status"),
-                    color = when {
-                        data.statusKind == WatchInfoStatus.ERROR || data.statusKind == WatchInfoStatus.TIMEOUT -> palette.danger
-                        data.statusKind == WatchInfoStatus.SUCCESS && !data.loading -> palette.success
-                        else -> palette.textSecondary
-                    },
-                    style = MaterialTheme.typography.bodySmall
-                )
-                WatchInfoField("Utolsó frissítés", data.lastSync)
-            }
+            Text(
+                text = when {
+                    data.loading -> "Óraadatok lekérése…"
+                    data.statusKind == WatchInfoStatus.ERROR || data.statusKind == WatchInfoStatus.TIMEOUT ->
+                        data.status?.takeIf(String::isNotBlank) ?: "Az óraadatok lekérése nem sikerült."
+                    data.lastSync != null -> "Frissítve · ${data.lastSync}"
+                    else -> data.status?.takeIf(String::isNotBlank) ?: "Még nincs frissítési eredmény."
+                },
+                modifier = Modifier.testTag("watch_device_info_status"),
+                color = when {
+                    data.statusKind == WatchInfoStatus.ERROR || data.statusKind == WatchInfoStatus.TIMEOUT -> palette.danger
+                    else -> palette.textSecondary
+                },
+                style = MaterialTheme.typography.labelSmall
+            )
         }
     }
 }
 
 @Composable
-private fun WatchInfoPanel(title: String, tag: String, content: @Composable () -> Unit) {
+private fun WatchInfoPanel(title: String, tag: String, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val palette = LocalTrainPilotPalette.current
     val shape = RoundedCornerShape(12.dp)
     Column(
-        Modifier.fillMaxWidth()
+        modifier.fillMaxWidth()
             .border(TrainPilotFrames.stroke(TrainPilotFrames.panelWidth, palette.sectionBorder), shape)
             .testTag(tag)
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(5.dp)
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
         Text(title, style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold, color = palette.textPrimary)

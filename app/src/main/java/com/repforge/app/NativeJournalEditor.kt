@@ -19,7 +19,7 @@ import java.util.UUID
 internal object NativeJournalEditor {
     data class Opened(val detail: WorkoutHistoryWithDetails, val ticket: NativeDataReplacement.Continuation)
     data class Draft(val started: String, val finished: String, val exercises: List<Exercise>,
-        val feedbackEffort: String? = null)
+        val feedbackEffort: String? = null, val note: String = "")
     data class Units(val loadType: String, val repUnit: String, val measurementType: String)
     data class Exercise(val originalIndex: Int?, val id: String, val sets: List<Set>, val catalogUnits: Units? = null)
     data class Set(val originalIndex: Int?, val weight: String, val reps: String, val done: Boolean,
@@ -43,8 +43,11 @@ internal object NativeJournalEditor {
                 Set(i, value("weight"), value("reps"), set.optBoolean("done"),
                     value("leftSeconds"), value("rightSeconds"), value("distanceMeters"), value("actualRir"))
             })
-        }, detail.workout.effortFeedback)
+        }, detail.workout.effortFeedback, savedNote(raw))
     }
+
+    private fun savedNote(raw: JSONObject): String =
+        (raw.optJSONObject("feedback")?.opt("note") as? String) ?: (raw.opt("note") as? String).orEmpty()
 
     fun addExercise(draft: Draft, source: ExerciseLibraryEntity): Draft {
         require(draft.exercises.none { it.id == source.id })
@@ -103,6 +106,8 @@ internal object NativeJournalEditor {
         require(finish.toEpochMilli() <= now + 60_000L)
         require(draft.exercises.size in 1..200)
         val raw = LegacyWebViewMigrator.workoutJson(detail)
+        if (draft.note != savedNote(raw)) require(draft.note.length <= 3000 &&
+            draft.note.none { it.isISOControl() && it != '\n' })
         val original = raw.getJSONArray("exercises")
         val usedExercises = HashSet<Int>()
         val newIds = HashSet<String>()
@@ -174,6 +179,13 @@ internal object NativeJournalEditor {
             feedback.remove("suggestion")
             raw.put("feedback", feedback)
             if (raw.has("effortFeedback")) raw.put("effortFeedback", effort)
+        }
+        if (draft.note != savedNote(raw)) {
+            // A note is annotation, not a second progression approval. Keep applied/ratings intact.
+            val feedback = raw.optJSONObject("feedback")?.let { JSONObject(it.toString()) } ?: JSONObject()
+            feedback.put("note", draft.note).put("updatedAt", now)
+            raw.put("feedback", feedback)
+            if (raw.has("note")) raw.put("note", draft.note)
         }
         if (timesChanged) {
             // Measured telemetry retains its real measurement window; it is never silently relabelled.

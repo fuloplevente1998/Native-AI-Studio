@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -58,6 +59,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -1060,7 +1062,13 @@ fun ProgramEditorScreen(
     onOpenExerciseDetail: (String) -> Unit,
     onOpenExerciseLibrary: () -> Unit,
     onMoveExercise: (Int, Int) -> Unit = { _, _ -> },
-    onOpenAddCustomExercise: () -> Unit = {}
+    onOpenAddCustomExercise: () -> Unit = {},
+    onCopyProgram: () -> Unit = {},
+    onDeleteProgram: () -> Unit = {},
+    onAddDay: (String) -> Unit = {},
+    onDeleteDay: () -> Unit = {},
+    onRemoveExercise: (String) -> Unit = {},
+    onRenameProgram: (String) -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
@@ -1069,7 +1077,7 @@ fun ProgramEditorScreen(
         ?: com.example.model.TrainingProgramModel(id = "custom_program", nameHu = "Egyéni program", nameEn = "Custom Program", subtitleHu = "Saját program", subtitleEn = "Custom Program", tagsHu = emptyList(), isCustom = true, isActive = false, days = emptyList())
     val dayIndex = state.editingDayIndex.coerceIn(0, (program.days.size - 1).coerceAtLeast(0))
     val currentDay = program.days.getOrNull(dayIndex)
-    var programName by remember(program.id) { mutableStateOf(program.nameHu) }
+    var programName by remember(program.id, program.nameHu) { mutableStateOf(program.nameHu) }
 
     Column(
         modifier = Modifier
@@ -1101,9 +1109,13 @@ fun ProgramEditorScreen(
                 singleLine = true
             )
 
+            if (programName.trim() != program.nameHu) Button(
+                onClick = { onRenameProgram(programName) }, enabled = !state.libraryMutationBusy && programName.isNotBlank(),
+                modifier = Modifier.fillMaxWidth().testTag("studio_program_save_name")) { Text("Programnév mentése") }
+
             // Segmented A nap | B nap selector (Mockup 4/4 #6)
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 program.days.forEachIndexed { idx, d ->
@@ -1112,7 +1124,7 @@ fun ProgramEditorScreen(
                         shape = RoundedCornerShape(12.dp),
                         color = if (selected) palette.primary else palette.surface,
                         modifier = Modifier
-                            .weight(1f)
+                            .widthIn(min = 76.dp)
                             .heightIn(min = 48.dp)
                             .trainPilotBorder(
                                 1.dp,
@@ -1295,6 +1307,9 @@ fun ProgramEditorScreen(
                                     )
                                 }
 
+                                com.example.ui.components.StudioRemoveProgramExerciseButton(
+                                    ex.id, ex.localizedName(state.language), state.libraryMutationBusy, onRemoveExercise)
+
                                 Surface(
                                     shape = RoundedCornerShape(10.dp),
                                     color = palette.surfaceElevated,
@@ -1369,34 +1384,10 @@ fun ProgramEditorScreen(
                 Text("Új egyedi gyakorlat létrehozása (pl. Kör futás)", color = palette.primary, fontWeight = FontWeight.Bold)
             }
 
-            // Program törlése (DEMO)
-            Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = palette.danger.copy(alpha = 0.12f),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp)
-                    .border(1.dp, palette.danger.copy(alpha = 0.45f), RoundedCornerShape(14.dp))
-                    .clickable { onBack() }
-            ) {
-                Row(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.DeleteOutline,
-                        contentDescription = null,
-                        tint = palette.danger
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = strings.deleteProgramDemoAction,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = palette.danger
-                    )
-                }
-            }
+            com.example.ui.components.StudioProgramManagementControls(
+                program, state.libraryMutationBusy, currentDay != null,
+                onCopyProgram, onDeleteProgram, onAddDay, onDeleteDay
+            )
         }
     }
 }
@@ -2498,7 +2489,8 @@ fun ExerciseLibraryScreen(
     onOpenAddCustomExercise: () -> Unit = {},
     onStartExerciseNow: (ExerciseItem) -> Unit = {},
     onAddExerciseToQueue: (ExerciseItem) -> Unit = {},
-    onStartQueuedWorkout: () -> Unit = {}
+    onStartQueuedWorkout: () -> Unit = {},
+    onToggleFavoritesOnly: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
@@ -2509,7 +2501,7 @@ fun ExerciseLibraryScreen(
             ex.nameEn.contains(state.exerciseSearchQuery, ignoreCase = true) ||
             ex.primaryMusclesHu.contains(state.exerciseSearchQuery, ignoreCase = true) ||
             ex.equipmentHu.contains(state.exerciseSearchQuery, ignoreCase = true)
-        matchesCategory && matchesSearch
+        matchesCategory && matchesSearch && (!state.favoriteExercisesOnly || ex.id in state.favoriteExerciseIds)
     }
 
     Column(
@@ -2529,6 +2521,9 @@ fun ExerciseLibraryScreen(
             modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
+            FilterChip(selected = state.favoriteExercisesOnly, onClick = onToggleFavoritesOnly,
+                label = { Text("Kedvencek (${state.favoriteExerciseIds.size})") },
+                modifier = Modifier.testTag("studio_library_favorites_only"))
             OutlinedTextField(
                 value = state.exerciseSearchQuery,
                 onValueChange = onSearchQueryChange,
@@ -2808,7 +2803,9 @@ fun ExerciseDetailScreen(
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
     onAddExerciseToWorkout: (ExerciseItem) -> Unit,
-    onStartDemoWithExercise: () -> Unit
+    onStartDemoWithExercise: () -> Unit,
+    onToggleFavorite: (String) -> Unit = {},
+    customExerciseActions: @Composable () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
@@ -2878,6 +2875,12 @@ fun ExerciseDetailScreen(
                     }
                 }
             }
+
+            TrainPilotOutlinedButton(onClick = { onToggleFavorite(exercise.id) },
+                enabled = !state.libraryMutationBusy, modifier = Modifier.fillMaxWidth().testTag("studio_exercise_favorite")) {
+                Text(if (exercise.id in state.favoriteExerciseIds) "★ Eltávolítás a kedvencekből" else "☆ Hozzáadás a kedvencekhez")
+            }
+            customExerciseActions()
 
             // Anatomical & Posture Illustration Card (Embedded video is NOT auto-opened inline; clicking the video button opens the popup dialog!)
             Surface(

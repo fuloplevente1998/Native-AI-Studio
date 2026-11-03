@@ -98,12 +98,19 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                                 "good" to R.string.journal_effort_good, "challenging" to R.string.journal_effort_challenging,
                                 "hard" to R.string.journal_effort_hard, "pain" to R.string.journal_effort_pain)
                             choices.forEach { (effort, label) ->
-                                FilterChip(selected = draft.feedbackEffort == effort,
+                                FilterChip(selected = draft.feedbackEffort == effort || (draft.feedbackEffort == "right" && effort == "good"),
                                     onClick = { onChange(draft.copy(feedbackEffort = effort)) },
                                     enabled = !state.saving && !feedbackLocked,
                                     label = { Text(text.getString(label)) },
                                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_editor_feedback_$effort"))
                             }
+                        }
+                        item {
+                            OutlinedTextField(draft.note, { onChange(draft.copy(note = it)) },
+                                label = { Text(when (language) {
+                                    "en" -> "Workout note"; "de" -> "Trainingsnotiz"; "ro" -> "Notiță antrenament"; else -> "Edzésjegyzet"
+                                }) }, enabled = !state.saving, minLines = 2,
+                                modifier = Modifier.fillMaxWidth().testTag("journal_editor_note"))
                         }
                         draft.exercises.forEachIndexed { e, exercise ->
                             val source = exercise.originalIndex?.let { original.getJSONObject(it) }

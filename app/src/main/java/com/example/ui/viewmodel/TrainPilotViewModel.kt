@@ -206,6 +206,9 @@ data class TrainPilotUiState(
     val selectedExerciseCategory: ExerciseCategory = ExerciseCategory.ALL,
     val selectedExerciseId: String = "",
     val showAddCustomExerciseDialog: Boolean = false,
+    val libraryMutationBusy: Boolean = false,
+    val favoriteExerciseIds: Set<String> = emptySet(),
+    val favoriteExercisesOnly: Boolean = false,
 
     // Active Workout & Measurement State (Mockup 2/4 #1..#6)
     val isSavingWorkout: Boolean = false,
@@ -336,6 +339,8 @@ class TrainPilotViewModel : ViewModel() {
     private var nativeSettingsStore: TrainPilotSettingsStore? = null
     private var nativeDatabase: TrainPilotDatabase? = null
     private var nativeScope: CoroutineScope? = null
+    private var nativeReloadJob: Job? = null
+    private var programEditorContinuation: com.repforge.app.NativeDataReplacement.Continuation? = null
     private var nativeObserversJob: Job? = null
     private var personalRecordsJob: Job? = null
     private var personalRecordsRevision = 0L
@@ -762,7 +767,7 @@ class TrainPilotViewModel : ViewModel() {
         exercisesMap: Map<String, ExerciseItem>, activeId: String? = null): List<TrainingProgramModel> {
         val explicitActive = programs.any { runCatching { JSONObject(it.rawJson).optBoolean("isActive") }.getOrDefault(false) }
         return programs.mapIndexed { pIdx, prog ->
-                val progDays = days.filter { it.programId == prog.id }.mapIndexed { dIdx, dayEntity ->
+                val progDays = days.filter { it.programId == prog.id }.sortedWith(compareBy<ProgramDayEntity> { it.sortOrder }.thenBy { it.dayId }).mapIndexed { dIdx, dayEntity ->
                     val dayExercises = runCatching {
                         val recipes = JSONObject(prog.rawJson).optJSONObject("prescriptions") ?: JSONObject()
                         val arr = JSONArray(dayEntity.exercisesJson)
@@ -782,7 +787,7 @@ class TrainPilotViewModel : ViewModel() {
                     }.getOrElse { emptyList() }
                     com.example.model.ProgramDayModel(
                         id = dayEntity.compositeId,
-                        dayCode = when (dIdx) { 0 -> "A nap"; 1 -> "B nap"; 2 -> "C nap"; else -> "D nap" },
+                        dayCode = if (dIdx < 26) "${'A' + dIdx} nap" else "${dIdx + 1}. nap",
                         titleHu = dayEntity.nameHu.ifBlank { "Edzésnap ${dIdx + 1}" },
                         titleEn = dayEntity.nameEn.ifBlank { "Day ${dIdx + 1}" },
                         durationMinutes = 60,
@@ -1058,7 +1063,8 @@ class TrainPilotViewModel : ViewModel() {
         database: TrainPilotDatabase,
         scope: CoroutineScope
     ) {
-        scope.launch(Dispatchers.IO) {
+        nativeReloadJob?.cancel()
+        nativeReloadJob = scope.launch(Dispatchers.IO) {
             // Seed catalog into Room DB
             try {
                 TrainPilotDatabase.ensureBuiltinCatalogSeeded(database, context)
@@ -1096,6 +1102,8 @@ class TrainPilotViewModel : ViewModel() {
                 } catch (_: Throwable) { DemoDataProvider.defaultExercises }
             }
 
+            val loadedFavoriteIds = runCatching { com.repforge.app.NativeExerciseFavorites.load(database).toSet() }
+                .getOrDefault(emptySet())
             val exercisesMap = mappedExercises.associateBy { it.id }
 
             // 3. Read real programs and days from Room ProgramDao (with custom exercise prescriptions & active flag)
@@ -1359,6 +1367,7 @@ class TrainPilotViewModel : ViewModel() {
                         HealthJournalStore.get(context).preferences().optString("provider", HealthJournalStore.HC) == healthProviderAtBind
                     st.copy(
                         exercises = mappedExercises,
+                        favoriteExerciseIds = loadedFavoriteIds,
                         profileComplete = com.example.model.StudioProfileCompletion.complete(savedProfile),
                         userHeightCm = savedProfile.optInt("height", st.userHeightCm),
                         userWeightKg = savedProfile.optDouble("weight", st.userWeightKg.toDouble()).toFloat(),
@@ -1376,9 +1385,13 @@ class TrainPilotViewModel : ViewModel() {
                         userExcludedExercisesHu = savedProfile.optJSONArray("excluded")?.let { arr ->
                             (0 until arr.length()).map { arr.optString(it) }.toSet()
                         } ?: st.userExcludedExercisesHu,
-                        selectedExerciseId = currentActiveEx?.id ?: st.selectedExerciseId,
+                        selectedExerciseId = if (restoredActiveSnap != null) currentActiveEx?.id ?: st.selectedExerciseId
+                            else st.selectedExerciseId.takeIf { id -> mappedExercises.any { it.id == id } }
+                                ?: mappedExercises.firstOrNull()?.id.orEmpty(),
                         programs = mappedPrograms,
-                        editingProgramId = activeProg?.id ?: st.editingProgramId,
+                        editingProgramId = if (st.currentSubScreen == SubScreen.PROGRAM_EDITOR &&
+                            mappedPrograms.any { it.id == st.editingProgramId }) st.editingProgramId
+                            else activeProg?.id ?: st.editingProgramId,
                         calendarEvents = if (loadedCalendarEvents.isNotEmpty()) loadedCalendarEvents else st.calendarEvents,
                         calendarUndoStack = if (loadedCalendarUndo.isNotEmpty()) loadedCalendarUndo else st.calendarUndoStack,
                         isWorkoutSessionActive = restoredActiveSnap != null,
@@ -1653,11 +1666,152 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     // Program & Exercise Editor Actions
+    internal suspend fun awaitStudioProgramWrites() {
+        programWriteJob?.join()
+        check(programWriteError == null) { requireNotNull(programWriteError) }
+    }
+
+    private fun mutateStudioLibrary(
+        success: String,
+        editor: Boolean = false,
+        selectLastDay: Boolean = false,
+        action: suspend (Context, TrainPilotDatabase, TrainPilotSettingsStore) -> String?
+    ) {
+        if (_uiState.value.libraryMutationBusy) return
+        val context = nativeContext ?: return
+        val db = nativeDatabase ?: return
+        val store = nativeSettingsStore ?: return
+        val scope = nativeScope ?: return
+        val ticket = try { com.repforge.app.NativeDataReplacement.continuationForCurrentData(context) }
+            catch (_: Exception) { return }
+        val editorTicket = if (editor) programEditorContinuation ?: ticket else null
+        nativeReloadJob?.cancel()
+        _uiState.update { it.copy(libraryMutationBusy = true) }
+        scope.launch {
+            try {
+                awaitStudioProgramWrites()
+                val focus = withContext(Dispatchers.IO) {
+                    programWriteMutex.withLock {
+                        com.repforge.app.NativeDataReplacement.mutate(context) {
+                            ticket.requireCurrent(context)
+                            editorTicket?.requireCurrent(context)
+                            action(context, db, store)
+                        }
+                    }
+                }
+                val loaded = withContext(Dispatchers.IO) {
+                    Triple(db.exerciseLibraryDao().getAllExercises(), db.programDao().getProgramsWithDays(),
+                        com.repforge.app.NativeExerciseFavorites.load(db).toSet())
+                }
+                ticket.requireCurrent(context)
+                val exercises = loaded.first.map(::mapExerciseEntity)
+                val programs = mapProgramRows(loaded.second.map { it.program }, loaded.second.flatMap { it.days },
+                    exercises.associateBy { it.id }, store.current().activeProgramId)
+                _uiState.update { state ->
+                    val editing = focus ?: state.editingProgramId
+                    val missing = programs.none { it.id == editing }
+                    state.copy(exercises = exercises, programs = programs, favoriteExerciseIds = loaded.third,
+                        editingProgramId = if (missing) programs.firstOrNull()?.id.orEmpty() else editing,
+                        programsTabCustomOnly = if (focus != null && focus != state.editingProgramId &&
+                            programs.any { it.id == focus && it.isCustom }) true else state.programsTabCustomOnly,
+                        editingDayIndex = if (selectLastDay) (programs.firstOrNull { it.id == focus }?.days?.lastIndex ?: 0).coerceAtLeast(0)
+                            else if (focus != null) state.editingDayIndex.coerceIn(0,
+                            (programs.firstOrNull { it.id == focus }?.days?.lastIndex ?: 0).coerceAtLeast(0)) else state.editingDayIndex,
+                        currentSubScreen = if (missing && state.currentSubScreen == SubScreen.PROGRAM_EDITOR)
+                            SubScreen.PROGRAMS_LIST else state.currentSubScreen,
+                        expandedEditorExerciseId = null,
+                        statusBannerMessage = success)
+                }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (error: Exception) {
+                val detail = error.message.orEmpty()
+                val message = when {
+                    detail.contains("Deactivate", true) -> "Törlés előtt válassz másik aktív programot."
+                    detail.contains("active", true) || detail.contains("transferring", true) ->
+                        "Előbb fejezd be az aktív vagy átadás alatt lévő edzést. Törlés előtt válassz másik aktív programot."
+                    detail.contains("history", true) || detail.contains("calendar", true) ->
+                        "A naplóban vagy a naptárban használt program/nap nem törölhető."
+                    detail.contains("Built-in", true) -> "A beépített sablon nem törölhető; készíts saját másolatot."
+                    detail.contains("changed", true) || detail.contains("replacement", true) ->
+                        "Az adatok megváltoztak. Nyisd meg újra a szerkesztőt."
+                    else -> "A művelet nem sikerült. Ellenőrizd a megadott adatokat és nyisd meg újra."
+                }
+                _uiState.update { it.copy(statusBannerMessage = message) }
+            } finally { _uiState.update { it.copy(libraryMutationBusy = false) } }
+        }
+    }
+
+    private fun editStudioProgram(
+        success: String,
+        selectLastDay: Boolean = false,
+        change: (com.repforge.app.NativeProgramEditor.Draft, String?) -> com.repforge.app.NativeProgramEditor.Draft
+    ) {
+        val state = _uiState.value
+        val programId = state.editingProgramId
+        val dayKey = state.programs.firstOrNull { it.id == programId }?.days?.getOrNull(state.editingDayIndex)?.id
+        val language = state.language.name.lowercase(java.util.Locale.ROOT)
+        mutateStudioLibrary(success, editor = true, selectLastDay = selectLastDay) { context, db, _ ->
+            val opened = requireNotNull(db.programDao().getProgramWithDaysById(programId))
+            val rawDayId = opened.days.firstOrNull { it.compositeId == dayKey || it.dayId == dayKey }?.dayId
+            val draft = change(com.repforge.app.NativeProgramEditor.from(opened, language), rawDayId)
+            com.repforge.app.NativeProgramEditor.save(context, db, opened, draft, language)
+        }
+    }
+
+    fun renameEditorProgram(name: String) = editStudioProgram("Programnév elmentve.") { draft, _ ->
+        draft.copy(name = name.trim())
+    }
+
+    fun copyEditorProgram() {
+        val state = _uiState.value
+        mutateStudioLibrary("Saját programmásolat elkészült. Aktiválás a programlistában.", editor = true) { context, db, _ ->
+            val opened = requireNotNull(db.programDao().getProgramWithDaysById(state.editingProgramId))
+            val language = state.language.name.lowercase(java.util.Locale.ROOT)
+            val draft = com.repforge.app.NativeProgramEditor.from(opened, language)
+            com.repforge.app.NativeProgramEditor.save(context, db, opened,
+                draft.copy(name = (draft.name.take(107) + " – másolat")), language, clone = true)
+        }
+    }
+
+    fun deleteEditorProgram() {
+        val id = _uiState.value.editingProgramId
+        mutateStudioLibrary("Program végleg törölve a tárból.", editor = true) { context, db, store ->
+            com.repforge.app.NativeProgramEditor.delete(context, db,
+                requireNotNull(db.programDao().getProgramWithDaysById(id)), store)
+            null
+        }
+    }
+
+    fun addEditorDay(name: String) = editStudioProgram("Edzésnap hozzáadva.", selectLastDay = true) { draft, _ ->
+        com.repforge.app.NativeProgramEditor.addDay(draft, name.trim())
+    }
+
+    fun deleteEditorDay() = editStudioProgram("Edzésnap törölve.") { draft, dayId ->
+        require(dayId != null && draft.days.size > 1)
+        draft.copy(days = draft.days.filterNot { it.id == dayId })
+    }
+
+    fun removeEditorExercise(id: String) = editStudioProgram("Gyakorlat eltávolítva az edzésnapból.") { draft, dayId ->
+        require(dayId != null)
+        draft.copy(days = draft.days.map { day -> if (day.id != dayId) day else day.copy(
+            entries = day.entries.filterNot { com.repforge.app.NativeProgramEditor.exerciseId(it) == id }) })
+    }
+
+    fun toggleExerciseFavorite(id: String) = mutateStudioLibrary("Kedvencek frissítve.") { context, db, _ ->
+        com.repforge.app.NativeExerciseFavorites.toggle(context, db, id)
+        null
+    }
+
+    fun toggleFavoriteExercisesOnly() {
+        _uiState.update { it.copy(favoriteExercisesOnly = !it.favoriteExercisesOnly) }
+    }
+
     fun setProgramsTabCustomOnly(customOnly: Boolean) {
         _uiState.update { it.copy(programsTabCustomOnly = customOnly) }
     }
 
     fun activateProgram(programId: String) {
+        if (_uiState.value.libraryMutationBusy) return
         _uiState.update { state ->
             val updated = state.programs.map { prog ->
                 prog.copy(isActive = prog.id == programId)
@@ -1672,6 +1826,9 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun openProgramEditor(programId: String, dayIndex: Int = 0) {
+        programEditorContinuation = nativeContext?.let {
+            runCatching { com.repforge.app.NativeDataReplacement.continuationForCurrentData(it) }.getOrNull()
+        }
         _uiState.update {
             val back = (it.backStack + NavRoute(it.currentTab, it.currentSubScreen)).takeLast(16)
             it.copy(
@@ -1702,6 +1859,7 @@ class TrainPilotViewModel : ViewModel() {
         weightKg: Float,
         restSec: Int
     ) {
+        if (_uiState.value.libraryMutationBusy) return
         _uiState.update { state ->
             val updatedPrograms = state.programs.map { prog ->
                 if (prog.id != state.editingProgramId) prog
@@ -1735,6 +1893,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun addExerciseToActiveProgramDay(exercise: ExerciseItem) {
+        if (_uiState.value.libraryMutationBusy) return
         _uiState.update { state ->
             val updatedPrograms = state.programs.map { prog ->
                 if (prog.id != state.editingProgramId) prog
@@ -1756,6 +1915,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun moveEditorExercise(fromIndex: Int, toIndex: Int) {
+        if (_uiState.value.libraryMutationBusy) return
         _uiState.update { state ->
             val updatedPrograms = state.programs.map { prog ->
                 if (prog.id != state.editingProgramId) prog
@@ -1783,6 +1943,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun moveProgramOrder(fromIndex: Int, toIndex: Int) {
+        if (_uiState.value.libraryMutationBusy) return
         _uiState.update { state ->
             val visiblePrograms = if (state.programsTabCustomOnly) {
                 state.programs.filter { it.isCustom }
@@ -1814,6 +1975,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun createNewCustomProgram(nameHu: String, subtitleHu: String) {
+        if (_uiState.value.libraryMutationBusy) return
         val cleanName = nameHu.trim().ifBlank { "Egyedi edzésterv" }
         val cleanSub = subtitleHu.trim().ifBlank { "Saját összeállítású program" }
         _uiState.update { state ->
@@ -1875,6 +2037,7 @@ class TrainPilotViewModel : ViewModel() {
         isTimed: Boolean = false,
         addToCurrentProgramDay: Boolean = true
     ) {
+        if (_uiState.value.libraryMutationBusy) return
         val cleanName = nameHu.trim().ifBlank { "Egyedi gyakorlat" }
         val cleanEquip = equipmentHu.trim().ifBlank { "Saját testsúly / Egyedi" }
         val cleanDesc = descriptionHu.trim().ifBlank { "Egyedi felhasználói gyakorlat saját leírással és végrehajtási jegyzettel." }

@@ -1,5 +1,8 @@
 package com.example.followup.inappvideo
 
+import com.example.ui.components.inappvideo.ExerciseVideoLoad
+import com.example.ui.components.inappvideo.EXERCISE_VIDEO_ORIGIN
+import com.example.ui.components.inappvideo.exerciseVideoPlayerEvent
 import com.example.ui.components.inappvideo.ExerciseVideoMode
 import com.example.ui.components.inappvideo.allowedInAppVideoNavigation
 import com.example.ui.components.inappvideo.embeddedYouTubeError
@@ -14,9 +17,11 @@ class InAppVideoPolicyTest {
 
     @Test fun embedUsesOnlyTheSelectedVerifiedId() {
         val html = exerciseYouTubeEmbedHtml(selected)
-        assertTrue(html.contains("youtube-nocookie.com/embed/$selected"))
+        assertTrue(html.contains("https://www.youtube-nocookie.com"))
+        assertTrue(html.contains("videoId: \"$selected\""))
+        assertTrue(html.contains("origin: \"$EXERCISE_VIDEO_ORIGIN\""))
+        assertTrue(html.contains("▶ Lejátszás"))
         assertFalse(html.contains("pSHjTRCQxIw"))
-        assertTrue(html.contains("enablejsapi=1"))
         assertTrue(html.contains("trainpilot-video:"))
         assertTrue(html.contains("function tpPause()"))
         assertFalse(html.contains("addJavascriptInterface"))
@@ -57,4 +62,28 @@ class InAppVideoPolicyTest {
     @Test fun modeNamesDistinguishEmbedFromRealInAppBrowser() {
         assertFalse(ExerciseVideoMode.EMBED == ExerciseVideoMode.BROWSER)
     }
+    @Test fun apiReadyIsNotPlaybackAndCannotUndoFailureOrPlayInProgress() {
+        var state: ExerciseVideoLoad = ExerciseVideoLoad.Loading
+        assertEquals(state, exerciseVideoPlayerEvent(state, "paused"))
+        state = exerciseVideoPlayerEvent(state, "ready")
+        assertEquals(ExerciseVideoLoad.Ready, state)
+        state = exerciseVideoPlayerEvent(state, "starting")
+        assertEquals(ExerciseVideoLoad.Starting, state)
+        assertEquals(state, exerciseVideoPlayerEvent(state, "ready"))
+        state = exerciseVideoPlayerEvent(state, "playing")
+        assertEquals(ExerciseVideoLoad.Playing, state)
+        assertEquals(state, exerciseVideoPlayerEvent(state, "ready"))
+        state = exerciseVideoPlayerEvent(state, "error:153")
+        assertTrue(state is ExerciseVideoLoad.Failed)
+        for (late in listOf("ready", "paused", "playing", "starting")) {
+            assertEquals(state, exerciseVideoPlayerEvent(state, late))
+        }
+    }
+
+    @Test fun autoplayBlockIsFailureAndAppIdentityMatchesInstalledPackage() {
+        assertTrue(exerciseVideoPlayerEvent(ExerciseVideoLoad.Starting, "blocked") is ExerciseVideoLoad.Failed)
+        assertEquals("https://" + com.repforge.app.BuildConfig.APPLICATION_ID.lowercase(java.util.Locale.ROOT),
+            EXERCISE_VIDEO_ORIGIN)
+    }
+
 }

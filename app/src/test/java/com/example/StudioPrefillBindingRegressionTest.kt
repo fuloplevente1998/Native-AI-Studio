@@ -183,4 +183,115 @@ class StudioPrefillBindingRegressionTest {
         assertEquals(0.0, requireNotNull(samsung.readiness.samsungScore), 0.001)
         assertEquals(0.0, requireNotNull(samsung.readiness.score), 0.001)
     }
+    @Test fun studioProgramCopyDayAndExerciseActionsReallyPersistWithoutChangingOriginal() {
+        val model = model()
+        val original = native { db.programDao().getProgramWithDaysById("studio-test")!! }
+        model.openProgramEditor("studio-test", 0)
+        model.copyEditorProgram()
+        await { !model.uiState.value.libraryMutationBusy }
+        val copyId = model.uiState.value.editingProgramId
+        assertNotEquals("studio-test", copyId)
+        val copied = native { db.programDao().getProgramWithDaysById(copyId)!! }
+        assertEquals("keep-raw", JSONObject(copied.program.rawJson).getString("customUnknown"))
+        assertEquals("studio-test", native { settings.current().activeProgramId })
+        model.removeEditorExercise(exercise.id)
+        await { !model.uiState.value.libraryMutationBusy }
+        assertEquals(0, JSONArray(native { db.programDao().getProgramWithDaysById(copyId)!! }
+            .days.first { it.dayId == "a" }.exercisesJson).length())
+        model.addEditorDay("Új nap")
+        await { !model.uiState.value.libraryMutationBusy }
+        assertEquals(3, native { db.programDao().getProgramWithDaysById(copyId)!! }.days.size)
+        assertEquals(2, model.uiState.value.editingDayIndex)
+        assertTrue(model.uiState.value.programsTabCustomOnly)
+        model.selectEditingDayIndex(2)
+        model.deleteEditorDay()
+        await { !model.uiState.value.libraryMutationBusy }
+        assertEquals(2, native { db.programDao().getProgramWithDaysById(copyId)!! }.days.size)
+        model.renameEditorProgram("Átnevezett másolat")
+        await { !model.uiState.value.libraryMutationBusy }
+        assertEquals("Átnevezett másolat", native { db.programDao().getProgramWithDaysById(copyId)!! }.program.nameHu)
+        model.deleteEditorProgram()
+        await { !model.uiState.value.libraryMutationBusy }
+        assertNull(native { db.programDao().getProgramWithDaysById(copyId) })
+        assertEquals(original, native { db.programDao().getProgramWithDaysById("studio-test")!! })
+    }
+
+    @Test fun activeProgramDeletionIsRefusedAndFavoritesSurviveAStudioReload() {
+        val model = model()
+        model.openProgramEditor("studio-test", 0)
+        model.deleteEditorProgram()
+        await { !model.uiState.value.libraryMutationBusy }
+        assertNotNull(native { db.programDao().getProgramWithDaysById("studio-test") })
+        assertTrue(model.uiState.value.statusBannerMessage.orEmpty().contains("aktív programot"))
+        model.toggleExerciseFavorite(exercise.id)
+        await { !model.uiState.value.libraryMutationBusy }
+        assertTrue(exercise.id in model.uiState.value.favoriteExerciseIds)
+        assertTrue(exercise.id in native { NativeExerciseFavorites.load(db) })
+        val reloaded = model()
+        assertTrue(exercise.id in reloaded.uiState.value.favoriteExerciseIds)
+        model.toggleExerciseFavorite(exercise.id)
+        await { !model.uiState.value.libraryMutationBusy }
+        assertFalse(exercise.id in native { NativeExerciseFavorites.load(db) })
+    }
+
+    @Test fun nativeJournalEditorPersistsManualSetsAndFeedbackWithTheSameWorkoutId() {
+        seedPrevious()
+        native {
+            val detail = db.workoutHistoryDao().getWorkoutWithDetailsById("previous-different-program")!!
+            val opened = NativeJournalEditor.open(context, detail)
+            val draft = NativeJournalEditor.from(detail)
+            val ex = draft.exercises.first()
+            val changed = ex.copy(sets = ex.sets.mapIndexed { index, set ->
+                if (index == 0) set.copy(weight = "27.5", reps = "7", rir = "0") else set })
+            NativeJournalEditor.save(context, db, opened, draft.copy(exercises = listOf(changed), feedbackEffort = "pain", note = "Kézzel javított napló"))
+            val saved = db.workoutHistoryDao().getWorkoutWithDetailsById(detail.workout.id)!!
+            val json = JSONObject(saved.workout.rawJson)
+            assertEquals(detail.workout.id, saved.workout.id)
+            assertEquals("pain", json.getJSONObject("feedback").getString("rating"))
+            assertEquals("Kézzel javított napló", json.getJSONObject("feedback").getString("note"))
+            val set = json.getJSONArray("exercises").getJSONObject(0).getJSONArray("sets").getJSONObject(0)
+            assertEquals(27.5, set.getDouble("weight"), 0.001)
+            assertEquals("7", set.getString("reps")); assertEquals(0, set.getInt("actualRir"))
+            assertEquals(detail.workout.started, saved.workout.started)
+        }
+    }
+
+    @Test fun nativeCustomExerciseEditAndDeleteUseTheRealStoreAndCleanFavorites() {
+        native {
+            val draft = NativeCustomExerciseEditor.Draft("Saját teszt", "Leírás", "core", "reps",
+                "bodyweight", "ism.", 2, "8–12", 0.0, 60, "")
+            val id = NativeCustomExerciseEditor.save(context, db, null, draft, "hu")
+            val original = db.exerciseLibraryDao().getExerciseById(id)!!
+            NativeCustomExerciseEditor.save(context, db, id, draft.copy(name = "Új név", restSeconds = 75), "hu", original.rawJson)
+            val edited = db.exerciseLibraryDao().getExerciseById(id)!!
+            assertEquals(id, edited.id); assertEquals("Új név", edited.nameHu)
+            assertEquals(original.nameEn, edited.nameEn); assertEquals(75, edited.defaultRestSeconds)
+            NativeExerciseFavorites.toggle(context, db, id)
+            NativeCustomExerciseEditor.delete(context, db, id, edited.rawJson)
+            assertNull(db.exerciseLibraryDao().getExerciseById(id))
+            assertFalse(id in NativeExerciseFavorites.load(db))
+        }
+    }
+
+    @Test fun journalNotePreservesAppliedFeedbackAndUneditedLegacyAnnotation() {
+        seedPrevious()
+        native {
+            val detail = db.workoutHistoryDao().getWorkoutWithDetailsById("previous-different-program")!!
+            val raw = JSONObject(detail.workout.rawJson).put("feedback", JSONObject()
+                .put("rating", "hard").put("effort", "hard").put("applied", true).put("note", "x".repeat(4000)))
+            LegacyWebViewMigrator(context, db, settings).saveWorkoutJsonToRoom(raw)
+            val original = db.workoutHistoryDao().getWorkoutWithDetailsById(detail.workout.id)!!
+            val draft = NativeJournalEditor.from(original)
+            NativeJournalEditor.save(context, db, NativeJournalEditor.open(context, original), draft)
+            val unchanged = db.workoutHistoryDao().getWorkoutWithDetailsById(detail.workout.id)!!
+            assertEquals("x".repeat(4000), JSONObject(unchanged.workout.rawJson).getJSONObject("feedback").getString("note"))
+            NativeJournalEditor.save(context, db, NativeJournalEditor.open(context, unchanged),
+                NativeJournalEditor.from(unchanged).copy(note = "Saját megjegyzés"))
+            val feedback = JSONObject(db.workoutHistoryDao().getWorkoutWithDetailsById(detail.workout.id)!!.workout.rawJson)
+                .getJSONObject("feedback")
+            assertTrue(feedback.getBoolean("applied")); assertEquals("hard", feedback.getString("rating"))
+            assertEquals("Saját megjegyzés", feedback.getString("note"))
+        }
+    }
+
 }

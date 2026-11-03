@@ -262,4 +262,18 @@ class HealthReadingsRegressionTest {
         assertEquals(ReadingState.READ_ERROR,
             HealthReadingsProjection.recoveryToday(samsung, listOf(failure), emptyList(), now, ZoneOffset.UTC).state)
     }
+    @Test fun unsupportedSamsungRestingPulseIsNotReportedAsMissingPermission() {
+        val raw = row(samsung).put("averageHeartRate", 73).put("restingHeartRate", 55)
+            .put("permissions", JSONObject().put("READ_HEART_RATE", true))
+        val value = read(samsung, raw)
+        assertEquals(ReadingState.AVAILABLE, value.state)
+        assertEquals(73.0, value.averageBpm!!, 0.001)
+        assertNull(value.restingBpm)
+        assertFalse(value.explanationHu.contains("engedély"))
+        val denied = read(samsung, row(samsung).put("averageHeartRate", 73)
+            .put("permissions", JSONObject().put("READ_HEART_RATE", false)))
+        assertEquals(ReadingState.PERMISSION_DENIED, denied.state)
+        assertNull(denied.averageBpm)
+    }
+
 }

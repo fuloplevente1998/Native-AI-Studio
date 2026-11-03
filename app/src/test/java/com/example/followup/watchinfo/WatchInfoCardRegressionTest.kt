@@ -46,6 +46,10 @@ class WatchInfoCardRegressionTest {
         compose.onNodeWithTag("watch_device_info_card", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("watch_info_device_panel", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("watch_info_system_panel", useUnmergedTree = true).assertExists()
+        val device = compose.onNodeWithTag("watch_info_device_panel", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val system = compose.onNodeWithTag("watch_info_system_panel", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertEquals(device.top, system.top, 1f)
+        org.junit.Assert.assertTrue(device.right <= system.left)
         for (value in listOf("Teszt Wear node", "SM-RTEST", "75%", "16", "0.1.0-beta", "2743")) {
             compose.onNodeWithText(value, useUnmergedTree = true).assertExists()
         }
