@@ -122,12 +122,21 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                                         modifier = Modifier.testTag("journal_editor_remove_exercise_$e")) { Text(text.getString(R.string.journal_edit_remove)) }
                                 }
                             }
+                            item {
+                                com.example.ui.components.ExerciseFeedbackControl(
+                                    effort = exercise.effort, note = exercise.note, language = language,
+                                    onEffort = { replaceExercise(e, exercise.copy(effort = it)) },
+                                    onNote = { replaceExercise(e, exercise.copy(note = it)) },
+                                    enabled = !state.saving,
+                                    effortLocked = feedbackLocked || source?.optJSONObject("feedback")?.optBoolean("applied") == true,
+                                    tag = "journal_exercise_feedback_$e")
+                            }
                             exercise.sets.forEachIndexed { s, set ->
                                 item {
                                     Surface(color = colors.card2, shape = RoundedCornerShape(14.dp),
                                         border = TrainPilotFrames.stroke(0.75.dp, colors.line)) {
                                     Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                             Text("${s + 1}.", Modifier.weight(1f))
                                             Checkbox(set.done, { editSet(e, s, set.copy(done = it)) }, enabled = !state.saving,
                                                 modifier = Modifier.testTag("journal_editor_done_${e}_$s"))

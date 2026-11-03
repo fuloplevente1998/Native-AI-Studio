@@ -1,5 +1,13 @@
 # TrainPilot Native – aktuális állapot, 2026-11-03
 
+## Legutóbbi ellenőrzés: PR89 / 2747
+
+PR89 main-merge `d7efe6ccc0d96db658ce3336358fb2e498a4facc`, PR CI41711925392 és signed main41712528009 SUCCESS. A letöltött nyers XML **420 = 244 telefon + 176 Wear**, 0 failure/error/skipped. A signed metaadat source/package/verzió/Maps/páros egyezése, mindkét APK hash-e és a tényleges v2 aláíró tanúsítvány hash-e ellenőrizve; signer változatlan. [Nyilvános bizonyíték](RELEASE_2747_VERIFIED_ARTIFACTS.json).
+
+**[Legfrissebb telefonos APK: 2747 / PR89](https://drive.google.com/file/d/1JkLyIuOYtINKNBatGg2Ems_lHUyXDlHk/view?usp=drivesdk)** – 19 645 636 bájt. A feltöltött Drive-fájl neve, mérete, szülőmappája és letöltési linkje visszaolvasva. A 2747 telefonos/UI módosításaihoz nem szükséges új órás app: a Wear-forrás csak versionCode-ban tér el a korábbi kiadástól. Készüléken a fullscreen GPS alsó gombjai, a kompakt izomterhelés-fejléc és a napló jobb szélső törlése továbbra is visszatesztelendők.
+
+A teljes metrikalista és a gyakorlatonkénti visszajelzés **külön, még nem fordított forráscsomagban** készült, nem része a fenti 2747 APK-nak; [állapot és következő ellenőrzések](METRICS_EXERCISE_FEEDBACK_NO_BUILD_2026-11-03.md). **#74 automata/intervallum további bekötése sztornó; BLE sztornó; #82 adatvédelmi tájékoztató később.** #75 teljes négynyelvű paritás nyitott. Az alábbi 2744-es átadó és a régi backlog történeti, a fenti frissebb állapot az irányadó.
+
 Ez az elsődleges átadó. A felhasználó a beleférő javításokat egyetlen telefonos APK-ban kérte, közös készülékes próbára. A régebbi átadók és a korábbi „backlog / nincs bekötve” kijelentések történetiek; a lentiek az aktuális állapot.
 
 ## Legfrissebb telefonos APK

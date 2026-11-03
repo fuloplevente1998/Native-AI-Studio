@@ -257,6 +257,10 @@ data class TrainPilotUiState(
     val outdoorPaceLabel: String = "0:00",
     val workoutSummaryMoodIndex: Int = -1, // No feedback until explicitly chosen.
     val workoutSummaryNote: String = "",
+    val summaryFeedbackWorkoutId: String = "",
+    val exerciseFeedbackWorkoutId: String = "",
+    val exerciseFeedbackChoices: Map<String, Int> = emptyMap(),
+    val exerciseFeedbackNotes: Map<String, String> = emptyMap(),
 
     // Log / Diary State (Mockup 3/4 #1..#3 + main)
     val logSearchQuery: String = "",
@@ -2918,12 +2922,67 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
+    private var summaryFeedbackTicket: NativeDataReplacement.Continuation? = null
+    private var summaryFeedbackOwnerId = ""
+
+    private fun admitSummaryFeedback(): Boolean {
+        val context = nativeContext ?: return false
+        val id = _uiState.value.activeWorkoutId
+        if (id.isBlank() || !_uiState.value.isWorkoutSessionActive || _uiState.value.isSavingWorkout) return false
+        val same = summaryFeedbackOwnerId == id &&
+            runCatching { requireNotNull(summaryFeedbackTicket).requireCurrent(context) }.isSuccess
+        if (!same) {
+            summaryFeedbackTicket = runCatching { NativeDataReplacement.continuationForCurrentData(context) }.getOrNull() ?: return false
+            summaryFeedbackOwnerId = id
+            _uiState.update { it.copy(summaryFeedbackWorkoutId = id, workoutSummaryMoodIndex = -1, workoutSummaryNote = "") }
+        }
+        return true
+    }
+
     fun selectWorkoutSummaryMood(index: Int) {
-        _uiState.update { it.copy(workoutSummaryMoodIndex = index) }
+        if (index !in -1..5 || !admitSummaryFeedback()) return
+        _uiState.update { state ->
+            if (!state.isWorkoutSessionActive || state.activeWorkoutId.isBlank()) state
+            else state.copy(summaryFeedbackWorkoutId = state.activeWorkoutId, workoutSummaryMoodIndex = index,
+                workoutSummaryNote = if (state.summaryFeedbackWorkoutId == state.activeWorkoutId) state.workoutSummaryNote else "")
+        }
     }
 
     fun updateWorkoutSummaryNote(note: String) {
-        _uiState.update { it.copy(workoutSummaryNote = note) }
+        if (!admitSummaryFeedback()) return
+        _uiState.update { state ->
+            if (!state.isWorkoutSessionActive || state.activeWorkoutId.isBlank()) state
+            else state.copy(summaryFeedbackWorkoutId = state.activeWorkoutId, workoutSummaryNote = note.take(3000),
+                workoutSummaryMoodIndex = if (state.summaryFeedbackWorkoutId == state.activeWorkoutId) state.workoutSummaryMoodIndex else -1)
+        }
+    }
+
+    private var exerciseFeedbackTicket: NativeDataReplacement.Continuation? = null
+    private var exerciseFeedbackOwnerId = ""
+
+    fun updateExerciseFeedback(id: String, index: Int? = null, note: String? = null) {
+        val context = nativeContext ?: return
+        val stateBefore = _uiState.value
+        val ticketValid = exerciseFeedbackOwnerId == stateBefore.activeWorkoutId &&
+            runCatching { requireNotNull(exerciseFeedbackTicket).requireCurrent(context) }.isSuccess
+        if (!ticketValid) {
+            exerciseFeedbackTicket = runCatching { NativeDataReplacement.continuationForCurrentData(context) }.getOrNull() ?: return
+            exerciseFeedbackOwnerId = stateBefore.activeWorkoutId
+        }
+        _uiState.update { state ->
+            if (state.isSavingWorkout || !state.isWorkoutSessionActive || state.activeWorkoutId.isBlank() ||
+                state.activeWorkoutExercises.none { it.id == id } || (index != null && index !in -1..5)) state
+            else {
+                val same = ticketValid && state.exerciseFeedbackWorkoutId == state.activeWorkoutId
+                state.copy(exerciseFeedbackWorkoutId = state.activeWorkoutId,
+                    exerciseFeedbackChoices = (if (same) state.exerciseFeedbackChoices else emptyMap()).let {
+                        if (index != null) it + (id to index) else it
+                    },
+                    exerciseFeedbackNotes = (if (same) state.exerciseFeedbackNotes else emptyMap()).let {
+                        if (note != null) it + (id to note.take(3000)) else it
+                    })
+            }
+        }
     }
 
     private var nativeStartJob: kotlinx.coroutines.Job? = null
@@ -3381,8 +3440,17 @@ class TrainPilotViewModel : ViewModel() {
                     check(completed > 0 || com.repforge.app.StudioOutdoorFinish.canSaveTimeOnly(current)) {
                         "Nincs hitelesen mért idő vagy rögzített sorozat. A mérés elvethető, de üres edzés nem menthető."
                     }
-                    com.repforge.app.StudioWorkoutFeedback.chosen(state.workoutSummaryMoodIndex,
-                        state.workoutSummaryNote, System.currentTimeMillis())?.let { current.put("feedback", it) }
+                    if (state.summaryFeedbackWorkoutId == state.activeWorkoutId) {
+                        requireNotNull(summaryFeedbackTicket).requireCurrent(ctx)
+                        com.repforge.app.StudioWorkoutFeedback.chosen(state.workoutSummaryMoodIndex,
+                            state.workoutSummaryNote, System.currentTimeMillis())?.let { current.put("feedback", it) }
+                    }
+                    if (state.exerciseFeedbackWorkoutId == state.activeWorkoutId &&
+                        (state.exerciseFeedbackChoices.isNotEmpty() || state.exerciseFeedbackNotes.isNotEmpty())) {
+                        requireNotNull(exerciseFeedbackTicket).requireCurrent(ctx)
+                        com.repforge.app.StudioWorkoutFeedback.attachExerciseEdits(current, state.exerciseFeedbackWorkoutId,
+                            state.exerciseFeedbackChoices, state.exerciseFeedbackNotes)
+                    }
                     current
                 }
                 val workoutId = activeToFinalize.getString("workoutId")

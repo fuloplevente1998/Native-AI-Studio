@@ -1,0 +1,32 @@
+{
+  "source": "d7efe6ccc0d96db658ce3336358fb2e498a4facc",
+  "run": 41712528009,
+  "versionCode": 2747,
+  "tests": {
+    "tests": 420,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "modules": {
+    "phone": 244,
+    "wear": 176
+  },
+  "apks": [
+    {
+      "file": "app-release.apk",
+      "bytes": 19645636,
+      "sha256": "f1145e326dee02bd82bebebf6ca98385a4598350c1757d0091e0378130b94677",
+      "signer": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6"
+    },
+    {
+      "file": "wear-release.apk",
+      "bytes": 4636863,
+      "sha256": "042eb64971376a230c8cef23f241f7afbfdb86f5ac423624f179599a69965cbf",
+      "signer": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6"
+    }
+  ],
+  "mapsApiKeyConfigured": true,
+  "phoneDownload": "https://drive.google.com/file/d/1JkLyIuOYtINKNBatGg2Ems_lHUyXDlHk/view?usp=drivesdk",
+  "pullRequest": "https://github.com/fuloplevente1998/Native-AI-Studio/pull/89"
+}

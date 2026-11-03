@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.repforge.app.ui.theme.trainPilotSoftGlow
+
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
@@ -1477,6 +1479,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                 .fillMaxWidth()
                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(20.dp))
                 .testTag("progress_total_volume_card")
+                .trainPilotSoftGlow(palette.primary, RoundedCornerShape(20.dp), 3.dp)
         ) {
             Column(modifier = Modifier.padding(14.dp)) {
                 // Header row (clickable to expand/collapse between compact & Screenshot 6 large Volumen trend)

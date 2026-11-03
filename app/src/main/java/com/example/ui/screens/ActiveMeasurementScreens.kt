@@ -3161,7 +3161,9 @@ fun WorkoutSummaryScreen(
     onUpdateNote: (String) -> Unit,
     onSaveWorkout: () -> Unit,
     onPauseAndExit: () -> Unit,
-    onDiscardWorkout: () -> Unit
+    onDiscardWorkout: () -> Unit,
+    onExerciseEffort: (String, Int) -> Unit = { _, _ -> },
+    onExerciseNote: (String, String) -> Unit = { _, _ -> }
 ) {
     val palette = LocalTrainPilotPalette.current
     val moods = listOf(
@@ -3287,7 +3289,7 @@ fun WorkoutSummaryScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         moods.forEachIndexed { idx, moodLabel ->
-                            val selected = uiState.workoutSummaryMoodIndex == idx
+                            val selected = uiState.summaryFeedbackWorkoutId == uiState.activeWorkoutId && uiState.workoutSummaryMoodIndex == idx
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
                                 color = if (selected) palette.primary else palette.surfaceElevated,
@@ -3309,13 +3311,27 @@ fun WorkoutSummaryScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
                     OutlinedTextField(
-                        value = uiState.workoutSummaryNote,
+                        value = if (uiState.summaryFeedbackWorkoutId == uiState.activeWorkoutId) uiState.workoutSummaryNote else "",
                         onValueChange = onUpdateNote,
                         placeholder = { Text("Megjegyzés hozzáadása az edzéshez...", color = palette.textMuted) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp)
                     )
                 }
+            }
+        }
+
+        uiState.activeWorkoutExercises.forEach { exercise ->
+            item(key = "exercise_feedback_${exercise.id}") {
+                val same = uiState.exerciseFeedbackWorkoutId == uiState.activeWorkoutId
+                com.example.ui.components.ExerciseFeedbackControl(
+                    effort = if (same) com.repforge.app.StudioWorkoutFeedback.efforts.getOrNull(
+                        uiState.exerciseFeedbackChoices[exercise.id] ?: -1) else null,
+                    note = if (same) uiState.exerciseFeedbackNotes[exercise.id].orEmpty() else "",
+                    language = uiState.language.name.lowercase(), title = exercise.nameHu,
+                    enabled = !uiState.isSavingWorkout,
+                    onEffort = { onExerciseEffort(exercise.id, com.repforge.app.StudioWorkoutFeedback.efforts.indexOf(it)) },
+                    onNote = { onExerciseNote(exercise.id, it) }, tag = "summary_feedback_${exercise.id}")
             }
         }
 

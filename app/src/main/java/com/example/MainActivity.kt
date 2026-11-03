@@ -709,6 +709,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             strings = strings,
                             onBack = { viewModel.navigateBack() },
                             onSelectMood = { viewModel.selectWorkoutSummaryMood(it) },
+                            onExerciseEffort = { id, index -> viewModel.updateExerciseFeedback(id, index = index) },
+                            onExerciseNote = { id, note -> viewModel.updateExerciseFeedback(id, note = note) },
                             onUpdateNote = { viewModel.updateWorkoutSummaryNote(it) },
                             onSaveWorkout = { viewModel.finishAndSaveWorkout() },
                             onPauseAndExit = {

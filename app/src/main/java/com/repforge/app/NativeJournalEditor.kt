@@ -21,7 +21,8 @@ internal object NativeJournalEditor {
     data class Draft(val started: String, val finished: String, val exercises: List<Exercise>,
         val feedbackEffort: String? = null, val note: String = "")
     data class Units(val loadType: String, val repUnit: String, val measurementType: String)
-    data class Exercise(val originalIndex: Int?, val id: String, val sets: List<Set>, val catalogUnits: Units? = null)
+    data class Exercise(val originalIndex: Int?, val id: String, val sets: List<Set>, val catalogUnits: Units? = null,
+        val effort: String? = null, val note: String = "")
     data class Set(val originalIndex: Int?, val weight: String, val reps: String, val done: Boolean,
         val left: String = "", val right: String = "", val distance: String = "", val rir: String = "")
 
@@ -42,7 +43,8 @@ internal object NativeJournalEditor {
                 fun value(key: String) = if (set.isNull(key)) "" else set.optString(key)
                 Set(i, value("weight"), value("reps"), set.optBoolean("done"),
                     value("leftSeconds"), value("rightSeconds"), value("distanceMeters"), value("actualRir"))
-            })
+            }, effort = ex.opt("effort") as? String,
+                note = (ex.optJSONObject("feedback")?.opt("note") as? String).orEmpty())
         }, detail.workout.effortFeedback, savedNote(raw))
     }
 
@@ -157,6 +159,8 @@ internal object NativeJournalEditor {
                 } else require(!edit.done || reps.toIntOrNull()?.let { it > 0 } == true)
                 sets.put(set)
             }
+            StudioWorkoutFeedback.editExercise(ex, edited.effort, edited.note,
+                raw.optJSONObject("feedback")?.optBoolean("applied") == true, now)
             ex.put("sets", sets); exercises.put(ex)
         }
         val timesChanged = start.toEpochMilli() != detail.workout.startedEpochMs || finish.toEpochMilli() != detail.workout.finishedEpochMs
