@@ -1,4 +1,5 @@
 name: TrainPilot persistent signed APK pair
+# 2744: trigger the existing protected main signing workflow after verified integration PR #66.
 
 on:
   workflow_dispatch:
