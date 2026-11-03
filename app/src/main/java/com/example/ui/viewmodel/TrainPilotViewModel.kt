@@ -65,6 +65,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import com.example.model.watchinfo.WatchInfoCardData
 import com.example.model.watchinfo.WatchInfoStatus
+import com.repforge.app.healthreadings.HealthReadingsProjection
+import com.repforge.app.healthreadings.PulseDayReading
+import com.repforge.app.healthreadings.RecoveryDayReading
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -95,7 +98,8 @@ data class WeeklyHealthDaySummary(
     val sourceLabelHu: String,
     val stepOriginPackage: String = "",
     val stepsAvailable: Boolean = false,
-    val stepsSourceLabelHu: String = "Nincs napi lépésadat"
+    val stepsSourceLabelHu: String = "Nincs napi lépésadat",
+    val pulse: PulseDayReading? = null
 )
 
 data class TrainPilotUiState(
@@ -151,6 +155,8 @@ data class TrainPilotUiState(
     val samsungEnergyScore: Int = 0,
     val trainPilotReadinessScore: Int = 0,
     val coachReadinessScore: Int = 0,
+    val todayPulseReading: PulseDayReading? = null,
+    val todayRecoveryReading: RecoveryDayReading? = null,
 
     // Watch & Sync State (Mockup 4/4 #2 + main)
     val watchName: String = "Nincs csatlakoztatott Wear OS óra",
@@ -1605,14 +1611,8 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun cycleHomeDemoMode(mode: HomeDemoMode) {
-        _uiState.update {
-            val readiness = if (mode == HomeDemoMode.COACH_LIGHT_DAY) 54 else 87
-            it.copy(
-                homeDemoMode = mode,
-                coachReadinessScore = readiness,
-                samsungEnergyScore = if (mode == HomeDemoMode.COACH_LIGHT_DAY) 61 else 87
-            )
-        }
+        // Demo layout selection must never fabricate health/Coach measurements.
+        _uiState.update { it.copy(homeDemoMode = mode) }
     }
 
     fun toggleGoalsDialog(show: Boolean) {
@@ -3650,6 +3650,11 @@ class TrainPilotViewModel : ViewModel() {
                 sleepDurationLabel = "—",
                 sleepHoursDecimal = "—",
                 samsungEnergyScore = 0,
+                trainPilotReadinessScore = 0,
+                coachReadinessScore = 0,
+                todayPulseReading = null,
+                todayRecoveryReading = null,
+                weeklyHealthDays = emptyList(),
                 spo2Percent = 0f,
                 vo2Max = 0f,
                 hrvRmssdMs = 0f,
@@ -3672,7 +3677,10 @@ class TrainPilotViewModel : ViewModel() {
                     else -> "Rögzített csomag: $hcDailySourceRaw"
                 }
                 val generation = store.generation()
-                val today = LocalDate.now()
+                val zone = ZoneId.systemDefault()
+                val now = Instant.now()
+                val today = now.atZone(zone).toLocalDate()
+                val projectedProviderDays = mutableListOf<JSONObject>()
                 val todayData = com.repforge.app.NativeHealthProviderData.day(store, provider, today)
 
                 val todaySleepMin = com.repforge.app.NativeDailyHealthDetails.sleepMinutes(
@@ -3725,6 +3733,12 @@ class TrainPilotViewModel : ViewModel() {
                 for (offset in 13 downTo 0) {
                     val d = today.minusDays(offset.toLong())
                     val dayObj = runCatching { com.repforge.app.NativeHealthProviderData.day(store, provider, d) }.getOrNull()
+                    // Never project another provider's cached row as the selected source.
+                    val ownDay = dayObj?.takeIf { raw ->
+                        raw.optString("provider").let { it.isBlank() || it == provider } &&
+                            raw.optString("channel").let { it.isBlank() || it == provider }
+                    }?.let { JSONObject(it.toString()).put("day", d.toString()) }
+                    if (ownDay != null) projectedProviderDays.add(ownDay)
                     val dStepsRaw = dayObj?.optDouble("steps", Double.NaN) ?: Double.NaN
                     val stepsAvailable = dStepsRaw.isFinite() && dStepsRaw >= 0
                     val dSteps = if (stepsAvailable) dStepsRaw.toInt() else 0
@@ -3778,7 +3792,9 @@ class TrainPilotViewModel : ViewModel() {
                             stepsAvailable = stepsAvailable,
                             stepsSourceLabelHu = if (stepsAvailable) formatProviderLabelHu(dayChannel, stepOriginPkg) else "Nincs napi lépésadat",
                             sourceLabelHu = sourceLabelHu,
-                            stepOriginPackage = stepOriginPkg
+                            stepOriginPackage = stepOriginPkg,
+                            pulse = if (provider == HealthJournalStore.HC || provider == HealthJournalStore.SAMSUNG)
+                                HealthReadingsProjection.pulseDay(provider, d, ownDay, now, zone) else null
                         )
                     )
                 }
@@ -3795,24 +3811,19 @@ class TrainPilotViewModel : ViewModel() {
                     "$primaryProviderHu (nincs szinkronizált mérés az elmúlt 7 napban)"
                 }
 
-                // Compute real readiness score if real health metrics exist
-                val computedReadiness = when {
-                    energyDbl.isFinite() && energyDbl > 0 -> energyDbl.roundToInt().coerceIn(1, 100)
-                    sleepMinDbl.isFinite() && sleepMinDbl > 0 -> {
-                        val sleepScore = ((sleepMinDbl / 450.0) * 60.0).roundToInt().coerceIn(20, 65)
-                        val hrBonus = if (restingDbl.isFinite() && restingDbl in 40.0..95.0) {
-                            ((85.0 - restingDbl) * 0.6).roundToInt().coerceIn(5, 25)
-                        } else 15
-                        val hrvBonus = if (hrvDbl.isFinite() && hrvDbl > 0) {
-                            (hrvDbl * 0.2).roundToInt().coerceIn(2, 10)
-                        } else 0
-                        (sleepScore + hrBonus + hrvBonus).coerceIn(1, 100)
-                    }
-                    restingDbl.isFinite() && restingDbl > 0 -> {
-                        (100 - (restingDbl.roundToInt() - 50).coerceIn(0, 45)).coerceIn(35, 90)
-                    }
-                    else -> 0
-                }
+                // Use the same selected-provider, day-validated projections for Home and Health.
+                val todayPulse = if (provider == HealthJournalStore.HC || provider == HealthJournalStore.SAMSUNG)
+                    HealthReadingsProjection.pulseDay(
+                        provider, today, projectedProviderDays.firstOrNull { it.optString("day") == today.toString() },
+                        now, zone) else null
+                val roomCoachHistory = runCatching {
+                    nativeDatabase?.workoutHistoryDao()?.getAllWorkoutsWithDetails()
+                        ?.mapNotNull { entry -> runCatching { JSONObject(entry.workout.rawJson) }.getOrNull() }
+                        ?: emptyList()
+                }.getOrDefault(emptyList())
+                val todayRecovery = if (provider == HealthJournalStore.HC || provider == HealthJournalStore.SAMSUNG)
+                    HealthReadingsProjection.recoveryToday(provider, projectedProviderDays, roomCoachHistory, now, zone)
+                    else null
 
                 withContext(Dispatchers.Main) {
                     if (store.generation() != generation || store.preferences().optString("provider", HealthJournalStore.HC) != provider) return@withContext
@@ -3825,8 +3836,8 @@ class TrainPilotViewModel : ViewModel() {
                             dailyHealthLastSyncIso = lastProviderSync,
                             totalCaloriesKcal = todayData?.optDouble("totalCalories", Double.NaN)?.takeIf { it.isFinite() && it >= 0 }?.toInt() ?: 0,
                             dailySteps = if (stepsDbl.isFinite() && stepsDbl >= 0) stepsDbl.toInt() else 0,
-                            currentHrBpm = if (pulseDbl.isFinite() && pulseDbl > 0) pulseDbl.toInt() else 0,
-                            restingHrBpm = if (restingDbl.isFinite() && restingDbl > 0) restingDbl.toInt() else 0,
+                            currentHrBpm = todayPulse?.averageBpm?.roundToInt() ?: 0,
+                            restingHrBpm = todayPulse?.restingBpm?.roundToInt() ?: 0,
                             maxHrBpm = if (maxHrDbl.isFinite() && maxHrDbl > 0) maxHrDbl.toInt() else 0,
                             minHrBpm = if (minHrDbl.isFinite() && minHrDbl > 0) minHrDbl.toInt() else 0,
                             dailyPulseHistory = todayPulseHistory,
@@ -3834,7 +3845,7 @@ class TrainPilotViewModel : ViewModel() {
                             activeCaloriesKcal = if (caloriesDbl.isFinite() && caloriesDbl > 0) caloriesDbl.toInt() else 0,
                             sleepDurationLabel = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) String.format("%d ó %d p", (sleepMinDbl / 60).toInt(), (sleepMinDbl % 60).toInt()) else "—",
                             sleepHoursDecimal = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) "${((sleepMinDbl / 60.0) * 10.0).roundToInt() / 10.0} h" else "—",
-                            samsungEnergyScore = if (energyDbl.isFinite() && energyDbl >= 0) energyDbl.toInt() else 0,
+                            samsungEnergyScore = todayRecovery?.samsungEnergy?.roundToInt() ?: 0,
                             spo2Percent = todayData?.optDouble("oxygenSaturationPercent", Double.NaN)?.takeIf { it.isFinite() && it > 0 }?.toFloat() ?: 0f,
                             vo2Max = todayData?.optDouble("vo2Max", Double.NaN)?.takeIf { it.isFinite() && it > 0 }?.toFloat() ?: 0f,
                             bodyFatPercent = if (bodyFatDbl.isFinite() && bodyFatDbl > 0) bodyFatDbl.toFloat() else st.bodyFatPercent,
@@ -3843,8 +3854,10 @@ class TrainPilotViewModel : ViewModel() {
                             bloodGlucoseLabel = gluLabel,
                             respiratoryRateLabel = respLabel,
                             dailyDistanceKm = distKmToday,
-                            coachReadinessScore = computedReadiness,
-                            trainPilotReadinessScore = computedReadiness,
+                            coachReadinessScore = todayRecovery?.coachScore?.roundToInt() ?: 0,
+                            trainPilotReadinessScore = todayRecovery?.trainPilotEstimate ?: 0,
+                            todayPulseReading = todayPulse,
+                            todayRecoveryReading = todayRecovery,
                             weeklyHealthDays = weeklyDaysList.takeLast(7),
                             dailyActivityDays = weeklyDaysList,
                             weeklyTotalSteps = sumSteps,
