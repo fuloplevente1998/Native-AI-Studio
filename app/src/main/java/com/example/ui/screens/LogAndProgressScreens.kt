@@ -97,6 +97,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import com.example.localization.LocalizedStrings
 import com.example.model.LoggedWorkoutEntry
 import com.example.model.SubScreen
