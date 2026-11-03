@@ -11,3 +11,9 @@ A 2742-es készülékes visszajelzések alapján; az alkalmazásazonosító és 
 Regressziók: valódi Room/privátfájl-törlés, idegen hivatkozás, változott cél és megszakadt takarítás helyreállítása; Studio megerősítés/Mégse/célváltás; naptár tényleges világos/sötét rajzolása; órakártya callback/busy, kérésazonosító és ismeretlen akkumulátor; kompakt magasság és teljes képernyős gombok térképen belüli láthatósága. Actions és nyers XML eredménye a futás után rögzítendő. A fizikai megjelenés, valódi telefon–óra válasz és fájltörlés készülékes elfogadása külön marad.
 
 A képi referenciák az eredeti beszélgetés 01:51-es világos naptár és 02:05-ös GPS-képei. A repo nem tartalmazza a képfájlokat.
+
+## A munka közben kért további javítások
+
+- #50: Google Cloud szakasz alapból csukva, mentett nyitottsággal a Studio és natív Beállításokban. Folyamatállapot/hiba és a külön hozzájárulási/megerősítési felületek becsukva is működnek.
+- #51: Home és Egészség ugyanazt a hatos Mai állapot rácsot használja; Home-on kompakt méret, rövid Coach-kártya a Coach oldalra navigálva, megőrzött görgetési fallback kis ablak/nagy betű esetén. A Home hős kártya aktív edzésnél a munkamenetet mutatja és nyitja, nem a közben kijelölt programot.
+- #52: új GPS-session új natív azonosítót és indulási időt kap, nincs lezárt execution ID újrahasználat. A natív előkészítés szinkron eredménye alapján kerül aktívnak a UI-ba; sikertelen előkészítés nem hoz létre látszólagos sessiont. A programId kültéri sessionnél független a kijelölt tervtől. Natív állapot újratöltésekor a pillanatkép Mainen friss, lezárt állapot nem marad aktív egy korábbi UI-copy miatt. Stale elvetés nem töröl másik edzést; a pontosan egyező, már lezárt session UI-ja mellékhatás nélkül lezárható.

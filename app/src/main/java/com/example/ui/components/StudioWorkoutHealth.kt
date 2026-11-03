@@ -54,6 +54,10 @@ internal fun studioWorkoutHealthContent(
         if (workoutId.isNotBlank()) model.openDetails(workoutId)
         onDispose { model.closeDetails() }
     }
+    LaunchedEffect(workoutId, state.deleting, state.selectedWorkoutId) {
+        if (workoutId.isNotBlank() && !state.deleting && state.selectedWorkoutId != workoutId &&
+            state.deletedWorkoutId != workoutId) model.openDetails(workoutId)
+    }
     val detail = state.detail?.takeIf { it.workout.id == workoutId }
     LaunchedEffect(detail?.workout, resumed, state.healthProvider) {
         val workout = detail?.workout ?: return@LaunchedEffect

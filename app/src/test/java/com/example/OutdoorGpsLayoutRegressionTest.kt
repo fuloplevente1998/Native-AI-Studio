@@ -118,6 +118,13 @@ class OutdoorGpsLayoutRegressionTest {
         }
     }
 
+    @Test fun fullscreenAlsoKeepsActionsReachableWithLargeText() {
+        show(320, 480, font = 2f, fullscreen = true)
+        assertControlsVisible(bottomInset = 32)
+        compose.onNodeWithTag("gps_close_fullscreen").assertIsDisplayed()
+        compose.onNodeWithTag("gps_elapsed_timer_text").assertIsDisplayed()
+    }
+
     @Test fun activityChoicesRemainAvailableBeforeStarting() {
         show(360, 480, display = state.copy(started = false))
         compose.onNodeWithTag("gps_start_workout_btn").assertIsDisplayed()

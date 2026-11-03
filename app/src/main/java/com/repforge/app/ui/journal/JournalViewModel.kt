@@ -127,11 +127,12 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
     }
     fun closeDetails() {
         if (_uiState.value.deleting || _editor.value?.saving == true) return
+        deletionTicket = null
         cancelEditor()
         cancelHealthRefresh()
         selected.value = null
         closeRouteMap()
-        _uiState.update { it.copy(selectedWorkoutId = null, detail = null, detailLoading = false, detailError = false) }
+        _uiState.update { it.copy(selectedWorkoutId = null, detail = null, detailLoading = false, detailError = false, workoutToDelete = null) }
     }
     internal fun openEditor() {
         val detail = _uiState.value.detail ?: return

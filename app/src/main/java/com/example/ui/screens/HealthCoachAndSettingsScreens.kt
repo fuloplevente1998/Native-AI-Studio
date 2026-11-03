@@ -419,75 +419,12 @@ fun HealthTabScreen(
 
                     var expandedTodayTileKey by remember { mutableStateOf<String?>(null) }
 
-                    // Row 1 of 3 tiles: Alvás | Aktív kalória | Pulzus
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        MainTodayStatusTile(
-                            icon = Icons.Default.Bedtime,
-                            title = "Alvás",
-                            value = uiState.sleepHoursDecimal,
-                            onClick = {
-                                expandedTodayTileKey = if (expandedTodayTileKey == "sleep") null else "sleep"
-                                onToggleHealthSection("journal")
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                        MainTodayStatusTile(
-                            icon = Icons.Default.LocalFireDepartment,
-                            title = "Aktív kalória",
-                            value = if ("activeCalories" in uiState.dailyHealthAvailableFields) "${uiState.activeCaloriesKcal} kcal" else "—",
-                            onClick = {
-                                expandedTodayTileKey = if (expandedTodayTileKey == "calories") null else "calories"
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                        MainTodayStatusTile(
-                            icon = Icons.Default.Favorite,
-                            title = "Pulzus",
-                            value = if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—",
-                            onClick = {
-                                expandedTodayTileKey = if (expandedTodayTileKey == "pulse") null else "pulse"
-                                onToggleHealthSection("pulse")
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    // Row 2 of 3 tiles: Lépések | Mai edzés | Regeneráció
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        MainTodayStatusTile(
-                            icon = Icons.AutoMirrored.Filled.DirectionsWalk,
-                            title = "Lépések",
-                            value = if ("steps" in uiState.dailyHealthAvailableFields) "${uiState.dailySteps}" else "—",
-                            onClick = {
-                                expandedTodayTileKey = if (expandedTodayTileKey == "steps") null else "steps"
-                                onToggleHealthSection("journal")
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                        MainTodayStatusTile(
-                            icon = Icons.Default.FitnessCenter,
-                            title = "Mai edzés",
-                            value = "${uiState.loggedWorkouts.count { it.localWorkoutDate() == today }}",
-                            onClick = {
-                                expandedTodayTileKey = if (expandedTodayTileKey == "workout") null else "workout"
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                        MainTodayStatusTile(
-                            icon = Icons.Default.Eco,
-                            title = "Regeneráció",
-                            value = if (uiState.coachReadinessScore > 0) "${uiState.coachReadinessScore}/100" else "—",
-                            onClick = {
-                                expandedTodayTileKey = if (expandedTodayTileKey == "recovery") null else "recovery"
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
+                    StudioTodayStatusGrid(uiState) { key ->
+                        expandedTodayTileKey = if (expandedTodayTileKey == key) null else key
+                        when (key) {
+                            "sleep", "steps" -> onToggleHealthSection("journal")
+                            "pulse" -> onToggleHealthSection("pulse")
+                        }
                     }
 
                     // Expandable Detail Dropdown Card when any of the 6 "Mai állapot" tiles is tapped
@@ -1652,12 +1589,13 @@ fun HealthTabScreen(
 }
 
 @Composable
-private fun MainTodayStatusTile(
+internal fun MainTodayStatusTile(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     value: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    compact: Boolean = false
 ) {
     val palette = LocalTrainPilotPalette.current
     Surface(
@@ -1669,8 +1607,8 @@ private fun MainTodayStatusTile(
             .clickable { onClick() }
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(horizontal = if (compact) 8.dp else 10.dp, vertical = if (compact) 6.dp else 10.dp),
+            verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 8.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -3120,6 +3058,7 @@ fun StudioGoogleCloudSyncCard(
     val gs = settingsState.googleSyncState
     val context = LocalContext.current
     val activity = context as? Activity
+    var cloudExpanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var showMaintenanceOptions by remember { mutableStateOf(false) }
 
     val maintenancePreview by settingsViewModel.maintenancePreview.collectAsStateWithLifecycle()
@@ -3165,7 +3104,8 @@ fun StudioGoogleCloudSyncCard(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    .testTag("settings_google_expand").clickable { cloudExpanded = !cloudExpanded },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -3218,7 +3158,7 @@ fun StudioGoogleCloudSyncCard(
                     )
                 ) {
                     Text(
-                        text = if (gs.connectedEmail.isNotEmpty()) "Csatlakoztatva" else "Nincs belépve",
+                        text = (if (gs.connectedEmail.isNotEmpty()) "Csatlakoztatva" else "Nincs belépve") + if (cloudExpanded) " ▴" else " ▾",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = if (gs.connectedEmail.isNotEmpty()) palette.success else palette.textSecondary,
@@ -3227,6 +3167,8 @@ fun StudioGoogleCloudSyncCard(
                 }
             }
 
+            if (cloudExpanded) {
+                Column(Modifier.testTag("settings_google_expanded"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (gs.connectedEmail.isNotEmpty()) {
                 if (gs.connectedName.isNotBlank()) {
                     Text(
@@ -3393,6 +3335,9 @@ fun StudioGoogleCloudSyncCard(
                         text = "Bejelentkezés Google-fiókkal",
                         fontWeight = FontWeight.Bold
                     )
+                }
+            }
+
                 }
             }
 

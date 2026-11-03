@@ -98,7 +98,8 @@ fun HomeScreen(
     onOpenCalendarPlanner: () -> Unit,
     onOpenGoalsDialog: () -> Unit,
     onOpenPersonalPlanner: () -> Unit,
-    onDiscardWorkout: (String) -> Unit = {}
+    onDiscardWorkout: (String) -> Unit = {},
+    onOpenHealthToday: () -> Unit = onOpenHealthSteps
 ) {
     val palette = LocalTrainPilotPalette.current
     val activeProgram = state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
@@ -110,7 +111,7 @@ fun HomeScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
-            .padding(top = 8.dp, bottom = 24.dp),
+            .padding(top = 8.dp, bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
         if (!state.profileComplete || state.programs.none { it.isActive && it.isCustom && it.days.isNotEmpty() }) {
@@ -217,8 +218,8 @@ fun HomeScreen(
                             )
                         )
                     )
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -256,7 +257,7 @@ fun HomeScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            if (state.homeDemoMode == HomeDemoMode.PAUSED_WORKOUT) {
+                            if (state.isWorkoutSessionActive && state.homeDemoMode == HomeDemoMode.PAUSED_WORKOUT) {
                                 Icon(
                                     imageVector = Icons.Default.Pause,
                                     contentDescription = null,
@@ -270,7 +271,7 @@ fun HomeScreen(
                                 )
                             } else {
                                 Text(
-                                    text = if (activeProgram != null) {
+                                    text = if (state.isWorkoutSessionActive) "Aktív edzés" else if (activeProgram != null) {
                                         "${strings.activeProgramBadge} • ${activeProgram.localizedName(state.language)}"
                                     } else {
                                         strings.activeProgramBadge
@@ -284,13 +285,14 @@ fun HomeScreen(
                         }
 
                         Text(
-                            text = currentDay?.localizedTitle(state.language) ?: "Teljes test A",
+                            text = if (state.isWorkoutSessionActive) state.activeWorkoutTitleHu else currentDay?.localizedTitle(state.language) ?: "Teljes test A",
                             style = MaterialTheme.typography.titleLarge,
                             color = palette.textPrimary
                         )
 
                         Text(
-                            text = "${currentDay?.exercises?.size ?: 8} gyakorlat • kb. ${currentDay?.durationMinutes ?: 60} perc",
+                            text = if (state.isWorkoutSessionActive) "${state.activeWorkoutExercises.size} gyakorlat • Aktív edzés"
+                                else "${currentDay?.exercises?.size ?: 8} gyakorlat • kb. ${currentDay?.durationMinutes ?: 60} perc",
                             style = MaterialTheme.typography.bodyMedium,
                             color = palette.textSecondary
                         )
@@ -350,7 +352,7 @@ fun HomeScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
@@ -401,7 +403,7 @@ fun HomeScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
@@ -447,229 +449,14 @@ fun HomeScreen(
             }
         }
 
-        // 6. 2x2 VITALS & READINESS BENTO GRID (Mockup 1/4 #1: Alvás, Nyugalmi pulzus, Lépések, Samsung energia) + Expandable Dropdown Card
-        var expandedHomeVitalKey by remember { mutableStateOf<String?>(null) }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardRowGap)
-        ) {
-            // Top-Left: Alvás (7 ó 24 p • Jó minőség)
-            HomeVitalCard(
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("home_vital_sleep_card"),
-                icon = Icons.Default.Bedtime,
-                iconTint = palette.sleepAccent,
-                title = strings.sleepTitle,
-                mainValue = state.sleepDurationLabel,
-                statusText = if (state.sleepDurationLabel == "—") "Nincs alvásadat" else "Rögzített alvásidő",
-                statusColor = palette.success,
-                onClick = {
-                    expandedHomeVitalKey = if (expandedHomeVitalKey == "sleep") null else "sleep"
-                }
-            )
-
-            // Top-Right: Nyugalmi pulzus (62 bpm • Normális)
-            HomeVitalCard(
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("home_vital_hr_card"),
-                icon = Icons.Default.Favorite,
-                iconTint = palette.heartAccent,
-                title = strings.restingHrTitle,
-                mainValue = if (state.restingHrBpm > 0) "${state.restingHrBpm} bpm" else "— bpm",
-                statusText = if (state.restingHrBpm > 0) "Rögzített pulzusérték" else "Nincs mérés",
-                statusColor = palette.success,
-                onClick = {
-                    expandedHomeVitalKey = if (expandedHomeVitalKey == "hr") null else "hr"
-                }
-            )
-        }
-
-        val stepsProgress = (state.dailySteps.toFloat() / state.stepsGoal.toFloat()).coerceIn(0f, 1f)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardRowGap)
-        ) {
-            // Bottom-Left: Lépések (8 421 • Cél: 10 000 + cyan progress bar)
-            HomeVitalCard(
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("home_vital_steps_card"),
-                icon = Icons.AutoMirrored.Filled.DirectionsRun,
-                iconTint = palette.stepsAccent,
-                title = strings.stepsTitle,
-                mainValue = if ("steps" in state.dailyHealthAvailableFields) formatThousand(state.dailySteps) else "—",
-                statusText = strings.stepsGoalWithCount(state.stepsGoal),
-                statusColor = palette.textSecondary,
-                progressFraction = stepsProgress,
-                progressColor = palette.stepsAccent,
-                onClick = {
-                    expandedHomeVitalKey = if (expandedHomeVitalKey == "steps") null else "steps"
-                }
-            )
-
-            // Bottom-Right: Samsung energia (87 / 100 • Jó állapot + green progress bar + Forrás: Samsung Health)
-            val energyProgress = (state.samsungEnergyScore / 100f).coerceIn(0f, 1f)
-            HomeVitalCard(
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("home_vital_energy_card"),
-                icon = Icons.Default.Eco,
-                iconTint = palette.energyAccent,
-                title = strings.samsungEnergyTitle,
-                mainValue = if (state.samsungEnergyScore > 0) "${state.samsungEnergyScore} / 100" else "— / 100",
-                statusText = if (state.samsungEnergyScore > 0) "Rögzített energiaérték" else "Nincs elérhető adat",
-                statusColor = if (state.samsungEnergyScore >= 75) palette.success else palette.warning,
-                progressFraction = energyProgress,
-                progressColor = palette.energyAccent,
-                footerCaption = if (state.samsungEnergyScore > 0) strings.sourceSamsungHealth else "Forrásadat nem érhető el",
-                onClick = {
-                    expandedHomeVitalKey = if (expandedHomeVitalKey == "energy") null else "energy"
-                }
-            )
-        }
-
-        // Expandable Dropdown Card for the 4 Home Vitals (matches the 4 expandable cards under Összes volumen on Fejlődés)
-        AnimatedVisibility(visible = expandedHomeVitalKey != null) {
-            val activeKey = expandedHomeVitalKey ?: "sleep"
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = palette.surface,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .trainPilotBorder(1.5.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(18.dp))
-                    .testTag("home_vital_expanded_dropdown_card")
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    val (headerTitle, accentColor, summaryRows, targetActionLabel, onJumpTarget) = when (activeKey) {
-                        "hr" -> Quintuple(
-                            "Nyugalmi & napi pulzus • ${if (state.restingHrBpm > 0) "${state.restingHrBpm} bpm" else "—"}",
-                            palette.heartAccent,
-                            listOf(
-                                "Mai nyugalmi pulzus" to if (state.restingHrBpm > 0) "${state.restingHrBpm} bpm" else "Nincs mérés",
-                                "Aktuális / utolsó mérés" to if (state.currentHrBpm > 0) "${state.currentHrBpm} bpm" else "Nincs mérés",
-                                "7 napos tartomány" to "Nincs ellenőrzött 7 napos összesítés"
-                            ),
-                            "Ugrás a 24 órás Pulzustrendhez >",
-                            onOpenHealthHeart
-                        )
-                        "steps" -> Quintuple(
-                            "Napi & heti lépésszám • ${formatThousand(state.dailySteps)} lépés",
-                            palette.stepsAccent,
-                            listOf(
-                                "Mai teljesítés" to "${formatThousand(state.dailySteps)} / ${formatThousand(state.stepsGoal)} (${(stepsProgress * 100).toInt()}%)",
-                                "Távolság és kalória" to "Edzéshez kötött mérés nem érhető el",
-                                "Adatforrás" to "Az Egészségnaplóban ellenőrizhető"
-                            ),
-                            "Ugrás az Egészségnapló lépéseihez >",
-                            onOpenHealthSteps
-                        )
-                        "energy" -> Quintuple(
-                            "Samsung Energia & Készenlét • ${if (state.samsungEnergyScore > 0) "${state.samsungEnergyScore}/100" else "Nincs adat"}",
-                            palette.energyAccent,
-                            listOf(
-                                "Energia pontszám" to if (state.samsungEnergyScore > 0) "${state.samsungEnergyScore} / 100" else "Nincs mérés",
-                                "TrainPilot Coach készenlét" to if (state.coachReadinessScore > 0) "${state.coachReadinessScore} / 100" else "Nincs adat",
-                                "Javasolt mai terhelés" to if (state.samsungEnergyScore > 0) {
-                                    if (state.samsungEnergyScore >= 70) "Teljes terhelés • 1–2 RIR" else "Könnyített regeneráló nap"
-                                } else "Nincs megbízható mérés"
-                            ),
-                            "Ugrás a TrainPilot Coach elemzéshez >",
-                            onOpenCoachReadiness
-                        )
-                        else -> Quintuple(
-                            "Alvásminőség & Regeneráció • ${state.sleepDurationLabel}",
-                            palette.sleepAccent,
-                            listOf(
-                                "Mai alvásidő" to "${state.sleepDurationLabel} (${state.sleepHoursDecimal})",
-                                "Mélyalvás & REM arány" to "Nincs ellenőrzött alvásfázis-adat",
-                                "Éjszakai regeneráció" to if (state.restingHrBpm > 0) "Nyugalmi pulzus: ${state.restingHrBpm} bpm" else "Nincs mérés"
-                            ),
-                            "Ugrás az Egészség alvásnaplóhoz >",
-                            onOpenHealthSleep
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = headerTitle,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = accentColor
-                        )
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp),
-                            modifier = Modifier.clickable { expandedHomeVitalKey = null }
-                        ) {
-                            Text(
-                                text = "Bezárás",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.primary
-                            )
-                            Icon(
-                                imageVector = Icons.Default.ExpandLess,
-                                contentDescription = null,
-                                tint = palette.primary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-
-                    summaryRows.forEach { (label, value) ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(palette.surfaceElevated)
-                                .padding(horizontal = 10.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(label, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
-                            Text(value, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                        }
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = palette.primary.copy(alpha = 0.16f),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .trainPilotBorder(1.dp, palette.primary, RoundedCornerShape(12.dp))
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onJumpTarget() }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = targetActionLabel,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.primary
-                            )
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = null,
-                                tint = palette.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                }
+        // Shared compact 3 × 2 today summary. Details open on their existing destination pages.
+        StudioTodayStatusGrid(state, compact = true) { key ->
+            when (key) {
+                "sleep" -> onOpenHealthSleep()
+                "pulse" -> onOpenHealthHeart()
+                "steps" -> onOpenHealthSteps()
+                "recovery" -> onOpenCoachReadiness()
+                else -> onOpenHealthToday()
             }
         }
 
@@ -690,7 +477,7 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -725,116 +512,19 @@ fun HomeScreen(
                     }
                 }
 
-                // MAI JAVASLAT / TrainPilot Coach Card from main Home screenshot
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = palette.surface,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .trainPilotBorder(
-                            width = 1.dp,
-                            color = palette.primary.copy(alpha = 0.45f),
-                            shape = RoundedCornerShape(18.dp)
-                        )
-                        .clickable { onOpenCoachReadiness() }
-                        .testTag("home_coach_advice_card")
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.AutoAwesome,
-                                    contentDescription = null,
-                                    tint = palette.primary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    text = strings.coachSuggestionHeader,
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = palette.primary
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = null,
-                                tint = palette.primary
-                            )
+                Surface(shape = RoundedCornerShape(18.dp), color = palette.surface,
+                    modifier = Modifier.fillMaxWidth()
+                        .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.45f), RoundedCornerShape(18.dp))
+                        .clickable { onOpenCoachReadiness() }.testTag("home_coach_advice_card")) {
+                    Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Default.AutoAwesome, null, tint = palette.primary, modifier = Modifier.size(20.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(strings.coachSuggestionHeader, color = palette.primary, style = MaterialTheme.typography.labelMedium)
+                            Text(if (state.coachReadinessScore > 0) "Mai készenlét: ${state.coachReadinessScore}/100" else "Nézd meg a mai javaslatot",
+                                color = palette.textPrimary, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-
-                        val isLightDay = state.homeDemoMode == HomeDemoMode.COACH_LIGHT_DAY
-                        Text(
-                            text = if (isLightDay) strings.coachLightDayTitle else strings.coachNormalDayTitle,
-                            style = MaterialTheme.typography.titleLarge,
-                            color = palette.textPrimary
-                        )
-                        Text(
-                            text = if (isLightDay) strings.coachLightDayBody else strings.coachNormalDayBody,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = palette.textSecondary
-                        )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = palette.surfaceElevated,
-                                modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                            ) {
-                                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
-                                    Text(
-                                        text = strings.readinessTodayLabel,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = palette.textSecondary
-                                    )
-                                    Text(
-                                        text = if (state.coachReadinessScore > 0) "${state.coachReadinessScore}/100" else "—",
-                                        style = MaterialTheme.typography.titleLarge,
-                                        color = palette.textPrimary
-                                    )
-                                }
-                            }
-
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = palette.surfaceElevated,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                            ) {
-                                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
-                                    Text(
-                                        text = strings.nextWorkoutLabel,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = palette.textSecondary
-                                    )
-                                    Text(
-                                        text = if (activeProgram != null) {
-                                            "${activeProgram.localizedName(state.language)} • ${currentDay?.dayCode ?: "A"}"
-                                        } else {
-                                            "—"
-                                        },
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = palette.textPrimary,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        }
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.primary)
                     }
                 }
             }

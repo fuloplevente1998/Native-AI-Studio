@@ -85,6 +85,48 @@ class StudioPausedWorkoutDiscardRegressionTest {
             assertTrue(native { db.workoutHistoryDao().getTombstones().isEmpty() })
         } finally { parent.cancel() }
     }
+    @Test fun gpsCanStartAgainAfterDiscardWithoutReusingTheClosedExecutionId() {
+        val parent = kotlinx.coroutines.SupervisorJob()
+        val scope = kotlinx.coroutines.CoroutineScope(parent + kotlinx.coroutines.Dispatchers.Main.immediate)
+        val model = TrainPilotViewModel()
+        try {
+            model.bindNativeEnvironment(context, com.repforge.app.data.store.TrainPilotSettingsStore(context), db, scope)
+            await { !model.uiState.value.savedRecordsLoading }
+            native { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main.immediate) {
+                assertTrue(model.startGpsTrackingSession("Kültéri futás", "test-gps-one"))
+            } }
+            val first = ActiveWorkoutStore.current(context)!!
+            native { TrainPilotWorkoutFinalization(context, db).discardWorkout(first) }
+            native { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main.immediate) {
+                assertTrue(model.startGpsTrackingSession("Kültéri futás", "test-gps-two"))
+            } }
+            val second = ActiveWorkoutStore.current(context)!!
+            assertNotEquals(first.getString("workoutId"), second.getString("workoutId"))
+            assertEquals("outdoor", second.getString("programId"))
+            assertTrue(second.getLong("generation") > first.getLong("generation"))
+        } finally { parent.cancel() }
+    }
+
+    @Test fun programSelectionDoesNotReplaceTheGpsSessionAndDiscardStillUsesItsId() {
+        val parent = kotlinx.coroutines.SupervisorJob()
+        val scope = kotlinx.coroutines.CoroutineScope(parent + kotlinx.coroutines.Dispatchers.Main.immediate)
+        val model = TrainPilotViewModel()
+        try {
+            model.bindNativeEnvironment(context, com.repforge.app.data.store.TrainPilotSettingsStore(context), db, scope)
+            await { !model.uiState.value.savedRecordsLoading }
+            native { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main.immediate) {
+                assertTrue(model.startGpsTrackingSession("Kültéri futás", "test-gps-program"))
+                model.activateProgram("different-program")
+            } }
+            val id = ActiveWorkoutStore.current(context)!!.getString("workoutId")
+            assertEquals(id, model.uiState.value.activeWorkoutId)
+            assertEquals("Kültéri futás", model.uiState.value.activeWorkoutTitleHu)
+            model.stopActiveWorkoutSession(id)
+            await { !model.uiState.value.isSavingWorkout && !model.uiState.value.isWorkoutSessionActive }
+            assertTrue(native { db.workoutHistoryDao().isTombstoned(id, JSONObject.quote(id)) })
+        } finally { parent.cancel() }
+    }
+
     private fun await(condition: () -> Boolean) {
         val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30)
         while (true) {

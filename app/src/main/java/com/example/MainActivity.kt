@@ -842,10 +842,14 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                         }
                                     },
                                     onOpenProgramDayDetails = {
-                                        val activeProg = uiState.programs.firstOrNull { it.isActive } ?: uiState.programs.firstOrNull()
-                                        viewModel.openProgramEditor(activeProg?.id ?: "home_ab_basic", 0)
+                                        if (uiState.isWorkoutSessionActive) viewModel.returnToActiveWorkout()
+                                        else {
+                                            val activeProg = uiState.programs.firstOrNull { it.isActive } ?: uiState.programs.firstOrNull()
+                                            viewModel.openProgramEditor(activeProg?.id ?: "home_ab_basic", 0)
+                                        }
                                     },
                                     onOpenQuickWorkout = { viewModel.toggleQuickWorkoutSheet(true) },
+                                    onOpenHealthToday = { viewModel.selectTab(MainTab.HEALTH) },
                                     onOpenWatchAndSync = { viewModel.requestWatchDeviceInfo(); viewModel.navigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
                                     onOpenHealthSleep = {
                                         viewModel.openHealthAndExpand(journal = true)
