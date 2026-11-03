@@ -4,7 +4,7 @@ Ez az elsődleges belépési pont. A régi dátumozott átadók történeti megf
 
 ## Új közös javítócsomag – #79
 
-A felhasználó a fekete YouTube-videó jelzése után a beleférő javításokat egy közös APK-ban kéri. Az új implementáció és egyben végzendő tesztlista: [NATIVE_TEST_BATCH_2026-11-03.md](NATIVE_TEST_BATCH_2026-11-03.md). A videó/kompakt óraadat/Samsung permission és program-/sajátgyakorlat-/naplószerkesztés most implementálva, a teljes végleges CI és új aláírt APK még ellenőrzés alatt. A részletes egészségböngésző bekötése részleges #71. Ez felülírja az alábbi korábbi backlog-jelzéseket ezeknél a pontoknál. **A korábban átadott81da2f7 APK ezt a csomagot még nem tartalmazza.** BLE sztornó, #69/#71 teljes maradéka, #74/#75 nem kész. Fizikai elfogadás nincs állítva.
+A felhasználó a fekete YouTube-videó jelzése után a beleférő javításokat egy közös APK-ban kéri. Az új implementáció és egyben végzendő tesztlista: [NATIVE_TEST_BATCH_2026-11-03.md](NATIVE_TEST_BATCH_2026-11-03.md). A videó/kompakt óraadat/Samsung permission és program-/sajátgyakorlat-/naplószerkesztés **#79-ben mainen** (`d69c77e41692f7c2c171e400358772439bff35ea`). Tesztelt forrás18b828e, Actions41670555328 SUCCESS, letöltött nyers411 =235 telefon+176Wear, nulla failure/error/skipped; inline JS7 külön sikeres. [CI-bizonyíték](NATIVE_BATCH_CI_2026-11-03.json). Az egyetlen új aláírt main APK build41671892820 folyamatban; átadása még nem igazolt. A részletes egészségböngésző bekötése részleges #71. Ez felülírja az alábbi korábbi backlog-jelzéseket ezeknél a pontoknál. **A korábban átadott81da2f7 APK ezt a csomagot még nem tartalmazza.** BLE sztornó, #69/#71 teljes maradéka, #74/#75 nem kész. Fizikai elfogadás nincs állítva.
 
 ## Kód és ellenőrzés
 
