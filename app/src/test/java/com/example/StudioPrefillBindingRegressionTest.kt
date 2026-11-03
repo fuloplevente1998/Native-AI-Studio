@@ -88,7 +88,7 @@ class StudioPrefillBindingRegressionTest {
     private fun seedPrevious(): String = native {
         val now = Instant.now()
         val sets = JSONArray().put(JSONObject().put("done", true).put("weight", 17.5).put("reps", "12").put("actualRir", 1))
-            .put(JSONObject().put("done", true).put("weight", 19).put("reps", "9").put("actualRir", 0))
+            .put(JSONObject().put("done", true).put("weight", 19.7).put("reps", "9").put("actualRir", 0))
         val raw = JSONObject().put("id", "previous-different-program").put("programId", "another-program")
             .put("dayId", "other-day").put("programName", "Előző edzés")
             .put("started", now.minusSeconds(7200).toString()).put("finished", now.minusSeconds(3600).toString())
@@ -108,7 +108,7 @@ class StudioPrefillBindingRegressionTest {
         val rows = frame.getJSONArray("exercises").getJSONObject(0).getJSONArray("sets")
         assertEquals(17.5, rows.getJSONObject(0).getDouble("weight"), 0.001)
         assertEquals("12", rows.getJSONObject(0).getString("reps"))
-        assertEquals(19.0, rows.getJSONObject(1).getDouble("weight"), 0.001)
+        assertEquals(19.7, rows.getJSONObject(1).getDouble("weight"), 0.001)
         assertEquals("9", rows.getJSONObject(1).getString("reps"))
         assertFalse(rows.getJSONObject(0).has("actualRir")); assertFalse(rows.getJSONObject(0).getBoolean("done"))
         val id = rows.getJSONObject(0).getString("setId")
@@ -120,6 +120,8 @@ class StudioPrefillBindingRegressionTest {
         assertEquals(id, edited.getJSONArray("sets").getJSONObject(0).getString("setId"))
         assertFalse(edited.getJSONArray("sets").getJSONObject(0).has("actualRir"))
         assertTrue(edited.getJSONArray("sets").getJSONObject(0).has("previousValues228"))
+        val untouched = edited.getJSONArray("sets").getJSONObject(1)
+        assertEquals(untouched.getJSONObject("previousValues228").getDouble("weight"), untouched.getDouble("weight"), 0.0)
         val saved = native { db.workoutHistoryDao().getWorkoutWithDetailsById("previous-different-program")!! }
         assertEquals(JSONObject(before).getJSONArray("exercises").toString(), JSONObject(saved.workout.rawJson).getJSONArray("exercises").toString())
         model.startPlannedWorkout("studio-test", 0)

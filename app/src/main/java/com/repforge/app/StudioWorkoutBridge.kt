@@ -34,6 +34,11 @@ internal object StudioWorkoutBridge {
                 if (old != null) {
                     val merged = JSONObject(old.toString())
                     update.keys().forEach { merged.put(it, update.get(it)) }
+                    // Float display roundtrips must not turn untouched #228 values into manual edits.
+                    val originalWeight = old.optDouble("weight", Double.NaN)
+                    val displayedWeight = update.optDouble("weight", Double.NaN)
+                    if (originalWeight.isFinite() && displayedWeight.isFinite() &&
+                        originalWeight.toFloat() == displayedWeight.toFloat()) merged.put("weight", old.get("weight"))
                     if (!update.has("actualRir")) merged.remove("actualRir")
                     sets.put(j, merged)
                 }
