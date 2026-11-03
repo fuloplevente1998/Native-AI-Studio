@@ -6,6 +6,8 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.remember
 import com.repforge.app.ui.theme.LocalTrainPilotColors
 import com.repforge.app.ui.theme.TrainPilotExtendedColors
+import com.repforge.app.ui.theme.Card2Color
+import com.repforge.app.ui.theme.NativeThemeTokens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -14,6 +16,19 @@ import androidx.compose.ui.unit.Density
 
 val LocalTrainPilotPalette = staticCompositionLocalOf {
     TrainPilotPalettes.allPalettes.first()
+}
+
+/** One mapping for Studio and embedded native editors, including light selection colors. */
+internal fun nativeStudioColors(palette: TrainPilotPalette): TrainPilotExtendedColors {
+    val separated = palette.id in 17..32
+    val selected = if (separated) palette.tintedSurface(0.16f) else Card2Color
+    return TrainPilotExtendedColors(bg = palette.background, card = palette.surfaceCard, card2 = palette.surfaceElevated,
+        line = palette.cardBorder, text = palette.textPrimary, muted = palette.textSecondary,
+        accent = palette.primary, accent2 = palette.secondary, onAccent = palette.onPrimary,
+        accentText = if (separated) palette.primary else NativeThemeTokens.readableAccent(palette.primary),
+        selectedSurface = selected,
+        selectedBorder = if (separated) palette.primary else NativeThemeTokens.readableControlAccent(palette.primary, selected),
+        dangerText = palette.danger, success = palette.success, emphasisBorder = palette.sectionBorder)
 }
 
 @Composable
@@ -70,12 +85,7 @@ fun TrainPilotTheme(
         fontScale = (currentDensity.fontScale * fontScaleMultiplier).coerceIn(0.85f, 2.5f)
     )
 
-    val nativeColors = remember(palette) {
-        TrainPilotExtendedColors(bg = palette.background, card = palette.surfaceCard, card2 = palette.surfaceElevated,
-            line = palette.cardBorder, text = palette.textPrimary, muted = palette.textSecondary,
-            accent = palette.primary, accent2 = palette.secondary, onAccent = palette.onPrimary,
-            dangerText = palette.danger, success = palette.success, emphasisBorder = palette.sectionBorder)
-    }
+    val nativeColors = remember(palette) { nativeStudioColors(palette) }
     CompositionLocalProvider(
         LocalTrainPilotPalette provides palette,
         LocalTrainPilotColors provides nativeColors,

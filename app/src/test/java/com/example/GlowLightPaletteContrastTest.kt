@@ -2,6 +2,7 @@ package com.example
 
 import androidx.compose.ui.graphics.luminance
 import com.example.ui.theme.TrainPilotPalettes
+import com.example.ui.theme.nativeStudioColors
 import com.repforge.app.ui.theme.NativeThemeTokens
 import org.junit.Assert.*
 import org.junit.Test
@@ -16,6 +17,14 @@ class GlowLightPaletteContrastTest {
                 palette.stepsAccent, palette.energyAccent)) {
                 for (surface in surfaces) assertTrue("Palette ${palette.id}: text contrast",
                     NativeThemeTokens.contrast(foreground, surface) >= 4.5f)
+            }
+            val native = nativeStudioColors(palette)
+            assertEquals(palette.surfaceCard, native.card)
+            assertEquals(palette.surfaceElevated, native.card2)
+            assertEquals(1f, native.selectedSurface.alpha)
+            for (surface in listOf(native.card, native.card2, native.selectedSurface)) {
+                assertTrue(NativeThemeTokens.contrast(native.accentText, surface) >= 4.5f)
+                assertTrue(NativeThemeTokens.contrast(native.selectedBorder, surface) >= 3f)
             }
             assertNotEquals(palette.background, palette.surfaceCard)
             assertNotEquals(palette.surfaceCard, palette.surfaceElevated)
