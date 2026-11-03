@@ -11,7 +11,9 @@ class GlowLightPaletteContrastTest {
         for (palette in TrainPilotPalettes.allPalettes.filter { it.id in 17..32 }) {
             val surfaces = listOf(palette.background, palette.surfaceCard, palette.surfaceElevated,
                 palette.tintedSurface(0.12f), palette.tintedSurface(0.16f), palette.tintedSurface(0.22f))
-            for (foreground in listOf(palette.primary, palette.secondary, palette.textPrimary, palette.textSecondary)) {
+            for (foreground in listOf(palette.primary, palette.secondary, palette.textPrimary, palette.textSecondary,
+                palette.success, palette.warning, palette.danger, palette.sleepAccent, palette.heartAccent,
+                palette.stepsAccent, palette.energyAccent)) {
                 for (surface in surfaces) assertTrue("Palette ${palette.id}: text contrast",
                     NativeThemeTokens.contrast(foreground, surface) >= 4.5f)
             }

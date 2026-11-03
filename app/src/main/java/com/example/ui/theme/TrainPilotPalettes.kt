@@ -2,6 +2,8 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import com.example.model.AppLanguage
 
 enum class PaletteCategory(val labelHu: String, val labelEn: String, val iconEmoji: String) {
@@ -12,6 +14,23 @@ enum class PaletteCategory(val labelHu: String, val labelEn: String, val iconEmo
     LIGHT("Világos témák", "Light Themes", "☀️"),
     BASIC("Alap témák", "Basic Themes", "🌑"),
     VIVID("Vivid témák", "Vivid Themes", "✨");
+}
+
+/** Preserve approved matte/contrast semantics; make colored readings readable on new surfaces. */
+private fun readableThemeSemantic(seed: Color, id: Int, page: Color, card: Color, inner: Color, accent: Color): Color {
+    if (id !in 17..32) return seed
+    val surfaces = listOf(page, card, inner) + listOf(0.12f, 0.16f, 0.22f).map {
+        accent.copy(alpha = it).compositeOver(card)
+    }
+    val destination = if (id >= 25) Color.Black else Color.White
+    for (step in 0..100) {
+        val candidate = lerp(seed, destination, step / 100f)
+        if (surfaces.all {
+                val first = candidate.luminance(); val second = it.luminance()
+                (maxOf(first, second) + 0.05f) / (minOf(first, second) + 0.05f) >= 4.55f
+            }) return candidate
+    }
+    return destination
 }
 
 data class TrainPilotPalette(
@@ -31,16 +50,16 @@ data class TrainPilotPalette(
     val textPrimary: Color,
     val textSecondary: Color,
     val cardBorder: Color,
-    val success: Color = if (id in 25..32) Color(0xFF059669) else Color(0xFF34D399),
-    val warning: Color = if (id in 25..32) Color(0xFFD97706) else Color(0xFFFBBF24),
-    val danger: Color = if (id in 25..32) Color(0xFFDC2626) else Color(0xFFF87171),
+    val success: Color = readableThemeSemantic(if (id in 25..32) Color(0xFF059669) else Color(0xFF34D399), id, background, surface, surfaceElevated, primary),
+    val warning: Color = readableThemeSemantic(if (id in 25..32) Color(0xFFD97706) else Color(0xFFFBBF24), id, background, surface, surfaceElevated, primary),
+    val danger: Color = readableThemeSemantic(if (id in 25..32) Color(0xFFDC2626) else Color(0xFFF87171), id, background, surface, surfaceElevated, primary),
     val isDark: Boolean = id !in 25..32,
     val primaryBright: Color = primary,
     val tertiary: Color = secondary,
-    val sleepAccent: Color = if (id !in 25..32) Color(0xFF818CF8) else Color(0xFF4F46E5),
-    val heartAccent: Color = if (id !in 25..32) Color(0xFFFB7185) else Color(0xFFE11D48),
-    val stepsAccent: Color = if (id !in 25..32) Color(0xFF34D399) else Color(0xFF059669),
-    val energyAccent: Color = if (id !in 25..32) Color(0xFFFBBF24) else Color(0xFFD97706)
+    val sleepAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFF818CF8) else Color(0xFF4F46E5), id, background, surface, surfaceElevated, primary),
+    val heartAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFFFB7185) else Color(0xFFE11D48), id, background, surface, surfaceElevated, primary),
+    val stepsAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFF34D399) else Color(0xFF059669), id, background, surface, surfaceElevated, primary),
+    val energyAccent: Color = readableThemeSemantic(if (id !in 25..32) Color(0xFFFBBF24) else Color(0xFFD97706)
 ) {
     // 4 distinct theme families requested by user:
     // 1..8   = Matt témák (valódi matt, alacsony telítettségű, bársonyos felületek)
@@ -92,7 +111,7 @@ object TrainPilotPalettes {
         // 1..8: MATT TÉMÁK (Valódi matt, pasztellesített-tompított színek, bársonyos sötétszürke felületek)
         // =========================================================================
         TrainPilotPalette(
-            id = 1,
+            id = 1, id, background, surface, surfaceElevated, primary),
             key = "graphite_gold",
             nameHu = "Matt Grafit & Óarany (Alap)",
             nameEn = "Matte Graphite & Antique Gold",
