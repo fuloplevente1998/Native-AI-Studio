@@ -188,4 +188,17 @@ class StudioProgressUiRegressionTest {
         assertEquals(listOf("A", "B"), adds); assertEquals(1, undos)
     }
 
+    @Test fun volumePercentageActuallyUpdatesForIncreaseAndDecrease() {
+        var state by mutableStateOf(TrainPilotUiState(selectedProgressRangeIndex = 1,
+            loggedWorkouts = listOf(row(0, 1500), row(7, 1000))))
+        compose.setContent { TrainPilotTheme {
+            Column(Modifier.width(360.dp).verticalScroll(rememberScrollState())) {
+                MainProgressVolumeAndMuscleSection(state, {}, {}, {}, {})
+            }
+        } }
+        compose.onNodeWithTag("progress_volume_change", useUnmergedTree = true).assertTextEquals("▲ +50%")
+        compose.runOnIdle { state = state.copy(loggedWorkouts = listOf(row(0, 500), row(7, 1000))) }
+        compose.onNodeWithTag("progress_volume_change", useUnmergedTree = true).assertTextEquals("▼ -50%")
+    }
+
 }

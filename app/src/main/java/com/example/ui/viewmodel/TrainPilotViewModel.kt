@@ -17,6 +17,7 @@ import com.example.model.ExerciseItem
 import com.example.model.ExerciseSetItem
 import com.example.model.HomeDemoMode
 import com.example.model.LoggedWorkoutEntry
+import com.example.model.workoutsInCalendarWeekToDate
 import com.example.model.localWorkoutDate
 import com.example.model.StudioProgressWindow
 import com.example.model.progressPeriodDays
@@ -1391,7 +1392,7 @@ class TrainPilotViewModel : ViewModel() {
                         loggedWorkouts = mappedWorkouts,
                         privatePhotoCount = mappedWorkouts.sumOf { it.photoCount },
                         prRecords = computedPrs,
-                        weeklyGoalCompleted = mappedWorkouts.size,
+                        weeklyGoalCompleted = mappedWorkouts.workoutsInCalendarWeekToDate(LocalDate.now()).size,
                         weeklyGoalTarget = if (loadedWeeklyGoal > 0) loadedWeeklyGoal else st.weeklyGoalTarget,
                         stepsGoal = if (loadedStepsGoal > 0) loadedStepsGoal else st.stepsGoal,
                         currentBodyWeightKg = if (latestWeightKg > 0f) latestWeightKg else st.currentBodyWeightKg,
@@ -3299,7 +3300,7 @@ class TrainPilotViewModel : ViewModel() {
                                 workoutStartedEpochMs = 0L,
                                 loggedWorkouts = updatedLogs,
                                 prRecords = computePrRecordsFromWorkouts(updatedLogs),
-                                weeklyGoalCompleted = st.weeklyGoalCompleted + 1,
+                                weeklyGoalCompleted = updatedLogs.workoutsInCalendarWeekToDate(LocalDate.now()).size,
                                 quickWorkoutQueue = emptyList(),
                                 currentTab = MainTab.PROGRESS,
                                 progressMainSection = 1,

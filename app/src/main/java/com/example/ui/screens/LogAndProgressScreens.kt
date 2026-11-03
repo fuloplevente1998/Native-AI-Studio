@@ -804,7 +804,7 @@ fun LogWorkoutDetailScreen(
     onOpenWatchSync: () -> Unit,
     onOpenHealthTab: () -> Unit,
     workoutHealth: @Composable () -> Unit = {},
-    deleteActions: @Composable () -> Unit = {}
+    deleteActions: (@Composable () -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     val workout = uiState.loggedWorkouts.find { it.id == uiState.selectedLogWorkoutId }
@@ -860,7 +860,6 @@ fun LogWorkoutDetailScreen(
         contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
-        item { deleteActions() }
         // Summary Header Card
         item {
             Surface(
@@ -908,6 +907,8 @@ fun LogWorkoutDetailScreen(
                 }
             }
         }
+
+        if (deleteActions != null) item { deleteActions() }
 
         // Sub-tabs: Gyakorlatok (5) | Statisztikák | Forrás
         item {
@@ -1457,6 +1458,7 @@ internal fun MainProgressVolumeAndMuscleSection(
     val volumeBars = remember(uiState.loggedWorkouts, period) { period.volumes(uiState.loggedWorkouts) }
     val expandedWeeklyBars = volumeBars
     val loggedTotalKg = periodWorkouts.sumOf { it.totalVolumeKg }
+    val volumeChange = period.volumeChangePercent(uiState.loggedWorkouts)
     val totalVolumeText = "%,d kg".format(java.util.Locale.US, loggedTotalKg).replace(',', ' ')
     val dateSubtitle = "${period.start.format(huFmt)} – ${period.end.format(huFmt)}"
     val prCountValue = uiState.prRecords.count {
@@ -1511,9 +1513,16 @@ internal fun MainProgressVolumeAndMuscleSection(
                     Column(horizontalAlignment = Alignment.End) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "—",
+                                text = when {
+                                    volumeChange == null -> "—"
+                                    volumeChange > 0 -> "▲ +$volumeChange%"
+                                    volumeChange < 0 -> "▼ $volumeChange%"
+                                    else -> "0%"
+                                },
                                 style = MaterialTheme.typography.titleMedium,
-                                color = palette.textSecondary
+                                color = when { volumeChange == null || volumeChange == 0L -> palette.textSecondary
+                                    volumeChange > 0 -> palette.success else -> palette.danger },
+                                modifier = Modifier.testTag("progress_volume_change")
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Icon(

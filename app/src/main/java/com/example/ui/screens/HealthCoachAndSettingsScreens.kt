@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
+import com.example.model.workoutsOn
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import com.repforge.app.ui.theme.trainPilotBorder
@@ -172,7 +173,8 @@ fun HealthTabScreen(
     onOpenGoalsDialog: () -> Unit = {},
     onDeleteWeightLog: (String) -> Unit = {},
     onSelectHealthSource: (Boolean) -> Unit = { onTogglePrimaryHealthSource() },
-    onRequestHealthPermissions: () -> Unit = { onNavigateToSubScreen(SubScreen.PERMISSIONS_SCREEN) }
+    onRequestHealthPermissions: () -> Unit = { onNavigateToSubScreen(SubScreen.PERMISSIONS_SCREEN) },
+    onOpenLoggedWorkout: (String) -> Unit = { onNavigateToSubScreen(SubScreen.LOG_WORKOUT_DETAIL) }
 ) {
     val palette = LocalTrainPilotPalette.current
     val requestDailyHealthSync = com.example.ui.components.LocalSyncDailyHealth.current
@@ -466,10 +468,10 @@ fun HealthTabScreen(
                                         "Célok módosítása >"
                                     ) to { onOpenGoalsDialog() }
                                     "workout" -> listOf(
-                                        "Mai edzések • ${uiState.loggedWorkouts.size} rögzített edzés",
-                                        "Utolsó edzés: ${uiState.loggedWorkouts.firstOrNull()?.titleHu ?: "Még nincs rögzített edzés"}",
+                                        "Mai edzések • ${uiState.loggedWorkouts.workoutsOn(today).size} rögzített edzés",
+                                        "Utolsó mai edzés: ${uiState.loggedWorkouts.workoutsOn(today).firstOrNull()?.titleHu ?: "Ma még nincs rögzített edzés"}",
                                         "Edzésnapló részletek megnyitása >"
-                                    ) to { onNavigateToSubScreen(SubScreen.LOG_WORKOUT_DETAIL) }
+                                    ) to { uiState.loggedWorkouts.workoutsOn(today).firstOrNull()?.id?.let(onOpenLoggedWorkout) }
                                     "recovery" -> listOf(
                                         "Regeneráció & Készenlét • ${uiState.coachReadinessScore}/100",
                                         "Samsung Energia: ${uiState.samsungEnergyScore}/100 • Javaslat: 1–2 RIR kontrollált terhelés",

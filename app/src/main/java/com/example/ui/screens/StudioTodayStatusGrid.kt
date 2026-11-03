@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import com.example.model.localWorkoutDate
+import com.example.model.workoutsOn
 import com.example.ui.viewmodel.TrainPilotUiState
 import java.time.LocalDate
 
@@ -21,7 +21,7 @@ internal fun StudioTodayStatusGrid(state: TrainPilotUiState, compact: Boolean = 
         Triple("calories", if (compact) "Aktív kcal" else "Aktív kalória", if ("activeCalories" in state.dailyHealthAvailableFields) "${state.activeCaloriesKcal} kcal" else "—"),
         Triple("pulse", "Pulzus", if (state.currentHrBpm > 0) "${state.currentHrBpm} bpm" else "—"),
         Triple("steps", "Lépések", if ("steps" in state.dailyHealthAvailableFields) "${state.dailySteps}" else "—"),
-        Triple("workout", "Mai edzés", "${state.loggedWorkouts.count { it.localWorkoutDate() == LocalDate.now() }}"),
+        Triple("workout", "Mai edzés", "${state.loggedWorkouts.workoutsOn(LocalDate.now()).size}"),
         Triple("recovery", "Regeneráció", if (state.coachReadinessScore > 0) "${state.coachReadinessScore}/100" else "—")
     )
     val icons = listOf(Icons.Default.Bedtime, Icons.Default.LocalFireDepartment, Icons.Default.Favorite,

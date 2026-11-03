@@ -1009,6 +1009,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     if (!health.healthRefreshing) viewModel.reloadHealthJournal()
                                 }
                                 HealthTabScreen(
+                                    onOpenLoggedWorkout = viewModel::openLogWorkoutDetail,
                                     uiState = uiState.copy(primaryHealthSourceSamsung = health.provider == com.repforge.app.HealthJournalStore.SAMSUNG,
                                         lastHealthSyncLabel = health.lastSyncAt, lastHealthReadLabel = health.lastReadAt,
                                         samsungGrantedCount = health.samsungGrantedCount,

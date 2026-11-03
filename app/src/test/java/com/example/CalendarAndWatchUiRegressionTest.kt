@@ -1,10 +1,12 @@
 package com.example
 
 import androidx.compose.runtime.*
-import androidx.compose.ui.graphics.toPixelMap
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.example.localization.TrainPilotStrings
 import com.example.model.AppLanguage
 import com.example.ui.screens.CalendarPlannerScreen
@@ -26,15 +28,23 @@ import org.robolectric.annotation.LooperMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @LooperMode(LooperMode.Mode.PAUSED)
 class CalendarAndWatchUiRegressionTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule val compose = createAndroidComposeRule<androidx.activity.ComponentActivity>()
     @Test fun calendarActuallyPaintsLightThenDarkOnThemeChange() {
         var palette by mutableStateOf(TrainPilotPalettes.allPalettes.first { !it.isDark })
         compose.setContent { TrainPilotTheme(palette) {
             CalendarPlannerScreen(TrainPilotUiState(), {}, {}, {}, {}, { _, _ -> }, {})
         } }
         fun panelLuminance(): Float {
-            val image = compose.onNodeWithTag("calendar_month_panel").captureToImage().toPixelMap()
-            return image[image.width / 2, 8].luminance()
+            val bounds = compose.onNodeWithTag("calendar_month_panel").fetchSemanticsNode().boundsInRoot
+            var luminance = 0f
+            compose.runOnIdle {
+                val content = compose.activity.findViewById<android.view.View>(android.R.id.content)
+                val bitmap = Bitmap.createBitmap(content.width, content.height, Bitmap.Config.ARGB_8888)
+                content.draw(Canvas(bitmap))
+                luminance = Color(bitmap.getPixel(((bounds.left + bounds.right) / 2).toInt(), bounds.top.toInt() + 8)).luminance()
+                bitmap.recycle()
+            }
+            return luminance
         }
         assertTrue("Light calendar must not remain a dark panel", panelLuminance() > 0.5f)
         compose.runOnIdle { palette = TrainPilotPalettes.allPalettes.first { it.isDark } }
