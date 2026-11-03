@@ -1910,11 +1910,7 @@ internal fun CoachDetailScreen(
                                 color = palette.primary
                             )
                             Text(
-                                text = if (hasScore) {
-                                    "A napi regeneráció és az akut izomterhelés alapján ma teljes értékű edzés végezhető 1–2 RIR tartalékkal."
-                                } else {
-                                    "Szinkronizáld a Health Connect vagy Samsung Health adatokat a mai személyre szabott készenléti érték kiszámításához."
-                                },
+                                text = com.example.ui.components.studioCoachReadinessText(readiness),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = palette.textSecondary
                             )
@@ -2009,7 +2005,11 @@ internal fun CoachDetailScreen(
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Kulcsjelek", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                        Text(if (nativeState.provider == com.repforge.app.HealthJournalStore.SAMSUNG) "Samsung Health" else "Health Connect", style = MaterialTheme.typography.labelMedium, color = palette.primary)
+                        Text(when (nativeState.provider) {
+                            com.repforge.app.HealthJournalStore.SAMSUNG -> "Samsung Health"
+                            com.repforge.app.HealthJournalStore.HC -> "Health Connect"
+                            else -> "Adatok betöltése…"
+                        }, style = MaterialTheme.typography.labelMedium, color = palette.primary)
                     }
                     CoachSignalRow("Alvás", readiness?.sleepMinutes?.let { "${it.toInt() / 60} ó ${it.toInt() % 60} p" } ?: "—", palette.success)
                     CoachSignalRow("Nyugalmi pulzus", uiState.todayPulseReading?.takeIf { it.provider == nativeState.provider }?.restingBpm?.let { "${it.toInt()} bpm" } ?: "—", palette.success)

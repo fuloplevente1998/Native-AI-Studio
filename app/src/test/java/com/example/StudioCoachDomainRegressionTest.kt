@@ -60,5 +60,7 @@ class StudioCoachDomainRegressionTest {
             .put("exercises", JSONArray().put(JSONObject()))
         val result = NativeCoachReadiness.calculate(JSONObject(), energy, listOf(workout), now, ZoneOffset.UTC)
         assertTrue(result.pain); assertTrue(requireNotNull(result.score) <= 54.0)
+        assertTrue(com.example.ui.components.studioCoachReadinessText(result).contains("Fájdalomjelzés"))
+        assertFalse(com.example.ui.components.studioCoachReadinessText(result).contains("teljes értékű"))
     }
 }
