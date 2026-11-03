@@ -118,7 +118,13 @@ fun exerciseYouTubeEmbedHtml(videoId: String): String {
                         document.getElementById("cover").hidden = true;
                         tpReport("playing");
                       }
-                      if (event.data === 0 || event.data === 2) tpReport("paused");
+                      if (event.data === 0 || event.data === 2) {
+                        if (!document.getElementById("cover").hidden) {
+                          tpButton.disabled = false;
+                          tpButton.textContent = "▶ Lejátszás";
+                        }
+                        tpReport("paused");
+                      }
                     },
                     onAutoplayBlocked: function () { tpReport("blocked"); },
                     onError: function (event) { tpReport("error:" + event.data); }

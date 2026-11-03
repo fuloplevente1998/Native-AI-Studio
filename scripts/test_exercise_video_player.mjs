@@ -70,3 +70,14 @@ test('blocked playback is reported instead of being called ready', () => {
   assert.equal(p.events.at(-1), 'trainpilot-video:blocked');
   assert.equal(p.elements.play.disabled, true);
 });
+
+test('pause before the first frame lets the user retry the visible play button', () => {
+  const p = player();
+  p.options.events.onReady();
+  p.elements.play.click();
+  p.options.events.onStateChange({ data: 2 });
+  assert.equal(p.elements.cover.hidden, false);
+  assert.equal(p.elements.play.disabled, false);
+  p.elements.play.click();
+  assert.equal(p.playCalls, 2);
+});

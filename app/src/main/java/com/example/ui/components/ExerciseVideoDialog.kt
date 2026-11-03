@@ -85,6 +85,10 @@ fun ExerciseYouTubeVideoModalDialog(
     var copyError by remember(url) { mutableStateOf(false) }
 
     LaunchedEffect(url, mode, retryKey, load) {
+        if (load is ExerciseVideoLoad.Failed && mode == ExerciseVideoMode.EMBED) {
+            // A late media start after the deadline must not play behind the error panel.
+            webView?.evaluateJavascript("tpPause();", null)
+        }
         if (url != null && (load == ExerciseVideoLoad.Loading || load == ExerciseVideoLoad.Starting)) {
             val starting = load == ExerciseVideoLoad.Starting
             delay(18_000)
