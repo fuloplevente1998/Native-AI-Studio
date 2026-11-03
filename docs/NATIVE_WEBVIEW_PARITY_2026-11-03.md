@@ -1,5 +1,7 @@
 # WebView main → Native Studio: funkcióparitás, 2026-11-03
 
+**Frissítés #77 után:** #68 előtöltés és #70 Coach bekötés implementálva, main81da2f7; igazolt402 teszt (0 failure/error/skipped). #69 RIR/root-feedback alap javítva, teljes paritása részleges. A további hiányok továbbra is backlog, BLE sztornó. Az alábbi részletek auditkori tünetét a soronkénti státusz értelmezi.
+
 ## Forrás és az audit határa
 
 - Régi, kanonikus telefonapp: `fuloplevente1998/TrainPilot` main **`5f026a56b9b6d33c84afa77eb3927b11f0bd6f6a`**, `www/app.js` (20 599 sor), `www/index.html`, `docs/FEATURES.hu.md` és az `ai-studio/` mesterspecifikáció/inventory.
@@ -25,9 +27,11 @@
 | Mentés/Drive | JSON/ZIP streamelt import/export, privát fotók, health consent, redo/replacement/tombstone létezik | Saját mentés, valódi process kill, Drive/OAuth és hibatűrés fizikai ellenőrzése |
 | Témák, nyelvek | Témakövető naptár/térkép, témák és nyelvválasztó létezik, #67 kompakt Settings | Négy nyelv teljes felületi lokalizációja hiányos; #75 |
 
-## Igazolt hiányok / részleges bekötések
+## Auditkori eltérések és mostani megvalósítási állapot
 
 ### 1. P1 – Előző megfelelő edzés súly-/ismétlés-előtöltése a Studio indításban — [68](https://github.com/fuloplevente1998/Native-AI-Studio/issues/68)
+
+**Most: implementálva #77-ben, main81da2f7, CI402; nem újrakiosztandó kódhiány.**
 
 **Régi viselkedés:** `www/app.js:812–885, tp228PrefillSets`. Inventory: B01, A10.
 
@@ -41,6 +45,8 @@ A startPlannedWorkout/startWorkoutWithExercises a buildDefaultSetsForExercise é
 
 ### 2. P1 – Opcionális tényleges RIR és kanonikus fájdalom/effort visszajelzés — [69](https://github.com/fuloplevente1998/Native-AI-Studio/issues/69)
 
+**Most: részben implementálva #77-ben (opcionális RIR, root-feedback, pain); további feedback-paritás #69/#73-ban nyitott.**
+
 **Régi viselkedés:** `www/app.js:20241 tp197RirSave; 16869 TrainPilotWorkoutFeedback`. Inventory: B15, B16, C03.
 
 **Mostani bizonyíték:** `app/src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt:784, 825, 3215`.
@@ -52,6 +58,8 @@ A Studio minden új sorozathoz rir=2 értéket ad és actualRir-ként menti, kü
 **Megrendelési állapot:** A Coach bekötésével közös szerződés; nem szabad párhuzamosan átírni ugyanazt a VM-et.
 
 ### 3. P1 – Valódi Coach tanácsok, következő nap és tartós progresszió bekötése — [70](https://github.com/fuloplevente1998/Native-AI-Studio/issues/70)
+
+**Most: implementálva #77-ben, main81da2f7, CI402; nem újrakiosztandó kódhiány.**
 
 **Régi viselkedés:** `www/app.js:3514 rf233ExerciseAdvice; 19989 tp197UiRequestSave`. Inventory: C11–C14, E17.
 
@@ -130,7 +138,7 @@ A teljes `NativeHealthMetrics.definitions` 26 kulcsa már létezik a háttérben
 ## Külön, már rögzített új észrevételek
 
 - #60: a mostani két egymás alatti órablokk túl magas. Kompakt fejléc és két egymás melletti belső panel kell. **Nem kész**, csak a javaslat és a követelmény rögzített.
-- #61: Samsung pulzusnál téves engedélyhiány-jelzés; hiteles Energy=0 esetén a napi recovery és Coach score eltérhet. Ezek forráshibák, nem „a felhasználónál biztosan nincs engedély” megállapítások.
+- #61: Samsung pulzusnál a téves engedélyhiány-jelzés továbbra is nyitott; a hiteles Energy=0 és Coach score eltérését #77 javítja. Az eredeti készülékes adathiány okát ez sem bizonyítja.
 - #48 és #35: #67 javítás mainen; friss APK-s visszateszt szükséges. A korábbi 2744-es készülékképek a megelőző megoldást cáfolták, nem a most átadandó #67-et igazolják.
 
 ## Sztornózott és nem megrendelt terület
@@ -141,7 +149,7 @@ A teljes `NativeHealthMetrics.definitions` 26 kulcsa már létezik a háttérben
 
 ## Megvalósítási sorrend és ütközések
 
-A felhasználó sorrendje: **#67 aláírt telefonos APK átadása → #70 Coach + #68 előtöltés**, a szükséges #69 adatértelmezési feltételekkel. A kanonikus motor, valódi program/nap-azonosság, kézi/draft-védelem és provider-izoláció megmarad. A régi `dayId=session` rekordot nem szabad találomra egy A/B naphoz rendelni.
+A felhasználó sorrendje teljesült: **#67 aláírt telefonos APK átadva → #70 Coach + #68 előtöltés mainen**, a szükséges #69 adatértelmezési feltételekkel. A kész kódot ne implementáld újra. A kanonikus motor, valódi program/nap-azonosság, kézi/draft-védelem és provider-izoláció megmarad. A régi `dayId=session` rekordot nem szabad találomra egy A/B naphoz rendelni.
 
 A többi #71–#75 most csak backlog. Ugyanazt a `TrainPilotViewModel.kt`, `MainActivity.kt` vagy `HealthCoachAndSettingsScreens.kt` fájlt érintő feladatok nem adhatók párhuzamosan több chatnek közös írásra; új kiosztásnál ismét teljes fájltulajdon kell. Már mainen lévő #58/#62–#67 kódot ne cherry-pickelj újra. Alügynök nincs kérve.
 

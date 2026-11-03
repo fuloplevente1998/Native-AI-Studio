@@ -4,10 +4,11 @@ Ez az elsődleges belépési pont. A régi dátumozott átadók történeti megf
 
 ## Kód és ellenőrzés
 
-- Native main alkalmazásforrás: `deebfddd7f0259e589e9791582ad6d2d38fcf4e2` (#67 merge). PR-forrás: `c0a9862aaadf1e3d4ad20bc12420f8d828114c2d`; app/Wear/shared/scripts/workflow fáik egyeznek.
-- [Actions 41589518841](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41589518841) SUCCESS. Letöltött nyers JUnit XML: **395 = 219 telefon + 176 Wear**, 0 failure/error/skipped; artifact `13208903929`. A jelentés commitja egyezik a PR-head-del.
-- #58, #62–#66 és #67 mainen. A Coach rövid kivonata, piros részlet-/listatörlés, belső videó, valós órainfó, pulzus/recovery projekció, témakövetés, naptár, valódi naplóadat és százalékos volumen-grafikon már létezik; ezeket ne kezdd újra.
-- #67: nagyobb hasznos mini térkép, rendszerhez illesztett Dialog, Android látható ablakhoz mért Indítás-gomb; napi Pulzus kártyába költözött trend és az ismételt alapnézeti szövegek eltávolítása; kompakt Settings fejléc, egyetlen Témák cím és közös edzésbeállítási keret.
+- Main alkalmazásforrás: **`81da2f7d3190ff5a558e2a07ccf1fe54104c90e8`** (#77). Tesztelt PR-head: `eae9d6042d48998d9e9e21681443257aa8427897`; app/Wear/shared/scripts/workflow fák egyeznek.
+- [Actions 41598444479](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41598444479) SUCCESS; letöltött nyers XML: **402 =226 telefon +176 Wear**, 0 failure/error/skipped, artifact `13213141866` és tényleges source-SHA visszaellenőrizve.
+- #77: a kanonikus Coach/target/advice/readiness és előző megfelelő alkalom súly-/ismétlés-előtöltése a Studio UI-ba kötve. Valódi program/nap indul, jövőbeli cél a naptárba visz. A #228 előtöltő programtól/naptól függetlenül azonos ID/loadType/repUnit alapján működik; nincs örökölt actualRir/done/idő/GPS. Stable ID, kézi érték és eredeti napló megmarad. A hiányzó RIR és tényleges 0 külön, a hat visszajelzés kanonikus machine érték. Fájdalom/alacsony készenlét a szövegben is korlátoz; nincs helyi fake súly/RIR számítás. [Részletek](COACH_PREFILL_IMPLEMENTATION_2026-11-03.md).
+- Korábbi #67 appforrás: `deebfddd7f0259e589e9791582ad6d2d38fcf4e2`, tesztelt PR-head `c0a9862aaadf1e3d4ad20bc12420f8d828114c2d`; Actions 41589518841, nyers395 =219 telefon+176Wear, 0 failure/error/skipped. A mini/fullscreen térkép, Mai állapot pulzustrend/szöveg és Settings fejléc/csoport javítása innen származik. Ezeket ne kezdd újra.
+- #58/#62–#66: Coach rövid kivonat, piros részlet-/listatörlés, belső videó, valós órainfó, pulzus/recovery projekció, témakövetés, naptár, valós naplóadat és volumen-százalék már létezik.
 
 ## APK – külön állapot a main kódjától
 
@@ -19,12 +20,13 @@ A #67 csak telefonos fájlokat változtatott. Ehhez önmagában az órás appot 
 
 Korábbi igazolt aláírt build: 41580088708, forrás `56301f7d68016f3074c366ff4162617adf75e8cd`, 393 teszt; EZ MÉG NEM TARTALMAZZA #67-et. A régi 2743-as Drive-linkek történeti kiadások, nem a legfrissebb javítások.
 
-## Következő jóváhagyott munka
+## Jóváhagyott munka és megmaradó backlog
 
-1. A fenti aláírt telefonos APK átadása kész; a következő két funkció fejlesztése megkezdhető.
-2. [#70 – Coach valódi bekötése](https://github.com/fuloplevente1998/Native-AI-Studio/issues/70), és [#68 – előző megfelelő edzésből súly/ismétlés előtöltése](https://github.com/fuloplevente1998/Native-AI-Studio/issues/68). A szükséges RIR/effort szerződést #69 alapján megőrizni/javítani; nem lehet kitalált RIR-ből vagy elvesző fájdalomjelzésből progressziót számolni.
-3. A többi paritáshiány csak rögzített backlog. A program-/gyakorlatműveletek, teljes egészségböngésző, intervallum- és nyelvi teljesség nem kapott most implementációs felhatalmazást.
-4. **BLE-kezelő sztornó**, a felhasználó kifejezett kérése. Nem fejlesztendő, nem kell új hibajegy; meglévő backend/adat törlése sem feladat.
+1. A #67 aláírt telefonos APK átadása kész. A felhasználó ezt megkapta a Coach/előző alkalom fejlesztése ELŐTT.
+2. #70 Coach és #68 előtöltés **kódban/CI-ben kész, mainen**, implementációként lezárva. A legújabb, ezeket tartalmazó aláírt main build [41599072569](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41599072569) az `81da2f7...` forrásból indult; állapota az APK-szakaszban kerül rögzítésre. Fizikai elfogadás nem állított.
+3. #69 alap RIR/root-feedback szerződése javítva; a teljes gyakorlatonkénti/utólagos feedback és régi formátumok áttekintése még nyitott, adatot tömegesen nem írunk át. #61 Energy 0 része javítva, Samsung permission-üzenet része még nyitott.
+4. #71–#75 és a #60 kompakt órakártya csak backlog; más új implementációt most nem kezdünk. #35/#48/#59 készülékes visszaigazolásra vár.
+5. **BLE-kezelő sztornó**, a felhasználó kifejezett kérése. Nem fejlesztendő, meglévő adat/backend törlése sem feladat.
 
 A funkcióhiányok forráshoz kötött listája: [WebView–natív paritásaudit](NATIVE_WEBVIEW_PARITY_2026-11-03.md).
 Aktuális készülékes nyitott pontok: [hibakövető](PROGRESS_HEALTH_BUG_TRACKER_2026-11-02.md).

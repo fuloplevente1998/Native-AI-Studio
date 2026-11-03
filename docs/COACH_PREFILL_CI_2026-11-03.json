@@ -1,0 +1,28 @@
+{
+  "source": "eae9d6042d48998d9e9e21681443257aa8427897",
+  "run": 41598444479,
+  "artifact": 13213141866,
+  "counts": {
+    "tests": 402,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "modules": {
+    "phone": {
+      "tests": 226,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "wear": {
+      "tests": 176,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "mainMerge": "81da2f7d3190ff5a558e2a07ccf1fe54104c90e8",
+  "appTreeEqual": true,
+  "deviceAccepted": false
+}

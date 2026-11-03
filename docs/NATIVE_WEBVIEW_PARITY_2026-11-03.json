@@ -1,7 +1,7 @@
 {
   "schema": "native-webview-parity-2026-11-03.v1",
   "webviewMain": "5f026a56b9b6d33c84afa77eb3927b11f0bd6f6a",
-  "nativeAppSource": "deebfddd7f0259e589e9791582ad6d2d38fcf4e2",
+  "nativeAppSource": "81da2f7d3190ff5a558e2a07ccf1fe54104c90e8",
   "method": "Feature-level static source and reachable Studio entrypoint review; not a complete 107-point device revalidation",
   "approvedAfterApk": [
     "coach",
@@ -20,7 +20,8 @@
       "native": "app/src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt:784, 2789, 2829",
       "symptom": "A startPlannedWorkout/startWorkoutWithExercises a buildDefaultSetsForExercise értékeit használja. A régi megfelelő alkalom súlya és ismétlése nem kerül át. A kanonikus session dayId jelenleg session, ezért valódi program/nap-azonosság és legacy-kompatibilitás is kell.",
       "acceptance": "Csak megfelelő, mentett és teljesített erősítő alkalomból öröklődjön súly és ismétlés, sorozatonként. Gyors és tervezett indítás; új/saját/importált gyakorlat. Kézi módosítás és aktív draft megmarad. RIR, done, idő, GPS, ownership nem öröklődik. Valós program/nap-azonosság, legacy fallback csak bizonyítható egyezésnél.",
-      "scope": "A felhasználó kérte: a mostani APK átadása UTÁN implementáljuk."
+      "scope": "A felhasználó kérte: a mostani APK átadása UTÁN implementáljuk.",
+      "status": "implemented-ci-verified"
     },
     {
       "key": "feedback",
@@ -31,7 +32,8 @@
       "native": "app/src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt:784, 825, 3215",
       "symptom": "A Studio minden új sorozathoz rir=2 értéket ad és actualRir-ként menti, külön megadási jel nélkül. A feedback magyar effort szöveg, míg a kanonikus Coach feedback.rating és gépi pain/hard értéket vizsgál.",
       "acceptance": "A hiányzó actualRir maradjon hiányzó; mért 0 külön kezelve. A felhasználó kifejezett RIR-je megmarad export/import/restart során. A pain/hard és a többi kanonikus effort-állapot eljusson a Coach-hoz, régi adatok migrációja adatvesztés nélkül. A RIR-cél nem tényleges mérés.",
-      "scope": "A Coach bekötésével közös szerződés; nem szabad párhuzamosan átírni ugyanazt a VM-et."
+      "scope": "A Coach bekötésével közös szerződés; nem szabad párhuzamosan átírni ugyanazt a VM-et.",
+      "status": "partially-implemented"
     },
     {
       "key": "coach",
@@ -42,7 +44,8 @@
       "native": "app/src/main/java/com/example/ui/screens/HealthCoachAndSettingsScreens.kt:1770; app/src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt:4123",
       "symptom": "A Studio Coach nem használja a CoachViewModel/NativeCoachAdviceRepository teljes tanácslistáját, az ajánlott nap az első nap. Az updateProgressionSettings csak UiState-et módosít. A kanonikus motor és NativeTrainingModePicker már létezik, új motort nem kell írni.",
       "acceptance": "Adatalapú gyakorlatonkénti ajánlás és indok; NativeCoachTargets szerinti valódi program/nap/naptári cél. A kijelzett nap induljon. Szolgáltató- és frissességvédelem; fájdalom/terhelés megmarad. Módok valós mentése, előnézet és tudatos elfogadás. Adathiánynál nincs kitalált tanács. Studio arculat megmarad.",
-      "scope": "A felhasználó kérte: az APK átadása UTÁN implementáljuk. Előtöltéssel összehangolt munka."
+      "scope": "A felhasználó kérte: az APK átadása UTÁN implementáljuk. Előtöltéssel összehangolt munka.",
+      "status": "implemented-ci-verified"
     },
     {
       "key": "health-browser",
@@ -53,7 +56,8 @@
       "native": "app/src/main/java/com/repforge/app/ui/health/HealthRecordBrowser.kt; app/src/main/java/com/repforge/app/ui/health/NativeHealthMetrics.kt; app/src/main/java/com/example/ui/screens/HealthCoachAndSettingsScreens.kt",
       "symptom": "A Studio főleg mai és 7/14 napos összesítéseket mutat. A teljes dátumtól/dátumig lapozó, nyers rekord, alvásszakasz és mind a 26 metrika részletezője nincs elérhetően bekötve. Ezekhez natív háttérkomponens már van.",
       "acceptance": "Dátumszűrés és lapozás valódi tárolón; forrás/időbélyeg/hiány/hiba helyes; összes támogatott metrika és alvásszakasz hozzáférhető. Nincs fake érték, nincs provider-keverés. A mai kártyák kompaktak maradnak.",
-      "scope": "Rögzített backlog, most nem kezdjük el."
+      "scope": "Rögzített backlog, most nem kezdjük el.",
+      "status": "backlog-not-authorized"
     },
     {
       "key": "program-crud",
@@ -64,7 +68,8 @@
       "native": "app/src/main/java/com/example/ui/screens/WorkoutAndPlanningScreens.kt:1380; app/src/main/java/com/example/MainActivity.kt:475–566",
       "symptom": "A programtörlés feliratos művelet jelenleg onBack-et hív. A Studio útvonalon nincs teljes programmásolás/törlés, nap hozzáadás/törlés, gyakorlateltávolítás a napból, meglévő saját gyakorlat szerkesztés/törlés és tartós kedvenckezelés. Létrehozás/aktiválás/sorrend/prescription-szerkesztés már létezik.",
       "acceptance": "Minden felsorolt művelet valódi Room-módosítás, hibánál nincs hamis siker; aktív session/import/szinkron és beépített elemek védelme. Kedvencek backupban megmaradnak. Meglévő napló gyakorlatreferenciái nem sérülhetnek.",
-      "scope": "A felhasználónak felsorolva; most csak backlog, nincs implementációs felhatalmazás ebben a körben."
+      "scope": "A felhasználónak felsorolva; most csak backlog, nincs implementációs felhatalmazás ebben a körben.",
+      "status": "backlog-not-authorized"
     },
     {
       "key": "journal-edit",
@@ -75,7 +80,8 @@
       "native": "app/src/main/java/com/example/MainActivity.kt:709–730; app/src/main/java/com/repforge/app/ui/journal/JournalEditorDialog.kt",
       "symptom": "A Studio naplórészletben a natív törlés/Health/fotó/útvonal elérhető, de a létező JournalEditorDialog/openEditor szerkesztési út nincs bekötve. A meglévő visszajelzés szerkesztése sem teljes.",
       "acceptance": "Mentett sets/reps/súly/tényleges RIR és megjegyzés/visszajelzés tudatos szerkesztése, előnézet/megerősítés a meglévő natív szerkesztőn. Cache/PR/Coach frissüljön, idők/ownership/health nem találhatók ki.",
-      "scope": "Csak rögzítés; #57 törlés funkcióját nem kell újraírni."
+      "scope": "Csak rögzítés; #57 törlés funkcióját nem kell újraírni.",
+      "status": "backlog-not-authorized"
     },
     {
       "key": "timers",
@@ -86,7 +92,8 @@
       "native": "app/src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt:2746; app/src/main/java/com/repforge/app/data/store/TrainPilotSettingsStore.kt:256",
       "symptom": "Az updateIntervalSettings és toggleAutoMode a Studio UiState-et írja; a teljes globális/edzésenkénti preset és kanonikus setTimerDefaults kapcsolat hiányos. Az alap natív stopper/szünet/folytatás meglétét ez nem vitatja.",
       "acceptance": "A kiválasztott munka/pihenő/kör/auto mód valódi motorhoz és tartós presethez jusson, restart/programváltás után helyesen; hang/haptika jogosultság és háttéridő megmarad. Ne legyen második időzítő.",
-      "scope": "A pontos preset/start útvonal külön megvalósítási auditot igényel; most backlog."
+      "scope": "A pontos preset/start útvonal külön megvalósítási auditot igényel; most backlog.",
+      "status": "backlog-not-authorized"
     },
     {
       "key": "languages",
@@ -97,7 +104,19 @@
       "native": "app/src/main/java/com/example/ui/screens/HealthCoachAndSettingsScreens.kt; app/src/main/java/com/example/ui/screens/WorkoutAndPlanningScreens.kt",
       "symptom": "Nyelvválasztás és sok fordítás már van, de több látható képernyőszöveg közvetlen magyar literal; a teljes négy nyelv paritása nincs kész.",
       "acceptance": "Minden felhasználói felirat és állapot lokalizált, dátum/számformátum helyes, hosszú DE/RO feliratok és nagy betű használható. Nem pusztán a négy nyelvgomb léte számít késznek.",
-      "scope": "Rögzítés, most nem implementáljuk."
+      "scope": "Rögzítés, most nem implementáljuk.",
+      "status": "backlog-not-authorized"
     }
-  ]
+  ],
+  "auditNativeSource": "deebfddd7f0259e589e9791582ad6d2d38fcf4e2",
+  "verification": {
+    "source": "eae9d6042d48998d9e9e21681443257aa8427897",
+    "run": 41598444479,
+    "rawXmlArtifact": 13213141866,
+    "tests": 402,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "deviceAccepted": false
+  }
 }
