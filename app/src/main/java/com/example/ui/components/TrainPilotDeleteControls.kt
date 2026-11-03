@@ -22,13 +22,13 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.theme.LocalTrainPilotPalette
 
 @Composable
-internal fun TrainPilotDeleteButton(onClick: () -> Unit, enabled: Boolean, modifier: Modifier = Modifier) {
+internal fun TrainPilotDeleteButton(onClick: () -> Unit, enabled: Boolean, modifier: Modifier = Modifier, label: String = "Edzés törlése") {
     val foreground = if (LocalTrainPilotPalette.current.isDark) Color(0xFFFCA5A5) else Color(0xFFB91C1C)
     OutlinedButton(onClick, modifier.heightIn(min = 48.dp), enabled = enabled,
         shape = RoundedCornerShape(11.dp), border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.65f)),
         colors = ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFFEF4444).copy(alpha = 0.16f), contentColor = foreground)) {
         Icon(Icons.Default.Delete, null, Modifier.size(18.dp))
-        Text(" Edzés törlése")
+        Text(" $label")
     }
 }
 

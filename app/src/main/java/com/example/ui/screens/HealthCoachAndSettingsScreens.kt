@@ -1354,6 +1354,9 @@ fun HealthTabScreen(
                 expanded = uiState.expandedHealthJournal,
                 onToggle = { onToggleHealthSection("journal") }
             ) {
+                com.example.ui.components.StudioHealthRecordBrowserButton(
+                    if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG
+                    else com.repforge.app.HealthJournalStore.HC, uiState.language.name.lowercase())
                 val journalEntries = if (uiState.weeklyHealthDays.isNotEmpty()) {
                     uiState.weeklyHealthDays.reversed().map { day ->
                         day.dayLabelHu to ("Forrás: ${day.sourceLabelHu} • " +

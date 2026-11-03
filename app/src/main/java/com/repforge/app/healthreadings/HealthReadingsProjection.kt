@@ -82,14 +82,16 @@ object HealthReadingsProjection {
 
         val permissions = raw.optJSONObject("permissions")
         val pulseDenied = permissions?.has("READ_HEART_RATE") == true && !permissions.optBoolean("READ_HEART_RATE")
-        val restingDenied = provider == HealthJournalStore.SAMSUNG ||
+        // The direct Samsung bridge does not expose resting HR. Unsupported is not denied.
+        val restingSupported = provider != HealthJournalStore.SAMSUNG
+        val restingDenied = restingSupported &&
             permissions?.has("READ_RESTING_HEART_RATE") == true && !permissions.optBoolean("READ_RESTING_HEART_RATE")
         val failed = errorFields(raw)
         val pulseError = failed.any { it in pulseKeys } && !pulseDenied
-        val restingError = "restingHeartRate" in failed && !restingDenied
+        val restingError = restingSupported && "restingHeartRate" in failed && !restingDenied
         // Persisted cached values must not be reused as newly granted measurements on a failed read.
         val usePulse = !pulseDenied && !pulseError
-        val useResting = !restingDenied && !restingError
+        val useResting = restingSupported && !restingDenied && !restingError
 
         val start = day.atStartOfDay(zone).toInstant()
         val end = day.plusDays(1).atStartOfDay(zone).toInstant()
@@ -116,7 +118,7 @@ object HealthReadingsProjection {
         val state = when {
             hasReading -> ReadingState.AVAILABLE
             pulseError || restingError -> ReadingState.READ_ERROR
-            pulseDenied && restingDenied -> ReadingState.PERMISSION_DENIED
+            pulseDenied && (!restingSupported || restingDenied) -> ReadingState.PERMISSION_DENIED
             else -> ReadingState.NO_DATA
         }
         val note = when (state) {
