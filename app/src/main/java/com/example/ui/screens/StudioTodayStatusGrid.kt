@@ -11,18 +11,41 @@ import androidx.compose.ui.unit.dp
 import com.example.model.workoutsOn
 import com.example.ui.viewmodel.TrainPilotUiState
 import java.time.LocalDate
+import kotlin.math.roundToInt
+import com.example.ui.components.healthreadings.HealthPulseDayRow
+import com.example.ui.components.healthreadings.HealthRecoveryRow
+import com.repforge.app.healthreadings.RecoverySource
 
 /** The same six measured/projected values on Home and Health; no second calculation path. */
 @Composable
 internal fun StudioTodayStatusGrid(state: TrainPilotUiState, compact: Boolean = false,
     onSelect: (String) -> Unit) {
+    val pulse = state.todayPulseReading
+    val recovery = state.todayRecoveryReading
+    val pulseName = when {
+        pulse?.averageBpm != null -> "Napi átlagpulzus"
+        pulse?.lastBpm != null -> "Utolsó mérés"
+        pulse?.restingBpm != null -> "Nyugalmi pulzus"
+        else -> "Pulzus"
+    }
+    val pulseValue = when {
+        pulse?.averageBpm != null -> "${pulse.averageBpm.roundToInt()} bpm"
+        pulse?.lastBpm != null -> "${pulse.lastBpm} bpm"
+        pulse?.restingBpm != null -> "${pulse.restingBpm.roundToInt()} bpm"
+        else -> "—"
+    }
+    val recoveryName = when (recovery?.source) {
+        RecoverySource.SAMSUNG_ENERGY -> "Samsung Energia"
+        RecoverySource.TRAINPILOT_ESTIMATE -> "TP regeneráció"
+        else -> "Regeneráció"
+    }
     val values = listOf(
         Triple("sleep", "Alvás", state.sleepHoursDecimal),
         Triple("calories", if (compact) "Aktív kcal" else "Aktív kalória", if ("activeCalories" in state.dailyHealthAvailableFields) "${state.activeCaloriesKcal} kcal" else "—"),
-        Triple("pulse", "Pulzus", if (state.currentHrBpm > 0) "${state.currentHrBpm} bpm" else "—"),
+        Triple("pulse", pulseName, pulseValue),
         Triple("steps", "Lépések", if ("steps" in state.dailyHealthAvailableFields) "${state.dailySteps}" else "—"),
         Triple("workout", "Mai edzés", "${state.loggedWorkouts.workoutsOn(LocalDate.now()).size}"),
-        Triple("recovery", "Regeneráció", if (state.coachReadinessScore > 0) "${state.coachReadinessScore}/100" else "—")
+        Triple("recovery", recoveryName, recovery?.displayScoreHu ?: "—")
     )
     val icons = listOf(Icons.Default.Bedtime, Icons.Default.LocalFireDepartment, Icons.Default.Favorite,
         Icons.AutoMirrored.Filled.DirectionsWalk, Icons.Default.FitnessCenter, Icons.Default.Eco)
@@ -36,6 +59,10 @@ internal fun StudioTodayStatusGrid(state: TrainPilotUiState, compact: Boolean = 
                     modifier = Modifier.weight(1f).heightIn(min = if (compact) 64.dp else 76.dp)
                         .testTag("${if (compact) "home" else "health"}_today_$key"), compact = compact)
             }
+        }
+        if (!compact) {
+            state.todayPulseReading?.let { HealthPulseDayRow(it) }
+            state.todayRecoveryReading?.let { HealthRecoveryRow(it) }
         }
     }
 }
