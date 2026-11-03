@@ -61,6 +61,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.ui.unit.dp
@@ -125,6 +126,7 @@ fun AnatomicalMuscleHeatmapCard(
     }
 
     val selectedMuscleObj = muscleLoads.find { it.id == selectedMuscleId }
+    var showExplanation by remember { mutableStateOf(false) }
 
     val smallHeatColor = Color(0xFFE5B842)   // Yellow-Gold (Kisebb)
     val mediumHeatColor = Color(0xFFE68A2E)  // Warm Orange (Közepes)
@@ -138,7 +140,7 @@ fun AnatomicalMuscleHeatmapCard(
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
             .testTag("anatomical_muscle_heatmap_card")
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(10.dp)) {
             // Header row: "Izomcsoport-terhelés" + "3 hó" pill button
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -178,13 +180,13 @@ fun AnatomicalMuscleHeatmapCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Side-by-Side Row: Left = Front & Back Anatomical Figures, Right = 6 Muscle Progress Bars
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 // Left half: Dual Front & Back Anatomical Muscular Figures
                 val baseSilhouette = Color(0xFF434A56)
@@ -202,8 +204,8 @@ fun AnatomicalMuscleHeatmapCard(
 
                 Box(
                     modifier = Modifier
-                        .weight(0.48f)
-                        .height(160.dp)
+                        .weight(0.42f)
+                        .height(140.dp)
                         .clip(RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center
                 ) {
@@ -226,8 +228,8 @@ fun AnatomicalMuscleHeatmapCard(
 
                 // Right half: 6 Compact Muscle Progress Bars (Mell, Hát, Váll, Láb, Kar, Core)
                 Column(
-                    modifier = Modifier.weight(0.55f),
-                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                    modifier = Modifier.weight(0.58f),
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     muscleLoads.forEach { m ->
                         val isSel = selectedMuscleId == m.id
@@ -250,10 +252,12 @@ fun AnatomicalMuscleHeatmapCard(
                         ) {
                             Text(
                                 text = m.nameHu,
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.labelSmall,
                                 fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isSel) palette.primary else palette.textPrimary,
-                                modifier = Modifier.width(34.dp)
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.width(56.dp)
                             )
                             Box(
                                 modifier = Modifier
@@ -283,7 +287,7 @@ fun AnatomicalMuscleHeatmapCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Legend Row: 🟡 Kisebb   🟠 Közepes   🔴 Nagyobb
             Row(
@@ -298,12 +302,23 @@ fun AnatomicalMuscleHeatmapCard(
                 LegendDot(color = highHeatColor, label = "Nagyobb")
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(3.dp))
 
+            // Keep the safety caveat visible; put the longer explanation behind a tap.
             Text(
+                text = "Relatív sorozatterhelés, nem fáradtság · Részletek",
+                modifier = Modifier.clickable { showExplanation = !showExplanation }
+                    .testTag("muscle_explanation_toggle"),
+                style = MaterialTheme.typography.labelSmall,
+                color = palette.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (showExplanation) Text(
                 text = subtitle,
                 style = MaterialTheme.typography.labelSmall,
-                color = palette.textSecondary
+                color = palette.textSecondary,
+                modifier = Modifier.testTag("muscle_explanation_text")
             )
 
             // Expandable Muscle Exercise Breakdown when user taps any muscle bar or body part
