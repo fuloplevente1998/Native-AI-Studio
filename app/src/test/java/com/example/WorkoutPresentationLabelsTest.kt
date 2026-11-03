@@ -4,6 +4,7 @@ import com.example.model.AppLanguage
 import com.example.model.ExerciseItem
 import com.example.ui.components.secondaryWorkoutDayTitle
 import com.example.ui.components.strengthColumnLabels
+import com.example.ui.components.withNativeStrengthUnits
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -24,6 +25,14 @@ class WorkoutPresentationLabelsTest {
         assertEquals("kg", strengthColumnLabels(bulgarian.copy(loadType = "single_dumbbell"), AppLanguage.HU).weight)
         assertEquals("kg/hand", strengthColumnLabels(bulgarian, AppLanguage.EN).weight)
         assertEquals("rep.", strengthColumnLabels(bulgarian, AppLanguage.RO).repetitions)
+    }
+    @Test fun activeUnitsRemainAuthoritativeWhenTheCatalogHasDifferentMetadata() {
+        val catalog = ExerciseItem("same-id", "Név", loadType = "total", repUnit = "ism.", defaultWeightKg = 12f)
+        val active = withNativeStrengthUnits(catalog, "per_hand", "/láb")
+        assertEquals("kg/kar", strengthColumnLabels(active, AppLanguage.HU).weight)
+        assertEquals("ism.", strengthColumnLabels(active, AppLanguage.HU).repetitions)
+        assertEquals(catalog.id, active.id); assertEquals(catalog.defaultWeightKg, active.defaultWeightKg)
+        assertEquals(catalog, withNativeStrengthUnits(catalog, null, null))
     }
     @Test fun bodyweightAndMeasuredTimeKeepTheirOwnDisplayMeaning() {
         val body = ExerciseItem("plank", "Plank", loadType = "bodyweight", measurementType = "time", repUnit = "mp")

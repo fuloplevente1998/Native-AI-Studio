@@ -21,6 +21,11 @@ internal fun strengthColumnLabels(exercise: ExerciseItem?, language: AppLanguage
         else word("ism.", "reps", "Wdh.", "rep."))
 }
 
+/** Keep the canonical active snapshot's units through restore, even if the catalog differs. */
+internal fun withNativeStrengthUnits(catalog: ExerciseItem, loadType: String?, repUnit: String?): ExerciseItem =
+    catalog.copy(loadType = loadType?.takeIf { it.isNotBlank() } ?: catalog.loadType,
+        repUnit = repUnit ?: catalog.repUnit)
+
 /** Suppress only a repeated day code; a user's distinct title remains visible. */
 internal fun secondaryWorkoutDayTitle(code: String, title: String): String? {
     fun normalized(value: String) = value.trim().lowercase(java.util.Locale.ROOT)
