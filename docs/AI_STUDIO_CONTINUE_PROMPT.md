@@ -1,3 +1,9 @@
+## Legfrissebb munkakiosztás – 2026-11-03, PR #58
+
+A Coach rövid összefoglalója és a piros, naplólistából is elérhető edzéstörlés a [#58 PR](https://github.com/fuloplevente1998/Native-AI-Studio/pull/58) része; CI-ellenőrzés folyamatban. Ebből most nincs új APK vagy verzióemelés, az utolsó kiadott pár 2743.
+
+A többi munkán itt nem dolgozunk: [négy külön fejlesztői feladat és integrátor](chat-tasks-independent-2743/README.md), [kizárólagos fájltulajdon](chat-tasks-independent-2743/FAJLTULAJDON.md). Nyitott: #59 appon belüli videó, #60 óraadatok két blokkban, #61 pulzus/regeneráció adatútja, újranyitott #48 nagy térkép a friss készülékes képek alapján. Az 1–4 párhuzamosan készülhet; a közös képernyőket/ViewModelt kizárólag az 5. integrátor köti be az átadások után. A korábbi #48-kész jelölést ez az új megfigyelés felülírja; a JVM-ellenőrzés nem készülékes elfogadás.
+
 Aktuális felülíró checkpoint: #49 main a8605b0b5c2e68ef11a7ec224ad912a232f61bbc, 2743 /0.1.0-beta. PR CI 41561039880 SUCCESS, letöltött XML 358 =182 telefon +176 Wear, 0 failure/error/skip. #43/#44/#45/#47/#48/#50/#51/#52/#53/#54 kódjavításai kész; ne oszd ki újra. Main signed 41561684993 SUCCESS, nyers XML szintén 358/358; állandó kulcsos 2743-as telefon/Wear APK-pár Drive-on, méret/szülő readback igazolt. Linkek és hash-ek az átadó legfelső blokkjában. Óraadat-lekéréshez mindkét új APK kell, készülékes elfogadás külön; a HC-üresség eredeti fizikai oka továbbra is nyitott.
 
 2026-11-03 felülíró állapot: main 3f3195a /2742, PR #38–#41 integrálva, a felhasználó az APK-t teszteli. #34/#35/#11 kódjavítása és #41 providerizolációja kész, fizikai elfogadás folyamatban. Nyitott: #43 naplózott edzés törlése (régi 8. feladat), #44 világos témában sötét naptár, #45 térkép alapértelmezett témakövetése, valamint a HC készülékes üresség bizonyított okának feltárása. Lásd a munkalista legfelső blokkját és docs/DEVICE_TEST_CHECKLIST_2026-11-03.md.
