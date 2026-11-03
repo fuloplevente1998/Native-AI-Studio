@@ -1,5 +1,33 @@
 # TrainPilot Native – aktuális állapot, 2026-11-03
 
+## Legfrissebb kiadás: 2748 / PR90
+
+**[Telefonos APK letöltése – 2748](https://drive.google.com/file/d/1SquNqT68gJtxt5zGQUuqlPlVU-_kEr9C/view?usp=drivesdk)**. Elég a telefonos appot frissíteni; a Wear alkalmazáslogika változatlan, órás újratelepítés nem szükséges. Package `com.TrainPilot.com`, versionName `0.1.0-beta`, versionCode2748, a megszokott állandó aláíró.
+
+- Aláírt alkalmazásforrás: `f74133a1bb1e690ce56166c1f0370582e4eedbc6` (PR90 main-merge). A tesztelt PR-head `a98260c122159530e6af6f0f6b9b16358a756a36`, tényleges PR-CI checkout `db3b344fac8d92c7008f74e57f4b02d9a75c3815`; app/Wear/shared/scripts/workflows fák egyezése ellenőrizve.
+- [PR CI41721740450](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41721740450) SUCCESS: letöltött nyers XML **428 =252 telefon +176 Wear**, 0 failure/error/skipped; **7 videó-JS ellenőrzés** sikeres.
+- [Aláírt main build41723677980](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41723677980) SUCCESS: ismét letöltött nyers428, nulla hiba/kihagyás; mindkét APK verzió/package/hash/v2 cert fingerprint és CI-apksigner/pinned signer, Maps/pair/capability ellenőrzés sikeres.
+- Telefon: **19 743 944 bájt**, SHA256 `f3f1aae2306142fbf47d52f2240a864b54843bb85294e3b5fd6e346eafb7c832`. Drive-fájl neve, MIME, mérete, mappája és tényleges linkje visszaolvasva. [Gépi bizonyíték](RELEASE_2748_VERIFIED_ARTIFACTS.json).
+
+## Mi van a 2748-ban?
+
+A #91 átlagvolumen-alcím eltávolítása; #92 Coach rövidebb készenléti kártya és Edzés oldalra navigálás automatikus indítás nélkül; #93 kompakt keretes naplószerkesztő, legördülős nehézség és a látható Android-ablakra korlátozott Mentés; #94 elkülönülő kontrasztos kártya/belső panel. A matt/világos/glow alapszínek megmaradnak. A fő Health/Coach/Fejlődés kártyák finom fade kiemelést, a GPS-felirat és a sorozatszerkesztő vezérlői külön hézagot kapnak. A felhasználó által már jónak jelzett fullscreen GPS gombelrendezés változatlan.
+
+#71: mind a26 meglévő metrika pontos nap- és Health Connect/Samsung forrásválasztással, a korábbi részletes rekordböngészővel; nincs idegen nap/forrás vagy becslés helyettesítés. #69 kért új része: gyakorlatonkénti válasz/jegyzet az összegzőben és naplóban, dropdownnal, explicit kanonikus gépi értékekkel; a véglegesítő legfrissebb draftjára kerül, sorozat/RIR/metadata, applied-zár és restore/owner/generation védelemmel. Nem új motor vagy Coach-képlet.
+
+**[Telefonos tesztlista](TEST_2748_PHONE.md)**. CI és APK-ellenőrzés nem készülékes elfogadás; a témák, Mentés/billentyűzet, metrikák és per-exercise visszajelzés közös próbája még szükséges.
+
+## Mi maradt?
+
+**[Tételes hátralévő munkák](REMAINING_WORK_AFTER_2748.md)**: #95 egységes aktív sorozatsor és helyes kg/kar, kg, ism. feliratok (bolgár guggolásnál /láb nélkül), #59 beágyazott videó tényleges hibája, #75 teljes lokalizáció, #82 későbbi adatvédelmi szöveg és #69 régi formátumok teljes auditja. #95 a felhasználó kifejezett kérésére a következő kör, nem része a 2748-nak.
+
+A legfrissebb készülékes visszajelzés szerint a beágyazott videó nem indul, **a belső böngészős mód működik**. Ez nyitott hiba; a 2748 nem tartalmaz új, külön erre készült javítást. A videó JS-tesztjei nem jelentik a YouTube készülékes elfogadását. **BLE és #74 automata/intervallum további bekötés sztornó.**
+
+## Korábbi, történeti átadók
+
+Az alábbi korábbi APK- és backlog-leírások történetiek; a fenti 2748-as állapot az irányadó.
+
+
 ## Legutóbbi ellenőrzés: PR89 / 2747
 
 PR89 main-merge `d7efe6ccc0d96db658ce3336358fb2e498a4facc`, PR CI41711925392 és signed main41712528009 SUCCESS. A letöltött nyers XML **420 = 244 telefon + 176 Wear**, 0 failure/error/skipped. A signed metaadat source/package/verzió/Maps/páros egyezése, mindkét APK hash-e és a tényleges v2 aláíró tanúsítvány hash-e ellenőrizve; signer változatlan. [Nyilvános bizonyíték](RELEASE_2747_VERIFIED_ARTIFACTS.json).

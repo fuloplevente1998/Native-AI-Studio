@@ -1,6 +1,6 @@
 # WebView main → Native Studio: funkcióparitás, 2026-11-03
 
-**Frissítés #79 után:** #68/#70 már #77-ben kész; #72 program-/sajátgyakorlat-/kedvenc és #73 naplószerkesztés most bekötve, #60 kompakt óra és #61 Samsung permission javítva. #59 készülékes videóhiba javítása CI/APK kész, elfogadás nyitott. #71 rekordböngésző részben bekötve; teljes26 metrikás összesítő, #69 maradéka, #74/#75 még nyitott. CI41670555328 nyers411, nulla hiba/kihagyás, signed41671892820; [aktuális átadó](CURRENT_STATUS.md). Az alábbi forráshelyek/auditkori tünetek történeti kiindulópontok, a soronkénti státusz felülírja őket.
+**Frissítés PR90 / 2748 után:** a teljes26 metrikás böngésző és a kért gyakorlatonkénti visszajelzés most mainen, a közös aláírt APK-ban. PR/signed CI nyers428, JS7 sikeres; [aktuális átadó](CURRENT_STATUS.md). #69 régi formátumok teljes auditja és #75 nyitott; #74 sztornó, #82 később, #95 következő kör. #59 a friss készülékes visszajelzés szerint továbbra is tényleges beágyazási hiba, a belső böngésző működik. Az alábbi régi forráshelyek, státuszok és tünetek történeti kiindulópontok, nem a mostani implementáció hiányának bizonyítékai. A készülékes elfogadás külön marad.
 
 ## Forrás és az audit határa
 
