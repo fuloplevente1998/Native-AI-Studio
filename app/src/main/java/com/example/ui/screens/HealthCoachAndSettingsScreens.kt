@@ -2707,7 +2707,7 @@ fun WatchAndSyncScreen(
 
         item {
             StudioWatchInformationCard(
-                data = uiState.watchInfoCardData,
+                data = uiState.watchInfoCardData.copy(loading = uiState.watchInfoLoading || uiState.watchInfoCardData.loading),
                 onRefresh = onRefreshWatchInfo
             )
         }
