@@ -1315,28 +1315,15 @@ fun HealthTabScreen(
             ExpandableHealthSectionCard(
                 icon = Icons.Default.Restore,
                 title = strings.moreHealthDataTitle,
-                subtitle = "Vérnyomás, vércukor, légzésszám, távolság",
+                subtitle = null,
                 expanded = uiState.expandedHealthExtraData,
                 onToggle = { onToggleHealthSection("extra") }
             ) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SummarySmallPill("Vérnyomás", uiState.bloodPressureLabel, Modifier.weight(1f))
-                    SummarySmallPill("Vércukor", uiState.bloodGlucoseLabel, Modifier.weight(1f))
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SummarySmallPill("Légzésszám", uiState.respiratoryRateLabel, Modifier.weight(1f))
-                    SummarySmallPill(
-                        "Távolság (ma)",
-                        if (uiState.dailyDistanceKm > 0f) String.format(java.util.Locale.US, "%.2f km", uiState.dailyDistanceKm).replace('.', ',') else "—",
-                        Modifier.weight(1f)
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SummarySmallPill("Véroxigén (SpO₂)", if (uiState.spo2Percent > 0f) "${uiState.spo2Percent} %" else "—", Modifier.weight(1f))
-                    SummarySmallPill("HRV (RMSSD)", if (uiState.hrvRmssdMs > 0f) "${uiState.hrvRmssdMs.roundToInt()} ms" else "—", Modifier.weight(1f))
-                }
+                com.example.ui.components.StudioHealthMetricsBrowser(
+                    initialProvider = if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG
+                        else com.repforge.app.HealthJournalStore.HC,
+                    language = uiState.language.name.lowercase(),
+                    refreshKey = "${uiState.dailyHealthLastSyncIso}:${uiState.healthSyncBusy}")
             }
         }
 

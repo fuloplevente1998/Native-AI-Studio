@@ -122,6 +122,15 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                                         modifier = Modifier.testTag("journal_editor_remove_exercise_$e")) { Text(text.getString(R.string.journal_edit_remove)) }
                                 }
                             }
+                            item {
+                                com.example.ui.components.ExerciseFeedbackControl(
+                                    effort = exercise.effort, note = exercise.note, language = language,
+                                    onEffort = { replaceExercise(e, exercise.copy(effort = it)) },
+                                    onNote = { replaceExercise(e, exercise.copy(note = it)) },
+                                    enabled = !state.saving,
+                                    effortLocked = feedbackLocked || source?.optJSONObject("feedback")?.optBoolean("applied") == true,
+                                    tag = "journal_exercise_feedback_$e")
+                            }
                             exercise.sets.forEachIndexed { s, set ->
                                 item {
                                     Surface(color = colors.card2, shape = RoundedCornerShape(14.dp),

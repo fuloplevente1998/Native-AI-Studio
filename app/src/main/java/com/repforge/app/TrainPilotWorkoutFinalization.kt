@@ -173,6 +173,8 @@ internal class TrainPilotWorkoutFinalization(
             current = ActiveWorkoutStore.current(context)
         }
         var draft = JSONObject(if (ownsDraft && !fromWatch) current.toString() else input.toString())
+        // Apply only explicit per-exercise annotations before persisting the retryable canonical draft.
+        if (!fromWatch) StudioWorkoutFeedback.mergePendingExerciseEdits(input, draft, System.currentTimeMillis())
         if (!fromWatch && input.has("feedback")) draft.put("feedback", input.get("feedback"))
         // Retain the first finish timestamp across failed retries.
         val finished = current?.takeIf { ownsDraft && it.optBoolean("finalizationPending") }?.optString("finished")
