@@ -105,7 +105,7 @@ class OutdoorGpsLayoutRegressionTest {
     @Test fun compactMapLeavesRoomForDataInsteadOfGrowingWithTheScreen() {
         show(393, 780)
         val bounds = compose.onNodeWithTag("outdoor_compact_map_card").getUnclippedBoundsInRoot()
-        assertTrue(bounds.height <= 220.dp)
+        assertTrue(bounds.bottom - bounds.top <= 220.dp)
         assertControlsVisible()
     }
 

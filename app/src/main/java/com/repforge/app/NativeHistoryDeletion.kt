@@ -66,7 +66,9 @@ internal object NativeHistoryDeletion {
         NativeJournalEditor.requireNotActive(context, strings(receipt.getJSONArray("aliases")).toSet())
         val active = withContext(Dispatchers.Main.immediate) {
             listOfNotNull(ActiveWorkoutStore.current(context), PhoneWorkoutExecution.store(context).snapshot(),
-                PhoneOwnership193.journal(context).read().optJSONObject("snapshot")).joinToString("\n")
+                PhoneOwnership193.journal(context).read().optJSONObject("snapshot"))
+                .filter { it.optBoolean("active") || it.optBoolean("finalizationPending") || it.optBoolean("discardPending") }
+                .joinToString("\n")
         }
         suspend fun referenced(value: String) = active.contains(JSONObject.quote(value)) ||
             dao.hasHistoryAssetReference(value, JSONObject.quote(value))
