@@ -8,7 +8,7 @@ A felhasználó a nyelveket és a fennmaradó nem-dizájn munkát egyetlen AI St
 
 Repo: https://github.com/fuloplevente1998/Native-AI-Studio . **A tényleges legfrissebb mainből indulj.** Az alábbi raw linkek mind a mainre mutatnak. Az ellenőrzött 2748 alkalmazásforrás f74133a1bb1e690ce56166c1f0370582e4eedbc6, utána a 6f24a078651827033b929d4f429c29be98da5074 dokumentációs követés. A munkaleírás későbbi docs-commitja nem új alkalmazásbuild.
 
-Az AI Studio csak a main nézetet látja; ezért ha, a mainből beolvasott projekten dolgozz; ne várj hozzáférést korábbi javítóbranchhez. A változtatást a rendelkezésedre álló patch/commit/GitHub-export módon add vissza. Ne állíts branch-létrehozást, PR-t, main-merge-öt vagy APK-t, ha a tényleges eszközöd nem végezte el. A felhasználó a teljes implementációt kéri, nem csak tervet; ahol az eszközöd engedi, csináld végig, korlátnál konkrét alkalmazható módosításokat adj át.
+Az AI Studio csak a main nézetet látja, ezért a mainből beolvasott projekten dolgozz; ne várj hozzáférést korábbi javítóbranchhez. A változtatást a rendelkezésedre álló patch/commit/GitHub-export módon add vissza. Ne állíts branch-létrehozást, PR-t, main-merge-öt vagy APK-t, ha a tényleges eszközöd nem végezte el. A felhasználó a teljes implementációt kéri, nem csak tervet; ahol az eszközöd engedi, csináld végig, korlátnál konkrét alkalmazható módosításokat adj át.
 
 A tényleges app **Kotlin/Compose natív telefonapp**. A Studio út a com.example/MainActivity.kt és com.example/ui képernyők, meglévő com.repforge natív komponensekkel. Ne generáld újra a régi WebView vagy ai-studio export alapján az alkalmazást. A régi TrainPilot-repo csak referencia, nem szerkesztési cél.
 
