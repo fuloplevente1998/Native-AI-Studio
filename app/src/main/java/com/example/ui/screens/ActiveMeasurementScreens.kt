@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
+
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
@@ -71,7 +73,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.ui.window.Dialog
@@ -1716,7 +1717,7 @@ fun ActiveBilateralWorkoutScreen(
         var editRightText by remember(setToEdit) { mutableStateOf(setToEdit.rightSec.toString()) }
         var editRirText by remember(setToEdit) { mutableStateOf(if (setToEdit.actualRirProvided) setToEdit.rir.toString() else "") }
 
-        androidx.compose.material3.AlertDialog(
+        com.example.ui.components.TrainPilotAlertDialog(
             onDismissRequest = { editingBilateralSet = null },
             containerColor = palette.surfaceElevated,
             title = {

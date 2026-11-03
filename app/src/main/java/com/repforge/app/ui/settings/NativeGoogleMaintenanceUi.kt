@@ -1,5 +1,7 @@
 package com.repforge.app.ui.settings
 
+import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
+
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag

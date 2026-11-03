@@ -35,7 +35,7 @@ const val EXERCISE_VIDEO_ORIGIN = "https://com.trainpilot.com"
 fun exerciseVideoPlayerEvent(current: ExerciseVideoLoad, event: String): ExerciseVideoLoad {
     if (current is ExerciseVideoLoad.Failed) return current
     return when {
-        event == "ready" -> if (current == ExerciseVideoLoad.Loading) ExerciseVideoLoad.Ready else current
+        (event == "ready" || event == "frame-ready") -> if (current == ExerciseVideoLoad.Loading) ExerciseVideoLoad.Ready else current
         event == "starting" -> ExerciseVideoLoad.Starting
         event == "playing" -> ExerciseVideoLoad.Playing
         event == "paused" -> if (current == ExerciseVideoLoad.Playing || current == ExerciseVideoLoad.Starting)
@@ -51,9 +51,9 @@ fun exerciseVideoPlayerEvent(current: ExerciseVideoLoad, event: String): Exercis
 }
 
 /**
- * No native JavaScript bridge. The selected video gets a visible, trusted HTML
- * play gesture; API-ready alone never means media is playing. The API constructs
- * the iframe after its script is ready (rather than attaching to a racing iframe).
+ * Same direct YouTube iframe/native controls as TrainPilot WebView main
+ * 5f026a5, app.js openDemo. JS only observes state and pauses on lifecycle exit;
+ * it never calls playVideo or overlays a second play button across the iframe.
  */
 fun exerciseYouTubeEmbedHtml(videoId: String): String {
     require(Regex("^[A-Za-z0-9_-]{11}$").matches(videoId))
@@ -66,77 +66,46 @@ fun exerciseYouTubeEmbedHtml(videoId: String): String {
           <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
           <style>
             html,body { margin:0; width:100%; height:100%; background:#000; overflow:hidden; }
-            #player { position:absolute; inset:0; width:100%; height:100%; border:0; }
-            #cover { position:absolute; inset:0; display:flex; align-items:center;
-              justify-content:center; background:#111 url('https://i.ytimg.com/vi/$videoId/hqdefault.jpg') center/cover; }
-            #cover[hidden] { display:none; }
-            #play { font:600 18px sans-serif; color:#fff; background:#a30000;
-              border:2px solid #fff; border-radius:24px; padding:14px 22px; cursor:pointer; }
-            #play:disabled { background:#333; cursor:wait; }
+            #player { display:block; width:100%; height:100%; border:0; }
           </style>
         </head>
         <body>
-          <div id="player"></div>
-          <div id="cover"><button id="play" type="button" disabled>Betöltés…</button></div>
+          <iframe id="player" title="Oktatóvideó"
+            src="https://www.youtube.com/embed/$videoId?playsinline=1&amp;rel=0&amp;controls=1&amp;autoplay=0&amp;enablejsapi=1&amp;origin=https%3A%2F%2Fcom.trainpilot.com"
+            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+            referrerpolicy="strict-origin-when-cross-origin" onload="tpReport('frame-ready')" allowfullscreen></iframe>
           <script>
             var tpPlayer = null;
             var tpFailed = false;
-            var tpButton = document.getElementById("play");
             function tpReport(event) {
               if (tpFailed) return;
-              if (event.indexOf("error:") === 0 || event === "blocked") {
-                tpFailed = true;
-                tpButton.disabled = true;
-                tpButton.textContent = "A videó nem indítható";
-              }
+              if (event.indexOf("error:") === 0 || event === "blocked") tpFailed = true;
               document.title = "trainpilot-video:" + event;
               console.log("trainpilot-video:" + event);
             }
-            tpButton.addEventListener("click", function () {
-              if (!tpPlayer || tpFailed) return;
-              tpButton.disabled = true;
-              tpButton.textContent = "Indítás…";
-              tpReport("starting");
-              try { tpPlayer.playVideo(); } catch (e) { tpReport("error:0"); }
-            });
             function onYouTubeIframeAPIReady() {
               try {
-                tpPlayer = new YT.Player("player", {
-                  host: "https://www.youtube-nocookie.com",
-                  width: "100%", height: "100%", videoId: "$videoId",
-                  playerVars: { playsinline: 1, controls: 1, origin: "$EXERCISE_VIDEO_ORIGIN" },
-                  events: {
-                    onReady: function () {
-                      if (tpFailed) return;
-                      tpButton.disabled = false;
-                      tpButton.textContent = "▶ Lejátszás";
-                      tpReport("ready");
-                    },
-                    onStateChange: function (event) {
-                      if (tpFailed) return;
-                      if (event.data === 1) {
-                        document.getElementById("cover").hidden = true;
-                        tpReport("playing");
-                      }
-                      if (event.data === 0 || event.data === 2) {
-                        if (!document.getElementById("cover").hidden) {
-                          tpButton.disabled = false;
-                          tpButton.textContent = "▶ Lejátszás";
-                        }
-                        tpReport("paused");
-                      }
-                    },
-                    onAutoplayBlocked: function () { tpReport("blocked"); },
-                    onError: function (event) { tpReport("error:" + event.data); }
-                  }
-                });
-              } catch (e) { tpReport("error:0"); }
+                tpPlayer = new YT.Player("player", { events: {
+                  onReady: function () { tpReport("ready"); },
+                  onStateChange: function (event) {
+                    if (event.data === 3) tpReport("starting");
+                    if (event.data === 1) tpReport("playing");
+                    if (event.data === 0 || event.data === 2) tpReport("paused");
+                  },
+                  onAutoplayBlocked: function () { tpReport("blocked"); },
+                  onError: function (event) { tpReport("error:" + event.data); }
+                }});
+              } catch (e) { tpReport("observer-unavailable"); }
             }
             function tpPause() {
-              try { if (tpPlayer && tpPlayer.pauseVideo) tpPlayer.pauseVideo(); } catch(e) {}
+              try {
+                if (tpPlayer && tpPlayer.pauseVideo) tpPlayer.pauseVideo();
+                else document.getElementById("player").contentWindow.postMessage(
+                  JSON.stringify({ event: "command", func: "pauseVideo", args: [] }), "https://www.youtube.com");
+              } catch(e) {}
             }
           </script>
-          <script src="https://www.youtube.com/iframe_api" onerror="tpReport('error:0')"></script>
+          <script src="https://www.youtube.com/iframe_api" onerror="tpReport('observer-unavailable')"></script>
         </body>
         </html>
     """.trimIndent()

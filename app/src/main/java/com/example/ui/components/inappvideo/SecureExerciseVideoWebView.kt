@@ -89,7 +89,15 @@ fun SecureExerciseVideoWebView(
                     settings.apply {
                         javaScriptEnabled = true // Needed by YouTube IFrame API.
                         domStorageEnabled = true
-                        mediaPlaybackRequiresUserGesture = true
+                        // Match Capacitor Bridge.setupWebView() used by the working WebView app.
+                        // The owned embed has autoplay=0 and never calls playVideo itself.
+                        mediaPlaybackRequiresUserGesture = mode != ExerciseVideoMode.EMBED
+                        useWideViewPort = true
+                        loadWithOverviewMode = true
+                        textZoom = 100
+                        setSupportZoom(mode == ExerciseVideoMode.BROWSER)
+                        builtInZoomControls = mode == ExerciseVideoMode.BROWSER
+                        displayZoomControls = false
                         allowFileAccess = false
                         allowContentAccess = false
                         allowFileAccessFromFileURLs = false
@@ -253,7 +261,7 @@ fun SecureExerciseVideoWebView(
 private fun isYouTubeEmbedFrame(
     mode: ExerciseVideoMode, request: WebResourceRequest
 ): Boolean = mode == ExerciseVideoMode.EMBED &&
-    request.url.host.orEmpty().equals("www.youtube-nocookie.com", ignoreCase = true) &&
+    request.url.host.orEmpty().lowercase(java.util.Locale.ROOT) in setOf("www.youtube.com", "www.youtube-nocookie.com") &&
     request.url.path.orEmpty().startsWith("/embed/")
 
 private interface VideoCleanup {

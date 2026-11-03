@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
+
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
@@ -57,7 +59,6 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ButtonDefaults
@@ -81,6 +82,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -1096,11 +1099,6 @@ fun ProgramEditorScreen(
             modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
-            Text(
-                text = strings.editProgramTitle,
-                style = MaterialTheme.typography.labelLarge,
-                color = palette.textSecondary
-            )
             OutlinedTextField(
                 value = programName,
                 onValueChange = { programName = it },
@@ -1472,8 +1470,11 @@ fun CalendarPlannerScreen(
         "Január", "Február", "Március", "Április", "Május", "Június",
         "Július", "Augusztus", "Szeptember", "Október", "November", "December"
     )
-    val monthHeaderText = "${displayedYearMonth.year}. ${huMonthNames[displayedYearMonth.monthValue - 1]} 01."
-    val dayEvents = state.calendarEvents.filter { it.dayOfMonth == state.selectedCalendarDay && it.dateIso.startsWith(displayedYearMonth.toString()) }
+    val monthHeaderText = "${displayedYearMonth.year}. ${huMonthNames[displayedYearMonth.monthValue - 1]}"
+    var openedDay by androidx.compose.runtime.saveable.rememberSaveable(state.calendarYearMonth) { mutableStateOf<Int?>(null) }
+    var planningOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val selectedDay = openedDay ?: state.selectedCalendarDay
+    val dayEvents = state.calendarEvents.filter { it.dayOfMonth == selectedDay && it.dateIso.startsWith(displayedYearMonth.toString()) }
     val activeProgram = state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
     val activeProgramTitle = activeProgram?.nameHu ?: "Otthoni A/B – Alap (személyre szabott)"
 
@@ -1700,15 +1701,16 @@ fun CalendarPlannerScreen(
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(top = 8.dp, bottom = 24.dp)
-    ) {
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+        val calendarWeeks = ((displayedYearMonth.atDay(1).dayOfWeek.value - 1 + displayedYearMonth.lengthOfMonth() + 6) / 7)
+        // Normal phone windows fit the month and a compact planner row. Scrolling
+        // remains a fallback for very short windows and accessibility font sizes.
+        val calendarCellHeight = ((maxHeight - 200.dp) / calendarWeeks.toFloat()).coerceIn(36.dp, 42.dp)
         Column(
-            modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
-            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 4.dp)
+                .testTag("calendar_compact_page"),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             // 1. EXACT SCREENSHOT 7 CALENDAR CARD
             Surface(
@@ -1719,8 +1721,8 @@ fun CalendarPlannerScreen(
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier = Modifier.padding(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     // Header row: [ < ]   2026. Október 01.   [ > ]   [ X ]
                     Row(
@@ -1732,10 +1734,10 @@ fun CalendarPlannerScreen(
                             shape = RoundedCornerShape(12.dp),
                             color = palette.surfaceElevated,
                             modifier = Modifier
-                                .size(44.dp)
+                                .size(48.dp)
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable { onSelectMonth(displayedYearMonth.minusMonths(1).toString()) }
+                                .clickable { openedDay = null; onSelectMonth(displayedYearMonth.minusMonths(1).toString()) }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
@@ -1757,10 +1759,10 @@ fun CalendarPlannerScreen(
                                 shape = RoundedCornerShape(12.dp),
                                 color = palette.surfaceElevated,
                                 modifier = Modifier
-                                    .size(44.dp)
+                                    .size(48.dp)
                                     .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                                     .clip(RoundedCornerShape(12.dp))
-                                    .clickable { onSelectMonth(displayedYearMonth.plusMonths(1).toString()) }
+                                    .clickable { openedDay = null; onSelectMonth(displayedYearMonth.plusMonths(1).toString()) }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
@@ -1811,11 +1813,11 @@ fun CalendarPlannerScreen(
                     val firstDayOffset = displayedYearMonth.atDay(1).dayOfWeek.value - 1 // Monday=0 .. Sunday=6
                     val totalCells = ((firstDayOffset + daysInMonth + 6) / 7) * 7
 
-                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         for (weekIdx in 0 until (totalCells / 7)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 for (dow in 0..6) {
                                     val cellIndex = weekIdx * 7 + dow
@@ -1824,7 +1826,7 @@ fun CalendarPlannerScreen(
                                         Spacer(
                                             modifier = Modifier
                                                 .weight(1f)
-                                                .height(42.dp)
+                                                .height(calendarCellHeight)
                                         )
                                     } else {
                                         val isSelected = dayNumber == state.selectedCalendarDay
@@ -1840,14 +1842,15 @@ fun CalendarPlannerScreen(
                                             },
                                             modifier = Modifier
                                                 .weight(1f)
-                                                .height(42.dp)
+                                                .height(calendarCellHeight)
                                                 .trainPilotBorder(
                                                     width = if (isSelected) 1.8.dp else 1.dp,
                                                     color = if (isSelected) palette.primary else palette.cardBorder,
                                                     shape = RoundedCornerShape(10.dp)
                                                 )
                                                 .clip(RoundedCornerShape(10.dp))
-                                                .clickable { onSelectDay(dayNumber) }
+                                                .testTag("calendar_day_$dayNumber")
+                                                .clickable { onSelectDay(dayNumber); openedDay = dayNumber }
                                         ) {
                                             Row(
                                                 modifier = Modifier
@@ -1891,56 +1894,55 @@ fun CalendarPlannerScreen(
                     }
                 }
             }
-
+            Surface(shape = RoundedCornerShape(16.dp), color = palette.surfaceCard,
+                modifier = Modifier.fillMaxWidth().trainPilotBorder(TrainPilotFrames.panelWidth,
+                    palette.cardBorder, RoundedCornerShape(16.dp))) {
+                Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Column(Modifier.weight(1f)) {
+                            Text(activeProgramTitle, color = palette.textPrimary, style = MaterialTheme.typography.titleSmall,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text("${state.planningCadenceHu} • ${state.planningTime}", color = palette.textSecondary,
+                                style = MaterialTheme.typography.labelSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
+                        if (state.calendarUndoStack.isNotEmpty()) IconButton(onClick = onUndoCalendarAction,
+                            modifier = Modifier.size(48.dp).testTag("calendar_undo_action")) {
+                            Text("↶", color = palette.primary, style = MaterialTheme.typography.headlineSmall,
+                                modifier = Modifier.semantics { contentDescription = "Visszavonás (${state.calendarUndoStack.size})" })
+                        }
+                        TrainPilotOutlinedButton(onClick = { planningOpen = true },
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("calendar_planning_open")) { Text("Tervezés") }
+                    }
+                }
+            }
+        }
+    }
+    if (openedDay != null) {
+        com.example.ui.components.CompactCalendarDialog(
+            title = "${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${selectedDay.toString().padStart(2, '0')}.",
+            tag = "calendar_day_dialog", onClose = { openedDay = null }
+        ) {
             // 2. INTERACTIVE DAY ACTIONS CARD (Módosítás, Áthelyezés, Törlés, Visszavonás)
             Surface(
                 shape = RoundedCornerShape(18.dp),
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth().testTag("calendar_day_actions")
-                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                    .trainPilotBorder(TrainPilotFrames.panelWidth, palette.cardBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier = Modifier.padding(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            modifier = Modifier.weight(1f),
-                            text = "${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${state.selectedCalendarDay.toString().padStart(2, '0')}. • Napi műveletek",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            color = palette.textPrimary
-                        )
-                        if (state.calendarUndoStack.isNotEmpty()) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = palette.primary.copy(alpha = 0.16f),
-                                modifier = Modifier
-                                    .trainPilotBorder(1.dp, palette.primary, RoundedCornerShape(8.dp))
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .heightIn(min = 48.dp).testTag("calendar_undo_action").clickable { onUndoCalendarAction() }
-                            ) {
-                                Text(
-                                    text = "↶ Visszavonás (${state.calendarUndoStack.size})",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = palette.primary,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                                )
-                            }
-                        }
-                    }
-
                     if (dayEvents.isEmpty()) {
                         Text("Nincs tervezett edzés ezen a napon.", style = MaterialTheme.typography.bodySmall,
                             color = palette.textSecondary, modifier = Modifier.fillMaxWidth().testTag("calendar_empty_day"))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             for (split in listOf("A", "B")) {
                                 TrainPilotOutlinedButton(onClick = {
-                                    onAddPlannedWorkoutOnDay(state.selectedCalendarDay, split, state.planningTime, state.planningDurationMin)
+                                    onAddPlannedWorkoutOnDay(selectedDay, split, state.planningTime, state.planningDurationMin)
                                 }, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("calendar_add_$split")) {
                                     Text("+ Alap $split")
                                 }
@@ -1978,7 +1980,7 @@ fun CalendarPlannerScreen(
                                         Surface(
                                             shape = RoundedCornerShape(8.dp),
                                             color = palette.primary.copy(alpha = 0.16f),
-                                            modifier = Modifier.clickable { onOpenWorkoutDetail() }
+                                            modifier = Modifier.clickable { openedDay = null; onOpenWorkoutDetail() }
                                         ) {
                                             Text(
                                                 text = "Napló >",
@@ -1999,13 +2001,13 @@ fun CalendarPlannerScreen(
                                         label = "Módosítás",
                                         color = palette.primary,
                                         modifier = Modifier.weight(1f),
-                                        onClick = { editingEvent = ev }
+                                        onClick = { openedDay = null; editingEvent = ev }
                                     )
                                     CalendarActionChip(
                                         label = "Áthelyezés",
                                         color = palette.textPrimary,
                                         modifier = Modifier.weight(1f),
-                                        onClick = { movingEvent = ev }
+                                        onClick = { openedDay = null; movingEvent = ev }
                                     )
                                     CalendarActionChip(
                                         label = "Törlés",
@@ -2025,18 +2027,22 @@ fun CalendarPlannerScreen(
                     }
                 }
             }
-
+        }
+    }
+    if (planningOpen) {
+        com.example.ui.components.CompactCalendarDialog(title = "Tervezés", tag = "calendar_planning_dialog",
+            onClose = { planningOpen = false }) {
             // 3. EXACT SCREENSHOT 7 MONTHLY PLANNER & REPLAN CARD
             Surface(
                 shape = RoundedCornerShape(22.dp),
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
+                    .trainPilotBorder(TrainPilotFrames.panelWidth, palette.cardBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier.padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -2052,7 +2058,7 @@ fun CalendarPlannerScreen(
                                 .padding(end = 10.dp)
                         )
                         Button(
-                            onClick = { onOpenReplanModal(true) },
+                            onClick = { planningOpen = false; onOpenReplanModal(true) },
                             modifier = Modifier.heightIn(min = 46.dp),
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
@@ -2138,7 +2144,7 @@ fun CalendarPlannerScreen(
                     }
 
                     Button(
-                        onClick = onPlanMonthlyWorkouts,
+                        onClick = { onPlanMonthlyWorkouts(); planningOpen = false },
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = palette.primary,

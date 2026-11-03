@@ -1,5 +1,7 @@
 package com.repforge.app.ui.workout
 
+import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
+
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import android.Manifest
@@ -17,7 +19,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text

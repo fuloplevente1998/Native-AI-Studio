@@ -1,5 +1,7 @@
 package com.repforge.app.ui.settings
 
+import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
+
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import androidx.compose.foundation.layout.Arrangement
@@ -10,7 +12,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults

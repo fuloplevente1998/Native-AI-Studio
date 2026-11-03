@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
+
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
 import com.example.model.workoutsOn
@@ -73,7 +75,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Watch
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -403,12 +404,6 @@ fun HealthTabScreen(
                                     color = palette.primary
                                 )
                             }
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "Az egészséged rövid áttekintése",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = palette.textSecondary
-                            )
                         }
                         IconButton(
                             onClick = { requestDailyHealthSync(if (uiState.primaryHealthSourceSamsung)

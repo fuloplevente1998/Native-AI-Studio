@@ -3,6 +3,7 @@ package com.repforge.app.ui.theme
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -34,3 +35,8 @@ fun Modifier.trainPilotBorder(border: BorderStroke, shape: Shape = RectangleShap
 
 fun Modifier.trainPilotBorder(width: Dp, brush: Brush, shape: Shape = RectangleShape): Modifier =
     border(TrainPilotFrames.stroke(width, brush), shape)
+
+/** Subtle static edge fade. Uses the existing palette; never changes layout or touch targets. */
+fun Modifier.trainPilotSoftGlow(accent: Color, shape: Shape, elevation: Dp = 6.dp): Modifier =
+    this.shadow(elevation, shape = shape, clip = false,
+        ambientColor = accent.copy(alpha = 0.08f), spotColor = accent.copy(alpha = 0.16f))

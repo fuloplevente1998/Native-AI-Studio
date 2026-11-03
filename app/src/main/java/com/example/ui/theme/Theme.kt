@@ -3,6 +3,9 @@ package com.example.ui.theme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.remember
+import com.repforge.app.ui.theme.LocalTrainPilotColors
+import com.repforge.app.ui.theme.TrainPilotExtendedColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -67,8 +70,15 @@ fun TrainPilotTheme(
         fontScale = (currentDensity.fontScale * fontScaleMultiplier).coerceIn(0.85f, 2.5f)
     )
 
+    val nativeColors = remember(palette) {
+        TrainPilotExtendedColors(bg = palette.background, card = palette.surfaceCard, card2 = palette.surfaceElevated,
+            line = palette.cardBorder, text = palette.textPrimary, muted = palette.textSecondary,
+            accent = palette.primary, accent2 = palette.secondary, onAccent = palette.onPrimary,
+            dangerText = palette.danger, success = palette.success, emphasisBorder = palette.sectionBorder)
+    }
     CompositionLocalProvider(
         LocalTrainPilotPalette provides palette,
+        LocalTrainPilotColors provides nativeColors,
         LocalDensity provides scaledDensity
     ) {
         MaterialTheme(

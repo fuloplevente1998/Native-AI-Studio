@@ -1,5 +1,7 @@
 package com.repforge.app.ui.journal
 
+import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
+
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import android.content.res.Resources
