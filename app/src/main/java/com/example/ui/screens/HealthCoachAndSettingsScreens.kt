@@ -2267,7 +2267,7 @@ fun SettingsMainScreen(
             .fillMaxSize()
             .background(palette.background)
             .testTag("settings_main_screen"),
-        contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
+        contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
         item {
@@ -2286,10 +2286,7 @@ fun SettingsMainScreen(
             )
         }
 
-        // Megjelenés és nyelv (32 Palettes in 4 Expandable Columns + 4 Languages)
-        item {
-            Text(strings.appearanceAndLang, style = MaterialTheme.typography.labelLarge, color = palette.textSecondary)
-        }
+        // The expandable theme card already supplies its own title.
 
         item {
             SettingsActionRowCard(
@@ -2480,69 +2477,70 @@ fun SettingsMainScreen(
             }
         }
 
-        // Edzés és értesítések
-        item {
-            Text("Edzés és értesítések", style = MaterialTheme.typography.labelLarge, color = palette.textSecondary)
-        }
-
-        item {
-            SettingsActionRowCard(
-                title = strings.restTimerTitle,
-                subtitle = "Alapértelmezett pihenőidő (koppints a váltáshoz)",
-                badgeText = "${uiState.defaultRestSec} mp",
-                onClick = onCycleRestTimer
-            )
-        }
-
         item {
             Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                shape = RoundedCornerShape(22.dp), color = palette.surfaceCard,
+                modifier = Modifier.fillMaxWidth().testTag("settings_workout_group")
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
-                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Edzés és értesítések", style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                    SettingsActionRowCard(
+                        title = strings.restTimerTitle,
+                        subtitle = "Alapértelmezett pihenőidő (koppints a váltáshoz)",
+                        badgeText = "${uiState.defaultRestSec} mp",
+                        subtleBorder = true,
+                        onClick = onCycleRestTimer
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = palette.surfaceCard,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .trainPilotBorder(0.75.dp, palette.cardBorder.copy(alpha = 0.45f), RoundedCornerShape(18.dp))
                     ) {
-                        Column {
-                            Text(strings.soundAlertTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text("Pihenőidő lejártakor", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
-                        }
-                        Switch(checked = uiState.soundAlertEnabled, onCheckedChange = onToggleSoundAlert)
-                    }
-                    HorizontalDivider(color = palette.cardBorder)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text("Rezgés", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text("Haptikus visszajelzés pihenőidő végén", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
-                        }
-                        Switch(
-                            checked = vibrationEnabled,
-                            onCheckedChange = {
-                                vibrationEnabled = it
-                                onShowBanner(if (it) "Rezgés bekapcsolva" else "Rezgés kikapcsolva")
+                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(strings.soundAlertTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                    Text("Pihenőidő lejártakor", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                                }
+                                Switch(checked = uiState.soundAlertEnabled, onCheckedChange = onToggleSoundAlert)
                             }
-                        )
+                            HorizontalDivider(color = palette.cardBorder)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text("Rezgés", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                    Text("Haptikus visszajelzés pihenőidő végén", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                                }
+                                Switch(
+                                    checked = vibrationEnabled,
+                                    onCheckedChange = {
+                                        vibrationEnabled = it
+                                        onShowBanner(if (it) "Rezgés bekapcsolva" else "Rezgés kikapcsolva")
+                                    }
+                                )
+                            }
+                        }
                     }
+                    SettingsActionRowCard(
+                        title = "Edzés beállításai és progresszió",
+                        subtitle = "${uiState.trainingStyleHu} • ${uiState.progressionRuleHu} • Pihenő: ${uiState.defaultRestSec} mp",
+                        badgeText = "Szerk.",
+                        subtleBorder = true,
+                        onClick = { onToggleProgressionModal(true) }
+                    )
                 }
             }
-        }
-
-        item {
-            SettingsActionRowCard(
-                title = "Edzés beállításai és progresszió",
-                subtitle = "${uiState.trainingStyleHu} • ${uiState.progressionRuleHu} • Pihenő: ${uiState.defaultRestSec} mp",
-                badgeText = "Szerk.",
-                onClick = { onToggleProgressionModal(true) }
-            )
         }
 
         // Eszközök és adatok (Óra, Mentés, Engedélyek, Privát fotók)
@@ -2603,7 +2601,8 @@ private fun SettingsActionRowCard(
     badgeText: String,
     onClick: () -> Unit,
     testTag: String = "",
-    isExpanded: Boolean? = null
+    isExpanded: Boolean? = null,
+    subtleBorder: Boolean = false
 ) {
     val palette = LocalTrainPilotPalette.current
     Surface(
@@ -2611,7 +2610,9 @@ private fun SettingsActionRowCard(
         color = palette.surfaceCard,
         modifier = Modifier
             .fillMaxWidth()
-            .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+            .trainPilotBorder(if (subtleBorder) 0.75.dp else 1.25.dp,
+                if (subtleBorder) palette.cardBorder.copy(alpha = 0.45f) else palette.sectionBorder,
+                RoundedCornerShape(18.dp))
             .clip(RoundedCornerShape(18.dp))
             .clickable { onClick() }
             .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier)
