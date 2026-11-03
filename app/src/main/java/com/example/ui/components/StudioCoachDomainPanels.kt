@@ -97,13 +97,13 @@ internal fun StudioCoachNextTrainingCard(
     val letterDay = target.title.trim().takeIf { it.length in 1..2 }
         ?: target.dayId.uppercase().takeIf { it in setOf("A", "B", "C", "D") }
     val shape = RoundedCornerShape(18.dp)
-    Surface(color = palette.primary.copy(alpha = 0.12f), shape = shape,
+    Surface(color = palette.tintedSurface(0.12f), shape = shape,
         modifier = Modifier.fillMaxWidth().testTag("studio_coach_target")
             .trainPilotBorder(2.dp, palette.primary.copy(alpha = 0.85f), shape)) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween) {
-                Surface(color = palette.primary.copy(alpha = 0.20f), shape = RoundedCornerShape(50.dp)) {
+                Surface(color = palette.tintedSurface(0.20f), shape = RoundedCornerShape(50.dp)) {
                     Text("KÖVETKEZŐ EDZÉSNAP", color = palette.primary,
                         style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp))
@@ -127,7 +127,7 @@ internal fun StudioCoachNextTrainingCard(
                     }
                 }
                 if (letterDay != null) {
-                    Surface(color = palette.primary.copy(alpha = 0.16f),
+                    Surface(color = palette.tintedSurface(0.16f),
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.trainPilotBorder(1.25.dp, palette.primary,
                             RoundedCornerShape(16.dp)).testTag("studio_coach_day_badge")) {

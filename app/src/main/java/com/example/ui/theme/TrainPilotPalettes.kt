@@ -1,6 +1,7 @@
 package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import com.example.model.AppLanguage
 
 enum class PaletteCategory(val labelHu: String, val labelEn: String, val iconEmoji: String) {
@@ -43,7 +44,7 @@ data class TrainPilotPalette(
 ) {
     // 4 distinct theme families requested by user:
     // 1..8   = Matt témák (valódi matt, alacsony telítettségű, bársonyos felületek)
-    // 9..16  = Kontrasztos témák (mélyfekete háttér, éles keretek, magas kontraszt)
+    // 9..16  = Kontrasztos témák (mélyfekete háttér, elkülönülő kártya/belső felület, magas kontraszt)
     // 17..24 = Fényes / Glow témák (neon ragyogás és glow kiemelés)
     // 25..32 = Világos témák (valódi világos háttér, színes keretek és kijelölések)
     val subGroup: PaletteCategory
@@ -62,6 +63,11 @@ data class TrainPilotPalette(
 
     val sectionBorder: Color get() = androidx.compose.ui.graphics.lerp(cardBorder, primary, 0.72f)
     val surfaceCard: Color get() = surface
+
+    /** Contrast accents sit on an opaque card, rather than disappearing into the black page. */
+    fun tintedSurface(alpha: Float): Color = primary.copy(alpha = alpha).let {
+        if (isHighContrast) it.compositeOver(surfaceCard) else it
+    }
     val textMuted: Color = textSecondary.copy(alpha = 0.90f)
 
     fun localizedName(lang: AppLanguage): String = when (lang) {
@@ -242,8 +248,8 @@ object TrainPilotPalettes {
             nameRo = "Contrast Negru & Aur Pur",
             category = PaletteCategory.BASIC,
             background = Color(0xFF000000),
-            surface = Color(0xFF0A0D12),
-            surfaceElevated = Color(0xFF141922),
+            surface = Color(0xFF202733),
+            surfaceElevated = Color(0xFF344050),
             primary = Color(0xFFFFD60A),
             onPrimary = Color(0xFF000000),
             secondary = Color(0xFF00E5FF),
@@ -260,8 +266,8 @@ object TrainPilotPalettes {
             nameRo = "Contrast Negru & Smarald",
             category = PaletteCategory.BASIC,
             background = Color(0xFF000000),
-            surface = Color(0xFF07100C),
-            surfaceElevated = Color(0xFF102018),
+            surface = Color(0xFF192D26),
+            surfaceElevated = Color(0xFF2C463B),
             primary = Color(0xFF00F59B),
             onPrimary = Color(0xFF000000),
             secondary = Color(0xFFFFD166),
@@ -278,8 +284,8 @@ object TrainPilotPalettes {
             nameRo = "Contrast Onix & Albastru Gheață",
             category = PaletteCategory.BASIC,
             background = Color(0xFF020408),
-            surface = Color(0xFF090F18),
-            surfaceElevated = Color(0xFF121C2B),
+            surface = Color(0xFF1E2A3A),
+            surfaceElevated = Color(0xFF32465C),
             primary = Color(0xFF38BDF8),
             onPrimary = Color(0xFF000000),
             secondary = Color(0xFFFACC15),
@@ -296,8 +302,8 @@ object TrainPilotPalettes {
             nameRo = "Contrast Carbon & Stacojiu",
             category = PaletteCategory.BASIC,
             background = Color(0xFF030203),
-            surface = Color(0xFF11090C),
-            surfaceElevated = Color(0xFF1E1116),
+            surface = Color(0xFF30212A),
+            surfaceElevated = Color(0xFF4A3440),
             primary = Color(0xFFFF4769),
             onPrimary = Color(0xFF000000),
             secondary = Color(0xFF38BDF8),
@@ -314,8 +320,8 @@ object TrainPilotPalettes {
             nameRo = "Contrast Titan & Lime Volt",
             category = PaletteCategory.BASIC,
             background = Color(0xFF020402),
-            surface = Color(0xFF0B110B),
-            surfaceElevated = Color(0xFF152015),
+            surface = Color(0xFF252D1E),
+            surfaceElevated = Color(0xFF3D482F),
             primary = Color(0xFFB8FF01),
             onPrimary = Color(0xFF000000),
             secondary = Color(0xFF00E5FF),
@@ -332,8 +338,8 @@ object TrainPilotPalettes {
             nameRo = "Contrast Obsidian & Portocaliu Intens",
             category = PaletteCategory.BASIC,
             background = Color(0xFF040200),
-            surface = Color(0xFF120C07),
-            surfaceElevated = Color(0xFF21160D),
+            surface = Color(0xFF30251D),
+            surfaceElevated = Color(0xFF4A3A2C),
             primary = Color(0xFFFF8800),
             onPrimary = Color(0xFF000000),
             secondary = Color(0xFF00F0FF),
@@ -350,8 +356,8 @@ object TrainPilotPalettes {
             nameRo = "Contrast Miez de Noapte & Ultraviolet",
             category = PaletteCategory.BASIC,
             background = Color(0xFF020106),
-            surface = Color(0xFF0D0918),
-            surfaceElevated = Color(0xFF18112B),
+            surface = Color(0xFF282138),
+            surfaceElevated = Color(0xFF403456),
             primary = Color(0xFFC084FC),
             onPrimary = Color(0xFF000000),
             secondary = Color(0xFF2DD4BF),
@@ -368,8 +374,8 @@ object TrainPilotPalettes {
             nameRo = "Contrast Negru Profund & Turcoaz",
             category = PaletteCategory.BASIC,
             background = Color(0xFF000304),
-            surface = Color(0xFF071216),
-            surfaceElevated = Color(0xFF0F2128),
+            surface = Color(0xFF1A2D32),
+            surfaceElevated = Color(0xFF2C4850),
             primary = Color(0xFF00F5D4),
             onPrimary = Color(0xFF000000),
             secondary = Color(0xFFFFB703),
