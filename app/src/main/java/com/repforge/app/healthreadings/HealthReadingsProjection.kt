@@ -187,6 +187,18 @@ object HealthReadingsProjection {
                     safe.remove("energyScoreTime")
                     safe.remove("energyScoreSource")
                 }
+                val grants = safe.optJSONObject("permissions")
+                val failures = errorFields(safe)
+                if (grants?.has("READ_SLEEP") == true && !grants.optBoolean("READ_SLEEP") ||
+                    "sleepMinutes" in failures) {
+                    for (key in listOf("sleepSessions", "sleepMinutes", "sleepStart", "sleepEnd", "sleepSource"))
+                        safe.remove(key)
+                }
+                if (grants?.has("READ_HEART_RATE_VARIABILITY") == true &&
+                    !grants.optBoolean("READ_HEART_RATE_VARIABILITY") || "hrvRmssdMs" in failures) {
+                    for (key in listOf("hrvRmssdMs", "hrvTime", "hrvSource", "hrvBaselineMs"))
+                        safe.remove(key)
+                }
             }
         }
         val current = ownDays.firstOrNull { it.optString("day") == today.toString() }
