@@ -170,7 +170,10 @@ class HealthReadingsRegressionTest {
         assertNull(result.samsungEnergy)
         val zero = row(samsung).put("energyScore", 0)
             .put("energyScoreTime", "2026-11-02T18:00:00Z").put("energyScoreSource", "samsung_health")
-        assertNull(HealthReadingsProjection.recoveryToday(samsung, listOf(zero), emptyList(), now, ZoneOffset.UTC).score)
+        val zeroReading = HealthReadingsProjection.recoveryToday(samsung, listOf(zero), emptyList(), now, ZoneOffset.UTC)
+        assertEquals(RecoverySource.SAMSUNG_ENERGY, zeroReading.source)
+        assertEquals(0.0, zeroReading.score!!, 0.001)
+        assertEquals(0.0, zeroReading.samsungEnergy!!, 0.001)
     }
 
     @Test fun healthConnectCannotInheritSamsungScoreEmbeddedInWrongRow() {
@@ -192,6 +195,51 @@ class HealthReadingsRegressionTest {
         assertNotNull(result.trainPilotEstimate)
         assertNull(result.samsungEnergy)
         assertEquals(result.trainPilotEstimate!!.toDouble(), result.score!!, 0.001)
+    }
+
+
+    @Test fun hcReadWarningsIdentifySdkFailureWithoutBlamingUnrelatedMetrics() {
+        val failed = row().put("warnings", JSONArray().put("READ_HEART_RATE: provider transport failure"))
+        assertEquals(ReadingState.READ_ERROR, read(hc, failed).state)
+        val unrelated = row().put("warnings", JSONArray().put("READ_STEPS: provider transport failure"))
+        assertEquals(ReadingState.NO_DATA, read(hc, unrelated).state)
+        val diagnosed = row().put("hcReadDiagnosis", JSONObject().put("readErrorFields",
+            JSONArray().put("READ_RESTING_HEART_RATE: aggregation failure")))
+        assertEquals(ReadingState.READ_ERROR, read(hc, diagnosed).state)
+    }
+
+    @Test fun channelMismatchIsNotReusedAsSelectedProvider() {
+        val wrongChannel = row().put("channel", samsung).put("averageHeartRate", 100)
+        assertEquals(ReadingState.WRONG_DAY_OR_PROVIDER, read(hc, wrongChannel).state)
+        assertNull(read(hc, wrongChannel).averageBpm)
+    }
+
+    @Test fun yesterdaySleepCannotFillAnEmptyTodayRecovery() {
+        val yesterday = day.minusDays(1)
+        val olderSleep = JSONObject().put("source", "hc.origin")
+            .put("start", "2026-11-01T12:00:00Z").put("end", "2026-11-01T19:00:00Z")
+        val oldRow = row(hc, yesterday).put("sleepSessions", JSONArray().put(olderSleep))
+        val todayEmpty = row()
+        val result = HealthReadingsProjection.recoveryToday(hc,
+            listOf(oldRow, todayEmpty), emptyList(), now, ZoneOffset.UTC)
+        assertEquals(RecoverySource.NONE, result.source)
+        assertNull(result.score)
+        assertNull(result.trainPilotEstimate)
+        val missingToday = HealthReadingsProjection.recoveryToday(hc,
+            listOf(oldRow), emptyList(), now, ZoneOffset.UTC)
+        assertEquals(ReadingState.NOT_SYNCED, missingToday.state)
+    }
+
+    @Test fun healthConnectRecoveryDeniedAndReadErrorRemainDifferent() {
+        val denied = row().put("permissions", JSONObject()
+            .put("READ_SLEEP", false).put("READ_HEART_RATE_VARIABILITY", false))
+        assertEquals(ReadingState.PERMISSION_DENIED, HealthReadingsProjection.recoveryToday(
+            hc, listOf(denied), emptyList(), now, ZoneOffset.UTC).state)
+        val failed = row().put("permissions", JSONObject()
+            .put("READ_SLEEP", true).put("READ_HEART_RATE_VARIABILITY", true))
+            .put("warnings", JSONArray().put("READ_SLEEP: unavailable"))
+        assertEquals(ReadingState.READ_ERROR, HealthReadingsProjection.recoveryToday(
+            hc, listOf(failed), emptyList(), now, ZoneOffset.UTC).state)
     }
 
     @Test fun deniedEnergyGrantIsSeparateFromSdkError() {
