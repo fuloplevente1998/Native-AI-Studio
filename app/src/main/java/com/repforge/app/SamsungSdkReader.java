@@ -182,7 +182,7 @@ final class SamsungSdkReader {
                         // Exclude pre-midnight and future-day samples at the [start, end) boundary.
                         for (HeartRate h : series) if (h.getStartTime() != null &&
                                 !h.getStartTime().isBefore(start) && h.getStartTime().isBefore(end) &&
-                                Float.isFinite(h.getHeartRate()) && h.getHeartRate() >= 20 && h.getHeartRate() <= 250) {
+                                Double.isFinite(h.getHeartRate()) && h.getHeartRate() >= 20 && h.getHeartRate() <= 250) {
                             String key = source(p) + h.getStartTime() + "|" + h.getEndTime();
                             samples.put(key, new double[]{h.getHeartRate(), h.getMin(), h.getMax()});
                             timed.put(key, new JSONObject().put("time", h.getStartTime().toString())
