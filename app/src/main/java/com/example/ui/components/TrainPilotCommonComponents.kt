@@ -395,7 +395,7 @@ private fun TopNavPillItem(
 
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = if (selected) palette.primary.copy(alpha = if (palette.isDark) 0.22f else 0.16f) else palette.surface,
+        color = if (selected) palette.tintedSurface(if (palette.isDark) 0.22f else 0.16f) else palette.surface,
         modifier = modifier
             .then(glowModifier)
             .heightIn(min = 48.dp)
@@ -693,7 +693,7 @@ fun PalettePickerBottomSheet(
                     val active = kotlin.math.abs(fontScaleMultiplier - scale) < 0.03f
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = if (active) palette.primary.copy(alpha = 0.22f) else palette.surfaceElevated,
+                        color = if (active) palette.tintedSurface(0.22f) else palette.surfaceElevated,
                         modifier = Modifier
                             .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                             .trainPilotBorder(
@@ -718,7 +718,7 @@ fun PalettePickerBottomSheet(
 
                 Surface(
                     shape = RoundedCornerShape(10.dp),
-                    color = if (compactPhoneMode) palette.primary.copy(alpha = 0.22f) else palette.surfaceElevated,
+                    color = if (compactPhoneMode) palette.tintedSurface(0.22f) else palette.surfaceElevated,
                     modifier = Modifier
                         .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                         .trainPilotBorder(
@@ -1575,7 +1575,7 @@ fun PersonalPlannerModalDialog(
                                         val flatIdx = rowIdx * 2 + colIdx
                                         Surface(
                                             shape = RoundedCornerShape(10.dp),
-                                            color = if (isChecked) palette.primary.copy(alpha = 0.18f) else palette.surface,
+                                            color = if (isChecked) palette.tintedSurface(0.18f) else palette.surface,
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .trainPilotBorder(

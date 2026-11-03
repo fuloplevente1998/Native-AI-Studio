@@ -141,7 +141,7 @@ fun HomeScreen(
                 ) {
                     Surface(
                         shape = CircleShape,
-                        color = palette.primary.copy(alpha = 0.16f),
+                        color = palette.tintedSurface(0.16f),
                         modifier = Modifier.size(38.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -231,12 +231,12 @@ fun HomeScreen(
                     // Left Dumbbell Icon in warm dark gold container
                     Surface(
                         shape = RoundedCornerShape(14.dp),
-                        color = palette.primary.copy(alpha = 0.14f),
+                        color = palette.tintedSurface(0.14f),
                         modifier = Modifier
                             .size(44.dp)
                             .trainPilotBorder(
                                 width = 1.dp,
-                                color = palette.primary.copy(alpha = 0.3f),
+                                color = palette.tintedSurface(0.3f),
                                 shape = RoundedCornerShape(14.dp)
                             )
                     ) {
