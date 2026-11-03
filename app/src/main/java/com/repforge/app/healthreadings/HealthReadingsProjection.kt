@@ -98,7 +98,7 @@ object HealthReadingsProjection {
         if (usePulse && sampleArray != null) for (i in 0 until sampleArray.length()) {
             val row = sampleArray.optJSONObject(i) ?: continue
             val at = instant(row.optString("time")) ?: continue
-            val bpm = number(row, "bpm")?.takeIf { it in 20.0..250.0 && it % 1.0 == 0.0 }?.toInt() ?: continue
+            val bpm = number(row, "bpm")?.takeIf { it in 20.0..250.0 }?.roundToInt() ?: continue
             if (at.isBefore(start) || !at.isBefore(end) || at.isAfter(now)) continue
             val origin = row.optString("source").takeIf { it != "null" }.orEmpty()
             unique[at to origin] = HeartSample(at, bpm, origin)
@@ -190,17 +190,29 @@ object HealthReadingsProjection {
             }
         }
         val current = ownDays.firstOrNull { it.optString("day") == today.toString() }
-        val status = current?.let { metricState(it, "energyScore", "READ_ENERGY_SCORE", provider == HealthJournalStore.SAMSUNG) }
-            ?: ReadingState.NOT_SYNCED
+            ?: return RecoveryDayReading(today, provider, ReadingState.NOT_SYNCED, RecoverySource.NONE,
+                null, null, null, null, null, "Nincs kiválasztott forrásból származó mai napi adat.")
+        val status = recoveryStatus(current, provider)
         val signals = NativeCoachSignals.fromDays(ownDays, today, zone)
-        val calculation = NativeCoachReadiness.calculate(signals.recovery, signals.daily, workouts, now, zone)
+        // Previous-day measurements can build an HRV baseline, but cannot fill today's missing recovery.
+        val todayRecovery = signals.recovery.takeIf { it.optString("day") == today.toString() } ?: JSONObject()
+        val calculation = NativeCoachReadiness.calculate(todayRecovery, signals.daily, workouts, now, zone)
+        // The accepted Home presentation already validates genuine Samsung Energy 0 through the
+        // canonical validator using a temporary positive probe. Preserve that zero/null distinction.
+        val verifiedZeroAt = if (provider == HealthJournalStore.SAMSUNG &&
+            number(current, "energyScore") == 0.0) {
+            val probe = JSONObject(current.toString()).put("energyScore", 1.0)
+            NativeCoachReadiness.calculate(todayRecovery, signals.daily, workouts, now, zone,
+                externalEnergy = probe, externalEnergyAvailable = true)
+                .takeIf { it.samsungScore == 1.0 }?.samsungTime
+        } else null
         val source = when {
-            calculation.samsungScore != null && provider == HealthJournalStore.SAMSUNG -> RecoverySource.SAMSUNG_ENERGY
+            (calculation.samsungScore != null || verifiedZeroAt != null) && provider == HealthJournalStore.SAMSUNG -> RecoverySource.SAMSUNG_ENERGY
             calculation.trainpilotScore != null && calculation.trainpilotObservations > 0 -> RecoverySource.TRAINPILOT_ESTIMATE
             else -> RecoverySource.NONE
         }
         val selectedScore = when (source) {
-            RecoverySource.SAMSUNG_ENERGY -> calculation.samsungScore
+            RecoverySource.SAMSUNG_ENERGY -> calculation.samsungScore ?: 0.0
             RecoverySource.TRAINPILOT_ESTIMATE -> calculation.trainpilotScore?.toDouble()
             RecoverySource.NONE -> null
         }
@@ -223,8 +235,20 @@ object HealthReadingsProjection {
             }
         }
         return RecoveryDayReading(today, provider, finalState, source, selectedScore,
-            calculation.score, calculation.samsungScore, calculation.samsungTime,
-            calculation.trainpilotScore, explanation)
+            calculation.score, calculation.samsungScore ?: if (verifiedZeroAt != null) 0.0 else null,
+            calculation.samsungTime ?: verifiedZeroAt, calculation.trainpilotScore, explanation)
+    }
+
+    private fun recoveryStatus(raw: JSONObject, provider: String): ReadingState {
+        if (provider == HealthJournalStore.SAMSUNG)
+            return metricState(raw, "energyScore", "READ_ENERGY_SCORE", true)
+        val permissions = raw.optJSONObject("permissions")
+        val sleepDenied = permissions?.has("READ_SLEEP") == true && !permissions.optBoolean("READ_SLEEP")
+        val hrvDenied = permissions?.has("READ_HEART_RATE_VARIABILITY") == true &&
+            !permissions.optBoolean("READ_HEART_RATE_VARIABILITY")
+        if (sleepDenied && hrvDenied) return ReadingState.PERMISSION_DENIED
+        if (errorFields(raw).any { it == "sleepMinutes" || it == "hrvRmssdMs" }) return ReadingState.READ_ERROR
+        return ReadingState.NO_DATA
     }
 
     private fun metricState(raw: JSONObject, metric: String, grant: String, checkGrant: Boolean): ReadingState {
@@ -249,6 +273,19 @@ object HealthReadingsProjection {
                 val key = failed.optString(i)
                 if (errors?.optString(key) != "PERMISSION_DENIED" && key.isNotBlank()) add(key)
             }
+            // Health Connect uses warnings (and hcReadDiagnosis.readErrorFields), not Samsung's errors.
+            val diagnostic = raw.optJSONObject("hcReadDiagnosis")?.optJSONArray("readErrorFields")
+            val warnings = raw.optJSONArray("warnings")
+            for (list in listOfNotNull(diagnostic, warnings)) for (i in 0 until list.length()) {
+                val message = list.optString(i)
+                when {
+                    message.startsWith("READ_HEART_RATE:") -> addAll(pulseKeys)
+                    message.startsWith("READ_RESTING_HEART_RATE:") -> add("restingHeartRate")
+                    message.startsWith("READ_SLEEP:") -> add("sleepMinutes")
+                    message.startsWith("READ_HEART_RATE_VARIABILITY:") -> add("hrvRmssdMs")
+                    message.startsWith("READ_ENERGY_SCORE:") -> add("energyScore")
+                }
+            }
         }
     }
 
@@ -266,7 +303,8 @@ object HealthReadingsProjection {
 
     private fun matches(raw: JSONObject, provider: String, day: LocalDate): Boolean =
         raw.optString("day") == day.toString() &&
-            raw.optString("provider").let { it.isBlank() || it == provider }
+            raw.optString("provider").let { it.isBlank() || it == provider } &&
+            raw.optString("channel").let { it.isBlank() || it == provider }
 
     private fun requireProvider(provider: String) {
         require(provider == HealthJournalStore.HC || provider == HealthJournalStore.SAMSUNG) {
