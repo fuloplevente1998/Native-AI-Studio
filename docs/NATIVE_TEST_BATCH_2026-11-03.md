@@ -28,3 +28,7 @@ A régi programmezők és sorrend továbbra is működnek. A kanonikus művelet 
 6. Egészségnapló részletes böngésző: dátumtartomány, eredet/típus, lapozás; a kiválasztott adatforrás és hiányállapot megmarad.
 
 A teljes #69 gyakorlatonkénti/utólagos feedback-paritás, #71 26 metrikás összesítő, #74 preset/automata motorbekötés és #75 teljes négynyelvű felület még nem tekinthető késznek. A korábbi #35/#48 térkép/szöveg javítások készülékes elfogadása is a közös próbába tartozik.
+
+## Végleges átadás
+
+#79 mainen, appforrás `d69c77e41692f7c2c171e400358772439bff35ea`, tesztelt `18b828e17e45a2b67ea6e864c04fe72685b46a6c`. CI41670555328 SUCCESS, letöltött nyers411, nulla failure/error/skipped; inline JS7 külön sikeres. Signed41671892820 SUCCESS, metadata/hash/signer/Maps/pair és Drive-méret/szülő visszaellenőrizve. [Egyetlen telefonos teszt-APK](https://drive.google.com/file/d/1EBiZCJ7hEiGi5QHw87umNLZbEEmTgcVu/view?usp=drivesdk). [Részletes bizonyíték és aktuális backlog](CURRENT_STATUS.md). Fizikai elfogadás még nyitott.
