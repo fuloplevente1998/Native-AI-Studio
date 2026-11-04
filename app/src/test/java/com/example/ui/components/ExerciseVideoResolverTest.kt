@@ -279,4 +279,17 @@ class ExerciseVideoResolverTest {
         assertEquals("Legs, Glutes", com.example.model.translateMuscleListLabel("Láb/far", AppLanguage.EN))
     }
 
+    @Test fun everyBundledExerciseHasTranslatedEquipmentAndMuscleFragments() {
+        val untranslated = Regex("kézisúlyzó|csiga|támasz|rögzítés|gép|futócipő|lábhajlító|combhajlító|hátsó váll|lapocka|kondíció", RegexOption.IGNORE_CASE)
+        for (entry in com.repforge.app.data.db.TrainPilotDatabase.defaultExercises()) {
+            val raw = org.json.JSONObject(entry.rawJson)
+            for (language in listOf(AppLanguage.EN, AppLanguage.DE, AppLanguage.RO)) {
+                val equipment = com.example.model.translateEquipmentLabel(raw.optString("equipment"), entry.loadType, language)
+                val muscles = com.example.model.translateMuscleListLabel(raw.optString("target"), language)
+                assertFalse("${entry.id} $language: $equipment", untranslated.containsMatchIn(equipment))
+                assertFalse("${entry.id} $language: $muscles", untranslated.containsMatchIn(muscles))
+            }
+        }
+    }
+
 }

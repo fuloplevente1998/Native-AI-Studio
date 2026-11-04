@@ -157,9 +157,53 @@ data class ExerciseItem(
     }
 }
 
+private val equipmentDisplayLabels = mapOf(
+    "pad" to listOf("bench", "Bank", "bancă"),
+    "támasz" to listOf("support", "Stütze", "sprijin"),
+    "állítható pad" to listOf("adjustable bench", "verstellbare Bank", "bancă reglabilă"),
+    "vízszintes pad" to listOf("flat bench", "Flachbank", "bancă orizontală"),
+    "ferde pad" to listOf("incline bench", "Schrägbank", "bancă înclinată"),
+    "stabil pad" to listOf("stable bench", "stabile Bank", "bancă stabilă"),
+    "stabil támasz" to listOf("stable support", "stabile Stütze", "sprijin stabil"),
+    "opcionális stabil támasz" to listOf("optional stable support", "optionale stabile Stütze", "sprijin stabil opțional"),
+    "stabil fellépő" to listOf("stable step", "stabiler Step", "platformă stabilă"),
+    "stabil fellépő/doboz" to listOf("stable step/box", "stabiler Step/Kasten", "platformă/cutie stabilă"),
+    "stabil pad/támasz" to listOf("stable bench/support", "stabile Bank/Stütze", "bancă/sprijin stabil"),
+    "biztonságos állvány" to listOf("safety rack", "Sicherheitsständer", "suport de siguranță"),
+    "futócipő" to listOf("running shoes", "Laufschuhe", "pantofi de alergare"),
+    "gyaloglócipő" to listOf("walking shoes", "Walkingschuhe", "pantofi de mers"),
+    "túracipő" to listOf("hiking shoes", "Wanderschuhe", "pantofi de drumeție"),
+    "görkorcsolya" to listOf("inline skates", "Inlineskates", "role"),
+    "kerékpár" to listOf("bicycle", "Fahrrad", "bicicletă"),
+    "alsó csiga" to listOf("low pulley", "unterer Kabelzug", "scripete inferior"),
+    "kétoldali csiga" to listOf("dual cable pulleys", "beidseitiger Kabelzug", "scripeți bilaterali"),
+    "csigás lehúzó" to listOf("lat pulldown", "Latzug", "aparat de tracțiuni la cablu"),
+    "kötél" to listOf("rope", "Seil", "frânghie"),
+    "magas rögzítés" to listOf("high anchor", "hohe Befestigung", "ancorare înaltă"),
+    "oldalsó rögzítés" to listOf("side anchor", "seitliche Befestigung", "ancorare laterală"),
+    "stabil rögzítés" to listOf("secure anchor", "stabile Befestigung", "ancorare stabilă"),
+    "hack guggoló gép" to listOf("hack squat machine", "Hackenschmidt-Gerät", "aparat hack squat"),
+    "húzódzkodórúd" to listOf("pull-up bar", "Klimmzugstange", "bară de tracțiuni"),
+    "lábhajlító gép" to listOf("leg curl machine", "Beinbeuger", "aparat pentru flexia picioarelor"),
+    "ülő lábhajlító gép" to listOf("seated leg curl", "sitzender Beinbeuger", "aparat de flexie din șezut"),
+    "lábnyújtó gép" to listOf("leg extension machine", "Beinstrecker", "aparat pentru extensia picioarelor"),
+    "lábtoló gép" to listOf("leg press", "Beinpresse", "presă pentru picioare"),
+    "mellnyomó gép" to listOf("chest press machine", "Brustpresse", "aparat pentru împins la piept"),
+    "pec-deck gép" to listOf("pec deck", "Butterfly-Gerät", "aparat pec deck"),
+    "rásegítéses húzódzkodó gép" to listOf("assisted pull-up machine", "unterstütztes Klimmzuggerät", "aparat de tracțiuni asistate"),
+    "stabil alacsony rúd / heveder" to listOf("stable low bar / straps", "stabile niedrige Stange / Schlingen", "bară joasă stabilă / chingi"),
+    "testsúly" to listOf("bodyweight", "Körpergewicht", "greutatea corpului"),
+    "tolódzkodó korlát" to listOf("dip bars", "Dip-Barren", "bare paralele"),
+    "vállnyomó gép" to listOf("shoulder press machine", "Schulterpresse", "aparat pentru împins deasupra capului"),
+    "álló vádligép" to listOf("standing calf raise machine", "stehendes Wadenheben", "aparat pentru gambe din picioare"),
+)
+
 fun translateEquipmentLabel(rawHu: String, loadType: String = "", lang: AppLanguage): String {
     if (lang == AppLanguage.HU) return rawHu
-    val key = rawHu.trim().lowercase()
+    val key = rawHu.trim().lowercase(java.util.Locale.ROOT)
+    equipmentDisplayLabels[key]?.let { values ->
+        return values[when(lang) { AppLanguage.EN -> 0; AppLanguage.DE -> 1; else -> 2 }]
+    }
     val loadKey = if (key.isBlank() || key in setOf("per_hand", "single_dumbbell", "bodyweight", "total", "weight", "dumbbell", "barbell", "machine", "cable", "band", "kettlebell")) loadType.trim().lowercase() else ""
     if (rawHu.contains('+')) return rawHu.split('+').joinToString(" + ") { translateEquipmentLabel(it.trim(), "", lang) }
     return when {
@@ -236,6 +280,15 @@ fun translateSingleMuscleLabel(tokenHu: String, lang: AppLanguage): String {
             AppLanguage.DE -> "Rücken"
             AppLanguage.RO -> "Spate"
             AppLanguage.HU -> tokenHu
+        }
+        "hátsó váll" -> when(lang) {
+            AppLanguage.EN -> "Rear delts"; AppLanguage.DE -> "Hintere Schultern"; AppLanguage.RO -> "Deltoizi posteriori"; else -> tokenHu
+        }
+        "lapocka" -> when(lang) {
+            AppLanguage.EN -> "Scapular muscles"; AppLanguage.DE -> "Schulterblattmuskeln"; AppLanguage.RO -> "Mușchi scapulari"; else -> tokenHu
+        }
+        "kondíció" -> when(lang) {
+            AppLanguage.EN -> "Conditioning"; AppLanguage.DE -> "Kondition"; AppLanguage.RO -> "Condiționare"; else -> tokenHu
         }
         "váll", "shoulders", "delts" -> when (lang) {
             AppLanguage.EN -> "Shoulders"
