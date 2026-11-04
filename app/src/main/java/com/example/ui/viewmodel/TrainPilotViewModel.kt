@@ -864,6 +864,13 @@ class TrainPilotViewModel : ViewModel() {
         val builtinDayByComposite = builtinDays.associateBy { it.compositeId }
         return programs.mapIndexed { pIdx, prog ->
                 val catalogProg = if (prog.builtin) builtinProgById[prog.id] else null
+                // Preserve user-renamed titles. Only unmodified Hungarian template
+                // names in generated personal copies can inherit catalog translations.
+                val copiedTemplate = if (!prog.builtin && prog.id.startsWith("personal-") &&
+                    (prog.nameEn.isBlank() || prog.nameEn == prog.nameHu) &&
+                    prog.nameDe.isBlank() && prog.nameRo.isBlank()
+                ) builtinProgs.firstOrNull { it.nameHu == prog.nameHu } else null
+                val localizedTemplate = catalogProg ?: copiedTemplate
                 val progDays = days.filter { it.programId == prog.id }.sortedWith(compareBy<ProgramDayEntity> { it.sortOrder }.thenBy { it.dayId }).mapIndexed { dIdx, dayEntity ->
                     val catalogDay = if (prog.builtin) builtinDayByComposite[dayEntity.compositeId] else null
                     val dayExercises = runCatching {
@@ -929,13 +936,13 @@ class TrainPilotViewModel : ViewModel() {
                 val builtSubtitleRo = customUserDesc ?: "$locRo • $lvlRo • ${progDays.size} zile de antrenament"
 
                 val resolvedNameHu = prog.nameHu.ifBlank { catalogProg?.nameHu.orEmpty() }.ifBlank { prog.nameEn }.ifBlank { "Edzésterv ${pIdx + 1}" }
-                val resolvedNameEn = (catalogProg?.nameEn?.takeIf { prog.nameHu == catalogProg.nameHu && (prog.nameEn.isBlank() || prog.nameEn == prog.nameHu) }
+                val resolvedNameEn = (localizedTemplate?.nameEn?.takeIf { prog.nameHu == localizedTemplate?.nameHu && (prog.nameEn.isBlank() || prog.nameEn == prog.nameHu) }
                     ?: prog.nameEn.takeIf { it.isNotBlank() })
                     .orEmpty().ifBlank { resolvedNameHu }
-                val resolvedNameDe = (catalogProg?.nameDe?.takeIf { prog.nameHu == catalogProg.nameHu && (prog.nameDe.isBlank() || prog.nameDe == prog.nameHu) }
+                val resolvedNameDe = (localizedTemplate?.nameDe?.takeIf { prog.nameHu == localizedTemplate?.nameHu && (prog.nameDe.isBlank() || prog.nameDe == prog.nameHu) }
                     ?: prog.nameDe.takeIf { it.isNotBlank() })
                     .orEmpty().ifBlank { resolvedNameEn }
-                val resolvedNameRo = (catalogProg?.nameRo?.takeIf { prog.nameHu == catalogProg.nameHu && (prog.nameRo.isBlank() || prog.nameRo == prog.nameHu) }
+                val resolvedNameRo = (localizedTemplate?.nameRo?.takeIf { prog.nameHu == localizedTemplate?.nameHu && (prog.nameRo.isBlank() || prog.nameRo == prog.nameHu) }
                     ?: prog.nameRo.takeIf { it.isNotBlank() })
                     .orEmpty().ifBlank { resolvedNameEn }
 

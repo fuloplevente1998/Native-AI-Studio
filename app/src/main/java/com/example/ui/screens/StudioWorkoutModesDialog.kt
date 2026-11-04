@@ -108,7 +108,14 @@ internal fun StudioWorkoutModesDialog(
             ) {
                 if (isProgram) Text(
                     workoutModeText(lang, "Aktív program: ", "Active program: ", "Aktives Programm: ", "Program activ: ") +
-                        state.activeTrainingModeProgramId,
+                        (state.programs.firstOrNull { it.id == state.activeTrainingModeProgramId }?.let { program ->
+                            when (lang) {
+                                AppLanguage.HU -> program.nameHu
+                                AppLanguage.EN -> program.nameEn.ifBlank { program.nameHu }
+                                AppLanguage.DE -> program.nameDe.ifBlank { program.nameEn.ifBlank { program.nameHu } }
+                                AppLanguage.RO -> program.nameRo.ifBlank { program.nameEn.ifBlank { program.nameHu } }
+                            }
+                        } ?: state.activeTrainingModeProgramId),
                     color = p.textSecondary)
                 if (review != null) {
                     Text(workoutModeText(lang, "Módváltás előnézete", "Mode change preview",
