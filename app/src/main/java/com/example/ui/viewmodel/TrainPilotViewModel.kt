@@ -102,6 +102,30 @@ data class WeeklyHealthDaySummary(
     val pulse: PulseDayReading? = null
 )
 
+/** Read-only comparison for the exact saved native program and mode proposal. */
+data class StudioTrainingModeRow(
+    val day: String,
+    val exercise: String,
+    val beforeSets: Int?,
+    val afterSets: Int?,
+    val beforeReps: String,
+    val afterReps: String,
+    val restSeconds: Int?,
+    val beforeWeight: Double?,
+    val afterWeight: Double?,
+    val rir: String
+)
+
+data class StudioTrainingModeReview(
+    val beforeStyle: String,
+    val beforeProgression: String,
+    val afterStyle: String,
+    val afterProgression: String,
+    val inheritGlobal: Boolean,
+    val programName: String,
+    val rows: List<StudioTrainingModeRow>
+)
+
 data class TrainPilotUiState(
     // Theme & Localization & Accessibility
     val selectedPaletteId: Int = 1, // Default: 01 • Grafit & Arany
@@ -186,6 +210,16 @@ data class TrainPilotUiState(
     val trainingStyleHu: String = "Normál hipertrófia",
     val progressionRuleHu: String = "Dupla progresszió",
     val beginnerGentleProfileActive: Boolean = false,
+    val trainingStyleCode: String = "normal",
+    val progressionModeCode: String = "double",
+    val programTrainingStyleCode: String = "normal",
+    val programProgressionModeCode: String = "double",
+    val programTrainingModeSource: String = "legacy",
+    val activeTrainingModeProgramId: String = "",
+    val globalTrainingModeUndo: Boolean = false,
+    val programTrainingModeUndo: Boolean = false,
+    val progressionModeReview: StudioTrainingModeReview? = null,
+    val progressionModeBusy: Boolean = false,
 
     // Calendar & Replan State (Mockup 1/4 #4 + main Naptár & Újratervezés)
     val calendarYearMonth: String = YearMonth.now().toString(),
@@ -1129,12 +1163,28 @@ class TrainPilotViewModel : ViewModel() {
         }
 
         observersScope.launch {
-            settingsStore.settingsFlow.map { it.trainingModes197Json }.distinctUntilChanged().collect { raw ->
-                val mode = com.repforge.app.data.store.NativeTrainingModes.globalChoice(raw)
-                _uiState.update { it.copy(
-                    trainingStyleHu = if (mode.trainingStyle == "hit") "HIT-inspirált" else "Normál hipertrófia",
-                    progressionRuleHu = when (mode.progressionMode) { "linear" -> "Lineáris progresszió"; "rir" -> "RIR/Coach"; else -> "Dupla progresszió" }) }
-            }
+            settingsStore.settingsFlow.map { it.trainingModes197Json to it.activeProgramId }
+                .distinctUntilChanged().collect { (raw, programId) ->
+                    val global = com.repforge.app.data.store.NativeTrainingModes.globalChoice(raw)
+                    val program = com.repforge.app.data.store.NativeTrainingModes.resolveSavedJson(raw, programId)
+                    val changes = com.repforge.app.data.store.NativeTrainingModeChange
+                    _uiState.update { it.copy(
+                        trainingStyleHu = if (global.trainingStyle == "hit") "HIT-inspirált" else "Normál hipertrófia",
+                        progressionRuleHu = when (global.progressionMode) {
+                            "linear" -> "Lineáris progresszió"
+                            "rir" -> "RIR/Coach"
+                            else -> "Dupla progresszió"
+                        },
+                        trainingStyleCode = global.trainingStyle,
+                        progressionModeCode = global.progressionMode,
+                        programTrainingStyleCode = program.trainingStyle,
+                        programProgressionModeCode = program.progressionMode,
+                        programTrainingModeSource = program.source,
+                        activeTrainingModeProgramId = programId,
+                        globalTrainingModeUndo = changes.undoValue(raw, "global", null) != null,
+                        programTrainingModeUndo = changes.undoValue(raw, "program", programId) != null
+                    ) }
+                }
         }
 
         observersScope.launch(Dispatchers.Main.immediate) {
@@ -4637,24 +4687,48 @@ class TrainPilotViewModel : ViewModel() {
         reloadNativeEnvironment(context, store, db, scope)
     }
 
-    fun toggleSoundAlert(enabled: Boolean) {
-        _uiState.update { it.copy(soundAlertEnabled = enabled) }
-        val store = nativeSettingsStore
-        val scope = nativeScope
-        if (store != null && scope != null) {
-            val current = _uiState.value
-            scope.launch(Dispatchers.IO) {
-                try {
+    private fun studioModesText(hu: String, en: String, de: String, ro: String): String =
+        when (_uiState.value.language) {
+            AppLanguage.HU -> hu
+            AppLanguage.EN -> en
+            AppLanguage.DE -> de
+            AppLanguage.RO -> ro
+        }
+
+    // Rest/sound/haptic settings are immediate, unlike the separately approved modes.
+    // Serialize writes and preserve the user's interval work/round defaults.
+    private val studioTimerWriteMutex = Mutex()
+
+    private fun persistStudioTimerSettings() {
+        val store = nativeSettingsStore ?: return
+        val scope = nativeScope ?: return
+        scope.launch(Dispatchers.IO) {
+            try {
+                studioTimerWriteMutex.withLock {
+                    val saved = store.current()
+                    val ui = _uiState.value
                     store.setTimerDefaults(
-                        workSeconds = 30,
-                        restSeconds = current.defaultRestSec,
-                        rounds = 3,
-                        sound = enabled,
-                        vibration = current.vibrationEnabled
+                        workSeconds = saved.workSeconds,
+                        restSeconds = ui.defaultRestSec,
+                        rounds = saved.rounds,
+                        sound = ui.soundAlertEnabled,
+                        vibration = ui.vibrationEnabled,
+                        autoAdvance = saved.intervalAutoAdvance
                     )
-                } catch (_: Throwable) {}
+                }
+            } catch (error: kotlinx.coroutines.CancellationException) { throw error }
+            catch (error: Exception) {
+                _uiState.update { it.copy(statusBannerMessage = studioModesText(
+                    "Az időzítő beállítása nem menthető.", "Could not save timer settings.",
+                    "Timereinstellungen konnten nicht gespeichert werden.",
+                    "Setările temporizatorului nu au putut fi salvate.")) }
             }
         }
+    }
+
+    fun toggleSoundAlert(enabled: Boolean) {
+        _uiState.update { it.copy(soundAlertEnabled = enabled) }
+        persistStudioTimerSettings()
     }
 
     fun cycleDefaultRestTimer() {
@@ -4665,68 +4739,174 @@ class TrainPilotViewModel : ViewModel() {
                 120 -> 180
                 else -> 60
             }
-            it.copy(
-                defaultRestSec = next,
-                statusBannerMessage = tr(
-                    "Alapértelmezett pihenőidő: $next mp",
-                    "Default rest time: $next sec",
-                    "Standard-Pausenzeit: $next Sek.",
-                    "Timp de odihnă implicit: $next sec",
-                    it.language
-                )
-            )
+            it.copy(defaultRestSec = next, statusBannerMessage = studioModesText(
+                "Alapértelmezett pihenőidő: $next mp", "Default rest time: $next sec",
+                "Standard-Pausenzeit: $next Sek.", "Timp implicit de pauză: $next sec"))
         }
-        val store = nativeSettingsStore
-        val scope = nativeScope
-        if (store != null && scope != null) {
-            val current = _uiState.value
-            scope.launch(Dispatchers.IO) {
-                try {
-                    store.setTimerDefaults(
-                        workSeconds = 30,
-                        restSeconds = current.defaultRestSec,
-                        rounds = 3,
-                        sound = current.soundAlertEnabled,
-                        vibration = current.vibrationEnabled
-                    )
-                } catch (_: Throwable) {}
+        persistStudioTimerSettings()
+    }
+
+    private var pendingStudioMode: com.repforge.app.data.store.NativeTrainingModeChange.Preview? = null
+    private var pendingStudioComparison: com.repforge.app.ui.settings.NativeTrainingModeComparison.Snapshot? = null
+    private var studioModeGeneration = 0L
+
+    fun toggleProgressionModal(show: Boolean) {
+        studioModeGeneration++
+        pendingStudioMode = null
+        pendingStudioComparison = null
+        _uiState.update {
+            it.copy(showProgressionModal = show, progressionModeReview = null,
+                progressionModeBusy = false)
+        }
+    }
+
+    fun discardProgressionPreview() {
+        studioModeGeneration++
+        pendingStudioMode = null
+        pendingStudioComparison = null
+        _uiState.update { it.copy(progressionModeReview = null, progressionModeBusy = false) }
+    }
+
+    /** No writes in preview: approval uses exactly this prepared DataStore snapshot. */
+    fun previewProgressionSettings(style: String, rule: String, scopeName: String, inherit: Boolean) {
+        val store = nativeSettingsStore ?: return
+        val scope = nativeScope ?: return
+        if (_uiState.value.progressionModeBusy || !_uiState.value.showProgressionModal) return
+        if (scopeName !in setOf("global", "program") || style !in setOf("normal", "hit") ||
+            rule !in setOf("double", "linear", "rir") || (inherit && scopeName != "program")) return
+        val token = ++studioModeGeneration
+        pendingStudioMode = null
+        pendingStudioComparison = null
+        _uiState.update { it.copy(progressionModeBusy = true, progressionModeReview = null) }
+        scope.launch {
+            try {
+                val saved = store.current()
+                val mode = com.repforge.app.data.store.NativeTrainingModeChange
+                val proposal = if (inherit) {
+                    mode.prepareInherit(saved.trainingModes197Json, saved.activeProgramId, saved.activeProgramId)
+                } else {
+                    mode.prepare(saved.trainingModes197Json, saved.activeProgramId, scopeName,
+                        if (scopeName == "program") saved.activeProgramId else null, style, rule)
+                }
+                val snapshot = withContext(Dispatchers.IO) {
+                    com.repforge.app.ui.settings.NativeTrainingModeComparison.read(
+                        requireNotNull(nativeContext), proposal)
+                }
+                if (studioModeGeneration != token || !_uiState.value.showProgressionModal) return@launch
+                pendingStudioMode = proposal
+                pendingStudioComparison = snapshot
+                _uiState.update { it.copy(
+                    progressionModeBusy = false,
+                    progressionModeReview = StudioTrainingModeReview(
+                        beforeStyle = proposal.before.trainingStyle,
+                        beforeProgression = proposal.before.progressionMode,
+                        afterStyle = proposal.after.trainingStyle,
+                        afterProgression = proposal.after.progressionMode,
+                        inheritGlobal = proposal.inheritGlobal,
+                        programName = snapshot.programName,
+                        rows = snapshot.rows.map { row ->
+                            StudioTrainingModeRow(
+                                day = row.day, exercise = row.exercise,
+                                beforeSets = row.beforeSets, afterSets = row.afterSets,
+                                beforeReps = row.beforeReps, afterReps = row.afterReps,
+                                restSeconds = row.restSeconds,
+                                beforeWeight = row.beforeWeight, afterWeight = row.afterWeight,
+                                rir = row.rir)
+                        })
+                ) }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (error: Exception) {
+                if (studioModeGeneration == token) _uiState.update { it.copy(
+                    progressionModeBusy = false,
+                    statusBannerMessage = studioModesText(
+                        "Nem sikerült elkészíteni a program-összehasonlítást.",
+                        "Could not prepare the program comparison.",
+                        "Programmvergleich konnte nicht erstellt werden.",
+                        "Nu s-a putut pregăti comparația programului.")) }
             }
         }
     }
 
-    fun toggleProgressionModal(show: Boolean) {
-        _uiState.update { it.copy(showProgressionModal = show) }
+    fun approveProgressionSettings() {
+        val proposal = pendingStudioMode ?: return
+        val comparison = pendingStudioComparison ?: return
+        val context = nativeContext ?: return
+        val store = nativeSettingsStore ?: return
+        val scope = nativeScope ?: return
+        if (_uiState.value.progressionModeBusy || _uiState.value.progressionModeReview == null) return
+        val token = ++studioModeGeneration
+        pendingStudioMode = null
+        pendingStudioComparison = null
+        _uiState.update { it.copy(progressionModeBusy = true) }
+        scope.launch {
+            try {
+                check(withContext(Dispatchers.IO) {
+                    com.repforge.app.ui.settings.NativeTrainingModeComparison.isCurrent(
+                        context, proposal, comparison)
+                }) { "Az előnézetben használt program időközben megváltozott." }
+                check(com.repforge.app.data.store.NativeTrainingModeChange.approve(store, proposal)) {
+                    "A beállítás időközben módosult. Nyisd meg újra az előnézetet."
+                }
+                if (studioModeGeneration == token) _uiState.update { it.copy(
+                    showProgressionModal = false, progressionModeReview = null,
+                    progressionModeBusy = false, statusBannerMessage = studioModesText(
+                        "Edzésmód elmentve.", "Training mode saved.",
+                        "Trainingsmodus gespeichert.", "Mod de antrenament salvat.")) }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (error: Exception) {
+                if (studioModeGeneration == token) _uiState.update { it.copy(
+                    progressionModeReview = null, progressionModeBusy = false,
+                    statusBannerMessage = if (error.message?.contains("Finish the active workout") == true)
+                        studioModesText(
+                            "Az edzésmód csak az aktív edzés befejezése után módosítható.",
+                            "Finish the active workout before changing training mode.",
+                            "Trainingsmodus erst nach Abschluss des aktiven Trainings ändern.",
+                            "Finalizează antrenamentul activ înainte de schimbarea modului.")
+                    else studioModesText(
+                        "Az edzésmód nem menthető. Nyisd meg újra az előnézetet.",
+                        "Could not save the training mode. Reopen the preview.",
+                        "Trainingsmodus konnte nicht gespeichert werden. Vorschau erneut öffnen.",
+                        "Modul de antrenament nu a putut fi salvat. Redeschide previzualizarea.")) }
+            }
+        }
     }
 
-    fun updateProgressionSettings(styleHu: String, ruleHu: String, gentleBeginner: Boolean) {
-        val scope = nativeScope ?: return
+    fun undoProgressionSettings(scopeName: String) {
         val store = nativeSettingsStore ?: return
+        val scope = nativeScope ?: return
+        if (scopeName !in setOf("global", "program") || _uiState.value.progressionModeBusy) return
+        val token = ++studioModeGeneration
+        pendingStudioMode = null
+        pendingStudioComparison = null
+        _uiState.update { it.copy(progressionModeBusy = true, progressionModeReview = null) }
         scope.launch {
             try {
                 val saved = store.current()
-                val proposal = com.repforge.app.data.store.NativeTrainingModeChange.prepare(
-                    saved.trainingModes197Json, saved.activeProgramId, "global", null,
-                    if (styleHu.contains("HIT", true)) "hit" else "normal",
-                    when { ruleHu.contains("Lineáris", true) -> "linear"; ruleHu.contains("RIR", true) || ruleHu.contains("Coach", true) -> "rir"; else -> "double" })
-                check(com.repforge.app.data.store.NativeTrainingModeChange.approve(store, proposal)) {
-                    tr(
-                        "A progresszió beállításai megváltoztak. Nyisd meg újra a beállítást.",
-                        "Progression settings changed. Please reopen settings.",
-                        "Progressionseinstellungen geändert. Bitte erneut öffnen.",
-                        "Setările de progresie s-au modificat. Redeschide setările."
-                    )
+                check(com.repforge.app.data.store.NativeTrainingModeChange.undo(store, scopeName,
+                    if (scopeName == "program") saved.activeProgramId else null)) {
+                    "Nincs visszavonható módváltás."
                 }
-                _uiState.update { it.copy(beginnerGentleProfileActive = gentleBeginner,
-                    showProgressionModal = false, statusBannerMessage = tr(
-                        "A progresszió beállításai tartósan elmentve.",
-                        "Progression settings saved.",
-                        "Progressionseinstellungen dauerhaft gespeichert.",
-                        "Setările de progresie au fost salvate.",
-                        it.language
-                    )) }
+                if (studioModeGeneration == token) _uiState.update { it.copy(
+                    progressionModeBusy = false, showProgressionModal = false,
+                    statusBannerMessage = studioModesText(
+                        "Az előző edzésmód visszaállítva.", "Previous training mode restored.",
+                        "Vorheriger Trainingsmodus wiederhergestellt.",
+                        "Modul de antrenament anterior a fost restaurat.")) }
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
-            catch (error: Exception) { _uiState.update { it.copy(statusBannerMessage = error.message ?: tr("A progresszió nem menthető.", "Failed to save progression settings.", "Progression kann nicht gespeichert werden.", "Progresia nu poate fi salvată.", it.language)) } }
+            catch (error: Exception) {
+                if (studioModeGeneration == token) _uiState.update { it.copy(
+                    progressionModeBusy = false,
+                    statusBannerMessage = studioModesText(
+                        "A módváltás nem vonható vissza.", "Could not undo training mode change.",
+                        "Trainingsmoduswechsel konnte nicht rückgängig gemacht werden.",
+                        "Schimbarea modului nu a putut fi anulată.")) }
+            }
         }
+    }
+
+    fun toggleVibrationAlert(enabled: Boolean) {
+        _uiState.update { it.copy(vibrationEnabled = enabled) }
+        persistStudioTimerSettings()
     }
 
     fun selectBackupFormat(format: String) {

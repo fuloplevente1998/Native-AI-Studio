@@ -88,6 +88,7 @@ import com.example.ui.screens.ProgramEditorScreen
 import com.example.ui.screens.ProgramsListScreen
 import com.example.ui.screens.ProgressTabScreen
 import com.example.ui.screens.SettingsMainScreen
+import com.example.ui.screens.StudioWorkoutModesDialog
 import com.example.ui.screens.WatchAndSyncScreen
 import com.example.ui.screens.WorkoutSummaryScreen
 import com.example.ui.screens.WorkoutTabScreen
@@ -268,174 +269,22 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
             )
         }
 
-        // 3b. Global Workout Settings & Progression Modal (Edzés beállításai) when opened outside SettingsMainScreen
-        if (uiState.showProgressionModal && uiState.currentSubScreen != SubScreen.SETTINGS_MAIN) {
-            var selectedStyle by androidx.compose.runtime.remember(uiState.trainingStyleHu) {
-                androidx.compose.runtime.mutableStateOf(uiState.trainingStyleHu)
-            }
-            var selectedRule by androidx.compose.runtime.remember(uiState.progressionRuleHu) {
-                androidx.compose.runtime.mutableStateOf(uiState.progressionRuleHu)
-            }
-            var gentleMode by androidx.compose.runtime.remember(uiState.beginnerGentleProfileActive) {
-                androidx.compose.runtime.mutableStateOf(uiState.beginnerGentleProfileActive)
-            }
-            val lang = uiState.language
-            val modalTitle = when (lang) {
-                com.example.model.AppLanguage.HU -> "Edzés beállításai"
-                com.example.model.AppLanguage.EN -> "Workout Settings"
-                com.example.model.AppLanguage.DE -> "Trainingseinstellungen"
-                com.example.model.AppLanguage.RO -> "Setări antrenament"
-            }
-            val defaultRestLabel = when (lang) {
-                com.example.model.AppLanguage.HU -> "Alapértelmezett pihenőidő"
-                com.example.model.AppLanguage.EN -> "Default rest time"
-                com.example.model.AppLanguage.DE -> "Standard-Pausenzeit"
-                com.example.model.AppLanguage.RO -> "Timp de odihnă implicit"
-            }
-            val secUnit = when (lang) {
-                com.example.model.AppLanguage.HU -> "mp"
-                com.example.model.AppLanguage.EN -> "sec"
-                com.example.model.AppLanguage.DE -> "Sek."
-                com.example.model.AppLanguage.RO -> "sec"
-            }
-            val soundAlertLabel = when (lang) {
-                com.example.model.AppLanguage.HU -> "Hangjelzés pihenőidő végén"
-                com.example.model.AppLanguage.EN -> "Sound alert when rest ends"
-                com.example.model.AppLanguage.DE -> "Signalton am Ende der Pause"
-                com.example.model.AppLanguage.RO -> "Sunet la finalul pauzei"
-            }
-            val styleHeaderLabel = when (lang) {
-                com.example.model.AppLanguage.HU -> "Edzésstílus:"
-                com.example.model.AppLanguage.EN -> "Training style:"
-                com.example.model.AppLanguage.DE -> "Trainingsstil:"
-                com.example.model.AppLanguage.RO -> "Stil de antrenament:"
-            }
-            val ruleHeaderLabel = when (lang) {
-                com.example.model.AppLanguage.HU -> "Progressziós szabály:"
-                com.example.model.AppLanguage.EN -> "Progression rule:"
-                com.example.model.AppLanguage.DE -> "Progressionsregel:"
-                com.example.model.AppLanguage.RO -> "Regulă de progresie:"
-            }
-            val gentleProfileLabel = when (lang) {
-                com.example.model.AppLanguage.HU -> "Kezdő kímélő profil"
-                com.example.model.AppLanguage.EN -> "Beginner gentle profile"
-                com.example.model.AppLanguage.DE -> "Schongang-Profil für Einsteiger"
-                com.example.model.AppLanguage.RO -> "Profil blând pentru începători"
-            }
-            com.example.ui.components.TrainPilotAlertDialog(
-                onDismissRequest = { viewModel.toggleProgressionModal(false) },
-                containerColor = palette.surface,
-                titleContentColor = palette.textPrimary,
-                title = {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = modalTitle,
-                            style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.weight(1f)
-                        )
-                        TrainPilotRedCloseButton(
-                            onClick = { viewModel.toggleProgressionModal(false) }
-                        )
-                    }
+        // One shared Studio editor for Settings/global and Workout/active-program modes.
+        if (uiState.showProgressionModal) {
+            val modeScope = if (uiState.currentSubScreen == SubScreen.SETTINGS_MAIN) "global" else "program"
+            StudioWorkoutModesDialog(
+                state = uiState,
+                scope = modeScope,
+                onDismiss = { viewModel.toggleProgressionModal(false) },
+                onCycleRest = { viewModel.cycleDefaultRestTimer() },
+                onToggleSound = { viewModel.toggleSoundAlert(it) },
+                onToggleVibration = { viewModel.toggleVibrationAlert(it) },
+                onPreview = { style, progression, inherit ->
+                    viewModel.previewProgressionSettings(style, progression, modeScope, inherit)
                 },
-                text = {
-                    Column(
-                        modifier = Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = palette.surfaceElevated,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                                .clickable { viewModel.cycleDefaultRestTimer() }
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(defaultRestLabel, color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
-                                Text("${uiState.defaultRestSec} $secUnit", color = palette.primary, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = palette.surfaceElevated,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(soundAlertLabel, color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
-                                androidx.compose.material3.Switch(
-                                    checked = uiState.soundAlertEnabled,
-                                    onCheckedChange = { viewModel.toggleSoundAlert(it) }
-                                )
-                            }
-                        }
-                        Text(styleHeaderLabel, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                        listOf("Erő & Hipertrófia", "Funkcionális & Állóképesség", "Kezdő kímélő (Ízületbarát)").forEach { st ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { selectedStyle = st }
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                androidx.compose.material3.RadioButton(selected = selectedStyle == st, onClick = { selectedStyle = st })
-                                Text(com.example.localization.StudioProfileOptionLabels.trainingStyle(st, lang), color = palette.textPrimary)
-                            }
-                        }
-                        Text(ruleHeaderLabel, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                        listOf("Dupla progresszió (8-12 ism. -> +2.5 kg)", "Lineáris (+1.25 kg hetente)", "RIR-alapú (1-2 RIR megtartása)").forEach { rl ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { selectedRule = rl }
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                androidx.compose.material3.RadioButton(selected = selectedRule == rl, onClick = { selectedRule = rl })
-                                Text(com.example.localization.StudioProfileOptionLabels.progressionRule(rl, lang), color = palette.textPrimary)
-                            }
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(gentleProfileLabel, color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
-                            androidx.compose.material3.Switch(checked = gentleMode, onCheckedChange = { gentleMode = it })
-                        }
-                    }
-                },
-                confirmButton = {
-                    androidx.compose.material3.Button(
-                        onClick = { viewModel.updateProgressionSettings(selectedStyle, selectedRule, gentleMode) },
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                            containerColor = palette.primary,
-                            contentColor = palette.onPrimary
-                        )
-                    ) {
-                        Text(strings.saveBtn, fontWeight = FontWeight.Bold)
-                    }
-                },
-                dismissButton = {
-                    androidx.compose.material3.TextButton(onClick = { viewModel.toggleProgressionModal(false) }) {
-                        Text(strings.cancelBtn, color = palette.textSecondary)
-                    }
-                }
+                onApprove = { viewModel.approveProgressionSettings() },
+                onEditPreview = { viewModel.discardProgressionPreview() },
+                onUndo = { viewModel.undoProgressionSettings(modeScope) }
             )
         }
 
@@ -853,10 +702,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onSelectLanguage = { viewModel.selectLanguage(it) },
                             onCycleRestTimer = { viewModel.cycleDefaultRestTimer() },
                             onToggleSoundAlert = { viewModel.toggleSoundAlert(it) },
+                            onToggleVibration = { viewModel.toggleVibrationAlert(it) },
                             onToggleProgressionModal = { viewModel.toggleProgressionModal(it) },
-                            onSaveProgression = { style, rule, gentle ->
-                                viewModel.updateProgressionSettings(style, rule, gentle)
-                            },
                             onNavigateToSubScreen = { viewModel.navigateToSubScreen(it) },
                             onShowBanner = { viewModel.showBannerMessage(it) },
                             onCloudSyncCompleted = { viewModel.refreshAfterCloudSync(context) }
