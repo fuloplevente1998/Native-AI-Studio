@@ -96,4 +96,13 @@ class ExerciseFeedbackRegressionTest {
             assertNull(Feedback.readLegacyExerciseRir(JSONObject().put("feedback", JSONObject().put("rir", bad))))
         }
     }
+    @Test fun unknownExplicitExerciseEffortDoesNotInheritAConflictingWorkoutAnswer() {
+        val raw = workout().put("feedback", JSONObject().put("effort", "good"))
+        val ex = exercise(raw).put("effort", "unknown-legacy-answer")
+        assertEquals("", Feedback.readExerciseEffort(ex, raw))
+        assertEquals("unknown-legacy-answer", ex.getString("effort"))
+        ex.remove("effort")
+        assertEquals("good", Feedback.readExerciseEffort(ex, raw))
+    }
+
 }

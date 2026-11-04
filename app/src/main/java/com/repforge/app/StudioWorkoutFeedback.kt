@@ -117,8 +117,11 @@ internal object StudioWorkoutFeedback {
 
     /** Reads canonical exercise effort for Coach, falling back to workout-level feedback. */
     fun readExerciseEffort(exercise: JSONObject, workout: JSONObject? = null): String {
-        val own = normalizeKnownEffort(readOwnExerciseEffort(exercise))
-        if (own != null) return if (own == "right") "good" else own
+        val savedOwn = readOwnExerciseEffort(exercise)
+        if (savedOwn != null) {
+            val own = normalizeKnownEffort(savedOwn) ?: return ""
+            return if (own == "right") "good" else own
+        }
         val inherited = workout?.let { normalizeKnownEffort(readWorkoutEffort(it)) }
         if (inherited != null) return if (inherited == "right") "good" else inherited
         return ""
