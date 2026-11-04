@@ -4518,6 +4518,7 @@ class TrainPilotViewModel : ViewModel() {
         if (scopeName !in setOf("global", "program") || _uiState.value.progressionModeBusy) return
         val token = ++studioModeGeneration
         pendingStudioMode = null
+        pendingStudioComparison = null
         _uiState.update { it.copy(progressionModeBusy = true, progressionModeReview = null) }
         scope.launch {
             try {
