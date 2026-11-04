@@ -156,15 +156,14 @@ private fun tr(lang: AppLanguage, hu: String, en: String, de: String, ro: String
 
 private fun localizeTrainingStyle(rawHu: String, lang: AppLanguage): String = when (rawHu.trim()) {
     "Normál hipertrófia" -> tr(lang, "Normál hipertrófia", "Standard Hypertrophy", "Normale Hypertrophie", "Hipertrofie standard")
-    "Erő (5×5)" -> tr(lang, "Erő (5×5)", "Strength (5×5)", "Kraft (5×5)", "Forță (5×5)")
-    "Állóképesség / Köredzés" -> tr(lang, "Állóképesség / Köredzés", "Endurance / Circuit", "Ausdauer / Zirkel", "Anduranță / Circuit")
+    "HIT-inspirált" -> tr(lang, "HIT-inspirált", "HIT-inspired", "HIT-inspiriert", "Inspirat de HIT")
     else -> rawHu
 }
 
 private fun localizeProgressionRule(rawHu: String, lang: AppLanguage): String = when (rawHu.trim()) {
     "Dupla progresszió" -> tr(lang, "Dupla progresszió", "Double Progression", "Doppelte Progression", "Progresie dublă")
-    "Lineáris súlyemelés" -> tr(lang, "Lineáris súlyemelés", "Linear Weight Increase", "Lineare Steigerung", "Creștere liniară")
-    "RIR alapú autoreguláció" -> tr(lang, "RIR alapú autoreguláció", "RIR Autoregulation", "RIR-Autoregulation", "Autoreglare RIR")
+    "Lineáris progresszió" -> tr(lang, "Lineáris progresszió", "Linear Progression", "Lineare Progression", "Progresie liniară")
+    "RIR/Coach" -> "RIR / Coach"
     else -> rawHu
 }
 
@@ -2206,8 +2205,8 @@ fun SettingsMainScreen(
     onSelectLanguage: (AppLanguage) -> Unit,
     onCycleRestTimer: () -> Unit,
     onToggleSoundAlert: (Boolean) -> Unit,
+    onToggleVibration: (Boolean) -> Unit,
     onToggleProgressionModal: (Boolean) -> Unit,
-    onSaveProgression: (String, String, Boolean) -> Unit,
     onNavigateToSubScreen: (SubScreen) -> Unit,
     onShowBanner: (String) -> Unit,
     onCloudSyncCompleted: () -> Unit = {}
@@ -2220,7 +2219,6 @@ fun SettingsMainScreen(
     var expandedContrastThemes by remember { mutableStateOf(false) }
     var expandedGlowThemes by remember { mutableStateOf(false) }
     var expandedLightThemes by remember { mutableStateOf(false) }
-    var vibrationEnabled by remember { mutableStateOf(uiState.vibrationEnabled) }
     var showPrivacyPolicyDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val secUnit = tr(uiState.language, "mp", "sec", "Sek.", "sec")
 
@@ -2258,116 +2256,6 @@ fun SettingsMainScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary)
                 ) {
                     Text(strings.closeAction, fontWeight = FontWeight.Bold)
-                }
-            }
-        )
-    }
-
-    if (uiState.showProgressionModal) {
-        var selectedStyle by remember { mutableStateOf(uiState.trainingStyleHu) }
-        var selectedRule by remember { mutableStateOf(uiState.progressionRuleHu) }
-        var beginnerGentle by remember { mutableStateOf(uiState.beginnerGentleProfileActive) }
-        AlertDialog(
-            onDismissRequest = { onToggleProgressionModal(false) },
-            containerColor = palette.surfaceCard,
-            titleContentColor = palette.textPrimary,
-            textContentColor = palette.textSecondary,
-            title = { Text(tr(uiState.language, "Edzés beállításai és progresszió", "Workout Settings & Progression", "Trainingseinstellungen & Progression", "Setări antrenament și progresie"), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(tr(uiState.language, "Alapértelmezett pihenőidő:", "Default rest timer:", "Standard-Pausenzeit:", "Timp de pauză implicit:"), fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = palette.primary.copy(alpha = 0.2f),
-                            modifier = Modifier
-                                .trainPilotBorder(1.dp, palette.primary, RoundedCornerShape(10.dp))
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable { onCycleRestTimer() }
-                        ) {
-                            Text(
-                                text = "${uiState.defaultRestSec} $secUnit ↻",
-                                fontWeight = FontWeight.Bold,
-                                color = palette.primary,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
-                        }
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(tr(uiState.language, "Hangjelzés pihenő végén", "Sound alert when rest ends", "Ton am Pausenende", "Alertă sonoră la finalul pauzei"), color = palette.textPrimary)
-                        Switch(checked = uiState.soundAlertEnabled, onCheckedChange = onToggleSoundAlert)
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(tr(uiState.language, "Rezgés pihenő végén", "Vibration when rest ends", "Vibration am Pausenende", "Vibrație la finalul pauzei"), color = palette.textPrimary)
-                        Switch(checked = vibrationEnabled, onCheckedChange = { vibrationEnabled = it })
-                    }
-                    Text(tr(uiState.language, "Edzésstílus:", "Training style:", "Trainingsstil:", "Stil de antrenament:"), fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                    listOf("Normál hipertrófia", "Erő (5×5)", "Állóképesség / Köredzés").forEach { st ->
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (selectedStyle == st) palette.primary else palette.surfaceElevated,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { selectedStyle = st }
-                        ) {
-                            Text(
-                                text = localizeTrainingStyle(st, uiState.language),
-                                color = if (selectedStyle == st) palette.onPrimary else palette.textPrimary,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(10.dp)
-                            )
-                        }
-                    }
-                    Text(tr(uiState.language, "Progressziós elv:", "Progression rule:", "Progressionsprinzip:", "Regulă de progresie:"), fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                    listOf("Dupla progresszió", "Lineáris súlyemelés", "RIR alapú autoreguláció").forEach { rl ->
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (selectedRule == rl) palette.primary else palette.surfaceElevated,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { selectedRule = rl }
-                        ) {
-                            Text(
-                                text = localizeProgressionRule(rl, uiState.language),
-                                color = if (selectedRule == rl) palette.onPrimary else palette.textPrimary,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(10.dp)
-                            )
-                        }
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(tr(uiState.language, "Kezdő kímélő profil", "Beginner gentle profile", "Schonendes Einsteigerprofil", "Profil blând pentru începători"), color = palette.textPrimary)
-                        Switch(checked = beginnerGentle, onCheckedChange = { beginnerGentle = it })
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { onSaveProgression(selectedStyle, selectedRule, beginnerGentle) },
-                    colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary)
-                ) {
-                    Text(strings.saveAction, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TrainPilotOutlinedButton(onClick = { onToggleProgressionModal(false) }) {
-                    Text(strings.cancelAction, color = palette.textPrimary)
                 }
             }
         )
@@ -2639,11 +2527,8 @@ fun SettingsMainScreen(
                                     Text(tr(uiState.language, "Haptikus visszajelzés pihenőidő végén", "Haptic feedback at the end of rest", "Haptisches Feedback am Pausenende", "Feedback haptic la finalul pauzei"), style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                                 }
                                 Switch(
-                                    checked = vibrationEnabled,
-                                    onCheckedChange = {
-                                        vibrationEnabled = it
-                                        onShowBanner(if (it) tr(uiState.language, "Rezgés bekapcsolva", "Vibration enabled", "Vibration aktiviert", "Vibrație activată") else tr(uiState.language, "Rezgés kikapcsolva", "Vibration disabled", "Vibration deaktiviert", "Vibrație dezactivată"))
-                                    }
+                                    checked = uiState.vibrationEnabled,
+                                    onCheckedChange = onToggleVibration
                                 )
                             }
                         }
