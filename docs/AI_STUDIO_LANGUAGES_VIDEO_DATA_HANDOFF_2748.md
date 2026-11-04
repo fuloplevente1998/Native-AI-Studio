@@ -176,7 +176,7 @@ A tényleges feedback-olvasók:
 - RIR: meglévő SetEditorRules212 parser, illetve gyakorlat `actualRir` és `feedback.rir`, szigorú 0..10; hiány nem nulla. Az ismeretlen explicit gyakorlatválasz megmarad, és nem helyettesítődik az edzés másik válaszával.
 - Applied-zár és az érintetlen kanonikus sorozatok megőrzése tesztelendő marad minden import/szerkesztés útvonalon; ez nem általános ígéret minden történeti JSON-formátumra.
 
-Fordítások: sok telefonos képernyő, popup és hibaállapot bővült HU/EN/DE/RO szöveggel. Még maradtak magyar opciófeliratok és dinamikus üzenetek (például a profil kanonikus felszerelés-/célopcióinak megjelenítése). A #75 teljes készre jelentése nem indokolt.
+Fordítások: sok telefonos képernyő, popup és hibaállapot bővült HU/EN/DE/RO szöveggel. A profil kanonikus cél-/szint-/helyszín-/felszerelés-/kizárás-opcióinak megjelenítését és a gyors edzés katalógusneveit a PR106 külön javította, mentett értékek átnevezése nélkül. A teljes alkalmazás dinamikus üzeneteinek készülékes nyelvi ellenőrzése még szükséges. A #75 teljes készre jelentése nem indokolt.
 
 Videó: API-ready és iframe-load különválik; beágyazási hiba/időtúllépés után engedélyezett URL esetén belső böngészőre vált. Ez készülékes próba nélkül nem bizonyítja a beágyazott YouTube lejátszás sikerét.
 

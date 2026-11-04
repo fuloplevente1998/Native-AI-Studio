@@ -1,22 +1,20 @@
-# Hátralévő munka – PR101 dizájn után
+# Hátralévő munka – PR105/PR106 után
 
-A #95/#97/#98/#99 dizájn forrásban elkészült, PR101 mainen és CI434 hibamentes; nem újra kiosztandó fejlesztés. A következő közös aláírt APK-val készülékes vizuális visszateszt szükséges. A korábban átadott2748 még a dizájn előtti forrású.
+A dizájn és a profil/statisztika/kereső/kedvenc javítások mainen. Az AI Studio integráció PR105-ben CI444-gyel ellenőrzött; a profilopciók és a gyors edzés feliratai PR106-ban javítva, CI446 sikeres. [2751 telefonos tesztlista](TEST_2751_PHONE.md).
 
-## AI Studio egyetlen munkafolyamatban
+## Még ellenőrzendő
 
-1. **#75 – Teljes HU/EN/DE/RO telefonos felület.** A friss main képernyőin a nyelvi bekötés már átvehető; állapot: ready_for_translation_binding. A kész fontokat/témákat/elrendezést megőrizni.
-2. **#59 – Beágyazott videó tényleges hibája.** A készüléken nem működik, a belső böngészőben elindul. Ez tényleges javítás, nem pusztán visszateszt.
-3. **#69 maradéka – Régi visszajelzés-formátumok auditja.** Az új per-exercise válasz/jegyzet kész. Bizonyított aliasok veszteségmentes kezelése, ismeretlen adatok megőrzése; nincs találgató RIR2-átírás.
-4. **#82 – Adatvédelmi tájékoztató a csomag végén.** Régi forrás és meglévő natív policy összevetése; a közvetlen Samsung SDK-olvasást már tükröző valós technikai tájékoztatás. Személyes/jogi konfigurációt nem találunk ki.
-
-**[Egyetlen AI Studio átadó, minden main/raw linkkel](AI_STUDIO_LANGUAGES_VIDEO_DATA_HANDOFF_2748.md).** A korábbi több-chat kiosztás helyett a felhasználó egyetlen AI Studio-munkafolyamatot választott.
+1. **#75 – Nyelvek.** A profilopciók ismert fordítási rése bezárva; a teljes telefonos felület dinamikus hiba- és adatállapotait HU/EN/DE/RO nyelven készüléken is ellenőrizni kell. Ez nem a mentett felhasználói tartalom átnevezése.
+2. **#59 – Videó.** Külön API-ready állapot és automatikus belső böngészős fallback kész; tényleges YouTube-lejátszás és háttérbe kerülés/bezárás telefonos próbája szükséges.
+3. **#69 – Régi visszajelzések.** A konkrét támogatott JSON-utak és aliasok az átadó 7. pontjában. Ismeretlen válasz megőrzése tesztelt; további valós régi mentésekkel történő import/szerkesztés visszateszt marad. Nincs általános ígéret minden történeti formátumra.
+4. **#82 – Adatvédelem.** Beállításból megnyitható, a közvetlen Samsung SDK/Health Connect/Wear és GPS-útvonaltárolás leírása pontosítva. Publikálás előtt teljes tartalmi/jogi és személyes konfigurációs felülvizsgálat szükséges; jogi dátum vagy kapcsolattartó nincs kitalálva.
 
 ## Készülékes elfogadás
 
-A metrikák/naplószerkesztés (#71), gyakorlatonkénti válaszok (#69), kompakt felület (#84), új dizájn és korábbi Egészség-tömörítés (#35) külön telefonos próbája még szükséges. A fullscreen GPS-gombok működését a felhasználó elfogadta; az elrendezést megőrizzük.
+Metrikák (#71), per-exercise válaszok (#69), kompakt felület (#84), témák/fontok és Egészség-tömörítés (#35) együtt tesztelendő. Az elfogadott fullscreen GPS-gombelrendezést megőrizzük.
 
 ## Sztornó
 
-BLE-kezelő és #74 automata/intervallum további bekötés nem feladat. Meglévő működő motor/adat nem törlendő.
+BLE-kezelő és #74 automata/intervallum további bekötés nem feladat. Meglévő motor/adat nem törlendő.
 
-Aktuális bizonyíték és APK-állapot: [CURRENT_STATUS.md](CURRENT_STATUS.md).
+Aktuális kiadás és bizonyíték: [CURRENT_STATUS.md](CURRENT_STATUS.md).

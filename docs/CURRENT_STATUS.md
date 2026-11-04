@@ -1,5 +1,21 @@
 # TrainPilot Native – aktuális állapot, 2026-11-04
 
+## Legfrissebb aláírt telefonos kiadás: 2751 / PR106
+
+**[Telefonos APK letöltése – 2751](https://drive.google.com/file/d/1VTlz4bDex5pZR_FnIZsLSQ1qH0O2jVLO/view?usp=drivesdk)**. A megszokott tartós aláíróval a meglévő appra frissíthető, elég a telefonos appot telepíteni. Package `com.TrainPilot.com`, versionName `0.1.0-beta`. Az óra alkalmazáslogikája nem változott.
+
+Tartalmazza a PR101/104 dizájn-, profil-, grafikon-, aktivitásszűrés- és kedvencjavításokat, a PR105-ben felülvizsgált AI Studio csomagot, valamint a PR106 profilopció-/felszerelésleírás-/kizárás-/gyorsedzés-fordításait. A mentett kanonikus profilértékek és a felhasználói tartalom megőrzését külön regresszió ellenőrzi.
+
+- Aláírt forrás: `754da45bae8fc3bffd1190bdc6d2ea54757fdbd7`, signed run41781088959 SUCCESS.
+- PR CI41779927504 és az aláírt kiadási folyamat is **446 =270 telefon+176 Wear** tesztet futtatott, 0 failure/error/skipped. Mindkét nyers XML ellenőrizve.
+- Telefon: 20 335 612 bájt; SHA256 `0e896a790ad7aad4c639fe4cd33d1ff1051b0bed75e474f4c498972ea5a1342e`. A signer, verzió, package, Maps-konfiguráció és phone/Wear páros egyezés ellenőrizve, Drive-metaadat visszaolvasva.
+- [Gépi kiadási bizonyíték](RELEASE_2751_VERIFIED_ARTIFACTS.json), [telefonos tesztlista](TEST_2751_PHONE.md).
+
+A tényleges videólejátszás és a teljes telefonos vizuális/nyelvi elfogadás még visszatesztelendő. CI és APK-ellenőrzés nem fizikai készülékes elfogadás. [Hátralévő ellenőrzések](REMAINING_WORK_AFTER_2748.md).
+
+## Korábbi integrációs és kiadási állapotok (történeti)
+
+
 ## AI Studio Drive integráció – 2750 előkészítés
 
 Bázis: PR104, `0ec7065087f241809026f88344e4c8651df467ce`. A korábbi profil-, statisztika-, kereső- és kedvencjavítások megmaradnak. Fordítások, videós belső böngésző fallback és régi feedback-olvasók bővültek; az adatvédelmi szöveg Samsung/GPS állításai pontosítva. A teljes lokalizáció és a YouTube készülékes elfogadása még nem igazolt. A tényleges támogatott JSON-utak és korlátok az [átadó 7. pontjában](AI_STUDIO_LANGUAGES_VIDEO_DATA_HANDOFF_2748.md).

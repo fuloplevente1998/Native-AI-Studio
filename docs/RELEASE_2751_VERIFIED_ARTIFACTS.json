@@ -1,0 +1,44 @@
+{
+  "source": "754da45bae8fc3bffd1190bdc6d2ea54757fdbd7",
+  "run": 41781088959,
+  "versionCode": 2751,
+  "versionName": "0.1.0-beta",
+  "applicationId": "com.TrainPilot.com",
+  "tests": {
+    "tests": 446,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "modules": {
+    "app": 270,
+    "wear": 176
+  },
+  "apks": [
+    {
+      "platform": "telefon",
+      "file": "TrainPilot-2751-754da45-telefon.apk",
+      "bytes": 20335612,
+      "sha256": "0e896a790ad7aad4c639fe4cd33d1ff1051b0bed75e474f4c498972ea5a1342e",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6"
+    },
+    {
+      "platform": "ora",
+      "file": "TrainPilot-2751-754da45-ora.apk",
+      "bytes": 4636863,
+      "sha256": "c987198352e4b164d92c43b3ae25c216556d88b10ec724d38b35ad8d2bf59bf1",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6"
+    }
+  ],
+  "mapsApiKeyConfigured": true,
+  "dataLayerPairIdentityVerified": true,
+  "signedApkArtifact": 13299936981,
+  "signedRawXmlArtifact": 13299687794,
+  "pr": 106,
+  "prRun": 41779927504,
+  "prHead": "6c1388d4e154e3c391cde970cec554b916d67941",
+  "prRawXmlArtifact": 13298734034,
+  "deviceAccepted": false,
+  "phoneDownload": "https://drive.google.com/file/d/1VTlz4bDex5pZR_FnIZsLSQ1qH0O2jVLO/view?usp=drivesdk",
+  "phoneUploadVerified": true
+}
