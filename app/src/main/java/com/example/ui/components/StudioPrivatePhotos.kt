@@ -41,13 +41,12 @@ import com.repforge.app.ui.theme.TrainPilotCardSpacing
 import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.WorkoutPhotoRepository
 import com.repforge.app.data.db.TrainPilotDatabase
-import com.repforge.app.data.db.WorkoutPhotoEntity
+import com.repforge.app.NativeJournalPhotos
+import com.repforge.app.StoredPhotoMetadata
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
-import org.json.JSONObject
-import java.time.Instant
 
 private fun trL(lang: com.example.model.AppLanguage, hu: String, en: String, de: String, ro: String): String = when (lang) {
     com.example.model.AppLanguage.HU -> hu
@@ -70,96 +69,35 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
 
     var selectedCategory by remember { mutableStateOf("after") } // "before", "after", "other"
 
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { res ->
-        val workoutId = state.privatePhotoWorkoutId ?: return@rememberLauncherForActivityResult
+    var pendingPhoto by remember { mutableStateOf<NativeJournalPhotos.Request?>(null) }
+    var photoError by remember { mutableStateOf(false) }
+
+    fun receivePhoto(importPhoto: suspend () -> Result<StoredPhotoMetadata?>) {
+        val request = pendingPhoto ?: return
+        pendingPhoto = null
         scope.launch {
-            val r = photoRepo.handleCameraResult(res.resultCode, res.data)
-            r.getOrNull()?.let { meta ->
-                withContext(Dispatchers.IO) {
-                    val entity = WorkoutPhotoEntity(
-                        id = meta.id,
-                        workoutHistoryId = workoutId,
-                        label = selectedCategory,
-                        createdAt = Instant.now().toString(),
-                        updatedAt = System.currentTimeMillis(),
-                        width = meta.width,
-                        height = meta.height,
-                        bytes = meta.bytes,
-                        driveFileId = null,
-                        deletedAt = null
-                    )
-                    db.workoutHistoryDao().insertPhotos(listOf(entity))
-                    // Keep rawJson in sync
-                    val detail = db.workoutHistoryDao().getWorkoutWithDetails(workoutId)
-                    if (detail != null) {
-                        try {
-                            val json = JSONObject(detail.workout.rawJson)
-                            val arr = json.optJSONArray("photos") ?: JSONArray()
-                            arr.put(
-                                JSONObject()
-                                    .put("id", meta.id)
-                                    .put("label", selectedCategory)
-                                    .put("createdAt", Instant.now().toString())
-                                    .put("width", meta.width)
-                                    .put("height", meta.height)
-                                    .put("bytes", meta.bytes)
-                            )
-                            json.put("photos", arr)
-                            db.workoutHistoryDao().insertWorkout(detail.workout.copy(rawJson = json.toString()))
-                        } catch (_: Exception) {}
-                    }
-                }
+            try {
+                val photo = importPhoto().getOrThrow() ?: return@launch
+                withContext(Dispatchers.IO) { NativeJournalPhotos.attach(context, db, request, photo) }
                 model.loadProgressData()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                photoError = true
             }
         }
     }
 
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { res -> receivePhoto { photoRepo.handleCameraResult(res.resultCode, res.data) } }
+
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
-    ) { res ->
-        val workoutId = state.privatePhotoWorkoutId ?: return@rememberLauncherForActivityResult
-        scope.launch {
-            val r = photoRepo.importPickedUri(res.data?.data)
-            r.getOrNull()?.let { meta ->
-                withContext(Dispatchers.IO) {
-                    val entity = WorkoutPhotoEntity(
-                        id = meta.id,
-                        workoutHistoryId = workoutId,
-                        label = selectedCategory,
-                        createdAt = Instant.now().toString(),
-                        updatedAt = System.currentTimeMillis(),
-                        width = meta.width,
-                        height = meta.height,
-                        bytes = meta.bytes,
-                        driveFileId = null,
-                        deletedAt = null
-                    )
-                    db.workoutHistoryDao().insertPhotos(listOf(entity))
-                    val detail = db.workoutHistoryDao().getWorkoutWithDetails(workoutId)
-                    if (detail != null) {
-                        try {
-                            val json = JSONObject(detail.workout.rawJson)
-                            val arr = json.optJSONArray("photos") ?: JSONArray()
-                            arr.put(
-                                JSONObject()
-                                    .put("id", meta.id)
-                                    .put("label", selectedCategory)
-                                    .put("createdAt", Instant.now().toString())
-                                    .put("width", meta.width)
-                                    .put("height", meta.height)
-                                    .put("bytes", meta.bytes)
-                            )
-                            json.put("photos", arr)
-                            db.workoutHistoryDao().insertWorkout(detail.workout.copy(rawJson = json.toString()))
-                        } catch (_: Exception) {}
-                    }
-                }
-                model.loadProgressData()
-            }
-        }
-    }
+    ) { res -> receivePhoto {
+        if (res.resultCode == android.app.Activity.RESULT_OK) photoRepo.importPickedUri(res.data?.data)
+        else Result.success(null)
+    } }
 
     DisposableEffect(owner, model) {
         val observer = LifecycleEventObserver { _, event ->
@@ -214,6 +152,14 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                                 color = palette.textPrimary
                             )
 
+                            if (photoError) {
+                                Text(trL(lang, "A fotó hozzáadása nem sikerült. Próbáld újra.",
+                                    "Could not add photo. Please try again.",
+                                    "Foto konnte nicht hinzugefügt werden. Bitte erneut versuchen.",
+                                    "Fotografia nu a putut fi adăugată. Încearcă din nou."),
+                                    color = palette.danger, modifier = Modifier.testTag("journal_photo_error"))
+                            }
+
                             // Category selection chips: Edzés előtt / Edzés után / Egyéb
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -257,8 +203,14 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                                 Button(
                                     onClick = {
                                         try {
+                                            val workoutId = state.privatePhotoWorkoutId ?: return@Button
+                                            pendingPhoto = NativeJournalPhotos.prepare(context, workoutId, selectedCategory)
+                                            photoError = false
                                             cameraLauncher.launch(photoRepo.prepareCameraCaptureIntent())
-                                        } catch (_: Exception) {}
+                                        } catch (_: Exception) {
+                                            pendingPhoto = null
+                                            photoError = true
+                                        }
                                     },
                                     shape = RoundedCornerShape(12.dp),
                                     colors = ButtonDefaults.buttonColors(
@@ -278,8 +230,14 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                                 Button(
                                     onClick = {
                                         try {
+                                            val workoutId = state.privatePhotoWorkoutId ?: return@Button
+                                            pendingPhoto = NativeJournalPhotos.prepare(context, workoutId, selectedCategory)
+                                            photoError = false
                                             galleryLauncher.launch(photoRepo.createPickImageIntent())
-                                        } catch (_: Exception) {}
+                                        } catch (_: Exception) {
+                                            pendingPhoto = null
+                                            photoError = true
+                                        }
                                     },
                                     shape = RoundedCornerShape(12.dp),
                                     colors = ButtonDefaults.buttonColors(
