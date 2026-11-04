@@ -32,9 +32,19 @@ internal fun StudioHealthMetricsBrowser(initialProvider: String, language: Strin
     var recordType by rememberSaveable { mutableStateOf<String?>(null) }
     var editingDate by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current.applicationContext
-    fun label(hu: String, en: String) = if (language == "hu") hu else en
+    fun label(hu: String, en: String, de: String = en, ro: String = en) = when (language.lowercase()) {
+        "en" -> en
+        "de" -> de
+        "ro" -> ro
+        else -> hu
+    }
     TrainPilotOutlinedButton(onClick = { opened = true }, modifier = Modifier.fillMaxWidth().testTag("health_all_metrics")) {
-        Text(label("Mind a 26 metrika • dátum és forrás", "All 26 metrics • date and source"))
+        Text(label(
+            "Mind a 26 metrika • dátum és forrás",
+            "All 26 metrics • date and source",
+            "Alle 26 Metriken • Datum und Quelle",
+            "Toate cele 26 de metrici • dată și sursă"
+        ))
     }
     if (!opened) return
     val date = LocalDate.parse(day)
@@ -61,7 +71,7 @@ internal fun StudioHealthMetricsBrowser(initialProvider: String, language: Strin
         StudioNativeEditorTheme {
             HealthRecordBrowser(day, provider, recordType!!, language, onClose = { recordType = null })
         }
-    } else CompactCalendarDialog(label("Egészségmetrikák", "Health metrics"), "health_metrics_dialog", { opened = false }) {
+    } else CompactCalendarDialog(label("Egészségmetrikák", "Health metrics", "Gesundheitsmetriken", "Metrici de sănătate"), "health_metrics_dialog", { opened = false }) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC).forEach { source ->
                 FilterChip(selected = provider == source, onClick = { provider = source },
@@ -75,15 +85,15 @@ internal fun StudioHealthMetricsBrowser(initialProvider: String, language: Strin
                 modifier = Modifier.testTag("metrics_next_day")) { Text("›") }
         }
         Row(Modifier.fillMaxWidth()) {
-            TextButton(onClick = { day = LocalDate.now().toString() }, modifier = Modifier.weight(1f)) { Text(label("Ma", "Today")) }
-            TextButton(onClick = { reload++ }, modifier = Modifier.weight(1f).testTag("metrics_reload")) { Text(label("Újraolvasás", "Reload")) }
-            TextButton(onClick = { recordType = "" }, modifier = Modifier.weight(1f)) { Text(label("Rekordok", "Records")) }
+            TextButton(onClick = { day = LocalDate.now().toString() }, modifier = Modifier.weight(1f)) { Text(label("Ma", "Today", "Heute", "Azi")) }
+            TextButton(onClick = { reload++ }, modifier = Modifier.weight(1f).testTag("metrics_reload")) { Text(label("Újraolvasás", "Reload", "Neu laden", "Reîncarcă")) }
+            TextButton(onClick = { recordType = "" }, modifier = Modifier.weight(1f)) { Text(label("Rekordok", "Records", "Einträge", "Înregistrări")) }
         }
         when {
             loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
-            failed -> Text(label("Az adatok nem tölthetők be. Próbáld újra.", "Could not load data. Try again."), color = MaterialTheme.colorScheme.error)
+            failed -> Text(label("Az adatok nem tölthetők be. Próbáld újra.", "Could not load data. Try again.", "Daten konnten nicht geladen werden. Bitte erneut versuchen.", "Datele nu au putut fi încărcate. Încearcă din nou."), color = MaterialTheme.colorScheme.error)
             else -> {
-                Text(label("Mentett napi mérések", "Stored daily measurements"), style = MaterialTheme.typography.labelSmall)
+                Text(label("Mentett napi mérések", "Stored daily measurements", "Gespeicherte Tagesmessungen", "Măsurători zilnice salvate"), style = MaterialTheme.typography.labelSmall)
                 val metrics = NativeHealthMetrics.parse(context, NativeDetailedHealthMetrics.admitted(raw, provider, date), language)
                 metrics.forEach { metric ->
                     val status = NativeDetailedHealthMetrics.status(raw, metric.key, provider, date)
@@ -103,9 +113,9 @@ internal fun StudioHealthMetricsBrowser(initialProvider: String, language: Strin
                                     listOfNotNull(NativeWorkoutHealthSource.label(provider), origin,
                                         raw?.optString(metric.key + "Time")?.takeIf { it.isNotBlank() && it != "null" }).distinct().joinToString(" · ")
                                 }
-                                NativeDetailedHealthMetrics.Status.DENIED -> label("Olvasási engedély hiányzik", "Read permission missing")
-                                NativeDetailedHealthMetrics.Status.ERROR -> label("Az olvasás hibát jelzett", "Read failed")
-                                NativeDetailedHealthMetrics.Status.NO_DATA -> label("Nincs elérhető adat", "No available data")
+                                NativeDetailedHealthMetrics.Status.DENIED -> label("Olvasási engedély hiányzik", "Read permission missing", "Leseberechtigung fehlt", "Permisiunea de citire lipsește")
+                                NativeDetailedHealthMetrics.Status.ERROR -> label("Az olvasás hibát jelzett", "Read failed", "Lesefehler aufgetreten", "Citirea a eșuat")
+                                NativeDetailedHealthMetrics.Status.NO_DATA -> label("Nincs elérhető adat", "No available data", "Keine Daten verfügbar", "Nu există date disponibile")
                             }
                             Text(source, style = MaterialTheme.typography.labelSmall)
                         }
@@ -119,11 +129,11 @@ internal fun StudioHealthMetricsBrowser(initialProvider: String, language: Strin
         var input by rememberSaveable(day) { mutableStateOf(day) }
         val parsed = runCatching { LocalDate.parse(input) }.getOrNull()?.takeIf { it <= LocalDate.now() }
         TrainPilotAlertDialog(onDismissRequest = { editingDate = false },
-            title = { Text(label("Dátum választása", "Select date")) },
+            title = { Text(label("Dátum választása", "Select date", "Datum auswählen", "Selectează data")) },
             text = { OutlinedTextField(input, { input = it }, singleLine = true,
                 label = { Text("YYYY-MM-DD") }, isError = parsed == null, modifier = Modifier.testTag("metrics_date_input")) },
             confirmButton = { TextButton(onClick = { day = parsed!!.toString(); editingDate = false }, enabled = parsed != null,
                 modifier = Modifier.testTag("metrics_date_confirm")) { Text("OK") } },
-            dismissButton = { TextButton(onClick = { editingDate = false }) { Text(label("Mégse", "Cancel")) } })
+            dismissButton = { TextButton(onClick = { editingDate = false }) { Text(label("Mégse", "Cancel", "Abbrechen", "Anulează")) } })
     }
 }

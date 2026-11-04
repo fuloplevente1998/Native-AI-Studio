@@ -161,3 +161,25 @@ Egyetlen felelősként vidd végig a csomagot. A csak main nézet miatt minden �
 - Forrásparser, képernyőkép, mock és videó-API eseményteszt önmagában nem tényleges készülékes működési bizonyíték. Pontosan írd le, mi futott és mi maradt visszatesztre.
 
 **Elvárt végső válasz:** mely issue-k készültek el, érintett commit/main-forrás, tényleges ellenőrzések és számok, valódi APK-link vagy eszközkorlát esetén alkalmazható átadó, megmaradt bizonytalan adatok/hibahelyzetek rövid listája. Ne csak javaslatot vagy újabb általános tervet adj vissza.
+
+---
+
+## 7. Drive ZIP integráció – ellenőrzött kód és fennmaradó korlátok
+
+Forrás: `trainpilot-nov-4-2026-5-42-26-am.zip`, Drive ID `1g-GggZVFY-74nrZGoa08-myVVGatS6S3`. Integrációs bázis: `0ec7065087f241809026f88344e4c8651df467ce` (PR104). Az export eredeti jelentésének más SHA-ja, 443-as JVM száma és teljes lokalizációra vonatkozó állítása nem szolgál ellenőrzési bizonyítékként.
+
+A tényleges feedback-olvasók:
+- Edzés: `feedback.effort`, `feedback.rating` szöveg, `feedback.effortScore`, gyökér `effortFeedback`.
+- Gyakorlat: `effort`, `feedback.effort`, `feedback.rating` szöveg, `feedback.effortScore`, gyökér `effortScore`.
+- Ismert kódok: easy/light/good/right/challenging/hard/pain, valamint a `knownAliases` táblában felsorolt fordított címkék. A kód nem ígéri minden lehetséges örökölt alias vagy rating-típus támogatását. A 3-as numerikus score belső olvasáskor good; right/good UI-alias, nem adatmigrációs átnevezés.
+- Jegyzet: gyakorlatnál `feedback.note`, `note`, `userNote`; edzésnél `feedback.note`, `note`.
+- RIR: meglévő SetEditorRules212 parser, illetve gyakorlat `actualRir` és `feedback.rir`, szigorú 0..10; hiány nem nulla. Az ismeretlen explicit gyakorlatválasz megmarad, és nem helyettesítődik az edzés másik válaszával.
+- Applied-zár és az érintetlen kanonikus sorozatok megőrzése tesztelendő marad minden import/szerkesztés útvonalon; ez nem általános ígéret minden történeti JSON-formátumra.
+
+Fordítások: sok telefonos képernyő, popup és hibaállapot bővült HU/EN/DE/RO szöveggel. Még maradtak magyar opciófeliratok és dinamikus üzenetek (például a profil kanonikus felszerelés-/célopcióinak megjelenítése). A #75 teljes készre jelentése nem indokolt.
+
+Videó: API-ready és iframe-load különválik; beágyazási hiba/időtúllépés után engedélyezett URL esetén belső böngészőre vált. Ez készülékes próba nélkül nem bizonyítja a beágyazott YouTube lejátszás sikerét.
+
+Adatvédelem: Samsung SDK/Health Connect/Wear forrás és GPS-útvonaltárolás pontosítva, beállításból megnyitható. Nincs kitalált új jogi dátum, kapcsolattartó vagy jóváhagyás; publikálás előtt a teljes tájékoztató felülvizsgálandó.
+
+Helyben igazolva: 12 fontarc és 7 videó JS-teszt sikeres. GitHub CI41775858274: 444 teszt, 0 failure/error/skipped; a nyers XML ellenőrizve. Bizonyíték: AI_STUDIO_INTEGRATION_CI_2026-11-04.json. 2750-es verziókód előkészítve; aláírt 2750-es APK még nincs kiadva. A legutóbb átadott kiadás 2749.

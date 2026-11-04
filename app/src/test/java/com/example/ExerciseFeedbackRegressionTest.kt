@@ -60,4 +60,49 @@ class ExerciseFeedbackRegressionTest {
         try { Feedback.applyExercises(raw, "live", mapOf("squat" to 0), emptyMap(), 2); fail("Applied answer changed") }
         catch (_: IllegalStateException) { }
     }
+
+    @Test fun legacyRatingEffortScoreTranslatedLabelsAndExerciseNotesAreReadConsistentlyByCoach() {
+        val v13Workout = workout("v13").put("feedback", JSONObject().put("rating", "right").put("note", "v13 root note"))
+        assertEquals("right", Feedback.readWorkoutEffort(v13Workout))
+        assertEquals("good", Feedback.readExerciseEffort(exercise(v13Workout), v13Workout))
+        assertEquals("v13 root note", Feedback.readWorkoutNote(v13Workout))
+
+        val scoreWorkout = workout("score")
+        exercise(scoreWorkout).put("effortScore", 4).put("userNote", "legacy userNote")
+        assertEquals("challenging", Feedback.readOwnExerciseEffort(exercise(scoreWorkout)))
+        assertEquals("challenging", Feedback.readExerciseEffort(exercise(scoreWorkout), scoreWorkout))
+        assertEquals("legacy userNote", Feedback.readExerciseNote(exercise(scoreWorkout)))
+
+        val target = com.repforge.app.ui.coach.NativeCoachExerciseAdvice.Target("reps", min = 8.0, max = 8.0, sets = 1)
+        val occRight = com.repforge.app.ui.coach.NativeCoachExerciseAdvice.occurrence(v13Workout, exercise(v13Workout), target)
+        assertTrue(occRight.safe)
+        assertFalse(occRight.adverse)
+
+        val chosen = Feedback.chosen(2, "Pont jó volt", 1234L)!!
+        assertEquals("good", chosen.getString("effort"))
+        assertEquals("right", chosen.getString("rating"))
+        assertEquals(3, chosen.getInt("effortScore"))
+        assertEquals("phone", chosen.getString("source"))
+    }
+
+    @Test fun legacyExerciseRirDistinguishesZeroFromMissingAndRejectsOutOfRangeValues() {
+        assertNull(Feedback.readLegacyExerciseRir(JSONObject()))
+        assertEquals(0, Feedback.readLegacyExerciseRir(JSONObject().put("actualRir", 0)))
+        assertEquals(0, Feedback.readLegacyExerciseRir(JSONObject().put("actualRir", "0")))
+        assertEquals(3, Feedback.readLegacyExerciseRir(JSONObject().put("feedback", JSONObject().put("rir", 3))))
+        assertEquals(10, Feedback.readLegacyExerciseRir(JSONObject().put("feedback", JSONObject().put("rir", "10"))))
+        for (bad in listOf<Any>(JSONObject.NULL, "", -1, 11, 2.5, "bad")) {
+            assertNull(Feedback.readLegacyExerciseRir(JSONObject().put("actualRir", bad)))
+            assertNull(Feedback.readLegacyExerciseRir(JSONObject().put("feedback", JSONObject().put("rir", bad))))
+        }
+    }
+    @Test fun unknownExplicitExerciseEffortDoesNotInheritAConflictingWorkoutAnswer() {
+        val raw = workout().put("feedback", JSONObject().put("effort", "good"))
+        val ex = exercise(raw).put("effort", "unknown-legacy-answer")
+        assertEquals("", Feedback.readExerciseEffort(ex, raw))
+        assertEquals("unknown-legacy-answer", ex.getString("effort"))
+        ex.remove("effort")
+        assertEquals("good", Feedback.readExerciseEffort(ex, raw))
+    }
+
 }

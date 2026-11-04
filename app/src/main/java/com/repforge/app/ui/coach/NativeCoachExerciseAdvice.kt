@@ -11,7 +11,7 @@ internal object NativeCoachExerciseAdvice {
     data class Occurrence(val workout: JSONObject, val exercise: JSONObject, val reps: List<Double>,
         val weight: Double, val allDone: Boolean, val effort: String, val hitTop: Boolean,
         val belowMin: Boolean, val average: Double?) {
-        val safe get() = effort in setOf("easy", "light", "good")
+        val safe get() = effort in setOf("easy", "light", "good", "right")
         val adverse get() = effort in setOf("challenging", "hard", "pain")
     }
     data class Variation(val exerciseId: String, val name: String, val level: Int)
@@ -53,7 +53,7 @@ internal object NativeCoachExerciseAdvice {
         val all = sets.isNotEmpty() && done.size == sets.size && (target.sets <= 0 || done.size >= target.sets)
         val range = target.kind in setOf("reps", "time")
         return Occurrence(workout, exercise, reps, weight, all,
-            exercise.optString("effort").ifBlank { workout.optJSONObject("feedback")?.optString("effort").orEmpty() },
+            com.repforge.app.StudioWorkoutFeedback.readExerciseEffort(exercise, workout),
             range && all && target.max != null && reps.isNotEmpty() && reps.min() >= target.max,
             range && target.min != null && reps.isNotEmpty() && reps.min() < target.min, reps.takeIf { it.isNotEmpty() }?.average())
     }

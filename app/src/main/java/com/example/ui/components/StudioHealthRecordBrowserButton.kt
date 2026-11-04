@@ -17,8 +17,14 @@ internal fun StudioHealthRecordBrowserButton(provider: String, language: String)
     require(provider in setOf(HealthJournalStore.HC, HealthJournalStore.SAMSUNG))
     var opened by rememberSaveable(provider) { mutableStateOf(false) }
     val day = remember(opened) { LocalDate.now().toString() }
+    val label = when (language.lowercase()) {
+        "en" -> "Detailed data log • date and data source"
+        "de" -> "Detailliertes Datenprotokoll • Datum und Datenquelle"
+        "ro" -> "Jurnal detaliat de date • dată și sursă de date"
+        else -> "Részletes adatnapló • dátum és adatforrás"
+    }
     TrainPilotOutlinedButton(onClick = { opened = true }, modifier = Modifier.fillMaxWidth()
-        .testTag("studio_health_record_browser")) { Text("Részletes adatnapló • dátum és adatforrás") }
+        .testTag("studio_health_record_browser")) { Text(label) }
     if (opened) StudioNativeEditorTheme {
         HealthRecordBrowser(day, provider, "", language, onClose = { opened = false })
     }

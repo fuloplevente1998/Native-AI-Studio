@@ -24,6 +24,12 @@ internal fun StudioCustomExerciseActions(id: String, language: String, beforeWri
     var ticket by remember(id) { mutableStateOf<NativeDataReplacement.Continuation?>(null) }
     var busy by remember(id) { mutableStateOf(false) }
     var error by remember(id) { mutableStateOf<String?>(null) }
+    fun word(hu: String, en: String, de: String, ro: String) = when (language.lowercase()) {
+        "en" -> en
+        "de" -> de
+        "ro" -> ro
+        else -> hu
+    }
     fun change(deleted: Boolean = false, operation: suspend (ExerciseLibraryEntity) -> Unit) {
         val existing = opened ?: return
         val lease = ticket ?: return
@@ -43,10 +49,30 @@ internal fun StudioCustomExerciseActions(id: String, language: String, beforeWri
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) {
                 error = when {
-                    failure.message.orEmpty().contains("used in") -> "A programban vagy naplóban használt gyakorlat nem törölhető."
-                    failure.message.orEmpty().contains("active workout") -> "Előbb fejezd be az aktív edzést."
-                    failure.message.orEmpty().contains("changed") -> "A gyakorlat megváltozott. Nyisd meg újra."
-                    else -> "Nem sikerült a módosítás. Ellenőrizd a mezőket, vagy nyisd meg újra."
+                    failure.message.orEmpty().contains("used in") -> word(
+                        "A programban vagy naplóban használt gyakorlat nem törölhető.",
+                        "Exercises used in a program or workout log cannot be deleted.",
+                        "Eine im Programm oder Protokoll verwendete Übung kann nicht gelöscht werden.",
+                        "Exercițiul folosit într-un program sau în jurnal nu poate fi șters."
+                    )
+                    failure.message.orEmpty().contains("active workout") -> word(
+                        "Előbb fejezd be az aktív edzést.",
+                        "Finish the active workout first.",
+                        "Beende zuerst das aktive Training.",
+                        "Finalizează mai întâi antrenamentul activ."
+                    )
+                    failure.message.orEmpty().contains("changed") -> word(
+                        "A gyakorlat megváltozott. Nyisd meg újra.",
+                        "The exercise has changed. Reopen it.",
+                        "Die Übung wurde geändert. Öffne sie erneut.",
+                        "Exercițiul s-a modificat. Redeschide-l."
+                    )
+                    else -> word(
+                        "Nem sikerült a módosítás. Ellenőrizd a mezőket, vagy nyisd meg újra.",
+                        "Could not save changes. Check the fields or reopen.",
+                        "Änderung fehlgeschlagen. Prüfe die Felder oder öffne sie erneut.",
+                        "Modificarea nu a reușit. Verifică câmpurile sau redeschide."
+                    )
                 }
             } finally { busy = false }
         }
@@ -63,12 +89,24 @@ internal fun StudioCustomExerciseActions(id: String, language: String, beforeWri
                     require(exercise.custom)
                     ticket = lease; opened = exercise
                 } catch (cancelled: CancellationException) { throw cancelled }
-                catch (_: Exception) { error = "A gyakorlat nem nyitható meg. Frissítsd az oldalt." }
+                catch (_: Exception) {
+                    error = word(
+                        "A gyakorlat nem nyitható meg. Frissítsd az oldalt.",
+                        "Could not open exercise. Refresh the page.",
+                        "Übung konnte nicht geöffnet werden. Aktualisiere die Seite.",
+                        "Exercițiul nu poate fi deschis. Reîmprospătează pagina."
+                    )
+                }
                 finally { busy = false }
             }
         }
     }, enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("studio_custom_exercise_edit")) {
-        Text("Saját gyakorlat szerkesztése")
+        Text(word(
+            "Saját gyakorlat szerkesztése",
+            "Edit custom exercise",
+            "Eigene Übung bearbeiten",
+            "Editează exercițiul personalizat"
+        ))
     }
     if (opened == null && error != null) Text(requireNotNull(error))
     opened?.let { existing -> StudioNativeEditorTheme {

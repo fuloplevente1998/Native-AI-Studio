@@ -136,8 +136,16 @@ import com.example.ui.components.ExercisePostureMiniIllustration
 import com.example.ui.components.NativeWorkoutRouteMapBox
 import com.example.ui.components.SmallExerciseVideoButton
 import com.example.ui.components.SubScreenTopBar
+import com.example.model.AppLanguage
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.viewmodel.TrainPilotUiState
+
+private fun tr(lang: AppLanguage, hu: String, en: String, de: String, ro: String): String = when (lang) {
+    AppLanguage.HU -> hu
+    AppLanguage.EN -> en
+    AppLanguage.DE -> de
+    AppLanguage.RO -> ro
+}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -226,12 +234,15 @@ fun ActiveStrengthWorkoutScreen(
     val currentExercise = workoutExercises.getOrNull(currentExerciseIdx)
         ?: uiState.exercises.find { it.id == uiState.selectedExerciseId }
         ?: uiState.exercises.firstOrNull()
+    val lang = uiState.language
     val currentExerciseName = currentExercise?.nameHu ?: "Goblet guggolás"
     val currentExerciseId = currentExercise?.id ?: "goblet_squat"
+    val restWord = tr(lang, "Pihenő", "Rest", "Pause", "Pauză")
+    val secWord = tr(lang, "mp", "s", "Sek.", "sec")
     val currentExerciseSubtitle = if (currentExercise != null) {
-        "${currentExercise.primaryMusclesHu} • ${currentExercise.equipmentHu} • ${currentExercise.defaultSets}×${currentExercise.defaultReps} • Pihenő: ${currentExercise.defaultRestSec} mp"
+        "${currentExercise.primaryMusclesHu} • ${currentExercise.equipmentHu} • ${currentExercise.defaultSets}×${currentExercise.defaultReps} • $restWord: ${currentExercise.defaultRestSec} $secWord"
     } else {
-        "Láb • Kézisúlyzó • 3×8–20 • Pihenő: 90 mp"
+        tr(lang, "Láb • Kézisúlyzó • 3×8–20 • Pihenő: 90 mp", "Legs • Dumbbell • 3×8–20 • Rest: 90 s", "Beine • Kurzhantel • 3×8–20 • Pause: 90 Sek.", "Picioare • Ganteră • 3×8–20 • Pauză: 90 sec")
     }
     val columnLabels = com.example.ui.components.strengthColumnLabels(currentExercise, uiState.language)
     val setTableScroll = rememberScrollState()
@@ -257,7 +268,13 @@ fun ActiveStrengthWorkoutScreen(
             textContentColor = palette.textSecondary,
             title = {
                 Text(
-                    text = "✏️ ${targetSet.setNumber}. sorozat kitöltése",
+                    text = tr(
+                        lang,
+                        "✏️ ${targetSet.setNumber}. sorozat kitöltése",
+                        "✏️ Fill set #${targetSet.setNumber}",
+                        "✏️ ${targetSet.setNumber}. Satz ausfüllen",
+                        "✏️ Completare seria #${targetSet.setNumber}"
+                    ),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = palette.textPrimary
@@ -320,6 +337,7 @@ fun ActiveStrengthWorkoutScreen(
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
+                        val repUnit = tr(lang, "ism.", "reps", "Wdh.", "rep.")
                         listOf("8", "10", "12", "15", "20").forEach { presetReps ->
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
@@ -329,7 +347,7 @@ fun ActiveStrengthWorkoutScreen(
                                     .clickable { editRepsText = presetReps }
                             ) {
                                 Text(
-                                    text = "$presetReps ism.",
+                                    text = "$presetReps $repUnit",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = palette.textPrimary,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -340,7 +358,13 @@ fun ActiveStrengthWorkoutScreen(
 
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "RIR (Ráspórolt ismétlések):",
+                        text = tr(
+                            lang,
+                            "RIR (Ráspórolt ismétlések):",
+                            "RIR (Reps in reserve):",
+                            "RIR (Wiederholungen in Reserve):",
+                            "RIR (Repetări în rezervă):"
+                        ),
                         style = MaterialTheme.typography.labelMedium,
                         color = palette.textSecondary
                     )
@@ -369,7 +393,7 @@ fun ActiveStrengthWorkoutScreen(
                     ),
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("Mentés", fontWeight = FontWeight.Bold)
+                    Text(strings.saveBtn, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -377,7 +401,7 @@ fun ActiveStrengthWorkoutScreen(
                     onClick = { editingSet = null },
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("Mégse", color = palette.textPrimary)
+                    Text(strings.cancelBtn, color = palette.textPrimary)
                 }
             }
         )
@@ -422,7 +446,13 @@ fun ActiveStrengthWorkoutScreen(
         item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 SubScreenTopBar(
-                    title = "${uiState.activeWorkoutTitleHu} • ${currentExerciseIdx + 1} / $totalExercisesCount gyakorlat",
+                    title = tr(
+                        lang,
+                        "${uiState.activeWorkoutTitleHu} • ${currentExerciseIdx + 1} / $totalExercisesCount gyakorlat",
+                        "${uiState.activeWorkoutTitleHu} • ${currentExerciseIdx + 1} / $totalExercisesCount exercises",
+                        "${uiState.activeWorkoutTitleHu} • ${currentExerciseIdx + 1} / $totalExercisesCount Übungen",
+                        "${uiState.activeWorkoutTitleHu} • ${currentExerciseIdx + 1} / $totalExercisesCount exerciții"
+                    ),
                     onBack = onBack,
                     onOpenSettings = onOpenSettings,
                     rightExtraContent = { com.example.ui.components.StudioWorkoutHealthAction() }
@@ -501,7 +531,7 @@ fun ActiveStrengthWorkoutScreen(
                                 )
                                 Icon(
                                     imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Gyakorlat váltása",
+                                    contentDescription = tr(lang, "Gyakorlat váltása", "Switch exercise", "Übung wechseln", "Schimbă exercițiul"),
                                     tint = palette.primary,
                                     modifier = Modifier.size(22.dp)
                                 )
@@ -535,7 +565,13 @@ fun ActiveStrengthWorkoutScreen(
                                             modifier = Modifier.size(18.dp)
                                         )
                                         Text(
-                                            text = "📚 Választás a 106+ gyakorlatkönyvtárból...",
+                                            text = tr(
+                                                lang,
+                                                "📚 Választás a 106+ gyakorlatkönyvtárból...",
+                                                "📚 Choose from the 106+ exercise library...",
+                                                "📚 Aus der 106+ Übungsbibliothek wählen...",
+                                                "📚 Alege din biblioteca de 106+ exerciții..."
+                                            ),
                                             color = palette.primary,
                                             fontWeight = FontWeight.Bold
                                         )
@@ -590,7 +626,7 @@ fun ActiveStrengthWorkoutScreen(
                                 .clickable { onOpenExerciseDetail(currentExerciseId) }
                         ) {
                             Text(
-                                text = "Tárcsa & Bemelegítés",
+                                text = tr(lang, "Tárcsa & Bemelegítés", "Plates & Warm-up", "Scheiben & Aufwärmen", "Discuri & Încălzire"),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = palette.textPrimary,
@@ -605,7 +641,7 @@ fun ActiveStrengthWorkoutScreen(
         // Section header
         item {
             Text(
-                text = "Sorozatok",
+                text = tr(uiState.language, "Sorozatok", "Sets", "Sätze", "Serii"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = palette.textPrimary
@@ -618,7 +654,7 @@ fun ActiveStrengthWorkoutScreen(
             Row(Modifier.horizontalScroll(setTableScroll).width(maxWidth.coerceAtLeast(minimumSetTableWidth)),
                 verticalAlignment = Alignment.CenterVertically) {
                 Text("#", style = MaterialTheme.typography.labelSmall, color = palette.textMuted, modifier = Modifier.width(setNumberSize), textAlign = TextAlign.Center)
-                Text("Előző", style = MaterialTheme.typography.labelSmall, color = palette.textMuted, modifier = Modifier.width(previousColumnWidth), textAlign = TextAlign.Center)
+                Text(tr(uiState.language, "Előző", "Previous", "Vorherig", "Anterior"), style = MaterialTheme.typography.labelSmall, color = palette.textMuted, modifier = Modifier.width(previousColumnWidth), textAlign = TextAlign.Center)
                 Text(columnLabels.weight, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, modifier = Modifier.weight(1f).padding(horizontal = 2.dp), textAlign = TextAlign.Center, maxLines = 2)
                 Text(columnLabels.repetitions, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, modifier = Modifier.weight(1f).padding(horizontal = 2.dp), textAlign = TextAlign.Center, maxLines = 2)
                 Text("RIR", style = MaterialTheme.typography.labelSmall, color = palette.textMuted, modifier = Modifier.weight(0.9f), textAlign = TextAlign.Center)
@@ -809,10 +845,11 @@ fun ActiveStrengthWorkoutScreen(
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
+                        val repChipUnit = tr(lang, "ism.", "reps", "Wdh.", "rep.")
                         SmallAdjustChip(String.format(java.util.Locale.forLanguageTag(uiState.language.name.lowercase()), "%+.1f kg", -0.5f)) { onAdjustSetValues(setItem.setNumber, -0.5f, 0, 0) }
                         SmallAdjustChip(String.format(java.util.Locale.forLanguageTag(uiState.language.name.lowercase()), "%+.1f kg", 0.5f)) { onAdjustSetValues(setItem.setNumber, 0.5f, 0, 0) }
-                        SmallAdjustChip("-1 ism.") { onAdjustSetValues(setItem.setNumber, 0f, -1, 0) }
-                        SmallAdjustChip("+1 ism.") { onAdjustSetValues(setItem.setNumber, 0f, 1, 0) }
+                        SmallAdjustChip("-1 $repChipUnit") { onAdjustSetValues(setItem.setNumber, 0f, -1, 0) }
+                        SmallAdjustChip("+1 $repChipUnit") { onAdjustSetValues(setItem.setNumber, 0f, 1, 0) }
                         SmallAdjustChip("RIR 0") { onUpdateSetValuesExact(setItem.setNumber, setItem.weightKg, setItem.reps, 0) }
                         SmallAdjustChip("RIR 1") { onUpdateSetValuesExact(setItem.setNumber, setItem.weightKg, setItem.reps, 1) }
                         SmallAdjustChip("RIR 2") { onUpdateSetValuesExact(setItem.setNumber, setItem.weightKg, setItem.reps, 2) }
@@ -832,7 +869,11 @@ fun ActiveStrengthWorkoutScreen(
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("+ Új sorozat hozzáadása", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
+                Text(
+                    tr(lang, "+ Új sorozat hozzáadása", "+ Add new set", "+ Neuen Satz hinzufügen", "+ Adaugă o serie nouă"),
+                    color = palette.textPrimary,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
 
@@ -900,7 +941,7 @@ fun ActiveStrengthWorkoutScreen(
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Text(
-                                    text = "Pihenő: $formattedRest",
+                                    text = "$restWord: $formattedRest",
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = palette.textPrimary
@@ -931,7 +972,7 @@ fun ActiveStrengthWorkoutScreen(
                                         )
                                         Spacer(modifier = Modifier.width(2.dp))
                                         Text(
-                                            text = if (uiState.restTimerRunning) "Szünet" else "Indít",
+                                            text = if (uiState.restTimerRunning) tr(lang, "Szünet", "Pause", "Pause", "Pauză") else tr(lang, "Indít", "Start", "Start", "Start"),
                                             style = MaterialTheme.typography.labelSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = palette.onPrimary
@@ -939,10 +980,10 @@ fun ActiveStrengthWorkoutScreen(
                                     }
                                 }
                                 SmallAdjustChip("+15") { onAdjustRestTimer(15) }
-                                SmallAdjustChip("Kihagy") { onSkipRest() }
+                                SmallAdjustChip(tr(lang, "Kihagy", "Skip", "Überspr.", "Omite")) { onSkipRest() }
                                 Icon(
                                     imageVector = Icons.Default.ExpandLess,
-                                    contentDescription = "Nagy pihenő mód",
+                                    contentDescription = tr(lang, "Nagy pihenő mód", "Expanded rest timer", "Großer Pausenmodus", "Mod pauză extins"),
                                     tint = palette.primary,
                                     modifier = Modifier
                                         .size(20.dp)
@@ -979,7 +1020,7 @@ fun ActiveStrengthWorkoutScreen(
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Text(
-                                            text = "Pihenőidő (Nagy mód)",
+                                            text = tr(lang, "Pihenőidő (Nagy mód)", "Rest timer (Expanded)", "Pausenzeit (Groß)", "Timp de pauză (Extins)"),
                                             style = MaterialTheme.typography.labelMedium,
                                             color = palette.primary,
                                             fontWeight = FontWeight.Bold
@@ -996,13 +1037,13 @@ fun ActiveStrengthWorkoutScreen(
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                             ) {
                                                 Text(
-                                                    text = "Lapos mód",
+                                                    text = tr(lang, "Lapos mód", "Compact mode", "Kompaktmodus", "Mod compact"),
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = palette.textSecondary
                                                 )
                                                 Icon(
                                                     imageVector = Icons.Default.ExpandMore,
-                                                    contentDescription = "Kis lapos mód",
+                                                    contentDescription = tr(lang, "Kis lapos mód", "Compact rest timer", "Kompakter Pausenmodus", "Mod pauză compact"),
                                                     tint = palette.textSecondary,
                                                     modifier = Modifier.size(14.dp)
                                                 )
@@ -1017,7 +1058,11 @@ fun ActiveStrengthWorkoutScreen(
                                         color = palette.textPrimary
                                     )
                                     Text(
-                                        text = if (uiState.restTimerRunning) "Visszaszámlálás fut • Rezgés a végén" else "Koppints a körre vagy az Indításra",
+                                        text = if (uiState.restTimerRunning) {
+                                            tr(lang, "Visszaszámlálás fut • Rezgés a végén", "Countdown running • Vibrates at end", "Countdown läuft • Vibration am Ende", "Numărătoare inversă • Vibrație la final")
+                                        } else {
+                                            tr(lang, "Koppints a körre vagy az Indításra", "Tap the ring or Start", "Tippe auf den Kreis oder Start", "Atinge inelul sau Start")
+                                        },
                                         style = MaterialTheme.typography.bodySmall,
                                         color = palette.textSecondary
                                     )
@@ -1068,7 +1113,7 @@ fun ActiveStrengthWorkoutScreen(
                                     modifier = Modifier.weight(1f).height(40.dp),
                                     contentPadding = PaddingValues(0.dp)
                                 ) {
-                                    Text("-15 mp", color = palette.textPrimary, fontWeight = FontWeight.Bold)
+                                    Text("-15 $secWord", color = palette.textPrimary, fontWeight = FontWeight.Bold)
                                 }
                                 TrainPilotOutlinedButton(
                                     onClick = { onAdjustRestTimer(15) },
@@ -1076,7 +1121,7 @@ fun ActiveStrengthWorkoutScreen(
                                     modifier = Modifier.weight(1f).height(40.dp),
                                     contentPadding = PaddingValues(0.dp)
                                 ) {
-                                    Text("+15 mp", color = palette.textPrimary, fontWeight = FontWeight.Bold)
+                                    Text("+15 $secWord", color = palette.textPrimary, fontWeight = FontWeight.Bold)
                                 }
                                 Button(
                                     onClick = onSkipRest,
@@ -1098,6 +1143,8 @@ fun ActiveStrengthWorkoutScreen(
                 // Sticky < Előző | Következő > Navigation Row
                 val hasNextExercise = currentExerciseIdx + 1 < totalExercisesCount
                 val nextExName = workoutExercises.getOrNull(currentExerciseIdx + 1)?.nameHu
+                val prevWord = tr(lang, "Előző", "Previous", "Zurück", "Anterior")
+                val nextWord = tr(lang, "Következő", "Next", "Weiter", "Următorul")
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -1112,7 +1159,7 @@ fun ActiveStrengthWorkoutScreen(
                             .testTag("active_prev_exercise_btn")
                     ) {
                         Text(
-                            text = if (currentExerciseIdx > 0) "< Előző (${currentExerciseIdx}/$totalExercisesCount)" else "< Előző",
+                            text = if (currentExerciseIdx > 0) "< $prevWord (${currentExerciseIdx}/$totalExercisesCount)" else "< $prevWord",
                             color = palette.textPrimary,
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
@@ -1134,9 +1181,9 @@ fun ActiveStrengthWorkoutScreen(
                     ) {
                         Text(
                             text = if (hasNextExercise) {
-                                "Következő: ${nextExName ?: "${currentExerciseIdx + 2}. gyakorlat"} >"
+                                "$nextWord: ${nextExName ?: tr(lang, "${currentExerciseIdx + 2}. gyakorlat", "Exercise #${currentExerciseIdx + 2}", "${currentExerciseIdx + 2}. Übung", "Exercițiul #${currentExerciseIdx + 2}")} >"
                             } else {
-                                "Edzés befejezése >"
+                                tr(lang, "Edzés befejezése >", "Finish workout >", "Training beenden >", "Finalizare antrenament >")
                             },
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
@@ -1280,13 +1327,21 @@ fun ActiveTimedWorkoutScreen(
         ) {
             item {
                 SubScreenTopBar(
-                    title = "${uiState.activeWorkoutTitleHu} • ${currentIdx + 1} / $totalCount gyakorlat",
+                    title = tr(
+                        uiState.language,
+                        "${uiState.activeWorkoutTitleHu} • ${currentIdx + 1} / $totalCount gyakorlat",
+                        "${uiState.activeWorkoutTitleHu} • ${currentIdx + 1} / $totalCount exercises",
+                        "${uiState.activeWorkoutTitleHu} • ${currentIdx + 1} / $totalCount Übungen",
+                        "${uiState.activeWorkoutTitleHu} • ${currentIdx + 1} / $totalCount exerciții"
+                    ),
                     onBack = onBack,
                     onOpenSettings = onOpenSettings,
                     rightExtraContent = { com.example.ui.components.StudioWorkoutHealthAction() }
                 )
             }
             item {
+                val lang = uiState.language
+                val secWord = tr(lang, "mp", "s", "Sek.", "sec")
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = palette.surfaceCard,
@@ -1320,13 +1375,19 @@ fun ActiveTimedWorkoutScreen(
                                         )
                                         Icon(
                                             imageVector = Icons.Default.KeyboardArrowDown,
-                                            contentDescription = "Időalapú gyakorlat váltása",
+                                            contentDescription = tr(lang, "Időalapú gyakorlat váltása", "Switch timed exercise", "Zeitbasierte Übung wechseln", "Schimbă exercițiul cronometrat"),
                                             tint = palette.primary,
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }
                                     Text(
-                                        text = "Cél: $currentSetIndex. sorozat • Célidő: $targetSec mp • Koppints a váltáshoz",
+                                        text = tr(
+                                            lang,
+                                            "Cél: $currentSetIndex. sorozat • Célidő: $targetSec mp • Koppints a váltáshoz",
+                                            "Target: Set #$currentSetIndex • Target time: $targetSec s • Tap to switch",
+                                            "Ziel: $currentSetIndex. Satz • Zielzeit: $targetSec Sek. • Tippen zum Wechseln",
+                                            "Țintă: Seria #$currentSetIndex • Timp țintă: $targetSec sec • Atinge pentru schimbare"
+                                        ),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = palette.textSecondary
                                     )
@@ -1347,7 +1408,11 @@ fun ActiveTimedWorkoutScreen(
                                             )
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Text(
-                                                text = if (isRunning) "Stopper fut ●" else "Stopper készenlétben",
+                                                text = if (isRunning) {
+                                                    tr(lang, "Stopper fut ●", "Stopwatch running ●", "Stoppuhr läuft ●", "Cronometrul rulează ●")
+                                                } else {
+                                                    tr(lang, "Stopper készenlétben", "Stopwatch ready", "Stoppuhr bereit", "Cronometru pregătit")
+                                                },
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = if (isRunning) palette.primary else palette.secondary,
                                                 fontWeight = FontWeight.Bold
@@ -1367,7 +1432,13 @@ fun ActiveTimedWorkoutScreen(
                                     DropdownMenuItem(
                                         text = {
                                             Text(
-                                                text = "📚 Gyakorlatkönyvtár megnyitása...",
+                                                text = tr(
+                                                    lang,
+                                                    "📚 Gyakorlatkönyvtár megnyitása...",
+                                                    "📚 Open Exercise Library...",
+                                                    "📚 Übungsbibliothek öffnen...",
+                                                    "📚 Deschide biblioteca de exerciții..."
+                                                ),
                                                 color = palette.primary,
                                                 fontWeight = FontWeight.Bold
                                             )
@@ -1383,7 +1454,7 @@ fun ActiveTimedWorkoutScreen(
                                         DropdownMenuItem(
                                             text = {
                                                 Text(
-                                                    text = "${option.nameHu} (${option.targetSeconds.coerceAtLeast(30)} mp)",
+                                                    text = "${option.nameHu} (${option.targetSeconds.coerceAtLeast(30)} $secWord)",
                                                     color = if (isSel) palette.primary else palette.textPrimary,
                                                     fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium
                                                 )
@@ -1435,13 +1506,17 @@ fun ActiveTimedWorkoutScreen(
                             )
                             val remaining = (targetSec - currentSec).coerceAtLeast(0)
                             Text(
-                                text = if (currentSec >= targetSec) "Cél teljesítve! 🎉" else "Hátra: $remaining mp",
+                                text = if (currentSec >= targetSec) {
+                                    tr(lang, "Cél teljesítve! 🎉", "Target reached! 🎉", "Ziel erreicht! 🎉", "Țintă atinsă! 🎉")
+                                } else {
+                                    tr(lang, "Hátra: $remaining mp", "Remaining: $remaining s", "Verbleibend: $remaining Sek.", "Rămas: $remaining sec")
+                                },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = if (currentSec >= targetSec) palette.success else palette.textSecondary,
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                text = "Cél: 00:$targetSec",
+                                text = tr(lang, "Cél: 00:$targetSec", "Target: 00:$targetSec", "Ziel: 00:$targetSec", "Țintă: 00:$targetSec"),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.primary,
                                 fontWeight = FontWeight.Bold
@@ -1456,10 +1531,10 @@ fun ActiveTimedWorkoutScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        SmallAdjustChip("-5 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "single", -5) } }
-                        SmallAdjustChip("+5 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "single", 5) } }
-                        SmallAdjustChip("+15 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "single", 15) } }
-                        SmallAdjustChip("+30 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "single", 30) } }
+                        SmallAdjustChip("-5 $secWord") { target?.let { nativeModel.adjustSetStopwatch(it, "single", -5) } }
+                        SmallAdjustChip("+5 $secWord") { target?.let { nativeModel.adjustSetStopwatch(it, "single", 5) } }
+                        SmallAdjustChip("+15 $secWord") { target?.let { nativeModel.adjustSetStopwatch(it, "single", 15) } }
+                        SmallAdjustChip("+30 $secWord") { target?.let { nativeModel.adjustSetStopwatch(it, "single", 30) } }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -1487,7 +1562,11 @@ fun ActiveTimedWorkoutScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (isRunning) "Szünet" else "Stopper indítása",
+                                text = if (isRunning) {
+                                    tr(lang, "Szünet", "Pause", "Pause", "Pauză")
+                                } else {
+                                    tr(lang, "Stopper indítása", "Start stopwatch", "Stoppuhr starten", "Pornește cronometrul")
+                                },
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -1525,7 +1604,13 @@ fun ActiveTimedWorkoutScreen(
                         Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Sorozat rögzítése (${String.format("%02d:%02d", currentSec / 60, currentSec % 60)}) ✓",
+                            text = tr(
+                                lang,
+                                "Sorozat rögzítése (${String.format("%02d:%02d", currentSec / 60, currentSec % 60)}) ✓",
+                                "Record set (${String.format("%02d:%02d", currentSec / 60, currentSec % 60)}) ✓",
+                                "Satz speichern (${String.format("%02d:%02d", currentSec / 60, currentSec % 60)}) ✓",
+                                "Salvează seria (${String.format("%02d:%02d", currentSec / 60, currentSec % 60)}) ✓"
+                            ),
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -1535,6 +1620,8 @@ fun ActiveTimedWorkoutScreen(
 
         // Target Preset selector
         item {
+            val lang = uiState.language
+            val secWord = tr(lang, "mp", "s", "Sek.", "sec")
             Surface(
                 shape = RoundedCornerShape(18.dp),
                 color = palette.surfaceCard,
@@ -1544,7 +1631,7 @@ fun ActiveTimedWorkoutScreen(
             ) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Célidő beállítása:",
+                        text = tr(lang, "Célidő beállítása:", "Set target time:", "Zielzeit einstellen:", "Setează timpul țintă:"),
                         style = MaterialTheme.typography.labelMedium,
                         color = palette.textSecondary,
                         fontWeight = FontWeight.SemiBold
@@ -1563,7 +1650,7 @@ fun ActiveTimedWorkoutScreen(
                                     .clickable { targetSec = sec }
                             ) {
                                 Text(
-                                    text = "$sec mp",
+                                    text = "$sec $secWord",
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = if (targetSec == sec) palette.onPrimary else palette.textPrimary,
@@ -1579,6 +1666,7 @@ fun ActiveTimedWorkoutScreen(
 
         // Completed sets list
         item {
+            val lang = uiState.language
             Surface(
                 shape = RoundedCornerShape(18.dp),
                 color = palette.surfaceCard,
@@ -1588,14 +1676,14 @@ fun ActiveTimedWorkoutScreen(
             ) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Eddigi sorozatok:",
+                        text = tr(lang, "Eddigi sorozatok:", "Sets so far:", "Bisherige Sätze:", "Serii până acum:"),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = palette.primary
                     )
                     completedSets.forEachIndexed { index, duration ->
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("${index + 1}. sorozat", color = palette.textSecondary)
+                            Text(tr(lang, "${index + 1}. sorozat", "Set #${index + 1}", "${index + 1}. Satz", "Seria #${index + 1}"), color = palette.textSecondary)
                             Text(
                                 text = String.format("%02d:%02d ✓", duration / 60, duration % 60),
                                 color = palette.success,
@@ -1605,7 +1693,7 @@ fun ActiveTimedWorkoutScreen(
                     }
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(
-                            text = "$currentSetIndex. sorozat (Aktuális)",
+                            text = tr(lang, "$currentSetIndex. sorozat (Aktuális)", "Set #$currentSetIndex (Current)", "$currentSetIndex. Satz (Aktuell)", "Seria #$currentSetIndex (Curentă)"),
                             color = palette.primary,
                             fontWeight = FontWeight.Bold
                         )
@@ -1629,6 +1717,7 @@ fun ActiveTimedWorkoutScreen(
                 .fillMaxWidth()
                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
         ) {
+            val lang = uiState.language
             val hasNext = currentIdx + 1 < totalCount
             Row(
                 modifier = Modifier
@@ -1642,7 +1731,7 @@ fun ActiveTimedWorkoutScreen(
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.weight(1f).height(48.dp)
                 ) {
-                    Text("< Előző", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
+                    Text(tr(lang, "< Előző", "< Previous", "< Zurück", "< Anterior"), color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
                 }
                 Button(
                     onClick = onNextExercise,
@@ -1654,7 +1743,17 @@ fun ActiveTimedWorkoutScreen(
                     modifier = Modifier.weight(1.3f).height(48.dp)
                 ) {
                     Text(
-                        text = if (hasNext) "Következő (${currentIdx + 2}/$totalCount) >" else "Edzés befejezése >",
+                        text = if (hasNext) {
+                            tr(
+                                lang,
+                                "Következő (${currentIdx + 2}/$totalCount) >",
+                                "Next (${currentIdx + 2}/$totalCount) >",
+                                "Weiter (${currentIdx + 2}/$totalCount) >",
+                                "Următorul (${currentIdx + 2}/$totalCount) >"
+                            )
+                        } else {
+                            tr(lang, "Edzés befejezése >", "Finish workout >", "Training beenden >", "Finalizare antrenament >")
+                        },
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -1693,6 +1792,8 @@ fun ActiveBilateralWorkoutScreen(
         ?: uiState.exercises.find { it.id == uiState.selectedExerciseId }
         ?: uiState.exercises.firstOrNull { it.isBilateral || it.nameHu.contains("oldalsó plank", ignoreCase = true) }
 
+    val lang = uiState.language
+    val secWord = tr(lang, "mp", "s", "Sek.", "sec")
     val exerciseTitle = currentExercise?.nameHu ?: "Oldalsó plank"
     val defaultTargetSec = currentExercise?.targetSeconds ?: 30
 
@@ -1732,7 +1833,13 @@ fun ActiveBilateralWorkoutScreen(
             containerColor = palette.surfaceElevated,
             title = {
                 Text(
-                    text = "${setToEdit.setNumber}. sorozat • Kétoldali adatrögzítés",
+                    text = tr(
+                        lang,
+                        "${setToEdit.setNumber}. sorozat • Kétoldali adatrögzítés",
+                        "Set #${setToEdit.setNumber} • Bilateral entry",
+                        "${setToEdit.setNumber}. Satz • Beidseitige Eingabe",
+                        "Seria #${setToEdit.setNumber} • Înregistrare bilaterală"
+                    ),
                     color = palette.textPrimary,
                     style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold
                 )
@@ -1740,7 +1847,13 @@ fun ActiveBilateralWorkoutScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = "$exerciseTitle – állítsd be külön a Bal és Jobb oldal másodperceit:",
+                        text = tr(
+                            lang,
+                            "$exerciseTitle – állítsd be külön a Bal és Jobb oldal másodperceit:",
+                            "$exerciseTitle – set Left and Right side seconds separately:",
+                            "$exerciseTitle – Sekunden für linke und rechte Seite getrennt einstellen:",
+                            "$exerciseTitle – setează separat secundele pentru partea stângă și dreaptă:"
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.textSecondary
                     )
@@ -1751,14 +1864,14 @@ fun ActiveBilateralWorkoutScreen(
                         androidx.compose.material3.OutlinedTextField(
                             value = editLeftText,
                             onValueChange = { editLeftText = it.filter { ch -> ch.isDigit() } },
-                            label = { Text("Bal oldal (mp)") },
+                            label = { Text(tr(lang, "Bal oldal (mp)", "Left side (s)", "Linke Seite (Sek.)", "Partea stângă (sec)")) },
                             singleLine = true,
                             modifier = Modifier.weight(1f)
                         )
                         androidx.compose.material3.OutlinedTextField(
                             value = editRightText,
                             onValueChange = { editRightText = it.filter { ch -> ch.isDigit() } },
-                            label = { Text("Jobb oldal (mp)") },
+                            label = { Text(tr(lang, "Jobb oldal (mp)", "Right side (s)", "Rechte Seite (Sek.)", "Partea dreaptă (sec)")) },
                             singleLine = true,
                             modifier = Modifier.weight(1f)
                         )
@@ -1767,19 +1880,21 @@ fun ActiveBilateralWorkoutScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        SmallAdjustChip("Bal -5mp") {
+                        val leftShort = tr(lang, "Bal", "Left", "Links", "Stg.")
+                        val rightShort = tr(lang, "Jobb", "Right", "Rechts", "Dr.")
+                        SmallAdjustChip("$leftShort -5$secWord") {
                             val v = (editLeftText.toIntOrNull() ?: 30) - 5
                             editLeftText = v.coerceAtLeast(1).toString()
                         }
-                        SmallAdjustChip("Bal +5mp") {
+                        SmallAdjustChip("$leftShort +5$secWord") {
                             val v = (editLeftText.toIntOrNull() ?: 30) + 5
                             editLeftText = v.coerceAtMost(600).toString()
                         }
-                        SmallAdjustChip("Jobb -5mp") {
+                        SmallAdjustChip("$rightShort -5$secWord") {
                             val v = (editRightText.toIntOrNull() ?: 30) - 5
                             editRightText = v.coerceAtLeast(1).toString()
                         }
-                        SmallAdjustChip("Jobb +5mp") {
+                        SmallAdjustChip("$rightShort +5$secWord") {
                             val v = (editRightText.toIntOrNull() ?: 30) + 5
                             editRightText = v.coerceAtMost(600).toString()
                         }
@@ -1787,7 +1902,7 @@ fun ActiveBilateralWorkoutScreen(
                     androidx.compose.material3.OutlinedTextField(
                         value = editRirText,
                         onValueChange = { editRirText = it.filter { ch -> ch.isDigit() } },
-                        label = { Text("RIR (Tartalék: 0–10)") },
+                        label = { Text(tr(lang, "RIR (Tartalék: 0–10)", "RIR (Reserve: 0–10)", "RIR (Reserve: 0–10)", "RIR (Rezervă: 0–10)")) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -1800,7 +1915,7 @@ fun ActiveBilateralWorkoutScreen(
                         ) {
                             Icon(Icons.Default.DeleteOutline, contentDescription = null, tint = palette.danger, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Sorozat törlése", color = palette.danger, fontWeight = FontWeight.Bold)
+                            Text(tr(lang, "Sorozat törlése", "Delete set", "Satz löschen", "Șterge seria"), color = palette.danger, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -1819,7 +1934,7 @@ fun ActiveBilateralWorkoutScreen(
                         contentColor = palette.onPrimary
                     )
                 ) {
-                    Text("Mentés és rögzítés", fontWeight = FontWeight.Bold)
+                    Text(tr(lang, "Mentés és rögzítés", "Save and record", "Speichern und erfassen", "Salvează și înregistrează"), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -1847,7 +1962,7 @@ fun ActiveBilateralWorkoutScreen(
         ) {
             item {
                 SubScreenTopBar(
-                    title = "$exerciseTitle • Kétoldali stopper",
+                    title = "$exerciseTitle • ${tr(lang, "Kétoldali stopper", "Bilateral stopwatch", "Beidseitige Stoppuhr", "Cronometru bilateral")}",
                     onBack = onBack,
                     onOpenSettings = onOpenSettings,
                     rightExtraContent = { com.example.ui.components.StudioWorkoutHealthAction() }
@@ -1880,7 +1995,13 @@ fun ActiveBilateralWorkoutScreen(
                                     color = palette.textPrimary
                                 )
                                 Text(
-                                    text = "2 külön stopper oldalanként • A „Leállítás és rögzítés” gomb a kiválasztott (${selectedTargetSetNumber}.) sorozatba menti az időt",
+                                    text = tr(
+                                        lang,
+                                        "2 külön stopper oldalanként • A „Leállítás és rögzítés” gomb a kiválasztott (${selectedTargetSetNumber}.) sorozatba menti az időt",
+                                        "2 separate stopwatches per side • \"Stop & record\" saves the time into the selected (#${selectedTargetSetNumber}) set",
+                                        "2 separate Stoppuhren pro Seite • „Stoppen & speichern“ sichert die Zeit im ausgewählten (${selectedTargetSetNumber}.) Satz",
+                                        "2 cronometre separate pe parte • „Oprește și înregistrează” salvează timpul în seria selectată (#${selectedTargetSetNumber})"
+                                    ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textSecondary
                                 )
@@ -1901,7 +2022,13 @@ fun ActiveBilateralWorkoutScreen(
                                 color = palette.primary.copy(alpha = 0.16f)
                             ) {
                                 Text(
-                                    text = "${uiState.activeExerciseIndex + 1} / ${workoutExercises.size.coerceAtLeast(1)} gyakorlat • Aktív cél: ${selectedTargetSetNumber}. sorozat",
+                                    text = tr(
+                                        lang,
+                                        "${uiState.activeExerciseIndex + 1} / ${workoutExercises.size.coerceAtLeast(1)} gyakorlat • Aktív cél: ${selectedTargetSetNumber}. sorozat",
+                                        "${uiState.activeExerciseIndex + 1} / ${workoutExercises.size.coerceAtLeast(1)} exercises • Active target: Set #${selectedTargetSetNumber}",
+                                        "${uiState.activeExerciseIndex + 1} / ${workoutExercises.size.coerceAtLeast(1)} Übungen • Aktives Ziel: ${selectedTargetSetNumber}. Satz",
+                                        "${uiState.activeExerciseIndex + 1} / ${workoutExercises.size.coerceAtLeast(1)} exerciții • Țintă activă: Seria #${selectedTargetSetNumber}"
+                                    ),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.primary,
@@ -1919,7 +2046,7 @@ fun ActiveBilateralWorkoutScreen(
                                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                 ) {
                                     Text(
-                                        text = "Gyakorlat váltása ▾",
+                                        text = tr(lang, "Gyakorlat váltása ▾", "Switch exercise ▾", "Übung wechseln ▾", "Schimbă exercițiul ▾"),
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = palette.textPrimary,
@@ -1952,7 +2079,13 @@ fun ActiveBilateralWorkoutScreen(
                                     DropdownMenuItem(
                                         text = {
                                             Text(
-                                                text = "📚 Gyakorlatkönyvtár megnyitása...",
+                                                text = tr(
+                                                    lang,
+                                                    "📚 Gyakorlatkönyvtár megnyitása...",
+                                                    "📚 Open Exercise Library...",
+                                                    "📚 Übungsbibliothek öffnen...",
+                                                    "📚 Deschide biblioteca de exerciții..."
+                                                ),
                                                 color = palette.primary,
                                                 fontWeight = FontWeight.Bold
                                             )
@@ -1998,7 +2131,7 @@ fun ActiveBilateralWorkoutScreen(
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Text(
-                                            text = "B",
+                                            text = tr(lang, "B", "L", "L", "S"),
                                             fontWeight = FontWeight.Bold,
                                             color = if (leftRunning) palette.onPrimary else palette.textPrimary,
                                             style = MaterialTheme.typography.labelMedium
@@ -2008,16 +2141,34 @@ fun ActiveBilateralWorkoutScreen(
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column {
                                     Text(
-                                        text = "Bal oldal stopper",
+                                        text = tr(lang, "Bal oldal stopper", "Left side stopwatch", "Stoppuhr linke Seite", "Cronometru partea stângă"),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = palette.textPrimary
                                     )
                                     Text(
                                         text = when {
-                                            leftRunning -> "Mérés folyamatban (${selectedTargetSetNumber}. sorozat - Bal) ●"
-                                            isLeftRecordedInTarget -> "${selectedTargetSetNumber}. sorozat Bal oldal rögzítve (${targetSetObj?.leftSec ?: defaultTargetSec} mp) ✓"
-                                            else -> "Cél: ${selectedTargetSetNumber}. sorozat Bal oldal (${defaultTargetSec} mp)"
+                                            leftRunning -> tr(
+                                                lang,
+                                                "Mérés folyamatban (${selectedTargetSetNumber}. sorozat - Bal) ●",
+                                                "Measuring (Set #${selectedTargetSetNumber} - Left) ●",
+                                                "Messung läuft (${selectedTargetSetNumber}. Satz - Links) ●",
+                                                "Măsurare în curs (Seria #${selectedTargetSetNumber} - Stânga) ●"
+                                            )
+                                            isLeftRecordedInTarget -> tr(
+                                                lang,
+                                                "${selectedTargetSetNumber}. sorozat Bal oldal rögzítve (${targetSetObj?.leftSec ?: defaultTargetSec} mp) ✓",
+                                                "Set #${selectedTargetSetNumber} Left side recorded (${targetSetObj?.leftSec ?: defaultTargetSec} s) ✓",
+                                                "${selectedTargetSetNumber}. Satz Linke Seite erfasst (${targetSetObj?.leftSec ?: defaultTargetSec} Sek.) ✓",
+                                                "Seria #${selectedTargetSetNumber} Partea stângă salvată (${targetSetObj?.leftSec ?: defaultTargetSec} sec) ✓"
+                                            )
+                                            else -> tr(
+                                                lang,
+                                                "Cél: ${selectedTargetSetNumber}. sorozat Bal oldal (${defaultTargetSec} mp)",
+                                                "Target: Set #${selectedTargetSetNumber} Left side (${defaultTargetSec} s)",
+                                                "Ziel: ${selectedTargetSetNumber}. Satz Linke Seite (${defaultTargetSec} Sek.)",
+                                                "Țintă: Seria #${selectedTargetSetNumber} Partea stângă (${defaultTargetSec} sec)"
+                                            )
                                         },
                                         style = MaterialTheme.typography.labelSmall,
                                         color = when {
@@ -2070,7 +2221,7 @@ fun ActiveBilateralWorkoutScreen(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text(if (leftRunning) "Szünet" else "Indítás", fontWeight = FontWeight.Bold)
+                                Text(if (leftRunning) tr(lang, "Szünet", "Pause", "Pause", "Pauză") else tr(lang, "Indítás", "Start", "Starten", "Pornește"), fontWeight = FontWeight.Bold)
                             }
 
                             // Leállítás és rögzítés button -> writes directly into selectedTargetSetNumber's Left slot!
@@ -2095,7 +2246,7 @@ fun ActiveBilateralWorkoutScreen(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "Leállítás és rögzítés",
+                                    text = tr(lang, "Leállítás és rögzítés", "Stop and record", "Stoppen & speichern", "Oprește și înregistrează"),
                                     fontWeight = FontWeight.Bold,
                                     style = MaterialTheme.typography.labelMedium,
                                     maxLines = 1
@@ -2108,11 +2259,11 @@ fun ActiveBilateralWorkoutScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            SmallAdjustChip("Nulláz") {
+                            SmallAdjustChip(tr(lang, "Nulláz", "Reset", "Reset", "Reset")) {
                                 target?.let(nativeModel::resetSetStopwatch)
                             }
-                            SmallAdjustChip("+5 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "left", 5) } }
-                            SmallAdjustChip("+15 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "left", 15) } }
+                            SmallAdjustChip("+5 $secWord") { target?.let { nativeModel.adjustSetStopwatch(it, "left", 5) } }
+                            SmallAdjustChip("+15 $secWord") { target?.let { nativeModel.adjustSetStopwatch(it, "left", 15) } }
                         }
                     }
                 }
@@ -2147,7 +2298,7 @@ fun ActiveBilateralWorkoutScreen(
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Text(
-                                            text = "J",
+                                            text = tr(lang, "J", "R", "R", "D"),
                                             fontWeight = FontWeight.Bold,
                                             color = if (rightRunning) palette.onPrimary else palette.textPrimary,
                                             style = MaterialTheme.typography.labelMedium
@@ -2157,16 +2308,34 @@ fun ActiveBilateralWorkoutScreen(
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column {
                                     Text(
-                                        text = "Jobb oldal stopper",
+                                        text = tr(lang, "Jobb oldal stopper", "Right side stopwatch", "Stoppuhr rechte Seite", "Cronometru partea dreaptă"),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = palette.textPrimary
                                     )
                                     Text(
                                         text = when {
-                                            rightRunning -> "Mérés folyamatban (${selectedTargetSetNumber}. sorozat - Jobb) ●"
-                                            isRightRecordedInTarget -> "${selectedTargetSetNumber}. sorozat Jobb oldal rögzítve (${targetSetObj?.rightSec ?: defaultTargetSec} mp) ✓"
-                                            else -> "Cél: ${selectedTargetSetNumber}. sorozat Jobb oldal (${defaultTargetSec} mp)"
+                                            rightRunning -> tr(
+                                                lang,
+                                                "Mérés folyamatban (${selectedTargetSetNumber}. sorozat - Jobb) ●",
+                                                "Measuring (Set #${selectedTargetSetNumber} - Right) ●",
+                                                "Messung läuft (${selectedTargetSetNumber}. Satz - Rechts) ●",
+                                                "Măsurare în curs (Seria #${selectedTargetSetNumber} - Dreapta) ●"
+                                            )
+                                            isRightRecordedInTarget -> tr(
+                                                lang,
+                                                "${selectedTargetSetNumber}. sorozat Jobb oldal rögzítve (${targetSetObj?.rightSec ?: defaultTargetSec} mp) ✓",
+                                                "Set #${selectedTargetSetNumber} Right side recorded (${targetSetObj?.rightSec ?: defaultTargetSec} s) ✓",
+                                                "${selectedTargetSetNumber}. Satz Rechte Seite erfasst (${targetSetObj?.rightSec ?: defaultTargetSec} Sek.) ✓",
+                                                "Seria #${selectedTargetSetNumber} Partea dreaptă salvată (${targetSetObj?.rightSec ?: defaultTargetSec} sec) ✓"
+                                            )
+                                            else -> tr(
+                                                lang,
+                                                "Cél: ${selectedTargetSetNumber}. sorozat Jobb oldal (${defaultTargetSec} mp)",
+                                                "Target: Set #${selectedTargetSetNumber} Right side (${defaultTargetSec} s)",
+                                                "Ziel: ${selectedTargetSetNumber}. Satz Rechte Seite (${defaultTargetSec} Sek.)",
+                                                "Țintă: Seria #${selectedTargetSetNumber} Partea dreaptă (${defaultTargetSec} sec)"
+                                            )
                                         },
                                         style = MaterialTheme.typography.labelSmall,
                                         color = when {
@@ -2219,7 +2388,7 @@ fun ActiveBilateralWorkoutScreen(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text(if (rightRunning) "Szünet" else "Indítás", fontWeight = FontWeight.Bold)
+                                Text(if (rightRunning) tr(lang, "Szünet", "Pause", "Pause", "Pauză") else tr(lang, "Indítás", "Start", "Starten", "Pornește"), fontWeight = FontWeight.Bold)
                             }
 
                             // Leállítás és rögzítés button -> writes directly into selectedTargetSetNumber's Right slot!
@@ -2244,7 +2413,7 @@ fun ActiveBilateralWorkoutScreen(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "Leállítás és rögzítés",
+                                    text = tr(lang, "Leállítás és rögzítés", "Stop and record", "Stoppen & speichern", "Oprește și înregistrează"),
                                     fontWeight = FontWeight.Bold,
                                     style = MaterialTheme.typography.labelMedium,
                                     maxLines = 1
@@ -2257,11 +2426,11 @@ fun ActiveBilateralWorkoutScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            SmallAdjustChip("Nulláz") {
+                            SmallAdjustChip(tr(lang, "Nulláz", "Reset", "Reset", "Reset")) {
                                 target?.let(nativeModel::resetSetStopwatch)
                             }
-                            SmallAdjustChip("+5 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "right", 5) } }
-                            SmallAdjustChip("+15 mp") { target?.let { nativeModel.adjustSetStopwatch(it, "right", 15) } }
+                            SmallAdjustChip("+5 $secWord") { target?.let { nativeModel.adjustSetStopwatch(it, "right", 5) } }
+                            SmallAdjustChip("+15 $secWord") { target?.let { nativeModel.adjustSetStopwatch(it, "right", 15) } }
                         }
                     }
                 }
@@ -2285,19 +2454,26 @@ fun ActiveBilateralWorkoutScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Sorozatok • Oldalankénti adatrögzítés",
+                                    text = tr(lang, "Sorozatok • Oldalankénti adatrögzítés", "Sets • Per-side recording", "Sätze • Seitliche Erfassung", "Serii • Înregistrare pe parte"),
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary
                                 )
                                 Text(
-                                    text = "Koppints egy sorozatra a cél-kijelöléshez, vagy az oldal mezőre a kézi szerkesztéshez",
+                                    text = tr(
+                                        lang,
+                                        "Koppints egy sorozatra a cél-kijelöléshez, vagy az oldal mezőre a kézi szerkesztéshez",
+                                        "Tap a set to select target, or tap a side field for manual editing",
+                                        "Tippe auf einen Satz für die Zielauswahl oder auf ein Seitenfeld zur manuellen Bearbeitung",
+                                        "Atinge o serie pentru a o selecta ca țintă sau câmpul părții pentru editare manuală"
+                                    ),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = palette.textSecondary
                                 )
                             }
+                            Spacer(modifier = Modifier.width(8.dp))
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
                                 color = palette.primary.copy(alpha = 0.16f),
@@ -2306,7 +2482,7 @@ fun ActiveBilateralWorkoutScreen(
                                     .clickable { onAddSet() }
                             ) {
                                 Text(
-                                    text = "+ Sorozat",
+                                    text = tr(lang, "+ Sorozat", "+ Set", "+ Satz", "+ Serie"),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.primary,
@@ -2358,7 +2534,7 @@ fun ActiveBilateralWorkoutScreen(
                                         )
                                         if (isSelectedTarget && !setItem.completed) {
                                             Text(
-                                                text = "CÉL",
+                                                text = tr(lang, "CÉL", "TARGET", "ZIEL", "ȚINTĂ"),
                                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                                                 fontWeight = FontWeight.Bold,
                                                 color = palette.primary
@@ -2387,14 +2563,15 @@ fun ActiveBilateralWorkoutScreen(
                                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
+                                            val leftTitle = tr(lang, "Bal oldal", "Left side", "Linke Seite", "Partea stângă")
                                             Text(
-                                                text = if (setItem.leftRecorded || setItem.completed) "Bal oldal ✓" else "Bal oldal",
+                                                text = if (setItem.leftRecorded || setItem.completed) "$leftTitle ✓" else leftTitle,
                                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                                 color = if (setItem.leftRecorded || setItem.completed) palette.success else palette.textSecondary,
                                                 fontWeight = FontWeight.SemiBold
                                             )
                                             Text(
-                                                text = "${setItem.leftSec} mp",
+                                                text = "${setItem.leftSec} $secWord",
                                                 style = MaterialTheme.typography.titleSmall,
                                                 fontWeight = FontWeight.Bold,
                                                 color = palette.textPrimary
@@ -2423,14 +2600,15 @@ fun ActiveBilateralWorkoutScreen(
                                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
+                                            val rightTitle = tr(lang, "Jobb oldal", "Right side", "Rechte Seite", "Partea dreaptă")
                                             Text(
-                                                text = if (setItem.rightRecorded || setItem.completed) "Jobb oldal ✓" else "Jobb oldal",
+                                                text = if (setItem.rightRecorded || setItem.completed) "$rightTitle ✓" else rightTitle,
                                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                                 color = if (setItem.rightRecorded || setItem.completed) palette.success else palette.textSecondary,
                                                 fontWeight = FontWeight.SemiBold
                                             )
                                             Text(
-                                                text = "${setItem.rightSec} mp",
+                                                text = "${setItem.rightSec} $secWord",
                                                 style = MaterialTheme.typography.titleSmall,
                                                 fontWeight = FontWeight.Bold,
                                                 color = palette.textPrimary
@@ -2472,7 +2650,7 @@ fun ActiveBilateralWorkoutScreen(
                                         Box(contentAlignment = Alignment.Center) {
                                             Icon(
                                                 imageVector = Icons.Default.Check,
-                                                contentDescription = "Sorozat kész",
+                                                contentDescription = tr(lang, "Sorozat kész", "Set complete", "Satz fertig", "Serie completă"),
                                                 tint = if (setItem.completed) palette.onPrimary else palette.textSecondary,
                                                 modifier = Modifier.size(18.dp)
                                             )
@@ -2505,7 +2683,13 @@ fun ActiveBilateralWorkoutScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Oldalak egyensúlya (${selectedTargetSetNumber}. sorozat)",
+                                text = tr(
+                                    lang,
+                                    "Oldalak egyensúlya (${selectedTargetSetNumber}. sorozat)",
+                                    "Side balance (Set #${selectedTargetSetNumber})",
+                                    "Seitenbalance (${selectedTargetSetNumber}. Satz)",
+                                    "Echilibru lateral (Seria #${selectedTargetSetNumber})"
+                                ),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.textPrimary
@@ -2515,7 +2699,11 @@ fun ActiveBilateralWorkoutScreen(
                                 color = if (diff <= 3) palette.success.copy(alpha = 0.2f) else palette.primary.copy(alpha = 0.2f)
                             ) {
                                 Text(
-                                    text = if (diff == 0) "Különbség: 0 mp" else "Eltérés: $diff mp",
+                                    text = if (diff == 0) {
+                                        tr(lang, "Különbség: 0 mp", "Difference: 0 s", "Differenz: 0 Sek.", "Diferență: 0 sec")
+                                    } else {
+                                        tr(lang, "Eltérés: $diff mp", "Difference: $diff s", "Abweichung: $diff Sek.", "Abatere: $diff sec")
+                                    },
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = if (diff <= 3) palette.success else palette.primary,
@@ -2525,10 +2713,34 @@ fun ActiveBilateralWorkoutScreen(
                         }
                         Text(
                             text = when {
-                                compareLeft == 0 && compareRight == 0 -> "Indítsd el a stoppereket a bal és jobb oldal méréséhez."
-                                diff == 0 -> "Tökéletes szimmetria a bal ($compareLeft mp) és jobb ($compareRight mp) oldal között!"
-                                diff <= 5 -> "Kiváló stabilitási egyensúly (Bal: $compareLeft mp • Jobb: $compareRight mp)."
-                                else -> "Figyelem: $diff másodperc különbség (Bal: $compareLeft mp • Jobb: $compareRight mp)."
+                                compareLeft == 0 && compareRight == 0 -> tr(
+                                    lang,
+                                    "Indítsd el a stoppereket a bal és jobb oldal méréséhez.",
+                                    "Start the stopwatches to measure left and right sides.",
+                                    "Starte die Stoppuhren, um die linke und rechte Seite zu messen.",
+                                    "Pornește cronometrele pentru a măsura partea stângă și dreaptă."
+                                )
+                                diff == 0 -> tr(
+                                    lang,
+                                    "Tökéletes szimmetria a bal ($compareLeft mp) és jobb ($compareRight mp) oldal között!",
+                                    "Perfect symmetry between left ($compareLeft s) and right ($compareRight s) sides!",
+                                    "Perfekte Symmetrie zwischen linker ($compareLeft Sek.) und rechter ($compareRight Sek.) Seite!",
+                                    "Simetrie perfectă între partea stângă ($compareLeft sec) și dreaptă ($compareRight sec)!"
+                                )
+                                diff <= 5 -> tr(
+                                    lang,
+                                    "Kiváló stabilitási egyensúly (Bal: $compareLeft mp • Jobb: $compareRight mp).",
+                                    "Great stability balance (Left: $compareLeft s • Right: $compareRight s).",
+                                    "Ausgezeichnetes Stabilitätsgleichgewicht (Links: $compareLeft Sek. • Rechts: $compareRight Sek.).",
+                                    "Echilibru excelent de stabilitate (Stânga: $compareLeft sec • Dreapta: $compareRight sec)."
+                                )
+                                else -> tr(
+                                    lang,
+                                    "Figyelem: $diff másodperc különbség (Bal: $compareLeft mp • Jobb: $compareRight mp).",
+                                    "Note: $diff seconds difference (Left: $compareLeft s • Right: $compareRight s).",
+                                    "Hinweis: $diff Sekunden Unterschied (Links: $compareLeft Sek. • Rechts: $compareRight Sek.).",
+                                    "Atenție: diferență de $diff secunde (Stânga: $compareLeft sec • Dreapta: $compareRight sec)."
+                                )
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.textSecondary
@@ -2587,7 +2799,7 @@ fun ActiveBilateralWorkoutScreen(
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Text(
-                                    text = "Pihenő: " + String.format("%02d:%02d", uiState.restTimerRemainingSec / 60, uiState.restTimerRemainingSec % 60),
+                                    text = "${tr(lang, "Pihenő", "Rest", "Pause", "Pauză")}: " + String.format("%02d:%02d", uiState.restTimerRemainingSec / 60, uiState.restTimerRemainingSec % 60),
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = if (uiState.restTimerRunning) palette.primary else palette.textPrimary
@@ -2599,16 +2811,22 @@ fun ActiveBilateralWorkoutScreen(
                             ) {
                                 SmallAdjustChip("-15") { onAdjustRestTimer(-15) }
                                 SmallAdjustChip("+15") { onAdjustRestTimer(15) }
-                                SmallAdjustChip(if (uiState.restTimerRunning) "Szünet" else "Indít") { onToggleRestRunning() }
+                                SmallAdjustChip(if (uiState.restTimerRunning) tr(lang, "Szünet", "Pause", "Pause", "Pauză") else tr(lang, "Indít", "Start", "Start", "Start")) { onToggleRestRunning() }
                                 if (uiState.restTimerRunning || uiState.restTimerRemainingSec < uiState.defaultRestSec) {
-                                    SmallAdjustChip("Átugrás") { onSkipRest() }
+                                    SmallAdjustChip(strings.skipAction) { onSkipRest() }
                                 }
                             }
                         }
                         if (restTimerLargeMode) {
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = "Húzd felfelé a kompakt módhoz • Mindkét oldal rögzítése után a pihenő automatikusan elindul.",
+                                text = tr(
+                                    lang,
+                                    "Húzd felfelé a kompakt módhoz • Mindkét oldal rögzítése után a pihenő automatikusan elindul.",
+                                    "Swipe up for compact mode • Rest timer starts automatically after both sides are recorded.",
+                                    "Nach oben wischen für Kompaktmodus • Pause startet automatisch nach Erfassung beider Seiten.",
+                                    "Glisează în sus pentru modul compact • Pauza pornește automat după înregistrarea ambelor părți."
+                                ),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.textSecondary
                             )
@@ -2630,7 +2848,7 @@ fun ActiveBilateralWorkoutScreen(
                             .height(48.dp)
                             .testTag("bilateral_prev_exercise_btn")
                     ) {
-                        Text("< Előző", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
+                        Text(tr(lang, "< Előző", "< Previous", "< Zurück", "< Anterior"), color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
                     }
                     Button(
                         onClick = onNextExercise,
@@ -2645,7 +2863,17 @@ fun ActiveBilateralWorkoutScreen(
                             .testTag("bilateral_next_exercise_btn")
                     ) {
                         Text(
-                            text = if (hasNextExercise) "Következő (${uiState.activeExerciseIndex + 2}/${workoutExercises.size}) >" else "Edzés befejezése ✓",
+                            text = if (hasNextExercise) {
+                                tr(
+                                    lang,
+                                    "Következő (${uiState.activeExerciseIndex + 2}/${workoutExercises.size}) >",
+                                    "Next (${uiState.activeExerciseIndex + 2}/${workoutExercises.size}) >",
+                                    "Weiter (${uiState.activeExerciseIndex + 2}/${workoutExercises.size}) >",
+                                    "Următorul (${uiState.activeExerciseIndex + 2}/${workoutExercises.size}) >"
+                                )
+                            } else {
+                                tr(lang, "Edzés befejezése ✓", "Finish workout ✓", "Training beenden ✓", "Finalizare antrenament ✓")
+                            },
                             fontWeight = FontWeight.Bold,
                             maxLines = 1
                         )
@@ -2751,21 +2979,32 @@ fun ActiveOutdoorGpsScreen(
         }
     }
 
+    val lang = uiState.language
     val startNativeGpsTracking = {
         if (!startRequested && (!isStarted || isPaused)) {
             startRequested = true
-            serviceErrorMsg = "GPS-szolgáltatás indul; visszaigazolásra vár…"
+            serviceErrorMsg = tr(
+                lang,
+                "GPS-szolgáltatás indul; visszaigazolásra vár…",
+                "Starting GPS service; waiting for confirmation…",
+                "GPS-Dienst startet; warte auf Bestätigung…",
+                "Serviciul GPS pornește; se așteaptă confirmarea…"
+            )
             screenScope.launch {
                 var confirmed = false
                 try {
                     val activityName = uiState.activeWorkoutTitleHu.ifBlank { "Kültéri futás" }
-                    check(onStartGpsTracking(activityName, routeOwnerKey)) { "A natív munkamenet nem készíthető elő." }
+                    check(onStartGpsTracking(activityName, routeOwnerKey)) {
+                        tr(lang, "A natív munkamenet nem készíthető elő.", "Native session could not be prepared.", "Native Sitzung konnte nicht vorbereitet werden.", "Sesiunea nativă nu a putut fi pregătită.")
+                    }
                     nativeMeasurement.onEditorVisible()
                     val frame = checkNotNull(com.repforge.app.PhoneWorkoutExecution.store(context).snapshot())
                     check(kotlinx.coroutines.withTimeoutOrNull(5_000) {
                         while (!com.repforge.app.IntervalTimerService.armed(frame.getString("workoutId"), frame.getLong("generation"))) delay(100)
                         true
-                    } == true) { "A natív háttérvezérlő nem igazolta vissza az indítást." }
+                    } == true) {
+                        tr(lang, "A natív háttérvezérlő nem igazolta vissza az indítást.", "Native background controller did not confirm startup.", "Nativer Hintergrunddienst hat den Start nicht bestätigt.", "Controlerul nativ de fundal nu a confirmat pornirea.")
+                    }
                     val exercise = frame.getJSONArray("exercises").getJSONObject(frame.optInt("currentExercise"))
                     val sets = exercise.getJSONArray("sets")
                     val set = (0 until sets.length()).map { sets.getJSONObject(it) }.first { !it.optBoolean("done") }
@@ -2781,14 +3020,20 @@ fun ActiveOutdoorGpsScreen(
                         }
                         true
                     } == true
-                    check(receipt) { "A GPS-szolgáltatás nem igazolta vissza az indítást." }
-                    check(onStartGpsTracking(activityName, routeOwnerKey)) { "A GPS-mérés natív edzéshez kötése nem sikerült." }
+                    check(receipt) {
+                        tr(lang, "A GPS-szolgáltatás nem igazolta vissza az indítást.", "GPS service did not confirm startup.", "GPS-Dienst hat den Start nicht bestätigt.", "Serviciul GPS nu a confirmat pornirea.")
+                    }
+                    check(onStartGpsTracking(activityName, routeOwnerKey)) {
+                        tr(lang, "A GPS-mérés natív edzéshez kötése nem sikerült.", "Binding GPS tracking to native workout failed.", "Verknüpfung der GPS-Messung mit dem nativen Training fehlgeschlagen.", "Asocierea măsurătorii GPS cu antrenamentul nativ a eșuat.")
+                    }
                     confirmed = true
                     isStarted = true
                     isPaused = false
                     serviceErrorMsg = ""
                 } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
-                catch (error: Exception) { serviceErrorMsg = error.message ?: "A GPS-mérés nem indult el." }
+                catch (error: Exception) {
+                    serviceErrorMsg = error.message ?: tr(lang, "A GPS-mérés nem indult el.", "GPS tracking did not start.", "GPS-Messung wurde nicht gestartet.", "Măsurătoarea GPS nu a pornit.")
+                }
                 finally {
                     startRequested = false
                     if (!confirmed) {
@@ -2802,14 +3047,18 @@ fun ActiveOutdoorGpsScreen(
 
     val startIndoorMeasurement = {
         try {
-            check(onStartGpsTracking(uiState.activeWorkoutTitleHu, "")) { "A beltéri munkamenet nem menthető." }
+            check(onStartGpsTracking(uiState.activeWorkoutTitleHu, "")) {
+                tr(lang, "A beltéri munkamenet nem menthető.", "Indoor session could not be saved.", "Indoor-Sitzung konnte nicht gespeichert werden.", "Sesiunea indoor nu a putut fi salvată.")
+            }
             val frame = com.repforge.app.StudioWorkoutBridge.startIndoor(context)
             isStarted = frame.optJSONObject(com.repforge.app.NativeSetStopwatch.FIELD)?.let {
                 com.repforge.app.NativeSetStopwatch.running(it)
             } == true
             isPaused = !isStarted
             serviceErrorMsg = ""
-        } catch (error: Exception) { serviceErrorMsg = error.message ?: "A beltéri időmérés nem indult el." }
+        } catch (error: Exception) {
+            serviceErrorMsg = error.message ?: tr(lang, "A beltéri időmérés nem indult el.", "Indoor timer did not start.", "Indoor-Zeitmessung wurde nicht gestartet.", "Cronometrul indoor nu a pornit.")
+        }
     }
 
     val pauseMeasurement = {
@@ -2859,7 +3108,9 @@ fun ActiveOutdoorGpsScreen(
             // Save still requires a completed native set or a verified positive-time receipt.
             recorded = true
             isPaused = true
-        } catch (error: Exception) { finishErrorMsg = error.message ?: "A mérés nem rögzíthető." }
+        } catch (error: Exception) {
+            finishErrorMsg = error.message ?: tr(lang, "A mérés nem rögzíthető.", "Measurement could not be recorded.", "Messung konnte nicht erfasst werden.", "Măsurătoarea nu a putut fi înregistrată.")
+        }
         recorded
     }
 
@@ -2871,7 +3122,13 @@ fun ActiveOutdoorGpsScreen(
         if (grantedFine && gpsActive) {
             startNativeGpsTracking()
         } else if (!grantedFine && gpsActive) {
-            serviceErrorMsg = "A GPS-méréshez pontos helymeghatározási engedély szükséges. Engedély nélkül 0 m kerül rögzítésre."
+            serviceErrorMsg = tr(
+                lang,
+                "A GPS-méréshez pontos helymeghatározási engedély szükséges. Engedély nélkül 0 m kerül rögzítésre.",
+                "Precise location permission is required for GPS tracking. Without permission, 0 m will be recorded.",
+                "Für die GPS-Messung ist die genaue Standortberechtigung erforderlich. Ohne Berechtigung werden 0 m erfasst.",
+                "Pentru măsurătoarea GPS este necesară permisiunea de locație precisă. Fără permisiune se vor înregistra 0 m."
+            )
         }
     }
 
@@ -2934,12 +3191,18 @@ fun ActiveOutdoorGpsScreen(
     val display = OutdoorGpsDisplay(
         title = uiState.activeWorkoutTitleHu.ifBlank { "Kültéri futás" },
         status = when {
-            !gpsActive -> "Beltéri időmérés • GPS kikapcsolva"
-            !hasLocationPermission -> "Helymeghatározási engedély szükséges"
-            isStarted && isPaused -> "GPS szüneteltetve"
-            isStarted && hasServiceFix -> "Élő GPS-jel ($realGpsFixesCount pont • ±${gpsAccuracyMeters.toInt()} m)"
-            isStarted -> "GPS-jelre vár…"
-            else -> "Indításra kész"
+            !gpsActive -> tr(lang, "Beltéri időmérés • GPS kikapcsolva", "Indoor timer • GPS disabled", "Indoor-Zeitmessung • GPS deaktiviert", "Cronometru indoor • GPS dezactivat")
+            !hasLocationPermission -> tr(lang, "Helymeghatározási engedély szükséges", "Location permission required", "Standortberechtigung erforderlich", "Permisiune de locație necesară")
+            isStarted && isPaused -> tr(lang, "GPS szüneteltetve", "GPS paused", "GPS pausiert", "GPS în pauză")
+            isStarted && hasServiceFix -> tr(
+                lang,
+                "Élő GPS-jel ($realGpsFixesCount pont • ±${gpsAccuracyMeters.toInt()} m)",
+                "Live GPS signal ($realGpsFixesCount pts • ±${gpsAccuracyMeters.toInt()} m)",
+                "Live-GPS-Signal ($realGpsFixesCount Pkt. • ±${gpsAccuracyMeters.toInt()} m)",
+                "Semnal GPS live ($realGpsFixesCount pct. • ±${gpsAccuracyMeters.toInt()} m)"
+            )
+            isStarted -> tr(lang, "GPS-jelre vár…", "Waiting for GPS signal…", "Warte auf GPS-Signal…", "Se așteaptă semnalul GPS…")
+            else -> tr(lang, "Indításra kész", "Ready to start", "Bereit zum Starten", "Pregătit de start")
         },
         gpsEnabled = gpsActive, started = isStarted, paused = isPaused,
         elapsed = formattedElapsed, distance = formattedDistance, pace = formattedPace,
@@ -2966,7 +3229,8 @@ fun ActiveOutdoorGpsScreen(
         },
         pause = { pauseMeasurement() },
         lap = {
-            lapSplits = lapSplits + "${lapCount}. kör: $formattedElapsed ($formattedDistance)"
+            val lapWord = tr(lang, "kör", "lap", "Runde", "tură")
+            lapSplits = lapSplits + "${lapCount}. $lapWord: $formattedElapsed ($formattedDistance)"
             lapCount += 1
         },
         finish = {
@@ -3024,9 +3288,11 @@ fun IntervalSettingsScreen(
         contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
+        val lang = uiState.language
+        val secWord = tr(lang, "mp", "s", "Sek.", "sec")
         item {
             SubScreenTopBar(
-                title = "Intervallumok beállítása",
+                title = tr(lang, "Intervallumok beállítása", "Interval Settings", "Intervalleinstellungen", "Setări intervale"),
                 onBack = onBack,
                 onOpenSettings = onOpenSettings,
                     rightExtraContent = { com.example.ui.components.StudioWorkoutHealthAction() }
@@ -3034,24 +3300,24 @@ fun IntervalSettingsScreen(
         }
         item {
             IntervalStepperCard(
-                label = "Munkaidő",
-                valueText = "$workSec mp",
+                label = tr(lang, "Munkaidő", "Work time", "Arbeitszeit", "Timp de lucru"),
+                valueText = "$workSec $secWord",
                 onMinus = { workSec = (workSec - 5).coerceAtLeast(10) },
                 onPlus = { workSec = (workSec + 5).coerceAtMost(300) }
             )
         }
         item {
             IntervalStepperCard(
-                label = "Pihenőidő",
-                valueText = "$restSec mp",
+                label = tr(lang, "Pihenőidő", "Rest time", "Pausenzeit", "Timp de pauză"),
+                valueText = "$restSec $secWord",
                 onMinus = { restSec = (restSec - 5).coerceAtLeast(10) },
                 onPlus = { restSec = (restSec + 5).coerceAtMost(300) }
             )
         }
         item {
             IntervalStepperCard(
-                label = "Ismétlések (körök)",
-                valueText = "$rounds kör",
+                label = tr(lang, "Ismétlések (körök)", "Repetitions (rounds)", "Wiederholungen (Runden)", "Repetări (runde)"),
+                valueText = tr(lang, "$rounds kör", "$rounds rounds", "$rounds Runden", "$rounds runde"),
                 onMinus = { rounds = (rounds - 1).coerceAtLeast(1) },
                 onPlus = { rounds = (rounds + 1).coerceAtMost(20) }
             )
@@ -3070,7 +3336,7 @@ fun IntervalSettingsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Hangjelzés", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
+                        Text(tr(lang, "Hangjelzés", "Sound alert", "Tonhinweis", "Alertă sonoră"), color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
                         Switch(checked = sound, onCheckedChange = { sound = it })
                     }
                     Row(
@@ -3078,7 +3344,7 @@ fun IntervalSettingsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Rezgés", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
+                        Text(tr(lang, "Rezgés", "Vibration", "Vibration", "Vibrație"), color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
                         Switch(checked = vibration, onCheckedChange = { vibration = it })
                     }
                 }
@@ -3176,13 +3442,14 @@ fun WorkoutSummaryScreen(
     onExerciseNote: (String, String) -> Unit = { _, _ -> }
 ) {
     val palette = LocalTrainPilotPalette.current
+    val lang = uiState.language
     val moods = listOf(
-        "😄 Túl könnyű",
-        "🙂 Könnyű",
-        "💪 Pont jó",
-        "😤 Nehéz",
-        "🥵 Túl nehéz",
-        "⚠️ Fájdalom"
+        tr(lang, "😄 Túl könnyű", "😄 Too easy", "😄 Zu leicht", "😄 Prea ușor"),
+        tr(lang, "🙂 Könnyű", "🙂 Easy", "🙂 Leicht", "🙂 Ușor"),
+        tr(lang, "💪 Pont jó", "💪 Just right", "💪 Genau richtig", "💪 Tocmai bun"),
+        tr(lang, "😤 Nehéz", "😤 Hard", "😤 Schwer", "😤 Greu"),
+        tr(lang, "🥵 Túl nehéz", "🥵 Too hard", "🥵 Zu schwer", "🥵 Prea greu"),
+        tr(lang, "⚠️ Fájdalom", "⚠️ Pain", "⚠️ Schmerz", "⚠️ Durere")
     )
 
     LazyColumn(
@@ -3204,7 +3471,7 @@ fun WorkoutSummaryScreen(
             val titleLabel = if (uiState.activeWorkoutTitleHu.contains("Kültéri", ignoreCase = true) || uiState.activeWorkoutTitleHu.contains("Futás", ignoreCase = true)) {
                 uiState.activeWorkoutTitleHu
             } else {
-                "Kültéri futás"
+                tr(lang, "Kültéri futás", "Outdoor run", "Laufen im Freien", "Alergare în aer liber")
             }
             "$titleLabel • $distLabel"
         } else {
@@ -3212,8 +3479,16 @@ fun WorkoutSummaryScreen(
                 (uiState.activeSetsByExerciseId[ex.id] ?: emptyList()).any { it.completed }
             }
             val totalExsCount = uiState.activeWorkoutExercises.size.coerceAtLeast(1)
-            val displayTitle = uiState.activeWorkoutTitleHu.ifBlank { "Tervezett edzés" }
-            "$displayTitle • $completedExsCount / $totalExsCount gyakorlat"
+            val displayTitle = uiState.activeWorkoutTitleHu.ifBlank {
+                tr(lang, "Tervezett edzés", "Planned workout", "Geplantes Training", "Antrenament planificat")
+            }
+            tr(
+                lang,
+                "$displayTitle • $completedExsCount / $totalExsCount gyakorlat",
+                "$displayTitle • $completedExsCount / $totalExsCount exercises",
+                "$displayTitle • $completedExsCount / $totalExsCount Übungen",
+                "$displayTitle • $completedExsCount / $totalExsCount exerciții"
+            )
         }
 
         val elapsedMs = if (uiState.workoutStartedEpochMs > 0L) {
@@ -3231,23 +3506,29 @@ fun WorkoutSummaryScreen(
         val volumeOrDistLabel: String
         val volumeOrDistHeader: String
         if (isOutdoor) {
-            volumeOrDistHeader = "Távolság"
+            volumeOrDistHeader = strings.distanceLabel
             volumeOrDistLabel = String.format(java.util.Locale("hu", "HU"), "%.2f km", uiState.outdoorDistanceKm)
         } else {
             val totalVolKg = uiState.activeSetsByExerciseId.values.flatten().filter { it.completed }.sumOf { (it.weightKg * it.reps).toDouble() }
             val totalReps = uiState.activeSetsByExerciseId.values.flatten().filter { it.completed }.sumOf { it.reps }
             if (totalVolKg > 0.0) {
-                volumeOrDistHeader = "Volumen"
+                volumeOrDistHeader = tr(lang, "Volumen", "Volume", "Volumen", "Volum")
                 volumeOrDistLabel = "${totalVolKg.toInt()} kg"
             } else {
-                volumeOrDistHeader = "Ismétlések"
-                volumeOrDistLabel = "$totalReps ism."
+                volumeOrDistHeader = tr(lang, "Ismétlések", "Repetitions", "Wiederholungen", "Repetări")
+                volumeOrDistLabel = "$totalReps ${tr(lang, "ism.", "reps", "Wdh.", "rep.")}"
             }
         }
 
         // Daily calories and generic time/distance estimates are NOT workout sensor measurements.
         // Show an explicit unavailable state until a verified workout-specific Health record exists.
-        val caloriesLabel = "— kcal (nincs hiteles edzésadat)"
+        val caloriesLabel = tr(
+            lang,
+            "— kcal (nincs hiteles edzésadat)",
+            "— kcal (no verified workout data)",
+            "— kcal (keine verifizierten Trainingsdaten)",
+            "— kcal (fără date verificate)"
+        )
 
         item {
             Text(
@@ -3270,9 +3551,9 @@ fun WorkoutSummaryScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                SummaryStatTile("Időtartam", durationLabel, Modifier.weight(1f))
+                SummaryStatTile(tr(lang, "Időtartam", "Duration", "Dauer", "Durată"), durationLabel, Modifier.weight(1f))
                 SummaryStatTile(volumeOrDistHeader, volumeOrDistLabel, Modifier.weight(1f))
-                SummaryStatTile("Kalória", caloriesLabel, Modifier.weight(1f))
+                SummaryStatTile(tr(lang, "Kalória", "Calories", "Kalorien", "Calorii"), caloriesLabel, Modifier.weight(1f))
             }
         }
 
@@ -3287,7 +3568,7 @@ fun WorkoutSummaryScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Milyen volt az edzés?",
+                        text = tr(lang, "Milyen volt az edzés?", "How was the workout?", "Wie war das Training?", "Cum a fost antrenamentul?"),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = palette.textPrimary
@@ -3323,7 +3604,18 @@ fun WorkoutSummaryScreen(
                     OutlinedTextField(
                         value = if (uiState.summaryFeedbackWorkoutId == uiState.activeWorkoutId) uiState.workoutSummaryNote else "",
                         onValueChange = onUpdateNote,
-                        placeholder = { Text("Megjegyzés hozzáadása az edzéshez...", color = palette.textMuted) },
+                        placeholder = {
+                            Text(
+                                tr(
+                                    lang,
+                                    "Megjegyzés hozzáadása az edzéshez...",
+                                    "Add a note to the workout...",
+                                    "Notiz zum Training hinzufügen...",
+                                    "Adaugă o notă la antrenament..."
+                                ),
+                                color = palette.textMuted
+                            )
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp)
                     )

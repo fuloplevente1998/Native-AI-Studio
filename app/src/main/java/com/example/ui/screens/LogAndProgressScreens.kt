@@ -118,6 +118,13 @@ import com.example.ui.components.SubScreenTopBar
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.viewmodel.TrainPilotUiState
 
+private fun trL(lang: com.example.model.AppLanguage, hu: String, en: String, de: String, ro: String): String = when (lang) {
+    com.example.model.AppLanguage.HU -> hu
+    com.example.model.AppLanguage.EN -> en
+    com.example.model.AppLanguage.DE -> de
+    com.example.model.AppLanguage.RO -> ro
+}
+
 /**
  * 1. NAPLÓ (Mockup 3/4 #1 + main Edzésnapló)
  */
@@ -138,9 +145,9 @@ fun LogTabScreen(
     com.example.ui.components.StudioWorkoutDeleteConfirmation(null, onDeletedWorkout, deleteModel)
     if (deleteState.operationFailed && deleteState.workoutToDelete == null) AlertDialog(
         onDismissRequest = deleteModel::clearOperationError,
-        title = { Text("Az edzés adatai nem érhetők el") },
-        text = { Text("A napló közben frissülhetett vagy adatcsere van folyamatban. Nyisd meg újra a műveletet.") },
-        confirmButton = { TextButton(onClick = deleteModel::clearOperationError) { Text("Rendben") } },
+        title = { Text(trL(uiState.language, "Az edzés adatai nem érhetők el", "Workout data unavailable", "Trainingsdaten nicht verfügbar", "Datele antrenamentului nu sunt disponibile")) },
+        text = { Text(trL(uiState.language, "A napló közben frissülhetett vagy adatcsere van folyamatban. Nyisd meg újra a műveletet.", "The log may have updated or data replacement is in progress. Please reopen the action.", "Das Protokoll wurde aktualisiert oder ein Datenaustausch läuft. Öffne die Aktion erneut.", "Jurnalul s-a actualizat sau un schimb de date este în curs. Redeschide acțiunea.")) },
+        confirmButton = { TextButton(onClick = deleteModel::clearOperationError) { Text(trL(uiState.language, "Rendben", "OK", "OK", "OK")) } },
         modifier = Modifier.testTag("journal_list_delete_error")
     )
 
@@ -175,9 +182,9 @@ fun LogTabScreen(
         intervalStartDay != null && intervalEndDay != null ->
             "$monthPrefixHu ${rangeMinDay}. – $monthPrefixHu ${rangeMaxDay}."
         intervalStartDay != null ->
-            "Innentől: $monthPrefixHu ${intervalStartDay}. (válassz zárónapot)"
+            trL(uiState.language, "Innentől: $monthPrefixHu ${intervalStartDay}. (válassz zárónapot)", "From: $monthPrefixHu ${intervalStartDay}. (select end day)", "Ab: $monthPrefixHu ${intervalStartDay}. (Endtag wählen)", "De la: $monthPrefixHu ${intervalStartDay}. (alege ziua finală)")
         filterAllMonths ->
-            "Összes hónap (${today.year})"
+            trL(uiState.language, "Összes hónap (${today.year})", "All months (${today.year})", "Alle Monate (${today.year})", "Toate lunile (${today.year})")
         else ->
             monthFullHu
     }
@@ -554,7 +561,13 @@ fun LogTabScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "$currentFilterLabel • ${filteredLogs.size} rögzített edzés",
+                    text = trL(
+                        uiState.language,
+                        "$currentFilterLabel • ${filteredLogs.size} rögzített edzés",
+                        "$currentFilterLabel • ${filteredLogs.size} logged workouts",
+                        "$currentFilterLabel • ${filteredLogs.size} protokollierte Trainings",
+                        "$currentFilterLabel • ${filteredLogs.size} antrenamente înregistrate"
+                    ),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = palette.textSecondary,
@@ -580,7 +593,7 @@ fun LogTabScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Edzés részletei",
+                                text = strings.workoutDetailTitle,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.primary
@@ -613,13 +626,19 @@ fun LogTabScreen(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Text(
-                            text = "Nincs rögzített edzés erre a szűrésre",
+                            text = trL(uiState.language, "Nincs rögzített edzés erre a szűrésre", "No logged workouts for this filter", "Keine protokollierten Trainings für diesen Filter", "Niciun antrenament înregistrat pentru acest filtru"),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = palette.textPrimary
                         )
                         Text(
-                            text = "A kiválasztott időszakra ($currentFilterLabel) még nem található naplózott edzés.",
+                            text = trL(
+                                uiState.language,
+                                "A kiválasztott időszakra ($currentFilterLabel) még nem található naplózott edzés.",
+                                "No logged workouts found for the selected period ($currentFilterLabel).",
+                                "Für den ausgewählten Zeitraum ($currentFilterLabel) wurden noch keine Trainings gefunden.",
+                                "Nu s-au găsit antrenamente înregistrate pentru perioada selectată ($currentFilterLabel)."
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.textSecondary
                         )
@@ -632,7 +651,7 @@ fun LogTabScreen(
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary)
                             ) {
-                                Text("Szűrő törlése", fontWeight = FontWeight.Bold)
+                                Text(trL(uiState.language, "Szűrő törlése", "Clear filter", "Filter löschen", "Șterge filtrul"), fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -753,11 +772,12 @@ internal fun LogWorkoutCard(
                     fontWeight = FontWeight.Bold,
                     color = palette.textPrimary,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
+                val lang = com.example.localization.LocalTrainPilotStrings.current.language
                 Text(
                     text = if (entry.isOutdoorRun) {
-                        "${entry.durationMinutes} perc · ${entry.distanceKm} km · ${entry.paceLabel}"
+                        "${entry.durationMinutes} ${trL(lang, "perc", "min", "Min.", "min")} · ${entry.distanceKm} km · ${entry.paceLabel}"
                     } else {
-                        "${entry.durationMinutes} perc · ${entry.totalSets} sorozat · ${entry.totalVolumeKg} kg"
+                        "${entry.durationMinutes} ${trL(lang, "perc", "min", "Min.", "min")} · ${entry.totalSets} ${trL(lang, "sorozat", "sets", "Sätze", "serii")} · ${entry.totalVolumeKg} kg"
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = palette.textSecondary,
@@ -766,13 +786,14 @@ internal fun LogWorkoutCard(
             }
             // A route action belongs to the card content, before the trailing destructive action.
             if (entry.isOutdoorRun && entry.routeKeys.isNotEmpty()) {
+                val lang = com.example.localization.LocalTrainPilotStrings.current.language
                 IconButton(
                     onClick = onClick,
                     modifier = Modifier.size(48.dp).testTag("journal_route_map_${entry.id}")
                 ) {
                     Icon(
                         Icons.Default.Map,
-                        contentDescription = "Rögzített útvonal megnyitása",
+                        contentDescription = trL(lang, "Rögzített útvonal megnyitása", "Open recorded route", "Aufgezeichnete Route öffnen", "Deschide traseul înregistrat"),
                         tint = palette.success,
                         modifier = Modifier.size(20.dp)
                     )
@@ -834,12 +855,12 @@ fun LogWorkoutDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Nincs kiválasztott edzés",
+                        text = trL(uiState.language, "Nincs kiválasztott edzés", "No workout selected", "Kein Training ausgewählt", "Niciun antrenament selectat"),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = palette.textPrimary
                     )
                     Text(
-                        text = "Válassz egy befejezett edzést a Naplóból a részletek megtekintéséhez.",
+                        text = trL(uiState.language, "Válassz egy befejezett edzést a Naplóból a részletek megtekintéséhez.", "Select a completed workout from the Log to view details.", "Wähle ein abgeschlossenes Training aus dem Protokoll für Details.", "Selectează un antrenament finalizat din Jurnal pentru detalii."),
                         style = MaterialTheme.typography.bodyMedium,
                         color = palette.textSecondary,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -890,16 +911,16 @@ fun LogWorkoutDetailScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text("${workout.durationMinutes} perc", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text("edzésidő", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                            Text("${workout.durationMinutes} ${trL(uiState.language, "perc", "min", "Min.", "min")}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                            Text(trL(uiState.language, "edzésidő", "duration", "Trainingszeit", "durată"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
                         }
                         Column {
                             Text(workout.workTimeLabel, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text("munkaidő", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                            Text(trL(uiState.language, "munkaidő", "work time", "Arbeitszeit", "timp activ"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
                         }
                         Column {
                             Text(workout.restTimeLabel, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text("pihenőidő", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                            Text(trL(uiState.language, "pihenőidő", "rest time", "Pausenzeit", "timp odihnă"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
                         }
                     }
                 }
@@ -911,9 +932,9 @@ fun LogWorkoutDetailScreen(
         // Sub-tabs: Gyakorlatok (5) | Statisztikák | Forrás
         item {
             val tabTitles = listOf(
-                if (workout.isOutdoorRun) "Aktivitás" else "Gyakorlatok (${workout.exerciseDetails.size})",
-                "Statisztikák",
-                "Forrás"
+                if (workout.isOutdoorRun) trL(uiState.language, "Aktivitás", "Activity", "Aktivität", "Activitate") else trL(uiState.language, "Gyakorlatok (${workout.exerciseDetails.size})", "Exercises (${workout.exerciseDetails.size})", "Übungen (${workout.exerciseDetails.size})", "Exerciții (${workout.exerciseDetails.size})"),
+                trL(uiState.language, "Statisztikák", "Statistics", "Statistiken", "Statistici"),
+                trL(uiState.language, "Forrás", "Source", "Quelle", "Sursă")
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1082,7 +1103,7 @@ fun LogWorkoutDetailScreen(
         // The health controller lives outside LazyColumn; scrolling never restarts provider reads.
         item(key = "workout_health") { workoutHealth() }
 
-        // Fotók (2) & Útvonal megtekintése buttons
+                        // Fotók (2) & Útvonal megtekintése buttons
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1099,7 +1120,7 @@ fun LogWorkoutDetailScreen(
                 ) {
                     Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Fotók (${workout.photoCount})", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
+                    Text(trL(uiState.language, "Fotók (${workout.photoCount})", "Photos (${workout.photoCount})", "Fotos (${workout.photoCount})", "Fotografii (${workout.photoCount})"), color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
                 }
                 TrainPilotOutlinedButton(
                     onClick = onOpenRouteMap,
@@ -1112,7 +1133,7 @@ fun LogWorkoutDetailScreen(
                 ) {
                     Icon(imageVector = Icons.Default.Map, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(if (workout.routeKeys.isEmpty()) "Nincs útvonal" else "Útvonal megtekintése", color = palette.textPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                    Text(if (workout.routeKeys.isEmpty()) trL(uiState.language, "Nincs útvonal", "No route", "Keine Route", "Fără traseu") else trL(uiState.language, "Útvonal megtekintése", "View route", "Route ansehen", "Vezi traseul"), color = palette.textPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 }
             }
         }
@@ -1120,7 +1141,7 @@ fun LogWorkoutDetailScreen(
         // Egészségügyi forrás: TrainPilot óra & Health Connect (Mockup 3/4 #2 custom icons)
         item {
             Text(
-                text = "Egészségügyi forrás",
+                text = trL(uiState.language, "Egészségügyi forrás", "Health source", "Gesundheitsquelle", "Sursă de sănătate"),
                 style = MaterialTheme.typography.labelMedium,
                 color = palette.textSecondary
             )
@@ -1153,7 +1174,7 @@ fun LogWorkoutDetailScreen(
                                 color = palette.textPrimary
                             )
                             Text(
-                                text = if (workout.sourceWatch) "Órás edzésadat rögzítve" else "Nincs órás mérés",
+                                text = if (workout.sourceWatch) trL(uiState.language, "Órás edzésadat rögzítve", "Watch workout data recorded", "Uhr-Trainingsdaten erfasst", "Date antrenament ceas înregistrate") else trL(uiState.language, "Nincs órás mérés", "No watch measurement", "Keine Uhrmessung", "Fără măsurătoare pe ceas"),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.success
                             )
@@ -1178,7 +1199,7 @@ fun LogWorkoutDetailScreen(
                         MockupHealthConnectBadge(modifier = Modifier.size(34.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Egészségadatok",
+                                text = trL(uiState.language, "Egészségadatok", "Health data", "Gesundheitsdaten", "Date de sănătate"),
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.textPrimary
@@ -1281,12 +1302,12 @@ fun LogRouteMapScreen(
                     }
                 }
                 Text(
-                    text = if (workout?.routeKeys.isNullOrEmpty()) "Ehhez az edzéshez nincs rögzített útvonal." else "Privát, rögzített GPS-útvonal",
+                    text = if (workout?.routeKeys.isNullOrEmpty()) trL(uiState.language, "Ehhez az edzéshez nincs rögzített útvonal.", "No recorded route for this workout.", "Für dieses Training gibt es keine aufgezeichnete Route.", "Nu există traseu înregistrat pentru acest antrenament.") else trL(uiState.language, "Privát, rögzített GPS-útvonal", "Private recorded GPS route", "Private aufgezeichnete GPS-Route", "Traseu GPS privat înregistrat"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = palette.textPrimary
                 )
                 Text(
-                    text = workout?.dateLabelHu ?: "Nincs dátum",
+                    text = workout?.dateLabelHu ?: trL(uiState.language, "Nincs dátum", "No date", "Kein Datum", "Fără dată"),
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary
                 )
@@ -1295,7 +1316,7 @@ fun LogRouteMapScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Hitelesített részidőadat nem érhető el", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                    Text(trL(uiState.language, "Hitelesített részidőadat nem érhető el", "Verified split data unavailable", "Bestätigte Zwischenzeiten nicht verfügbar", "Datele intermediare verificate nu sunt disponibile"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
                     Text("—", style = MaterialTheme.typography.labelSmall, color = palette.primary, fontWeight = FontWeight.Bold)
                 }
             }
@@ -1545,7 +1566,12 @@ internal fun MainProgressVolumeAndMuscleSection(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                val rangeLabels = listOf("1 nap", "7 nap", "30 nap", "3 hó")
+                val rangeLabels = listOf(
+                    trL(uiState.language, "1 nap", "1 day", "1 Tag", "1 zi"),
+                    trL(uiState.language, "7 nap", "7 days", "7 Tage", "7 zile"),
+                    trL(uiState.language, "30 nap", "30 days", "30 Tage", "30 zile"),
+                    trL(uiState.language, "3 hó", "3 mo", "3 Mon.", "3 luni")
+                )
 
                 if (expandedVolumeDetails) {
                     // SCREENSHOT 6: EXPANDED FULL-WIDTH "Volumen trend" VIEW
@@ -1591,7 +1617,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Volumen trend",
+                            text = trL(uiState.language, "Volumen trend", "Volume trend", "Volumentrend", "Trend volum"),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.ExtraBold,
                             color = palette.textPrimary
@@ -1602,7 +1628,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                             modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                         ) {
                             Text(
-                                text = if (period.days >= 30) "Heti bontás" else "Napi bontás",
+                                text = if (period.days >= 30) trL(uiState.language, "Heti bontás", "Weekly breakdown", "Wöchentlich", "Săptămânal") else trL(uiState.language, "Napi bontás", "Daily breakdown", "Täglich", "Zilnic"),
                                 modifier = Modifier.testTag("progress_volume_bucket_unit").padding(horizontal = 12.dp, vertical = 6.dp),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = palette.textSecondary
@@ -1619,9 +1645,15 @@ internal fun MainProgressVolumeAndMuscleSection(
                     val selectedBar = expandedWeeklyBars.getOrNull(uiState.selectedVolumeBarIndex)
                     Text(
                         text = if (selectedBar != null) {
-                            "Kiválasztott ${if (period.days == 90) "hét" else "nap"} (${selectedBar.first}): ${selectedBar.second} kg összvolumen"
+                            trL(
+                                uiState.language,
+                                "Kiválasztott ${if (period.days == 90) "hét" else "nap"} (${selectedBar.first}): ${selectedBar.second} kg összvolumen",
+                                "Selected ${if (period.days == 90) "week" else "day"} (${selectedBar.first}): ${selectedBar.second} kg total volume",
+                                "Ausgewählte(r) ${if (period.days == 90) "Woche" else "Tag"} (${selectedBar.first}): ${selectedBar.second} kg Gesamtvolumen",
+                                "${if (period.days == 90) "Săptămâna selectată" else "Ziua selectată"} (${selectedBar.first}): ${selectedBar.second} kg volum total"
+                            )
                         } else {
-                            "Válassz egy oszlopot a részletekhez."
+                            trL(uiState.language, "Válassz egy oszlopot a részletekhez.", "Select a bar for details.", "Wähle einen Balken für Details.", "Selectează o coloană pentru detalii.")
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = if (selectedBar != null) palette.primary else palette.textSecondary

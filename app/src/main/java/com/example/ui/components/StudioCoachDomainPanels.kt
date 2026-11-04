@@ -22,6 +22,14 @@ import com.repforge.app.ui.text.nativeResources
 import com.repforge.app.ui.theme.trainPilotBorder
 import androidx.compose.foundation.shape.RoundedCornerShape
 
+private fun coachTr(lang: String, hu: String, en: String, de: String, ro: String): String =
+    when (lang.lowercase().take(2)) {
+        "en" -> en
+        "de" -> de
+        "ro" -> ro
+        else -> hu
+    }
+
 /** Studio presentation of the canonical Coach; no local advice formula or silent prescription edits. */
 @Composable
 internal fun StudioCoachRecommendations(
@@ -35,18 +43,19 @@ internal fun StudioCoachRecommendations(
     showTarget: Boolean = true
 ) {
     val palette = LocalTrainPilotPalette.current
-    val text = nativeResources(LocalContext.current, state.language)
+    val lang = state.language.ifBlank { com.example.localization.LocalTrainPilotStrings.current.language.code }
+    val text = nativeResources(LocalContext.current, lang)
     state.variationPreview?.let { preview ->
         AlertDialog(onDismissRequest = onCloseVariation,
-            title = { Text("Gyakorlatváltozat előnézete") },
+            title = { Text(coachTr(lang, "Gyakorlatváltozat előnézete", "Exercise Variation Preview", "Vorschau der Übungsvariante", "Previzualizare variantă exercițiu")) },
             text = { Text(NativeCoachAdviceText.variation(text, preview.next)) },
             confirmButton = { TextButton(onClick = onSaveVariation, enabled = !state.variationBusy,
-                modifier = Modifier.testTag("studio_coach_variation_confirm")) { Text("Változat mentése") } },
-            dismissButton = { TextButton(onClick = onCloseVariation, enabled = !state.variationBusy) { Text("Mégse") } })
+                modifier = Modifier.testTag("studio_coach_variation_confirm")) { Text(coachTr(lang, "Változat mentése", "Save Variation", "Variante speichern", "Salvează varianta")) } },
+            dismissButton = { TextButton(onClick = onCloseVariation, enabled = !state.variationBusy) { Text(coachTr(lang, "Mégse", "Cancel", "Abbrechen", "Anulează")) } })
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (state.loading) CircularProgressIndicator(Modifier.size(24.dp))
-        if (state.error) Text("A Coach adatai nem frissíthetők. A korábbi kijelzés nem friss mérés.", color = palette.danger)
+        if (state.error) Text(coachTr(lang, "A Coach adatai nem frissíthetők. A korábbi kijelzés nem friss mérés.", "Coach data could not be refreshed. Previous values are not a fresh measurement.", "Coach-Daten konnten nicht aktualisiert werden.", "Datele Coach nu pot fi actualizate."), color = palette.danger)
         if (showTarget) StudioCoachNextTrainingCard(state, onStart, onWorkout)
         state.exercises.forEach { row ->
             Surface(color = palette.surfaceCard, shape = RoundedCornerShape(14.dp),
@@ -57,26 +66,33 @@ internal fun StudioCoachRecommendations(
                         modifier = Modifier.clickable { onExercise(row.id) })
                     Text(NativeCoachAdviceText.label(text, row.advice.action), color = palette.primary)
                     Text(NativeCoachAdviceText.reason(text, row.advice.reason), color = palette.textSecondary)
-                    Text("Megfelelő előzmény: ${row.advice.historyCount}", color = palette.textSecondary)
-                    if (row.advice.target.text.isNotBlank()) Text("Cél: ${row.advice.target.text}", color = palette.textSecondary)
+                    Text(coachTr(lang, "Megfelelő előzmény: ${row.advice.historyCount}", "Matching history: ${row.advice.historyCount}", "Passender Verlauf: ${row.advice.historyCount}", "Istoric relevant: ${row.advice.historyCount}"), color = palette.textSecondary)
+                    if (row.advice.target.text.isNotBlank()) Text("${coachTr(lang, "Cél", "Target", "Ziel", "Țintă")}: ${row.advice.target.text}", color = palette.textSecondary)
                     if (row.advice.action in setOf("increase", "reduce", "start") && row.advice.weight > 0)
-                        Text("Javasolt súly: ${row.advice.weight} kg" + when (row.loadType) {
-                            "per_hand" -> " kézenként"; "total" -> " összesen"; "single_dumbbell" -> " egy súlyzóval"; else -> ""
+                        Text("${coachTr(lang, "Javasolt súly", "Suggested weight", "Empfohlenes Gewicht", "Greutate recomandată")}: ${row.advice.weight} kg" + when (row.loadType) {
+                            "per_hand" -> coachTr(lang, " kézenként", " per hand", " pro Hand", " pe mână")
+                            "total" -> coachTr(lang, " összesen", " total", " gesamt", " total")
+                            "single_dumbbell" -> coachTr(lang, " egy súlyzóval", " single dumbbell", " mit einer Kurzhantel", " cu o ganteră")
+                            else -> ""
                         }, color = palette.textPrimary)
                     if (row.advice.action == "reps" && row.advice.nextReps.isNotEmpty())
-                        Text("Javasolt ismétlések: ${row.advice.nextReps.joinToString(" / ")}", color = palette.textPrimary)
+                        Text("${coachTr(lang, "Javasolt ismétlések", "Suggested reps", "Empfohlene Wdh.", "Repetări recomandate")}: ${row.advice.nextReps.joinToString(" / ")}", color = palette.textPrimary)
                     row.modePreview?.let { preview ->
-                        val style = if (preview.trainingStyle == "hit") "HIT-inspirált" else "Normál"
-                        val mode = when (preview.mode) { "linear" -> "Lineáris"; "rir" -> "RIR/Coach"; else -> "Dupla progresszió" }
-                        Text("$style / $mode • ${preview.workingSets} munkasorozat", color = palette.textSecondary)
+                        val style = if (preview.trainingStyle == "hit") coachTr(lang, "HIT-inspirált", "HIT-inspired", "HIT-inspiriert", "Inspirat HIT") else coachTr(lang, "Normál", "Normal", "Normal", "Normal")
+                        val mode = when (preview.mode) {
+                            "linear" -> coachTr(lang, "Lineáris", "Linear", "Linear", "Liniar")
+                            "rir" -> "RIR/Coach"
+                            else -> coachTr(lang, "Dupla progresszió", "Double progression", "Doppelte Progression", "Progresie dublă")
+                        }
+                        Text("$style / $mode • ${preview.workingSets} ${coachTr(lang, "munkasorozat", "working sets", "Arbeitssätze", "serii de lucru")}", color = palette.textSecondary)
                     }
                     if (row.advice.action == "variation") TextButton(onClick = { onPreviewVariation(row.id) },
-                        enabled = !state.variationBusy && !state.loading && !state.error) { Text("Változat előnézete") }
+                        enabled = !state.variationBusy && !state.loading && !state.error) { Text(coachTr(lang, "Változat előnézete", "Preview Variation", "Variante ansehen", "Previzualizează varianta")) }
                 }
             }
         }
-        if (state.variationFailed) Text("A gyakorlatváltozat nem menthető; frissítsd az adatokat.", color = palette.danger)
-        if (state.variationSaved) Text("A gyakorlatváltozat elmentve.", color = palette.success)
+        if (state.variationFailed) Text(coachTr(lang, "A gyakorlatváltozat nem menthető; frissítsd az adatokat.", "Could not save exercise variation; refresh data.", "Übungsvariante konnte nicht gespeichert werden.", "Varianta nu a putut fi salvată."), color = palette.danger)
+        if (state.variationSaved) Text(coachTr(lang, "A gyakorlatváltozat elmentve.", "Exercise variation saved.", "Übungsvariante gespeichert.", "Varianta a fost salvată."), color = palette.success)
     }
 }
 
@@ -88,10 +104,11 @@ internal fun StudioCoachNextTrainingCard(
     onWorkout: () -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
+    val lang = state.language.ifBlank { com.example.localization.LocalTrainPilotStrings.current.language.code }
     val target = state.target
     if (target == null) {
         if (!state.loading && !state.error) {
-            Text("Nincs elérhető programnap. Válassz aktív programot.", color = palette.textSecondary)
+            Text(coachTr(lang, "Nincs elérhető programnap. Válassz aktív programot.", "No program day available. Select an active program.", "Kein Programmtag verfügbar. Wähle ein aktives Programm.", "Nicio zi de program disponibilă. Alege un program activ."), color = palette.textSecondary)
         }
         return
     }
@@ -107,21 +124,21 @@ internal fun StudioCoachNextTrainingCard(
             Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween) {
                 Surface(color = palette.tintedSurface(0.20f), shape = RoundedCornerShape(50.dp)) {
-                    Text("KÖVETKEZŐ EDZÉSNAP", color = palette.primary,
+                    Text(coachTr(lang, "KÖVETKEZŐ EDZÉSNAP", "NEXT WORKOUT DAY", "NÄCHSTER TRAININGSTAG", "URMĂTOAREA ZI DE ANTRENAMENT"), color = palette.primary,
                         style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp))
                 }
-                if (target.upcoming) Text("TERVEZETT", color = palette.textSecondary,
+                if (target.upcoming) Text(coachTr(lang, "TERVEZETT", "PLANNED", "GEPLANT", "PLANIFICAT"), color = palette.textSecondary,
                     style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
             }
             Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(target.programTitle.ifBlank { "Következő edzés" },
+                    Text(target.programTitle.ifBlank { coachTr(lang, "Következő edzés", "Next workout", "Nächstes Training", "Următorul antrenament") },
                         style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold,
                         color = palette.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.testTag("studio_coach_program_name"))
-                    Text(if (letterDay == null) target.title else "Edzésnap: ${target.title}",
+                    Text(if (letterDay == null) target.title else "${coachTr(lang, "Edzésnap", "Workout day", "Trainingstag", "Zi antrenament")}: ${target.title}",
                         style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary,
                         maxLines = 2, modifier = Modifier.testTag("studio_coach_day_name"))
                     target.schedule?.let {
@@ -146,7 +163,7 @@ internal fun StudioCoachNextTrainingCard(
                 onClick = onWorkout,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     .testTag("studio_coach_start_target")) {
-                Text("Megnyitás az Edzés oldalon",
+                Text(coachTr(lang, "Megnyitás az Edzés oldalon", "Open on Workout Page", "Auf der Trainingsseite öffnen", "Deschide în pagina Antrenament"),
                     fontWeight = FontWeight.Bold)
             }
         }
@@ -168,35 +185,36 @@ internal fun StudioWorkoutCoachPanel(exerciseId: String) {
         factory = androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(app))
     val state by model.uiState.collectAsStateWithLifecycle()
     val palette = LocalTrainPilotPalette.current
+    val lang = com.example.localization.LocalTrainPilotStrings.current.language.code
     if (state.modeReviewOpen) AlertDialog(
         onDismissRequest = model::cancelTrainingModeReview,
-        title = { Text("Coach-javaslat jóváhagyása") },
-        text = { Text("Csak az érintetlen sorozatok súlya változik. RIR, teljesítettség, idő és mérés nem keletkezik.") },
+        title = { Text(coachTr(lang, "Coach-javaslat jóváhagyása", "Approve Coach Proposal", "Coach-Vorschlag bestätigen", "Aprobă propunerea Coach")) },
+        text = { Text(coachTr(lang, "Csak az érintetlen sorozatok súlya változik. RIR, teljesítettség, idő és mérés nem keletkezik.", "Only untouched sets will update weight. RIR, completion, time, and measurements are not fabricated.", "Nur unberührte Sätze ändern das Gewicht. RIR, Abschluss und Zeit werden nicht erzeugt.", "Doar seriile neatinse își modifică greutatea. RIR, finalizarea și timpul nu sunt generate.")) },
         confirmButton = { TextButton(onClick = model::approveTrainingModeWeight, enabled = !state.modeProposalLoading,
-            modifier = Modifier.testTag("studio_active_coach_approve")) { Text("Alkalmazás") } },
-        dismissButton = { TextButton(onClick = model::cancelTrainingModeReview) { Text("Mégse") } })
+            modifier = Modifier.testTag("studio_active_coach_approve")) { Text(coachTr(lang, "Alkalmazás", "Apply", "Anwenden", "Aplică")) } },
+        dismissButton = { TextButton(onClick = model::cancelTrainingModeReview) { Text(coachTr(lang, "Mégse", "Cancel", "Abbrechen", "Anulează")) } })
     Surface(color = palette.surfaceCard, shape = RoundedCornerShape(18.dp),
         modifier = Modifier.fillMaxWidth().testTag("studio_active_coach_panel")
             .trainPilotBorder(1.dp, palette.sectionBorder, RoundedCornerShape(18.dp))) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("TrainPilot Coach", style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
             if (!state.explicitTrainingMode) {
-                Text("A tartós progressziós módot az edzés előtt választhatod ki a Beállításokban. Az előző alkalom értékei ettől függetlenül betöltődnek.", color = palette.textSecondary)
+                Text(coachTr(lang, "A tartós progressziós módot az edzés előtt választhatod ki a Beállításokban. Az előző alkalom értékei ettől függetlenül betöltődnek.", "You can select the persistent progression mode in Settings before a workout. Previous session values still prefill.", "Den dauerhaften Progressionsmodus kannst du vor dem Training in den Einstellungen wählen.", "Poți selecta modul de progresie în Setări înainte de antrenament. Valorile anterioare se încarcă oricum."), color = palette.textSecondary)
             } else {
                 OutlinedButton(onClick = { model.previewTrainingModeWeight(exerciseId) },
                     enabled = !state.modeProposalLoading && !state.isFinishing && !state.isPaused && state.timerOwner == "phone",
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("studio_active_coach_preview")) {
-                    Text(if (state.modeProposalLoading) "Előkészítés…" else "Valódi előzmények alapján javaslat")
+                    Text(if (state.modeProposalLoading) coachTr(lang, "Előkészítés…", "Preparing…", "Vorbereiten…", "Se pregătește…") else coachTr(lang, "Valódi előzmények alapján javaslat", "Proposal from real history", "Vorschlag aus echtem Verlauf", "Propunere din istoricul real"))
                 }
                 if (state.modeProposalForExercise == exerciseId) {
                     Text(state.modeReason, color = palette.textPrimary)
-                    Text("Megfelelő előzmény: ${state.modeHistoryCount}", color = palette.textSecondary)
+                    Text(coachTr(lang, "Megfelelő előzmény: ${state.modeHistoryCount}", "Matching history: ${state.modeHistoryCount}", "Passender Verlauf: ${state.modeHistoryCount}", "Istoric relevant: ${state.modeHistoryCount}"), color = palette.textSecondary)
                     if (state.modeSuggestedWeight != null && state.modeBaselineWeight != null) {
                         Text("${state.modeBaselineWeight} → ${state.modeSuggestedWeight} kg", color = palette.textPrimary)
                         Button(onClick = model::reviewTrainingModeWeight,
                             enabled = !state.modeProposalLoading && !state.isPaused && state.timerOwner == "phone",
-                            modifier = Modifier.testTag("studio_active_coach_review")) { Text("Javaslat áttekintése") }
-                    } else Text("Most nincs jóváhagyható súlymódosítás.", color = palette.textSecondary)
+                            modifier = Modifier.testTag("studio_active_coach_review")) { Text(coachTr(lang, "Javaslat áttekintése", "Review Proposal", "Vorschlag prüfen", "Revizuiește propunerea")) }
+                    } else Text(coachTr(lang, "Most nincs jóváhagyható súlymódosítás.", "No weight adjustment to approve right now.", "Derzeit keine Gewichtsänderung verfügbar.", "Nicio modificare de greutate de aprobat acum."), color = palette.textSecondary)
                 }
             }
             state.statusMessage?.let { Text(it, color = palette.textSecondary) }

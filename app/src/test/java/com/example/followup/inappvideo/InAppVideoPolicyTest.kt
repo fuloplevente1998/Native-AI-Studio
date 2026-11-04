@@ -89,4 +89,24 @@ class InAppVideoPolicyTest {
             EXERCISE_VIDEO_ORIGIN)
     }
 
+    @Test fun frameReadyAloneDoesNotMarkReadyAndObserverUnavailableTriggersBrowserFallback() {
+        val afterFrameReady = exerciseVideoPlayerEvent(ExerciseVideoLoad.Loading, "frame-ready")
+        assertEquals(ExerciseVideoLoad.Loading, afterFrameReady)
+        val afterObserverUnavailable = exerciseVideoPlayerEvent(afterFrameReady, "observer-unavailable")
+        assertTrue(afterObserverUnavailable is ExerciseVideoLoad.Failed)
+        assertTrue(
+            com.example.ui.components.inappvideo.shouldAutoFallbackToBrowser(
+                ExerciseVideoMode.EMBED,
+                afterObserverUnavailable,
+                "https://www.youtube.com/watch?v=$selected"
+            )
+        )
+        assertFalse(
+            com.example.ui.components.inappvideo.shouldAutoFallbackToBrowser(
+                ExerciseVideoMode.BROWSER,
+                afterObserverUnavailable,
+                "https://www.youtube.com/watch?v=$selected"
+            )
+        )
+    }
 }
