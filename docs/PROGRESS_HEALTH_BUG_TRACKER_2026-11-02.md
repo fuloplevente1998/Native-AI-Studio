@@ -15,6 +15,9 @@ Ebben a körben nincs alkalmazáskód-javítás, tesztfuttatás vagy új APK.
 | [#84](https://github.com/fuloplevente1998/Native-AI-Studio/issues/84) | Újranyitva: naplós edzés- és visszajelzés-szerkesztő kompakt, közös keretes/fényes/színátmenetes app-dizájnja, valódi témahíddal és biztonságos látható Mentéssel. Előzmény #93 PR; más régi UI-részfeladat nem aktivált. | 4410.jpg, felhasználói csatolmány |
 | [#122](https://github.com/fuloplevente1998/Native-AI-Studio/issues/122) | További egészségadatok + Egészségnapló összevonása a naplódizájn megtartásával, részletek a napok lenyitásában. Külön részletes-mérés gomb/oldal helyett egységes, deduplikált napi adatok; a meglévő részletképesség megmarad. | 4415.jpg / 4414.jpg / 4413.jpg |
 | [#123](https://github.com/fuloplevente1998/Native-AI-Studio/issues/123) | Android rendszer-dátumválasztó helyett az app meglévő naptárdizájnja; a #122 utáni közös egészségnaplóban is. A helyi UI-hiba különbözik a Google 404 szinkronhibától. | 4412.jpg |
+| [#125](https://github.com/fuloplevente1998/Native-AI-Studio/issues/125) | Aktív edzés Átadás órának gombjára kis, meglévő WearOS-stílusú óraikon; átadási logika változatlan. | Felhasználó szöveges visszajelzése |
+| [#126](https://github.com/fuloplevente1998/Native-AI-Studio/issues/126) | Az Edzés Vissza gombja beleolvad a környezetébe; kis keret vagy eltérő szín/árnyalat szükséges. | Felhasználó szöveges visszajelzése |
+| [#70](https://github.com/fuloplevente1998/Native-AI-Studio/issues/70) | Újranyitott működési hiba: az Edzés oldali Coach nem ad javaslatot a felhasználó közel 30 mentett edzése mellett. Érvényes előzmény/natív tanács/UI és valódi adathiány/hiba elkülönítése kivizsgálandó, új motor nélkül. | Felhasználó szöveges visszajelzése; nem dizájnhiba |
 
 **Lezárva a felhasználó kifejezett kérésére:** #35, #59, #69, #71, #75.
 A korábban halasztott #82 adatvédelmi tájékoztató `not_planned` státusszal lezárva;
