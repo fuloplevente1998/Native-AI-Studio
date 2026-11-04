@@ -57,7 +57,7 @@ class ProfileAndRecordLayoutRegressionTest {
     @Test fun expandedRecordReservesFullChartHeightInsideItsCard() {
         compose.setContent { TrainPilotTheme {
             StudioStatisticsContent(
-                state = TrainPilotUiState(savedExerciseBests = listOf(
+                state = TrainPilotUiState(savedRecordsLoading = false, savedExerciseBests = listOf(
                     SavedExerciseBest("pullover", "Pullover", "Pullover", "reps", "weight", 5.5, 15, null, null))),
                 native = ProgressUiState(selectedExerciseId = "pullover", strengthLoading = false,
                     exercise1RmTrend = listOf(
