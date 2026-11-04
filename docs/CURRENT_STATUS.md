@@ -2,12 +2,15 @@
 
 ## Legújabb készülékes visszajelzés – 2026-11-04 / 2753
 
-**Hat aktív hiba/feladat:** [#117 – Naptár szinkron / Google 404](https://github.com/fuloplevente1998/Native-AI-Studio/issues/117),
+**Kilenc aktív hiba/feladat:** [#117 – Naptár szinkron / Google 404](https://github.com/fuloplevente1998/Native-AI-Studio/issues/117),
 [#118 – Témák kinyitott fejlécének és négy sorának közös kerete](https://github.com/fuloplevente1998/Native-AI-Studio/issues/118),
 [#120 – Edzésrészletek: szolgáltatók a Forrás fülre, deduplikált pulzus/kcal a Statisztikákra](https://github.com/fuloplevente1998/Native-AI-Studio/issues/120),
 [#84 – Újranyitva: naplós edzés- és visszajelzés-szerkesztő kompakt app-dizájnja](https://github.com/fuloplevente1998/Native-AI-Studio/issues/84),
 [#122 – Egységes, naponta lenyitható Egészségnapló](https://github.com/fuloplevente1998/Native-AI-Studio/issues/122),
-[#123 – Rendszer-dátumválasztó helyett az app saját naptárdizájnja](https://github.com/fuloplevente1998/Native-AI-Studio/issues/123).
+[#123 – Rendszer-dátumválasztó helyett az app saját naptárdizájnja](https://github.com/fuloplevente1998/Native-AI-Studio/issues/123),
+[#125 – Aktív edzés Átadás órának vezérlőjére kis WearOS óraikon](https://github.com/fuloplevente1998/Native-AI-Studio/issues/125),
+[#126 – Edzés Vissza gombjának elkülönülő kerete/árnyalata](https://github.com/fuloplevente1998/Native-AI-Studio/issues/126),
+[#70 – Újranyitott funkcióhiba: Edzés oldali Coach-javaslatok hiánya](https://github.com/fuloplevente1998/Native-AI-Studio/issues/70).
 Referencia: a felhasználó 4407.jpg / 4406.jpg / 4408.jpg képei. Most csak rögzítés;
 alkalmazáskód-javítás és új APK nem készült. A 404 oka a képből nem bizonyított.
 
@@ -37,6 +40,19 @@ app-naptár/dátumválasztó arculata használandó. A natív DatePickerDialog h
 HealthRecordBrowser.pickDate útvonalon azonosítva. A #122 utáni új közös felületre
 is érvényes; nem a Google-naptárszinkron #117-es hibája. A dátum-/intervallum-
 validáció és eredeti adatok változatlanok. Mindkét új jegy most csak rögzítés.
+
+**Aktív edzés – új szöveges visszajelzés:** #125 az Átadás órának gombon kis,
+a meglévő WearOS órakártyával egyező stílusú óraikont kér. #126 a környezetébe
+olvadó Vissza gombra kis keretet vagy elkülönülő színt/árnyalatot kér; a navigáció
+és átadási/ownership műveletek megmaradnak.
+
+**Coach – tényleges működési hiba (#70 újranyitva):** az Edzés oldali TrainPilot
+Coach a felhasználó szerint semmit nem javasol, miközben közel 30 edzése mentett.
+Ez nem dizájnprobléma. A megfelelő gyakorlat-/előzményadat, natív tanács és UI
+bekötése kivizsgálandó; az ok még nem bizonyított. Valós, használható előzménynél
+legyen kanonikus ajánlás/indok, valódi adathiánynál/hibánál érthető állapot.
+A meglévő motor és jóváhagyási/fájdalom-/adatvédelmi védelmek maradjanak meg.
+Mindhárom visszajelzés most rögzítés, nem kész javítás.
 
 A felhasználó kérésére a korábbi #35, #59, #69, #71, #75 lezárva; a halasztott
 #82 `not_planned` státusszal lezárva, implementációs állítás nélkül. A korábbi
