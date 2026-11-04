@@ -58,6 +58,9 @@ import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
@@ -2499,7 +2502,8 @@ fun ExerciseLibraryScreen(
     onStartExerciseNow: (ExerciseItem) -> Unit = {},
     onAddExerciseToQueue: (ExerciseItem) -> Unit = {},
     onStartQueuedWorkout: () -> Unit = {},
-    onToggleFavoritesOnly: () -> Unit = {}
+    onToggleFavoritesOnly: () -> Unit = {},
+    onToggleFavorite: (String) -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
@@ -2517,7 +2521,7 @@ fun ExerciseLibraryScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(bottom = 24.dp)
+            .padding(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 4.dp, bottom = 24.dp)
     ) {
         // Matches Mockup 1/4 #5 "Gyakorlatok" (106-os gyakorlat-adatbázis kategóriák szerint)
         SubScreenTopBar(
@@ -2527,27 +2531,13 @@ fun ExerciseLibraryScreen(
         )
 
         Column(
-            modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
-            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+            CompactJournalSearchField(state.exerciseSearchQuery, onSearchQueryChange, strings.logSearchHint)
             FilterChip(selected = state.favoriteExercisesOnly, onClick = onToggleFavoritesOnly,
                 label = { Text("Kedvencek (${state.favoriteExerciseIds.size})") },
                 modifier = Modifier.testTag("studio_library_favorites_only"))
-            OutlinedTextField(
-                value = state.exerciseSearchQuery,
-                onValueChange = onSearchQueryChange,
-                placeholder = { Text(strings.logSearchHint, color = palette.textSecondary) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = null,
-                        tint = palette.textSecondary
-                    )
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            )
 
             // Compact Horizontal Category Chips with exact counts: Összes (106) | Láb | Mell | Hát | Váll | Kar | Core
             Row(
@@ -2745,6 +2735,15 @@ fun ExerciseLibraryScreen(
                             )
                         }
                         Spacer(modifier = Modifier.width(6.dp))
+                        val favorite = ex.id in state.favoriteExerciseIds
+                        IconToggleButton(checked = favorite, onCheckedChange = { onToggleFavorite(ex.id) },
+                            enabled = !state.libraryMutationBusy,
+                            modifier = Modifier.size(48.dp).testTag("exercise_library_favorite_${ex.id}")) {
+                            Icon(if (favorite) Icons.Default.Star else Icons.Default.StarBorder,
+                                contentDescription = if (favorite) "Eltávolítás a kedvencekből" else "Hozzáadás a kedvencekhez",
+                                tint = if (favorite) palette.primary else palette.textSecondary,
+                                modifier = Modifier.size(22.dp))
+                        }
                         // Video popup button (opens modal dialog ONLY when clicked)
                         SmallExerciseVideoButton(
                             exerciseName = ex.localizedName(state.language),

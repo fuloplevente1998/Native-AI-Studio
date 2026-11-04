@@ -91,4 +91,27 @@ class ProfileAndRecordLayoutRegressionTest {
         compose.onNodeWithTag("statistics_daily_activity").assertExists()
     }
 
+    @Test fun libraryStarsUpdateFavoritesAndKeepSearchCompact() {
+        val state = androidx.compose.runtime.mutableStateOf(TrainPilotUiState(exercises = listOf(
+            com.example.model.ExerciseItem("squat", "Guggolás"),
+            com.example.model.ExerciseItem("plank", "Plank"))))
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.ExerciseLibraryScreen(state.value, {}, {},
+                onSearchQueryChange = { state.value = state.value.copy(exerciseSearchQuery = it) },
+                onSelectCategory = {}, onSelectExercise = {},
+                onToggleFavoritesOnly = { state.value = state.value.copy(favoriteExercisesOnly = !state.value.favoriteExercisesOnly) },
+                onToggleFavorite = { id ->
+                    val old = state.value.favoriteExerciseIds
+                    state.value = state.value.copy(favoriteExerciseIds = if (id in old) old - id else old + id)
+                })
+        } }
+        val search = compose.onNodeWithTag("log_search_input").getUnclippedBoundsInRoot()
+        assertTrue(search.bottom - search.top == 48.dp)
+        compose.onNodeWithTag("exercise_library_favorite_squat").performScrollTo().performClick().assertIsOn()
+        compose.onNodeWithTag("studio_library_favorites_only").performScrollTo().performClick()
+        compose.onNodeWithTag("exercise_library_favorite_plank").assertDoesNotExist()
+        compose.onNodeWithTag("exercise_library_favorite_squat").performScrollTo().performClick()
+        compose.onNodeWithTag("exercise_library_favorite_squat").assertDoesNotExist()
+    }
+
 }

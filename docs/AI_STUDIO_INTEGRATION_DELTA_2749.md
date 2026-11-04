@@ -7,6 +7,8 @@ A PR104 profil- és statisztikajavításait őrizd meg a nyelvi munka integrál�
 - `app/src/main/java/com/example/ui/screens/StudioStatisticsScreen.kt`: a rekordgrafikon külön 160 dp rajzterületet kap; konkrét kardióaktivitásnál nem látszik a napi lépésösszesítő, az összes aktivitásnál visszatér.
 - `app/src/main/java/com/repforge/app/ui/progress/NativeCardioProgressPanel.kt`: a napi aktivitással azonos kártyastílus, keskeny kijelzőn két oszlop, a fölösleges külön Kardió cím és leírás nélkül.
 - `app/src/main/java/com/repforge/app/ui/progress/StatisticsMetricTile.kt`: közös napi aktivitás/kardió metrikakártya. A fordított címkék és az egységek a hívó oldalon maradnak.
+- `app/src/main/java/com/example/ui/screens/WorkoutAndPlanningScreens.kt`: kompakt gyakorlatválasztó a napló keresőjével és közvetlen kedvenc-csillaggal.
+- `app/src/main/java/com/example/MainActivity.kt`: a kedvenc-csillag bekötése a meglévő tartós mentéshez.
 - `app/src/test/java/com/example/ProfileAndRecordLayoutRegressionTest.kt`: profilértékek, többes kijelölés, grafikonmagasság és aktivitásszűrő ellenőrzése.
 
 Nincs backend-, adatformátum-, videó- vagy nyelvi erőforrás-módosítás ebben a csomagban.

@@ -565,7 +565,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 viewModel.addExerciseToActiveProgramDay(ex)
                             },
                             onStartQueuedWorkout = { viewModel.startQueuedWorkout() },
-                            onToggleFavoritesOnly = viewModel::toggleFavoriteExercisesOnly
+                            onToggleFavoritesOnly = viewModel::toggleFavoriteExercisesOnly,
+                            onToggleFavorite = viewModel::toggleExerciseFavorite
                         )
                     }
 
