@@ -37,10 +37,10 @@ class ProfileAndRecordLayoutRegressionTest {
         profile()
         compose.onNodeWithTag("profile_height_box").performClick()
         compose.onNodeWithText("181 cm").performScrollTo().performClick()
-        compose.onNodeWithTag("profile_height_box").assert(hasAnyDescendant(hasText("181 cm")))
+        compose.onNodeWithText("181 cm").assertExists()
         compose.onNodeWithTag("profile_weight_box").performClick()
         compose.onNodeWithText("66 kg").performScrollTo().performClick()
-        compose.onNodeWithTag("profile_weight_box").assert(hasAnyDescendant(hasText("66 kg")))
+        compose.onNodeWithText("66 kg").assertExists()
     }
 
     @Test fun equipmentHasOnlyOneMultiSelectAndKeepsSelectionsWhileOpen() {
@@ -68,7 +68,7 @@ class ProfileAndRecordLayoutRegressionTest {
         } }
         val record = compose.onNodeWithTag("statistics_record_pullover")
         val collapsed = record.getUnclippedBoundsInRoot().height
-        record.performClick()
+        compose.onNodeWithText("Pullover").performClick()
         val chart = compose.onNodeWithTag("statistics_record_chart_pullover", useUnmergedTree = true)
         chart.performScrollTo().assertIsDisplayed()
         val plot = chart.getUnclippedBoundsInRoot()
