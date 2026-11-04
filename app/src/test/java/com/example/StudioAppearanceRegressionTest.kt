@@ -61,9 +61,13 @@ class StudioAppearanceRegressionTest {
                     onNavigateToSubScreen = {}, onShowBanner = {})
             }
         }
-        compose.onNodeWithTag("settings_themes_group").assertDoesNotExist()
+        compose.onNodeWithTag("settings_themes_group").assertExists()
         val list = compose.onNodeWithTag("settings_main_screen")
         list.performScrollToNode(hasTestTag("settings_open_palettes_row"))
+        val collapsedFrame = compose.onNodeWithTag("settings_themes_group").getUnclippedBoundsInRoot()
+        val header = compose.onNodeWithTag("settings_open_palettes_row").getUnclippedBoundsInRoot()
+        assertTrue(header.left >= collapsedFrame.left && header.right <= collapsedFrame.right)
+        assertTrue(header.top >= collapsedFrame.top && header.bottom <= collapsedFrame.bottom)
         compose.onNodeWithTag("settings_open_palettes_row").performClick()
         list.performScrollToNode(hasTestTag("settings_themes_group"))
         val frame = compose.onNodeWithTag("settings_themes_group").getUnclippedBoundsInRoot()
@@ -79,7 +83,7 @@ class StudioAppearanceRegressionTest {
         compose.runOnIdle { assertEquals(9, selected) }
         list.performScrollToNode(hasTestTag("settings_open_palettes_row"))
         compose.onNodeWithTag("settings_open_palettes_row").performClick()
-        compose.onNodeWithTag("settings_themes_group").assertDoesNotExist()
+        compose.onNodeWithTag("settings_themes_group").assertExists()
         compose.runOnIdle { assertEquals(9, selected) }
     }
 
