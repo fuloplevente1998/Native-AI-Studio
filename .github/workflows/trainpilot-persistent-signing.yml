@@ -63,7 +63,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.3.1'
-          cache-read-only: true
+          # Signed main builds seed the default-branch cache for future main/PR builds.
+          # No configuration-cache encryption key is supplied: setup-gradle will not
+          # persist project configuration (which may contain signing credentials).
+          cache-read-only: false
 
       - name: Cache Robolectric Android SDK dependencies
         uses: actions/cache@v4
@@ -100,7 +103,13 @@ jobs:
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: gradle --no-daemon --stacktrace --continue :app:assembleRelease :wear:assembleRelease :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest
+        run: gradle --no-daemon --stacktrace --profile --continue :app:assembleRelease :wear:assembleRelease :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest
+
+      - name: Verify raw phone, Wear and shared JUnit XML test results
+        if: always()
+        env:
+          TRAINPILOT_SOURCE_SHA: ${{ github.sha }}
+        run: python3 scripts/verify_junit_xml.py
 
       - name: Verify package, embedded Maps configuration and pinned signer
         run: python3 scripts/verify_android_apk_metadata.py
@@ -130,5 +139,16 @@ jobs:
           path: |
             app/build/test-results/
             wear/build/test-results/
+            shared/build/test-results/
+            app/build/outputs/junit-verification.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload Gradle task timing profile
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trainpilot-build-profile
+          path: build/reports/profile/
           if-no-files-found: ignore
           retention-days: 7

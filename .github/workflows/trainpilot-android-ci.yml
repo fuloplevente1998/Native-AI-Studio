@@ -97,13 +97,13 @@ jobs:
           TARGETED_REGRESSIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.targeted_regressions }}
         run: |
           if [[ "$WEAR_CLOSURE_REGRESSIONS" == "true" ]]; then
-            gradle --no-daemon --stacktrace --continue :app:assembleDebug :wear:assembleDebug :wear:assembleOptimized \
+            gradle --no-daemon --stacktrace --profile --continue :app:assembleDebug :wear:assembleDebug :wear:assembleOptimized \
               :app:testDebugUnitTest --tests 'com.example.WatchDiscardRecoveryRegressionTest' \
               --tests 'com.example.PhoneReturnInstallationRegressionTest' --tests 'com.example.HealthSyncAdmissionRegressionTest' \
               :wear:testDebugUnitTest --tests 'com.repforge.app.wear.WearClosureRecoveryTest' \
               --tests 'com.repforge.app.wear.WearSaveSyncTest' --tests 'com.repforge.app.wear.WorkoutOwnership193Test'
           elif [[ "$TARGETED_REGRESSIONS" == "true" ]]; then
-            gradle --no-daemon --stacktrace --continue :app:assembleDebug :wear:assembleDebug :wear:assembleOptimized :app:testDebugUnitTest \
+            gradle --no-daemon --stacktrace --profile --continue :app:assembleDebug :wear:assembleDebug :wear:assembleOptimized :app:testDebugUnitTest \
               --tests 'com.example.StudioProgress*' \
               --tests 'com.example.StudioHealthPermissionActionTest' \
               --tests 'com.example.StudioAppearanceRegressionTest' \
@@ -114,7 +114,7 @@ jobs:
               --tests 'com.example.HealthProviderSelectionRegressionTest' \
               --tests 'com.example.HealthSyncAdmissionRegressionTest'
           else
-            gradle --no-daemon --stacktrace --continue :app:assembleDebug :app:testDebugUnitTest :wear:assembleDebug :wear:assembleOptimized :wear:testDebugUnitTest :shared:testDebugUnitTest
+            gradle --no-daemon --stacktrace --profile --continue :app:assembleDebug :app:testDebugUnitTest :wear:assembleDebug :wear:assembleOptimized :wear:testDebugUnitTest :shared:testDebugUnitTest
           fi
 
       - name: Verify raw phone, Wear and shared JUnit XML test results
@@ -178,5 +178,14 @@ jobs:
             shared/build/reports/tests/
             shared/build/test-results/
             app/build/outputs/junit-verification.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload Gradle task timing profile
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trainpilot-build-profile
+          path: build/reports/profile/
           if-no-files-found: ignore
           retention-days: 7
