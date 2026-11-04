@@ -114,4 +114,28 @@ class ProfileAndRecordLayoutRegressionTest {
         compose.onNodeWithTag("exercise_library_favorite_squat").assertDoesNotExist()
     }
 
+    @Test fun englishProfileDisplaysTranslatedChoicesButSavesCanonicalValues() {
+        var savedGoal = ""
+        var savedEquipment = ""
+        compose.setContent { TrainPilotTheme {
+            androidx.compose.runtime.CompositionLocalProvider(
+                com.example.localization.LocalTrainPilotStrings provides
+                    com.example.localization.TrainPilotStrings.forLanguage(com.example.model.AppLanguage.EN)) {
+                PersonalPlannerModalDialog(initialEquipmentHu = "Saját testsúly",
+                    onSaveAndOpenPlan = { _, _, goal, _, _, equipment, _, _, _, _ ->
+                        savedGoal = goal; savedEquipment = equipment
+                    }, onDismiss = {})
+            }
+        } }
+        compose.onNodeWithTag("profile_goal_box").performClick()
+        compose.onNodeWithText("Strength gain").performScrollTo().performClick()
+        compose.onNodeWithTag("profile_equipment_box").performScrollTo()
+        compose.onNodeWithText("Body weight").assertExists()
+        compose.onNodeWithText("Build and save plan").performClick()
+        compose.runOnIdle {
+            org.junit.Assert.assertEquals("Erőnövelés", savedGoal)
+            org.junit.Assert.assertEquals("Saját testsúly", savedEquipment)
+        }
+    }
+
 }
