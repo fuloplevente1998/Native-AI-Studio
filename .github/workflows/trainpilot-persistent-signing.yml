@@ -1,5 +1,5 @@
 name: TrainPilot persistent signed APK pair
-# 2748: signed main after UI, theme, journal, metrics and exercise-feedback validation.
+# 2749: signed main with verified font, theme, workout-row and handover design fixes.
 
 on:
   workflow_dispatch:
