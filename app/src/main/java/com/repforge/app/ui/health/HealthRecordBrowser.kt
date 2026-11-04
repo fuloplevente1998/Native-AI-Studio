@@ -392,7 +392,8 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
                             }
                         }
                         items(current.rows, key = { "${it.channel}:${it.type}:${it.id}" }) { row ->
-                            HealthRecordCard(row, language)
+                            val sourceName = current.origins.firstOrNull { it.source == row.source }?.name.orEmpty()
+                            HealthRecordCard(row, language, sourceName)
                         }
                     }
                 }
@@ -532,7 +533,7 @@ private fun SourceFilterPill(
 }
 
 @Composable
-private fun HealthRecordCard(row: HealthRecordRow, language: String) {
+private fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName: String) {
     val text = nativeResources(LocalContext.current, language)
     val colors = LocalTrainPilotColors.current
     val langCode = language.lowercase(Locale.ROOT)
@@ -550,7 +551,7 @@ private fun HealthRecordCard(row: HealthRecordRow, language: String) {
     val scalar = NativeHealthRecords.number(data, "value")
         ?: if (row.type == "SleepSessionRecord") NativeHealthRecords.number(data, "durationMinutes") else null
     val displayUnit = if (row.type == "SleepSessionRecord" && data.has("durationMinutes")) "min" else unit
-    val friendlySource = friendlyPackageOrChannelName(row.source, row.channel, text)
+    val friendlySource = friendlyHealthSourceName(row.source, sourceName, healthChannelName(row.channel, text))
     val count = data.optJSONArray("stages")?.length() ?: data.optJSONArray("samples")?.length() ?: 0
 
     Card(
@@ -789,23 +790,26 @@ private fun friendlyOriginLabel(
     origin: HealthRecordOrigin,
     channel: String,
     text: android.content.res.Resources
-): String {
-    if (origin.name.isNotBlank() && !origin.name.contains('.')) return origin.name
-    return friendlyPackageOrChannelName(origin.source, channel, text)
-}
+): String = friendlyHealthSourceName(origin.source, origin.name, healthChannelName(channel, text))
 
-private fun friendlyPackageOrChannelName(
-    source: String,
-    channel: String,
-    text: android.content.res.Resources
-): String {
+private val rawPackageIdentifier = Regex("^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)+$")
+
+/**
+ * Prefer the app label provided by Health Connect/Samsung Health over its package ID.
+ * Raw identifiers continue to be used only for querying/filtering, never as the UI label.
+ */
+internal fun friendlyHealthSourceName(source: String, suppliedName: String, channelFallback: String): String {
+    val label = suppliedName.trim()
+    if (label.isNotEmpty() && !label.equals(source, ignoreCase = true) && !rawPackageIdentifier.matches(label)) {
+        return label
+    }
     val lower = source.lowercase(Locale.ROOT)
     return when {
         lower.contains("shealth") || lower.contains("samsung") -> "Samsung Health"
         lower.contains("google.android.apps.fitness") -> "Google Fit"
         lower.contains("healthconnect") || lower.contains("healthdata") -> "Health Connect"
-        source.isNotBlank() && !source.contains('.') -> source
-        else -> healthChannelName(channel, text)
+        source.isNotBlank() && !rawPackageIdentifier.matches(source) -> source
+        else -> channelFallback
     }
 }
 
