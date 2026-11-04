@@ -77,4 +77,17 @@ class ProfileAndRecordLayoutRegressionTest {
         assertTrue(card.height >= collapsed + 160.dp)
         assertTrue(plot.top >= card.top && plot.bottom <= card.bottom)
     }
+    @Test fun specificCardioFilterHidesDailyActivityUntilAllIsSelected() {
+        val selected = androidx.compose.runtime.mutableStateOf("cycling")
+        compose.setContent { TrainPilotTheme {
+            StudioStatisticsContent(state = TrainPilotUiState(statsSubTab = 1, cardioFilterStepsMode = false),
+                native = ProgressUiState(selectedCardioId = selected.value),
+                onSelectTab = {}, onStepsMode = {}, onExercise = {},
+                onActivity = { selected.value = it }, onRetry = {}, onRefreshRecords = {})
+        } }
+        compose.onNodeWithTag("statistics_daily_activity").assertDoesNotExist()
+        compose.onNodeWithTag("progress_cardio_all").performClick()
+        compose.onNodeWithTag("statistics_daily_activity").assertExists()
+    }
+
 }

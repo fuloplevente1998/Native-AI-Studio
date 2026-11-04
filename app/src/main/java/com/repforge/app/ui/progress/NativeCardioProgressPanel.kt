@@ -1,6 +1,10 @@
 package com.repforge.app.ui.progress
 
 import com.repforge.app.ui.theme.TrainPilotFrames
+import com.repforge.app.ui.theme.trainPilotBorder
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Surface
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -43,14 +47,10 @@ internal fun NativeCardioProgressPanel(state: ProgressUiState,
     val model = state.cardio
     var visibleRecordCount by remember(state.selectedCardioId) { mutableIntStateOf(12) }
     Card(Modifier.fillMaxWidth().testTag("progress_cardio"),
-        shape = RoundedCornerShape(18.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = colors.card),
-        border = TrainPilotFrames.stroke(1.dp, colors.line)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(strings.getString(R.string.cardio_progress_title),
-                color = colors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Text(strings.getString(R.string.cardio_progress_description),
-                color = colors.muted, fontSize = 12.sp)
+        border = TrainPilotFrames.stroke(1.25.dp, colors.emphasisBorder)) {
+        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             LazyRow(Modifier.fillMaxWidth().testTag("progress_cardio_choices"),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 item(key = "all") {
@@ -121,7 +121,8 @@ internal fun NativeCardioProgressPanel(state: ProgressUiState,
                     val displayedRecords = model.records.take(visibleRecordCount)
                     displayedRecords.forEach { record ->
                         Column(Modifier.fillMaxWidth()
-                            .background(colors.card2, RoundedCornerShape(10.dp)).padding(10.dp)
+                            .background(colors.card2, MaterialTheme.shapes.large)
+                            .trainPilotBorder(1.dp, colors.line, MaterialTheme.shapes.large).padding(10.dp)
                             .testTag("progress_cardio_record_${record.exerciseId}_${record.roundedDistanceMeters}")) {
                             Text("${activityNames[record.exerciseId] ?: record.exerciseId} · " +
                                 strings.getString(R.string.cardio_progress_record_distance,
@@ -163,31 +164,25 @@ internal fun cardioActivityName(language: String, activity: CardioActivityOption
 
 @Composable
 private fun CardioChoice(label: String, selected: Boolean, tag: String, onClick: () -> Unit) {
-    val c = LocalTrainPilotColors.current
-    Box(Modifier.background(if (selected) c.accent else c.card2, RoundedCornerShape(8.dp))
-        .clickable(onClick = onClick).defaultMinSize(minHeight = 48.dp)
-        .testTag(tag).padding(horizontal = 12.dp, vertical = 10.dp),
-        contentAlignment = Alignment.Center) {
-        Text(label, color = if (selected) c.onAccent else c.text, fontSize = 12.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
-    }
+    FilterChip(selected = selected, onClick = onClick, label = { Text(label) },
+        modifier = Modifier.heightIn(min = 48.dp).testTag(tag))
 }
 
 @Composable
 private fun CardioMetrics(distance: String, duration: String, pace: String, tag: String) {
-    val c = LocalTrainPilotColors.current
     val labels = listOf("km", "hh:mm:ss", "min/km")
     val values = listOf(distance, duration, pace)
     val tags = listOf("distance", "duration", "pace")
-    Row(Modifier.fillMaxWidth().testTag(tag), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        values.forEachIndexed { i, value ->
-            Column(Modifier.weight(1f).background(c.card2, RoundedCornerShape(10.dp))
-                .padding(horizontal = 4.dp, vertical = 10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(value, color = c.text, fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
-                    modifier = Modifier.testTag("${tag}_${tags[i]}"))
-                Text(labels[i], color = c.muted, fontSize = 10.sp)
+    BoxWithConstraints(Modifier.fillMaxWidth().testTag(tag)) {
+        val columns = if (maxWidth < 420.dp) 2 else 3
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            values.indices.toList().chunked(columns).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    row.forEach { i ->
+                        StatisticsMetricTile(labels[i], values[i], Modifier.weight(1f), "${tag}_${tags[i]}")
+                    }
+                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                }
             }
         }
     }
