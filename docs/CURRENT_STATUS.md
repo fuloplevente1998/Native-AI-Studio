@@ -1,13 +1,31 @@
 # TrainPilot Native – aktuális állapot, 2026-11-04
 
+## Legújabb készülékes visszajelzés – 2026-11-04 / 2753
+
+**Két aktív hiba:** [#117 – Naptár szinkron / Google 404](https://github.com/fuloplevente1998/Native-AI-Studio/issues/117),
+[#118 – Témák kinyitott fejlécének és négy sorának közös kerete](https://github.com/fuloplevente1998/Native-AI-Studio/issues/118).
+Referencia: a felhasználó 4407.jpg / 4406.jpg / 4408.jpg képei. Most csak rögzítés;
+alkalmazáskód-javítás és új APK nem készült. A 404 oka a képből nem bizonyított.
+
+A felhasználó kérésére a korábbi #35, #59, #69, #71, #75, #84 lezárva; a halasztott
+#82 `not_planned` státusszal lezárva, implementációs állítás nélkül. A korábbi
+szakaszok nyitott checkboxai történetiek, nem önálló új feladatok.
+[Aktív hibanyilvántartás](PROGRESS_HEALTH_BUG_TRACKER_2026-11-02.md).
+
+A 2753-as release APK-pár időközben a megszokott TrainPilot Native Drive-mappába is
+felkerült; a név, APK MIME, pontos méret és szülőmappa visszaolvasva:
+**[telefonos release](https://drive.google.com/file/d/1VSHpl38FkLFFh7Nt5MlG0wGxRl2oQ39_/view?usp=drivesdk)**,
+**[optimalizált Wear release](https://drive.google.com/file/d/1GGMk-L5wRmJkusZ_FO6quGT2mT-Gt11-/view?usp=drivesdk)**.
+
+
 ## Legfrissebb ellenőrzött kiadás: 2753 – edzésfotók / PR113
 
 **[Aláírt telefonos release + optimalizált Wear release APK-pár letöltése](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41905695506/artifacts/13360792555)**.
 A ZIP-ben a telefon `app/build/outputs/apk/release/app-release.apk`, az óra
 `wear/build/outputs/apk/release/wear-release.apk`. Telefon **20 433 912 bájt**,
 Wear **4 636 863 bájt**, változatlan tartós signer és `com.TrainPilot.com` package,
-`0.1.0-beta / 2753`. A GitHub artifact 7 napig őrzött; Drive-feltöltés ebben a
-menetben nem történt. A pontos hash-ek és nyilvános cert a [kiadási bizonyítékban](RELEASE_2753_PHOTOS_VERIFIED_ARTIFACTS.json).
+`0.1.0-beta / 2753`. A GitHub artifact 7 napig őrzött; a későbbi Drive-átadás
+ellenőrzött linkjei fent találhatók. A pontos hash-ek és nyilvános cert a [kiadási bizonyítékban](RELEASE_2753_PHOTOS_VERIFIED_ARTIFACTS.json).
 
 Aláírt forrás: `99f2adf74d0e485dad8e37940a981b428b518f99`, signed run41905695506
 SUCCESS. Letöltött nyers XML: **460 = 284 telefon + 176 Wear**, 0 failure/error/skipped,
