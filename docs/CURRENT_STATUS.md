@@ -1,5 +1,48 @@
 # TrainPilot Native – aktuális állapot, 2026-11-04
 
+## Legfrissebb ellenőrzött kiadás: 2753 – edzésfotók / PR113
+
+**[Aláírt telefonos release + optimalizált Wear release APK-pár letöltése](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41905695506/artifacts/13360792555)**.
+A ZIP-ben a telefon `app/build/outputs/apk/release/app-release.apk`, az óra
+`wear/build/outputs/apk/release/wear-release.apk`. Telefon **20 433 912 bájt**,
+Wear **4 636 863 bájt**, változatlan tartós signer és `com.TrainPilot.com` package,
+`0.1.0-beta / 2753`. A GitHub artifact 7 napig őrzött; Drive-feltöltés ebben a
+menetben nem történt. A pontos hash-ek és nyilvános cert a [kiadási bizonyítékban](RELEASE_2753_PHOTOS_VERIFIED_ARTIFACTS.json).
+
+Aláírt forrás: `99f2adf74d0e485dad8e37940a981b428b518f99`, signed run41905695506
+SUCCESS. Letöltött nyers XML: **460 = 284 telefon + 176 Wear**, 0 failure/error/skipped,
+benne 7 új fotóregresszió. A közös modul NO-SOURCE. A tényleges APK-k hash-e,
+v2 cert-ujjlenyomata, package/verzió/Maps/páros/capability-metaadata és a GitHub
+ZIP digest is ellenőrizve. A későbbi PR115 csak workflow/dokumentáció, app/Wear/shared
+forrása az aláírt kiadással azonos.
+
+A `bbd7ad7` AI Studio import fotós és kompakt edzésvezérlős csomagja benne van.
+Edzés végén és korábbi Napló-edzésnél is van kamera/galéria, három kategóriával.
+PR113 javítja a naplós fotóhozzáadás parent-REPLACE miatti kaszkád-adatvesztését,
+és az összegző fotójának eltűnését a natív projektálás/mentés során. A mentés
+atomi, a késői callback törlés/restore/generáció után védett. Korábban már elveszett
+adat visszaállítását nem állítjuk. **[Telefonos tesztlista](TEST_2753_PHOTOS_PHONE.md)**;
+a tényleges kamera/galéria és vizuális készülékes elfogadás még nyitott.
+
+## CI gyorsítás – PR114 / PR115
+
+Két generált sablonteszt kivezetve, a funkcionális regressziók megmaradtak.
+A signed main végre elmenti a Gradle User Home cache-t; a logban a mentés igazolt.
+A PR CI ezentúl csak a teljes JVM-teszteket futtatja, külön debug/optimalizált
+telepítőcsomagolás nélkül. Release APK és annak szigorú ellenőrzése a signed jobban.
+Új, hideg regression-only CI41906780189 SUCCESS: 460 nyers teszt, 0 hiba/kihagyás,
+Gradle **6m18.75s**, a korábbi fotós CI Gradle-lépése 13m03s volt. Ezek külön
+mért futások, nem minden következő módosításra szóló időígéretek.
+Meleg main-cache próba41908345166 SUCCESS: Gradle-lépés **23 mp**, teljes job
+**1m26s**, 76 taskból 52 FROM-CACHE. A telefon/Wear tesztek eredménye cache-ből
+jött, azonos alkalmazás- és tesztforrásra; nem újonnan végrehajtott készülékes
+próba. Letöltött 460 nyers eredmény és aktuális source-report ellenőrizve.
+Új forrásváltozás továbbra is invalidálhat taskokat.
+[Időprofil és cache-részletek](ANDROID_BUILD_PERFORMANCE_2026-11-04.md).
+
+Az alábbi bejegyzések korábbi, történeti kiadások; a fenti 2753 az aktuális átadás.
+
+
 ## PR108 – második AI Studio import, 2752-es forrás előkészítve
 
 A külső YouTube/rendszerböngésző a videógomb alapértelmezett útja; a belső lejátszó helyett hibánál linkmásolás/újrapróbálás jelenik meg. Aktív edzés, gyakorlatutasítások, programmetaadatok, izomterhelés, időszak- és felugrófeliratok fordítása bővült. A saját nevek/leírások és a konkrét felszerelésadatok megőrzése felülvizsgálva. A korábbi GPS-adatvédelmi és ismeretlen feedback-védelmek megmaradnak.
