@@ -122,6 +122,39 @@ internal fun StudioWorkoutModesDialog(
                         workoutModeText(lang, "Új: ", "After: ", "Nachher: ", "După: ") +
                             styleName(lang, review.afterStyle) + " / " + progressionName(lang, review.afterProgression),
                         color = p.textPrimary, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        workoutModeText(lang, "Program-összehasonlítás: ",
+                            "Program comparison: ", "Programmvergleich: ", "Comparație program: ") +
+                            review.programName,
+                        color = p.textPrimary, fontWeight = FontWeight.Bold)
+                    for ((index, row) in review.rows.withIndex()) {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = p.surfaceElevated,
+                            modifier = Modifier.fillMaxWidth().testTag("studio_modes_comparison_$index")
+                        ) {
+                            Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Text(row.day, color = p.textSecondary)
+                                Text(row.exercise, color = p.textPrimary, fontWeight = FontWeight.Bold)
+                                Text(
+                                    workoutModeText(lang, "Sorozat: ", "Sets: ", "Sätze: ", "Serii: ") +
+                                        "${row.beforeSets ?: "—"} → ${row.afterSets ?: "—"}",
+                                    color = p.textPrimary)
+                                Text(
+                                    workoutModeText(lang, "Ismétlés: ", "Reps: ", "Wiederholungen: ", "Repetări: ") +
+                                        "${row.beforeReps} → ${row.afterReps}",
+                                    color = p.textPrimary)
+                                Text(
+                                    workoutModeText(lang, "Súly (kg): ", "Weight (kg): ", "Gewicht (kg): ", "Greutate (kg): ") +
+                                        "${row.beforeWeight ?: "—"} → ${row.afterWeight ?: "—"}",
+                                    color = p.textPrimary)
+                                Text(
+                                    workoutModeText(lang, "Pihenő: ", "Rest: ", "Pause: ", "Pauză: ") +
+                                        "${row.restSeconds ?: "—"} $unit · RIR: ${row.rir}",
+                                    color = p.textSecondary)
+                            }
+                        }
+                    }
                     if (review.inheritGlobal) Text(
                         workoutModeText(lang, "A program a globális beállítást fogja örökölni.",
                             "The program will inherit the global setting.",
