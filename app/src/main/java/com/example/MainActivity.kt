@@ -88,6 +88,7 @@ import com.example.ui.screens.ProgramEditorScreen
 import com.example.ui.screens.ProgramsListScreen
 import com.example.ui.screens.ProgressTabScreen
 import com.example.ui.screens.SettingsMainScreen
+import com.example.ui.screens.StudioWorkoutModesDialog
 import com.example.ui.screens.WatchAndSyncScreen
 import com.example.ui.screens.WorkoutSummaryScreen
 import com.example.ui.screens.WorkoutTabScreen
@@ -243,131 +244,22 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
             )
         }
 
-        // 3b. Global Workout Settings & Progression Modal (Edzés beállításai) when opened outside SettingsMainScreen
-        if (uiState.showProgressionModal && uiState.currentSubScreen != SubScreen.SETTINGS_MAIN) {
-            var selectedStyle by androidx.compose.runtime.remember(uiState.trainingStyleHu) {
-                androidx.compose.runtime.mutableStateOf(uiState.trainingStyleHu)
-            }
-            var selectedRule by androidx.compose.runtime.remember(uiState.progressionRuleHu) {
-                androidx.compose.runtime.mutableStateOf(uiState.progressionRuleHu)
-            }
-            var gentleMode by androidx.compose.runtime.remember(uiState.beginnerGentleProfileActive) {
-                androidx.compose.runtime.mutableStateOf(uiState.beginnerGentleProfileActive)
-            }
-            com.example.ui.components.TrainPilotAlertDialog(
-                onDismissRequest = { viewModel.toggleProgressionModal(false) },
-                containerColor = palette.surface,
-                titleContentColor = palette.textPrimary,
-                title = {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Edzés beállításai",
-                            style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.weight(1f)
-                        )
-                        TrainPilotRedCloseButton(
-                            onClick = { viewModel.toggleProgressionModal(false) }
-                        )
-                    }
+        // One shared Studio editor for Settings/global and Workout/active-program modes.
+        if (uiState.showProgressionModal) {
+            val modeScope = if (uiState.currentSubScreen == SubScreen.SETTINGS_MAIN) "global" else "program"
+            StudioWorkoutModesDialog(
+                state = uiState,
+                scope = modeScope,
+                onDismiss = { viewModel.toggleProgressionModal(false) },
+                onCycleRest = { viewModel.cycleDefaultRestTimer() },
+                onToggleSound = { viewModel.toggleSoundAlert(it) },
+                onToggleVibration = { viewModel.toggleVibrationAlert(it) },
+                onPreview = { style, progression, inherit ->
+                    viewModel.previewProgressionSettings(style, progression, modeScope, inherit)
                 },
-                text = {
-                    Column(
-                        modifier = Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = palette.surfaceElevated,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                                .clickable { viewModel.cycleDefaultRestTimer() }
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("Alapértelmezett pihenőidő", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
-                                Text("${uiState.defaultRestSec} mp", color = palette.primary, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = palette.surfaceElevated,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("Hangjelzés pihenőidő végén", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
-                                androidx.compose.material3.Switch(
-                                    checked = uiState.soundAlertEnabled,
-                                    onCheckedChange = { viewModel.toggleSoundAlert(it) }
-                                )
-                            }
-                        }
-                        Text("Edzésstílus:", fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                        listOf("Erő & Hipertrófia", "Funkcionális & Állóképesség", "Kezdő kímélő (Ízületbarát)").forEach { st ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { selectedStyle = st }
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                androidx.compose.material3.RadioButton(selected = selectedStyle == st, onClick = { selectedStyle = st })
-                                Text(st, color = palette.textPrimary)
-                            }
-                        }
-                        Text("Progressziós szabály:", fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                        listOf("Dupla progresszió (8-12 ism. -> +2.5 kg)", "Lineáris (+1.25 kg hetente)", "RIR-alapú (1-2 RIR megtartása)").forEach { rl ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { selectedRule = rl }
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                androidx.compose.material3.RadioButton(selected = selectedRule == rl, onClick = { selectedRule = rl })
-                                Text(rl, color = palette.textPrimary)
-                            }
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Kezdő kímélő profil", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
-                            androidx.compose.material3.Switch(checked = gentleMode, onCheckedChange = { gentleMode = it })
-                        }
-                    }
-                },
-                confirmButton = {
-                    androidx.compose.material3.Button(
-                        onClick = { viewModel.updateProgressionSettings(selectedStyle, selectedRule, gentleMode) },
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                            containerColor = palette.primary,
-                            contentColor = palette.onPrimary
-                        )
-                    ) {
-                        Text(strings.saveBtn, fontWeight = FontWeight.Bold)
-                    }
-                },
-                dismissButton = {
-                    androidx.compose.material3.TextButton(onClick = { viewModel.toggleProgressionModal(false) }) {
-                        Text(strings.cancelBtn, color = palette.textSecondary)
-                    }
-                }
+                onApprove = { viewModel.approveProgressionSettings() },
+                onEditPreview = { viewModel.discardProgressionPreview() },
+                onUndo = { viewModel.undoProgressionSettings(modeScope) }
             )
         }
 
@@ -785,10 +677,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onSelectLanguage = { viewModel.selectLanguage(it) },
                             onCycleRestTimer = { viewModel.cycleDefaultRestTimer() },
                             onToggleSoundAlert = { viewModel.toggleSoundAlert(it) },
+                            onToggleVibration = { viewModel.toggleVibrationAlert(it) },
                             onToggleProgressionModal = { viewModel.toggleProgressionModal(it) },
-                            onSaveProgression = { style, rule, gentle ->
-                                viewModel.updateProgressionSettings(style, rule, gentle)
-                            },
                             onNavigateToSubScreen = { viewModel.navigateToSubScreen(it) },
                             onShowBanner = { viewModel.showBannerMessage(it) },
                             onCloudSyncCompleted = { viewModel.refreshAfterCloudSync(context) }
