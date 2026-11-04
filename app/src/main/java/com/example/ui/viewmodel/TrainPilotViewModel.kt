@@ -850,14 +850,14 @@ class TrainPilotViewModel : ViewModel() {
                         }
                     }.getOrElse { emptyList() }
                     val resolvedDayHu = dayEntity.nameHu.ifBlank { catalogDay?.nameHu.orEmpty() }.ifBlank { "Edzésnap ${dIdx + 1}" }
-                    val resolvedDayEn = (catalogDay?.nameEn?.takeIf { dayEntity.nameHu == catalogDay.nameHu }
-                        ?: dayEntity.nameEn.takeUnless { it == dayEntity.nameHu && catalogDay != null })
-                        .orEmpty().ifBlank { "Day ${dIdx + 1}" }
-                    val resolvedDayDe = (catalogDay?.nameDe?.takeIf { dayEntity.nameHu == catalogDay.nameHu }
-                        ?: dayEntity.nameDe.takeUnless { it == dayEntity.nameHu && catalogDay != null })
+                    val resolvedDayEn = (catalogDay?.nameEn?.takeIf { dayEntity.nameHu == catalogDay.nameHu && (dayEntity.nameEn.isBlank() || dayEntity.nameEn == dayEntity.nameHu) }
+                        ?: dayEntity.nameEn.takeIf { it.isNotBlank() })
+                        .orEmpty().ifBlank { resolvedDayHu }
+                    val resolvedDayDe = (catalogDay?.nameDe?.takeIf { dayEntity.nameHu == catalogDay.nameHu && (dayEntity.nameDe.isBlank() || dayEntity.nameDe == dayEntity.nameHu) }
+                        ?: dayEntity.nameDe.takeIf { it.isNotBlank() })
                         .orEmpty().ifBlank { resolvedDayEn }
-                    val resolvedDayRo = (catalogDay?.nameRo?.takeIf { dayEntity.nameHu == catalogDay.nameHu }
-                        ?: dayEntity.nameRo.takeUnless { it == dayEntity.nameHu && catalogDay != null })
+                    val resolvedDayRo = (catalogDay?.nameRo?.takeIf { dayEntity.nameHu == catalogDay.nameHu && (dayEntity.nameRo.isBlank() || dayEntity.nameRo == dayEntity.nameHu) }
+                        ?: dayEntity.nameRo.takeIf { it.isNotBlank() })
                         .orEmpty().ifBlank { resolvedDayEn }
                     com.example.model.ProgramDayModel(
                         id = dayEntity.compositeId,
@@ -895,14 +895,14 @@ class TrainPilotViewModel : ViewModel() {
                 val builtSubtitleRo = customUserDesc ?: "$locRo • $lvlRo • ${progDays.size} zile de antrenament"
 
                 val resolvedNameHu = prog.nameHu.ifBlank { catalogProg?.nameHu.orEmpty() }.ifBlank { prog.nameEn }.ifBlank { "Edzésterv ${pIdx + 1}" }
-                val resolvedNameEn = (catalogProg?.nameEn?.takeIf { prog.nameHu == catalogProg.nameHu }
-                    ?: prog.nameEn.takeUnless { it == prog.nameHu && catalogProg != null })
+                val resolvedNameEn = (catalogProg?.nameEn?.takeIf { prog.nameHu == catalogProg.nameHu && (prog.nameEn.isBlank() || prog.nameEn == prog.nameHu) }
+                    ?: prog.nameEn.takeIf { it.isNotBlank() })
                     .orEmpty().ifBlank { resolvedNameHu }
-                val resolvedNameDe = (catalogProg?.nameDe?.takeIf { prog.nameHu == catalogProg.nameHu }
-                    ?: prog.nameDe.takeUnless { it == prog.nameHu && catalogProg != null })
+                val resolvedNameDe = (catalogProg?.nameDe?.takeIf { prog.nameHu == catalogProg.nameHu && (prog.nameDe.isBlank() || prog.nameDe == prog.nameHu) }
+                    ?: prog.nameDe.takeIf { it.isNotBlank() })
                     .orEmpty().ifBlank { resolvedNameEn }
-                val resolvedNameRo = (catalogProg?.nameRo?.takeIf { prog.nameHu == catalogProg.nameHu }
-                    ?: prog.nameRo.takeUnless { it == prog.nameHu && catalogProg != null })
+                val resolvedNameRo = (catalogProg?.nameRo?.takeIf { prog.nameHu == catalogProg.nameHu && (prog.nameRo.isBlank() || prog.nameRo == prog.nameHu) }
+                    ?: prog.nameRo.takeIf { it.isNotBlank() })
                     .orEmpty().ifBlank { resolvedNameEn }
 
                 TrainingProgramModel(
