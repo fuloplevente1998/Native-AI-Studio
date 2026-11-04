@@ -936,13 +936,13 @@ class TrainPilotViewModel : ViewModel() {
                 val builtSubtitleRo = customUserDesc ?: "$locRo • $lvlRo • ${progDays.size} zile de antrenament"
 
                 val resolvedNameHu = prog.nameHu.ifBlank { catalogProg?.nameHu.orEmpty() }.ifBlank { prog.nameEn }.ifBlank { "Edzésterv ${pIdx + 1}" }
-                val resolvedNameEn = (localizedTemplate?.nameEn?.takeIf { prog.nameHu == catalogProg.nameHu && (prog.nameEn.isBlank() || prog.nameEn == prog.nameHu) }
+                val resolvedNameEn = (localizedTemplate?.nameEn?.takeIf { prog.nameHu == localizedTemplate?.nameHu && (prog.nameEn.isBlank() || prog.nameEn == prog.nameHu) }
                     ?: prog.nameEn.takeIf { it.isNotBlank() })
                     .orEmpty().ifBlank { resolvedNameHu }
-                val resolvedNameDe = (localizedTemplate?.nameDe?.takeIf { prog.nameHu == catalogProg.nameHu && (prog.nameDe.isBlank() || prog.nameDe == prog.nameHu) }
+                val resolvedNameDe = (localizedTemplate?.nameDe?.takeIf { prog.nameHu == localizedTemplate?.nameHu && (prog.nameDe.isBlank() || prog.nameDe == prog.nameHu) }
                     ?: prog.nameDe.takeIf { it.isNotBlank() })
                     .orEmpty().ifBlank { resolvedNameEn }
-                val resolvedNameRo = (localizedTemplate?.nameRo?.takeIf { prog.nameHu == catalogProg.nameHu && (prog.nameRo.isBlank() || prog.nameRo == prog.nameHu) }
+                val resolvedNameRo = (localizedTemplate?.nameRo?.takeIf { prog.nameHu == localizedTemplate?.nameHu && (prog.nameRo.isBlank() || prog.nameRo == prog.nameHu) }
                     ?: prog.nameRo.takeIf { it.isNotBlank() })
                     .orEmpty().ifBlank { resolvedNameEn }
 
