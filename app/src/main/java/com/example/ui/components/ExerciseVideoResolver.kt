@@ -1,5 +1,9 @@
 package com.example.ui.components
 
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import com.repforge.app.data.db.TrainPilotDatabase
 import java.net.URI
 import java.util.Locale
@@ -122,14 +126,48 @@ fun resolveExerciseVideoAndNotes(
         }.singleOrNull()
     } else null
     val link = resolveExerciseVideoLink(storedVideoUrl, match?.videoUrl, isCustom)
-    val fallbackNoNotes = when (language.lowercase(Locale.ROOT)) {
+    val langNorm = language.lowercase(Locale.ROOT)
+    val fallbackNoNotes = when (langNorm) {
         "en" -> "No execution description is available for this exercise."
         "de" -> "Für diese Übung ist keine Ausführungsbeschreibung verfügbar."
         "ro" -> "Nu există o descriere de execuție pentru acest exercițiu."
         else -> "Ehhez a gyakorlathoz nincs végrehajtási leírás."
     }
-    val notes = selectedNotesHu?.takeIf { it.isNotBlank() }
-        ?: match?.notesHu?.takeIf { it.isNotBlank() }
+    val matchLocalizedNotes = when (langNorm) {
+        "en" -> match?.notesEn?.takeIf { it.isNotBlank() } ?: match?.notesHu?.takeIf { it.isNotBlank() }
+        "de" -> match?.notesDe?.takeIf { it.isNotBlank() } ?: match?.notesEn?.takeIf { it.isNotBlank() } ?: match?.notesHu?.takeIf { it.isNotBlank() }
+        "ro" -> match?.notesRo?.takeIf { it.isNotBlank() } ?: match?.notesEn?.takeIf { it.isNotBlank() } ?: match?.notesHu?.takeIf { it.isNotBlank() }
+        else -> match?.notesHu?.takeIf { it.isNotBlank() }
+    }
+    val notes = selectedNotesHu?.takeIf { it.isNotBlank() && (isCustom || matchLocalizedNotes == null) }
+        ?: matchLocalizedNotes
+        ?: selectedNotesHu?.takeIf { it.isNotBlank() }
         ?: fallbackNoNotes
     return ExerciseVideoDetails(link, notes)
+}
+
+/**
+ * Builds a validated external ACTION_VIEW Intent for opening an exercise video
+ * directly in the YouTube app or external browser without intermediate WebView modals.
+ */
+fun buildExternalExerciseVideoIntent(url: String?, context: Context? = null): Intent? {
+    val safeUrl = url?.let { safeExternalExerciseVideoUrl(it) } ?: return null
+    return Intent(Intent.ACTION_VIEW, Uri.parse(safeUrl)).apply {
+        addCategory(Intent.CATEGORY_BROWSABLE)
+        if (context !is Activity) {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+    }
+}
+
+/**
+ * Immediately launches the verified external exercise video URL in the system browser
+ * or YouTube app. Returns true if launched, false if invalid/missing or no handler exists.
+ */
+fun openExternalExerciseVideoUrl(context: Context, url: String?): Boolean {
+    val intent = buildExternalExerciseVideoIntent(url, context) ?: return false
+    return runCatching {
+        context.startActivity(intent)
+        true
+    }.getOrDefault(false)
 }

@@ -1,7 +1,14 @@
 package com.example.ui.components
 
+import android.content.Intent
+import androidx.compose.ui.graphics.Color
+import com.example.model.AppLanguage
+import com.example.model.ExerciseItem
+import com.example.model.ProgramDayModel
+import com.example.model.TrainingProgramModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -167,6 +174,125 @@ class ExerciseVideoResolverTest {
         assertEquals(ExerciseVideoState.EXTERNAL_ONLY, resolved.state)
         assertNull(resolved.youtubeId)
         assertEquals(stored, resolved.externalUrl)
+    }
+
+    @Test fun externalExerciseVideoIntentBuildsDirectBrowserActionView() {
+        val resolved = resolveExerciseVideoAndNotes("Goblet Squat", exerciseId = "goblet-squat", language = "en")
+        val intent = buildExternalExerciseVideoIntent(resolved.link.externalUrl)
+        assertNotNull(intent)
+        assertEquals(Intent.ACTION_VIEW, intent!!.action)
+        assertEquals("https://www.youtube.com/watch?v=$gobletId", intent.dataString)
+        assertTrue(intent.categories.contains(Intent.CATEGORY_BROWSABLE))
+        assertTrue((intent.flags and Intent.FLAG_ACTIVITY_NEW_TASK) != 0)
+        assertNull(buildExternalExerciseVideoIntent("javascript:alert(1)"))
+        assertNull(buildExternalExerciseVideoIntent(null))
+    }
+
+    @Test fun catalogExecutionNotesAndModelsLocalizeInHuEnDeRo() {
+        val enResolved = resolveExerciseVideoAndNotes("Goblet Squat", exerciseId = "goblet-squat", language = "en")
+        val deResolved = resolveExerciseVideoAndNotes("Goblet Kniebeuge", exerciseId = "goblet-squat", language = "de")
+        val roResolved = resolveExerciseVideoAndNotes("Genuflexiune Goblet", exerciseId = "goblet-squat", language = "ro")
+        assertTrue(enResolved.notesHu.contains("dumbbell", ignoreCase = true))
+        assertTrue(deResolved.notesHu.contains("Kurzhantel", ignoreCase = true))
+        assertTrue(roResolved.notesHu.contains("ganteră", ignoreCase = true))
+
+        val muscleItem = MuscleLoadItem(
+            id = "chest",
+            nameHu = "Mell",
+            setsText = "12 sorozat",
+            percentage = 80,
+            ratio = 0.8f,
+            levelLabelHu = "Magas",
+            topExercisesHu = emptyList(),
+            exerciseIdToOpen = "bench-press",
+            setsCount = 12
+        )
+        assertEquals("Chest", muscleItem.localizedName(AppLanguage.EN))
+        assertEquals("12 sets", muscleItem.localizedSetsText(AppLanguage.EN))
+        assertEquals("Higher load", muscleItem.localizedLevelLabel(AppLanguage.EN))
+        assertEquals("Brust", muscleItem.localizedName(AppLanguage.DE))
+        assertEquals("12 Sätze", muscleItem.localizedSetsText(AppLanguage.DE))
+        assertEquals("Piept", muscleItem.localizedName(AppLanguage.RO))
+        assertEquals("12 serii", muscleItem.localizedSetsText(AppLanguage.RO))
+
+        val day = ProgramDayModel(
+            id = "day-a",
+            dayCode = "A nap",
+            titleHu = "Felsőtest A",
+            titleEn = "Upper Body A",
+            durationMinutes = 52,
+            exercises = emptyList(),
+            titleDe = "Oberkörper A",
+            titleRo = "Partea superioară A"
+        )
+        assertEquals("Day A", day.localizedDayCode(AppLanguage.EN))
+        assertEquals("Tag A", day.localizedDayCode(AppLanguage.DE))
+        assertEquals("Ziua A", day.localizedDayCode(AppLanguage.RO))
+        assertEquals("Upper Body A", day.localizedTitle(AppLanguage.EN))
+        assertEquals("Oberkörper A", day.localizedTitle(AppLanguage.DE))
+        assertEquals("Partea superioară A", day.localizedTitle(AppLanguage.RO))
+
+        val program = TrainingProgramModel(
+            id = "full-body-a-b",
+            nameHu = "Teljes test A/B",
+            nameEn = "Full Body A/B",
+            subtitleHu = "Heti 3 napos alap program",
+            subtitleEn = "3-day foundational full body split",
+            tagsHu = listOf("Edzőterem", "Középhaladó"),
+            isCustom = false,
+            isActive = true,
+            days = listOf(day),
+            nameDe = "Ganzkörper A/B",
+            nameRo = "Full Body A/B",
+            subtitleDe = "3-Tage Ganzkörper-Grundprogramm",
+            subtitleRo = "Program de bază 3 zile pe săptămână"
+        )
+        assertEquals("Full Body A/B", program.localizedName(AppLanguage.EN))
+        assertEquals("Ganzkörper A/B", program.localizedName(AppLanguage.DE))
+        assertEquals("3-day foundational full body split", program.localizedSubtitle(AppLanguage.EN))
+        assertTrue(program.localizedTags(AppLanguage.EN).contains("Gym"))
+
+        val ex = ExerciseItem(
+            id = "goblet-squat",
+            nameHu = "Goblet guggolás",
+            nameEn = "Goblet Squat",
+            nameDe = "Goblet Kniebeuge",
+            nameRo = "Genuflexiune Goblet",
+            equipmentHu = "1 kézisúlyzó",
+            primaryMusclesHu = "Quad, Farizom",
+            secondaryMusclesHu = "Törzs",
+            stepsHu = listOf("Tartsd a súlyt mellkas előtt"),
+            stepsEn = listOf("Hold the dumbbell at chest height")
+        )
+        assertEquals("Goblet Squat", ex.localizedName(AppLanguage.EN))
+        assertEquals("1 dumbbell", ex.localizedEquipment(AppLanguage.EN))
+        assertEquals("Quads, Glutes", ex.localizedPrimaryMuscles(AppLanguage.EN))
+        assertEquals("Hold the dumbbell at chest height", ex.localizedSteps(AppLanguage.EN).first())
+    }
+    @Test fun translationDoesNotReplaceExplicitEquipmentOrCoachFeedback() {
+        val ex = ExerciseItem(id = "custom", nameHu = "My exercise", isCustom = true,
+            equipmentHu = "My special apparatus", loadType = "per_hand",
+            coachHintHu = "Keep this actual Coach restriction", stepsEn = listOf("Execution step"))
+        assertEquals("My special apparatus", ex.localizedEquipment(AppLanguage.EN))
+        assertEquals("Keep this actual Coach restriction", ex.localizedCoachHint(AppLanguage.EN))
+        assertEquals("1 dumbbell", ex.copy(equipmentHu = "1 kézisúlyzó").localizedEquipment(AppLanguage.EN))
+        assertEquals("Legs, Glutes", com.example.model.translateMuscleListLabel("Láb/far", AppLanguage.EN))
+        assertEquals("Core / Abs", com.example.model.translateMuscleListLabel("Törzs / Has", AppLanguage.EN))
+        assertEquals("Forearms, Back", com.example.model.translateMuscleListLabel("Alkar / Hát", AppLanguage.EN))
+        assertEquals("Obliques", com.example.model.translateMuscleListLabel("Oldalsó hasizom", AppLanguage.EN))
+    }
+
+    @Test fun everyBundledExerciseHasTranslatedEquipmentAndMuscleFragments() {
+        val untranslated = Regex("kézisúlyzó|csiga|támasz|rögzítés|gép|futócipő|lábhajlító|combhajlító|hátsó váll|lapocka|kondíció", RegexOption.IGNORE_CASE)
+        for (entry in com.repforge.app.data.db.TrainPilotDatabase.defaultExercises()) {
+            val raw = org.json.JSONObject(entry.rawJson)
+            for (language in listOf(AppLanguage.EN, AppLanguage.DE, AppLanguage.RO)) {
+                val equipment = com.example.model.translateEquipmentLabel(raw.optString("equipment"), entry.loadType, language)
+                val muscles = com.example.model.translateMuscleListLabel(raw.optString("target"), language)
+                assertFalse("${entry.id} $language: $equipment", untranslated.containsMatchIn(equipment))
+                assertFalse("${entry.id} $language: $muscles", untranslated.containsMatchIn(muscles))
+            }
+        }
     }
 
 }

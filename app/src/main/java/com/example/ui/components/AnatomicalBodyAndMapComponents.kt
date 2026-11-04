@@ -72,6 +72,8 @@ import com.example.localization.LocalTrainPilotStrings
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.components.mapcontrols.MapAppearanceSelector
 
+import com.example.model.AppLanguage
+
 data class MuscleLoadItem(
     val id: String,
     val nameHu: String,
@@ -82,7 +84,84 @@ data class MuscleLoadItem(
     val topExercisesHu: List<Pair<String, String>>, // ExerciseName to sets/load
     val exerciseIdToOpen: String,
     val setsCount: Int = 0
-)
+) {
+    fun localizedName(lang: AppLanguage): String = when (id.lowercase()) {
+        "chest" -> when (lang) {
+            AppLanguage.HU -> nameHu.ifBlank { "Mell" }
+            AppLanguage.EN -> "Chest"
+            AppLanguage.DE -> "Brust"
+            AppLanguage.RO -> "Piept"
+        }
+        "back" -> when (lang) {
+            AppLanguage.HU -> nameHu.ifBlank { "Hát" }
+            AppLanguage.EN -> "Back"
+            AppLanguage.DE -> "Rücken"
+            AppLanguage.RO -> "Spate"
+        }
+        "shoulders" -> when (lang) {
+            AppLanguage.HU -> nameHu.ifBlank { "Váll" }
+            AppLanguage.EN -> "Shoulders"
+            AppLanguage.DE -> "Schultern"
+            AppLanguage.RO -> "Umeri"
+        }
+        "legs" -> when (lang) {
+            AppLanguage.HU -> nameHu.ifBlank { "Láb" }
+            AppLanguage.EN -> "Legs"
+            AppLanguage.DE -> "Beine"
+            AppLanguage.RO -> "Picioare"
+        }
+        "arms" -> when (lang) {
+            AppLanguage.HU -> nameHu.ifBlank { "Kar" }
+            AppLanguage.EN -> "Arms"
+            AppLanguage.DE -> "Arme"
+            AppLanguage.RO -> "Brațe"
+        }
+        "core" -> when (lang) {
+            AppLanguage.HU -> nameHu.ifBlank { "Törzs" }
+            AppLanguage.EN -> "Core"
+            AppLanguage.DE -> "Rumpf"
+            AppLanguage.RO -> "Trunchi"
+        }
+        else -> com.example.model.translateSingleMuscleLabel(nameHu, lang)
+    }
+
+    fun localizedSetsText(lang: AppLanguage): String = when (lang) {
+        AppLanguage.HU -> setsText.ifBlank { "$setsCount sorozat" }
+        AppLanguage.EN -> "$setsCount sets"
+        AppLanguage.DE -> "$setsCount Sätze"
+        AppLanguage.RO -> "$setsCount serii"
+    }
+
+    fun localizedLevelLabel(lang: AppLanguage): String {
+        if (lang == AppLanguage.HU) return levelLabelHu
+        return when {
+            setsCount <= 0 -> when (lang) {
+                AppLanguage.EN -> "No load"
+                AppLanguage.DE -> "Keine Belastung"
+                AppLanguage.RO -> "Fără încărcare"
+                AppLanguage.HU -> levelLabelHu
+            }
+            percentage >= 70 -> when (lang) {
+                AppLanguage.EN -> "Higher load"
+                AppLanguage.DE -> "Höhere Belastung"
+                AppLanguage.RO -> "Încărcare mare"
+                AppLanguage.HU -> levelLabelHu
+            }
+            percentage >= 40 -> when (lang) {
+                AppLanguage.EN -> "Moderate load"
+                AppLanguage.DE -> "Mittlere Belastung"
+                AppLanguage.RO -> "Încărcare medie"
+                AppLanguage.HU -> levelLabelHu
+            }
+            else -> when (lang) {
+                AppLanguage.EN -> "Lower load"
+                AppLanguage.DE -> "Geringere Belastung"
+                AppLanguage.RO -> "Încărcare mică"
+                AppLanguage.HU -> levelLabelHu
+            }
+        }
+    }
+}
 
 /**
  * Compact Side-by-Side Front & Back Anatomical Muscle Heatmap ("Izomcsoport-terhelés")
@@ -104,7 +183,43 @@ fun AnatomicalMuscleHeatmapCard(
     onOpenExerciseDetail: ((String) -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
-    val periodOptions = remember { listOf("3 hó", "30 nap", "7 nap", "1 nap") }
+    val strings = LocalTrainPilotStrings.current
+    val lang = strings.language
+    val resolvedTitle = remember(title, lang) {
+        if (lang == AppLanguage.HU || title != "Izomcsoport-terhelés") title
+        else when (lang) {
+            AppLanguage.EN -> "Muscle Group Load"
+            AppLanguage.DE -> "Muskelgruppen-Belastung"
+            AppLanguage.RO -> "Încărcare grupe musculare"
+            AppLanguage.HU -> title
+        }
+    }
+    val resolvedSubtitle = remember(subtitle, lang) {
+        if (lang == AppLanguage.HU) subtitle
+        else when {
+            subtitle == "A színek és arányok az időszak legterheltebb izomcsoportjához viszonyítanak, nem fáradtságot mérnek." -> when (lang) {
+                AppLanguage.EN -> "Colors and ratios compare against the most loaded muscle group in the period; they do not measure fatigue."
+                AppLanguage.DE -> "Farben und Verhältnisse beziehen sich auf die am stärksten belastete Muskelgruppe im Zeitraum, nicht auf Ermüdung."
+                AppLanguage.RO -> "Culorile și proporțiile se raportează la grupa musculară cea mai încărcată din perioadă, nu măsoară oboseala."
+                AppLanguage.HU -> subtitle
+            }
+            subtitle.startsWith("A kiválasztott edzés izomterhelése") -> when (lang) {
+                AppLanguage.EN -> "Muscle load of the selected workout based on recorded sets."
+                AppLanguage.DE -> "Muskelbelastung des ausgewählten Trainings basierend auf erfassten Sätzen."
+                AppLanguage.RO -> "Încărcarea musculară a antrenamentului selectat pe baza seriilor înregistrate."
+                AppLanguage.HU -> subtitle
+            }
+            else -> subtitle
+        }
+    }
+    val periodOptions = remember(lang) {
+        when (lang) {
+            AppLanguage.HU -> listOf("3 hó", "30 nap", "7 nap", "1 nap")
+            AppLanguage.EN -> listOf("3 mo", "30 days", "7 days", "1 day")
+            AppLanguage.DE -> listOf("3 Mon.", "30 Tage", "7 Tage", "1 Tag")
+            AppLanguage.RO -> listOf("3 luni", "30 zile", "7 zile", "1 zi")
+        }
+    }
     val periodDayOptions = remember { listOf(90, 30, 7, 1) }
     val selectedPeriodIdx = periodDayOptions.indexOf(periodDays ?: 90).coerceAtLeast(0)
 
@@ -151,7 +266,7 @@ fun AnatomicalMuscleHeatmapCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = title,
+                    text = resolvedTitle,
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
@@ -216,11 +331,11 @@ fun AnatomicalMuscleHeatmapCard(
                         .clip(RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    val nativeLoads = remember(muscleLoads) {
+                    val nativeLoads = remember(muscleLoads, lang) {
                         muscleLoads.map {
                             com.repforge.app.ui.progress.MuscleLoadUiModel(
                                 muscleKey = it.id,
-                                label = it.nameHu,
+                                label = it.localizedName(lang),
                                 setsCount = it.setsCount,
                                 loadPercentage = it.ratio
                             )
@@ -228,7 +343,7 @@ fun AnatomicalMuscleHeatmapCard(
                     }
                     com.repforge.app.ui.progress.NativeMuscleLoadVisual(
                         loads = nativeLoads,
-                        language = "hu",
+                        language = lang.code.lowercase(),
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -258,13 +373,13 @@ fun AnatomicalMuscleHeatmapCard(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = m.nameHu,
+                                text = m.localizedName(lang),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isSel) palette.primary else palette.textPrimary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.width(56.dp)
+                                modifier = Modifier.width(64.dp)
                             )
                             Box(
                                 modifier = Modifier
@@ -296,24 +411,50 @@ fun AnatomicalMuscleHeatmapCard(
 
             Spacer(modifier = Modifier.height(4.dp))
 
+            val legendSmall = when (lang) {
+                AppLanguage.HU -> "Kisebb"
+                AppLanguage.EN -> "Lower"
+                AppLanguage.DE -> "Geringer"
+                AppLanguage.RO -> "Mică"
+            }
+            val legendMedium = when (lang) {
+                AppLanguage.HU -> "Közepes"
+                AppLanguage.EN -> "Moderate"
+                AppLanguage.DE -> "Mittel"
+                AppLanguage.RO -> "Medie"
+            }
+            val legendHigh = when (lang) {
+                AppLanguage.HU -> "Nagyobb"
+                AppLanguage.EN -> "Higher"
+                AppLanguage.DE -> "Höher"
+                AppLanguage.RO -> "Mare"
+            }
+
             // Legend Row: 🟡 Kisebb   🟠 Közepes   🔴 Nagyobb
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                LegendDot(color = smallHeatColor, label = "Kisebb")
+                LegendDot(color = smallHeatColor, label = legendSmall)
                 Spacer(modifier = Modifier.width(14.dp))
-                LegendDot(color = mediumHeatColor, label = "Közepes")
+                LegendDot(color = mediumHeatColor, label = legendMedium)
                 Spacer(modifier = Modifier.width(14.dp))
-                LegendDot(color = highHeatColor, label = "Nagyobb")
+                LegendDot(color = highHeatColor, label = legendHigh)
             }
 
             Spacer(modifier = Modifier.height(3.dp))
 
+            val explanationToggleLabel = when (lang) {
+                AppLanguage.HU -> "Relatív sorozatterhelés, nem fáradtság · Részletek"
+                AppLanguage.EN -> "Relative set volume, not fatigue · Details"
+                AppLanguage.DE -> "Relatives Satzvolumen, keine Ermüdung · Details"
+                AppLanguage.RO -> "Volum relativ de serii, nu oboseală · Detalii"
+            }
+
             // Keep the safety caveat visible; put the longer explanation behind a tap.
             Text(
-                text = "Relatív sorozatterhelés, nem fáradtság · Részletek",
+                text = explanationToggleLabel,
                 modifier = Modifier.clickable { showExplanation = !showExplanation }
                     .testTag("muscle_explanation_toggle"),
                 style = MaterialTheme.typography.labelSmall,
@@ -322,7 +463,7 @@ fun AnatomicalMuscleHeatmapCard(
                 overflow = TextOverflow.Ellipsis
             )
             if (showExplanation) Text(
-                text = subtitle,
+                text = resolvedSubtitle,
                 style = MaterialTheme.typography.labelSmall,
                 color = palette.textSecondary,
                 modifier = Modifier.testTag("muscle_explanation_text")
@@ -331,6 +472,18 @@ fun AnatomicalMuscleHeatmapCard(
             // Expandable Muscle Exercise Breakdown when user taps any muscle bar or body part
             if (selectedMuscleObj != null) {
                 Spacer(modifier = Modifier.height(10.dp))
+                val openExLabel = when (lang) {
+                    AppLanguage.HU -> "Gyakorlat >"
+                    AppLanguage.EN -> "Exercise >"
+                    AppLanguage.DE -> "Übung >"
+                    AppLanguage.RO -> "Exercițiu >"
+                }
+                val closeLabel = when (lang) {
+                    AppLanguage.HU -> "Bezárás ✕"
+                    AppLanguage.EN -> "Close ✕"
+                    AppLanguage.DE -> "Schließen ✕"
+                    AppLanguage.RO -> "Închide ✕"
+                }
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = palette.surfaceElevated,
@@ -349,14 +502,14 @@ fun AnatomicalMuscleHeatmapCard(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "${selectedMuscleObj.nameHu} • ${selectedMuscleObj.setsText} (${selectedMuscleObj.percentage}%)",
+                                text = "${selectedMuscleObj.localizedName(lang)} • ${selectedMuscleObj.localizedSetsText(lang)} (${selectedMuscleObj.percentage}%)",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.primary
                             )
                             if (onOpenExerciseDetail != null) {
                                 Text(
-                                    text = "Gyakorlat >",
+                                    text = openExLabel,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.primary,
@@ -366,7 +519,7 @@ fun AnatomicalMuscleHeatmapCard(
                                 )
                             } else {
                                 Text(
-                                    text = "Bezárás ✕",
+                                    text = closeLabel,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = palette.textSecondary
                                 )
@@ -652,12 +805,45 @@ fun NativeWorkoutRouteMapBox(
         // On cramped windows gesture zoom remains enabled; avoid buried +/- buttons.
         val googleControlsHeight = maxHeight - mapContentPadding.calculateTopPadding() -
             mapContentPadding.calculateBottomPadding()
+        val lang = LocalTrainPilotStrings.current.language
         if (!configured || !playServicesAvailable) {
-            Text(if (!configured) "Google Maps nincs beállítva. Az útvonal helyben megmarad."
-                else "A térképhez Google Play-szolgáltatások szükségesek. Az útvonal helyben megmarad.",
+            val missingMapsText = if (!configured) {
+                when (lang) {
+                    AppLanguage.HU -> "Google Maps nincs beállítva. Az útvonal helyben megmarad."
+                    AppLanguage.EN -> "Google Maps is not configured. The route remains saved locally."
+                    AppLanguage.DE -> "Google Maps ist nicht konfiguriert. Die Route bleibt lokal gespeichert."
+                    AppLanguage.RO -> "Google Maps nu este configurat. Traseul rămâne salvat local."
+                }
+            } else {
+                when (lang) {
+                    AppLanguage.HU -> "A térképhez Google Play-szolgáltatások szükségesek. Az útvonal helyben megmarad."
+                    AppLanguage.EN -> "Google Play Services are required for the map. The route remains saved locally."
+                    AppLanguage.DE -> "Für die Karte sind Google Play-Dienste erforderlich. Die Route bleibt lokal gespeichert."
+                    AppLanguage.RO -> "Serviciile Google Play sunt necesare pentru hartă. Traseul rămâne salvat local."
+                }
+            }
+            Text(missingMapsText,
                 style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
                 modifier = Modifier.padding(12.dp))
         } else {
+            val startAndFinishTitle = when (lang) {
+                AppLanguage.HU -> "Rajt és cél"
+                AppLanguage.EN -> "Start and finish"
+                AppLanguage.DE -> "Start und Ziel"
+                AppLanguage.RO -> "Start și sosire"
+            }
+            val startTitle = when (lang) {
+                AppLanguage.HU -> "Rajt"
+                AppLanguage.EN -> "Start"
+                AppLanguage.DE -> "Start"
+                AppLanguage.RO -> "Start"
+            }
+            val finishTitle = when (lang) {
+                AppLanguage.HU -> "Cél"
+                AppLanguage.EN -> "Finish"
+                AppLanguage.DE -> "Ziel"
+                AppLanguage.RO -> "Sosire"
+            }
             androidx.compose.runtime.key(retry) {
                 val camera = com.google.maps.android.compose.rememberCameraPositionState()
                 // Only actual recorded coordinates move the camera. No synthetic GPS location.
@@ -685,7 +871,7 @@ fun NativeWorkoutRouteMapBox(
                             recorded.start.first, recorded.start.second)
                         com.google.maps.android.compose.Marker(
                             state = com.google.maps.android.compose.MarkerState(position = startPoint),
-                            title = if (recorded.finish == null) "Rajt és cél" else "Rajt",
+                            title = if (recorded.finish == null) startAndFinishTitle else startTitle,
                             icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(
                                 com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_AZURE)
                         )
@@ -693,7 +879,7 @@ fun NativeWorkoutRouteMapBox(
                             com.google.maps.android.compose.Marker(
                                 state = com.google.maps.android.compose.MarkerState(
                                     position = com.google.android.gms.maps.model.LatLng(lat, lon)),
-                                title = "Cél",
+                                title = finishTitle,
                                 icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(
                                     com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_ORANGE)
                             )
@@ -708,12 +894,32 @@ fun NativeWorkoutRouteMapBox(
                     .padding(top = mapContentPadding.calculateTopPadding() + 8.dp, end = 8.dp)
             )
             if (!loaded) {
+                val mapStatusText = if (timedOut) {
+                    when (lang) {
+                        AppLanguage.HU -> "A térkép nem töltődött be. Ellenőrizd az internetet és a Maps-kulcs engedélyezését."
+                        AppLanguage.EN -> "The map did not load. Check your internet connection and Maps API key."
+                        AppLanguage.DE -> "Karte wurde nicht geladen. Internetverbindung und Maps-Schlüssel prüfen."
+                        AppLanguage.RO -> "Harta nu s-a încărcat. Verifică internetul și cheia Maps."
+                    }
+                } else {
+                    when (lang) {
+                        AppLanguage.HU -> "Google Maps betöltése…"
+                        AppLanguage.EN -> "Loading Google Maps…"
+                        AppLanguage.DE -> "Google Maps wird geladen…"
+                        AppLanguage.RO -> "Se încarcă Google Maps…"
+                    }
+                }
+                val retryLabel = when (lang) {
+                    AppLanguage.HU -> "Újrapróbálás"
+                    AppLanguage.EN -> "Retry"
+                    AppLanguage.DE -> "Erneut versuchen"
+                    AppLanguage.RO -> "Reîncearcă"
+                }
                 Surface(color = palette.surfaceCard.copy(alpha = 0.94f), shape = RoundedCornerShape(12.dp)) {
                     Column(Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(if (timedOut) "A térkép nem töltődött be. Ellenőrizd az internetet és a Maps-kulcs engedélyezését."
-                            else "Google Maps betöltése…", style = MaterialTheme.typography.bodySmall,
+                        Text(mapStatusText, style = MaterialTheme.typography.bodySmall,
                             color = palette.textSecondary)
-                        if (timedOut) TextButton(onClick = { retry += 1 }) { Text("Újrapróbálás") }
+                        if (timedOut) TextButton(onClick = { retry += 1 }) { Text(retryLabel) }
                     }
                 }
             }
@@ -1146,12 +1352,27 @@ fun ProgramTypeEmblemIcon(
     }
 }
 
-fun programEquipmentCategoryLabel(programNameOrId: String): String {
+fun programEquipmentCategoryLabel(programNameOrId: String, lang: AppLanguage = AppLanguage.HU): String {
     val lower = programNameOrId.lowercase()
     return when {
-        lower.contains("otthon") || lower.contains("alap") -> "Otthoni • Kézi súlyzós & gumiszalag"
-        lower.contains("testsúly") || lower.contains("kezdő") -> "Saját testsúlyos • Eszköz nélkül"
-        else -> "Súlyzós • Konditermi rúd & kézi súlyzó"
+        lower.contains("otthon") || lower.contains("home") || lower.contains("zuhause") || lower.contains("acasă") || lower.contains("alap") -> when (lang) {
+            AppLanguage.HU -> "Otthoni • Kézi súlyzós & gumiszalag"
+            AppLanguage.EN -> "Home • Dumbbells & resistance band"
+            AppLanguage.DE -> "Zuhause • Kurzhanteln & Widerstandsband"
+            AppLanguage.RO -> "Acasă • Gantere & bandă elastică"
+        }
+        lower.contains("testsúly") || lower.contains("bodyweight") || lower.contains("eigengewicht") || lower.contains("kezdő") || lower.contains("beginner") -> when (lang) {
+            AppLanguage.HU -> "Saját testsúlyos • Eszköz nélkül"
+            AppLanguage.EN -> "Bodyweight • No equipment"
+            AppLanguage.DE -> "Eigengewicht • Ohne Geräte"
+            AppLanguage.RO -> "Greutatea corpului • Fără echipament"
+        }
+        else -> when (lang) {
+            AppLanguage.HU -> "Súlyzós • Konditermi rúd & kézi súlyzó"
+            AppLanguage.EN -> "Free weights • Gym barbell & dumbbells"
+            AppLanguage.DE -> "Freigewichte • Lang- & Kurzhanteln"
+            AppLanguage.RO -> "Greutăți • Bară și gantere"
+        }
     }
 }
 

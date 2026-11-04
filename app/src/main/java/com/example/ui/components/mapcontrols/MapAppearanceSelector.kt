@@ -35,13 +35,36 @@ internal fun MapAppearanceSelector(
     modifier: Modifier = Modifier
 ) {
     val palette = LocalTrainPilotPalette.current
+    val lang = com.example.localization.LocalTrainPilotStrings.current.language
     var expanded by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(12.dp)
-    val currentLabel = when (appearance) {
-        MapAppearance.FOLLOW_APP -> "App témája"
-        MapAppearance.LIGHT -> "Világos térkép"
-        MapAppearance.DARK -> "Sötét térkép"
+    fun labelFor(choice: MapAppearance): String = when (choice) {
+        MapAppearance.FOLLOW_APP -> when (lang) {
+            com.example.model.AppLanguage.HU -> "App témája"
+            com.example.model.AppLanguage.EN -> "Follow app"
+            com.example.model.AppLanguage.DE -> "App-Design"
+            com.example.model.AppLanguage.RO -> "Tema aplicației"
+        }
+        MapAppearance.LIGHT -> when (lang) {
+            com.example.model.AppLanguage.HU -> "Világos térkép"
+            com.example.model.AppLanguage.EN -> "Light map"
+            com.example.model.AppLanguage.DE -> "Helle Karte"
+            com.example.model.AppLanguage.RO -> "Hartă luminoasă"
+        }
+        MapAppearance.DARK -> when (lang) {
+            com.example.model.AppLanguage.HU -> "Sötét térkép"
+            com.example.model.AppLanguage.EN -> "Dark map"
+            com.example.model.AppLanguage.DE -> "Dunkle Karte"
+            com.example.model.AppLanguage.RO -> "Hartă întunecată"
+        }
     }
+    val mapPrefix = when (lang) {
+        com.example.model.AppLanguage.HU -> "Térkép"
+        com.example.model.AppLanguage.EN -> "Map"
+        com.example.model.AppLanguage.DE -> "Karte"
+        com.example.model.AppLanguage.RO -> "Hartă"
+    }
+    val currentLabel = labelFor(appearance)
     Box(modifier) {
         Surface(
             shape = shape,
@@ -53,17 +76,18 @@ internal fun MapAppearanceSelector(
                 onClick = { expanded = true },
                 modifier = Modifier.heightIn(min = 48.dp).testTag("route_map_style_toggle")
             ) {
-                Text("Térkép: $currentLabel", style = MaterialTheme.typography.labelMedium,
+                Text("$mapPrefix: $currentLabel", style = MaterialTheme.typography.labelMedium,
                     color = palette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(" ▾", color = palette.textPrimary)
             }
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             listOf(
-                MapAppearance.FOLLOW_APP to "App témája",
-                MapAppearance.LIGHT to "Világos térkép",
-                MapAppearance.DARK to "Sötét térkép"
-            ).forEach { (choice, label) ->
+                MapAppearance.FOLLOW_APP,
+                MapAppearance.LIGHT,
+                MapAppearance.DARK
+            ).forEach { choice ->
+                val label = labelFor(choice)
                 DropdownMenuItem(
                     text = {
                         Text(label + if (appearance == choice) " ✓" else "",
