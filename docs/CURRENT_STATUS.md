@@ -2,15 +2,19 @@
 
 ## Legújabb készülékes visszajelzés – 2026-11-04 / 2753
 
-**Kilenc aktív hiba/feladat:** [#117 – Naptár szinkron / Google 404](https://github.com/fuloplevente1998/Native-AI-Studio/issues/117),
+**13 aktív hiba/feladat:** [#117 – Naptár szinkron / Google 404](https://github.com/fuloplevente1998/Native-AI-Studio/issues/117),
 [#118 – Témák kinyitott fejlécének és négy sorának közös kerete](https://github.com/fuloplevente1998/Native-AI-Studio/issues/118),
 [#120 – Edzésrészletek: szolgáltatók a Forrás fülre, deduplikált pulzus/kcal a Statisztikákra](https://github.com/fuloplevente1998/Native-AI-Studio/issues/120),
 [#84 – Újranyitva: naplós edzés- és visszajelzés-szerkesztő kompakt app-dizájnja](https://github.com/fuloplevente1998/Native-AI-Studio/issues/84),
 [#122 – Egységes, naponta lenyitható Egészségnapló](https://github.com/fuloplevente1998/Native-AI-Studio/issues/122),
 [#123 – Rendszer-dátumválasztó helyett az app saját naptárdizájnja](https://github.com/fuloplevente1998/Native-AI-Studio/issues/123),
 [#125 – Aktív edzés Átadás órának vezérlőjére kis WearOS óraikon](https://github.com/fuloplevente1998/Native-AI-Studio/issues/125),
-[#126 – Edzés Vissza gombjának elkülönülő kerete/árnyalata](https://github.com/fuloplevente1998/Native-AI-Studio/issues/126),
-[#70 – Újranyitott funkcióhiba: Edzés oldali Coach-javaslatok hiánya](https://github.com/fuloplevente1998/Native-AI-Studio/issues/70).
+[#126 – Edzés Vissza/Előző és Elvetés gombjainak elkülönülő kerete/árnyalata](https://github.com/fuloplevente1998/Native-AI-Studio/issues/126),
+[#70 – Újranyitott funkcióhiba: Edzés oldali Coach-javaslatok hiánya](https://github.com/fuloplevente1998/Native-AI-Studio/issues/70),
+[#128 – Stopper: Indítás nem indít; leállítás/rögzítés felülvizsgálandó](https://github.com/fuloplevente1998/Native-AI-Studio/issues/128),
+[#129 – Gyakorlatcsere után bent maradt stopperes felület](https://github.com/fuloplevente1998/Native-AI-Studio/issues/129),
+[#130 – Kétszeri elvetés: kettős indítás vagy bent maradt aktív állapot gyanúja](https://github.com/fuloplevente1998/Native-AI-Studio/issues/130),
+[#131 – Naptár Tervezés állandóan látható blokkban](https://github.com/fuloplevente1998/Native-AI-Studio/issues/131).
 Referencia: a felhasználó 4407.jpg / 4406.jpg / 4408.jpg képei. Most csak rögzítés;
 alkalmazáskód-javítás és új APK nem készült. A 404 oka a képből nem bizonyított.
 
@@ -43,7 +47,7 @@ validáció és eredeti adatok változatlanok. Mindkét új jegy most csak rögz
 
 **Aktív edzés – új szöveges visszajelzés:** #125 az Átadás órának gombon kis,
 a meglévő WearOS órakártyával egyező stílusú óraikont kér. #126 a környezetébe
-olvadó Vissza gombra kis keretet vagy elkülönülő színt/árnyalatot kér; a navigáció
+olvadó Vissza/Előző és Edzés elvetése gombra kis keretet vagy elkülönülő színt/árnyalatot kér; a navigáció
 és átadási/ownership műveletek megmaradnak.
 
 **Coach – tényleges működési hiba (#70 újranyitva):** az Edzés oldali TrainPilot
@@ -53,6 +57,27 @@ bekötése kivizsgálandó; az ok még nem bizonyított. Valós, használható e
 legyen kanonikus ajánlás/indok, valódi adathiánynál/hibánál érthető állapot.
 A meglévő motor és jóváhagyási/fájdalom-/adatvédelmi védelmek maradjanak meg.
 Mindhárom visszajelzés most rögzítés, nem kész javítás.
+
+**Új mérési/session funkcióhibák:** #128-ban az Indítás nem indítja a stoppert;
+a leállítás és rögzítés teljes útja ellenőrizendő. #129-ben Gyors edzésnél kétoldalas
+plank súlyzós gyakorlatra cserélése után a stopperes UI bent marad. #130-ban a
+felhasználó kétszeri elvetést tapasztalt, és felvetette a kettős indítás lehetőségét.
+A kétszeri elvetés a megfigyelés; a két aktív edzés, bent maradt projekció és közös
+ok még kivizsgálandó. E három jegy összefüggése együtt vizsgálandó a meglévő natív
+session/admission/measurement/discard útvonalon, állapotreset és adatvesztés nélkül.
+A kézi stopper hibája nem a sztornózott #74 intervallum/automata továbbfejlesztése.
+
+**Elvetés megjelenése:** a jobb keret/szín/árnyalat a #126 dizájnjegy része,
+a Vissza/Előző gomb mellett. Ez a #130 működési hibájától külön követendő.
+**#131:** a Naptár Tervezés blokkja állandóan látszódjon az app dizájnjában,
+külön nyitógomb nélkül. A napra koppintással nyíló adott-napi lebegő ablak és
+műveletei a felhasználó kérésére változatlanok.
+
+A nyitott GitHub-jegyek besorolása: **5 működési** (`type:functional`), **6 dizájn**
+(`type:design`), **2 összetett adat/felület** (`type:data-ui`). A korábbi bug/enhancement
+címkék megmaradnak. Javításonként rövid külön ág/PR ajánlott; tartós külön
+funkció-/dizájn-főág helyett egy main, szükség esetén közös okú hibacsoport egy ágon.
+[Munkaágak és címkézés](ISSUE_WORKFLOW_FUNCTION_DESIGN.md). Most továbbra is rögzítés.
 
 A felhasználó kérésére a korábbi #35, #59, #69, #71, #75 lezárva; a halasztott
 #82 `not_planned` státusszal lezárva, implementációs állítás nélkül. A korábbi

@@ -16,8 +16,17 @@ Ebben a körben nincs alkalmazáskód-javítás, tesztfuttatás vagy új APK.
 | [#122](https://github.com/fuloplevente1998/Native-AI-Studio/issues/122) | További egészségadatok + Egészségnapló összevonása a naplódizájn megtartásával, részletek a napok lenyitásában. Külön részletes-mérés gomb/oldal helyett egységes, deduplikált napi adatok; a meglévő részletképesség megmarad. | 4415.jpg / 4414.jpg / 4413.jpg |
 | [#123](https://github.com/fuloplevente1998/Native-AI-Studio/issues/123) | Android rendszer-dátumválasztó helyett az app meglévő naptárdizájnja; a #122 utáni közös egészségnaplóban is. A helyi UI-hiba különbözik a Google 404 szinkronhibától. | 4412.jpg |
 | [#125](https://github.com/fuloplevente1998/Native-AI-Studio/issues/125) | Aktív edzés Átadás órának gombjára kis, meglévő WearOS-stílusú óraikon; átadási logika változatlan. | Felhasználó szöveges visszajelzése |
-| [#126](https://github.com/fuloplevente1998/Native-AI-Studio/issues/126) | Az Edzés Vissza gombja beleolvad a környezetébe; kis keret vagy eltérő szín/árnyalat szükséges. | Felhasználó szöveges visszajelzése |
+| [#126](https://github.com/fuloplevente1998/Native-AI-Studio/issues/126) | Az Edzés Vissza/Előző és Elvetés gombjai kapjanak jobb keretet/kontrasztos árnyalatot. Az elvetés funkcióhibája külön #130. | Felhasználó szöveges visszajelzése |
 | [#70](https://github.com/fuloplevente1998/Native-AI-Studio/issues/70) | Újranyitott működési hiba: az Edzés oldali Coach nem ad javaslatot a felhasználó közel 30 mentett edzése mellett. Érvényes előzmény/natív tanács/UI és valódi adathiány/hiba elkülönítése kivizsgálandó, új motor nélkül. | Felhasználó szöveges visszajelzése; nem dizájnhiba |
+| [#128](https://github.com/fuloplevente1998/Native-AI-Studio/issues/128) | Funkcióhiba: az Indítás nem indítja a stoppert. Leállítás/rögzítés is felülvizsgálandó; csak valódi mérés az aktuális célpontra. | Szöveges készülékes jelzés |
+| [#129](https://github.com/fuloplevente1998/Native-AI-Studio/issues/129) | Funkcióhiba: Gyors edzésben kétoldalas plank súlyzós gyakorlatra cserélése után a stopperes UI marad. | Szöveges reprodukció |
+| [#130](https://github.com/fuloplevente1998/Native-AI-Studio/issues/130) | Kétszeri elvetés megfigyelése; kettős indítás vagy bent maradt aktív állapot gyanúja. Közös ok #128/#129-cel nem bizonyított, kivizsgálandó. | Szöveges készülékes jelzés |
+| [#131](https://github.com/fuloplevente1998/Native-AI-Studio/issues/131) | Naptár Tervezés része állandóan látható app-dizájnú blokkban; a napra kattintás adott-napi lebegő ablaka változatlan. | Felhasználói pontosítás |
+
+GitHub címkék: **type:functional** = #70/#117/#128/#129/#130;
+**type:design** = #84/#118/#123/#125/#126/#131;
+**type:data-ui** = #120/#122. Összesen **13** nyitott feladat.
+[Ág-/PR-ajánlás](ISSUE_WORKFLOW_FUNCTION_DESIGN.md).
 
 **Lezárva a felhasználó kifejezett kérésére:** #35, #59, #69, #71, #75.
 A korábban halasztott #82 adatvédelmi tájékoztató `not_planned` státusszal lezárva;
