@@ -1,5 +1,15 @@
 # TrainPilot Native – aktuális állapot, 2026-11-04
 
+## PR108 – második AI Studio import, 2752-es forrás előkészítve
+
+A külső YouTube/rendszerböngésző a videógomb alapértelmezett útja; a belső lejátszó helyett hibánál linkmásolás/újrapróbálás jelenik meg. Aktív edzés, gyakorlatutasítások, programmetaadatok, izomterhelés, időszak- és felugrófeliratok fordítása bővült. A saját nevek/leírások és a konkrét felszerelésadatok megőrzése felülvizsgálva. A korábbi GPS-adatvédelmi és ismeretlen feedback-védelmek megmaradnak.
+
+CI41797678036 SUCCESS: **450 =274 telefon+176 Wear**, 0 failure/error/skipped, letöltött nyers XML ellenőrizve. Font12 és JS7 PASS; Maps/package/páros metaadat igazolva. [Gépi bizonyíték](AI_STUDIO_SECOND_INTEGRATION_CI_2026-11-04.json).
+
+**Coach/progresszió: külön PR109**, nincs ebben az importban, nem készre jelentett. A külön ágat a PR108 utáni friss mainhez kell illeszteni, különösen a MainActivity.kt, TrainPilotViewModel.kt, TrainPilotModels.kt és WorkoutAndPlanningScreens.kt átfedéseinél a fordításokat megőrizve.
+
+2752-es verziókód a forrásban, de új aláírt APK most nem készült. A legutóbb átadott telepítő továbbra is az alábbi 2751; az nem tartalmazza a PR108-at. A külső videómegnyitás és a nyelvi megjelenítés tényleges készülékes próbája a következő közös kiadással esedékes.
+
 ## Legfrissebb aláírt telefonos kiadás: 2751 / PR106
 
 **[Telefonos APK letöltése – 2751](https://drive.google.com/file/d/1VTlz4bDex5pZR_FnIZsLSQ1qH0O2jVLO/view?usp=drivesdk)**. A megszokott tartós aláíróval a meglévő appra frissíthető, elég a telefonos appot telepíteni. Package `com.TrainPilot.com`, versionName `0.1.0-beta`. Az óra alkalmazáslogikája nem változott.

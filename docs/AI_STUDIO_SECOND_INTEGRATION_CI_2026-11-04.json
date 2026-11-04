@@ -1,0 +1,27 @@
+{
+  "pr": 108,
+  "run": 41797678036,
+  "sourceHead": "c2ca8c1a0146c881e2da7b2b266edb09dd39edc6",
+  "ciCheckout": "7752bc645945e5bbac166a3266ecf72e71972cf6",
+  "tests": {
+    "tests": 450,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "modules": {
+    "app": 274,
+    "wear": 176
+  },
+  "rawXmlArtifact": 13306403413,
+  "metadataArtifact": 13306478393,
+  "fontFacesVerified": 12,
+  "videoJsChecks": 7,
+  "versionCode": 2752,
+  "newSignedApkCreated": false,
+  "deviceAccepted": false,
+  "coachProgressionPr": 109,
+  "coachPrIncluded": false,
+  "zipDriveId": "1hopg5I3_LYpyEYtYpx8Jpq8BV1ZGT6l5",
+  "zipSha256": "b8df551360fd4b5795d03d8556620aa43fcd821ca01c24f3e562c6bf78b6c100"
+}
