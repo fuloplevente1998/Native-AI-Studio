@@ -66,8 +66,8 @@
   "signedColdGradleProfileSeconds": 794.13,
   "mainGradleCacheSaveVerified": true,
   "deviceAcceptance": "pending",
-  "driveUploaded": false,
-  "delivery": "GitHub artifact ZIP plus unpacked APK copies in the task workspace; no Drive connector available in this session",
+  "driveUploaded": true,
+  "delivery": "Verified unpacked APKs uploaded to the existing TrainPilot Native Drive folder; name, MIME, size and parent read back.",
   "warmRegressionCi": {
     "run": 41908345166,
     "sourceSha": "05d820a27933c79088e62af390a9dba5b6dad455",
@@ -84,5 +84,19 @@
       "skipped": 0
     },
     "sourceEquivalentToSignedApplicationAndTests": true
+  },
+  "drive": {
+    "folderId": "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9",
+    "phone": {
+      "id": "1VSHpl38FkLFFh7Nt5MlG0wGxRl2oQ39_",
+      "url": "https://drive.google.com/file/d/1VSHpl38FkLFFh7Nt5MlG0wGxRl2oQ39_/view?usp=drivesdk",
+      "bytes": 20433912
+    },
+    "wear": {
+      "id": "1GGMk-L5wRmJkusZ_FO6quGT2mT-Gt11-",
+      "url": "https://drive.google.com/file/d/1GGMk-L5wRmJkusZ_FO6quGT2mT-Gt11-/view?usp=drivesdk",
+      "bytes": 4636863
+    },
+    "metadataReadbackVerified": true
   }
 }

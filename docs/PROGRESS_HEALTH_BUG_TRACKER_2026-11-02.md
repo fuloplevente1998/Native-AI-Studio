@@ -1,5 +1,24 @@
 # Natív hibák és javítások – aktuális nyilvántartás, 2026-11-03
 
+## Aktuális hibák – 2026-11-04, 2753-as készülékes visszajelzés
+
+A felhasználó két új hiba rögzítését és a korábbi nyitott jegyek lezárását kérte.
+Ebben a körben nincs alkalmazáskód-javítás, tesztfuttatás vagy új APK.
+
+| Aktív jegy | Megfigyelés / elvárt eredmény | Referencia |
+|---|---|---|
+| [#117](https://github.com/fuloplevente1998/Native-AI-Studio/issues/117) | Naptár szinkron: „A Google-művelet nem sikerült. (404)”. Pontos API/erőforrás és ok kivizsgálandó; a kapcsolt fiók és korábbi Drive-időpont nem naptárszinkron-bizonyíték. | 4407.jpg, felhasználói csatolmány |
+| [#118](https://github.com/fuloplevente1998/Native-AI-Studio/issues/118) | Témák kinyitva: a fejléc és mind a négy témaválasztó sor kapjon közös külső keretet az Edzés és értesítések mintájára. A belső panelek lágyabbak, a témák és mentett választás megmaradnak. | 4406.jpg és 4408.jpg, felhasználói csatolmányok |
+
+**Lezárva a felhasználó kifejezett kérésére:** #35, #59, #69, #71, #75, #84.
+A korábban halasztott #82 adatvédelmi tájékoztató `not_planned` státusszal lezárva;
+nem jelenti az implementációját. A többi lezárás sem új, tételes paritás-/készülékes
+mérés: az eredeti bizonyítékok az egyes jegyekben megmaradnak. Új konkrét tünet
+külön jegyben rögzítendő. BLE és #74 korábbi sztornója változatlan.
+
+## Történeti nyilvántartás – a lentebbi „nyitott” állapotok nem aktuálisak
+
+
 Elsődleges állapot: [CURRENT_STATUS.md](CURRENT_STATUS.md). Funkcióparitás és új feladatok: [audit](NATIVE_WEBVIEW_PARITY_2026-11-03.md). Korábbi tracker: [történeti napló](PROGRESS_HEALTH_BUG_TRACKER_2026-11-02_HISTORY.md).
 
 | Jegy | Aktuális állapot | Következő lépés |
