@@ -57,7 +57,7 @@ class StudioAppearanceRegressionTest {
                 SettingsMainScreen(uiState = TrainPilotUiState(selectedPaletteId = selected),
                     strings = TrainPilotStrings.forLanguage(AppLanguage.HU), onBack = {}, onOpenPalettePicker = {},
                     onSelectPalette = { selected = it }, onSelectLanguage = {}, onCycleRestTimer = {},
-                    onToggleSoundAlert = {}, onToggleProgressionModal = {}, onSaveProgression = { _, _, _ -> },
+                    onToggleSoundAlert = {}, onToggleProgressionModal = {}, onToggleVibration = {},
                     onNavigateToSubScreen = {}, onShowBanner = {})
             }
         }
@@ -97,7 +97,7 @@ class StudioAppearanceRegressionTest {
                     onCycleRestTimer = {},
                     onToggleSoundAlert = {},
                     onToggleProgressionModal = {},
-                    onSaveProgression = { _, _, _ -> },
+                    onToggleVibration = {},
                     onNavigateToSubScreen = {},
                     onShowBanner = {}
                 )
@@ -198,7 +198,7 @@ class StudioAppearanceRegressionTest {
                     onCycleRestTimer = {},
                     onToggleSoundAlert = {},
                     onToggleProgressionModal = {},
-                    onSaveProgression = { _, _, _ -> },
+                    onToggleVibration = {},
                     onNavigateToSubScreen = {},
                     onShowBanner = {}
                 )
