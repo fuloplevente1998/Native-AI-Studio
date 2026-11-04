@@ -1,5 +1,7 @@
 # Dizájncsomag – 2748 utáni forrásmódosítások
 
+**Main / PR101:** 4737d72c75f191b18980bc40885633c1c43b5c99. [CI41733206574](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41733206574) SUCCESS, letöltött nyers XML **434 =258 telefon+176Wear**, nulla failure/error/skipped. A 12 fontarc ellenőrzése és JS7 sikeres. Tesztelt head5f02773 és tényleges CI-checkout ab12cd66 alkalmazás/Wear/shared/scripts/workflow fái egyeznek a mainnel. [Gépi bizonyíték](DESIGN_CI_2026-11-04.json). Új aláírt APK ebben a forráskörben nem készült.
+
 A felhasználó új döntése szerint Codex készíti a dizájnt, AI Studio a nyelveket/videót/fennmaradó adatfeladatokat. A main/raw átadó és a fájltulajdon-állapot az AI_STUDIO_LANGUAGES_VIDEO_DATA_HANDOFF_2748.md és DESIGN_WORK_STATUS.md fájlban.
 
 ## Változások
