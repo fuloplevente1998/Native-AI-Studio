@@ -8,13 +8,13 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import com.repforge.app.data.store.TrainPilotUserSettings
 
-val BgColor = Color(0xFF0D1015)
-val SurfaceColor = Color(0xFF161B22)
-val CardColor = Color(0xFF161B22)
-val Card2Color = Color(0xFF1E252F)
-val LineColor = Color(0xFF2A3341)
-val TextColor = Color(0xFFF8FAFC)
-val MutedColor = Color(0xFF94A3B8)
+val BgColor = Color(0xFF101318)
+val SurfaceColor = Color(0xFF1B2027)
+val CardColor = Color(0xFF1B2027)
+val Card2Color = Color(0xFF232933)
+val LineColor = Color(0x22FFFFFF)
+val TextColor = Color(0xFFF4F5F7)
+val MutedColor = Color(0xFFA4ABB6)
 val DangerColor = Color(0xFF3B232A)
 val DangerTextColor = Color(0xFFEFBCC3)
 val SuccessColor = Color(0xFF3CA87D)

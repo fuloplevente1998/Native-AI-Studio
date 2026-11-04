@@ -22,9 +22,9 @@ object TrainPilotFrames {
         line.copy(alpha = 0.85f), accent.copy(alpha = 0.45f), line.copy(alpha = 0.85f))))
     fun control(color: Color, selected: Boolean = false) = BorderStroke(controlWidth,
         color.copy(alpha = color.alpha * if (selected) 0.75f else 0.45f))
-    fun stroke(width: Dp, color: Color) = BorderStroke(minOf(width, panelWidth), color.copy(alpha = color.alpha * 0.65f))
+    fun stroke(width: Dp, color: Color) = BorderStroke(minOf(width, panelWidth), color.copy(alpha = color.alpha * 0.40f))
     fun stroke(width: Dp, brush: Brush): BorderStroke = BorderStroke(minOf(width, panelWidth),
-        if (brush is SolidColor) SolidColor(brush.value.copy(alpha = brush.value.alpha * 0.65f)) else brush)
+        if (brush is SolidColor) SolidColor(brush.value.copy(alpha = brush.value.alpha * 0.40f)) else brush)
 }
 
 /** Migrate existing palette frames without changing shape, padding, content or hit areas. */

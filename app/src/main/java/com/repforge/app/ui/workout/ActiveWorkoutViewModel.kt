@@ -415,7 +415,27 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
             undoAvailable = undoAvailable,
             undoRecordId = undoRecId,
             undoExerciseName = undoExName,
-            undoSetNumber = undoSetNum
+            undoSetNumber = undoSetNum,
+            attachedPhotos = run {
+                val photoArr = snapshot.optJSONArray("photos") ?: JSONArray()
+                val result = ArrayList<StoredPhotoMetadata>()
+                for (pi in 0 until photoArr.length()) {
+                    val pObj = photoArr.optJSONObject(pi) ?: continue
+                    val pid = pObj.optString("id")
+                    if (pid.isNotBlank() && photoRepository.exists(pid)) {
+                        result.add(
+                            StoredPhotoMetadata(
+                                id = pid,
+                                file = photoRepository.photoFile(pid),
+                                width = pObj.optInt("width", 0),
+                                height = pObj.optInt("height", 0),
+                                bytes = pObj.optLong("bytes", 0L)
+                            )
+                        )
+                    }
+                }
+                result
+            }
         )
     }
 
@@ -885,11 +905,11 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
     // Fotók csatolása
     // =========================================================================
 
-    fun onPhotoCaptured(meta: StoredPhotoMetadata) {
+    fun onPhotoCaptured(meta: StoredPhotoMetadata, label: String = "after") {
         if (editableSnapshot() == null) return
         val photos = _uiState.value.attachedPhotos + meta
         _uiState.value = _uiState.value.copy(attachedPhotos = photos)
-        savePhotosToActiveSnapshot()
+        savePhotosToActiveSnapshot(meta.id, label)
     }
 
     fun deletePhoto(id: String) {
@@ -900,14 +920,24 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
         savePhotosToActiveSnapshot()
     }
 
-    private fun savePhotosToActiveSnapshot() {
+    private fun savePhotosToActiveSnapshot(newId: String? = null, newLabel: String = "after") {
         val current = ActiveWorkoutStore.current(context) ?: return
+        val existingArr = current.optJSONArray("photos") ?: JSONArray()
+        val labelMap = HashMap<String, String>()
+        for (i in 0 until existingArr.length()) {
+            val obj = existingArr.optJSONObject(i) ?: continue
+            val id = obj.optString("id")
+            val lbl = obj.optString("label")
+            if (id.isNotBlank()) labelMap[id] = lbl
+        }
+        if (newId != null) labelMap[newId] = newLabel
+
         val arr = JSONArray()
         for (p in _uiState.value.attachedPhotos) {
             arr.put(
                 JSONObject()
                     .put("id", p.id)
-                    .put("label", "")
+                    .put("label", labelMap[p.id].orEmpty().ifBlank { "after" })
                     .put("createdAt", Instant.now().toString())
                     .put("width", p.width)
                     .put("height", p.height)

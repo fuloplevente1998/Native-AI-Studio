@@ -412,6 +412,9 @@ interface WorkoutHistoryDao {
     @Query("DELETE FROM workout_photos WHERE workoutHistoryId = :workoutId")
     suspend fun deletePhotosForWorkout(workoutId: String)
 
+    @Query("UPDATE workout_photos SET deletedAt = :deletedAt WHERE id = :photoId")
+    suspend fun markPhotoDeleted(photoId: String, deletedAt: String)
+
     @Query("DELETE FROM workout_history WHERE id = :id")
     suspend fun deleteWorkoutById(id: String)
 

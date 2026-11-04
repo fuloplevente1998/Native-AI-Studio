@@ -82,7 +82,7 @@ data class TrainPilotPalette(
     val isMatte: Boolean get() = subGroup == PaletteCategory.MATTE
     val glowColor: Color get() = if (hasGlow) primary.copy(alpha = 0.34f) else Color.Transparent
 
-    val sectionBorder: Color get() = androidx.compose.ui.graphics.lerp(cardBorder, primary, 0.72f)
+    val sectionBorder: Color get() = androidx.compose.ui.graphics.lerp(cardBorder, primary.copy(alpha = 0.50f), 0.50f)
     val surfaceCard: Color get() = surface
 
     /** Contrast accents sit on an opaque card, rather than disappearing into the black page. */
@@ -120,15 +120,15 @@ object TrainPilotPalettes {
             nameDe = "Matt-Graphit & Altgold",
             nameRo = "Grafit Mat & Auriu Antic",
             category = PaletteCategory.BASIC,
-            background = Color(0xFF17191E),
-            surface = Color(0xFF21252C),
-            surfaceElevated = Color(0xFF2A2F38),
-            primary = Color(0xFFC8A25A),
-            onPrimary = Color(0xFF1A1508),
-            secondary = Color(0xFF6B9A9C),
-            textPrimary = Color(0xFFE5E9F0),
-            textSecondary = Color(0xFFA3AEB9),
-            cardBorder = Color(0xFF333944)
+            background = Color(0xFF101318),
+            surface = Color(0xFF1B2027),
+            surfaceElevated = Color(0xFF232933),
+            primary = Color(0xFFF5BB4B),
+            onPrimary = Color(0xFF101318),
+            secondary = Color(0xFFC99F52),
+            textPrimary = Color(0xFFF4F5F7),
+            textSecondary = Color(0xFFA4ABB6),
+            cardBorder = Color(0x22FFFFFF)
         ),
         TrainPilotPalette(
             id = 2,

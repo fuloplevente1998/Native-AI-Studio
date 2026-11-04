@@ -139,6 +139,24 @@ import com.example.ui.components.SubScreenTopBar
 import com.example.model.AppLanguage
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.viewmodel.TrainPilotUiState
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.produceState
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import com.repforge.app.WorkoutPhotoRepository
+import com.repforge.app.ActiveWorkoutStore
+import org.json.JSONObject
+import org.json.JSONArray
+import java.time.Instant
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private fun tr(lang: AppLanguage, hu: String, en: String, de: String, ro: String): String = when (lang) {
     AppLanguage.HU -> hu
@@ -247,10 +265,10 @@ fun ActiveStrengthWorkoutScreen(
     val columnLabels = com.example.ui.components.strengthColumnLabels(currentExercise, uiState.language)
     val setTableScroll = rememberScrollState()
     val tableTextScale = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
-    val minimumSetTableWidth = 340.dp * tableTextScale
-    val setControlSize = 48.dp * tableTextScale.coerceAtMost(2f)
-    val setNumberSize = 36.dp * tableTextScale
-    val previousColumnWidth = 48.dp * tableTextScale
+    val minimumSetTableWidth = 320.dp * tableTextScale
+    val setControlSize = 38.dp * tableTextScale.coerceAtMost(1.3f)
+    val setNumberSize = 30.dp * tableTextScale
+    val previousColumnWidth = 44.dp * tableTextScale
     var exerciseDropdownExpanded by remember { mutableStateOf(false) }
 
     // Interactive edit dialog state for filling in reps and weight
@@ -624,11 +642,10 @@ fun ActiveStrengthWorkoutScreen(
                     ) {
                         SmallExerciseVideoButton(exerciseName = currentExerciseName, exerciseId = currentExerciseId)
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(10.dp),
                             color = palette.surfaceElevated,
                             modifier = Modifier
-                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(10.dp))
                                 .clickable { onOpenExerciseDetail(currentExerciseId) }
                         ) {
                             Text(
@@ -636,7 +653,7 @@ fun ActiveStrengthWorkoutScreen(
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = palette.textPrimary,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
                             )
                         }
                     }
@@ -675,37 +692,52 @@ fun ActiveStrengthWorkoutScreen(
         items(uiState.activeSets, key = { it.setNumber }) { setItem ->
             val isActiveSet = !setItem.completed && uiState.activeSets.firstOrNull { !it.completed }?.setNumber == setItem.setNumber
             Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = palette.surfaceCard,
+                shape = RoundedCornerShape(12.dp),
+                color = when {
+                    setItem.completed -> palette.surfaceElevated.copy(alpha = 0.5f)
+                    isActiveSet -> palette.surfaceCard
+                    else -> palette.surfaceCard
+                },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .trainPilotBorder(
-                        width = if (isActiveSet) 1.5.dp else 1.dp,
-                        color = if (isActiveSet) palette.primary else palette.cardBorder,
-                        shape = RoundedCornerShape(16.dp)
+                    .then(
+                        if (isActiveSet) {
+                            Modifier.trainPilotBorder(
+                                width = 1.dp,
+                                color = palette.primary,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                        } else if (setItem.completed) {
+                            Modifier.trainPilotBorder(
+                                width = 0.5.dp,
+                                color = palette.success.copy(alpha = 0.4f),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                        } else {
+                            Modifier
+                        }
                     )
             ) {
-                Column(modifier = Modifier.padding(8.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
                     // Only this table scrolls horizontally when the text cannot fit safely.
                     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
                     Row(
                         modifier = Modifier.horizontalScroll(setTableScroll).width(maxWidth.coerceAtLeast(minimumSetTableWidth)),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // 1. Same rounded control shape as the editable fields and actions
+                        // 1. Set number pill
                         Box(
                             modifier = Modifier
-                                .size(setNumberSize)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(if (setItem.completed) palette.primary else palette.surfaceElevated)
-                                .trainPilotBorder(1.dp, if (isActiveSet) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp)),
+                                .size(width = setNumberSize, height = setControlSize)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (setItem.completed) palette.success.copy(alpha = 0.15f) else if (isActiveSet) palette.primary.copy(alpha = 0.15f) else Color(0xFF14171D)),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = "${setItem.setNumber}",
-                                style = MaterialTheme.typography.titleSmall,
+                                style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = if (setItem.completed) palette.onPrimary else palette.primary
+                                color = if (setItem.completed) palette.success else if (isActiveSet) palette.primary else palette.textSecondary
                             )
                         }
 
@@ -718,16 +750,16 @@ fun ActiveStrengthWorkoutScreen(
                             textAlign = TextAlign.Center
                         )
 
-                        // 3. kg/kar input pill
+                        // 3. kg input pill (distinct dark input surface with subtle border)
                         Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = palette.surfaceElevated,
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFF12151B),
                             modifier = Modifier
                                 .weight(1f)
                                 .height(setControlSize)
                                 .padding(horizontal = 2.dp)
-                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
-                                .clip(RoundedCornerShape(10.dp))
+                                .trainPilotBorder(0.5.dp, Color(0x33FFFFFF), RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(8.dp))
                                 .clickable {
                                     editingSet = setItem
                                     editWeightText = setItem.weightKg.toString()
@@ -745,16 +777,16 @@ fun ActiveStrengthWorkoutScreen(
                             }
                         }
 
-                        // 4. /láb (reps) input pill
+                        // 4. reps input pill (distinct dark input surface with subtle border)
                         Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = palette.surfaceElevated,
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFF12151B),
                             modifier = Modifier
                                 .weight(1f)
                                 .height(setControlSize)
                                 .padding(horizontal = 2.dp)
-                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
-                                .clip(RoundedCornerShape(10.dp))
+                                .trainPilotBorder(0.5.dp, Color(0x33FFFFFF), RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(8.dp))
                                 .clickable {
                                     editingSet = setItem
                                     editWeightText = setItem.weightKg.toString()
@@ -774,14 +806,14 @@ fun ActiveStrengthWorkoutScreen(
 
                         // 5. RIR input pill
                         Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = palette.surfaceElevated,
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFF12151B),
                             modifier = Modifier
                                 .weight(0.9f)
                                 .height(setControlSize)
                                 .padding(horizontal = 2.dp)
-                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
-                                .clip(RoundedCornerShape(10.dp))
+                                .trainPilotBorder(0.5.dp, Color(0x33FFFFFF), RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(8.dp))
                                 .clickable {
                                     val nextRir = if (!setItem.actualRirProvided || setItem.rir >= 3) 0 else setItem.rir + 1
                                     onUpdateSetValuesExact(setItem.setNumber, setItem.weightKg, setItem.reps, nextRir)
@@ -791,65 +823,67 @@ fun ActiveStrengthWorkoutScreen(
                                 Text(
                                     text = if (setItem.actualRirProvided) "${setItem.rir}" else "—",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = if (setItem.rir > 0) palette.textPrimary else palette.textSecondary
+                                    color = if (setItem.rir > 0) palette.primary else palette.textSecondary
                                 )
                             }
                         }
 
-                        // 6. OK button
+                        // 6. OK / Done completion button
                         Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (setItem.completed) palette.primary else palette.tintedSurface(0.16f),
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (setItem.completed) palette.success else palette.primary.copy(alpha = 0.15f),
                             modifier = Modifier
-                                .size(setControlSize)
-                                .trainPilotBorder(1.dp, if (setItem.completed) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
-                                .clip(RoundedCornerShape(10.dp))
+                                .width(setControlSize)
+                                .height(setControlSize)
+                                .trainPilotBorder(1.dp, if (setItem.completed) palette.success else palette.primary, RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(8.dp))
                                 .clickable { onToggleSetCompleted(setItem.setNumber) }
                                 .testTag("toggle_set_${setItem.setNumber}")
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
-                                    text = "OK",
+                                    text = if (setItem.completed) "✓" else "OK",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (setItem.completed) palette.onPrimary else palette.textPrimary
+                                    color = if (setItem.completed) Color.White else palette.primary
                                 )
                             }
                         }
 
                         Spacer(modifier = Modifier.width(4.dp))
 
-                        // 7. Destructive action uses the same rounded square, with a semantic red frame
+                        // 7. Destructive delete action button
                         Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = palette.danger.copy(alpha = 0.16f),
+                            shape = RoundedCornerShape(8.dp),
+                            color = palette.danger.copy(alpha = 0.10f),
                             modifier = Modifier
-                                .size(setControlSize)
-                                .trainPilotBorder(1.dp, palette.danger, RoundedCornerShape(10.dp))
-                                .clip(RoundedCornerShape(10.dp))
+                                .width(setControlSize)
+                                .height(setControlSize)
+                                .trainPilotBorder(0.5.dp, palette.danger.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(8.dp))
                                 .clickable { onDeleteSet(setItem.setNumber) }
                                 .testTag("delete_set_${setItem.setNumber}")
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
-                                    text = "—",
+                                    text = "−",
                                     color = palette.danger,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp
+                                    fontSize = 15.sp
                                 )
                             }
                         }
                     }
 
                     }
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
-                    // Row of quick adjustment chips matching screenshot 3
+                    // Row of quick adjustment chips (compact, high-contrast, clean)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         val repChipUnit = tr(lang, "ism.", "reps", "Wdh.", "rep.")
                         SmallAdjustChip(String.format(java.util.Locale.forLanguageTag(uiState.language.name.lowercase()), "%+.1f kg", -0.5f)) { onAdjustSetValues(setItem.setNumber, -0.5f, 0, 0) }
@@ -1001,11 +1035,11 @@ fun ActiveStrengthWorkoutScreen(
                 } else {
                     // LARGE EXPANDED STICKY REST TIMER CARD (shown when scrolled down or expanded)
                     Surface(
-                        shape = RoundedCornerShape(18.dp),
+                        shape = RoundedCornerShape(16.dp),
                         color = palette.surfaceCard,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .trainPilotBorder(1.5.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(18.dp))
+                            .trainPilotBorder(0.5.dp, palette.primary.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
                             .testTag("sticky_rest_timer_large")
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
@@ -1240,7 +1274,7 @@ private fun SmallAdjustChip(
     val palette = LocalTrainPilotPalette.current
     Surface(
         shape = RoundedCornerShape(8.dp),
-        color = palette.background,
+        color = Color(0xFF232933),
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
             .clickable { onClick() }
@@ -1248,8 +1282,9 @@ private fun SmallAdjustChip(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = palette.textSecondary,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            color = Color(0xFFF4F5F7),
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
         )
     }
 }
@@ -3434,6 +3469,14 @@ private fun IntervalStepperCard(
     }
 }
 
+data class SummaryAttachedPhoto(
+    val id: String,
+    val label: String,
+    val width: Int,
+    val height: Int,
+    val bytes: Long
+)
+
 /**
  * 6. EDZÉS BEFEJEZÉSE / ÖSSZEGZÉSE (Mockup 2/4 #6)
  */
@@ -3453,6 +3496,91 @@ fun WorkoutSummaryScreen(
 ) {
     val palette = LocalTrainPilotPalette.current
     val lang = uiState.language
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val photoRepo = remember(context) { WorkoutPhotoRepository(context) }
+    var selectedPhotoCategory by remember { mutableStateOf("after") }
+
+    val attachedPhotos = remember {
+        val list = mutableStateListOf<SummaryAttachedPhoto>()
+        val current = ActiveWorkoutStore.current(context)
+        val arr = current?.optJSONArray("photos")
+        if (arr != null) {
+            for (i in 0 until arr.length()) {
+                val obj = arr.optJSONObject(i) ?: continue
+                val id = obj.optString("id")
+                if (id.isNotBlank()) {
+                    list.add(
+                        SummaryAttachedPhoto(
+                            id = id,
+                            label = obj.optString("label", "after"),
+                            width = obj.optInt("width", 0),
+                            height = obj.optInt("height", 0),
+                            bytes = obj.optLong("bytes", 0L)
+                        )
+                    )
+                }
+            }
+        }
+        list
+    }
+
+    fun syncPhotosToStore(photos: List<SummaryAttachedPhoto>) {
+        val current = ActiveWorkoutStore.current(context) ?: return
+        val arr = JSONArray()
+        for (p in photos) {
+            arr.put(
+                JSONObject()
+                    .put("id", p.id)
+                    .put("label", p.label)
+                    .put("createdAt", Instant.now().toString())
+                    .put("width", p.width)
+                    .put("height", p.height)
+                    .put("bytes", p.bytes)
+            )
+        }
+        current.put("photos", arr)
+        runCatching { ActiveWorkoutStore.saveOwned(context, current) }
+    }
+
+    val summaryCameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { res ->
+        scope.launch {
+            val r = photoRepo.handleCameraResult(res.resultCode, res.data)
+            r.getOrNull()?.let { meta ->
+                val p = SummaryAttachedPhoto(
+                    id = meta.id,
+                    label = selectedPhotoCategory,
+                    width = meta.width,
+                    height = meta.height,
+                    bytes = meta.bytes
+                )
+                attachedPhotos.add(p)
+                syncPhotosToStore(attachedPhotos)
+            }
+        }
+    }
+
+    val summaryGalleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { res ->
+        scope.launch {
+            val r = photoRepo.importPickedUri(res.data?.data)
+            r.getOrNull()?.let { meta ->
+                val p = SummaryAttachedPhoto(
+                    id = meta.id,
+                    label = selectedPhotoCategory,
+                    width = meta.width,
+                    height = meta.height,
+                    bytes = meta.bytes
+                )
+                attachedPhotos.add(p)
+                syncPhotosToStore(attachedPhotos)
+            }
+        }
+    }
+
     val moods = listOf(
         tr(lang, "😄 Túl könnyű", "😄 Too easy", "😄 Zu leicht", "😄 Prea ușor"),
         tr(lang, "🙂 Könnyű", "🙂 Easy", "🙂 Leicht", "🙂 Ușor"),
@@ -3631,6 +3759,264 @@ fun WorkoutSummaryScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp)
                     )
+                }
+            }
+        }
+
+        // Dedicated Workout Photos Card ("Edzésfotók")
+        item {
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = palette.surfaceCard,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                    .testTag("workout_summary_photos_card")
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CameraAlt,
+                                contentDescription = null,
+                                tint = palette.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = tr(lang, "Edzésfotók", "Workout Photos", "Trainingsfotos", "Fotografii de antrenament"),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = palette.textPrimary
+                            )
+                        }
+                        if (attachedPhotos.isNotEmpty()) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = palette.surfaceElevated
+                            ) {
+                                Text(
+                                    text = "${attachedPhotos.size}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.primary,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // Category chips: Edzés előtt / Edzés után / Egyéb
+                    Text(
+                        text = tr(lang, "Kategória kiválasztása", "Select category", "Kategorie wählen", "Selectează categoria"),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = palette.textSecondary
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val categories = listOf(
+                            "before" to tr(lang, "Edzés előtt", "Before", "Vorher", "Înainte"),
+                            "after" to tr(lang, "Edzés után", "After", "Nachher", "După"),
+                            "other" to tr(lang, "Egyéb", "Other", "Sonstiges", "Altele")
+                        )
+                        categories.forEach { (catKey, catLabel) ->
+                            val isSelected = selectedPhotoCategory == catKey
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (isSelected) palette.primary else palette.surfaceElevated,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { selectedPhotoCategory = catKey }
+                                    .testTag("summary_photo_cat_$catKey")
+                            ) {
+                                Box(
+                                    modifier = Modifier.padding(vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = catLabel,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSelected) palette.onPrimary else palette.textPrimary
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Camera and Gallery buttons
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                try {
+                                    summaryCameraLauncher.launch(photoRepo.prepareCameraCaptureIntent())
+                                } catch (_: Exception) {}
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = palette.surfaceElevated,
+                                contentColor = palette.textPrimary
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp)
+                                .testTag("workout_summary_camera_button")
+                        ) {
+                            Icon(Icons.Default.CameraAlt, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(tr(lang, "Kamera", "Camera", "Kamera", "Cameră"), fontWeight = FontWeight.SemiBold)
+                        }
+
+                        Button(
+                            onClick = {
+                                try {
+                                    summaryGalleryLauncher.launch(photoRepo.createPickImageIntent())
+                                } catch (_: Exception) {}
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = palette.surfaceElevated,
+                                contentColor = palette.textPrimary
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp)
+                                .testTag("workout_summary_gallery_button")
+                        ) {
+                            Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(tr(lang, "Galéria", "Gallery", "Galerie", "Galerie"), fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+
+                    // Photos preview row or empty prompt
+                    if (attachedPhotos.isNotEmpty()) {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(attachedPhotos, key = { it.id }) { photo ->
+                                val bitmap by produceState<Bitmap?>(initialValue = null, key1 = photo.id) {
+                                    value = withContext(Dispatchers.IO) {
+                                        try {
+                                            val file = photoRepo.photoFile(photo.id)
+                                            if (file.isFile && file.length() > 0) {
+                                                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                                                BitmapFactory.decodeFile(file.absolutePath, bounds)
+                                                val sample = maxOf(1, maxOf(bounds.outWidth / 240, bounds.outHeight / 240))
+                                                val opts = BitmapFactory.Options().apply { inSampleSize = sample }
+                                                BitmapFactory.decodeFile(file.absolutePath, opts)
+                                            } else null
+                                        } catch (_: Exception) {
+                                            null
+                                        }
+                                    }
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = palette.surfaceElevated,
+                                    modifier = Modifier
+                                        .size(width = 96.dp, height = 120.dp)
+                                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
+                                ) {
+                                    Box(modifier = Modifier.fillMaxSize()) {
+                                        if (bitmap != null) {
+                                            Image(
+                                                bitmap = bitmap!!.asImageBitmap(),
+                                                contentDescription = null,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        } else {
+                                            Box(
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.PhotoLibrary,
+                                                    contentDescription = null,
+                                                    tint = palette.textMuted
+                                                )
+                                            }
+                                        }
+
+                                        // Category badge on bottom
+                                        val catText = when (photo.label) {
+                                            "before" -> tr(lang, "Előtte", "Before", "Vorher", "Înainte")
+                                            "after" -> tr(lang, "Utána", "After", "Nachher", "După")
+                                            else -> tr(lang, "Egyéb", "Other", "Sonstiges", "Altele")
+                                        }
+                                        Surface(
+                                            shape = RoundedCornerShape(bottomStart = 12.dp, topEnd = 8.dp),
+                                            color = palette.background.copy(alpha = 0.85f),
+                                            modifier = Modifier.align(Alignment.BottomStart)
+                                        ) {
+                                            Text(
+                                                text = catText,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = palette.textPrimary,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+
+                                        // Delete button top right
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = palette.danger.copy(alpha = 0.9f),
+                                            modifier = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .padding(4.dp)
+                                                .size(24.dp)
+                                                .clip(CircleShape)
+                                                .clickable {
+                                                    photoRepo.delete(photo.id)
+                                                    attachedPhotos.removeAll { it.id == photo.id }
+                                                    syncPhotosToStore(attachedPhotos)
+                                                }
+                                                .testTag("summary_delete_photo_${photo.id}")
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Close,
+                                                    contentDescription = tr(lang, "Törlés", "Delete", "Löschen", "Șterge"),
+                                                    tint = Color.White,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = tr(
+                                lang,
+                                "Csatolj fotót az edzésről a fejlődés követéséhez (opcionális).",
+                                "Attach a photo to track your workout progress (optional).",
+                                "Hänge ein Foto an, um deinen Trainingsfortschritt zu verfolgen (optional).",
+                                "Atașează o fotografie pentru a urmări progresul antrenamentului (opțional)."
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = palette.textMuted
+                        )
+                    }
                 }
             }
         }

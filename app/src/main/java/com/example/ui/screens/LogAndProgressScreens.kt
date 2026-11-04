@@ -821,6 +821,36 @@ internal fun LogWorkoutCard(
                     )
                 }
             }
+            // Photo indicator badge for workouts that have attached photos
+            if (entry.photoCount > 0) {
+                val lang = com.example.localization.LocalTrainPilotStrings.current.language
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = palette.surfaceElevated,
+                    modifier = Modifier
+                        .clickable { onOpenDetailAlways() }
+                        .testTag("journal_photos_badge_${entry.id}")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PhotoLibrary,
+                            contentDescription = trL(lang, "Csatolt fotók", "Attached photos", "Angehängte Fotos", "Fotografii atașate"),
+                            tint = palette.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "${entry.photoCount}",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = palette.primary
+                        )
+                    }
+                }
+            }
             // The whole row opens details on a separate screen; a trailing arrow is redundant.
             com.example.ui.components.TrainPilotDeleteIcon(
                 onDelete, deleteEnabled, "journal_list_delete_${entry.id}", compactVisual = true
@@ -1144,7 +1174,7 @@ fun LogWorkoutDetailScreen(
             ) {
                 TrainPilotOutlinedButton(
                     onClick = onOpenPhotos,
-                    enabled = workout.photoCount > 0,
+                    enabled = true,
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier
                         .weight(1f)
