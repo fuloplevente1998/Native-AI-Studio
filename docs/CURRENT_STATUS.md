@@ -2,12 +2,28 @@
 
 ## Legújabb készülékes visszajelzés – 2026-11-04 / 2753
 
-**Két aktív hiba:** [#117 – Naptár szinkron / Google 404](https://github.com/fuloplevente1998/Native-AI-Studio/issues/117),
-[#118 – Témák kinyitott fejlécének és négy sorának közös kerete](https://github.com/fuloplevente1998/Native-AI-Studio/issues/118).
+**Négy aktív hiba/feladat:** [#117 – Naptár szinkron / Google 404](https://github.com/fuloplevente1998/Native-AI-Studio/issues/117),
+[#118 – Témák kinyitott fejlécének és négy sorának közös kerete](https://github.com/fuloplevente1998/Native-AI-Studio/issues/118),
+[#120 – Edzésrészletek: szolgáltatók a Forrás fülre, deduplikált pulzus/kcal a Statisztikákra](https://github.com/fuloplevente1998/Native-AI-Studio/issues/120),
+[#84 – Újranyitva: naplós edzés- és visszajelzés-szerkesztő kompakt app-dizájnja](https://github.com/fuloplevente1998/Native-AI-Studio/issues/84).
 Referencia: a felhasználó 4407.jpg / 4406.jpg / 4408.jpg képei. Most csak rögzítés;
 alkalmazáskód-javítás és új APK nem készült. A 404 oka a képből nem bizonyított.
 
-A felhasználó kérésére a korábbi #35, #59, #69, #71, #75, #84 lezárva; a halasztott
+Újabb referencia: **4409.jpg**, a naplózott edzés Statisztikák füle. A három
+TrainPilot WearOS / Samsung Health / Health Connect panel a Forrás fülre kerüljön;
+a Statisztikákon egy edzésszintű pulzus/kcal összesítő kell. Azonos/tükrözött mérés
+csak egyszer számíthat; a forráseredet, pontos időablak és eredeti tárolt adatok
+megmaradnak. Nincs források közötti vak kcal-összeadás, átlagok átlagolása vagy
+hiányzó mérés helyettesítése. #120 most nyilvántartás, nem elkészült implementáció.
+
+**4410.jpg:** a naplós edzés-/visszajelzés-szerkesztő a kompakt app-arculatot,
+közös kereteket, fényes hangsúlyokat, színátmeneteket és elkülönülő boxokat kövesse.
+Előzmény a már mergelt #93 PR; a korábbi #84 UI-jegy erre a konkrét dizájnra
+újranyitva, új párhuzamos jegy nélkül. A régi Fejlődés/Naplólista/Coach részfeladatok
+nem aktiválódtak újra. A mentés, viewport/IME, eredeti adatok és feedback-védelmek
+megőrzendők; most csak rögzítés.
+
+A felhasználó kérésére a korábbi #35, #59, #69, #71, #75 lezárva; a halasztott
 #82 `not_planned` státusszal lezárva, implementációs állítás nélkül. A korábbi
 szakaszok nyitott checkboxai történetiek, nem önálló új feladatok.
 [Aktív hibanyilvántartás](PROGRESS_HEALTH_BUG_TRACKER_2026-11-02.md).
