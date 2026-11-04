@@ -8,6 +8,7 @@ import com.repforge.app.*
 import com.repforge.app.data.db.*
 import com.repforge.app.data.migration.LegacyWebViewMigrator
 import com.repforge.app.data.store.TrainPilotSettingsStore
+import com.repforge.app.data.store.TrainPilotUserSettings
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
@@ -135,5 +136,48 @@ class JournalPhotoAttachmentRegressionTest {
         native { NativeDataReplacement.exclusively(context) { Unit } }
         assertTrue(runCatching { native { NativeJournalPhotos.attach(context, db, request, added) } }.isFailure)
         assertEquals(before, detail(before.workout.id))
+    }
+
+    private fun activeWorkout(): JSONObject = NativeWorkoutSession.installPrepared(context,
+        NativeWorkoutSession.quickCandidate(JSONObject("""
+            {"id":"press","name":"Press","repUnit":"ism.","measurementType":"reps","loadType":"weight",
+             "sets":[{"setId":"photo-set","set":1,"weight":20,"reps":10,"done":true}]}
+        """), TrainPilotUserSettings()))
+
+    @Test fun summaryPhotoSurvivesNativeProjectionAndActuallyFinalizesIntoRoom() {
+        val frame = activeWorkout()
+        val id = frame.getString("workoutId")
+        val added = photo()
+        val request = NativeWorkoutPhotos.prepare(context, id, "before")
+        native { NativeWorkoutPhotos.attach(context, request, added) }
+        val projected = NativeWorkoutEditing.project(context)
+        assertEquals(added.id, projected.getJSONArray("photos").getJSONObject(0).getString("id"))
+        assertEquals(added.id, PhoneWorkoutExecution.store(context).snapshot()!!
+            .getJSONArray("photos").getJSONObject(0).getString("id"))
+        native { TrainPilotWorkoutFinalization(context, db).finishWorkout(projected) }
+        val saved = detail(id)
+        assertEquals(1, saved.exercises.single().sets.size)
+        assertTrue(saved.exercises.single().sets.single().done)
+        assertEquals(added.id, saved.photos.single().id)
+        assertEquals("before", saved.photos.single().label)
+        assertEquals(added.id, JSONObject(saved.workout.rawJson).getJSONArray("photos").getJSONObject(0).getString("id"))
+        val late = photo()
+        assertTrue(runCatching { native { NativeWorkoutPhotos.attach(context, request, late) } }.isFailure)
+        assertEquals(saved, detail(id))
+    }
+
+    @Test fun summaryRemovalIsDurableAndWrongGenerationCannotReceivePhoto() {
+        val frame = activeWorkout()
+        val id = frame.getString("workoutId")
+        val added = photo()
+        val request = NativeWorkoutPhotos.prepare(context, id, "other")
+        assertTrue(runCatching { native {
+            NativeWorkoutPhotos.attach(context, request.copy(generation = request.generation + 1), added)
+        } }.isFailure)
+        native { NativeWorkoutPhotos.attach(context, request, added) }
+        native { NativeWorkoutPhotos.remove(context, request, added.id) }
+        val projected = NativeWorkoutEditing.project(context)
+        assertEquals(0, projected.getJSONArray("photos").length())
+        assertEquals(frame.getJSONArray("exercises").toString(), projected.getJSONArray("exercises").toString())
     }
 }

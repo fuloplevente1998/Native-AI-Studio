@@ -3501,7 +3501,7 @@ fun WorkoutSummaryScreen(
     val photoRepo = remember(context) { WorkoutPhotoRepository(context) }
     var selectedPhotoCategory by remember { mutableStateOf("after") }
 
-    val attachedPhotos = remember {
+    val attachedPhotos = remember(uiState.activeWorkoutId) {
         val list = mutableStateListOf<SummaryAttachedPhoto>()
         val current = ActiveWorkoutStore.current(context)
         val arr = current?.optJSONArray("photos")
@@ -3525,61 +3525,46 @@ fun WorkoutSummaryScreen(
         list
     }
 
-    fun syncPhotosToStore(photos: List<SummaryAttachedPhoto>) {
-        val current = ActiveWorkoutStore.current(context) ?: return
-        val arr = JSONArray()
-        for (p in photos) {
-            arr.put(
-                JSONObject()
-                    .put("id", p.id)
-                    .put("label", p.label)
-                    .put("createdAt", Instant.now().toString())
-                    .put("width", p.width)
-                    .put("height", p.height)
-                    .put("bytes", p.bytes)
-            )
+    var photoError by remember { mutableStateOf(false) }
+    var photoBusy by remember { mutableStateOf(false) }
+    var pendingPhoto by remember { mutableStateOf<com.repforge.app.NativeWorkoutPhotos.Request?>(null) }
+
+    fun showSavedPhotos(photos: JSONArray) {
+        attachedPhotos.clear()
+        for (i in 0 until photos.length()) {
+            val p = photos.getJSONObject(i)
+            attachedPhotos.add(SummaryAttachedPhoto(p.getString("id"), p.optString("label", "after"),
+                p.optInt("width"), p.optInt("height"), p.optLong("bytes")))
         }
-        current.put("photos", arr)
-        runCatching { ActiveWorkoutStore.saveOwned(context, current) }
+    }
+
+    fun receivePhoto(importPhoto: suspend () -> Result<com.repforge.app.StoredPhotoMetadata?>) {
+        val request = pendingPhoto ?: return
+        pendingPhoto = null
+        scope.launch {
+            try {
+                val photo = importPhoto().getOrThrow() ?: return@launch
+                showSavedPhotos(com.repforge.app.NativeWorkoutPhotos.attach(context, request, photo))
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                photoError = true
+            } finally {
+                photoBusy = false
+            }
+        }
     }
 
     val summaryCameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
-    ) { res ->
-        scope.launch {
-            val r = photoRepo.handleCameraResult(res.resultCode, res.data)
-            r.getOrNull()?.let { meta ->
-                val p = SummaryAttachedPhoto(
-                    id = meta.id,
-                    label = selectedPhotoCategory,
-                    width = meta.width,
-                    height = meta.height,
-                    bytes = meta.bytes
-                )
-                attachedPhotos.add(p)
-                syncPhotosToStore(attachedPhotos)
-            }
-        }
-    }
+    ) { res -> receivePhoto { photoRepo.handleCameraResult(res.resultCode, res.data) } }
 
     val summaryGalleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
-    ) { res ->
-        scope.launch {
-            val r = photoRepo.importPickedUri(res.data?.data)
-            r.getOrNull()?.let { meta ->
-                val p = SummaryAttachedPhoto(
-                    id = meta.id,
-                    label = selectedPhotoCategory,
-                    width = meta.width,
-                    height = meta.height,
-                    bytes = meta.bytes
-                )
-                attachedPhotos.add(p)
-                syncPhotosToStore(attachedPhotos)
-            }
-        }
-    }
+    ) { res -> receivePhoto {
+        if (res.resultCode == android.app.Activity.RESULT_OK) photoRepo.importPickedUri(res.data?.data)
+        else Result.success(null)
+    } }
 
     val moods = listOf(
         tr(lang, "😄 Túl könnyű", "😄 Too easy", "😄 Zu leicht", "😄 Prea ușor"),
@@ -3863,9 +3848,18 @@ fun WorkoutSummaryScreen(
                         Button(
                             onClick = {
                                 try {
+                                    pendingPhoto = com.repforge.app.NativeWorkoutPhotos.prepare(context,
+                                        uiState.activeWorkoutId, selectedPhotoCategory)
+                                    photoError = false
+                                    photoBusy = true
                                     summaryCameraLauncher.launch(photoRepo.prepareCameraCaptureIntent())
-                                } catch (_: Exception) {}
+                                } catch (_: Exception) {
+                                    pendingPhoto = null
+                                    photoBusy = false
+                                    photoError = true
+                                }
                             },
+                            enabled = !uiState.isSavingWorkout && !photoBusy,
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = palette.surfaceElevated,
@@ -3884,9 +3878,18 @@ fun WorkoutSummaryScreen(
                         Button(
                             onClick = {
                                 try {
+                                    pendingPhoto = com.repforge.app.NativeWorkoutPhotos.prepare(context,
+                                        uiState.activeWorkoutId, selectedPhotoCategory)
+                                    photoError = false
+                                    photoBusy = true
                                     summaryGalleryLauncher.launch(photoRepo.createPickImageIntent())
-                                } catch (_: Exception) {}
+                                } catch (_: Exception) {
+                                    pendingPhoto = null
+                                    photoBusy = false
+                                    photoError = true
+                                }
                             },
+                            enabled = !uiState.isSavingWorkout && !photoBusy,
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = palette.surfaceElevated,
@@ -3901,6 +3904,14 @@ fun WorkoutSummaryScreen(
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(tr(lang, "Galéria", "Gallery", "Galerie", "Galerie"), fontWeight = FontWeight.SemiBold)
                         }
+                    }
+
+                    if (photoError) {
+                        Text(tr(lang, "A fotóművelet nem sikerült. Próbáld újra.",
+                            "Photo operation failed. Please try again.",
+                            "Fotoaktion fehlgeschlagen. Bitte erneut versuchen.",
+                            "Operațiunea foto a eșuat. Încearcă din nou."),
+                            color = palette.danger, modifier = Modifier.testTag("summary_photo_error"))
                     }
 
                     // Photos preview row or empty prompt
@@ -3984,10 +3995,22 @@ fun WorkoutSummaryScreen(
                                                 .padding(4.dp)
                                                 .size(24.dp)
                                                 .clip(CircleShape)
-                                                .clickable {
-                                                    photoRepo.delete(photo.id)
-                                                    attachedPhotos.removeAll { it.id == photo.id }
-                                                    syncPhotosToStore(attachedPhotos)
+                                                .clickable(enabled = !uiState.isSavingWorkout && !photoBusy) {
+                                                    scope.launch {
+                                                        photoBusy = true
+                                                        try {
+                                                            val request = com.repforge.app.NativeWorkoutPhotos.prepare(
+                                                                context, uiState.activeWorkoutId, selectedPhotoCategory)
+                                                            showSavedPhotos(com.repforge.app.NativeWorkoutPhotos.remove(
+                                                                context, request, photo.id))
+                                                        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                                                            throw cancelled
+                                                        } catch (_: Exception) {
+                                                            photoError = true
+                                                        } finally {
+                                                            photoBusy = false
+                                                        }
+                                                    }
                                                 }
                                                 .testTag("summary_delete_photo_${photo.id}")
                                         ) {
@@ -4039,6 +4062,7 @@ fun WorkoutSummaryScreen(
         item {
             Button(
                 onClick = onSaveWorkout,
+                enabled = !uiState.isSavingWorkout && !photoBusy,
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = palette.primary,

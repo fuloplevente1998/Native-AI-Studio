@@ -14,9 +14,18 @@ kamera/galéria indításakor rögzül. Törölt, tombstone-nal jelölt, aktív 
 közben visszaállított adatkészlethez tartozó edzés nem kap késői fotóírást.
 A felület a hibát jelzi, a coroutine-megszakítást továbbadja.
 
+Az összegző korábban csak az ActiveWorkoutStore vetületébe írta a fotót. A mentés
+előtti NativeWorkoutEditing.project ezt a natív motor állapotával felülírta.
+A NativeWorkoutPhotos az edzésazonosító/generáció/restore-jegy ellenőrzése után
+a meglévő NativeWorkoutEditing.commitEdit útvonalon rögzíti a csatolást és
+eltávolítást. A bélyegkép csak sikeres tartós írás után frissül; a Mentés az
+import közben tiltott. Az eltávolítás leválasztja a fotót az edzésről.
+
 Regresszió: `JournalPhotoAttachmentRegressionTest` – meglévő gyakorlat/sorozat,
 fotók és idegen edzés megőrzése; három kategória; duplikált fotó atomi rollback;
-késői callback törlés, tombstone és restore után. A tényleges kamera/galéria és
+késői callback törlés, tombstone és restore után; összegzőbeli csatolás
+megmaradása natív újraprojektálás és valódi Room-véglegesítés után, tartós
+leválasztás és hibás generáció elutasítása. A tényleges kamera/galéria és
 készülékes megjelenítés továbbra is telefonos tesztet igényel.
 
 Verziókód, package, signer, motor, séma és migráció változatlan. CI/APK állapotot
