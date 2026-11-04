@@ -182,4 +182,4 @@ Videó: API-ready és iframe-load különválik; beágyazási hiba/időtúllép�
 
 Adatvédelem: Samsung SDK/Health Connect/Wear forrás és GPS-útvonaltárolás pontosítva, beállításból megnyitható. Nincs kitalált új jogi dátum, kapcsolattartó vagy jóváhagyás; publikálás előtt a teljes tájékoztató felülvizsgálandó.
 
-Helyben igazolva: 12 fontarc és 7 videó JS-teszt sikeres. A GitHub CI tényleges nyers XML eredménye az integrációs PR-ben irányadó. 2750-es verziókód előkészítve; aláírt 2750-es APK még nincs kiadva. A legutóbb átadott kiadás 2749.
+Helyben igazolva: 12 fontarc és 7 videó JS-teszt sikeres. GitHub CI41775858274: 444 teszt, 0 failure/error/skipped; a nyers XML ellenőrizve. Bizonyíték: AI_STUDIO_INTEGRATION_CI_2026-11-04.json. 2750-es verziókód előkészítve; aláírt 2750-es APK még nincs kiadva. A legutóbb átadott kiadás 2749.

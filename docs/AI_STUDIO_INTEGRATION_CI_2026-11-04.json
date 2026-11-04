@@ -1,0 +1,25 @@
+{
+  "pr": 105,
+  "baseMain": "0ec7065087f241809026f88344e4c8651df467ce",
+  "sourceHead": "6b13bd7049e63197f77880b2fe1e8f7cbf3a231d",
+  "run": 41775858274,
+  "rawXmlArtifact": 13297262564,
+  "metadataArtifact": 13297033145,
+  "tests": {
+    "tests": 444,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "modules": {
+    "app": 268,
+    "wear": 176
+  },
+  "fontFacesVerified": 12,
+  "videoJsChecks": 7,
+  "versionCode": 2750,
+  "newSignedApkCreated": false,
+  "deviceAccepted": false,
+  "zipDriveId": "1g-GggZVFY-74nrZGoa08-myVVGatS6S3",
+  "zipSha256": "188041e903ca85f358ecf77fdd0b180006dfb66148f74248aa4e2785c72fea47"
+}

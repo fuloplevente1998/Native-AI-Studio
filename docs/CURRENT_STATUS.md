@@ -6,7 +6,7 @@ Bázis: PR104, `0ec7065087f241809026f88344e4c8651df467ce`. A korábbi profil-, s
 
 Legutóbb átadott aláírt APK: **2749**, [telefonos letöltés](https://drive.google.com/file/d/1bNYaIqRfdtmKpajAmRHvjndZClW7128V/view?usp=drivesdk). [Ellenőrzött kiadási bizonyíték](RELEASE_2749_VERIFIED_ARTIFACTS.json). A 2750-es verziókód előkészítve, de új aláírt kiadás még nem készült.
 
-Az integráció CI-ellenőrzése folyamatban; a ZIP-ben szereplő compile_applet és 443-as JVM összesítés nincs függetlenül igazolva, ezért nem készre jelentés. Helyi fontellenőrzés: 12 PASS; videó JS: 7 PASS. A PR104 forrásellenőrzése: 439 teszt, 0 hiba (CI41769004493).
+Az integráció CI41775858274 sikeres: 444 teszt ({'app': 268, 'wear': 176}), 0 hiba/kihagyás; a nyers XML letöltve és ellenőrizve. [Bizonyíték](AI_STUDIO_INTEGRATION_CI_2026-11-04.json). Fontellenőrzés: 12 PASS; videó JS: 7 PASS. A ZIP korábbi compile_applet/443-as jelentése helyett ez a tényleges eredmény irányadó. A PR104 forrásellenőrzése: 439 teszt, 0 hiba (CI41769004493).
 
 ## Korábbi kiadások és dizájnellenőrzések (történeti)
 
