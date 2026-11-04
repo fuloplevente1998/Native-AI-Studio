@@ -193,7 +193,7 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
                     items(current.origins, key = { it.source }) { origin ->
                         FilterChip(selected = query.source == origin.source, onClick = { restart(origin.source) },
                             modifier = Modifier.testTag("health_origin_${origin.source}"),
-                            label = { Text(if (origin.name.isNotBlank()) "${origin.name} (${origin.source})" else origin.source) })
+                            label = { Text(healthSourceDisplayName(origin.source, origin.name)) })
                     }
                 }
                 Text(resources.getString(R.string.health_records_raw_notice), color = colors.muted)
@@ -213,7 +213,7 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
                 key(query, reloadToken) {
                     LazyColumn(Modifier.weight(1f).testTag("health_records_list"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         if (current.rows.isEmpty()) item { Text(resources.getString(R.string.health_records_empty), color = colors.muted) }
-                        items(current.rows, key = { "${it.channel}:${it.type}:${it.id}" }) { row -> HealthRecordCard(row, language) }
+                        items(current.rows, key = { "${it.channel}:${it.type}:${it.id}" }) { row -> HealthRecordCard(row, language, current.origins.firstOrNull { it.source == row.source }?.name.orEmpty()) }
                     }
                 }
             }
@@ -222,7 +222,7 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
 }
 
 @Composable
-private fun HealthRecordCard(row: HealthRecordRow, language: String) {
+private fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName: String) {
     val text = nativeResources(LocalContext.current, language)
     val colors = LocalTrainPilotColors.current
     val data = remember(row.data) { JSONObject(row.data) }
@@ -235,7 +235,7 @@ private fun HealthRecordCard(row: HealthRecordRow, language: String) {
     Card(Modifier.fillMaxWidth().testTag("health_record_${row.id}"), colors = CardDefaults.cardColors(containerColor = colors.card)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(text.getString(NativeHealthRecords.title(row.type)), color = colors.text, fontWeight = FontWeight.Bold)
-            Text(text.getString(R.string.health_record_source, "${healthChannelName(row.channel, text)} · ${row.source}"), color = colors.muted)
+            Text(text.getString(R.string.health_record_source, "${healthChannelName(row.channel, text)} · ${healthSourceDisplayName(row.source, sourceName)}"), color = colors.muted)
             Text(text.getString(R.string.health_record_start, healthRecordTime(row.startMs, language)), color = colors.muted)
             if (row.endMs != row.startMs) Text(text.getString(R.string.health_record_end, healthRecordTime(row.endMs, language)), color = colors.muted)
             Text(text.getString(R.string.health_record_modified, healthRecordTime(row.modifiedMs, language)), color = colors.muted)
@@ -287,4 +287,16 @@ private fun healthChannelName(channel: String, text: android.content.res.Resourc
     HealthJournalStore.SAMSUNG -> "Samsung Health"
     HealthJournalStore.BLE -> "BLE"
     else -> text.getString(R.string.health_history_title)
+}
+
+/** Present the provider's app label without exposing a package ID in the primary UI. */
+internal fun healthSourceDisplayName(source: String, suppliedName: String = ""): String {
+    val name = suppliedName.trim()
+    if (name.isNotEmpty() && name != source) return name
+    return when (source.lowercase(Locale.ROOT)) {
+        "com.sec.android.app.shealth" -> "Samsung Health"
+        "com.google.android.apps.fitness" -> "Google Fit"
+        "com.google.android.apps.healthdata" -> "Health Connect"
+        else -> source
+    }
 }
