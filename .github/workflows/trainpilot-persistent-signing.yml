@@ -3,6 +3,7 @@ name: TrainPilot persistent signed APK pair
 # 2752: PR109 signed phone/Wear pair build trigger; workflow steps unchanged.
 # PR110: one-time signed pair trigger after verified squash merge ac3987f3; workflow steps unchanged.
 # 2753: signed phone/Wear pair after AI Studio integration passes PR #112 CI; workflow steps unchanged.
+# 2753 release trigger after successful CI 41879354293 and merge commit 593af576; no workflow logic changed.
 
 on:
   workflow_dispatch:
