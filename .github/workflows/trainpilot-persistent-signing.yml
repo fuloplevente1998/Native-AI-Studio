@@ -1,5 +1,6 @@
 name: TrainPilot persistent signed APK pair
 # 2751: signed main with reviewed AI Studio integration and localized profile choices.
+# 2752: PR109 signed phone/Wear pair build trigger; workflow steps unchanged.
 
 on:
   workflow_dispatch:
