@@ -308,7 +308,13 @@ fun translateSingleMuscleLabel(tokenHu: String, lang: AppLanguage): String {
             AppLanguage.RO -> "Triceps"
             AppLanguage.HU -> tokenHu
         }
-        "kar", "arms", "forearms", "alkar" -> when (lang) {
+        "forearms", "alkar" -> when (lang) {
+            AppLanguage.EN -> "Forearms"; AppLanguage.DE -> "Unterarme"; AppLanguage.RO -> "Antebrațe"; else -> tokenHu
+        }
+        "oldalsó hasizom", "obliques" -> when (lang) {
+            AppLanguage.EN -> "Obliques"; AppLanguage.DE -> "Schräge Bauchmuskeln"; AppLanguage.RO -> "Oblici"; else -> tokenHu
+        }
+        "kar", "arms" -> when (lang) {
             AppLanguage.EN -> "Arms"
             AppLanguage.DE -> "Arme"
             AppLanguage.RO -> "Brațe"
@@ -344,7 +350,7 @@ fun translateSingleMuscleLabel(tokenHu: String, lang: AppLanguage): String {
             AppLanguage.RO -> "Gambe"
             AppLanguage.HU -> tokenHu
         }
-        "törzs / has", "törzs", "has", "core", "abs" -> when (lang) {
+        "törzs / has", "törzs", "has", "hasizom", "core", "abs" -> when (lang) {
             AppLanguage.EN -> "Core / Abs"
             AppLanguage.DE -> "Rumpf / Bauch"
             AppLanguage.RO -> "Trunchi / Abdomen"
@@ -377,7 +383,7 @@ fun translateMuscleListLabel(rawHu: String, lang: AppLanguage): String {
     return rawHu.split(Regex("[,/]")).map { it.trim() }
         .map { it.trim() }
         .filter { it.isNotEmpty() }
-        .joinToString(", ") { translateSingleMuscleLabel(it, lang) }
+        .map { translateSingleMuscleLabel(it, lang) }.distinct().joinToString(", ")
 }
 
 fun translateProgramTag(tagHu: String, lang: AppLanguage): String {

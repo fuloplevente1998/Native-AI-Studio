@@ -277,6 +277,9 @@ class ExerciseVideoResolverTest {
         assertEquals("Keep this actual Coach restriction", ex.localizedCoachHint(AppLanguage.EN))
         assertEquals("1 dumbbell", ex.copy(equipmentHu = "1 kézisúlyzó").localizedEquipment(AppLanguage.EN))
         assertEquals("Legs, Glutes", com.example.model.translateMuscleListLabel("Láb/far", AppLanguage.EN))
+        assertEquals("Core / Abs", com.example.model.translateMuscleListLabel("Törzs / Has", AppLanguage.EN))
+        assertEquals("Forearms, Back", com.example.model.translateMuscleListLabel("Alkar / Hát", AppLanguage.EN))
+        assertEquals("Obliques", com.example.model.translateMuscleListLabel("Oldalsó hasizom", AppLanguage.EN))
     }
 
     @Test fun everyBundledExerciseHasTranslatedEquipmentAndMuscleFragments() {
