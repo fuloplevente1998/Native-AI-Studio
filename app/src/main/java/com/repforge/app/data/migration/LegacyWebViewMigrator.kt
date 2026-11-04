@@ -595,7 +595,7 @@ class LegacyWebViewMigrator(
                 repUnit = repUnit,
                 measurementType = measurementType,
                 orderIndex = eIdx,
-                actualRir = SetEditorRules212.parseActualRir229(exObj),
+                actualRir = com.repforge.app.StudioWorkoutFeedback.readLegacyExerciseRir(exObj),
                 setRir229 = exObj.optBoolean("setRir229", false)
             )
 
@@ -676,8 +676,8 @@ class LegacyWebViewMigrator(
         }
 
         val feedbackObj = h.optJSONObject("feedback")
-        val effort = feedbackObj?.optString("effort")?.takeIf { it.isNotBlank() }
-            ?: h.optString("effortFeedback").takeIf { it.isNotBlank() }
+        val rawEffort = com.repforge.app.StudioWorkoutFeedback.readWorkoutEffort(h)
+        val effort = if (rawEffort == "right") "good" else rawEffort
         val skipped = feedbackObj?.optBoolean("skipped", false) ?: false
         val feedbackUpdatedAt = feedbackObj?.optLong("updatedAt", 0L) ?: 0L
 

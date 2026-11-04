@@ -108,7 +108,8 @@ fun resolveExerciseVideoAndNotes(
     storedVideoUrl: String? = null,
     isCustom: Boolean = false,
     selectedNotesHu: String? = null,
-    allowCatalogByTitle: Boolean = true
+    allowCatalogByTitle: Boolean = true,
+    language: String = "hu"
 ): ExerciseVideoDetails {
     val catalog = runCatching { TrainPilotDatabase.defaultExercises() }.getOrDefault(emptyList())
     val knownId = exerciseId?.takeIf { it.isNotBlank() }
@@ -121,8 +122,14 @@ fun resolveExerciseVideoAndNotes(
         }.singleOrNull()
     } else null
     val link = resolveExerciseVideoLink(storedVideoUrl, match?.videoUrl, isCustom)
+    val fallbackNoNotes = when (language.lowercase(Locale.ROOT)) {
+        "en" -> "No execution description is available for this exercise."
+        "de" -> "Für diese Übung ist keine Ausführungsbeschreibung verfügbar."
+        "ro" -> "Nu există o descriere de execuție pentru acest exercițiu."
+        else -> "Ehhez a gyakorlathoz nincs végrehajtási leírás."
+    }
     val notes = selectedNotesHu?.takeIf { it.isNotBlank() }
         ?: match?.notesHu?.takeIf { it.isNotBlank() }
-        ?: "Ehhez a gyakorlathoz nincs végrehajtási leírás."
+        ?: fallbackNoNotes
     return ExerciseVideoDetails(link, notes)
 }

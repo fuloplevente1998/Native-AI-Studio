@@ -24,7 +24,11 @@ internal fun JournalEffortDropdown(selected: String?, choices: List<Pair<String,
     val colors = LocalTrainPilotColors.current
     val selectedFill = colors.accent.copy(alpha = 0.16f).compositeOver(colors.card)
     var expanded by remember { mutableStateOf(false) }
-    val answer = choices.firstOrNull { it.first == selected || (selected == "right" && it.first == "good") }
+    val answer = choices.firstOrNull {
+        it.first == selected ||
+            (selected == "right" && it.first == "good") ||
+            (selected == "good" && it.first == "right")
+    }
     Box(Modifier.fillMaxWidth()) {
         Surface(onClick = { expanded = true }, enabled = enabled,
             shape = RoundedCornerShape(12.dp),

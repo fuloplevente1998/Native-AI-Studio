@@ -22,9 +22,15 @@ internal fun StudioLoggedWorkoutEditActions(workoutId: String, language: String,
         else if (saving && editor == null) { saving = false; onSaved() }
         else if (editor?.failed == true) saving = false
     }
+    val label = when (language.lowercase()) {
+        "en" -> "Edit workout and feedback"
+        "de" -> "Training und Feedback bearbeiten"
+        "ro" -> "Editează antrenamentul și feedbackul"
+        else -> "Edzés és visszajelzés szerkesztése"
+    }
     TrainPilotOutlinedButton(onClick = model::openEditor,
         enabled = !state.deleting && state.detail?.workout?.id == workoutId && editor == null,
-        modifier = Modifier.fillMaxWidth().testTag("studio_journal_edit")) { Text("Edzés és visszajelzés szerkesztése") }
+        modifier = Modifier.fillMaxWidth().testTag("studio_journal_edit")) { Text(label) }
     editor?.takeIf { it.opened.detail.workout.id == workoutId }?.let {
         StudioNativeEditorTheme { JournalEditorDialog(it, language, model::editDraft, { draft -> saving = true; model.saveEditor(draft) }, model::cancelEditor) }
     }

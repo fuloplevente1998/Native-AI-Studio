@@ -18,13 +18,19 @@ import com.repforge.app.healthreadings.RecoverySource
 @Composable
 internal fun StudioTodayStatusGrid(state: TrainPilotUiState, compact: Boolean = false,
     onSelect: (String) -> Unit) {
+    fun tr(hu: String, en: String, de: String, ro: String) = when (state.language) {
+        com.example.model.AppLanguage.HU -> hu
+        com.example.model.AppLanguage.EN -> en
+        com.example.model.AppLanguage.DE -> de
+        com.example.model.AppLanguage.RO -> ro
+    }
     val pulse = state.todayPulseReading
     val recovery = state.todayRecoveryReading
     val pulseName = when {
-        pulse?.averageBpm != null -> "Napi átlagpulzus"
-        pulse?.lastBpm != null -> "Utolsó mérés"
-        pulse?.restingBpm != null -> "Nyugalmi pulzus"
-        else -> "Pulzus"
+        pulse?.averageBpm != null -> tr("Napi átlagpulzus", "Daily Avg HR", "Ø Tagespuls", "Puls mediu zilnic")
+        pulse?.lastBpm != null -> tr("Utolsó mérés", "Last Reading", "Letzte Messung", "Ultima măsurătoare")
+        pulse?.restingBpm != null -> tr("Nyugalmi pulzus", "Resting HR", "Ruhepuls", "Puls repaus")
+        else -> tr("Pulzus", "Heart Rate", "Puls", "Puls")
     }
     val pulseValue = when {
         pulse?.averageBpm != null -> "${pulse.averageBpm.roundToInt()} bpm"
@@ -33,16 +39,16 @@ internal fun StudioTodayStatusGrid(state: TrainPilotUiState, compact: Boolean = 
         else -> "—"
     }
     val recoveryName = when (recovery?.source) {
-        RecoverySource.SAMSUNG_ENERGY -> "Samsung Energia"
-        RecoverySource.TRAINPILOT_ESTIMATE -> "TP regeneráció"
-        else -> "Regeneráció"
+        RecoverySource.SAMSUNG_ENERGY -> tr("Samsung Energia", "Samsung Energy", "Samsung Energie", "Energie Samsung")
+        RecoverySource.TRAINPILOT_ESTIMATE -> tr("TP regeneráció", "TP Recovery", "TP Erholung", "Recuperare TP")
+        else -> tr("Regeneráció", "Recovery", "Erholung", "Recuperare")
     }
     val values = listOf(
-        Triple("sleep", "Alvás", state.sleepHoursDecimal),
-        Triple("calories", if (compact) "Aktív kcal" else "Aktív kalória", if ("activeCalories" in state.dailyHealthAvailableFields) "${state.activeCaloriesKcal} kcal" else "—"),
+        Triple("sleep", tr("Alvás", "Sleep", "Schlaf", "Somn"), state.sleepHoursDecimal),
+        Triple("calories", if (compact) tr("Aktív kcal", "Active kcal", "Aktive kcal", "kcal active") else tr("Aktív kalória", "Active Calories", "Aktive Kalorien", "Calorii active"), if ("activeCalories" in state.dailyHealthAvailableFields) "${state.activeCaloriesKcal} kcal" else "—"),
         Triple("pulse", pulseName, pulseValue),
-        Triple("steps", "Lépések", if ("steps" in state.dailyHealthAvailableFields) "${state.dailySteps}" else "—"),
-        Triple("workout", "Mai edzés", "${state.loggedWorkouts.workoutsOn(LocalDate.now()).size}"),
+        Triple("steps", tr("Lépések", "Steps", "Schritte", "Pași"), if ("steps" in state.dailyHealthAvailableFields) "${state.dailySteps}" else "—"),
+        Triple("workout", tr("Mai edzés", "Today's Workout", "Heutiges Training", "Antrenament azi"), "${state.loggedWorkouts.workoutsOn(LocalDate.now()).size}"),
         Triple("recovery", recoveryName, recovery?.displayScoreHu ?: "—")
     )
     val icons = listOf(Icons.Default.Bedtime, Icons.Default.LocalFireDepartment, Icons.Default.Favorite,

@@ -1,14 +1,25 @@
-# TrainPilot Native – aktuális állapot, 2026-11-03
+# TrainPilot Native – aktuális állapot, 2026-11-04
 
-## Friss main dizájn – PR101, 2026-11-04
+## AI Studio integrált csomag – versionCode 2750 (PR104 `0ec70650` bázison)
 
-A dizájncsomag mainen: **4737d72c75f191b18980bc40885633c1c43b5c99**. Teljes CI434 =258 telefon+176Wear, 0 failure/error/skipped, 12 valódi fontarc glyph/súly/hash/licenc ellenőrzés és JS7 PASS. [Bizonyíték](DESIGN_CI_2026-11-04.json), [változások](DESIGN_FONT_THEME_IMPLEMENTATION.md).
+A legfrissebb main (`0ec706509a267119553ef7b9c8c78d1c881bf563`, PR104) dizájn-, profil- és statisztikajavításainak maradéktalan megőrzésével elkészült az AI Studio csomag (`versionCode = 2750` az `:app`, `:wear` és `scripts/verify_android_apk_metadata.py` fájlokban):
 
-Elkészült forrásban: #95 egységes sorozatvezérlők/egységfeliratok, #97 ismételt napcímek, #98 teljes ékezetes fontok és valódi súlyok, #99 glow/világos felületek és natív kijelölések, valamint a telefon/óra átadási sáv kompakt dizájnja. Motor és parancsok változatlanok; az aktív egységek csak UI-projekcióban maradnak meg. A készülékes vizuális elfogadás a következő APK-val szükséges.
+- **#59 – Appon belüli gyakorlatvideó-lejátszás javítása:** A beágyazott HTML valós HTTPS app-originről (`https://com.trainpilot.com/`) töltődik be; a `frame-ready` (`iframe.onload`) és a valódi `ready` (`YT.Player` `onReady`) állapot különválik, így elmarad a korai fekete képernyő. Beágyazási hiba (`100`/`101`/`150`/`153`), timeout vagy YouTube-navigáció esetén a modal automatikusan átvált a készüléken bizonyítottan működő appon belüli böngészős (`BROWSER`) módra külső app nyitása nélkül, megtartva a pontos videó-ID-t és minden SSL/bridge biztonsági korlátot.
+- **#69 – Régi visszajelzés-formátumok teljes auditja:** A bizonyított régi WebView edzés- és gyakorlat-visszajelzések (`good` → `right`, HU/EN/DE/RO fordított címkék, `effortScore` `1..5`, `rating`, `note`/`userNote`, `actualRir`/`feedback.rir`) normalizálva a kanonikus (`easy`/`light`/`right`/`challenging`/`hard`/`pain`) csatornára az importban, a naplószerkesztőben és a Coach-olvasókban. A hiányzó `actualRir` külön marad a `0`-tól, a `feedback.applied` zár védi a duplikált progressziót, az ismeretlen értékek sértetlenül megmaradnak.
+- **#75 – Teljes telefonos HU/EN/DE/RO lokalizáció:** Minden Studio képernyő, natív popup/szerkesztő, üres/hiba/engedély/mentési állapot, `contentDescription` és dinamikus felirat négy nyelven (`HU`, `EN`, `DE`, `RO`) követi a választott alkalmazásnyelvet, miközben a felhasználói edzés-/program-/gyakorlatnevek, jegyzetek és kanonikus JSON gépi kulcsok változatlanok maradnak.
+- **#82 – Adatvédelmi tájékoztató frissítése és bekötése:** A `PrivacyPolicy.text(lang)` négy nyelven pontosítja a közvetlen Samsung Health SDK-olvasást, a Health Connectet, a Wear OS kísérőméréseket és az alapból kikapcsolt `healthBackupConsent` működését; a Studio Beállítások képernyőn (`settings_open_privacy_row` → `settings_privacy_dialog`) közvetlenül megnyitható.
+- **PR101 (`4737d72c`) és PR104 (`0ec70650`) megőrzése:** Megmaradt az 1 cm / 1 kg profil-lépésköz, az egyetlen többválasztós felszerelés-dropdown, a 160 dp rekordgrafikon-rajzterület, az aktivitásszűrő (konkrét kardiónál rejtett napi lépésösszesítő), a `StatisticsMetricTile` / `NativeCardioProgressPanel` és a kompakt gyakorlatválasztó keresővel + kedvenc-csillaggal.
+- **Tényleges helyi ellenőrzések:**
+  - `compile_applet`: **SUCCESS**
+  - Nyers JUnit XML (`python3 scripts/verify_junit_xml.py`): **443 teszt = 267 telefon + 176 Wear** (`0 failure`, `0 error`, `0 skipped`)
+  - `node --test scripts/test_exercise_video_player.mjs`: **7/7 PASS**
+  - `python3 scripts/verify_font_glyphs.py`: **PASS** (12 statikus fontarc, valódi súlyok, hash-ek, licencek és HU/DE/RO/ASCII glyph-készlet)
 
-Az AI Studio most átveheti a **friss main** képernyőinek nyelvi bekötését, a kész dizájn megőrzésével. [Main/raw átadó](https://raw.githubusercontent.com/fuloplevente1998/Native-AI-Studio/main/docs/AI_STUDIO_LANGUAGES_VIDEO_DATA_HANDOFF_2748.md), [állapotjelző](DESIGN_WORK_STATUS.md). További AI Studio-scope: videóhiba, régi feedback audit, végül adatvédelmi tájékoztató.
+## Friss main dizájn – PR101 és PR104, 2026-11-04
 
-**Az alábbi2748 továbbra is a legutóbb átadott aláírt APK, régebbi f74133a alkalmazásforrással; nem tartalmazza az új PR101-dizájnt.** Ez a kör nem készített új aláírt kiadást. A korábbi #95-hátralévő státuszt a fenti friss implementáció felülírja.
+A dizájncsomag mainen: **4737d72c75f191b18980bc40885633c1c43b5c99**, majd a PR104 profil/statisztika/kedvenc javítások: **0ec706509a267119553ef7b9c8c78d1c881bf563**. Teljes CI434 =258 telefon+176Wear (PR101), majd a 2750-es AI Studio csomaggal **443 = 267 telefon + 176 Wear**, 0 failure/error/skipped, 12 valódi fontarc glyph/súly/hash/licenc ellenőrzés és JS7 PASS. [Bizonyíték](DESIGN_CI_2026-11-04.json), [változások](DESIGN_FONT_THEME_IMPLEMENTATION.md).
+
+Elkészült forrásban: #95 egységes sorozatvezérlők/egységfeliratok, #97 ismételt napcímek, #98 teljes ékezetes fontok és valódi súlyok, #99 glow/világos felületek és natív kijelölések, a telefon/óra átadási sáv kompakt dizájnja, valamint #59, #69, #75 és #82 teljes AI Studio implementációja. Motor és parancsok változatlanok; az aktív egységek csak UI-projekcióban maradnak meg. A készülékes vizuális és videós elfogadás a GitHub Actions által aláírt `2750`-es APK-val történik.
 
 ## Legfrissebb kiadás: 2748 / PR90
 

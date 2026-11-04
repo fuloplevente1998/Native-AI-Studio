@@ -19,32 +19,85 @@ sealed interface ExerciseVideoLoad {
 fun allowedInAppVideoNavigation(url: String): Boolean =
     safeExternalExerciseVideoUrl(url) == url
 
-fun embeddedYouTubeError(code: Int): String = when (code) {
-    2 -> "A YouTube hibás videóazonosítót jelzett."
-    5 -> "A készülék beágyazott lejátszója nem tudja lejátszani ezt a videót."
-    100 -> "A videó eltávolításra került vagy nem elérhető."
-    101, 150 -> "A videó tulajdonosa nem engedélyezi a beágyazott lejátszást."
-    153 -> "A YouTube nem fogadta el a beágyazott lejátszó azonosítását."
-    else -> "A YouTube lejátszója hibát jelzett (kód: $code)."
+fun embeddedYouTubeError(code: Int, language: String = "hu"): String = when (language.lowercase()) {
+    "en" -> when (code) {
+        2 -> "YouTube reported an invalid video ID."
+        5 -> "The embedded HTML5 player cannot play this video on this device."
+        100 -> "This video was removed or is unavailable."
+        101, 150 -> "The video owner does not allow embedded playback."
+        153 -> "YouTube rejected the embedded player identification."
+        else -> "The YouTube player reported an error (code: $code)."
+    }
+    "de" -> when (code) {
+        2 -> "YouTube hat eine ungültige Video-ID gemeldet."
+        5 -> "Der eingebettete Player kann dieses Video auf diesem Gerät nicht abspielen."
+        100 -> "Das Video wurde entfernt oder ist nicht verfügbar."
+        101, 150 -> "Der Videoeigentümer erlaubt keine eingebettete Wiedergabe."
+        153 -> "YouTube hat die Identifizierung des eingebetteten Players abgelehnt."
+        else -> "Der YouTube-Player hat einen Fehler gemeldet (Code: $code)."
+    }
+    "ro" -> when (code) {
+        2 -> "YouTube a raportat un ID video invalid."
+        5 -> "Playerul încorporat nu poate reda acest videoclip pe dispozitiv."
+        100 -> "Videoclipul a fost eliminat sau nu este disponibil."
+        101, 150 -> "Proprietarul videoclipului nu permite redarea încorporată."
+        153 -> "YouTube a respins identificarea playerului încorporat."
+        else -> "Playerul YouTube a raportat o eroare (cod: $code)."
+    }
+    else -> when (code) {
+        2 -> "A YouTube hibás videóazonosítót jelzett."
+        5 -> "A készülék beágyazott lejátszója nem tudja lejátszani ezt a videót."
+        100 -> "A videó eltávolításra került vagy nem elérhető."
+        101, 150 -> "A videó tulajdonosa nem engedélyezi a beágyazott lejátszást."
+        153 -> "A YouTube nem fogadta el a beágyazott lejátszó azonosítását."
+        else -> "A YouTube lejátszója hibát jelzett (kód: $code)."
+    }
 }
 
 /** HTTPS app identity used for both the WebView referrer and IFrame API origin. */
 const val EXERCISE_VIDEO_ORIGIN = "https://com.trainpilot.com"
 
+fun shouldAutoFallbackToBrowser(
+    mode: ExerciseVideoMode,
+    load: ExerciseVideoLoad,
+    externalUrl: String?
+): Boolean = mode == ExerciseVideoMode.EMBED &&
+    load is ExerciseVideoLoad.Failed &&
+    !externalUrl.isNullOrBlank() &&
+    allowedInAppVideoNavigation(externalUrl)
+
 /** A late API-ready/paused callback must not hide a network/player failure. */
-fun exerciseVideoPlayerEvent(current: ExerciseVideoLoad, event: String): ExerciseVideoLoad {
+fun exerciseVideoPlayerEvent(
+    current: ExerciseVideoLoad,
+    event: String,
+    language: String = "hu"
+): ExerciseVideoLoad {
     if (current is ExerciseVideoLoad.Failed) return current
     return when {
-        (event == "ready" || event == "frame-ready") -> if (current == ExerciseVideoLoad.Loading) ExerciseVideoLoad.Ready else current
+        event == "frame-ready" -> current
+        event == "ready" -> if (current == ExerciseVideoLoad.Loading) ExerciseVideoLoad.Ready else current
         event == "starting" -> ExerciseVideoLoad.Starting
         event == "playing" -> ExerciseVideoLoad.Playing
         event == "paused" -> if (current == ExerciseVideoLoad.Playing || current == ExerciseVideoLoad.Starting)
             ExerciseVideoLoad.Ready else current
         event == "blocked" -> ExerciseVideoLoad.Failed(
-            "A YouTube blokkolta az indítást. Próbáld a belső böngészőt."
+            when (language.lowercase()) {
+                "en" -> "YouTube blocked playback start. Try the in-app browser."
+                "de" -> "YouTube hat den Wiedergabestart blockiert. Versuche den In-App-Browser."
+                "ro" -> "YouTube a blocat pornirea redării. Încearcă browserul intern."
+                else -> "A YouTube blokkolta az indítást. Próbáld a belső böngészőt."
+            }
+        )
+        event == "observer-unavailable" -> ExerciseVideoLoad.Failed(
+            when (language.lowercase()) {
+                "en" -> "Embedded YouTube player API is unavailable. Switching to in-app browser."
+                "de" -> "Eingebettete YouTube-Player-API nicht verfügbar. Wechsel zum In-App-Browser."
+                "ro" -> "API-ul playerului YouTube încorporat nu este disponibil. Se comută la browserul intern."
+                else -> "A beágyazott YouTube lejátszó nem érhető el. Váltás a belső böngészőre."
+            }
         )
         event.startsWith("error:") -> ExerciseVideoLoad.Failed(
-            embeddedYouTubeError(event.removePrefix("error:").toIntOrNull() ?: 0)
+            embeddedYouTubeError(event.removePrefix("error:").toIntOrNull() ?: 0, language)
         )
         else -> current
     }

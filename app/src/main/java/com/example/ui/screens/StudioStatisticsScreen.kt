@@ -67,12 +67,20 @@ internal fun StudioStatisticsScreen(state: TrainPilotUiState, onSelectTab: (Int)
         onRefreshRecords = onRefreshRecords)
 }
 
+private fun statsTr(lang: com.example.model.AppLanguage, hu: String, en: String, de: String, ro: String): String = when (lang) {
+    com.example.model.AppLanguage.HU -> hu
+    com.example.model.AppLanguage.EN -> en
+    com.example.model.AppLanguage.DE -> de
+    com.example.model.AppLanguage.RO -> ro
+}
+
 @Composable
 internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressUiState,
     onSelectTab: (Int) -> Unit, onStepsMode: (Boolean) -> Unit, onExercise: (String) -> Unit,
     onActivity: (String) -> Unit, onRetry: () -> Unit, onRefreshRecords: () -> Unit) {
     val palette = LocalTrainPilotPalette.current
     val strings = TrainPilotStrings.forLanguage(state.language)
+    val lang = state.language
     val number = remember(state.language) { NumberFormat.getNumberInstance(Locale.forLanguageTag(state.language.name.lowercase()))
         .apply { maximumFractionDigits = 2 } }
     var selectedRecord by rememberSaveable { mutableStateOf<String?>(null) }
@@ -94,12 +102,12 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
             }
             if (state.statsSubTab == 0) {
                 when {
-                    state.savedRecordsLoading -> Text("Rekordok betöltése…", color = palette.textSecondary)
+                    state.savedRecordsLoading -> Text(statsTr(lang, "Rekordok betöltése…", "Loading records…", "Rekorde werden geladen…", "Se încarcă recordurile…"), color = palette.textSecondary)
                     state.savedRecordsError -> {
-                        Text("A rekordok nem olvashatók.", color = palette.danger)
-                        TextButton(onClick = onRefreshRecords) { Text("Újrapróbálás") }
+                        Text(statsTr(lang, "A rekordok nem olvashatók.", "Records could not be read.", "Rekorde konnten nicht geladen werden.", "Recordurile nu pot fi citite."), color = palette.danger)
+                        TextButton(onClick = onRefreshRecords) { Text(statsTr(lang, "Újrapróbálás", "Retry", "Erneut versuchen", "Reîncearcă")) }
                     }
-                    state.savedExerciseBests.isEmpty() -> Text("Még nincs mentett, befejezett sorozat.", color = palette.textSecondary)
+                    state.savedExerciseBests.isEmpty() -> Text(statsTr(lang, "Még nincs mentett, befejezett sorozat.", "No saved completed sets yet.", "Noch keine gespeicherten Sätze.", "Nicio serie finalizată salvată încă."), color = palette.textSecondary)
                     else -> state.savedExerciseBests.forEach { record ->
                         val expanded = selectedRecord == record.exerciseId
                         Surface(shape = MaterialTheme.shapes.large, color = palette.surfaceCard,
@@ -114,7 +122,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                                         Text(if (state.language.name == "HU") record.nameHu else record.nameEn,
                                             color = palette.textPrimary, style = MaterialTheme.typography.titleMedium,
                                             maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                        Text(savedRecordLabel(record, number), color = palette.textSecondary,
+                                        Text(savedRecordLabel(record, number, lang), color = palette.textSecondary,
                                             style = MaterialTheme.typography.bodySmall)
                                     }
                                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.primary)
@@ -122,12 +130,12 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                                 if (expanded) {
                                     HorizontalDivider(color = palette.cardBorder)
                                     if (record.weightKg != null && native.selectedExerciseId == record.exerciseId) {
-                                        Text("Becsült 1RM • Epley • utolsó 90 nap", color = palette.textSecondary)
-                                        if (native.strengthLoading) Text("Betöltés…", color = palette.textSecondary)
-                                        else if (native.strengthError) Text("Az 1RM-adatsor nem olvasható.", color = palette.danger)
-                                        else if (native.exercise1RmTrend.isEmpty()) Text("Nincs érvényes súly/ismétlés alapú 1RM-adat.", color = palette.textSecondary)
+                                        Text(statsTr(lang, "Becsült 1RM • Epley • utolsó 90 nap", "Estimated 1RM • Epley • last 90 days", "Geschätztes 1RM • Epley • letzte 90 Tage", "1RM estimat • Epley • ultimele 90 de zile"), color = palette.textSecondary)
+                                        if (native.strengthLoading) Text(statsTr(lang, "Betöltés…", "Loading…", "Laden…", "Se încarcă…"), color = palette.textSecondary)
+                                        else if (native.strengthError) Text(statsTr(lang, "Az 1RM-adatsor nem olvasható.", "1RM series could not be read.", "1RM-Datenreihe nicht lesbar.", "Seria 1RM nu poate fi citită."), color = palette.danger)
+                                        else if (native.exercise1RmTrend.isEmpty()) Text(statsTr(lang, "Nincs érvényes súly/ismétlés alapú 1RM-adat.", "No valid weight/reps 1RM data.", "Keine gültigen 1RM-Daten vorhanden.", "Fără date 1RM valide bazate pe greutate/repetări."), color = palette.textSecondary)
                                         else {
-                                            Text("Legutóbbi becslés: ${number.format(native.exercise1RmTrend.last().e1rmKg)} kg", color = palette.textPrimary)
+                                            Text(statsTr(lang, "Legutóbbi becslés: ${number.format(native.exercise1RmTrend.last().e1rmKg)} kg", "Latest estimate: ${number.format(native.exercise1RmTrend.last().e1rmKg)} kg", "Letzte Schätzung: ${number.format(native.exercise1RmTrend.last().e1rmKg)} kg", "Ultima estimare: ${number.format(native.exercise1RmTrend.last().e1rmKg)} kg"), color = palette.textPrimary)
                                             Box(Modifier.fillMaxWidth().height(160.dp)
                                                 .testTag("statistics_record_chart_${record.exerciseId}")) {
                                                 TrendCanvas(native.exercise1RmTrend.map { it.e1rmKg })
@@ -135,7 +143,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                                         }
                                     } else if (record.distanceMeters != null || record.measurementType == "distance" || record.repUnit in listOf("km", "m")) {
                                         NativeCardioProgressPanel(native, onActivity, onRetry)
-                                    } else Text(savedRecordLabel(record, number), color = palette.textPrimary)
+                                    } else Text(savedRecordLabel(record, number, lang), color = palette.textPrimary)
                                 }
                             }
                         }
@@ -143,7 +151,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                 }
             } else {
                 TrainPilotOutlinedButton(onClick = { onStepsMode(!state.cardioFilterStepsMode) }, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (state.cardioFilterStepsMode) "Napi aktivitás / lépések" else "Minden mozgás")
+                    Text(if (state.cardioFilterStepsMode) statsTr(lang, "Napi aktivitás / lépések", "Daily Activity / Steps", "Tägliche Aktivität / Schritte", "Activitate zilnică / pași") else statsTr(lang, "Minden mozgás", "All Activities", "Alle Aktivitäten", "Toate activitățile"))
                 }
                 if (!state.cardioFilterStepsMode) NativeCardioProgressPanel(native, onActivity, onRetry)
                 if (state.cardioFilterStepsMode || native.selectedCardioId == NativeCardioModel.ALL_ACTIVITIES) {
@@ -154,18 +162,59 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
     }
 }
 
-internal fun savedRecordLabel(record: SavedExerciseBest, number: NumberFormat): String = when {
-    record.distanceMeters != null -> "Leghosszabb táv: ${number.format(record.distanceMeters / 1000)} km"
-    record.measurementType == "distance" || record.repUnit in listOf("km", "m") -> "Nincs használható távadat"
-    record.seconds != null -> "Legjobb idő: ${record.seconds} mp"
-    record.weightKg != null -> "Legnagyobb súly: ${number.format(record.weightKg)} kg"
-    record.repetitions != null -> "Legjobb ismétlés: ${record.repetitions}"
-    else -> "Nincs használható mért sorozat"
+internal fun savedRecordLabel(
+    record: SavedExerciseBest,
+    number: NumberFormat,
+    language: com.example.model.AppLanguage = com.example.model.AppLanguage.HU
+): String = when {
+    record.distanceMeters != null -> statsTr(
+        language,
+        "Leghosszabb táv: ${number.format(record.distanceMeters / 1000)} km",
+        "Longest distance: ${number.format(record.distanceMeters / 1000)} km",
+        "Längste Distanz: ${number.format(record.distanceMeters / 1000)} km",
+        "Cea mai lungă distanță: ${number.format(record.distanceMeters / 1000)} km"
+    )
+    record.measurementType == "distance" || record.repUnit in listOf("km", "m") -> statsTr(
+        language,
+        "Nincs használható távadat",
+        "No usable distance data",
+        "Keine nutzbaren Distanzdaten",
+        "Fără date de distanță utilizabile"
+    )
+    record.seconds != null -> statsTr(
+        language,
+        "Legjobb idő: ${record.seconds} mp",
+        "Best time: ${record.seconds} sec",
+        "Beste Zeit: ${record.seconds} Sek.",
+        "Cel mai bun timp: ${record.seconds} sec"
+    )
+    record.weightKg != null -> statsTr(
+        language,
+        "Legnagyobb súly: ${number.format(record.weightKg)} kg",
+        "Heaviest weight: ${number.format(record.weightKg)} kg",
+        "Höchstes Gewicht: ${number.format(record.weightKg)} kg",
+        "Cea mai mare greutate: ${number.format(record.weightKg)} kg"
+    )
+    record.repetitions != null -> statsTr(
+        language,
+        "Legjobb ismétlés: ${record.repetitions}",
+        "Best reps: ${record.repetitions}",
+        "Beste Wdh.: ${record.repetitions}",
+        "Cele mai multe repetări: ${record.repetitions}"
+    )
+    else -> statsTr(
+        language,
+        "Nincs használható mért sorozat",
+        "No usable measured set",
+        "Kein nutzbarer gemessener Satz",
+        "Nicio serie măsurată utilizabilă"
+    )
 }
 
 @Composable
 private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberFormat) {
     val palette = LocalTrainPilotPalette.current
+    val lang = state.language
     val refresh = LocalSyncDailyHealth.current
     var explanationOpen by rememberSaveable { mutableStateOf(false) }
     val today = LocalDate.now()
@@ -187,8 +236,14 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
             val outside = if (todayDay?.stepsAvailable == true && todayDay.workoutCount == 0)
                 number.format(todayDay.steps) else "—"
             listOf(
-                listOf("Mai összes lépés" to total(today, today.plusDays(1)), "Edzésen kívül" to outside),
-                listOf("Heti lépések" to total(weekStart, today.plusDays(1)), "Előző hét" to total(previous, weekStart))
+                listOf(
+                    statsTr(lang, "Mai összes lépés", "Today's Total Steps", "Heutige Gesamtschritte", "Total pași azi") to total(today, today.plusDays(1)),
+                    statsTr(lang, "Edzésen kívül", "Outside Workouts", "Außerhalb Trainings", "În afara antrenamentelor") to outside
+                ),
+                listOf(
+                    statsTr(lang, "Heti lépések", "Weekly Steps", "Wochenschritte", "Pași săptămânali") to total(weekStart, today.plusDays(1)),
+                    statsTr(lang, "Előző hét", "Previous Week", "Vorwoche", "Săptămâna trecută") to total(previous, weekStart)
+                )
             ).forEach { row ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     row.forEach { (label, value) ->
@@ -196,20 +251,26 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
                     }
                 }
             }
-            Text("Szinkronizált napok: ${days.count { it.stepsAvailable }}/${days.size}",
+            Text(statsTr(lang, "Szinkronizált napok: ${days.count { it.stepsAvailable }}/${days.size}", "Synced days: ${days.count { it.stepsAvailable }}/${days.size}", "Synchronisierte Tage: ${days.count { it.stepsAvailable }}/${days.size}", "Zile sincronizate: ${days.count { it.stepsAvailable }}/${days.size}"),
                 color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
             TrainPilotOutlinedButton(onClick = { refresh(if (state.primaryHealthSourceSamsung) HealthJournalStore.SAMSUNG else HealthJournalStore.HC) },
-                enabled = !state.healthSyncBusy, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Lépésadatok frissítése") }
+                enabled = !state.healthSyncBusy, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(statsTr(lang, "Lépésadatok frissítése", "Refresh Step Data", "Schrittdaten aktualisieren", "Actualizează datele de pași")) }
             TextButton(onClick = { explanationOpen = !explanationOpen },
                 modifier = Modifier.heightIn(min = 48.dp).testTag("statistics_activity_explanation")) {
-                Text(if (explanationOpen) "Magyarázat bezárása" else "Mit jelentenek az adatok?")
+                Text(if (explanationOpen) statsTr(lang, "Magyarázat bezárása", "Hide Explanation", "Erklärung schließen", "Închide explicația") else statsTr(lang, "Mit jelentenek az adatok?", "What do these numbers mean?", "Was bedeuten diese Daten?", "Ce înseamnă aceste date?"))
             }
             if (explanationOpen) Text(
-                "Teljes napi lépések, egy kiválasztott forrásból. Ha az edzésen kívüli rész nem különíthető el, gondolatjelet mutatunk.",
+                statsTr(
+                    lang,
+                    "Teljes napi lépések, egy kiválasztott forrásból. Ha az edzésen kívüli rész nem különíthető el, gondolatjelet mutatunk.",
+                    "Total daily steps from the selected source. If non-workout steps cannot be separated, a dash is shown.",
+                    "Gesamte Tagesschritte aus der gewählten Quelle. Wenn Schritte außerhalb des Trainings nicht trennbar sind, wird ein Strich gezeigt.",
+                    "Totalul pașilor zilnici din sursa selectată. Dacă pașii din afara antrenamentului nu pot fi separați, se afișează o linie."
+                ),
                 color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
             Row(Modifier.fillMaxWidth()) {
-                Text("Dátum / forrás", Modifier.weight(1f), color = palette.textSecondary)
-                Text("Összes / edzésen kívül", color = palette.textSecondary)
+                Text(statsTr(lang, "Dátum / forrás", "Date / Source", "Datum / Quelle", "Dată / Sursă"), Modifier.weight(1f), color = palette.textSecondary)
+                Text(statsTr(lang, "Összes / edzésen kívül", "Total / Outside workout", "Gesamt / Außerhalb", "Total / În afară"), color = palette.textSecondary)
             }
             days.reversed().forEach { day ->
                 HorizontalDivider(color = palette.cardBorder)

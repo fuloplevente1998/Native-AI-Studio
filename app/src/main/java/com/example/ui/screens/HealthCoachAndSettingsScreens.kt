@@ -40,8 +40,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.Watch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
@@ -144,6 +146,27 @@ data class WeightMeasurementEntry(
     val dateLabel: String,
     val parsedDate: java.time.LocalDate = java.time.LocalDate.now()
 )
+
+private fun tr(lang: AppLanguage, hu: String, en: String, de: String, ro: String): String = when (lang) {
+    AppLanguage.HU -> hu
+    AppLanguage.EN -> en
+    AppLanguage.DE -> de
+    AppLanguage.RO -> ro
+}
+
+private fun localizeTrainingStyle(rawHu: String, lang: AppLanguage): String = when (rawHu.trim()) {
+    "Normál hipertrófia" -> tr(lang, "Normál hipertrófia", "Standard Hypertrophy", "Normale Hypertrophie", "Hipertrofie standard")
+    "Erő (5×5)" -> tr(lang, "Erő (5×5)", "Strength (5×5)", "Kraft (5×5)", "Forță (5×5)")
+    "Állóképesség / Köredzés" -> tr(lang, "Állóképesség / Köredzés", "Endurance / Circuit", "Ausdauer / Zirkel", "Anduranță / Circuit")
+    else -> rawHu
+}
+
+private fun localizeProgressionRule(rawHu: String, lang: AppLanguage): String = when (rawHu.trim()) {
+    "Dupla progresszió" -> tr(lang, "Dupla progresszió", "Double Progression", "Doppelte Progression", "Progresie dublă")
+    "Lineáris súlyemelés" -> tr(lang, "Lineáris súlyemelés", "Linear Weight Increase", "Lineare Steigerung", "Creștere liniară")
+    "RIR alapú autoreguláció" -> tr(lang, "RIR alapú autoreguláció", "RIR Autoregulation", "RIR-Autoregulation", "Autoreglare RIR")
+    else -> rawHu
+}
 
 private fun parseWeightEntryLocalDate(rawDate: String, fallback: java.time.LocalDate = java.time.LocalDate.now()): java.time.LocalDate {
     val cleaned = rawDate.trim()
@@ -249,32 +272,54 @@ fun HealthTabScreen(
             textContentColor = palette.textSecondary,
             title = {
                 Text(
-                    text = if (editingMeasurement != null) "Mérés szerkesztése" else "Új testsúlymérés",
+                    text = if (editingMeasurement != null) {
+                        tr(uiState.language, "Mérés szerkesztése", "Edit Measurement", "Messung bearbeiten", "Editează măsurătoarea")
+                    } else {
+                        tr(uiState.language, "Új testsúlymérés", "New Weight Entry", "Neue Gewichtsmessung", "Măsurătoare nouă greutate")
+                    },
                     style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Testsúly (kg) és a mérés dátuma (a grafikon ezen dátum alapján rendezi):")
+                    Text(
+                        tr(
+                            uiState.language,
+                            "Testsúly (kg) és a mérés dátuma (a grafikon ezen dátum alapján rendezi):",
+                            "Body weight (kg) and measurement date (sorted chronologically on chart):",
+                            "Körpergewicht (kg) und Messdatum (im Diagramm chronologisch sortiert):",
+                            "Greutate (kg) și data măsurătorii (ordonate cronologic pe grafic):"
+                        )
+                    )
                     OutlinedTextField(
                         value = weightText,
                         onValueChange = { weightText = it },
                         singleLine = true,
-                        label = { Text("Testsúly (kg)") }
+                        label = { Text(tr(uiState.language, "Testsúly (kg)", "Weight (kg)", "Gewicht (kg)", "Greutate (kg)")) }
                     )
                     OutlinedTextField(
                         value = dateText,
                         onValueChange = { dateText = it },
                         singleLine = true,
-                        label = { Text("Mérés dátuma (pl. 2026. 10. 15.)") }
+                        label = {
+                            Text(
+                                tr(
+                                    uiState.language,
+                                    "Mérés dátuma (pl. 2026. 10. 15.)",
+                                    "Measurement date (e.g. 2026. 10. 15.)",
+                                    "Messdatum (z. B. 2026. 10. 15.)",
+                                    "Data măsurătorii (ex. 2026. 10. 15.)"
+                                )
+                            )
+                        }
                     )
                     // Quick date presets for fast testing of historical dates
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf(
-                            "Ma" to today,
-                            "-3 nap" to today.minusDays(3),
-                            "-7 nap" to today.minusDays(7),
-                            "-14 nap" to today.minusDays(14)
+                            tr(uiState.language, "Ma", "Today", "Heute", "Azi") to today,
+                            tr(uiState.language, "-3 nap", "-3d", "-3T", "-3 zile") to today.minusDays(3),
+                            tr(uiState.language, "-7 nap", "-7d", "-7T", "-7 zile") to today.minusDays(7),
+                            tr(uiState.language, "-14 nap", "-14d", "-14T", "-14 zile") to today.minusDays(14)
                         ).forEach { (presetTitle, presetDate) ->
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
@@ -394,7 +439,7 @@ fun HealthTabScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(
-                                    text = "Mai állapot",
+                                    text = strings.todayStateTitle,
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = palette.textPrimary
@@ -413,8 +458,17 @@ fun HealthTabScreen(
                             enabled = !uiState.healthSyncBusy,
                             modifier = Modifier.testTag("health_today_header_sync")
                         ) {
-                            Icon(Icons.Default.Sync, contentDescription = "Mai egészségadatok frissítése",
-                                tint = palette.primary)
+                            Icon(
+                                Icons.Default.Sync,
+                                contentDescription = tr(
+                                    uiState.language,
+                                    "Mai egészségadatok frissítése",
+                                    "Refresh today's health data",
+                                    "Heutige Gesundheitsdaten aktualisieren",
+                                    "Actualizează datele de sănătate de azi"
+                                ),
+                                tint = palette.primary
+                            )
                         }
                     }
 
@@ -437,7 +491,7 @@ fun HealthTabScreen(
                         val totalEnergy = if (currentDaily && "totalCalories" in uiState.dailyHealthAvailableFields)
                             "${uiState.totalCaloriesKcal} kcal" else "—"
                         val heartRange = if (currentDaily && uiState.minHrBpm > 0 && uiState.maxHrBpm > 0)
-                            "${uiState.minHrBpm}–${uiState.maxHrBpm} bpm" else "nincs lekért napi tartomány"
+                            "${uiState.minHrBpm}–${uiState.maxHrBpm} bpm" else tr(uiState.language, "nincs lekért napi tartomány", "no daily range fetched", "kein Tagesbereich geladen", "fără interval zilnic preluat")
                         Surface(
                             shape = RoundedCornerShape(16.dp),
                             color = palette.background.copy(alpha = 0.75f),
@@ -452,34 +506,34 @@ fun HealthTabScreen(
                             ) {
                                 val (titleStr, onActionClick) = when (activeKey) {
                                     "calories" -> listOf(
-                                        "Aktív kalória részletek • $activeEnergy",
-                                        "Aktív energia: $activeEnergy • Teljes napi energia (nyugalmival): $totalEnergy",
-                                        "További Health-adatok megnyitása lent"
+                                        tr(uiState.language, "Aktív kalória részletek • $activeEnergy", "Active Calories Details • $activeEnergy", "Aktive Kalorien Details • $activeEnergy", "Detalii calorii active • $activeEnergy"),
+                                        tr(uiState.language, "Aktív energia: $activeEnergy • Teljes napi energia (nyugalmival): $totalEnergy", "Active energy: $activeEnergy • Total daily energy (with resting): $totalEnergy", "Aktive Energie: $activeEnergy • Tagesgesamtenergie (inkl. Ruhe): $totalEnergy", "Energie activă: $activeEnergy • Energie zilnică totală: $totalEnergy"),
+                                        tr(uiState.language, "További Health-adatok megnyitása lent", "Open More Health Data below", "Weitere Gesundheitsdaten unten öffnen", "Deschide mai multe date de sănătate mai jos")
                                     ) to { onToggleHealthSection("extra") }
                                     "pulse" -> listOf(
-                                        "Mai pulzus",
-                                        "Nyugalmi: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Tartomány: $heartRange",
-                                        "Korábbi mai pulzusmérések megtekintése lent"
+                                        tr(uiState.language, "Mai pulzus", "Today's Heart Rate", "Heutiger Puls", "Pulsul de azi"),
+                                        tr(uiState.language, "Nyugalmi: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Tartomány: $heartRange", "Resting: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Range: $heartRange", "Ruhepuls: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Bereich: $heartRange", "Repaus: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Interval: $heartRange"),
+                                        tr(uiState.language, "Korábbi mai pulzusmérések megtekintése lent", "View earlier pulse readings below", "Frühere Pulsmessungen unten ansehen", "Vezi măsurătorile anterioare de puls mai jos")
                                     ) to { onToggleHealthSection("pulse") }
                                     "steps" -> listOf(
-                                        "Lépések részletek • ${uiState.dailySteps} / ${uiState.stepsGoal}",
-                                        "Teljesítés: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Becsült táv: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km",
-                                        "Célok módosítása >"
+                                        tr(uiState.language, "Lépések részletek • ${uiState.dailySteps} / ${uiState.stepsGoal}", "Steps Details • ${uiState.dailySteps} / ${uiState.stepsGoal}", "Schritte Details • ${uiState.dailySteps} / ${uiState.stepsGoal}", "Detalii pași • ${uiState.dailySteps} / ${uiState.stepsGoal}"),
+                                        tr(uiState.language, "Teljesítés: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Becsült táv: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km", "Completion: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Est. distance: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km", "Erfüllung: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Gesch. Distanz: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km", "Progres: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Dist. est.: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km"),
+                                        tr(uiState.language, "Célok módosítása >", "Edit Goals >", "Ziele ändern >", "Modifică obiectivele >")
                                     ) to { onOpenGoalsDialog() }
                                     "workout" -> listOf(
-                                        "Mai edzések • ${uiState.loggedWorkouts.workoutsOn(today).size} rögzített edzés",
-                                        "Utolsó mai edzés: ${uiState.loggedWorkouts.workoutsOn(today).firstOrNull()?.titleHu ?: "Ma még nincs rögzített edzés"}",
-                                        "Edzésnapló részletek megnyitása >"
+                                        tr(uiState.language, "Mai edzések • ${uiState.loggedWorkouts.workoutsOn(today).size} rögzített edzés", "Today's Workouts • ${uiState.loggedWorkouts.workoutsOn(today).size} logged", "Heutige Trainings • ${uiState.loggedWorkouts.workoutsOn(today).size} erfasst", "Antrenamente azi • ${uiState.loggedWorkouts.workoutsOn(today).size} înregistrate"),
+                                        tr(uiState.language, "Utolsó mai edzés: ${uiState.loggedWorkouts.workoutsOn(today).firstOrNull()?.titleHu ?: "Ma még nincs rögzített edzés"}", "Latest workout today: ${uiState.loggedWorkouts.workoutsOn(today).firstOrNull()?.titleHu ?: "No workout logged today"}", "Letztes Training heute: ${uiState.loggedWorkouts.workoutsOn(today).firstOrNull()?.titleHu ?: "Heute noch kein Training erfasst"}", "Ultimul antrenament azi: ${uiState.loggedWorkouts.workoutsOn(today).firstOrNull()?.titleHu ?: "Niciun antrenament înregistrat azi"}"),
+                                        tr(uiState.language, "Edzésnapló részletek megnyitása >", "Open Workout Log details >", "Trainingsprotokoll-Details öffnen >", "Deschide detaliile jurnalului >")
                                     ) to { uiState.loggedWorkouts.workoutsOn(today).firstOrNull()?.id?.let(onOpenLoggedWorkout) }
                                     "recovery" -> listOf(
-                                        "Regeneráció & Készenlét • ${uiState.todayRecoveryReading?.displayScoreHu ?: "—"}",
-                                        uiState.todayRecoveryReading?.explanationHu ?: "Nincs igazolt regenerációs mérés.",
-                                        "TrainPilot Coach megnyitása >"
+                                        tr(uiState.language, "Regeneráció & Készenlét • ${uiState.todayRecoveryReading?.displayScoreHu ?: "—"}", "Recovery & Readiness • ${uiState.todayRecoveryReading?.displayScoreHu ?: "—"}", "Erholung & Bereitschaft • ${uiState.todayRecoveryReading?.displayScoreHu ?: "—"}", "Recuperare și pregătire • ${uiState.todayRecoveryReading?.displayScoreHu ?: "—"}"),
+                                        uiState.todayRecoveryReading?.explanationHu ?: tr(uiState.language, "Nincs igazolt regenerációs mérés.", "No verified recovery reading.", "Keine bestätigte Erholungsmessung.", "Nicio măsurătoare de recuperare verificată."),
+                                        tr(uiState.language, "TrainPilot Coach megnyitása >", "Open TrainPilot Coach >", "TrainPilot Coach öffnen >", "Deschide TrainPilot Coach >")
                                     ) to { onNavigateToSubScreen(SubScreen.COACH_DETAIL) }
                                     else -> listOf(
-                                        "Alvás részletek • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})",
-                                        "Alvásfázisok: nincs lekért adat",
-                                        "Egészségnapló megnyitása lent"
+                                        tr(uiState.language, "Alvás részletek • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})", "Sleep Details • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})", "Schlaf Details • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})", "Detalii somn • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})"),
+                                        tr(uiState.language, "Alvásfázisok: nincs lekért adat", "Sleep stages: no data fetched", "Schlafphasen: keine Daten geladen", "Faze somn: fără date preluate"),
+                                        tr(uiState.language, "Egészségnapló megnyitása lent", "Open Health Journal below", "Gesundheitstagebuch unten öffnen", "Deschide jurnalul de sănătate mai jos")
                                     ) to { onToggleHealthSection("journal") }
                                 }
 
@@ -500,7 +554,7 @@ fun HealthTabScreen(
                                         modifier = Modifier.clickable { expandedTodayTileKey = null }
                                     ) {
                                         Text(
-                                            text = "Bezárás",
+                                            text = strings.closeAction,
                                             style = MaterialTheme.typography.labelSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = palette.textSecondary
@@ -555,7 +609,7 @@ fun HealthTabScreen(
                                                 }
                                                 Column(modifier = Modifier.weight(1f)) {
                                                     Text(
-                                                        text = "24 órás pulzustrend",
+                                                        text = tr(uiState.language, "24 órás pulzustrend", "24h Heart Rate Trend", "24-Stunden-Pulstrend", "Tendință puls 24h"),
                                                         style = MaterialTheme.typography.titleMedium,
                                                         fontWeight = FontWeight.Bold,
                                                         color = palette.textPrimary
@@ -563,7 +617,7 @@ fun HealthTabScreen(
                                                     val restLbl = if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"
                                                     val peakLbl = if (uiState.maxHrBpm > 0) "${uiState.maxHrBpm} bpm" else "—"
                                                     Text(
-                                                        text = "Nyugalmi: $restLbl • Csúcs: $peakLbl",
+                                                        text = tr(uiState.language, "Nyugalmi: $restLbl • Csúcs: $peakLbl", "Resting: $restLbl • Peak: $peakLbl", "Ruhe: $restLbl • Spitze: $peakLbl", "Repaus: $restLbl • Vârf: $peakLbl"),
                                                         style = MaterialTheme.typography.bodySmall,
                                                         color = palette.textSecondary,
                                                         maxLines = 1,
@@ -581,7 +635,7 @@ fun HealthTabScreen(
                                                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                                                     ) {
                                                         Text(
-                                                            text = "Részletek",
+                                                            text = strings.detailsAction,
                                                             style = MaterialTheme.typography.labelSmall,
                                                             fontWeight = FontWeight.Bold,
                                                             color = palette.primary
@@ -610,9 +664,14 @@ fun HealthTabScreen(
                                             ) {
                                                 if (uiState.dailyPulseHistory.size < 2) {
                                                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                                        Text(if (uiState.dailyPulseHistory.isEmpty()) "Nincs lekért pulzus-idősor"
-                                                            else "Egy időbélyeges pulzusmérés érhető el",
-                                                            color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
+                                                        Text(
+                                                            if (uiState.dailyPulseHistory.isEmpty()) {
+                                                                tr(uiState.language, "Nincs lekért pulzus-idősor", "No heart rate time series fetched", "Keine Puls-Zeitreihe geladen", "Fără serie temporală de puls")
+                                                            } else {
+                                                                tr(uiState.language, "Egy időbélyeges pulzusmérés érhető el", "One timestamped heart rate reading available", "Eine Pulsmessung mit Zeitstempel verfügbar", "O măsurătoare de puls disponibilă")
+                                                            },
+                                                            color = palette.textSecondary, style = MaterialTheme.typography.bodySmall
+                                                        )
                                                     }
                                                 } else {
                                                     val readings = uiState.dailyPulseHistory
@@ -654,7 +713,7 @@ fun HealthTabScreen(
                                                         verticalArrangement = Arrangement.spacedBy(10.dp)
                                                     ) {
                                                         Text(
-                                                            text = "Mai pulzus",
+                                                            text = tr(uiState.language, "Mai pulzus", "Today's Heart Rate", "Heutiger Puls", "Pulsul de azi"),
                                                             style = MaterialTheme.typography.titleMedium,
                                                             fontWeight = FontWeight.Bold,
                                                             color = palette.textPrimary
@@ -664,12 +723,12 @@ fun HealthTabScreen(
                                                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                                                         ) {
                                                             PulseInnerBox(
-                                                                label = "Átlagpulzus",
+                                                                label = tr(uiState.language, "Átlagpulzus", "Avg HR", "Ø Puls", "Puls mediu"),
                                                                 value = if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—",
                                                                 modifier = Modifier.weight(1f)
                                                             )
                                                             PulseInnerBox(
-                                                                label = "Nyugalmi pulzus",
+                                                                label = strings.restingHrTitle,
                                                                 value = if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—",
                                                                 modifier = Modifier.weight(1f)
                                                             )
@@ -679,12 +738,12 @@ fun HealthTabScreen(
                                                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                                                         ) {
                                                             PulseInnerBox(
-                                                                label = "Max. pulzus",
+                                                                label = tr(uiState.language, "Max. pulzus", "Max HR", "Max. Puls", "Puls max."),
                                                                 value = if (uiState.maxHrBpm > 0) "${uiState.maxHrBpm} bpm" else "—",
                                                                 modifier = Modifier.weight(1f)
                                                             )
                                                             PulseInnerBox(
-                                                                label = "Min. pulzus",
+                                                                label = tr(uiState.language, "Min. pulzus", "Min HR", "Min. Puls", "Puls min."),
                                                                 value = if (uiState.minHrBpm > 0) "${uiState.minHrBpm} bpm" else "—",
                                                                 modifier = Modifier.weight(1f)
                                                             )
@@ -708,7 +767,7 @@ fun HealthTabScreen(
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     Text(
-                                                        text = "Regenerációs előzmények",
+                                                        text = tr(uiState.language, "Regenerációs előzmények", "Recovery History", "Erholungsverlauf", "Istoric recuperare"),
                                                         style = MaterialTheme.typography.titleSmall,
                                                         fontWeight = FontWeight.Bold,
                                                         color = palette.textPrimary
@@ -791,14 +850,20 @@ fun HealthTabScreen(
                                 .clickable { onToggleHealthSection("weekly") }
                         ) {
                             Text(
-                                text = "Heti egészség & edzés célok",
+                                text = tr(uiState.language, "Heti egészség & edzés célok", "Weekly Health & Workout Goals", "Wöchentliche Gesundheits- & Trainingsziele", "Obiective săptămânale sănătate și antrenament"),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = palette.textPrimary
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "$primaryProviderName & Room edzésnapló (Koppints a forrásokhoz)",
+                                text = tr(
+                                    uiState.language,
+                                    "$primaryProviderName & Room edzésnapló (Koppints a forrásokhoz)",
+                                    "$primaryProviderName & Room workout log (Tap for sources)",
+                                    "$primaryProviderName & Room-Trainingsprotokoll (Tippen für Quellen)",
+                                    "$primaryProviderName și jurnal Room (Atinge pentru surse)"
+                                ),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.primary,
@@ -823,7 +888,7 @@ fun HealthTabScreen(
                             ) {
                                 Text("🎯", fontSize = 13.sp)
                                 Text(
-                                    text = "Célok",
+                                    text = tr(uiState.language, "Célok", "Goals", "Ziele", "Obiective"),
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.primary
@@ -832,6 +897,7 @@ fun HealthTabScreen(
                         }
                     }
 
+                    val minUnit = tr(uiState.language, "perc", "min", "Min.", "min")
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         for (steps in listOf(true, false)) {
                             val expanded = if (steps) uiState.expandedWeeklySteps else uiState.expandedWeeklyWorkouts
@@ -843,19 +909,34 @@ fun HealthTabScreen(
                                     .testTag("health_weekly_${tag}_card")) {
                                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(if (steps) "Heti lépésszám" else "Aktív edzésidő", modifier = Modifier.weight(1f),
-                                            style = MaterialTheme.typography.labelLarge, color = palette.textPrimary)
+                                        Text(
+                                            if (steps) tr(uiState.language, "Heti lépésszám", "Weekly Steps", "Wöchentliche Schritte", "Pași săptămânali")
+                                            else tr(uiState.language, "Aktív edzésidő", "Active Workout Time", "Aktive Trainingszeit", "Timp activ antrenament"),
+                                            modifier = Modifier.weight(1f),
+                                            style = MaterialTheme.typography.labelLarge, color = palette.textPrimary
+                                        )
                                         Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.primary)
                                     }
                                     Text(if (steps) { if (goalDays.none { it.stepsAvailable }) "—" else "%,d".format(java.util.Locale.US, weeklyStepsCurrent).replace(',', ' ') }
-                                        else "$weeklyMinutesCurrent perc", style = MaterialTheme.typography.headlineMedium,
+                                        else "$weeklyMinutesCurrent $minUnit", style = MaterialTheme.typography.headlineMedium,
                                         color = palette.textPrimary, modifier = Modifier.testTag("health_weekly_${tag}_total"))
-                                    Text(if (steps) "Cél: $weeklyStepsTarget" else "Cél: $weeklyMinutesTarget perc",
-                                        style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                    Text(
+                                        if (steps) strings.stepsGoalWithCount(weeklyStepsTarget)
+                                        else "${strings.stepsGoalWithCount(weeklyMinutesTarget)} $minUnit",
+                                        style = MaterialTheme.typography.labelSmall, color = palette.textSecondary
+                                    )
                                     LinearProgressIndicator(progress = { (if (steps) weeklyStepsPct else weeklyMinutesPct) / 100f },
                                         modifier = Modifier.fillMaxWidth(), color = palette.primary, trackColor = palette.surfaceElevated)
-                                    if (steps) Text("${goalDays.count { it.stepsAvailable }}/7 napi adat • $primaryProviderName",
-                                        style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                    if (steps) Text(
+                                        tr(
+                                            uiState.language,
+                                            "${goalDays.count { it.stepsAvailable }}/7 napi adat • $primaryProviderName",
+                                            "${goalDays.count { it.stepsAvailable }}/7 daily records • $primaryProviderName",
+                                            "${goalDays.count { it.stepsAvailable }}/7 Tagesdaten • $primaryProviderName",
+                                            "${goalDays.count { it.stepsAvailable }}/7 zile cu date • $primaryProviderName"
+                                        ),
+                                        style = MaterialTheme.typography.labelSmall, color = palette.textSecondary
+                                    )
                                 }
                             }
                         }
@@ -870,8 +951,11 @@ fun HealthTabScreen(
                                 modifier = Modifier.fillMaxWidth().testTag("health_weekly_${tag}_days")
                                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))) {
                                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text(if (steps) "Heti lépésszám • napi bontás" else "Aktív edzésidő • napi bontás",
-                                        style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
+                                    Text(
+                                        if (steps) tr(uiState.language, "Heti lépésszám • napi bontás", "Weekly Steps • Daily Breakdown", "Wöchentliche Schritte • Tagesübersicht", "Pași săptămânali • Detaliere zilnică")
+                                        else tr(uiState.language, "Aktív edzésidő • napi bontás", "Active Workout Time • Daily Breakdown", "Aktive Trainingszeit • Tagesübersicht", "Timp activ • Detaliere zilnică"),
+                                        style = MaterialTheme.typography.titleMedium, color = palette.textPrimary
+                                    )
                                     for (day in goalDays) {
                                         val dayWorkouts = if (steps) emptyList() else
                                             uiState.loggedWorkouts.filter { it.localWorkoutDate()?.toString() == day.dateIso }
@@ -883,18 +967,23 @@ fun HealthTabScreen(
                                                 Text(day.dayLabelHu, style = MaterialTheme.typography.labelLarge,
                                                     color = palette.textPrimary)
                                                 Text(if (steps) day.stepsSourceLabelHu else
-                                                    if (dayWorkouts.isEmpty()) "Room edzésnapló • nincs mai edzés"
+                                                    if (dayWorkouts.isEmpty()) tr(uiState.language, "Room edzésnapló • nincs mai edzés", "Room workout log • no workout", "Room-Protokoll • kein Training", "Jurnal Room • fără antrenament")
                                                     else "Room • " + dayWorkouts.joinToString(" · ") {
-                                                        "${it.titleHu}: ${it.durationMinutes} perc"
+                                                        "${it.titleHu}: ${it.durationMinutes} $minUnit"
                                                     },
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = palette.textSecondary, maxLines = 2,
                                                     overflow = TextOverflow.Ellipsis)
                                             }
-                                            Text(if (steps) { if (day.stepsAvailable) "${day.steps} lépés" else "—" }
-                                                else "${day.workoutMinutes} perc • ${day.workoutCount} edzés",
+                                            Text(
+                                                if (steps) {
+                                                    if (day.stepsAvailable) "${day.steps} ${tr(uiState.language, "lépés", "steps", "Schritte", "pași")}" else "—"
+                                                } else {
+                                                    "${day.workoutMinutes} $minUnit • ${day.workoutCount} ${tr(uiState.language, "edzés", "workouts", "Trainings", "antr.")}"
+                                                },
                                                 modifier = Modifier.testTag("health_weekly_${tag}_${day.dateIso}"),
-                                                style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
+                                                style = MaterialTheme.typography.bodySmall, color = palette.textPrimary
+                                            )
                                         }
                                     }
                                 }
@@ -939,7 +1028,7 @@ fun HealthTabScreen(
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Testsúlynapló & Trend",
+                                        text = tr(uiState.language, "Testsúlynapló & Trend", "Weight Log & Trend", "Gewichtsprotokoll & Trend", "Jurnal greutate și tendință"),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = palette.textPrimary,
@@ -947,11 +1036,11 @@ fun HealthTabScreen(
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     val latestWeightLabel = if (latestChronologicalEntry != null) {
-                                        "Legújabb (${latestChronologicalEntry.dateLabel}): ${latestChronologicalEntry.weightLabel}"
+                                        "${tr(uiState.language, "Legújabb", "Latest", "Neueste", "Ultima")} (${latestChronologicalEntry.dateLabel}): ${latestChronologicalEntry.weightLabel}"
                                     } else if (uiState.currentBodyWeightKg > 0f) {
-                                        "Legújabb: ${"%.1f".format(uiState.currentBodyWeightKg).replace('.', ',')} kg"
+                                        "${tr(uiState.language, "Legújabb", "Latest", "Neueste", "Ultima")}: ${"%.1f".format(uiState.currentBodyWeightKg).replace('.', ',')} kg"
                                     } else {
-                                        "Legújabb: nincs rögzített mérés"
+                                        tr(uiState.language, "Legújabb: nincs rögzített mérés", "Latest: no recorded measurement", "Neueste: keine Messung erfasst", "Ultima: nicio măsurătoare înregistrată")
                                     }
                                     Text(
                                         text = latestWeightLabel,
@@ -973,7 +1062,7 @@ fun HealthTabScreen(
                                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
                                         Text(
-                                            text = "Részletek",
+                                            text = strings.detailsAction,
                                             style = MaterialTheme.typography.labelSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = palette.primary
@@ -1009,7 +1098,7 @@ fun HealthTabScreen(
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
-                                                text = "Még nincs rögzített testsúlymérés.",
+                                                text = tr(uiState.language, "Még nincs rögzített testsúlymérés.", "No weight entries recorded yet.", "Noch keine Gewichtsmessung erfasst.", "Nicio măsurătoare de greutate înregistrată."),
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = palette.textSecondary
                                             )
@@ -1093,13 +1182,13 @@ fun HealthTabScreen(
                                     ) {
                                         Column {
                                             Text(
-                                                text = "Test és fittség",
+                                                text = strings.bodyAndFitnessTitle,
                                                 style = MaterialTheme.typography.titleMedium,
                                                 fontWeight = FontWeight.Bold,
                                                 color = palette.primary
                                             )
                                             Text(
-                                                text = "Testzsír, SpO₂, VO₂max",
+                                                text = tr(uiState.language, "Testzsír, SpO₂, VO₂max", "Body fat, SpO₂, VO₂max", "Körperfett, SpO₂, VO₂max", "Grăsime corporală, SpO₂, VO₂max"),
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = palette.textSecondary
                                             )
@@ -1117,7 +1206,7 @@ fun HealthTabScreen(
                                                 verticalArrangement = Arrangement.spacedBy(3.dp)
                                             ) {
                                                 Text(
-                                                    text = "Testsúly (legutóbbi dátum szerint)",
+                                                    text = tr(uiState.language, "Testsúly (legutóbbi dátum szerint)", "Body weight (by latest date)", "Körpergewicht (nach letztem Datum)", "Greutate (după ultima dată)"),
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = palette.textSecondary
                                                 )
@@ -1129,7 +1218,7 @@ fun HealthTabScreen(
                                                     color = palette.textPrimary
                                                 )
                                                 Text(
-                                                    text = "Rögzített dátum: ${latestChronologicalEntry?.dateLabel ?: todayHuLabel}",
+                                                    text = "${tr(uiState.language, "Rögzített dátum", "Recorded date", "Erfasstes Datum", "Data înregistrată")}: ${latestChronologicalEntry?.dateLabel ?: todayHuLabel}",
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = palette.textSecondary
                                                 )
@@ -1141,7 +1230,7 @@ fun HealthTabScreen(
                                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
                                             PulseInnerBox(
-                                                label = "Testzsír",
+                                                label = tr(uiState.language, "Testzsír", "Body fat", "Körperfett", "Grăsime"),
                                                 value = if (uiState.bodyFatPercent > 0f) "${uiState.bodyFatPercent} %" else "—",
                                                 modifier = Modifier.weight(1f)
                                             )
@@ -1341,20 +1430,25 @@ fun HealthTabScreen(
                 com.example.ui.components.StudioHealthRecordBrowserButton(
                     if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG
                     else com.repforge.app.HealthJournalStore.HC, uiState.language.name.lowercase())
+                val srcWord = tr(uiState.language, "Forrás", "Source", "Quelle", "Sursă")
+                val sleepWord = strings.sleepTitle
+                val stepsWord = strings.stepsTitle
+                val calWord = tr(uiState.language, "Kalória", "Calories", "Kalorien", "Calorii")
+                val pulseWord = strings.pulseLabel
                 val journalEntries = if (uiState.weeklyHealthDays.isNotEmpty()) {
                     uiState.weeklyHealthDays.reversed().map { day ->
-                        day.dayLabelHu to ("Forrás: ${day.sourceLabelHu} • " +
-                            "Alvás: ${day.sleepLabel} • " +
-                            "Lépés: ${if (day.steps > 0) day.steps.toString() else "—"} • " +
-                            "Kalória: ${if (day.activeCaloriesKcal > 0) "${day.activeCaloriesKcal} kcal" else "—"}")
+                        day.dayLabelHu to ("$srcWord: ${day.sourceLabelHu} • " +
+                            "$sleepWord: ${day.sleepLabel} • " +
+                            "$stepsWord: ${if (day.steps > 0) day.steps.toString() else "—"} • " +
+                            "$calWord: ${if (day.activeCaloriesKcal > 0) "${day.activeCaloriesKcal} kcal" else "—"}")
                     }
                 } else {
                     listOf(
                         today.toString() to ("${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} • " +
-                            "Alvás: ${uiState.sleepDurationLabel} • " +
-                            "Pulzus: ${if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"} • " +
-                            "Lépések: ${if (uiState.dailySteps > 0) uiState.dailySteps.toString() else "—"} • " +
-                            "Kalória: ${if (uiState.activeCaloriesKcal > 0) "${uiState.activeCaloriesKcal} kcal" else "—"}")
+                            "$sleepWord: ${uiState.sleepDurationLabel} • " +
+                            "$pulseWord: ${if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"} • " +
+                            "$stepsWord: ${if (uiState.dailySteps > 0) uiState.dailySteps.toString() else "—"} • " +
+                            "$calWord: ${if (uiState.activeCaloriesKcal > 0) "${uiState.activeCaloriesKcal} kcal" else "—"}")
                     )
                 }
                 journalEntries.forEach { (d, summary) ->
@@ -1373,8 +1467,11 @@ fun HealthTabScreen(
                 }
                 val weeklyPulse = uiState.weeklyHealthDays.mapNotNull { it.pulse }
                 if (weeklyPulse.isNotEmpty()) {
-                    Text("Pulzus – elmúlt 7 nap", style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                    Text(
+                        tr(uiState.language, "Pulzus – elmúlt 7 nap", "Heart Rate – Last 7 Days", "Puls – Letzte 7 Tage", "Puls – Ultimele 7 zile"),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold, color = palette.textPrimary
+                    )
                     HealthPulseWeekRows(weeklyPulse)
                 }
             }
@@ -1384,8 +1481,8 @@ fun HealthTabScreen(
         item {
             ExpandableHealthSectionCard(
                 icon = Icons.Default.Link,
-                title = "Egészségadat-források",
-                subtitle = "Adatforrások, engedélyek és szinkron",
+                title = tr(uiState.language, "Egészségadat-források", "Health Data Sources", "Gesundheitsdatenquellen", "Surse date de sănătate"),
+                subtitle = tr(uiState.language, "Adatforrások, engedélyek és szinkron", "Data sources, permissions & sync", "Datenquellen, Berechtigungen & Sync", "Surse de date, permisiuni și sincronizare"),
                 expanded = uiState.expandedHealthConnect,
                 onToggle = { onToggleHealthSection("connect") },
                 customLeadingBadge = {
@@ -1411,10 +1508,12 @@ fun HealthTabScreen(
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
                             Text("Samsung Health", fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text(if (uiState.samsungGrantedCount < 0) "Engedély még nem igazolt"
-                                else "${uiState.samsungGrantedCount}/${uiState.samsungPermissionCount} adatkör",
+                            Text(
+                                if (uiState.samsungGrantedCount < 0) tr(uiState.language, "Engedély még nem igazolt", "Permission not verified yet", "Berechtigung noch nicht bestätigt", "Permisiune încă neverificată")
+                                else "${uiState.samsungGrantedCount}/${uiState.samsungPermissionCount} ${tr(uiState.language, "adatkör", "scopes", "Bereiche", "domenii")}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = if (uiState.samsungGrantedCount > 0) palette.success else palette.textSecondary)
+                                color = if (uiState.samsungGrantedCount > 0) palette.success else palette.textSecondary
+                            )
                         }
                     }
                     Surface(
@@ -1432,26 +1531,42 @@ fun HealthTabScreen(
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
                             Text("Health Connect", fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text("● ${uiState.healthGrantedCount}/${uiState.healthPermissionCount} engedély", style = MaterialTheme.typography.labelSmall, color = if (uiState.healthGrantedCount > 0) palette.success else palette.textSecondary)
+                            Text(
+                                "● ${uiState.healthGrantedCount}/${uiState.healthPermissionCount} ${tr(uiState.language, "engedély", "permissions", "Berechtigungen", "permisiuni")}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (uiState.healthGrantedCount > 0) palette.success else palette.textSecondary
+                            )
                         }
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Az elérhető adatok a választott szolgáltatótól és a tényleges engedélyektől függenek.",
+                    text = tr(
+                        uiState.language,
+                        "Az elérhető adatok a választott szolgáltatótól és a tényleges engedélyektől függenek.",
+                        "Available data depends on the selected provider and granted permissions.",
+                        "Verfügbare Daten hängen vom gewählten Anbieter und den Berechtigungen ab.",
+                        "Datele disponibile depind de furnizorul selectat și de permisiunile acordate."
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary
                 )
                 // Show source-scoped verification here, not above the six daily measurement tiles.
-                val selectedProviderSyncTime = remember(uiState.dailyHealthLastSyncIso) {
+                val selectedProviderSyncTime = remember(uiState.dailyHealthLastSyncIso, uiState.language) {
                     runCatching {
                         java.time.format.DateTimeFormatter.ofPattern("yyyy.MM.dd. HH:mm")
                             .withZone(java.time.ZoneId.systemDefault())
                             .format(java.time.Instant.parse(uiState.dailyHealthLastSyncIso))
-                    }.getOrDefault("Még nincs igazolt szinkron")
+                    }.getOrDefault(tr(uiState.language, "Még nincs igazolt szinkron", "No verified sync yet", "Noch keine bestätigte Synchronisierung", "Nicio sincronizare verificată încă"))
                 }
                 Text(
-                    text = "Kiválasztott forrás: ${uiState.dailyHealthSourceLabel} • Utolsó sikeres szinkron: $selectedProviderSyncTime",
+                    text = tr(
+                        uiState.language,
+                        "Kiválasztott forrás: ${uiState.dailyHealthSourceLabel} • Utolsó sikeres szinkron: $selectedProviderSyncTime",
+                        "Selected source: ${uiState.dailyHealthSourceLabel} • Last successful sync: $selectedProviderSyncTime",
+                        "Gewählte Quelle: ${uiState.dailyHealthSourceLabel} • Letzter Sync: $selectedProviderSyncTime",
+                        "Sursă selectată: ${uiState.dailyHealthSourceLabel} • Ultima sincronizare: $selectedProviderSyncTime"
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary,
                     modifier = Modifier.testTag("health_selected_provider_last_sync")
@@ -1478,7 +1593,7 @@ fun HealthTabScreen(
                 ) {
                     MockupWatchGraphicBadge(size = 46.dp)
                     Column(modifier = Modifier.weight(1f)) {
-                        val watchTitle = if (uiState.watchAppAvailable) "Óra és szinkron (${uiState.watchName})" else "Óra és szinkron"
+                        val watchTitle = if (uiState.watchAppAvailable) "${strings.watchAndSyncTitle} (${uiState.watchName})" else strings.watchAndSyncTitle
                         Text(
                             text = watchTitle,
                             style = MaterialTheme.typography.titleMedium,
@@ -1487,9 +1602,9 @@ fun HealthTabScreen(
                         )
                         Text(
                             text = when {
-                                uiState.watchAppAvailable -> "● Wear OS adatkapcsolat • átadás külön ACK-val"
-                                uiState.watchConnected -> "Wear OS rendszerkapcsolat • TrainPilot óraapp nincs telepítve"
-                                else -> "Nincs csatlakoztatott óra"
+                                uiState.watchAppAvailable -> tr(uiState.language, "● Wear OS adatkapcsolat • átadás külön ACK-val", "● Wear OS data link • handover with explicit ACK", "● Wear OS-Datenverbindung • Übergabe mit ACK", "● Conexiune date Wear OS • predare cu ACK")
+                                uiState.watchConnected -> tr(uiState.language, "Wear OS rendszerkapcsolat • TrainPilot óraapp nincs telepítve", "Wear OS system connection • TrainPilot watch app not installed", "Wear OS-Systemverbindung • TrainPilot-Uhren-App nicht installiert", "Conexiune sistem Wear OS • Aplicația de ceas TrainPilot nu este instalată")
+                                else -> tr(uiState.language, "Nincs csatlakoztatott óra", "No watch connected", "Keine Uhr verbunden", "Niciun ceas conectat")
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = if (uiState.watchAppAvailable) palette.success else palette.textSecondary
@@ -1524,7 +1639,7 @@ fun HealthTabScreen(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
-                                text = if (uiState.healthSyncBusy) "Szinkronizálás…" else strings.syncAction,
+                                text = if (uiState.healthSyncBusy) tr(uiState.language, "Szinkronizálás…", "Syncing…", "Synchronisiere…", "Se sincronizează…") else strings.syncAction,
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.textPrimary
@@ -1554,14 +1669,14 @@ fun HealthTabScreen(
                 }
 
                 Text(
-                    text = "${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} • utolsó teljes szinkron: ${uiState.lastHealthSyncLabel}",
+                    text = "${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} • ${tr(uiState.language, "utolsó teljes szinkron", "last full sync", "letzter Voll-Sync", "ultima sincronizare completă")}: ${uiState.lastHealthSyncLabel}",
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary
                 )
                 if (uiState.healthSyncMessage.isNotBlank()) Text(uiState.healthSyncMessage,
                     color = if (uiState.healthSyncFailed) palette.danger else if (uiState.healthSyncPartial) palette.warning else palette.textPrimary,
                     modifier = Modifier.testTag("health_sync_result"))
-                Text("Utolsó adatolvasás: ${uiState.lastHealthReadLabel}", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                Text("${tr(uiState.language, "Utolsó adatolvasás", "Last data read", "Letzter Datenabruf", "Ultima citire date")}: ${uiState.lastHealthReadLabel}", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                 Text(
                     text = uiState.healthProviderStatus,
                     style = MaterialTheme.typography.bodySmall,
@@ -1813,16 +1928,16 @@ internal fun CoachDetailScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Mai felkészültség",
+                            text = tr(uiState.language, "Mai felkészültség", "Today's Readiness", "Heutige Bereitschaft", "Pregătirea de azi"),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = palette.textPrimary
                         )
                         val statusBadgeText = when {
-                            displayScore >= 75 -> "OPTIMÁLIS KÉSZENLÉT"
-                            displayScore >= 50 -> "MÉRSÉKELT KÉSZENLÉT"
-                            hasScore -> "PIHENÉS JAVASOLT"
-                            else -> "NINCS MÉRT ADAT"
+                            displayScore >= 75 -> tr(uiState.language, "OPTIMÁLIS KÉSZENLÉT", "OPTIMAL READINESS", "OPTIMALE BEREITSCHAFT", "PREGĂTIRE OPTIMĂ")
+                            displayScore >= 50 -> tr(uiState.language, "MÉRSÉKELT KÉSZENLÉT", "MODERATE READINESS", "MÄSSIGE BEREITSCHAFT", "PREGĂTIRE MODERATĂ")
+                            hasScore -> tr(uiState.language, "PIHENÉS JAVASOLT", "REST ADVISED", "PAUSE EMPFOHLEN", "ODIHNĂ RECOMANDATĂ")
+                            else -> tr(uiState.language, "NINCS MÉRT ADAT", "NO MEASURED DATA", "KEINE MESSDATEN", "FĂRĂ DATE MĂSURATE")
                         }
                         val statusBadgeColor = when {
                             displayScore >= 75 -> palette.success
@@ -1892,13 +2007,13 @@ internal fun CoachDetailScreen(
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
-                                text = "3. Terheléssel korlátozott végső Coach készenlét",
+                                text = tr(uiState.language, "3. Terheléssel korlátozott végső Coach készenlét", "3. Load-Adjusted Final Coach Readiness", "3. Belastungsbereinigte Coach-Bereitschaft", "3. Pregătire finală Coach ajustată la sarcină"),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.primary
                             )
                             Text(
-                                text = com.example.ui.components.studioCoachReadinessText(readiness),
+                                text = com.example.ui.components.studioCoachReadinessText(readiness, uiState.language),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = palette.textSecondary
                             )
@@ -1919,7 +2034,7 @@ internal fun CoachDetailScreen(
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
-                                Text("1. Mai Samsung...", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
+                                Text(tr(uiState.language, "1. Mai Samsung...", "1. Samsung Energy", "1. Samsung Energie", "1. Energie Samsung"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
                                 Text(
                                     text = if (readiness?.samsungScore != null) "$samsungScore / 100" else "—",
                                     style = MaterialTheme.typography.titleMedium,
@@ -1927,7 +2042,7 @@ internal fun CoachDetailScreen(
                                     color = palette.textPrimary
                                 )
                                 Text(
-                                    text = if (readiness?.samsungScore != null) "Samsung Health" else "Nincs adat",
+                                    text = if (readiness?.samsungScore != null) "Samsung Health" else tr(uiState.language, "Nincs adat", "No data", "Keine Daten", "Fără date"),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = if (readiness?.samsungScore != null) palette.success else palette.textSecondary
                                 )
@@ -1941,14 +2056,14 @@ internal fun CoachDetailScreen(
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
-                                Text("2. TrainPilot saját...", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
+                                Text(tr(uiState.language, "2. TrainPilot saját...", "2. TrainPilot Own", "2. TrainPilot Eigen", "2. Scor TrainPilot"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
                                 Text(
                                     text = if (readiness?.trainpilotScore != null) "$ownReadinessScore / 100" else "—",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary
                                 )
-                                Text("HRV & alvás", style = MaterialTheme.typography.labelSmall, color = palette.primary)
+                                Text(tr(uiState.language, "HRV & alvás", "HRV & sleep", "HRV & Schlaf", "HRV și somn"), style = MaterialTheme.typography.labelSmall, color = palette.primary)
                             }
                         }
                         Surface(
@@ -1959,14 +2074,14 @@ internal fun CoachDetailScreen(
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
-                                Text("3. Terheléssel...", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
+                                Text(tr(uiState.language, "3. Terheléssel...", "3. Load-Adjusted", "3. Mit Belastung", "3. Cu sarcină"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
                                 Text(
                                     text = if (hasScore) "$displayScore / 100" else "—",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.primary
                                 )
-                                Text("Végső Coach", style = MaterialTheme.typography.labelSmall, color = palette.primary)
+                                Text(tr(uiState.language, "Végső Coach", "Final Coach", "Finaler Coach", "Coach final"), style = MaterialTheme.typography.labelSmall, color = palette.primary)
                             }
                         }
                     }
@@ -1992,17 +2107,25 @@ internal fun CoachDetailScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Kulcsjelek", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                        Text(tr(uiState.language, "Kulcsjelek", "Key Signals", "Schlüsselsignale", "Semnale cheie"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                         Text(when (nativeState.provider) {
                             com.repforge.app.HealthJournalStore.SAMSUNG -> "Samsung Health"
                             com.repforge.app.HealthJournalStore.HC -> "Health Connect"
-                            else -> "Adatok betöltése…"
+                            else -> tr(uiState.language, "Adatok betöltése…", "Loading data…", "Daten werden geladen…", "Se încarcă datele…")
                         }, style = MaterialTheme.typography.labelMedium, color = palette.primary)
                     }
-                    CoachSignalRow("Alvás", readiness?.sleepMinutes?.let { "${it.toInt() / 60} ó ${it.toInt() % 60} p" } ?: "—", palette.success)
-                    CoachSignalRow("Nyugalmi pulzus", uiState.todayPulseReading?.takeIf { it.provider == nativeState.provider }?.restingBpm?.let { "${it.toInt()} bpm" } ?: "—", palette.success)
+                    CoachSignalRow(
+                        strings.sleepTitle,
+                        readiness?.sleepMinutes?.let {
+                            val hUnit = tr(uiState.language, "ó", "h", "Std.", "h")
+                            val mUnit = tr(uiState.language, "p", "m", "Min.", "m")
+                            "${it.toInt() / 60} $hUnit ${it.toInt() % 60} $mUnit"
+                        } ?: "—",
+                        palette.success
+                    )
+                    CoachSignalRow(strings.restingHrTitle, uiState.todayPulseReading?.takeIf { it.provider == nativeState.provider }?.restingBpm?.let { "${it.toInt()} bpm" } ?: "—", palette.success)
                     CoachSignalRow("HRV (RMSSD)", readiness?.hrvMs?.let { "${it.toInt()} ms" } ?: "—", palette.primary)
-                    CoachSignalRow("Rögzített edzések", "${uiState.loggedWorkouts.size} db", palette.primary)
+                    CoachSignalRow(tr(uiState.language, "Rögzített edzések", "Logged Workouts", "Erfasste Trainings", "Antrenamente înregistrate"), "${uiState.loggedWorkouts.size} ${tr(uiState.language, "db", "", "Stk.", "")}".trim(), palette.primary)
                 }
             }
         }
@@ -2098,6 +2221,47 @@ fun SettingsMainScreen(
     var expandedGlowThemes by remember { mutableStateOf(false) }
     var expandedLightThemes by remember { mutableStateOf(false) }
     var vibrationEnabled by remember { mutableStateOf(uiState.vibrationEnabled) }
+    var showPrivacyPolicyDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val secUnit = tr(uiState.language, "mp", "sec", "Sek.", "sec")
+
+    if (showPrivacyPolicyDialog) {
+        AlertDialog(
+            onDismissRequest = { showPrivacyPolicyDialog = false },
+            containerColor = palette.surfaceCard,
+            titleContentColor = palette.textPrimary,
+            textContentColor = palette.textSecondary,
+            title = {
+                Text(
+                    text = tr(uiState.language, "Adatvédelmi tájékoztató", "Privacy Policy", "Datenschutzhinweise", "Informare privind confidențialitatea"),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .heightIn(max = 420.dp)
+                        .verticalScroll(rememberScrollState())
+                        .testTag("settings_privacy_dialog"),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = com.repforge.app.PrivacyPolicy.text(uiState.language.code.lowercase()),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = palette.textPrimary
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showPrivacyPolicyDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary)
+                ) {
+                    Text(strings.closeAction, fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
 
     if (uiState.showProgressionModal) {
         var selectedStyle by remember { mutableStateOf(uiState.trainingStyleHu) }
@@ -2108,7 +2272,7 @@ fun SettingsMainScreen(
             containerColor = palette.surfaceCard,
             titleContentColor = palette.textPrimary,
             textContentColor = palette.textSecondary,
-            title = { Text("Edzés beállításai és progresszió", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
+            title = { Text(tr(uiState.language, "Edzés beállításai és progresszió", "Workout Settings & Progression", "Trainingseinstellungen & Progression", "Setări antrenament și progresie"), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(
@@ -2116,7 +2280,7 @@ fun SettingsMainScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Alapértelmezett pihenőidő:", fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                        Text(tr(uiState.language, "Alapértelmezett pihenőidő:", "Default rest timer:", "Standard-Pausenzeit:", "Timp de pauză implicit:"), fontWeight = FontWeight.Bold, color = palette.textPrimary)
                         Surface(
                             shape = RoundedCornerShape(10.dp),
                             color = palette.primary.copy(alpha = 0.2f),
@@ -2126,7 +2290,7 @@ fun SettingsMainScreen(
                                 .clickable { onCycleRestTimer() }
                         ) {
                             Text(
-                                text = "${uiState.defaultRestSec} mp ↻",
+                                text = "${uiState.defaultRestSec} $secUnit ↻",
                                 fontWeight = FontWeight.Bold,
                                 color = palette.primary,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
@@ -2138,7 +2302,7 @@ fun SettingsMainScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Hangjelzés pihenő végén", color = palette.textPrimary)
+                        Text(tr(uiState.language, "Hangjelzés pihenő végén", "Sound alert when rest ends", "Ton am Pausenende", "Alertă sonoră la finalul pauzei"), color = palette.textPrimary)
                         Switch(checked = uiState.soundAlertEnabled, onCheckedChange = onToggleSoundAlert)
                     }
                     Row(
@@ -2146,10 +2310,10 @@ fun SettingsMainScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Rezgés pihenő végén", color = palette.textPrimary)
+                        Text(tr(uiState.language, "Rezgés pihenő végén", "Vibration when rest ends", "Vibration am Pausenende", "Vibrație la finalul pauzei"), color = palette.textPrimary)
                         Switch(checked = vibrationEnabled, onCheckedChange = { vibrationEnabled = it })
                     }
-                    Text("Edzésstílus:", fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                    Text(tr(uiState.language, "Edzésstílus:", "Training style:", "Trainingsstil:", "Stil de antrenament:"), fontWeight = FontWeight.Bold, color = palette.textPrimary)
                     listOf("Normál hipertrófia", "Erő (5×5)", "Állóképesség / Köredzés").forEach { st ->
                         Surface(
                             shape = RoundedCornerShape(10.dp),
@@ -2159,14 +2323,14 @@ fun SettingsMainScreen(
                                 .clickable { selectedStyle = st }
                         ) {
                             Text(
-                                text = st,
+                                text = localizeTrainingStyle(st, uiState.language),
                                 color = if (selectedStyle == st) palette.onPrimary else palette.textPrimary,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(10.dp)
                             )
                         }
                     }
-                    Text("Progressziós elv:", fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                    Text(tr(uiState.language, "Progressziós elv:", "Progression rule:", "Progressionsprinzip:", "Regulă de progresie:"), fontWeight = FontWeight.Bold, color = palette.textPrimary)
                     listOf("Dupla progresszió", "Lineáris súlyemelés", "RIR alapú autoreguláció").forEach { rl ->
                         Surface(
                             shape = RoundedCornerShape(10.dp),
@@ -2176,7 +2340,7 @@ fun SettingsMainScreen(
                                 .clickable { selectedRule = rl }
                         ) {
                             Text(
-                                text = rl,
+                                text = localizeProgressionRule(rl, uiState.language),
                                 color = if (selectedRule == rl) palette.onPrimary else palette.textPrimary,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(10.dp)
@@ -2188,7 +2352,7 @@ fun SettingsMainScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Kezdő kímélő profil", color = palette.textPrimary)
+                        Text(tr(uiState.language, "Kezdő kímélő profil", "Beginner gentle profile", "Schonendes Einsteigerprofil", "Profil blând pentru începători"), color = palette.textPrimary)
                         Switch(checked = beginnerGentle, onCheckedChange = { beginnerGentle = it })
                     }
                 }
@@ -2236,9 +2400,14 @@ fun SettingsMainScreen(
         // The expandable theme card already supplies its own title.
 
         item {
+            val toggleThemesHint = if (expandedMainThemesSection) {
+                tr(uiState.language, "Koppints a 4 téma stílus becsukásához", "Tap to collapse 4 theme categories", "Tippen zum Einklappen der 4 Themenkategorien", "Atinge pentru a restrânge cele 4 categorii de teme")
+            } else {
+                tr(uiState.language, "Koppints a 4 téma stílus kinyitásához", "Tap to expand 4 theme categories", "Tippen zum Ausklappen der 4 Themenkategorien", "Atinge pentru a extinde cele 4 categorii de teme")
+            }
             SettingsActionRowCard(
                 title = strings.themes32Title,
-                subtitle = "${currentPaletteObj.localizedName(uiState.language)} • Koppints a 4 téma stílus ${if (expandedMainThemesSection) "becsukásához" else "kinyitásához"}",
+                subtitle = "${currentPaletteObj.localizedName(uiState.language)} • $toggleThemesHint",
                 badgeText = "#${uiState.selectedPaletteId}",
                 onClick = { expandedMainThemesSection = !expandedMainThemesSection },
                 testTag = "settings_open_palettes_row",
@@ -2251,10 +2420,10 @@ fun SettingsMainScreen(
             item {
                 val allPalettes = TrainPilotPalettes.allPalettes
                 val categories = listOf(
-                    Triple("Matt témák (Sötét / Prémium matt)", allPalettes.filter { it.id in 1..8 }, expandedMatteThemes) to { expandedMatteThemes = !expandedMatteThemes },
-                    Triple("Kontrasztos témák (Élénk kontraszt)", allPalettes.filter { it.id in 9..16 }, expandedContrastThemes) to { expandedContrastThemes = !expandedContrastThemes },
-                    Triple("Fényes / Glow témák (Neon & Glow)", allPalettes.filter { it.id in 17..24 }, expandedGlowThemes) to { expandedGlowThemes = !expandedGlowThemes },
-                    Triple("Világos témák (Nappali / Light)", allPalettes.filter { it.id in 25..32 }, expandedLightThemes) to { expandedLightThemes = !expandedLightThemes }
+                    Triple(tr(uiState.language, "Matt témák (Sötét / Prémium matt)", "Matte Themes (Dark / Premium Matte)", "Matte Themen (Dunkel / Premium Matt)", "Teme mate (Întunecat / Mat premium)"), allPalettes.filter { it.id in 1..8 }, expandedMatteThemes) to { expandedMatteThemes = !expandedMatteThemes },
+                    Triple(tr(uiState.language, "Kontrasztos témák (Élénk kontraszt)", "High-Contrast Themes (Vivid Contrast)", "Kontrast-Themen (Lebendiger Kontrast)", "Teme cu contrast ridicat"), allPalettes.filter { it.id in 9..16 }, expandedContrastThemes) to { expandedContrastThemes = !expandedContrastThemes },
+                    Triple(tr(uiState.language, "Fényes / Glow témák (Neon & Glow)", "Glow Themes (Neon & Glow)", "Glow-Themen (Neon & Glow)", "Teme Glow (Neon & Glow)"), allPalettes.filter { it.id in 17..24 }, expandedGlowThemes) to { expandedGlowThemes = !expandedGlowThemes },
+                    Triple(tr(uiState.language, "Világos témák (Nappali / Light)", "Light Themes (Daylight / Light)", "Helle Themen (Tag / Hell)", "Teme luminoase (Zi / Light)"), allPalettes.filter { it.id in 25..32 }, expandedLightThemes) to { expandedLightThemes = !expandedLightThemes }
                 )
 
             Surface(shape = RoundedCornerShape(18.dp), color = palette.surfaceCard,
@@ -2300,7 +2469,7 @@ fun SettingsMainScreen(
                                 }
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Text(
-                                        text = "${catPalettes.size} téma",
+                                        text = "${catPalettes.size} ${tr(uiState.language, "téma", "themes", "Themen", "teme")}",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = palette.primary
                                     )
@@ -2336,7 +2505,7 @@ fun SettingsMainScreen(
                                                         .clip(RoundedCornerShape(14.dp))
                                                         .clickable {
                                                             onSelectPalette(itemPal.id)
-                                                            onShowBanner("Téma aktiválva: ${itemPal.localizedName(uiState.language)}")
+                                                            onShowBanner("${tr(uiState.language, "Téma aktiválva", "Theme activated", "Thema aktiviert", "Temă activată")}: ${itemPal.localizedName(uiState.language)}")
                                                         }
                                                 ) {
                                                     Row(
@@ -2431,12 +2600,12 @@ fun SettingsMainScreen(
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Edzés és értesítések", style = MaterialTheme.typography.titleMedium,
+                    Text(tr(uiState.language, "Edzés és értesítések", "Workout & Notifications", "Training & Benachrichtigungen", "Antrenament și notificări"), style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold, color = palette.textPrimary)
                     SettingsActionRowCard(
                         title = strings.restTimerTitle,
-                        subtitle = "Alapértelmezett pihenőidő (koppints a váltáshoz)",
-                        badgeText = "${uiState.defaultRestSec} mp",
+                        subtitle = tr(uiState.language, "Alapértelmezett pihenőidő (koppints a váltáshoz)", "Default rest timer (tap to cycle)", "Standard-Pausenzeit (tippen zum Wechseln)", "Timp de pauză implicit (atinge pentru schimbare)"),
+                        badgeText = "${uiState.defaultRestSec} $secUnit",
                         subtleBorder = true,
                         onClick = onCycleRestTimer
                     )
@@ -2455,7 +2624,7 @@ fun SettingsMainScreen(
                             ) {
                                 Column {
                                     Text(strings.soundAlertTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                                    Text("Pihenőidő lejártakor", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                                    Text(tr(uiState.language, "Pihenőidő lejártakor", "When rest timer expires", "Nach Ablauf der Pausenzeit", "La expirarea pauzei"), style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                                 }
                                 Switch(checked = uiState.soundAlertEnabled, onCheckedChange = onToggleSoundAlert)
                             }
@@ -2466,23 +2635,23 @@ fun SettingsMainScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column {
-                                    Text("Rezgés", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                                    Text("Haptikus visszajelzés pihenőidő végén", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                                    Text(tr(uiState.language, "Rezgés", "Vibration", "Vibration", "Vibrație"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                    Text(tr(uiState.language, "Haptikus visszajelzés pihenőidő végén", "Haptic feedback at the end of rest", "Haptisches Feedback am Pausenende", "Feedback haptic la finalul pauzei"), style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                                 }
                                 Switch(
                                     checked = vibrationEnabled,
                                     onCheckedChange = {
                                         vibrationEnabled = it
-                                        onShowBanner(if (it) "Rezgés bekapcsolva" else "Rezgés kikapcsolva")
+                                        onShowBanner(if (it) tr(uiState.language, "Rezgés bekapcsolva", "Vibration enabled", "Vibration aktiviert", "Vibrație activată") else tr(uiState.language, "Rezgés kikapcsolva", "Vibration disabled", "Vibration deaktiviert", "Vibrație dezactivată"))
                                     }
                                 )
                             }
                         }
                     }
                     SettingsActionRowCard(
-                        title = "Edzés beállításai és progresszió",
-                        subtitle = "${uiState.trainingStyleHu} • ${uiState.progressionRuleHu} • Pihenő: ${uiState.defaultRestSec} mp",
-                        badgeText = "Szerk.",
+                        title = tr(uiState.language, "Edzés beállításai és progresszió", "Workout Settings & Progression", "Trainingseinstellungen & Progression", "Setări antrenament și progresie"),
+                        subtitle = "${localizeTrainingStyle(uiState.trainingStyleHu, uiState.language)} • ${localizeProgressionRule(uiState.progressionRuleHu, uiState.language)} • ${strings.restLabel}: ${uiState.defaultRestSec} $secUnit",
+                        badgeText = tr(uiState.language, "Szerk.", "Edit", "Bearb.", "Edit."),
                         subtleBorder = true,
                         onClick = { onToggleProgressionModal(true) }
                     )
@@ -2490,20 +2659,20 @@ fun SettingsMainScreen(
             }
         }
 
-        // Eszközök és adatok (Óra, Mentés, Engedélyek, Privát fotók)
+        // Eszközök és adatok (Óra, Mentés, Engedélyek, Privát fotók, Adatvédelem)
         item {
-            Text("Eszközök és adatok", style = MaterialTheme.typography.labelLarge, color = palette.textSecondary)
+            Text(tr(uiState.language, "Eszközök és adatok", "Devices & Data", "Geräte & Daten", "Dispozitive și date"), style = MaterialTheme.typography.labelLarge, color = palette.textSecondary)
         }
 
         item {
             SettingsActionRowCard(
                 title = strings.watchAndSyncTitle,
                 subtitle = when {
-                    uiState.watchAppAvailable -> "${uiState.watchName} • Wear OS adatkapcsolat"
-                    uiState.watchConnected -> "Wear OS rendszerkapcsolat • TrainPilot óraapp nincs telepítve"
-                    else -> "Nincs csatlakoztatott óra"
+                    uiState.watchAppAvailable -> "${uiState.watchName} • ${tr(uiState.language, "Wear OS adatkapcsolat", "Wear OS data link", "Wear OS-Datenverbindung", "Conexiune date Wear OS")}"
+                    uiState.watchConnected -> tr(uiState.language, "Wear OS rendszerkapcsolat • TrainPilot óraapp nincs telepítve", "Wear OS system connection • TrainPilot watch app not installed", "Wear OS-Systemverbindung • TrainPilot-Uhren-App nicht installiert", "Conexiune sistem Wear OS • Aplicația de ceas TrainPilot nu este instalată")
+                    else -> tr(uiState.language, "Nincs csatlakoztatott óra", "No watch connected", "Keine Uhr verbunden", "Niciun ceas conectat")
                 },
-                badgeText = if (uiState.watchAppAvailable) "Adatkapcsolat" else "Nincs kapcsolat",
+                badgeText = if (uiState.watchAppAvailable) tr(uiState.language, "Adatkapcsolat", "Data link", "Datenlink", "Conexiune") else tr(uiState.language, "Nincs kapcsolat", "Disconnected", "Getrennt", "Deconectat"),
                 onClick = { onNavigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
                 testTag = "settings_open_watch_row"
             )
@@ -2512,7 +2681,7 @@ fun SettingsMainScreen(
         item {
             SettingsActionRowCard(
                 title = strings.backupRestoreTitle,
-                subtitle = "Helyi JSON / ZIP és Google Drive biztonsági mentés",
+                subtitle = tr(uiState.language, "Helyi JSON / ZIP és Google Drive biztonsági mentés", "Local JSON / ZIP and Google Drive backup", "Lokales JSON / ZIP und Google Drive-Backup", "Backup local JSON / ZIP și Google Drive"),
                 badgeText = uiState.selectedBackupFormat,
                 onClick = { onNavigateToSubScreen(SubScreen.BACKUP_RESTORE) },
                 testTag = "settings_open_backup_row"
@@ -2522,8 +2691,8 @@ fun SettingsMainScreen(
         item {
             SettingsActionRowCard(
                 title = strings.permissionsTitle,
-                subtitle = "GPS, Értesítések, Health Connect, Samsung Health",
-                badgeText = "Kezelés",
+                subtitle = tr(uiState.language, "GPS, Értesítések, Health Connect, Samsung Health", "GPS, Notifications, Health Connect, Samsung Health", "GPS, Benachrichtigungen, Health Connect, Samsung Health", "GPS, Notificări, Health Connect, Samsung Health"),
+                badgeText = tr(uiState.language, "Kezelés", "Manage", "Verwalten", "Gestionează"),
                 onClick = { onNavigateToSubScreen(SubScreen.PERMISSIONS_SCREEN) },
                 testTag = "settings_open_permissions_row"
             )
@@ -2532,10 +2701,26 @@ fun SettingsMainScreen(
         item {
             SettingsActionRowCard(
                 title = strings.privatePhotosTitle,
-                subtitle = "Csak ezen az eszközön tárolva • Nem kerül felhőbe",
-                badgeText = "${uiState.privatePhotoCount} fotó",
+                subtitle = tr(uiState.language, "Csak ezen az eszközön tárolva • Nem kerül felhőbe", "Stored on this device only • Never uploaded by default", "Nur auf diesem Gerät gespeichert • Nicht in der Cloud", "Stocate doar pe acest dispozitiv • Nu ajung în cloud implicit"),
+                badgeText = "${uiState.privatePhotoCount} ${tr(uiState.language, "fotó", "photos", "Fotos", "foto")}",
                 onClick = { onNavigateToSubScreen(SubScreen.PRIVATE_PHOTOS) },
                 testTag = "settings_open_photos_row"
+            )
+        }
+
+        item {
+            SettingsActionRowCard(
+                title = tr(uiState.language, "Adatvédelmi tájékoztató", "Privacy Policy", "Datenschutzhinweise", "Informare privind confidențialitatea"),
+                subtitle = tr(
+                    uiState.language,
+                    "Helyi adattárolás, Health Connect, Samsung Health, Wear OS és felhőmentés",
+                    "Local storage, Health Connect, Samsung Health, Wear OS & cloud backup",
+                    "Lokale Speicherung, Health Connect, Samsung Health, Wear OS & Cloud-Backup",
+                    "Stocare locală, Health Connect, Samsung Health, Wear OS și backup în cloud"
+                ),
+                badgeText = tr(uiState.language, "Megnyitás", "View", "Ansehen", "Vezi"),
+                onClick = { showPrivacyPolicyDialog = true },
+                testTag = "settings_open_privacy_row"
             )
         }
     }
@@ -2633,7 +2818,7 @@ fun WatchAndSyncScreen(
         // Section 1: Órakapcsolat (Mockup 4/4 #2)
         item {
             Text(
-                text = "Órakapcsolat",
+                text = strings.watchConnectedSub,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = palette.textPrimary
@@ -2661,7 +2846,7 @@ fun WatchAndSyncScreen(
                     verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
                 ) {
                     Text(
-                        text = "Aktív edzés vezérlése",
+                        text = tr(uiState.language, "Aktív edzés vezérlése", "Active Workout Control", "Steuerung des aktiven Trainings", "Controlul antrenamentului activ"),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = palette.textPrimary
@@ -2699,7 +2884,7 @@ fun WatchAndSyncScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "📱 Telefon vezérli",
+                                        text = tr(uiState.language, "📱 Telefon vezérli", "📱 Phone Controls", "📱 Telefon steuert", "📱 Controlat de telefon"),
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = if (phoneSelected) palette.primary else palette.textPrimary
@@ -2714,7 +2899,7 @@ fun WatchAndSyncScreen(
                                     }
                                 }
                                 Text(
-                                    text = "Óra megjeleníti",
+                                    text = tr(uiState.language, "Óra megjeleníti", "Watch mirrors state", "Uhr zeigt an", "Ceasul afișează"),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textSecondary
                                 )
@@ -2748,7 +2933,7 @@ fun WatchAndSyncScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "⌚ Óra vezérli",
+                                        text = tr(uiState.language, "⌚ Óra vezérli", "⌚ Watch Controls", "⌚ Uhr steuert", "⌚ Controlat de ceas"),
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = if (watchSelected) palette.primary else palette.textPrimary
@@ -2763,7 +2948,7 @@ fun WatchAndSyncScreen(
                                     }
                                 }
                                 Text(
-                                    text = "Önálló edzés",
+                                    text = tr(uiState.language, "Önálló edzés", "Autonomous session", "Eigenständiges Training", "Sesiune autonomă"),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textSecondary
                                 )
@@ -2791,7 +2976,7 @@ fun WatchAndSyncScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (uiState.watchControlPending) "Óra ACK-ra vár…"
+                            text = if (uiState.watchControlPending) tr(uiState.language, "Óra ACK-ra vár…", "Waiting for Watch ACK…", "Warte auf Uhr-ACK…", "Se așteaptă ACK de la ceas…")
                                 else if (uiState.phoneControlsWorkout) strings.handoverToWatchAction else strings.reclaimToPhoneAction,
                             fontWeight = FontWeight.Bold
                         )
@@ -2799,15 +2984,33 @@ fun WatchAndSyncScreen(
 
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         if (!uiState.watchAppAvailable) Text(
-                            "Az órára a párosított TrainPilot Wear OS alkalmazást telepítsd; a Galaxy Wearable önmagában nem elég.",
+                            tr(
+                                uiState.language,
+                                "Az órára a párosított TrainPilot Wear OS alkalmazást telepítsd; a Galaxy Wearable önmagában nem elég.",
+                                "Install the paired TrainPilot Wear OS app on your watch; Galaxy Wearable alone is not enough.",
+                                "Installiere die gekoppelte TrainPilot Wear OS-App auf der Uhr; Galaxy Wearable allein reicht nicht aus.",
+                                "Instalează aplicația asociată TrainPilot Wear OS pe ceas; Galaxy Wearable singur nu este suficient."
+                            ),
                             style = MaterialTheme.typography.bodySmall, color = palette.warning)
                         Text(
-                            text = "• A pulzus és edzésadatok szinkronja órakapcsolatot és külön visszaigazolást igényel",
+                            text = tr(
+                                uiState.language,
+                                "• A pulzus és edzésadatok szinkronja órakapcsolatot és külön visszaigazolást igényel",
+                                "• Heart rate and workout sync requires watch connection and explicit ACK",
+                                "• Puls- und Trainingssynchronisierung erfordert Uhrenverbindung und ACK",
+                                "• Sincronizarea pulsului și a antrenamentului necesită conexiune cu ceasul și ACK"
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.textSecondary
                         )
                         Text(
-                            text = "• Offline folytatás: kapcsolat megszakadásakor az óra önállóan folytatja az edzést",
+                            text = tr(
+                                uiState.language,
+                                "• Offline folytatás: kapcsolat megszakadásakor az óra önállóan folytatja az edzést",
+                                "• Offline continuation: if disconnected, the watch continues the workout autonomously",
+                                "• Offline-Fortsetzung: Bei Verbindungsabbruch führt die Uhr das Training selbstständig fort",
+                                "• Continuare offline: la întreruperea conexiunii, ceasul continuă autonom antrenamentul"
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.textSecondary
                         )
@@ -2819,7 +3022,7 @@ fun WatchAndSyncScreen(
         // Section 3: Egészségügyi szinkron (Mockup 4/4 #2: Health Connect & Samsung Health cards)
         item {
             Text(
-                text = "Egészségügyi szinkron",
+                text = tr(uiState.language, "Egészségügyi szinkron", "Health Sync", "Gesundheitssynchronisierung", "Sincronizare sănătate"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = palette.textPrimary
@@ -2850,12 +3053,20 @@ fun WatchAndSyncScreen(
                             color = palette.textPrimary
                         )
                         Text(
-                            text = if (uiState.permissionHealthConnectEnabled) "Engedélyezett: ${uiState.healthGrantedCount}/${uiState.healthPermissionCount}" else "Nincs olvasási engedély • engedélykérés",
+                            text = if (uiState.permissionHealthConnectEnabled) {
+                                "${tr(uiState.language, "Engedélyezett", "Granted", "Erteilt", "Acordate")}: ${uiState.healthGrantedCount}/${uiState.healthPermissionCount}"
+                            } else {
+                                tr(uiState.language, "Nincs olvasási engedély • engedélykérés", "No read permission • request access", "Keine Leseberechtigung • Zugriff anfordern", "Fără permisiune de citire • solicită acces")
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.success
                         )
                         Text(
-                            text = if (uiState.permissionHealthConnectEnabled) "Koppints a Health Connect szinkronizálásához" else "Pulzus, alvás, lépések, elégetett kalória, edzések",
+                            text = if (uiState.permissionHealthConnectEnabled) {
+                                tr(uiState.language, "Koppints a Health Connect szinkronizálásához", "Tap to sync Health Connect", "Tippen zum Synchronisieren von Health Connect", "Atinge pentru a sincroniza Health Connect")
+                            } else {
+                                tr(uiState.language, "Pulzus, alvás, lépések, elégetett kalória, edzések", "Heart rate, sleep, steps, calories burned, workouts", "Puls, Schlaf, Schritte, Kalorien, Trainings", "Puls, somn, pași, calorii arse, antrenamente")
+                            },
                             style = MaterialTheme.typography.labelSmall,
                             color = palette.textSecondary
                         )
@@ -2908,12 +3119,20 @@ fun WatchAndSyncScreen(
                             color = palette.textPrimary
                         )
                         Text(
-                            text = if (uiState.permissionSamsungHealthEnabled) "Olvasási engedély igazolva" else "Nincs igazolt olvasási engedély",
+                            text = if (uiState.permissionSamsungHealthEnabled) {
+                                tr(uiState.language, "Olvasási engedély igazolva", "Read permission verified", "Leseberechtigung bestätigt", "Permisiune de citire verificată")
+                            } else {
+                                tr(uiState.language, "Nincs igazolt olvasási engedély", "No verified read permission", "Keine bestätigte Leseberechtigung", "Nicio permisiune de citire verificată")
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.success
                         )
                         Text(
-                            text = if (uiState.permissionSamsungHealthEnabled) "Koppints a Samsung Health szinkronizálásához" else "Koppints az engedély megadásához és szinkronhoz",
+                            text = if (uiState.permissionSamsungHealthEnabled) {
+                                tr(uiState.language, "Koppints a Samsung Health szinkronizálásához", "Tap to sync Samsung Health", "Tippen zum Synchronisieren von Samsung Health", "Atinge pentru a sincroniza Samsung Health")
+                            } else {
+                                tr(uiState.language, "Koppints az engedély megadásához és szinkronhoz", "Tap to grant permission and sync", "Tippen für Berechtigung und Synchronisierung", "Atinge pentru permisiune și sincronizare")
+                            },
                             style = MaterialTheme.typography.labelSmall,
                             color = palette.textSecondary
                         )
@@ -2936,6 +3155,8 @@ fun StudioGoogleCloudSyncCard(
     settingsViewModel: SettingsViewModel = viewModel()
 ) {
     val palette = LocalTrainPilotPalette.current
+    val strings = com.example.localization.LocalTrainPilotStrings.current
+    val lang = strings.language
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val gs = settingsState.googleSyncState
     val context = LocalContext.current
@@ -3012,7 +3233,7 @@ fun StudioGoogleCloudSyncCard(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Google Cloud Szinkron",
+                            text = tr(lang, "Google Cloud Szinkron", "Google Cloud Sync", "Google Cloud-Synchronisierung", "Sincronizare Google Cloud"),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = palette.textPrimary
@@ -3021,7 +3242,7 @@ fun StudioGoogleCloudSyncCard(
                             text = if (gs.connectedEmail.isNotEmpty()) {
                                 gs.connectedEmail
                             } else {
-                                "Google Drive felhőmentés és Google Naptár szinkron"
+                                tr(lang, "Google Drive felhőmentés és Google Naptár szinkron", "Google Drive cloud backup & Google Calendar sync", "Google Drive Cloud-Backup & Google Kalender-Sync", "Backup Google Drive și sincronizare Google Calendar")
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = if (gs.connectedEmail.isNotEmpty()) palette.primary else palette.textSecondary,
@@ -3040,7 +3261,7 @@ fun StudioGoogleCloudSyncCard(
                     )
                 ) {
                     Text(
-                        text = (if (gs.connectedEmail.isNotEmpty()) "Csatlakoztatva" else "Nincs belépve") + if (cloudExpanded) " ▴" else " ▾",
+                        text = (if (gs.connectedEmail.isNotEmpty()) tr(lang, "Csatlakoztatva", "Connected", "Verbunden", "Conectat") else tr(lang, "Nincs belépve", "Signed out", "Nicht angemeldet", "Neconectat")) + if (cloudExpanded) " ▴" else " ▾",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = if (gs.connectedEmail.isNotEmpty()) palette.success else palette.textSecondary,
@@ -3054,7 +3275,7 @@ fun StudioGoogleCloudSyncCard(
             if (gs.connectedEmail.isNotEmpty()) {
                 if (gs.connectedName.isNotBlank()) {
                     Text(
-                        text = "Fiók: ${gs.connectedName} (${gs.connectedEmail})",
+                        text = "${tr(lang, "Fiók", "Account", "Konto", "Cont")}: ${gs.connectedName} (${gs.connectedEmail})",
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.SemiBold,
                         color = palette.textPrimary
@@ -3062,14 +3283,14 @@ fun StudioGoogleCloudSyncCard(
                 }
                 if (gs.lastDriveSyncIso.isNotEmpty()) {
                     Text(
-                        text = "Utolsó Drive szinkron: ${gs.lastDriveSyncIso.take(19).replace('T', ' ')}",
+                        text = "${tr(lang, "Utolsó Drive szinkron", "Last Drive sync", "Letzter Drive-Sync", "Ultima sincronizare Drive")}: ${gs.lastDriveSyncIso.take(19).replace('T', ' ')}",
                         style = MaterialTheme.typography.labelSmall,
                         color = palette.textSecondary
                     )
                 }
                 if (gs.lastCalendarSyncIso.isNotEmpty()) {
                     Text(
-                        text = "Utolsó Naptár szinkron: ${gs.lastCalendarSyncIso.take(19).replace('T', ' ')}",
+                        text = "${tr(lang, "Utolsó Naptár szinkron", "Last Calendar sync", "Letzter Kalender-Sync", "Ultima sincronizare Calendar")}: ${gs.lastCalendarSyncIso.take(19).replace('T', ' ')}",
                         style = MaterialTheme.typography.labelSmall,
                         color = palette.textSecondary
                     )
@@ -3089,7 +3310,7 @@ fun StudioGoogleCloudSyncCard(
                         colors = CheckboxDefaults.colors(checkedColor = palette.primary)
                     )
                     Text(
-                        text = "Korábbi felhőmentések keresése és összefésülése",
+                        text = tr(lang, "Korábbi felhőmentések keresése és összefésülése", "Search and merge earlier cloud backups", "Frühere Cloud-Backups suchen und zusammenführen", "Caută și îmbină backup-urile cloud anterioare"),
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.textSecondary
                     )
@@ -3119,7 +3340,7 @@ fun StudioGoogleCloudSyncCard(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Drive szinkron",
+                            text = tr(lang, "Drive szinkron", "Drive Sync", "Drive-Sync", "Sincronizare Drive"),
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.labelMedium
                         )
@@ -3141,7 +3362,7 @@ fun StudioGoogleCloudSyncCard(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Naptár szinkron",
+                            text = tr(lang, "Naptár szinkron", "Calendar Sync", "Kalender-Sync", "Sincronizare Calendar"),
                             color = palette.textPrimary,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.labelMedium
@@ -3162,7 +3383,7 @@ fun StudioGoogleCloudSyncCard(
                             .testTag("settings_google_disconnect_btn")
                     ) {
                         Text(
-                            text = "Google-fiók lekapcsolása",
+                            text = tr(lang, "Google-fiók lekapcsolása", "Disconnect Google Account", "Google-Konto trennen", "Deconectează contul Google"),
                             color = Color(0xFFEF4444),
                             fontWeight = FontWeight.SemiBold,
                             style = MaterialTheme.typography.labelMedium
@@ -3173,7 +3394,7 @@ fun StudioGoogleCloudSyncCard(
                         modifier = Modifier.heightIn(min = 48.dp)
                     ) {
                         Text(
-                            text = if (showMaintenanceOptions) "Karbantartás elrejtése" else "Felhő karbantartás",
+                            text = if (showMaintenanceOptions) tr(lang, "Karbantartás elrejtése", "Hide Maintenance", "Wartung ausblenden", "Ascunde mentenanța") else tr(lang, "Felhő karbantartás", "Cloud Maintenance", "Cloud-Wartung", "Mentenanță cloud"),
                             color = palette.textSecondary,
                             style = MaterialTheme.typography.labelMedium
                         )
@@ -3190,7 +3411,13 @@ fun StudioGoogleCloudSyncCard(
                 }
             } else {
                 Text(
-                    text = "Jelentkezz be Google-fiókkal az automatikus többeszközös Drive-szinkronhoz (edzésnapló, tervek, privát fotók) és a dedikált edzésnaptárhoz.",
+                    text = tr(
+                        lang,
+                        "Jelentkezz be Google-fiókkal az automatikus többeszközös Drive-szinkronhoz (edzésnapló, tervek, privát fotók) és a dedikált edzésnaptárhoz.",
+                        "Sign in with Google for automatic multi-device Drive sync (workout log, plans, private photos) and dedicated workout calendar.",
+                        "Melde dich mit Google an für automatische Drive-Synchronisierung (Protokoll, Pläne, private Fotos) und Trainingskalender.",
+                        "Conectează-te cu Google pentru sincronizare automată Drive (jurnal, planuri, fotografii private) și calendar dedicat."
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary
                 )
@@ -3214,7 +3441,7 @@ fun StudioGoogleCloudSyncCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Bejelentkezés Google-fiókkal",
+                        text = tr(lang, "Bejelentkezés Google-fiókkal", "Sign in with Google", "Mit Google anmelden", "Conectare cu Google"),
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -3295,7 +3522,7 @@ fun BackupRestoreScreen(
             if (onExportBackup != null) {
                 onExportBackup(uri)
             } else {
-                onShowBanner("Mentés készítése...")
+                onShowBanner(tr(uiState.language, "Mentés készítése...", "Creating backup...", "Sicherung wird erstellt...", "Se creează backup-ul..."))
             }
         }
     }
@@ -3307,7 +3534,7 @@ fun BackupRestoreScreen(
             if (onImportBackup != null) {
                 onImportBackup(uri)
             } else {
-                onShowBanner("Visszaállítás fájlból...")
+                onShowBanner(tr(uiState.language, "Visszaállítás fájlból...", "Restoring from file...", "Wiederherstellung aus Datei...", "Se restaurează din fișier..."))
             }
         }
     }
@@ -3366,20 +3593,64 @@ fun BackupRestoreScreen(
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Mentés tartalma", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                    Text("✓ Edzésnapló és PR rekordok (${uiState.loggedWorkouts.size} edzés)", color = palette.success)
-                    Text("✓ Saját programok és gyakorlatok (${uiState.programs.size} program)", color = palette.success)
-                    Text("✓ Beállítások és 32 színpaletta profil", color = palette.success)
+                    Text(tr(uiState.language, "Mentés tartalma", "Backup Contents", "Inhalt der Sicherung", "Conținutul backup-ului"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                    Text(
+                        tr(
+                            uiState.language,
+                            "✓ Edzésnapló és PR rekordok (${uiState.loggedWorkouts.size} edzés)",
+                            "✓ Workout log & PR records (${uiState.loggedWorkouts.size} workouts)",
+                            "✓ Trainingsprotokoll & PR-Rekorde (${uiState.loggedWorkouts.size} Trainings)",
+                            "✓ Jurnal antrenamente și recorduri PR (${uiState.loggedWorkouts.size} antrenamente)"
+                        ),
+                        color = palette.success
+                    )
+                    Text(
+                        tr(
+                            uiState.language,
+                            "✓ Saját programok és gyakorlatok (${uiState.programs.size} program)",
+                            "✓ Custom programs & exercises (${uiState.programs.size} programs)",
+                            "✓ Eigene Programme & Übungen (${uiState.programs.size} Programme)",
+                            "✓ Programe și exerciții proprii (${uiState.programs.size} programe)"
+                        ),
+                        color = palette.success
+                    )
+                    Text(
+                        tr(
+                            uiState.language,
+                            "✓ Beállítások és 32 színpaletta profil",
+                            "✓ Settings & 32 color palette profile",
+                            "✓ Einstellungen & 32-Farbpaletten-Profil",
+                            "✓ Setări și profilul celor 32 de palete"
+                        ),
+                        color = palette.success
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Health Connect, Samsung Health és órás egészségadatok", color = palette.textPrimary, modifier = Modifier.weight(1f))
+                        Text(
+                            tr(
+                                uiState.language,
+                                "Health Connect, Samsung Health és órás egészségadatok",
+                                "Health Connect, Samsung Health & watch health data",
+                                "Health Connect-, Samsung Health- und Uhren-Gesundheitsdaten",
+                                "Date de sănătate Health Connect, Samsung Health și ceas"
+                            ),
+                            color = palette.textPrimary, modifier = Modifier.weight(1f)
+                        )
                         Switch(checked = uiState.includeHealthInBackup, enabled = !uiState.backupHealthConsentSaving, onCheckedChange = onToggleIncludeHealth)
                     }
-                    Text("Alapból kikapcsolva. JSON/ZIP: tárolt egészségnapló és edzésösszesítések. Drive: az edzéshez mentett egészségadatok; a teljes napi egészségnapló nem kerül Drive-ra. Kikapcsolás nem törli a helyi adatokat vagy a korábbi mentéseket.",
-                        color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        tr(
+                            uiState.language,
+                            "Alapból kikapcsolva. JSON/ZIP: tárolt egészségnapló és edzésösszesítések. Drive: az edzéshez mentett egészségadatok; a teljes napi egészségnapló nem kerül Drive-ra. Kikapcsolás nem törli a helyi adatokat vagy a korábbi mentéseket.",
+                            "Off by default. JSON/ZIP: stored health journal & workout summaries. Drive: workout-attached health summaries only; full daily health journal is not uploaded to Drive. Turning off does not delete local data or existing backups.",
+                            "Standardmäßig aus. JSON/ZIP: gespeichertes Gesundheitstagebuch & Trainingszusammenfassungen. Drive: nur trainingsbezogene Gesundheitsdaten; das volle Tagesprotokoll wird nicht auf Drive geladen.",
+                            "Dezactivat implicit. JSON/ZIP: jurnalul de sănătate stocat și rezumatele antrenamentelor. Drive: doar datele de sănătate atașate antrenamentelor; jurnalul zilnic complet nu este încărcat pe Drive."
+                        ),
+                        color = palette.textSecondary, style = MaterialTheme.typography.bodySmall
+                    )
                 }
             }
         }
@@ -3393,13 +3664,19 @@ fun BackupRestoreScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Korábbi RepForge app mentés behozása",
+                        text = tr(uiState.language, "Korábbi RepForge app mentés behozása", "Import Legacy RepForge Backup", "Früheres RepForge-Backup importieren", "Importă backup RepForge anterior"),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = palette.primary
                     )
                     Text(
-                        text = "Teljes kompatibilitás a korábbi RepForge (.zip és .json) biztonsági mentésekkel: edzésnapló, egyéni programok, gyakorlatok, testsúlynapló és privát fotók automatikus konvertálása.",
+                        text = tr(
+                            uiState.language,
+                            "Teljes kompatibilitás a korábbi RepForge (.zip és .json) biztonsági mentésekkel: edzésnapló, egyéni programok, gyakorlatok, testsúlynapló és privát fotók automatikus konvertálása.",
+                            "Full compatibility with earlier RepForge (.zip and .json) backups: automatic conversion of workout logs, custom programs, exercises, weight log, and private photos.",
+                            "Volle Kompatibilität mit früheren RepForge-Backups (.zip und .json): automatische Konvertierung von Trainingsprotokoll, Programmen, Übungen, Gewicht und privaten Fotos.",
+                            "Compatibilitate completă cu backup-urile RepForge (.zip și .json): conversie automată pentru jurnal, programe, exerciții, greutate și fotografii private."
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.textSecondary
                     )
@@ -3416,7 +3693,7 @@ fun BackupRestoreScreen(
                         Icon(imageVector = Icons.Default.Restore, contentDescription = null, tint = palette.primary)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "RepForge ZIP / JSON mentés importálása",
+                            text = tr(uiState.language, "RepForge ZIP / JSON mentés importálása", "Import RepForge ZIP / JSON Backup", "RepForge ZIP / JSON importieren", "Importă backup ZIP / JSON RepForge"),
                             color = palette.primary,
                             fontWeight = FontWeight.Bold
                         )
@@ -3450,9 +3727,9 @@ fun BackupRestoreScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = if (uiState.selectedBackupFormat == "DRIVE" && gs.connectedEmail.isEmpty()) {
-                        "Bejelentkezés Google-fiókkal (Drive)"
+                        tr(uiState.language, "Bejelentkezés Google-fiókkal (Drive)", "Sign in with Google (Drive)", "Mit Google anmelden (Drive)", "Conectare cu Google (Drive)")
                     } else {
-                        "Mentés indítása (${uiState.selectedBackupFormat})"
+                        "${tr(uiState.language, "Mentés indítása", "Start Backup", "Sicherung starten", "Pornește backup")} (${uiState.selectedBackupFormat})"
                     },
                     fontWeight = FontWeight.Bold
                 )
@@ -3469,7 +3746,11 @@ fun BackupRestoreScreen(
             ) {
                 Icon(imageVector = Icons.Default.Restore, contentDescription = null, tint = palette.textPrimary)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Visszaállítás fájlból (TrainPilot / RepForge)", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
+                Text(
+                    tr(uiState.language, "Visszaállítás fájlból (TrainPilot / RepForge)", "Restore from file (TrainPilot / RepForge)", "Aus Datei wiederherstellen (TrainPilot / RepForge)", "Restaurare din fișier (TrainPilot / RepForge)"),
+                    color = palette.textPrimary,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }
@@ -3503,27 +3784,47 @@ fun PermissionsScreen(
             )
         }
         item {
-            PermissionToggleCard("GPS és helyadatok", "Kültéri futás és útvonal rögzítése", uiState.permissionGpsEnabled) {
+            PermissionToggleCard(
+                tr(uiState.language, "GPS és helyadatok", "GPS & Location", "GPS & Standortdaten", "GPS și locație"),
+                tr(uiState.language, "Kültéri futás és útvonal rögzítése", "Outdoor run and route recording", "Outdoor-Lauf und Routenaufzeichnung", "Alergare exterioară și înregistrare traseu"),
+                uiState.permissionGpsEnabled
+            ) {
                 onTogglePermission("gps")
             }
         }
         item {
-            PermissionToggleCard("Központi helymeghatározás", "Android rendszer-helyszolgáltatás beállításai", uiState.permissionCentralLocEnabled) {
+            PermissionToggleCard(
+                tr(uiState.language, "Központi helymeghatározás", "System Location Services", "System-Standortdienste", "Servicii de localizare sistem"),
+                tr(uiState.language, "Android rendszer-helyszolgáltatás beállításai", "Android system location settings", "Android-Standorteinstellungen", "Setări locație sistem Android"),
+                uiState.permissionCentralLocEnabled
+            ) {
                 onTogglePermission("central")
             }
         }
         item {
-            PermissionToggleCard("Értesítések", "Pihenőidő és aktív edzés állapotsor", uiState.permissionNotificationsEnabled) {
+            PermissionToggleCard(
+                tr(uiState.language, "Értesítések", "Notifications", "Benachrichtigungen", "Notificări"),
+                tr(uiState.language, "Pihenőidő és aktív edzés állapotsor", "Rest timer & active workout status notification", "Pausen-Timer & Trainingsstatus-Benachrichtigung", "Cronometru pauză și notificare antrenament activ"),
+                uiState.permissionNotificationsEnabled
+            ) {
                 onTogglePermission("notif")
             }
         }
         item {
-            PermissionToggleCard("Health Connect (${uiState.healthGrantedCount}/${uiState.healthPermissionCount})", "Pulzus, alvás, lépések és testsúly szinkron", uiState.permissionHealthConnectEnabled) {
+            PermissionToggleCard(
+                "Health Connect (${uiState.healthGrantedCount}/${uiState.healthPermissionCount})",
+                tr(uiState.language, "Pulzus, alvás, lépések és testsúly szinkron", "Heart rate, sleep, steps & weight sync", "Puls-, Schlaf-, Schritte- & Gewichtssynchronisierung", "Sincronizare puls, somn, pași și greutate"),
+                uiState.permissionHealthConnectEnabled
+            ) {
                 onTogglePermission("hc_manage")
             }
         }
         item {
-            PermissionToggleCard("Samsung Health közvetlen híd", "Samsung Health olvasási engedélyének kezelése", uiState.permissionSamsungHealthEnabled) {
+            PermissionToggleCard(
+                tr(uiState.language, "Samsung Health közvetlen híd", "Samsung Health Direct Bridge", "Direkte Samsung Health-Brücke", "Punte directă Samsung Health"),
+                tr(uiState.language, "Samsung Health olvasási engedélyének kezelése", "Manage Samsung Health read permissions", "Samsung Health-Leseberechtigungen verwalten", "Gestionează permisiunile de citire Samsung Health"),
+                uiState.permissionSamsungHealthEnabled
+            ) {
                 onTogglePermission("samsung_manage")
             }
         }

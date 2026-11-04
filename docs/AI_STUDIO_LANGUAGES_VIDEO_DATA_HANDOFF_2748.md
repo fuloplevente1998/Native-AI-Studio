@@ -161,3 +161,29 @@ Egyetlen felelősként vidd végig a csomagot. A csak main nézet miatt minden �
 - Forrásparser, képernyőkép, mock és videó-API eseményteszt önmagában nem tényleges készülékes működési bizonyíték. Pontosan írd le, mi futott és mi maradt visszatesztre.
 
 **Elvárt végső válasz:** mely issue-k készültek el, érintett commit/main-forrás, tényleges ellenőrzések és számok, valódi APK-link vagy eszközkorlát esetén alkalmazható átadó, megmaradt bizonytalan adatok/hibahelyzetek rövid listája. Ne csak javaslatot vagy újabb általános tervet adj vissza.
+
+---
+
+## 7. Elkészült implementáció és ellenőrzési jelentés (`versionCode = 2750`, bázis: `0ec706509a267119553ef7b9c8c78d1c881bf563` / PR104)
+
+### 7.1. Régi visszajelzés-formátumok konkrét audittáblája (#69)
+
+| Régi forrás / JSON útvonal | Bemeneti érték / típus | Kanonikus leképezés / viselkedés | Megjegyzés / védelem |
+| :--- | :--- | :--- | :--- |
+| `workout.feedback.effort` / `exercise.feedback.effort` / `workout.effort` / `workout.difficulty` / `workout.rpeEffort` | `"easy"`, `"light"`, `"right"`, `"challenging"`, `"hard"`, `"pain"` | Kanonikus gépi kód változatlanul (`easy`..`pain`) | Elsődleges kanonikus kulcsok |
+| Régi gépi aliasok (`effort` / `rating` / szöveges visszajelzés) | `"good"`, `"ok"`, `"normal"`, `"optimal"`, `"medium"`, `"moderate"` → `"right"`; `"too_easy"`, `"very_easy"` → `"easy"`; `"medium_hard"`, `"tough"` → `"challenging"`; `"too_hard"`, `"very_hard"`, `"max"`, `"failure"` → `"hard"`; `"injury"`, `"discomfort"`, `"ache"` → `"pain"` | Kanonikus gépi kód (`easy`/`light`/`right`/`challenging`/`hard`/`pain`) | `LegacyWebViewMigrator`, `StudioWorkoutFeedback`, `NativeJournalEditor`, `NativeCoachReadiness`, `NativeCoachExerciseAdvice` |
+| Lokalizált (HU/EN/DE/RO) címkék régi mentésben (`effort` / `feedback` string) | HU (`"Könnyű"`, `"Kicsit könnyű"`, `"Pont jó"`, `"Kihívás"`, `"Nehéz"`, `"Fájdalom"`), EN (`"Easy"`, `"Slightly easy"`, `"Just right"`, `"Challenging"`, `"Hard"`, `"Pain"`), DE (`"Leicht"`, `"Etwas leicht"`, `"Genau richtig"`, `"Fordernd"`, `"Schwer"`, `"Schmerz"`), RO (`"Ușor"`, `"Puțin ușor"`, `"Potrivit"`, `"Solicitant"`, `"Greu"`, `"Durere"`) – ékezettel és ékezet nélkül is | Kanonikus gépi kód (`easy`/`light`/`right`/`challenging`/`hard`/`pain`) | Megjelenítéskor mindig az aktuális appnyelvre fordul, mentéskor kanonikus gépi kód |
+| `effortScore` / `feedback.effortScore` / numerikus `rating` (`1..5`) | `1` → `"easy"`, `2` → `"light"`, `3` → `"right"`, `4` → `"challenging"`, `5` → `"hard"` | Kanonikus gépi kód (`easy`..`hard`) | Csak akkor lép életbe, ha nincs explicit érvényes szöveges `effort`; `1..5` tartományon kívüli szám nem íródik át |
+| `note` / `userNote` / `feedback.note` / `feedback.userNote` / `comment` | Szabad szöveg | `feedback.note` (és edzésszinten `workout.note` / `feedback.note` szinkronban) | `feedback.applied = true` esetén is szerkeszthető annotációként |
+| `feedback.applied` / `feedbackApplied` | `Boolean` (`true`/`false`) | `feedback.applied` | Ha `true`, az `effort` zárolt a második automatikus progresszió ellen |
+| `set.actualRir` / `set.rir` / `exercise.feedback.rir` / `workout.feedback.rir` | `0..10` egész szám vagy `null`/hiányzó | Valós `0` megmarad `0`-nak (`0` ≠ `null`); hiányzó érték `null` marad | Régi automatikus `RIR=2` nem íródik át visszamenőleg |
+| Ismeretlen szöveges vagy összetett visszajelzés (pl. `"custom_ legacy_tag"`) | Bármely nem bizonyított token | `normalizeLegacyEffortCode(...)` → `null` (Coach nem talál ki hamis progressziót); nyers `rawEffort` megmarad a JSON-ban | Sértetlen adatmegőrzés roundtrip közben |
+
+### 7.2. Ellenőrzési eredmények
+
+- **Alap main commit:** `0ec706509a267119553ef7b9c8c78d1c881bf563` (PR104)
+- **Verziószám:** `versionCode = 2750`, `versionName = "0.1.0-beta"`, `applicationId = "com.TrainPilot.com"`
+- **Font és glyph ellenőrzés (`python3 scripts/verify_font_glyphs.py`):** `PASS: 12 static font faces; actual weights, hashes, licenses and HU/DE/RO/ASCII glyphs verified.`
+- **Videó-lejátszó JS eseménytesztek (`node --test scripts/test_exercise_video_player.mjs`):** `7/7 PASS`
+- **Teljes JVM tesztkészlet (`gradle :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest` + `python3 scripts/verify_junit_xml.py`):** `443 teszt = 267 telefon + 176 Wear`, `0 failure`, `0 error`, `0 skipped`
+- **Android applet fordítás (`compile_applet`):** `SUCCESS`

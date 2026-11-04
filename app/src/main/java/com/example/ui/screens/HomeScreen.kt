@@ -106,6 +106,12 @@ fun HomeScreen(
     val activeProgram = state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
     val currentDay = activeProgram?.days?.firstOrNull()
     var showExtendedMainCards by remember { mutableStateOf(true) }
+    fun tr(hu: String, en: String, de: String, ro: String) = when (state.language) {
+        com.example.model.AppLanguage.HU -> hu
+        com.example.model.AppLanguage.EN -> en
+        com.example.model.AppLanguage.DE -> de
+        com.example.model.AppLanguage.RO -> ro
+    }
 
     Column(
         modifier = Modifier
@@ -274,7 +280,7 @@ fun HomeScreen(
                                 )
                             } else {
                                 Text(
-                                    text = if (state.isWorkoutSessionActive) "Aktív edzés" else if (activeProgram != null) {
+                                    text = if (state.isWorkoutSessionActive) tr("Aktív edzés", "Active Workout", "Aktives Training", "Antrenament activ") else if (activeProgram != null) {
                                         "${strings.activeProgramBadge} • ${activeProgram.localizedName(state.language)}"
                                     } else {
                                         strings.activeProgramBadge
@@ -288,14 +294,27 @@ fun HomeScreen(
                         }
 
                         Text(
-                            text = if (state.isWorkoutSessionActive) state.activeWorkoutTitleHu else currentDay?.localizedTitle(state.language) ?: "Teljes test A",
+                            text = if (state.isWorkoutSessionActive) state.activeWorkoutTitleHu else currentDay?.localizedTitle(state.language) ?: tr("Teljes test A", "Full Body A", "Ganzkörper A", "Full Body A"),
                             style = MaterialTheme.typography.titleMedium,
                             color = palette.textPrimary
                         )
 
                         Text(
-                            text = if (state.isWorkoutSessionActive) "${state.activeWorkoutExercises.size} gyakorlat • Aktív edzés"
-                                else "${currentDay?.exercises?.size ?: 8} gyakorlat • kb. ${currentDay?.durationMinutes ?: 60} perc",
+                            text = if (state.isWorkoutSessionActive) {
+                                tr(
+                                    "${state.activeWorkoutExercises.size} gyakorlat • Aktív edzés",
+                                    "${state.activeWorkoutExercises.size} exercises • Active workout",
+                                    "${state.activeWorkoutExercises.size} Übungen • Aktives Training",
+                                    "${state.activeWorkoutExercises.size} exerciții • Antrenament activ"
+                                )
+                            } else {
+                                tr(
+                                    "${currentDay?.exercises?.size ?: 8} gyakorlat • kb. ${currentDay?.durationMinutes ?: 60} perc",
+                                    "${currentDay?.exercises?.size ?: 8} exercises • ~${currentDay?.durationMinutes ?: 60} min",
+                                    "${currentDay?.exercises?.size ?: 8} Übungen • ca. ${currentDay?.durationMinutes ?: 60} Min.",
+                                    "${currentDay?.exercises?.size ?: 8} exerciții • aprox. ${currentDay?.durationMinutes ?: 60} min"
+                                )
+                            },
                             style = MaterialTheme.typography.bodyMedium,
                             color = palette.textSecondary
                         )
@@ -352,14 +371,14 @@ fun HomeScreen(
             }
             val watch: @Composable (Modifier) -> Unit = { card ->
                 val status = when {
-                    state.watchInfoLoading -> "Óraadatok lekérése…"
+                    state.watchInfoLoading -> tr("Óraadatok lekérése…", "Fetching watch info…", "Uhrendaten werden geladen…", "Se preiau datele ceasului…")
                     state.watchAppAvailable && state.watchBatteryPercent in 0..100 -> strings.connectedWithBattery(state.watchBatteryPercent)
-                    state.watchAppAvailable -> "TrainPilot óraapp elérhető"
-                    state.watchConnected -> "Wear OS kapcsolat • óraapp nem igazolt"
-                    else -> "Nincs órakapcsolat"
+                    state.watchAppAvailable -> tr("TrainPilot óraapp elérhető", "TrainPilot watch app available", "TrainPilot-Uhren-App verfügbar", "Aplicația de ceas TrainPilot disponibilă")
+                    state.watchConnected -> tr("Wear OS kapcsolat • óraapp nem igazolt", "Wear OS connected • watch app unverified", "Wear OS verbunden • Uhren-App unbestätigt", "Wear OS conectat • aplicație ceas neverificată")
+                    else -> tr("Nincs órakapcsolat", "No watch connected", "Keine Uhrenverbindung", "Nicio conexiune cu ceasul")
                 }
                 HomeCompactShortcut(card.testTag("home_watch_status_card"), Icons.Default.Watch,
-                    if (state.watchAppAvailable) state.watchName else "Órakapcsolat", status, onOpenWatchAndSync,
+                    if (state.watchAppAvailable) state.watchName else strings.watchConnectedSub, status, onOpenWatchAndSync,
                     enabled = !state.watchInfoLoading, connected = state.watchAppAvailable)
             }
             if (sideBySide) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardRowGap)) {
@@ -411,7 +430,7 @@ fun HomeScreen(
                                 text = if ("activeCalories" in state.dailyHealthAvailableFields)
                                     strings.activeCaloriesAndWorkoutsToday(state.activeCaloriesKcal,
                                         state.loggedWorkouts.count { it.localWorkoutDate() == java.time.LocalDate.now() })
-                                    else "Mai aktív kalória: nincs lekért adat",
+                                    else tr("Mai aktív kalória: nincs lekért adat", "Today's active calories: no data fetched", "Heutige aktive Kalorien: keine Daten geladen", "Calorii active azi: fără date preluate"),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = palette.textSecondary
                             )

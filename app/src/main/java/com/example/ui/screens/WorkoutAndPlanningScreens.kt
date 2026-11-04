@@ -112,6 +112,13 @@ import com.example.localization.LocalTrainPilotStrings
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.viewmodel.TrainPilotUiState
 
+private fun trW(lang: com.example.model.AppLanguage, hu: String, en: String, de: String, ro: String): String = when (lang) {
+    com.example.model.AppLanguage.HU -> hu
+    com.example.model.AppLanguage.EN -> en
+    com.example.model.AppLanguage.DE -> de
+    com.example.model.AppLanguage.RO -> ro
+}
+
 @Composable
 fun WorkoutTabScreen(
     state: TrainPilotUiState,
@@ -214,7 +221,7 @@ fun WorkoutTabScreen(
                             color = palette.primary.copy(alpha = 0.16f)
                         ) {
                             Text(
-                                text = "106 gyak.",
+                                text = trW(state.language, "106 gyak.", "106 ex.", "106 Üb.", "106 ex."),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.primary,
                                 fontWeight = FontWeight.Bold,
@@ -316,7 +323,7 @@ fun WorkoutTabScreen(
                             color = palette.success.copy(alpha = 0.16f)
                         ) {
                             Text(
-                                text = "GPS élő",
+                                text = trW(state.language, "GPS élő", "GPS live", "GPS live", "GPS live"),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.success,
                                 fontWeight = FontWeight.Bold,
@@ -448,7 +455,13 @@ fun WorkoutTabScreen(
                                 )
                             }
                             Text(
-                                text = "📋 ${day.exercises.size} gyakorlat • ⏱ kb. ${day.durationMinutes} perc",
+                                text = trW(
+                                    state.language,
+                                    "📋 ${day.exercises.size} gyakorlat • ⏱ kb. ${day.durationMinutes} perc",
+                                    "📋 ${day.exercises.size} exercises • ⏱ ~${day.durationMinutes} min",
+                                    "📋 ${day.exercises.size} Übungen • ⏱ ca. ${day.durationMinutes} Min",
+                                    "📋 ${day.exercises.size} exerciții • ⏱ ~${day.durationMinutes} min"
+                                ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = palette.textSecondary
                             )
@@ -498,7 +511,7 @@ fun WorkoutTabScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "⚙ Edzés beállításai • ${activeProgram.localizedName(state.language)}",
+                            text = "⚙ ${trW(state.language, "Edzés beállításai", "Workout settings", "Trainingseinstellungen", "Setări antrenament")} • ${activeProgram.localizedName(state.language)}",
                             style = MaterialTheme.typography.titleSmall,
                             color = palette.textPrimary
                         )
@@ -529,12 +542,18 @@ fun WorkoutTabScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Nincs aktív program",
+                        text = trW(state.language, "Nincs aktív program", "No active program", "Kein aktives Programm", "Niciun program activ"),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = palette.textPrimary
                     )
                     Text(
-                        text = "Válassz egy edzésprogramot a programlistából vagy hozz létre egy újat.",
+                        text = trW(
+                            state.language,
+                            "Válassz egy edzésprogramot a programlistából vagy hozz létre egy újat.",
+                            "Select a workout program from the list or create a new one.",
+                            "Wähle ein Trainingsprogramm aus der Liste oder erstelle ein neues.",
+                            "Selectează un program din listă sau creează unul nou."
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = palette.textSecondary,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -627,33 +646,39 @@ fun ProgramsListScreen(
 
     if (showCreateCustomProgramDialog) {
         var customProgName by remember { mutableStateOf("") }
-        var customProgSub by remember { mutableStateOf("Saját egyedi összeállítású edzésterv") }
+        var customProgSub by remember { mutableStateOf(trW(state.language, "Saját egyedi összeállítású edzésterv", "Custom workout plan", "Eigener Trainingsplan", "Plan de antrenament personalizat")) }
         AlertDialog(
             onDismissRequest = { showCreateCustomProgramDialog = false },
             containerColor = palette.surfaceCard,
             titleContentColor = palette.textPrimary,
             textContentColor = palette.textSecondary,
             title = {
-                Text("Új egyedi program létrehozása", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(trW(state.language, "Új egyedi program létrehozása", "Create new custom program", "Neues eigenes Programm erstellen", "Creează program personalizat nou"), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Adj nevet és leírást az új egyedi programodnak (pl. Kör futás & Core, Saját A/B terv):",
+                        text = trW(
+                            state.language,
+                            "Adj nevet és leírást az új egyedi programodnak (pl. Kör futás & Core, Saját A/B terv):",
+                            "Enter a name and description for your new custom program:",
+                            "Gib einen Namen und eine Beschreibung für dein eigenes Programm ein:",
+                            "Introdu un nume și o descriere pentru noul tău program personalizat:"
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.textSecondary
                     )
                     OutlinedTextField(
                         value = customProgName,
                         onValueChange = { customProgName = it },
-                        label = { Text("Program neve (pl. Kör futás & Erő)") },
+                        label = { Text(trW(state.language, "Program neve (pl. Kör futás & Erő)", "Program name", "Programmname", "Numele programului")) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = customProgSub,
                         onValueChange = { customProgSub = it },
-                        label = { Text("Rövid leírás / megjegyzés") },
+                        label = { Text(trW(state.language, "Rövid leírás / megjegyzés", "Short description / note", "Kurzbeschreibung / Notiz", "Descriere scurtă / notiță")) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -669,7 +694,7 @@ fun ProgramsListScreen(
                         contentColor = palette.onPrimary
                     )
                 ) {
-                    Text("Létrehozás és szerkesztés", fontWeight = FontWeight.Bold)
+                    Text(trW(state.language, "Létrehozás és szerkesztés", "Create and edit", "Erstellen und bearbeiten", "Creează și editează"), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -724,8 +749,8 @@ fun ProgramsListScreen(
                     val builtinCount = state.programs.count { !it.isCustom }
                     val customCount = state.programs.count { it.isCustom }
                     val tabs = listOf(
-                        false to "Alap programok ($builtinCount)",
-                        true to "Saját programok ($customCount)"
+                        false to trW(state.language, "Alap programok ($builtinCount)", "Built-in programs ($builtinCount)", "Standardprogramme ($builtinCount)", "Programe de bază ($builtinCount)"),
+                        true to trW(state.language, "Saját programok ($customCount)", "Custom programs ($customCount)", "Eigene Programme ($customCount)", "Programe proprii ($customCount)")
                     )
                     tabs.forEach { (isCustom, label) ->
                         val selected = state.programsTabCustomOnly == isCustom
@@ -809,7 +834,7 @@ fun ProgramsListScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "${activeProgram.days.size} edzésnap (A/B)",
+                                    text = trW(state.language, "${activeProgram.days.size} edzésnap (A/B)", "${activeProgram.days.size} workout days (A/B)", "${activeProgram.days.size} Trainingstage (A/B)", "${activeProgram.days.size} zile de antrenament (A/B)"),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = palette.textSecondary
                                 )
@@ -837,7 +862,7 @@ fun ProgramsListScreen(
             }
 
             Text(
-                text = if (state.programsTabCustomOnly) "Saját készítésű és generált tervek" else strings.moreProgramsTitle,
+                text = if (state.programsTabCustomOnly) trW(state.language, "Saját készítésű és generált tervek", "Custom and generated plans", "Eigene und generierte Pläne", "Planuri proprii și generate") else strings.moreProgramsTitle,
                 style = MaterialTheme.typography.titleMedium,
                 color = palette.textPrimary
             )
@@ -856,12 +881,18 @@ fun ProgramsListScreen(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Text(
-                            text = "Még nincs saját generált programod",
+                            text = trW(state.language, "Még nincs saját generált programod", "No custom generated programs yet", "Noch keine eigenen Programme", "Nu ai încă programe personalizate"),
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             color = palette.textPrimary
                         )
                         Text(
-                            text = "Készíts személyre szabott edzéstervet a Kezdőprofil (A01) varázslóval vagy hozz létre saját programot!",
+                            text = trW(
+                                state.language,
+                                "Készíts személyre szabott edzéstervet a Kezdőprofil (A01) varázslóval vagy hozz létre saját programot!",
+                                "Build a personalized workout plan with the Starter Profile (A01) wizard or create a custom program!",
+                                "Erstelle einen personalisierten Trainingsplan mit dem Startprofil (A01) oder lege ein eigenes Programm an!",
+                                "Creează un plan personalizat cu profilul de bază (A01) sau adaugă un program propriu!"
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.textSecondary,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -871,7 +902,7 @@ fun ProgramsListScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Kezdőprofil és egyéni terv (A01)", fontWeight = FontWeight.Bold)
+                            Text(trW(state.language, "Kezdőprofil és egyéni terv (A01)", "Starter profile & custom plan (A01)", "Startprofil & eigener Plan (A01)", "Profil de bază și plan propriu (A01)"), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -1006,7 +1037,7 @@ fun ProgramsListScreen(
                 ) {
                     Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Új egyedi program", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                    Text(trW(state.language, "Új egyedi program", "New custom program", "Neues eigenes Programm", "Program personalizat nou"), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                 }
 
                 TrainPilotOutlinedButton(
@@ -1019,7 +1050,7 @@ fun ProgramsListScreen(
                 ) {
                     Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Új gyakorlat", style = MaterialTheme.typography.labelLarge, color = palette.primary, fontWeight = FontWeight.Bold)
+                    Text(trW(state.language, "Új gyakorlat", "New exercise", "Neue Übung", "Exercițiu nou"), style = MaterialTheme.typography.labelLarge, color = palette.primary, fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -1115,7 +1146,9 @@ fun ProgramEditorScreen(
 
             if (programName.trim() != program.nameHu) Button(
                 onClick = { onRenameProgram(programName) }, enabled = !state.libraryMutationBusy && programName.isNotBlank(),
-                modifier = Modifier.fillMaxWidth().testTag("studio_program_save_name")) { Text("Programnév mentése") }
+                modifier = Modifier.fillMaxWidth().testTag("studio_program_save_name")) {
+                Text(trW(state.language, "Programnév mentése", "Save program name", "Programmname speichern", "Salvează numele programului"))
+            }
 
             // Segmented A nap | B nap selector (Mockup 4/4 #6)
             Row(
@@ -1385,7 +1418,7 @@ fun ProgramEditorScreen(
             ) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = palette.primary)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Új egyedi gyakorlat létrehozása (pl. Kör futás)", color = palette.primary, fontWeight = FontWeight.Bold)
+                Text(trW(state.language, "Új egyedi gyakorlat létrehozása (pl. Kör futás)", "Create new custom exercise", "Neue eigene Übung erstellen", "Creează exercițiu personalizat nou"), color = palette.primary, fontWeight = FontWeight.Bold)
             }
 
             com.example.ui.components.StudioProgramManagementControls(
@@ -1472,17 +1505,19 @@ fun CalendarPlannerScreen(
     val today = remember { java.time.LocalDate.now() }
     val displayedYearMonth = java.time.YearMonth.parse(state.calendarYearMonth)
 
-    val huMonthNames = listOf(
-        "Január", "Február", "Március", "Április", "Május", "Június",
-        "Július", "Augusztus", "Szeptember", "Október", "November", "December"
-    )
+    val huMonthNames = when (state.language) {
+        com.example.model.AppLanguage.HU -> listOf("Január", "Február", "Március", "Április", "Május", "Június", "Július", "Augusztus", "Szeptember", "Október", "November", "December")
+        com.example.model.AppLanguage.EN -> listOf("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+        com.example.model.AppLanguage.DE -> listOf("Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember")
+        com.example.model.AppLanguage.RO -> listOf("Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie", "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie")
+    }
     val monthHeaderText = "${displayedYearMonth.year}. ${huMonthNames[displayedYearMonth.monthValue - 1]}"
     var openedDay by androidx.compose.runtime.saveable.rememberSaveable(state.calendarYearMonth) { mutableStateOf<Int?>(null) }
     var planningOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val selectedDay = openedDay ?: state.selectedCalendarDay
     val dayEvents = state.calendarEvents.filter { it.dayOfMonth == selectedDay && it.dateIso.startsWith(displayedYearMonth.toString()) }
     val activeProgram = state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
-    val activeProgramTitle = activeProgram?.nameHu ?: "Otthoni A/B – Alap (személyre szabott)"
+    val activeProgramTitle = activeProgram?.localizedName(state.language) ?: trW(state.language, "Otthoni A/B – Alap (személyre szabott)", "Home A/B – Core (personalized)", "Heim A/B – Basis (personalisiert)", "Acasă A/B – Bază (personalizat)")
 
     var editingEvent by remember { mutableStateOf<com.example.model.CalendarDayEvent?>(null) }
     var movingEvent by remember { mutableStateOf<com.example.model.CalendarDayEvent?>(null) }
@@ -1916,10 +1951,10 @@ fun CalendarPlannerScreen(
                         if (state.calendarUndoStack.isNotEmpty()) IconButton(onClick = onUndoCalendarAction,
                             modifier = Modifier.size(48.dp).testTag("calendar_undo_action")) {
                             Text("↶", color = palette.primary, style = MaterialTheme.typography.headlineSmall,
-                                modifier = Modifier.semantics { contentDescription = "Visszavonás (${state.calendarUndoStack.size})" })
+                                modifier = Modifier.semantics { contentDescription = trW(state.language, "Visszavonás (${state.calendarUndoStack.size})", "Undo (${state.calendarUndoStack.size})", "Rückgängig (${state.calendarUndoStack.size})", "Anulează (${state.calendarUndoStack.size})") })
                         }
                         TrainPilotOutlinedButton(onClick = { planningOpen = true },
-                            modifier = Modifier.heightIn(min = 48.dp).testTag("calendar_planning_open")) { Text("Tervezés") }
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("calendar_planning_open")) { Text(trW(state.language, "Tervezés", "Planning", "Planung", "Planificare")) }
                     }
                 }
             }
@@ -1943,14 +1978,14 @@ fun CalendarPlannerScreen(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     if (dayEvents.isEmpty()) {
-                        Text("Nincs tervezett edzés ezen a napon.", style = MaterialTheme.typography.bodySmall,
+                        Text(trW(state.language, "Nincs tervezett edzés ezen a napon.", "No planned workout on this day.", "Kein geplantes Training an diesem Tag.", "Niciun antrenament planificat în această zi."), style = MaterialTheme.typography.bodySmall,
                             color = palette.textSecondary, modifier = Modifier.fillMaxWidth().testTag("calendar_empty_day"))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             for (split in listOf("A", "B")) {
                                 TrainPilotOutlinedButton(onClick = {
                                     onAddPlannedWorkoutOnDay(selectedDay, split, state.planningTime, state.planningDurationMin)
                                 }, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("calendar_add_$split")) {
-                                    Text("+ Alap $split")
+                                    Text(trW(state.language, "+ Alap $split", "+ Day $split", "+ Tag $split", "+ Ziua $split"))
                                 }
                             }
                         }
@@ -1977,7 +2012,7 @@ fun CalendarPlannerScreen(
                                             color = palette.textPrimary
                                         )
                                         Text(
-                                            text = "${ev.timeLabel} • ~${ev.durationMinutes} perc • ${if (isDone) "Teljesítve ✓" else "Tervezett (${ev.splitBadge} nap)"}",
+                                            text = "${ev.timeLabel} • ~${ev.durationMinutes} ${trW(state.language, "perc", "min", "Min.", "min")} • ${if (isDone) trW(state.language, "Teljesítve ✓", "Completed ✓", "Abgeschlossen ✓", "Finalizat ✓") else trW(state.language, "Tervezett (${ev.splitBadge} nap)", "Planned (Day ${ev.splitBadge})", "Geplant (Tag ${ev.splitBadge})", "Planificat (Ziua ${ev.splitBadge})")}",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = if (isDone) palette.success else palette.primary
                                         )
@@ -1989,7 +2024,7 @@ fun CalendarPlannerScreen(
                                             modifier = Modifier.clickable { openedDay = null; onOpenWorkoutDetail() }
                                         ) {
                                             Text(
-                                                text = "Napló >",
+                                                text = "${strings.navLog} >",
                                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                                 color = palette.primary,
                                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
@@ -2004,25 +2039,25 @@ fun CalendarPlannerScreen(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     CalendarActionChip(
-                                        label = "Módosítás",
+                                        label = trW(state.language, "Módosítás", "Modify", "Ändern", "Modifică"),
                                         color = palette.primary,
                                         modifier = Modifier.weight(1f),
                                         onClick = { openedDay = null; editingEvent = ev }
                                     )
                                     CalendarActionChip(
-                                        label = "Áthelyezés",
+                                        label = trW(state.language, "Áthelyezés", "Move", "Verschieben", "Mută"),
                                         color = palette.textPrimary,
                                         modifier = Modifier.weight(1f),
                                         onClick = { openedDay = null; movingEvent = ev }
                                     )
                                     CalendarActionChip(
-                                        label = "Törlés",
+                                        label = trW(state.language, "Törlés", "Delete", "Löschen", "Șterge"),
                                         color = palette.danger,
                                         modifier = Modifier.weight(1f),
                                         onClick = { onDeleteCalendarEvent(ev.id) }
                                     )
                                     CalendarActionChip(
-                                        label = "Visszavonás",
+                                        label = trW(state.language, "Visszavonás", "Undo", "Rückgängig", "Anulează"),
                                         color = if (state.calendarUndoStack.isNotEmpty()) palette.secondary else palette.textSecondary,
                                         modifier = Modifier.weight(1f),
                                         onClick = { onUndoCalendarAction() }
@@ -2036,7 +2071,7 @@ fun CalendarPlannerScreen(
         }
     }
     if (planningOpen) {
-        com.example.ui.components.CompactCalendarDialog(title = "Tervezés", tag = "calendar_planning_dialog",
+        com.example.ui.components.CompactCalendarDialog(title = trW(state.language, "Tervezés", "Planning", "Planung", "Planificare"), tag = "calendar_planning_dialog",
             onClose = { planningOpen = false }) {
             // 3. EXACT SCREENSHOT 7 MONTHLY PLANNER & REPLAN CARD
             Surface(
@@ -2536,7 +2571,7 @@ fun ExerciseLibraryScreen(
         ) {
             CompactJournalSearchField(state.exerciseSearchQuery, onSearchQueryChange, strings.logSearchHint)
             FilterChip(selected = state.favoriteExercisesOnly, onClick = onToggleFavoritesOnly,
-                label = { Text("Kedvencek (${state.favoriteExerciseIds.size})") },
+                label = { Text(trW(state.language, "Kedvencek (${state.favoriteExerciseIds.size})", "Favorites (${state.favoriteExerciseIds.size})", "Favoriten (${state.favoriteExerciseIds.size})", "Favorite (${state.favoriteExerciseIds.size})")) },
                 modifier = Modifier.testTag("studio_library_favorites_only"))
 
             // Compact Horizontal Category Chips with exact counts: Összes (106) | Láb | Mell | Hát | Váll | Kar | Core
@@ -2587,7 +2622,7 @@ fun ExerciseLibraryScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${filtered.size} / ${state.exercises.size} gyakorlat",
+                    text = trW(state.language, "${filtered.size} / ${state.exercises.size} gyakorlat", "${filtered.size} / ${state.exercises.size} exercises", "${filtered.size} / ${state.exercises.size} Übungen", "${filtered.size} / ${state.exercises.size} exerciții"),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = palette.textSecondary
@@ -2613,7 +2648,7 @@ fun ExerciseLibraryScreen(
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = "Új egyedi gyakorlat",
+                            text = trW(state.language, "Új egyedi gyakorlat", "New custom exercise", "Neue eigene Übung", "Exercițiu personalizat nou"),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = palette.primary
@@ -2639,13 +2674,13 @@ fun ExerciseLibraryScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Edzésre összeállítva (${state.quickWorkoutQueue.size} gyakorlat)",
+                                text = trW(state.language, "Edzésre összeállítva (${state.quickWorkoutQueue.size} gyakorlat)", "Queued for workout (${state.quickWorkoutQueue.size} exercises)", "Für Training zusammengestellt (${state.quickWorkoutQueue.size} Übungen)", "Pregătit pentru antrenament (${state.quickWorkoutQueue.size} exerciții)"),
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.primary
                             )
                             Text(
-                                text = state.quickWorkoutQueue.joinToString(", ") { it.nameHu },
+                                text = state.quickWorkoutQueue.joinToString(", ") { it.localizedName(state.language) },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.textSecondary,
                                 maxLines = 1,
@@ -2665,7 +2700,7 @@ fun ExerciseLibraryScreen(
                                 .heightIn(min = 36.dp)
                                 .testTag("exercise_library_start_queued_workout_button")
                         ) {
-                            Text("▶ Indítás", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold)
+                            Text("▶ ${strings.startAction}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold)
                         }
                     }
                 }
@@ -2740,7 +2775,8 @@ fun ExerciseLibraryScreen(
                             enabled = !state.libraryMutationBusy,
                             modifier = Modifier.size(48.dp).testTag("exercise_library_favorite_${ex.id}")) {
                             Icon(if (favorite) Icons.Default.Star else Icons.Default.StarBorder,
-                                contentDescription = if (favorite) "Eltávolítás a kedvencekből" else "Hozzáadás a kedvencekhez",
+                                contentDescription = if (favorite) trW(state.language, "Eltávolítás a kedvencekből", "Remove from favorites", "Aus Favoriten entfernen", "Elimină din favorite")
+                                else trW(state.language, "Hozzáadás a kedvencekhez", "Add to favorites", "Zu Favoriten hinzufügen", "Adaugă la favorite"),
                                 tint = if (favorite) palette.primary else palette.textSecondary,
                                 modifier = Modifier.size(22.dp))
                         }
@@ -2886,7 +2922,10 @@ fun ExerciseDetailScreen(
 
             TrainPilotOutlinedButton(onClick = { onToggleFavorite(exercise.id) },
                 enabled = !state.libraryMutationBusy, modifier = Modifier.fillMaxWidth().testTag("studio_exercise_favorite")) {
-                Text(if (exercise.id in state.favoriteExerciseIds) "★ Eltávolítás a kedvencekből" else "☆ Hozzáadás a kedvencekhez")
+                Text(if (exercise.id in state.favoriteExerciseIds)
+                    trW(state.language, "★ Eltávolítás a kedvencekből", "★ Remove from favorites", "★ Aus Favoriten entfernen", "★ Elimină din favorite")
+                else
+                    trW(state.language, "☆ Hozzáadás a kedvencekhez", "☆ Add to favorites", "☆ Zu Favoriten hinzufügen", "☆ Adaugă la favorite"))
             }
             customExerciseActions()
 
@@ -2977,7 +3016,7 @@ fun ExerciseDetailScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Anatómiai kivitelezés • ${exercise.primaryMusclesHu}",
+                            text = "${trW(state.language, "Anatómiai kivitelezés", "Anatomical execution", "Anatomische Ausführung", "Execuție anatomică")} • ${exercise.primaryMusclesHu}",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.White,
                             fontWeight = FontWeight.SemiBold
@@ -2992,7 +3031,7 @@ fun ExerciseDetailScreen(
                                 .testTag("exercise_detail_popup_video_chip")
                         ) {
                             Text(
-                                text = "▶ Videó megnyitása",
+                                text = trW(state.language, "▶ Videó megnyitása", "▶ Open video", "▶ Video öffnen", "▶ Deschide videoclipul"),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.primary,
@@ -3015,9 +3054,9 @@ fun ExerciseDetailScreen(
                     modifier = Modifier.padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    ExerciseMetaRow(label = "Eszköz", value = exercise.equipmentHu)
-                    ExerciseMetaRow(label = "Fő izmok", value = exercise.primaryMusclesHu)
-                    ExerciseMetaRow(label = "Másodlagos izmok", value = exercise.secondaryMusclesHu)
+                    ExerciseMetaRow(label = trW(state.language, "Eszköz", "Equipment", "Gerät", "Echipament"), value = exercise.equipmentHu)
+                    ExerciseMetaRow(label = trW(state.language, "Fő izmok", "Primary muscles", "Hauptmuskeln", "Mușchi principali"), value = exercise.primaryMusclesHu)
+                    ExerciseMetaRow(label = trW(state.language, "Másodlagos izmok", "Secondary muscles", "Sekundärmuskeln", "Mușchi secundari"), value = exercise.secondaryMusclesHu)
                 }
             }
 
@@ -3109,7 +3148,7 @@ fun ExerciseDetailScreen(
                 ) {
                     Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("▶ Edzés indítása ezzel", fontWeight = FontWeight.Bold)
+                    Text(trW(state.language, "▶ Edzés indítása ezzel", "▶ Start workout with this", "▶ Training damit starten", "▶ Începe antrenamentul cu acesta"), fontWeight = FontWeight.Bold)
                 }
             }
         }

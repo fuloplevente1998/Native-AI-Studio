@@ -43,13 +43,12 @@ internal object NativeJournalEditor {
                 fun value(key: String) = if (set.isNull(key)) "" else set.optString(key)
                 Set(i, value("weight"), value("reps"), set.optBoolean("done"),
                     value("leftSeconds"), value("rightSeconds"), value("distanceMeters"), value("actualRir"))
-            }, effort = ex.opt("effort") as? String,
-                note = (ex.optJSONObject("feedback")?.opt("note") as? String).orEmpty())
-        }, detail.workout.effortFeedback, savedNote(raw))
+            }, effort = StudioWorkoutFeedback.readOwnExerciseEffort(ex),
+                note = StudioWorkoutFeedback.readExerciseNote(ex))
+        }, detail.workout.effortFeedback ?: StudioWorkoutFeedback.readWorkoutEffort(raw), savedNote(raw))
     }
 
-    private fun savedNote(raw: JSONObject): String =
-        (raw.optJSONObject("feedback")?.opt("note") as? String) ?: (raw.opt("note") as? String).orEmpty()
+    private fun savedNote(raw: JSONObject): String = StudioWorkoutFeedback.readWorkoutNote(raw)
 
     fun addExercise(draft: Draft, source: ExerciseLibraryEntity): Draft {
         require(draft.exercises.none { it.id == source.id })
@@ -167,8 +166,10 @@ internal object NativeJournalEditor {
         raw.put("exercises", exercises).put("started", start.toString()).put("finished", finish.toString())
             .put("durationSeconds", if (timesChanged) duration.seconds.toInt() else detail.workout.durationSeconds)
             .put("editedAt", Instant.ofEpochMilli(now).toString())
-        if (draft.feedbackEffort != detail.workout.effortFeedback) {
-            val effort = draft.feedbackEffort
+        val initialWorkoutEffort = detail.workout.effortFeedback ?: StudioWorkoutFeedback.readWorkoutEffort(raw)
+        if (draft.feedbackEffort != initialWorkoutEffort) {
+            val normalized = StudioWorkoutFeedback.normalizeKnownEffort(draft.feedbackEffort)
+            val effort = if (normalized == "right") "good" else normalized
             val scores = listOf("easy", "light", "good", "challenging", "hard")
             require(effort in scores || effort == "pain") { "Invalid workout feedback" }
             val feedback = raw.optJSONObject("feedback")?.let { JSONObject(it.toString()) } ?: JSONObject()

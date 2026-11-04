@@ -41,16 +41,20 @@ fun SecureExerciseVideoWebView(
     youtubeId: String?,
     retryKey: Int,
     modifier: Modifier = Modifier,
+    language: String = "hu",
     onLoad: (ExerciseVideoLoad) -> Unit,
     onLocationChanged: (String) -> Unit,
     onHistoryChanged: (Boolean) -> Unit,
-    onViewChanged: (WebView?) -> Unit
+    onViewChanged: (WebView?) -> Unit,
+    onSwitchToBrowser: (String) -> Unit = {}
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val latestLoad by rememberUpdatedState(onLoad)
     val latestLocation by rememberUpdatedState(onLocationChanged)
     val latestHistory by rememberUpdatedState(onHistoryChanged)
     val latestView by rememberUpdatedState(onViewChanged)
+    val latestSwitchToBrowser by rememberUpdatedState(onSwitchToBrowser)
+    val latestLang by rememberUpdatedState(language)
     var currentView by remember { mutableStateOf<WebView?>(null) }
 
     DisposableEffect(lifecycleOwner, currentView, mode) {
@@ -121,7 +125,11 @@ fun SecureExerciseVideoWebView(
                     fun processPlayerEvent(value: String) {
                         if (mode != ExerciseVideoMode.EMBED ||
                             !value.startsWith("trainpilot-video:")) return
-                        val next = exerciseVideoPlayerEvent(playerLoad, value.removePrefix("trainpilot-video:"))
+                        val next = exerciseVideoPlayerEvent(
+                            playerLoad,
+                            value.removePrefix("trainpilot-video:"),
+                            latestLang
+                        )
                         if (next != playerLoad) {
                             playerLoad = next
                             if (next is ExerciseVideoLoad.Failed) loadFailed = true
@@ -175,14 +183,50 @@ fun SecureExerciseVideoWebView(
                     }
 
                     webViewClient = object : WebViewClient() {
+                        override fun shouldInterceptRequest(
+                            view: WebView,
+                            request: WebResourceRequest
+                        ): WebResourceResponse? {
+                            if (mode == ExerciseVideoMode.EMBED &&
+                                youtubeId != null &&
+                                request.url.toString().trimEnd('/') == EXERCISE_VIDEO_ORIGIN
+                            ) {
+                                return WebResourceResponse(
+                                    "text/html",
+                                    "UTF-8",
+                                    exerciseYouTubeEmbedHtml(youtubeId).byteInputStream(Charsets.UTF_8)
+                                )
+                            }
+                            return super.shouldInterceptRequest(view, request)
+                        }
+
                         override fun shouldOverrideUrlLoading(
                             view: WebView, request: WebResourceRequest
                         ): Boolean {
-                            if (!request.isForMainFrame) return false
                             val next = request.url.toString()
-                            if (mode == ExerciseVideoMode.EMBED ||
-                                !allowedInAppVideoNavigation(next)) {
-                                failure("A lejátszó nem engedélyezett navigációt próbált megnyitni.")
+                            val scheme = request.url.scheme?.lowercase(java.util.Locale.ROOT).orEmpty()
+                            if (mode == ExerciseVideoMode.EMBED) {
+                                if (next.trimEnd('/') == EXERCISE_VIDEO_ORIGIN) return false
+                                if (!request.isForMainFrame && isYouTubeEmbedFrame(mode, request)) return false
+                                if (allowedInAppVideoNavigation(next)) {
+                                    latestSwitchToBrowser(next)
+                                    return true
+                                }
+                                if (scheme in setOf("intent", "vnd.youtube") && allowedInAppVideoNavigation(url)) {
+                                    latestSwitchToBrowser(url)
+                                    return true
+                                }
+                                failure(localizedWebViewError("disallowed_nav", latestLang))
+                                return true
+                            }
+                            if (!request.isForMainFrame) {
+                                return !allowedInAppVideoNavigation(next)
+                            }
+                            if (scheme in setOf("intent", "vnd.youtube")) {
+                                return true
+                            }
+                            if (!allowedInAppVideoNavigation(next)) {
+                                failure(localizedWebViewError("disallowed_nav", latestLang))
                                 return true
                             }
                             latestLocation(next)
@@ -209,7 +253,7 @@ fun SecureExerciseVideoWebView(
                             view: WebView, request: WebResourceRequest, error: WebResourceError
                         ) {
                             if (request.isForMainFrame || isYouTubeEmbedFrame(mode, request)) {
-                                failure("Hálózati vagy lejátszóhiba. Próbáld a belső böngészőt.")
+                                failure(localizedWebViewError("network", latestLang))
                             }
                         }
                         override fun onReceivedHttpError(
@@ -217,27 +261,23 @@ fun SecureExerciseVideoWebView(
                         ) {
                             if ((request.isForMainFrame || isYouTubeEmbedFrame(mode, request)) &&
                                 response.statusCode >= 400) {
-                                failure("A videóoldal HTTP " + response.statusCode +
-                                    " hibát adott. Próbáld a belső böngészőt.")
+                                failure(localizedWebViewError("http", latestLang, response.statusCode))
                             }
                         }
                         override fun onReceivedSslError(
                             view: WebView, handler: SslErrorHandler, error: SslError
                         ) {
                             handler.cancel()
-                            failure("Hibás HTTPS-tanúsítvány. A videó betöltését megszakítottuk.")
+                            failure(localizedWebViewError("ssl", latestLang))
                         }
                     }
 
                     if (mode == ExerciseVideoMode.EMBED && youtubeId != null) {
-                        loadDataWithBaseURL(
-                            "$EXERCISE_VIDEO_ORIGIN/",
-                            exerciseYouTubeEmbedHtml(youtubeId), "text/html", "UTF-8", null
-                        )
+                        loadUrl("$EXERCISE_VIDEO_ORIGIN/")
                     } else if (mode == ExerciseVideoMode.BROWSER && allowedInAppVideoNavigation(url)) {
                         loadUrl(url)
                     } else {
-                        failure("Nem engedélyezett vagy hiányzó HTTPS-videóhivatkozás.")
+                        failure(localizedWebViewError("invalid_url", latestLang))
                     }
                     currentView = this
                     latestView(this)
@@ -257,6 +297,38 @@ fun SecureExerciseVideoWebView(
         )
     }
 }
+
+private fun localizedWebViewError(kind: String, language: String, statusCode: Int = 0): String =
+    when (language.lowercase(java.util.Locale.ROOT)) {
+        "en" -> when (kind) {
+            "disallowed_nav" -> "The player attempted an unpermitted navigation."
+            "network" -> "Network or player error. Try the in-app browser."
+            "http" -> "The video page returned HTTP $statusCode. Try the in-app browser."
+            "ssl" -> "Invalid HTTPS certificate. Video loading was aborted."
+            else -> "Unpermitted or missing HTTPS video link."
+        }
+        "de" -> when (kind) {
+            "disallowed_nav" -> "Der Player hat eine nicht erlaubte Navigation versucht."
+            "network" -> "Netzwerk- oder Playerfehler. Versuche den In-App-Browser."
+            "http" -> "Die Videoseite meldete HTTP $statusCode. Versuche den In-App-Browser."
+            "ssl" -> "Ungültiges HTTPS-Zertifikat. Das Laden des Videos wurde abgebrochen."
+            else -> "Nicht erlaubter oder fehlender HTTPS-Videolink."
+        }
+        "ro" -> when (kind) {
+            "disallowed_nav" -> "Playerul a încercat o navigare nepermisă."
+            "network" -> "Eroare de rețea sau player. Încearcă browserul intern."
+            "http" -> "Pagina video a returnat HTTP $statusCode. Încearcă browserul intern."
+            "ssl" -> "Certificat HTTPS invalid. Încărcarea videoclipului a fost oprită."
+            else -> "Link video HTTPS nepermis sau lipsă."
+        }
+        else -> when (kind) {
+            "disallowed_nav" -> "A lejátszó nem engedélyezett navigációt próbált megnyitni."
+            "network" -> "Hálózati vagy lejátszóhiba. Próbáld a belső böngészőt."
+            "http" -> "A videóoldal HTTP $statusCode hibát adott. Próbáld a belső böngészőt."
+            "ssl" -> "Hibás HTTPS-tanúsítvány. A videó betöltését megszakítottuk."
+            else -> "Nem engedélyezett vagy hiányzó HTTPS-videóhivatkozás."
+        }
+    }
 
 private fun isYouTubeEmbedFrame(
     mode: ExerciseVideoMode, request: WebResourceRequest

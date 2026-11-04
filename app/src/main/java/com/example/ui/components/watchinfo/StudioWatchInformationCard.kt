@@ -46,6 +46,13 @@ fun StudioWatchInformationCard(
     modifier: Modifier = Modifier
 ) {
     val palette = LocalTrainPilotPalette.current
+    val lang = com.example.localization.LocalTrainPilotStrings.current.language
+    fun word(hu: String, en: String, de: String, ro: String) = when (lang) {
+        com.example.model.AppLanguage.HU -> hu
+        com.example.model.AppLanguage.EN -> en
+        com.example.model.AppLanguage.DE -> de
+        com.example.model.AppLanguage.RO -> ro
+    }
     val shape = RoundedCornerShape(20.dp)
     Surface(
         modifier = modifier.fillMaxWidth()
@@ -61,14 +68,14 @@ fun StudioWatchInformationCard(
                     tint = palette.primary, modifier = Modifier.size(26.dp))
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(data.name?.takeIf(String::isNotBlank) ?: "Óraadatok", style = MaterialTheme.typography.titleSmall,
+                    Text(data.name?.takeIf(String::isNotBlank) ?: word("Óraadatok", "Watch info", "Uhrdaten", "Date ceas"), style = MaterialTheme.typography.titleSmall,
                         maxLines = 2, overflow = TextOverflow.Ellipsis,
                         fontWeight = FontWeight.Bold, color = palette.textPrimary)
                     Text(
                         when {
-                            data.appAvailable && data.connected -> "TrainPilot Wear elérhető"
-                            data.connected -> "Wear OS elérhető • TrainPilot Wear még nem igazolt"
-                            else -> "Nincs órakapcsolat"
+                            data.appAvailable && data.connected -> word("TrainPilot Wear elérhető", "TrainPilot Wear available", "TrainPilot Wear verfügbar", "TrainPilot Wear disponibil")
+                            data.connected -> word("Wear OS elérhető • TrainPilot Wear még nem igazolt", "Wear OS available • TrainPilot Wear not verified yet", "Wear OS verfügbar • TrainPilot Wear noch nicht bestätigt", "Wear OS disponibil • TrainPilot Wear încă neverificat")
+                            else -> word("Nincs órakapcsolat", "No watch connection", "Keine Uhrverbindung", "Fără conexiune cu ceasul")
                         },
                         style = MaterialTheme.typography.labelSmall,
                         color = when {
@@ -88,7 +95,7 @@ fun StudioWatchInformationCard(
                             strokeWidth = 2.dp, color = palette.primary
                         )
                     } else {
-                        Icon(Icons.Default.Sync, contentDescription = "Óraadatok frissítése",
+                        Icon(Icons.Default.Sync, contentDescription = word("Óraadatok frissítése", "Refresh watch info", "Uhrdaten aktualisieren", "Actualizează datele ceasului"),
                             tint = palette.primary)
                     }
                 }
@@ -97,13 +104,13 @@ fun StudioWatchInformationCard(
             BoxWithConstraints(Modifier.fillMaxWidth()) {
                 val sideBySide = maxWidth >= 300.dp && LocalDensity.current.fontScale <= 1.3f
                 val device: @Composable (Modifier) -> Unit = { panel ->
-                    WatchInfoPanel("Eszköz", "watch_info_device_panel", panel) {
-                        WatchInfoField("Modell", data.model)
-                        WatchInfoField("Akku", data.batteryPercent?.let { "${it}%" })
+                    WatchInfoPanel(word("Eszköz", "Device", "Gerät", "Dispozitiv"), "watch_info_device_panel", panel) {
+                        WatchInfoField(word("Modell", "Model", "Modell", "Model"), data.model)
+                        WatchInfoField(word("Akku", "Battery", "Akku", "Baterie"), data.batteryPercent?.let { "${it}%" })
                     }
                 }
                 val system: @Composable (Modifier) -> Unit = { panel ->
-                    WatchInfoPanel("Rendszer", "watch_info_system_panel", panel) {
+                    WatchInfoPanel(word("Rendszer", "System", "System", "Sistem"), "watch_info_system_panel", panel) {
                         WatchInfoField("Android", data.androidVersion)
                         WatchInfoField("TrainPilot", data.appVersion)
                         WatchInfoField("Build", data.appBuild?.toString())
@@ -123,11 +130,11 @@ fun StudioWatchInformationCard(
             }
             Text(
                 text = when {
-                    data.loading -> "Óraadatok lekérése…"
+                    data.loading -> word("Óraadatok lekérése…", "Fetching watch info…", "Uhrdaten werden abgerufen…", "Se preiau datele ceasului…")
                     data.statusKind == WatchInfoStatus.ERROR || data.statusKind == WatchInfoStatus.TIMEOUT ->
-                        data.status?.takeIf(String::isNotBlank) ?: "Az óraadatok lekérése nem sikerült."
-                    data.lastSync != null -> "Frissítve · ${data.lastSync}"
-                    else -> data.status?.takeIf(String::isNotBlank) ?: "Még nincs frissítési eredmény."
+                        data.status?.takeIf(String::isNotBlank) ?: word("Az óraadatok lekérése nem sikerült.", "Failed to fetch watch info.", "Abruf der Uhrdaten fehlgeschlagen.", "Preluarea datelor ceasului a eșuat.")
+                    data.lastSync != null -> "${word("Frissítve", "Updated", "Aktualisiert", "Actualizat")} · ${data.lastSync}"
+                    else -> data.status?.takeIf(String::isNotBlank) ?: word("Még nincs frissítési eredmény.", "No refresh result yet.", "Noch kein Aktualisierungsergebnis.", "Încă nu există rezultat de actualizare.")
                 },
                 modifier = Modifier.testTag("watch_device_info_status"),
                 color = when {

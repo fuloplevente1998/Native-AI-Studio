@@ -30,13 +30,16 @@ internal object NativeCoachReadiness {
         var loadParts = 0
         var pain = false
         for (workout in recent) {
-            if (workout.optJSONObject("feedback")?.optString("rating") == "pain" ||
-                workout.optJSONObject("feedback")?.optString("effort") == "pain") pain = true
+            val workoutEffort = com.repforge.app.StudioWorkoutFeedback.normalizeKnownEffort(
+                com.repforge.app.StudioWorkoutFeedback.readWorkoutEffort(workout)
+            )
+            if (workoutEffort == "pain" ||
+                workout.optJSONObject("feedback")?.optString("rating") == "pain") pain = true
             val exercises = workout.optJSONArray("exercises") ?: continue
             for (i in 0 until exercises.length()) {
                 val exercise = exercises.optJSONObject(i) ?: continue
-                if (exercise.optString("effort") == "pain") pain = true
-                val effort = exercise.optString("effort").ifBlank { workout.optJSONObject("feedback")?.optString("effort").orEmpty() }
+                val effort = com.repforge.app.StudioWorkoutFeedback.readExerciseEffort(exercise, workout)
+                if (effort == "pain") pain = true
                 if (effort.isBlank()) continue
                 loadParts++
                 load += when (effort) { "easy" -> 3; "light" -> 1; "challenging" -> -4; "hard" -> -8; "pain" -> -20; else -> 0 }

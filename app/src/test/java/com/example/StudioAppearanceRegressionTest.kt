@@ -171,4 +171,43 @@ class StudioAppearanceRegressionTest {
         compose.onNodeWithTag("health_weekly_steps_total", useUnmergedTree = true).assertTextEquals("—")
         compose.runOnIdle { assertTrue(steps); assertTrue(workouts) }
     }
+
+    @Test fun privacyPolicyAccuratelyDescribesHealthSourcesAndOpensFromStudioSettingsInAllFourLanguages() {
+        for (lang in listOf("hu", "en", "de", "ro")) {
+            val policy = com.repforge.app.PrivacyPolicy.text(lang)
+            assertTrue("Missing Samsung Health in $lang", policy.contains("Samsung Health"))
+            assertTrue("Missing Health Connect in $lang", policy.contains("Health Connect"))
+            assertTrue("Missing Wear OS in $lang", policy.contains("Wear OS") || policy.contains("Wear-OS"))
+            assertFalse("Stale denial of direct Samsung Health read in $lang",
+                policy.contains("nem olvas közvetlenül a Samsung Health alkalmazásból") ||
+                    policy.contains("does not read directly from Samsung Health") ||
+                    policy.contains("liest nicht direkt aus Samsung Health") ||
+                    policy.contains("nu citește direct din aplicația Samsung Health")
+            )
+        }
+
+        var currentLang by mutableStateOf(AppLanguage.RO)
+        compose.setContent {
+            TrainPilotTheme {
+                SettingsMainScreen(
+                    uiState = TrainPilotUiState(language = currentLang),
+                    strings = TrainPilotStrings.forLanguage(currentLang),
+                    onBack = {},
+                    onOpenPalettePicker = {},
+                    onSelectLanguage = { currentLang = it },
+                    onCycleRestTimer = {},
+                    onToggleSoundAlert = {},
+                    onToggleProgressionModal = {},
+                    onSaveProgression = { _, _, _ -> },
+                    onNavigateToSubScreen = {},
+                    onShowBanner = {}
+                )
+            }
+        }
+        val list = compose.onNodeWithTag("settings_main_screen")
+        list.performScrollToNode(hasTestTag("settings_open_privacy_row"))
+        compose.onNodeWithTag("settings_open_privacy_row").performClick()
+        compose.onNodeWithTag("settings_privacy_dialog").assertExists()
+        compose.onNodeWithText("Samsung Health SDK", substring = true).assertExists()
+    }
 }
