@@ -295,4 +295,49 @@ class ExerciseVideoResolverTest {
         }
     }
 
+    @Test fun customAndPersonalProgramsAndWorkoutLogsLocalizeAcrossAllLanguages() {
+        val customClone = TrainingProgramModel(
+            id = "custom-program-123",
+            nameHu = "Otthoni A/B – Alap",
+            nameEn = "Otthoni A/B – Alap",
+            nameDe = "Otthoni A/B – Alap",
+            nameRo = "Otthoni A/B – Alap",
+            subtitleHu = "Otthon • Kezdő • 2 edzésnap",
+            subtitleEn = "Otthon • Kezdő • 2 edzésnap",
+            subtitleDe = "Otthon • Kezdő • 2 edzésnap",
+            subtitleRo = "Otthon • Kezdő • 2 edzésnap",
+            tagsHu = listOf("Otthon", "Kezdő"),
+            isCustom = true,
+            isActive = true,
+            days = emptyList()
+        )
+        assertFalse(customClone.localizedName(AppLanguage.DE).contains("Otthoni"))
+        assertEquals("Zuhause • Anfänger • 2 Trainingstage", customClone.localizedSubtitle(AppLanguage.DE))
+        assertEquals("Home • Beginner • 2 workout days", customClone.localizedSubtitle(AppLanguage.EN))
+        assertEquals("Acasă • Începător • 2 zile de antrenament", customClone.localizedSubtitle(AppLanguage.RO))
+
+        val personalPlan = TrainingProgramModel(
+            id = "personal-456",
+            nameHu = "Saját Erő terv (Otthon)",
+            nameEn = "Saját Erő terv (Otthon)",
+            subtitleHu = "Kezdő • 3 nap/hét • 45 perc",
+            subtitleEn = "Kezdő • 3 nap/hét • 45 perc",
+            tagsHu = listOf("Otthon", "Kezdő"),
+            isCustom = true,
+            isActive = false,
+            days = emptyList()
+        )
+        assertEquals("Custom Strength Plan (Home)", personalPlan.localizedName(AppLanguage.EN))
+        assertEquals("Eigener Kraft-Plan (Zuhause)", personalPlan.localizedName(AppLanguage.DE))
+        assertEquals("Plan propriu Forță (Acasă)", personalPlan.localizedName(AppLanguage.RO))
+        assertEquals("Anfänger • 3 Tage/Woche • 45 Min.", personalPlan.localizedSubtitle(AppLanguage.DE))
+
+        val logged = com.example.model.LoggedWorkoutEntry(
+            id = "log-1",
+            titleHu = "Otthoni A/B – Alap • A nap • Fő fókusz"
+        )
+        assertTrue(logged.localizedTitle(AppLanguage.DE).contains("Tag A • Hauptfokus"))
+        assertFalse(logged.localizedTitle(AppLanguage.DE).contains("Otthoni"))
+    }
+
 }

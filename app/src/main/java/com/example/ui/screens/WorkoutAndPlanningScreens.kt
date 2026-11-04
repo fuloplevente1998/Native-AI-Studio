@@ -1127,7 +1127,7 @@ fun ProgramEditorScreen(
         ?: com.example.model.TrainingProgramModel(id = "custom_program", nameHu = "Egyéni program", nameEn = "Custom Program", subtitleHu = "Saját program", subtitleEn = "Custom Program", tagsHu = emptyList(), isCustom = true, isActive = false, days = emptyList())
     val dayIndex = state.editingDayIndex.coerceIn(0, (program.days.size - 1).coerceAtLeast(0))
     val currentDay = program.days.getOrNull(dayIndex)
-    val initialProgramName = if (program.isCustom) program.nameHu else program.localizedName(state.language)
+    val initialProgramName = program.localizedName(state.language)
     var programName by remember(program.id, initialProgramName) { mutableStateOf(initialProgramName) }
 
     Column(

@@ -441,6 +441,263 @@ fun translateProgramTag(tagHu: String, lang: AppLanguage): String {
     }
 }
 
+fun translateProgramTitle(rawTitle: String, lang: AppLanguage): String {
+    if (lang == AppLanguage.HU || rawTitle.isBlank()) return rawTitle
+    val trimmed = rawTitle.trim()
+
+    val copySuffixes = listOf(
+        " (személyre szabott)" to Triple(" (personalized)", " (personalisiert)", " (personalizat)"),
+        " – másolat" to Triple(" – copy", " – Kopie", " – copie"),
+        " - másolat" to Triple(" – copy", " – Kopie", " – copie"),
+        " (másolat)" to Triple(" (copy)", " (Kopie)", " (copie)"),
+        " – copy" to Triple(" – copy", " – Kopie", " – copie"),
+        " - copy" to Triple(" – copy", " – Kopie", " – copie"),
+        " – Kopie" to Triple(" – copy", " – Kopie", " – copie"),
+        " - Kopie" to Triple(" – copy", " – Kopie", " – copie"),
+        " – copie" to Triple(" – copy", " – Kopie", " – copie"),
+        " - copie" to Triple(" – copy", " – Kopie", " – copie")
+    )
+
+    var baseTitle = trimmed
+    var localizedSuffix = ""
+    for ((suffix, translations) in copySuffixes) {
+        if (trimmed.endsWith(suffix, ignoreCase = true)) {
+            baseTitle = trimmed.dropLast(suffix.length).trim()
+            localizedSuffix = when (lang) {
+                AppLanguage.EN -> translations.first
+                AppLanguage.DE -> translations.second
+                AppLanguage.RO -> translations.third
+                AppLanguage.HU -> suffix
+            }
+            break
+        }
+    }
+
+    fun normDash(s: String): String = s.replace('–', '-').replace('—', '-').trim()
+    val normBase = normDash(baseTitle)
+
+    val catalogProgs = runCatching { com.repforge.app.data.db.NativeBuiltinCatalog.programs.first }.getOrDefault(emptyList())
+    catalogProgs.firstOrNull { p ->
+        normDash(p.nameHu).equals(normBase, ignoreCase = true) ||
+            normDash(p.nameEn).equals(normBase, ignoreCase = true) ||
+            normDash(p.nameDe).equals(normBase, ignoreCase = true) ||
+            normDash(p.nameRo).equals(normBase, ignoreCase = true) ||
+            p.id.equals(normBase, ignoreCase = true)
+    }?.let { matched ->
+        val translatedBase = when (lang) {
+            AppLanguage.HU -> matched.nameHu
+            AppLanguage.EN -> matched.nameEn.ifBlank { matched.nameHu }
+            AppLanguage.DE -> matched.nameDe.ifBlank { matched.nameEn.ifBlank { matched.nameHu } }
+            AppLanguage.RO -> matched.nameRo.ifBlank { matched.nameEn.ifBlank { matched.nameHu } }
+        }
+        return translatedBase + localizedSuffix
+    }
+
+    val personalPlanMatch = Regex("^Saját\\s+(.+?)\\s+terv\\s*\\((.+?)\\)$", RegexOption.IGNORE_CASE).find(baseTitle)
+    if (personalPlanMatch != null) {
+        val rawGoal = personalPlanMatch.groupValues[1].trim()
+        val rawLoc = personalPlanMatch.groupValues[2].trim()
+        val goalLabel = when (rawGoal.lowercase()) {
+            "erő" -> when (lang) {
+                AppLanguage.EN -> "Strength"
+                AppLanguage.DE -> "Kraft"
+                AppLanguage.RO -> "Forță"
+                AppLanguage.HU -> rawGoal
+            }
+            "fogyás" -> when (lang) {
+                AppLanguage.EN -> "Weight loss"
+                AppLanguage.DE -> "Abnehmen"
+                AppLanguage.RO -> "Slăbire"
+                AppLanguage.HU -> rawGoal
+            }
+            "állóképesség" -> when (lang) {
+                AppLanguage.EN -> "Endurance"
+                AppLanguage.DE -> "Ausdauer"
+                AppLanguage.RO -> "Rezistență"
+                AppLanguage.HU -> rawGoal
+            }
+            else -> com.example.localization.StudioProfileOptionLabels.label(rawGoal, lang)
+        }
+        val locLabel = translateProgramTag(rawLoc, lang)
+        val translatedBase = when (lang) {
+            AppLanguage.EN -> "Custom $goalLabel Plan ($locLabel)"
+            AppLanguage.DE -> "Eigener $goalLabel-Plan ($locLabel)"
+            AppLanguage.RO -> "Plan propriu $goalLabel ($locLabel)"
+            AppLanguage.HU -> baseTitle
+        }
+        return translatedBase + localizedSuffix
+    }
+
+    val numberedPlanMatch = Regex("^(?:Edzésterv|Program)\\s*(\\d+)$", RegexOption.IGNORE_CASE).find(baseTitle)
+    if (numberedPlanMatch != null) {
+        val num = numberedPlanMatch.groupValues[1]
+        val translatedBase = when (lang) {
+            AppLanguage.EN -> "Training Plan $num"
+            AppLanguage.DE -> "Trainingsplan $num"
+            AppLanguage.RO -> "Plan de antrenament $num"
+            AppLanguage.HU -> baseTitle
+        }
+        return translatedBase + localizedSuffix
+    }
+
+    val translatedBase = when (normBase.lowercase()) {
+        "egyedi edzésterv", "saját edzésterv", "saját terv", "egyéni program", "saját program", "custom program", "own" -> when (lang) {
+            AppLanguage.EN -> if (normBase.equals("own", ignoreCase = true)) "Own" else "Custom Training Plan"
+            AppLanguage.DE -> "Eigener Trainingsplan"
+            AppLanguage.RO -> "Plan de antrenament personalizat"
+            AppLanguage.HU -> baseTitle
+        }
+        "4 napos felső / alsó (demo)" -> when (lang) {
+            AppLanguage.EN -> "4-Day Upper / Lower (Demo)"
+            AppLanguage.DE -> "4-Tage Ober-/Unterkörper (Demo)"
+            AppLanguage.RO -> "4 zile Superior / Inferior (Demo)"
+            AppLanguage.HU -> baseTitle
+        }
+        "otthoni 3 napos kézisúlyzós (demo)" -> when (lang) {
+            AppLanguage.EN -> "3-Day Home Dumbbell (Demo)"
+            AppLanguage.DE -> "3-Tage Kurzhantel Zuhause (Demo)"
+            AppLanguage.RO -> "3 zile Gantere Acasă (Demo)"
+            AppLanguage.HU -> baseTitle
+        }
+        else -> baseTitle
+    }
+    return translatedBase + localizedSuffix
+}
+
+fun translateProgramSubtitle(rawSubtitle: String, lang: AppLanguage): String {
+    if (lang == AppLanguage.HU || rawSubtitle.isBlank()) return rawSubtitle
+    val trimmed = rawSubtitle.trim()
+
+    val locLvlDaysMatch = Regex("^(.+?)\\s*•\\s*(.+?)\\s*•\\s*(\\d+)\\s*(?:edzésnap|workout days|Trainingstage|zile de antrenament)$", RegexOption.IGNORE_CASE).find(trimmed)
+    if (locLvlDaysMatch != null) {
+        val loc = translateProgramTag(locLvlDaysMatch.groupValues[1].trim(), lang)
+        val lvl = translateProgramTag(locLvlDaysMatch.groupValues[2].trim(), lang)
+        val days = locLvlDaysMatch.groupValues[3]
+        return when (lang) {
+            AppLanguage.EN -> "$loc • $lvl • $days workout days"
+            AppLanguage.DE -> "$loc • $lvl • $days Trainingstage"
+            AppLanguage.RO -> "$loc • $lvl • $days zile de antrenament"
+            AppLanguage.HU -> trimmed
+        }
+    }
+
+    val expDaysMinsMatch = Regex("^(.+?)\\s*•\\s*(\\d+)\\s*nap/hét\\s*•\\s*(\\d+)\\s*perc$", RegexOption.IGNORE_CASE).find(trimmed)
+    if (expDaysMinsMatch != null) {
+        val exp = translateProgramTag(expDaysMinsMatch.groupValues[1].trim(), lang)
+        val days = expDaysMinsMatch.groupValues[2]
+        val mins = expDaysMinsMatch.groupValues[3]
+        return when (lang) {
+            AppLanguage.EN -> "$exp • $days days/week • $mins min"
+            AppLanguage.DE -> "$exp • $days Tage/Woche • $mins Min."
+            AppLanguage.RO -> "$exp • $days zile/săpt. • $mins min"
+            AppLanguage.HU -> trimmed
+        }
+    }
+
+    return when (trimmed.lowercase()) {
+        "saját összeállítású program", "saját egyedi összeállítású edzésterv", "saját program", "egyéni program" -> when (lang) {
+            AppLanguage.EN -> "Custom workout program"
+            AppLanguage.DE -> "Eigenes Trainingsprogramm"
+            AppLanguage.RO -> "Program de antrenament personalizat"
+            AppLanguage.HU -> trimmed
+        }
+        else -> trimmed
+    }
+}
+
+fun translateProgramDayTitle(rawDayTitle: String, lang: AppLanguage): String {
+    if (lang == AppLanguage.HU || rawDayTitle.isBlank()) return rawDayTitle
+    val trimmed = rawDayTitle.trim()
+
+    fun normDash(s: String): String = s.replace('–', '-').replace('—', '-').trim()
+    val normTrimmed = normDash(trimmed)
+
+    val catalogDays = runCatching { com.repforge.app.data.db.NativeBuiltinCatalog.programs.second }.getOrDefault(emptyList())
+    catalogDays.firstOrNull { d ->
+        normDash(d.nameHu).equals(normTrimmed, ignoreCase = true) ||
+            normDash(d.nameEn).equals(normTrimmed, ignoreCase = true) ||
+            normDash(d.nameDe).equals(normTrimmed, ignoreCase = true) ||
+            normDash(d.nameRo).equals(normTrimmed, ignoreCase = true)
+    }?.let { matched ->
+        return when (lang) {
+            AppLanguage.HU -> matched.nameHu
+            AppLanguage.EN -> matched.nameEn.ifBlank { matched.nameHu }
+            AppLanguage.DE -> matched.nameDe.ifBlank { matched.nameEn.ifBlank { matched.nameHu } }
+            AppLanguage.RO -> matched.nameRo.ifBlank { matched.nameEn.ifBlank { matched.nameHu } }
+        }
+    }
+
+    val dayNumMatch = Regex("^(?:Edzésnap|Day|Trainingstag|Ziua de antrenament)\\s*(\\d+)$", RegexOption.IGNORE_CASE).find(trimmed)
+    if (dayNumMatch != null) {
+        val num = dayNumMatch.groupValues[1]
+        return when (lang) {
+            AppLanguage.EN -> "Day $num"
+            AppLanguage.DE -> "Trainingstag $num"
+            AppLanguage.RO -> "Ziua de antrenament $num"
+            AppLanguage.HU -> trimmed
+        }
+    }
+    val letterDayMatch = Regex("^([A-Z])\\s*nap$", RegexOption.IGNORE_CASE).find(trimmed)
+    if (letterDayMatch != null) {
+        val letter = letterDayMatch.groupValues[1].uppercase()
+        return when (lang) {
+            AppLanguage.EN -> "Day $letter"
+            AppLanguage.DE -> "Tag $letter"
+            AppLanguage.RO -> "Ziua $letter"
+            AppLanguage.HU -> trimmed
+        }
+    }
+    val ordDayMatch = Regex("^(\\d+)\\.?\\s*nap$", RegexOption.IGNORE_CASE).find(trimmed)
+    if (ordDayMatch != null) {
+        val num = ordDayMatch.groupValues[1]
+        return when (lang) {
+            AppLanguage.EN -> "Day $num"
+            AppLanguage.DE -> "Tag $num"
+            AppLanguage.RO -> "Ziua $num"
+            AppLanguage.HU -> trimmed
+        }
+    }
+    return when (trimmed) {
+        "A nap • Fő fókusz" -> when (lang) {
+            AppLanguage.EN -> "Day A • Primary Focus"
+            AppLanguage.DE -> "Tag A • Hauptfokus"
+            AppLanguage.RO -> "Ziua A • Focus principal"
+            AppLanguage.HU -> trimmed
+        }
+        "B nap • Kiegészítő fókusz" -> when (lang) {
+            AppLanguage.EN -> "Day B • Secondary Focus"
+            AppLanguage.DE -> "Tag B • Zusatzfokus"
+            AppLanguage.RO -> "Ziua B • Focus secundar"
+            AppLanguage.HU -> trimmed
+        }
+        "C nap • Teljes test & Core" -> when (lang) {
+            AppLanguage.EN -> "Day C • Full Body & Core"
+            AppLanguage.DE -> "Tag C • Ganzkörper & Core"
+            AppLanguage.RO -> "Ziua C • Full Body & Core"
+            AppLanguage.HU -> trimmed
+        }
+        "D nap • Felsőtest & Mobilizálás" -> when (lang) {
+            AppLanguage.EN -> "Day D • Upper Body & Mobility"
+            AppLanguage.DE -> "Tag D • Oberkörper & Mobilität"
+            AppLanguage.RO -> "Ziua D • Partea superioară & Mobilitate"
+            AppLanguage.HU -> trimmed
+        }
+        "E nap • Alsótest & Állóképesség" -> when (lang) {
+            AppLanguage.EN -> "Day E • Lower Body & Conditioning"
+            AppLanguage.DE -> "Tag E • Unterkörper & Ausdauer"
+            AppLanguage.RO -> "Ziua E • Partea inferioară & Condiție"
+            AppLanguage.HU -> trimmed
+        }
+        "F nap • Aktív regeneráció" -> when (lang) {
+            AppLanguage.EN -> "Day F • Active Recovery"
+            AppLanguage.DE -> "Tag F • Aktive Regeneration"
+            AppLanguage.RO -> "Ziua F • Recuperare activă"
+            AppLanguage.HU -> trimmed
+        }
+        else -> trimmed
+    }
+}
+
 data class ProgramDayModel(
     val id: String,
     val dayCode: String, // "A nap", "B nap"
@@ -452,62 +709,18 @@ data class ProgramDayModel(
     val titleRo: String = titleEn
 ) {
     fun localizedTitle(lang: AppLanguage): String {
-        val raw = when (lang) {
+        if (lang == AppLanguage.HU) return titleHu
+        val candidate = when (lang) {
             AppLanguage.HU -> titleHu
             AppLanguage.EN -> titleEn.ifBlank { titleHu }
             AppLanguage.DE -> titleDe.ifBlank { titleEn.ifBlank { titleHu } }
             AppLanguage.RO -> titleRo.ifBlank { titleEn.ifBlank { titleHu } }
         }
-        if (lang == AppLanguage.HU) return raw
-        val dayNumMatch = Regex("^(?:Edzésnap|Day)\\s*(\\d+)$", RegexOption.IGNORE_CASE).find(raw.trim())
-        if (dayNumMatch != null) {
-            val num = dayNumMatch.groupValues[1]
-            return when (lang) {
-                AppLanguage.EN -> "Day $num"
-                AppLanguage.DE -> "Trainingstag $num"
-                AppLanguage.RO -> "Ziua de antrenament $num"
-                AppLanguage.HU -> raw
-            }
-        }
-        return when (raw.trim()) {
-            "A nap • Fő fókusz" -> when (lang) {
-                AppLanguage.EN -> "Day A • Primary Focus"
-                AppLanguage.DE -> "Tag A • Hauptfokus"
-                AppLanguage.RO -> "Ziua A • Focus principal"
-                AppLanguage.HU -> raw
-            }
-            "B nap • Kiegészítő fókusz" -> when (lang) {
-                AppLanguage.EN -> "Day B • Secondary Focus"
-                AppLanguage.DE -> "Tag B • Zusatzfokus"
-                AppLanguage.RO -> "Ziua B • Focus secundar"
-                AppLanguage.HU -> raw
-            }
-            "C nap • Teljes test & Core" -> when (lang) {
-                AppLanguage.EN -> "Day C • Full Body & Core"
-                AppLanguage.DE -> "Tag C • Ganzkörper & Core"
-                AppLanguage.RO -> "Ziua C • Full Body & Core"
-                AppLanguage.HU -> raw
-            }
-            "D nap • Felsőtest & Mobilizálás" -> when (lang) {
-                AppLanguage.EN -> "Day D • Upper Body & Mobility"
-                AppLanguage.DE -> "Tag D • Oberkörper & Mobilität"
-                AppLanguage.RO -> "Ziua D • Partea superioară & Mobilitate"
-                AppLanguage.HU -> raw
-            }
-            "E nap • Alsótest & Állóképesség" -> when (lang) {
-                AppLanguage.EN -> "Day E • Lower Body & Conditioning"
-                AppLanguage.DE -> "Tag E • Unterkörper & Ausdauer"
-                AppLanguage.RO -> "Ziua E • Partea inferioară & Condiție"
-                AppLanguage.HU -> raw
-            }
-            "F nap • Aktív regeneráció" -> when (lang) {
-                AppLanguage.EN -> "Day F • Active Recovery"
-                AppLanguage.DE -> "Tag F • Aktive Regeneration"
-                AppLanguage.RO -> "Ziua F • Recuperare activă"
-                AppLanguage.HU -> raw
-            }
-            else -> raw
-        }
+        val needsFallback = candidate.isBlank() || candidate == titleHu || (lang != AppLanguage.EN && candidate == titleEn)
+        if (!needsFallback) return candidate
+        val fromHu = translateProgramDayTitle(titleHu, lang)
+        if (fromHu != titleHu) return fromHu
+        return translateProgramDayTitle(candidate, lang)
     }
 
     fun localizedDayCode(lang: AppLanguage): String {
@@ -555,18 +768,34 @@ data class TrainingProgramModel(
     val tagsDe: List<String> = emptyList(),
     val tagsRo: List<String> = emptyList()
 ) {
-    fun localizedName(lang: AppLanguage): String = when (lang) {
-        AppLanguage.HU -> nameHu
-        AppLanguage.EN -> nameEn.ifBlank { nameHu }
-        AppLanguage.DE -> nameDe.ifBlank { nameEn.ifBlank { nameHu } }
-        AppLanguage.RO -> nameRo.ifBlank { nameEn.ifBlank { nameHu } }
+    fun localizedName(lang: AppLanguage): String {
+        if (lang == AppLanguage.HU) return nameHu
+        val candidate = when (lang) {
+            AppLanguage.HU -> nameHu
+            AppLanguage.EN -> nameEn.ifBlank { nameHu }
+            AppLanguage.DE -> nameDe.ifBlank { nameEn.ifBlank { nameHu } }
+            AppLanguage.RO -> nameRo.ifBlank { nameEn.ifBlank { nameHu } }
+        }
+        val needsFallback = candidate.isBlank() || candidate == nameHu || (lang != AppLanguage.EN && candidate == nameEn)
+        if (!needsFallback) return candidate
+        val fromHu = translateProgramTitle(nameHu, lang)
+        if (fromHu != nameHu) return fromHu
+        return translateProgramTitle(candidate, lang)
     }
 
-    fun localizedSubtitle(lang: AppLanguage): String = when (lang) {
-        AppLanguage.HU -> subtitleHu
-        AppLanguage.EN -> subtitleEn.ifBlank { subtitleHu }
-        AppLanguage.DE -> subtitleDe.ifBlank { subtitleEn.ifBlank { subtitleHu } }
-        AppLanguage.RO -> subtitleRo.ifBlank { subtitleEn.ifBlank { subtitleHu } }
+    fun localizedSubtitle(lang: AppLanguage): String {
+        if (lang == AppLanguage.HU) return subtitleHu
+        val candidate = when (lang) {
+            AppLanguage.HU -> subtitleHu
+            AppLanguage.EN -> subtitleEn.ifBlank { subtitleHu }
+            AppLanguage.DE -> subtitleDe.ifBlank { subtitleEn.ifBlank { subtitleHu } }
+            AppLanguage.RO -> subtitleRo.ifBlank { subtitleEn.ifBlank { subtitleHu } }
+        }
+        val needsFallback = candidate.isBlank() || candidate == subtitleHu || (lang != AppLanguage.EN && candidate == subtitleEn)
+        if (!needsFallback) return candidate
+        val fromHu = translateProgramSubtitle(subtitleHu, lang)
+        if (fromHu != subtitleHu) return fromHu
+        return translateProgramSubtitle(candidate, lang)
     }
 
     fun localizedTags(lang: AppLanguage): List<String> = when (lang) {
@@ -610,6 +839,18 @@ data class CalendarDayEvent(
             if (prog.nameHu.equals(titleHu, ignoreCase = true)) {
                 return prog.localizedName(lang)
             }
+        }
+        val dayTranslated = translateProgramDayTitle(titleHu, lang)
+        if (dayTranslated != titleHu) return dayTranslated
+        val progTranslated = translateProgramTitle(titleHu, lang)
+        if (progTranslated != titleHu) return progTranslated
+        val firstBullet = titleHu.indexOf('•')
+        if (firstBullet > 0) {
+            val left = titleHu.substring(0, firstBullet).trim()
+            val right = titleHu.substring(firstBullet + 1).trim()
+            val pTitle = translateProgramTitle(left, lang)
+            val dTitle = translateProgramDayTitle(right, lang)
+            if (pTitle != left || dTitle != right) return "$pTitle • $dTitle"
         }
         return when (titleHu.trim()) {
             "Tervezett edzés" -> when (lang) {
@@ -685,6 +926,29 @@ data class LoggedWorkoutEntry(
         exercises.firstOrNull { it.nameHu.equals(trimmed, ignoreCase = true) }?.let {
             return it.localizedName(lang)
         }
+        val dayTranslated = translateProgramDayTitle(trimmed, lang)
+        if (dayTranslated != trimmed) return dayTranslated
+        val progTranslated = translateProgramTitle(trimmed, lang)
+        if (progTranslated != trimmed) return progTranslated
+        val firstBullet = trimmed.indexOf('•')
+        if (firstBullet > 0) {
+            val left = trimmed.substring(0, firstBullet).trim()
+            val right = trimmed.substring(firstBullet + 1).trim()
+            val pTitle = translateProgramTitle(left, lang)
+            val dTitle = translateProgramDayTitle(right, lang)
+            if (pTitle != left || dTitle != right) return "$pTitle • $dTitle"
+        }
+        val catalogEx = runCatching { com.repforge.app.data.db.NativeBuiltinCatalog.exercises }.getOrDefault(emptyList())
+        catalogEx.firstOrNull {
+            it.nameHu.equals(trimmed, ignoreCase = true) || it.nameEn.equals(trimmed, ignoreCase = true)
+        }?.let { ex ->
+            return when (lang) {
+                AppLanguage.HU -> ex.nameHu
+                AppLanguage.EN -> ex.nameEn.ifBlank { ex.nameHu }
+                AppLanguage.DE -> ex.nameDe.ifBlank { ex.nameEn.ifBlank { ex.nameHu } }
+                AppLanguage.RO -> ex.nameRo.ifBlank { ex.nameEn.ifBlank { ex.nameHu } }
+            }
+        }
         return titleHu
     }
 
@@ -698,15 +962,30 @@ data class LoggedWorkoutEntry(
                 AppLanguage.HU -> summaryExercisesHu
             }
         }
-        return summaryExercisesHu.split("•")
+        val catalogEx = runCatching { com.repforge.app.data.db.NativeBuiltinCatalog.exercises }.getOrDefault(emptyList())
+        val delimiter = if (summaryExercisesHu.contains("•")) " • " else ", "
+        val splitRegex = if (summaryExercisesHu.contains("•")) Regex("\\s*•\\s*") else Regex("\\s*,\\s*")
+        return summaryExercisesHu.split(splitRegex)
             .map { part ->
                 val clean = part.trim()
                 exercises.firstOrNull {
                     it.nameHu.equals(clean, ignoreCase = true) ||
                         it.nameEn.equals(clean, ignoreCase = true)
-                }?.localizedName(lang) ?: clean
+                }?.localizedName(lang)
+                    ?: catalogEx.firstOrNull {
+                        it.nameHu.equals(clean, ignoreCase = true) ||
+                            it.nameEn.equals(clean, ignoreCase = true)
+                    }?.let { ex ->
+                        when (lang) {
+                            AppLanguage.HU -> ex.nameHu
+                            AppLanguage.EN -> ex.nameEn.ifBlank { ex.nameHu }
+                            AppLanguage.DE -> ex.nameDe.ifBlank { ex.nameEn.ifBlank { ex.nameHu } }
+                            AppLanguage.RO -> ex.nameRo.ifBlank { ex.nameEn.ifBlank { ex.nameHu } }
+                        }
+                    }
+                    ?: clean
             }
-            .joinToString(" • ")
+            .joinToString(delimiter)
     }
 }
 
@@ -719,10 +998,24 @@ data class LoggedExerciseDetail(
 ) {
     fun localizedName(lang: AppLanguage, exercises: List<ExerciseItem> = emptyList()): String {
         if (lang == AppLanguage.HU) return nameHu
-        return exercises.firstOrNull {
-            it.nameHu.equals(nameHu.trim(), ignoreCase = true) ||
-                it.nameEn.equals(nameHu.trim(), ignoreCase = true)
-        }?.localizedName(lang) ?: nameHu
+        val clean = nameHu.trim()
+        exercises.firstOrNull {
+            it.nameHu.equals(clean, ignoreCase = true) ||
+                it.nameEn.equals(clean, ignoreCase = true)
+        }?.let { return it.localizedName(lang) }
+        val catalogEx = runCatching { com.repforge.app.data.db.NativeBuiltinCatalog.exercises }.getOrDefault(emptyList())
+        catalogEx.firstOrNull {
+            it.nameHu.equals(clean, ignoreCase = true) ||
+                it.nameEn.equals(clean, ignoreCase = true)
+        }?.let { ex ->
+            return when (lang) {
+                AppLanguage.HU -> ex.nameHu
+                AppLanguage.EN -> ex.nameEn.ifBlank { ex.nameHu }
+                AppLanguage.DE -> ex.nameDe.ifBlank { ex.nameEn.ifBlank { ex.nameHu } }
+                AppLanguage.RO -> ex.nameRo.ifBlank { ex.nameEn.ifBlank { ex.nameHu } }
+            }
+        }
+        return nameHu
     }
 
     fun localizedSummaryPrescription(lang: AppLanguage): String {
@@ -747,10 +1040,24 @@ data class PrRecordEntry(
 ) {
     fun localizedExerciseName(lang: AppLanguage, exercises: List<ExerciseItem> = emptyList()): String {
         if (lang == AppLanguage.HU) return exerciseNameHu
-        return exercises.firstOrNull {
-            it.nameHu.equals(exerciseNameHu.trim(), ignoreCase = true) ||
-                it.nameEn.equals(exerciseNameHu.trim(), ignoreCase = true)
-        }?.localizedName(lang) ?: exerciseNameHu
+        val clean = exerciseNameHu.trim()
+        exercises.firstOrNull {
+            it.nameHu.equals(clean, ignoreCase = true) ||
+                it.nameEn.equals(clean, ignoreCase = true)
+        }?.let { return it.localizedName(lang) }
+        val catalogEx = runCatching { com.repforge.app.data.db.NativeBuiltinCatalog.exercises }.getOrDefault(emptyList())
+        catalogEx.firstOrNull {
+            it.nameHu.equals(clean, ignoreCase = true) ||
+                it.nameEn.equals(clean, ignoreCase = true)
+        }?.let { ex ->
+            return when (lang) {
+                AppLanguage.HU -> ex.nameHu
+                AppLanguage.EN -> ex.nameEn.ifBlank { ex.nameHu }
+                AppLanguage.DE -> ex.nameDe.ifBlank { ex.nameEn.ifBlank { ex.nameHu } }
+                AppLanguage.RO -> ex.nameRo.ifBlank { ex.nameEn.ifBlank { ex.nameHu } }
+            }
+        }
+        return exerciseNameHu
     }
 
     fun localizedTypeLabel(lang: AppLanguage): String {

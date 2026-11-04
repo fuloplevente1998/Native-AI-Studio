@@ -687,7 +687,10 @@ fun LogTabScreen(
                     }
                 },
                 onOpenDetailAlways = { onOpenWorkoutDetail(logEntry.id) },
-                onDelete = { deleteModel.requestDeleteWorkout(logEntry.id) }, deleteEnabled = !deleteState.deleting
+                onDelete = { deleteModel.requestDeleteWorkout(logEntry.id) },
+                deleteEnabled = !deleteState.deleting,
+                programs = uiState.programs,
+                exercises = uiState.exercises
             )
         }
     }
@@ -744,7 +747,9 @@ internal fun LogWorkoutCard(
     onClick: () -> Unit,
     onOpenDetailAlways: () -> Unit,
     onDelete: () -> Unit,
-    deleteEnabled: Boolean
+    deleteEnabled: Boolean,
+    programs: List<com.example.model.TrainingProgramModel> = emptyList(),
+    exercises: List<com.example.model.ExerciseItem> = emptyList()
 ) {
     val palette = LocalTrainPilotPalette.current
     val shape = RoundedCornerShape(16.dp)
@@ -785,7 +790,7 @@ internal fun LogWorkoutCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = palette.textSecondary,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(entry.localizedTitle(lang),
+                Text(entry.localizedTitle(lang, programs, exercises),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = palette.textPrimary,
@@ -1056,7 +1061,7 @@ fun LogWorkoutDetailScreen(
                                         color = palette.textSecondary
                                     )
                                     Text(
-                                        text = com.example.model.StudioWorkoutJournalDisplay.setLabel(setRow, exDetail.measurementType, exDetail.repUnit, workout.isOutdoorRun),
+                                        text = com.example.model.StudioWorkoutJournalDisplay.setLabel(setRow, exDetail.measurementType, exDetail.repUnit, workout.isOutdoorRun, uiState.language),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = palette.textPrimary

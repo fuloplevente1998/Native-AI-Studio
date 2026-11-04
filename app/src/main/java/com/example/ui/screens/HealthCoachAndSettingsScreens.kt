@@ -519,11 +519,15 @@ fun HealthTabScreen(
                                         tr(uiState.language, "Teljesítés: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Becsült táv: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km", "Completion: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Est. distance: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km", "Erfüllung: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Gesch. Distanz: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km", "Progres: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Dist. est.: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km"),
                                         tr(uiState.language, "Célok módosítása >", "Edit Goals >", "Ziele ändern >", "Modifică obiectivele >")
                                     ) to { onOpenGoalsDialog() }
-                                    "workout" -> listOf(
-                                        tr(uiState.language, "Mai edzések • ${uiState.loggedWorkouts.workoutsOn(today).size} rögzített edzés", "Today's Workouts • ${uiState.loggedWorkouts.workoutsOn(today).size} logged", "Heutige Trainings • ${uiState.loggedWorkouts.workoutsOn(today).size} erfasst", "Antrenamente azi • ${uiState.loggedWorkouts.workoutsOn(today).size} înregistrate"),
-                                        tr(uiState.language, "Utolsó mai edzés: ${uiState.loggedWorkouts.workoutsOn(today).firstOrNull()?.titleHu ?: "Ma még nincs rögzített edzés"}", "Latest workout today: ${uiState.loggedWorkouts.workoutsOn(today).firstOrNull()?.titleHu ?: "No workout logged today"}", "Letztes Training heute: ${uiState.loggedWorkouts.workoutsOn(today).firstOrNull()?.titleHu ?: "Heute noch kein Training erfasst"}", "Ultimul antrenament azi: ${uiState.loggedWorkouts.workoutsOn(today).firstOrNull()?.titleHu ?: "Niciun antrenament înregistrat azi"}"),
-                                        tr(uiState.language, "Edzésnapló részletek megnyitása >", "Open Workout Log details >", "Trainingsprotokoll-Details öffnen >", "Deschide detaliile jurnalului >")
-                                    ) to { uiState.loggedWorkouts.workoutsOn(today).firstOrNull()?.id?.let(onOpenLoggedWorkout) }
+                                    "workout" -> {
+                                        val latestTodayTitle = uiState.loggedWorkouts.workoutsOn(today).firstOrNull()
+                                            ?.localizedTitle(uiState.language, uiState.programs, uiState.exercises)
+                                        listOf(
+                                            tr(uiState.language, "Mai edzések • ${uiState.loggedWorkouts.workoutsOn(today).size} rögzített edzés", "Today's Workouts • ${uiState.loggedWorkouts.workoutsOn(today).size} logged", "Heutige Trainings • ${uiState.loggedWorkouts.workoutsOn(today).size} erfasst", "Antrenamente azi • ${uiState.loggedWorkouts.workoutsOn(today).size} înregistrate"),
+                                            tr(uiState.language, "Utolsó mai edzés: ${latestTodayTitle ?: "Ma még nincs rögzített edzés"}", "Latest workout today: ${latestTodayTitle ?: "No workout logged today"}", "Letztes Training heute: ${latestTodayTitle ?: "Heute noch kein Training erfasst"}", "Ultimul antrenament azi: ${latestTodayTitle ?: "Niciun antrenament înregistrat azi"}"),
+                                            tr(uiState.language, "Edzésnapló részletek megnyitása >", "Open Workout Log details >", "Trainingsprotokoll-Details öffnen >", "Deschide detaliile jurnalului >")
+                                        ) to { uiState.loggedWorkouts.workoutsOn(today).firstOrNull()?.id?.let(onOpenLoggedWorkout) }
+                                    }
                                     "recovery" -> listOf(
                                         tr(uiState.language, "Regeneráció & Készenlét • ${uiState.todayRecoveryReading?.displayScoreHu ?: "—"}", "Recovery & Readiness • ${uiState.todayRecoveryReading?.displayScoreHu ?: "—"}", "Erholung & Bereitschaft • ${uiState.todayRecoveryReading?.displayScoreHu ?: "—"}", "Recuperare și pregătire • ${uiState.todayRecoveryReading?.displayScoreHu ?: "—"}"),
                                         uiState.todayRecoveryReading?.explanationHu ?: tr(uiState.language, "Nincs igazolt regenerációs mérés.", "No verified recovery reading.", "Keine bestätigte Erholungsmessung.", "Nicio măsurătoare de recuperare verificată."),
@@ -1429,47 +1433,123 @@ fun HealthTabScreen(
                 com.example.ui.components.StudioHealthRecordBrowserButton(
                     if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG
                     else com.repforge.app.HealthJournalStore.HC, uiState.language.name.lowercase())
-                val srcWord = tr(uiState.language, "Forrás", "Source", "Quelle", "Sursă")
                 val sleepWord = strings.sleepTitle
                 val stepsWord = strings.stepsTitle
                 val calWord = tr(uiState.language, "Kalória", "Calories", "Kalorien", "Calorii")
                 val pulseWord = strings.pulseLabel
+
+                data class JournalDaySummary(
+                    val dayLabel: String,
+                    val sourceLabel: String,
+                    val metrics: List<Pair<String, String>>
+                )
+
                 val journalEntries = if (uiState.weeklyHealthDays.isNotEmpty()) {
                     uiState.weeklyHealthDays.reversed().map { day ->
-                        day.dayLabelHu to ("$srcWord: ${day.sourceLabelHu} • " +
-                            "$sleepWord: ${day.sleepLabel} • " +
-                            "$stepsWord: ${if (day.steps > 0) day.steps.toString() else "—"} • " +
-                            "$calWord: ${if (day.activeCaloriesKcal > 0) "${day.activeCaloriesKcal} kcal" else "—"}")
+                        JournalDaySummary(
+                            dayLabel = day.dayLabelHu,
+                            sourceLabel = day.sourceLabelHu,
+                            metrics = listOf(
+                                sleepWord to day.sleepLabel,
+                                stepsWord to if (day.steps > 0) day.steps.toString() else "—",
+                                calWord to if (day.activeCaloriesKcal > 0) "${day.activeCaloriesKcal} kcal" else "—"
+                            )
+                        )
                     }
                 } else {
                     listOf(
-                        today.toString() to ("${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} • " +
-                            "$sleepWord: ${uiState.sleepDurationLabel} • " +
-                            "$pulseWord: ${if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"} • " +
-                            "$stepsWord: ${if (uiState.dailySteps > 0) uiState.dailySteps.toString() else "—"} • " +
-                            "$calWord: ${if (uiState.activeCaloriesKcal > 0) "${uiState.activeCaloriesKcal} kcal" else "—"}")
+                        JournalDaySummary(
+                            dayLabel = today.toString(),
+                            sourceLabel = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect",
+                            metrics = listOf(
+                                sleepWord to uiState.sleepDurationLabel,
+                                pulseWord to if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—",
+                                stepsWord to if (uiState.dailySteps > 0) uiState.dailySteps.toString() else "—",
+                                calWord to if (uiState.activeCaloriesKcal > 0) "${uiState.activeCaloriesKcal} kcal" else "—"
+                            )
+                        )
                     )
                 }
-                journalEntries.forEach { (d, summary) ->
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = palette.surfaceElevated,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            Text(d, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text(summary, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    journalEntries.forEach { entry ->
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = palette.surfaceElevated,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, palette.cardBorder),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = entry.dayLabel,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = palette.textPrimary
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(palette.primary.copy(alpha = 0.14f))
+                                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                                    ) {
+                                        Text(
+                                            text = entry.sourceLabel,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = palette.primary
+                                        )
+                                    }
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    entry.metrics.forEach { (label, value) ->
+                                        Column(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .background(palette.surfaceCard)
+                                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                                        ) {
+                                            Text(
+                                                text = label,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = palette.textSecondary,
+                                                maxLines = 1
+                                            )
+                                            Text(
+                                                text = value,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (value == "—") palette.textSecondary else palette.textPrimary,
+                                                maxLines = 1
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
+
                 val weeklyPulse = uiState.weeklyHealthDays.mapNotNull { it.pulse }
                 if (weeklyPulse.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         tr(uiState.language, "Pulzus – elmúlt 7 nap", "Heart Rate – Last 7 Days", "Puls – Letzte 7 Tage", "Puls – Ultimele 7 zile"),
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold, color = palette.textPrimary
+                        fontWeight = FontWeight.ExtraBold,
+                        color = palette.primary
                     )
                     HealthPulseWeekRows(weeklyPulse)
                 }

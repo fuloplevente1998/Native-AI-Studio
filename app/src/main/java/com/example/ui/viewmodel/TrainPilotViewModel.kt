@@ -864,15 +864,28 @@ class TrainPilotViewModel : ViewModel() {
         val builtinDayByComposite = builtinDays.associateBy { it.compositeId }
         return programs.mapIndexed { pIdx, prog ->
                 val catalogProg = if (prog.builtin) builtinProgById[prog.id] else null
-                // Preserve user-renamed titles. Only unmodified Hungarian template
-                // names in generated personal copies can inherit catalog translations.
-                val copiedTemplate = if (!prog.builtin && prog.id.startsWith("personal-") &&
-                    (prog.nameEn.isBlank() || prog.nameEn == prog.nameHu) &&
-                    prog.nameDe.isBlank() && prog.nameRo.isBlank()
-                ) builtinProgs.firstOrNull { it.nameHu == prog.nameHu } else null
+                val strippedNameHu = prog.nameHu.trim()
+                    .removeSuffix(" (személyre szabott)")
+                    .removeSuffix(" – másolat")
+                    .removeSuffix(" - másolat")
+                    .removeSuffix(" (másolat)")
+                    .trim()
+                val copiedTemplate = if (!prog.builtin) {
+                    prog.sourceTemplateId?.let { builtinProgById[it] }
+                        ?: builtinProgs.firstOrNull {
+                            it.nameHu.equals(strippedNameHu, ignoreCase = true) ||
+                                it.nameEn.equals(strippedNameHu, ignoreCase = true) ||
+                                it.nameDe.equals(strippedNameHu, ignoreCase = true) ||
+                                it.nameRo.equals(strippedNameHu, ignoreCase = true)
+                        }
+                } else null
                 val localizedTemplate = catalogProg ?: copiedTemplate
                 val progDays = days.filter { it.programId == prog.id }.sortedWith(compareBy<ProgramDayEntity> { it.sortOrder }.thenBy { it.dayId }).mapIndexed { dIdx, dayEntity ->
-                    val catalogDay = if (prog.builtin) builtinDayByComposite[dayEntity.compositeId] else null
+                    val catalogDay = if (prog.builtin) builtinDayByComposite[dayEntity.compositeId]
+                        else localizedTemplate?.let { tpl ->
+                            builtinDayByComposite["${tpl.id}:${dayEntity.dayId}"]
+                                ?: builtinDays.firstOrNull { it.programId == tpl.id && it.nameHu.equals(dayEntity.nameHu, ignoreCase = true) }
+                        } ?: builtinDays.firstOrNull { it.nameHu.equals(dayEntity.nameHu, ignoreCase = true) }
                     val dayExercises = runCatching {
                         val recipes = JSONObject(prog.rawJson).optJSONObject("prescriptions") ?: JSONObject()
                         val arr = JSONArray(dayEntity.exercisesJson)
@@ -891,15 +904,18 @@ class TrainPilotViewModel : ViewModel() {
                         }
                     }.getOrElse { emptyList() }
                     val resolvedDayHu = dayEntity.nameHu.ifBlank { catalogDay?.nameHu.orEmpty() }.ifBlank { "Edzésnap ${dIdx + 1}" }
-                    val resolvedDayEn = (catalogDay?.nameEn?.takeIf { dayEntity.nameHu == catalogDay.nameHu && (dayEntity.nameEn.isBlank() || dayEntity.nameEn == dayEntity.nameHu) }
-                        ?: dayEntity.nameEn.takeIf { it.isNotBlank() })
-                        .orEmpty().ifBlank { resolvedDayHu }
-                    val resolvedDayDe = (catalogDay?.nameDe?.takeIf { dayEntity.nameHu == catalogDay.nameHu && (dayEntity.nameDe.isBlank() || dayEntity.nameDe == dayEntity.nameHu) }
-                        ?: dayEntity.nameDe.takeIf { it.isNotBlank() })
-                        .orEmpty().ifBlank { resolvedDayEn }
-                    val resolvedDayRo = (catalogDay?.nameRo?.takeIf { dayEntity.nameHu == catalogDay.nameHu && (dayEntity.nameRo.isBlank() || dayEntity.nameRo == dayEntity.nameHu) }
-                        ?: dayEntity.nameRo.takeIf { it.isNotBlank() })
-                        .orEmpty().ifBlank { resolvedDayEn }
+                    val rawDayEn = (catalogDay?.nameEn?.takeIf { dayEntity.nameHu == catalogDay.nameHu && (dayEntity.nameEn.isBlank() || dayEntity.nameEn == dayEntity.nameHu) }
+                        ?: dayEntity.nameEn.takeIf { it.isNotBlank() && it != dayEntity.nameHu })
+                        .orEmpty()
+                    val resolvedDayEn = rawDayEn.ifBlank { com.example.model.translateProgramDayTitle(resolvedDayHu, AppLanguage.EN) }
+                    val rawDayDe = (catalogDay?.nameDe?.takeIf { dayEntity.nameHu == catalogDay.nameHu && (dayEntity.nameDe.isBlank() || dayEntity.nameDe == dayEntity.nameHu || dayEntity.nameDe == dayEntity.nameEn) }
+                        ?: dayEntity.nameDe.takeIf { it.isNotBlank() && it != dayEntity.nameHu && it != dayEntity.nameEn })
+                        .orEmpty()
+                    val resolvedDayDe = rawDayDe.ifBlank { com.example.model.translateProgramDayTitle(resolvedDayHu, AppLanguage.DE) }
+                    val rawDayRo = (catalogDay?.nameRo?.takeIf { dayEntity.nameHu == catalogDay.nameHu && (dayEntity.nameRo.isBlank() || dayEntity.nameRo == dayEntity.nameHu || dayEntity.nameRo == dayEntity.nameEn) }
+                        ?: dayEntity.nameRo.takeIf { it.isNotBlank() && it != dayEntity.nameHu && it != dayEntity.nameEn })
+                        .orEmpty()
+                    val resolvedDayRo = rawDayRo.ifBlank { com.example.model.translateProgramDayTitle(resolvedDayHu, AppLanguage.RO) }
                     com.example.model.ProgramDayModel(
                         id = dayEntity.compositeId,
                         dayCode = if (dIdx < 26) "${'A' + dIdx} nap" else "${dIdx + 1}. nap",
@@ -911,40 +927,49 @@ class TrainPilotViewModel : ViewModel() {
                         titleRo = resolvedDayRo
                     )
                 }
-                val locHu = prog.location.ifBlank { catalogProg?.location.orEmpty() }.ifBlank { "Otthon / Edzőterem" }
-                val lvlHu = prog.level.ifBlank { catalogProg?.level.orEmpty() }.ifBlank { "Kezdő" }
-                val metaSource = catalogProg ?: prog
-                val locEn = if (prog.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "location", "en")
+                val locHu = prog.location.ifBlank { localizedTemplate?.location.orEmpty() }.ifBlank { "Otthon / Edzőterem" }
+                val lvlHu = prog.level.ifBlank { localizedTemplate?.level.orEmpty() }.ifBlank { "Kezdő" }
+                val metaSource = localizedTemplate ?: prog
+                val locEn = if (metaSource.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "location", "en")
                     else com.example.model.translateProgramTag(locHu, AppLanguage.EN)
-                val locDe = if (prog.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "location", "de")
+                val locDe = if (metaSource.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "location", "de")
                     else com.example.model.translateProgramTag(locHu, AppLanguage.DE)
-                val locRo = if (prog.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "location", "ro")
+                val locRo = if (metaSource.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "location", "ro")
                     else com.example.model.translateProgramTag(locHu, AppLanguage.RO)
-                val lvlEn = if (prog.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "level", "en")
+                val lvlEn = if (metaSource.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "level", "en")
                     else com.example.model.translateProgramTag(lvlHu, AppLanguage.EN)
-                val lvlDe = if (prog.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "level", "de")
+                val lvlDe = if (metaSource.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "level", "de")
                     else com.example.model.translateProgramTag(lvlHu, AppLanguage.DE)
-                val lvlRo = if (prog.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "level", "ro")
+                val lvlRo = if (metaSource.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "level", "ro")
                     else com.example.model.translateProgramTag(lvlHu, AppLanguage.RO)
 
+                val isAutoGeneratedDesc = prog.description.isBlank() ||
+                    prog.description == localizedTemplate?.description ||
+                    Regex("^.+?\\s*•\\s*.+?\\s*•\\s*\\d+\\s*(?:edzésnap|workout days|Trainingstage|zile de antrenament)$", RegexOption.IGNORE_CASE).matches(prog.description.trim())
                 val customUserDesc = prog.description.takeIf {
-                    !prog.builtin && it.isNotBlank()
+                    !prog.builtin && !isAutoGeneratedDesc
                 }
-                val builtSubtitleHu = customUserDesc ?: prog.description.ifBlank { "$locHu • $lvlHu • ${progDays.size} edzésnap" }
-                val builtSubtitleEn = customUserDesc ?: "$locEn • $lvlEn • ${progDays.size} workout days"
-                val builtSubtitleDe = customUserDesc ?: "$locDe • $lvlDe • ${progDays.size} Trainingstage"
-                val builtSubtitleRo = customUserDesc ?: "$locRo • $lvlRo • ${progDays.size} zile de antrenament"
+                val builtSubtitleHu = customUserDesc ?: "$locHu • $lvlHu • ${progDays.size} edzésnap"
+                val builtSubtitleEn = customUserDesc?.let { com.example.model.translateProgramSubtitle(it, AppLanguage.EN) }
+                    ?: "$locEn • $lvlEn • ${progDays.size} workout days"
+                val builtSubtitleDe = customUserDesc?.let { com.example.model.translateProgramSubtitle(it, AppLanguage.DE) }
+                    ?: "$locDe • $lvlDe • ${progDays.size} Trainingstage"
+                val builtSubtitleRo = customUserDesc?.let { com.example.model.translateProgramSubtitle(it, AppLanguage.RO) }
+                    ?: "$locRo • $lvlRo • ${progDays.size} zile de antrenament"
 
                 val resolvedNameHu = prog.nameHu.ifBlank { catalogProg?.nameHu.orEmpty() }.ifBlank { prog.nameEn }.ifBlank { "Edzésterv ${pIdx + 1}" }
-                val resolvedNameEn = (localizedTemplate?.nameEn?.takeIf { prog.nameHu == localizedTemplate?.nameHu && (prog.nameEn.isBlank() || prog.nameEn == prog.nameHu) }
-                    ?: prog.nameEn.takeIf { it.isNotBlank() })
-                    .orEmpty().ifBlank { resolvedNameHu }
-                val resolvedNameDe = (localizedTemplate?.nameDe?.takeIf { prog.nameHu == localizedTemplate?.nameHu && (prog.nameDe.isBlank() || prog.nameDe == prog.nameHu) }
-                    ?: prog.nameDe.takeIf { it.isNotBlank() })
-                    .orEmpty().ifBlank { resolvedNameEn }
-                val resolvedNameRo = (localizedTemplate?.nameRo?.takeIf { prog.nameHu == localizedTemplate?.nameHu && (prog.nameRo.isBlank() || prog.nameRo == prog.nameHu) }
-                    ?: prog.nameRo.takeIf { it.isNotBlank() })
-                    .orEmpty().ifBlank { resolvedNameEn }
+                val rawNameEn = (localizedTemplate?.nameEn?.takeIf { prog.nameHu == localizedTemplate.nameHu && (prog.nameEn.isBlank() || prog.nameEn == prog.nameHu) }
+                    ?: prog.nameEn.takeIf { it.isNotBlank() && it != prog.nameHu })
+                    .orEmpty()
+                val resolvedNameEn = rawNameEn.ifBlank { com.example.model.translateProgramTitle(resolvedNameHu, AppLanguage.EN) }
+                val rawNameDe = (localizedTemplate?.nameDe?.takeIf { prog.nameHu == localizedTemplate.nameHu && (prog.nameDe.isBlank() || prog.nameDe == prog.nameHu || prog.nameDe == prog.nameEn) }
+                    ?: prog.nameDe.takeIf { it.isNotBlank() && it != prog.nameHu && it != prog.nameEn })
+                    .orEmpty()
+                val resolvedNameDe = rawNameDe.ifBlank { com.example.model.translateProgramTitle(resolvedNameHu, AppLanguage.DE) }
+                val rawNameRo = (localizedTemplate?.nameRo?.takeIf { prog.nameHu == localizedTemplate.nameHu && (prog.nameRo.isBlank() || prog.nameRo == prog.nameHu || prog.nameRo == prog.nameEn) }
+                    ?: prog.nameRo.takeIf { it.isNotBlank() && it != prog.nameHu && it != prog.nameEn })
+                    .orEmpty()
+                val resolvedNameRo = rawNameRo.ifBlank { com.example.model.translateProgramTitle(resolvedNameHu, AppLanguage.RO) }
 
                 TrainingProgramModel(
                     id = prog.id,

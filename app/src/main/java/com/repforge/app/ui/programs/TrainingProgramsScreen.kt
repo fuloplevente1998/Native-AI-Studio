@@ -346,9 +346,26 @@ fun ProgramCardItem(
     val context = LocalContext.current
     val strings = remember(context, language) { nativeResources(context, language) }
     val prog = programWithDays.program
+    val appLang = when (language.lowercase()) {
+        "en" -> com.example.model.AppLanguage.EN
+        "de" -> com.example.model.AppLanguage.DE
+        "ro" -> com.example.model.AppLanguage.RO
+        else -> com.example.model.AppLanguage.HU
+    }
     fun name(hu: String, en: String, de: String, ro: String) = when (language) {
         "en" -> en; "de" -> de; "ro" -> ro; else -> hu
     }.ifBlank { hu }
+    val localizedProgTitle = run {
+        val raw = name(prog.nameHu, prog.nameEn, prog.nameDe, prog.nameRo)
+        if (appLang != com.example.model.AppLanguage.HU && (raw == prog.nameHu || (appLang != com.example.model.AppLanguage.EN && raw == prog.nameEn))) {
+            com.example.model.translateProgramTitle(prog.nameHu, appLang)
+        } else com.example.model.translateProgramTitle(raw, appLang)
+    }
+    val localizedProgDesc = com.example.model.translateProgramSubtitle(prog.description, appLang)
+    val locBadge = if (prog.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(prog, "location", language)
+        else com.example.model.translateProgramTag(prog.location, appLang)
+    val lvlBadge = if (prog.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(prog, "level", language)
+        else com.example.model.translateProgramTag(prog.level, appLang)
 
     Card(
         modifier = Modifier.fillMaxWidth().testTag("program_${prog.id}"),
@@ -372,7 +389,7 @@ fun ProgramCardItem(
                             .background(colors.card2)
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
-                        Text(com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(prog, "location", language), color = colors.accent2, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text(locBadge, color = colors.accent2, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.width(6.dp))
                     Box(
@@ -381,7 +398,7 @@ fun ProgramCardItem(
                             .background(colors.card2)
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
-                        Text(com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(prog, "level", language), color = colors.muted, fontSize = 10.sp)
+                        Text(lvlBadge, color = colors.muted, fontSize = 10.sp)
                     }
                 }
                 if (isActive) {
@@ -397,8 +414,8 @@ fun ProgramCardItem(
                 }
             }
             Spacer(Modifier.height(8.dp))
-            Text(name(prog.nameHu, prog.nameEn, prog.nameDe, prog.nameRo), color = colors.text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Text(prog.description, color = colors.muted, fontSize = 12.sp)
+            Text(localizedProgTitle, color = colors.text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(localizedProgDesc, color = colors.muted, fontSize = 12.sp)
             TrainPilotOutlinedButton(onClick = onEdit, modifier = Modifier.fillMaxWidth()
                 .testTag("program_edit_${prog.id}")) {
                 Text(strings.getString(if (prog.builtin) R.string.native_program_copy_edit else R.string.native_program_edit))
@@ -430,6 +447,10 @@ fun ProgramCardItem(
                 Column(modifier = Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     programWithDays.days.sortedBy { it.sortOrder }.forEach { day ->
                         val exCount = runCatching { JSONArray(day.exercisesJson).length() }.getOrDefault(0)
+                        val rawDayTitle = name(day.nameHu, day.nameEn, day.nameDe, day.nameRo)
+                        val localizedDayTitle = if (appLang != com.example.model.AppLanguage.HU && (rawDayTitle == day.nameHu || (appLang != com.example.model.AppLanguage.EN && rawDayTitle == day.nameEn))) {
+                            com.example.model.translateProgramDayTitle(day.nameHu, appLang)
+                        } else com.example.model.translateProgramDayTitle(rawDayTitle, appLang)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -440,7 +461,7 @@ fun ProgramCardItem(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text(name(day.nameHu, day.nameEn, day.nameDe, day.nameRo), color = colors.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                Text(localizedDayTitle, color = colors.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                                 Text(strings.getString(R.string.native_program_exercises, exCount), color = colors.muted, fontSize = 11.sp)
                             }
                             Column(horizontalAlignment = Alignment.End) {

@@ -166,7 +166,7 @@ fun HomeScreen(
                             color = palette.textPrimary
                         )
                         Text(
-                            text = "${strings.personalPlannerTitle} • ${state.trainingStyleHu} • ${state.progressionRuleHu}",
+                            text = "${strings.personalPlannerTitle} • ${com.example.localization.StudioProfileOptionLabels.label(state.trainingStyleHu, state.language)} • ${com.example.localization.StudioProfileOptionLabels.label(state.progressionRuleHu, state.language)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.textSecondary,
                             maxLines = 1,
@@ -294,7 +294,10 @@ fun HomeScreen(
                         }
 
                         Text(
-                            text = if (state.isWorkoutSessionActive) state.activeWorkoutTitleHu else currentDay?.localizedTitle(state.language) ?: tr("Teljes test A", "Full Body A", "Ganzkörper A", "Full Body A"),
+                            text = if (state.isWorkoutSessionActive) {
+                                com.example.model.LoggedWorkoutEntry(id = "active", titleHu = state.activeWorkoutTitleHu)
+                                    .localizedTitle(state.language, state.programs, state.exercises)
+                            } else currentDay?.localizedTitle(state.language) ?: tr("Teljes test A", "Full Body A", "Ganzkörper A", "Full Body A"),
                             style = MaterialTheme.typography.titleMedium,
                             color = palette.textPrimary
                         )
