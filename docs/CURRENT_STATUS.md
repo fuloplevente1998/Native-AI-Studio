@@ -2,10 +2,12 @@
 
 ## Legújabb készülékes visszajelzés – 2026-11-04 / 2753
 
-**Négy aktív hiba/feladat:** [#117 – Naptár szinkron / Google 404](https://github.com/fuloplevente1998/Native-AI-Studio/issues/117),
+**Hat aktív hiba/feladat:** [#117 – Naptár szinkron / Google 404](https://github.com/fuloplevente1998/Native-AI-Studio/issues/117),
 [#118 – Témák kinyitott fejlécének és négy sorának közös kerete](https://github.com/fuloplevente1998/Native-AI-Studio/issues/118),
 [#120 – Edzésrészletek: szolgáltatók a Forrás fülre, deduplikált pulzus/kcal a Statisztikákra](https://github.com/fuloplevente1998/Native-AI-Studio/issues/120),
-[#84 – Újranyitva: naplós edzés- és visszajelzés-szerkesztő kompakt app-dizájnja](https://github.com/fuloplevente1998/Native-AI-Studio/issues/84).
+[#84 – Újranyitva: naplós edzés- és visszajelzés-szerkesztő kompakt app-dizájnja](https://github.com/fuloplevente1998/Native-AI-Studio/issues/84),
+[#122 – Egységes, naponta lenyitható Egészségnapló](https://github.com/fuloplevente1998/Native-AI-Studio/issues/122),
+[#123 – Rendszer-dátumválasztó helyett az app saját naptárdizájnja](https://github.com/fuloplevente1998/Native-AI-Studio/issues/123).
 Referencia: a felhasználó 4407.jpg / 4406.jpg / 4408.jpg képei. Most csak rögzítés;
 alkalmazáskód-javítás és új APK nem készült. A 404 oka a képből nem bizonyított.
 
@@ -22,6 +24,19 @@ Előzmény a már mergelt #93 PR; a korábbi #84 UI-jegy erre a konkrét dizájn
 újranyitva, új párhuzamos jegy nélkül. A régi Fejlődés/Naplólista/Coach részfeladatok
 nem aktiválódtak újra. A mentés, viewport/IME, eredeti adatok és feedback-védelmek
 megőrzendők; most csak rögzítés.
+
+**#122:** a További egészségadatok és az Egészségnapló közös felületet kapjon,
+az Egészségnapló dizájnját megtartva. A napok lenyitása mutassa a részletes,
+egységes mérési adatokat. A „Részletes egészségmérések • dátum és forrás” külön
+gombja és oldala megszüntetendő; a meglévő metrika-/rekord-/alvásfázis-részletek,
+dátum/forrás és dedup ugyanebben a naplóban maradjanak elérhetők. Referenciák:
+4415.jpg (két belépő), 4414.jpg (metrikák), 4413.jpg (részletes rekordok).
+
+**#123:** a 4412.jpg rendszerstílusú Android DatePickerje helyett a már meglévő
+app-naptár/dátumválasztó arculata használandó. A natív DatePickerDialog hívás a
+HealthRecordBrowser.pickDate útvonalon azonosítva. A #122 utáni új közös felületre
+is érvényes; nem a Google-naptárszinkron #117-es hibája. A dátum-/intervallum-
+validáció és eredeti adatok változatlanok. Mindkét új jegy most csak rögzítés.
 
 A felhasználó kérésére a korábbi #35, #59, #69, #71, #75 lezárva; a halasztott
 #82 `not_planned` státusszal lezárva, implementációs állítás nélkül. A korábbi
