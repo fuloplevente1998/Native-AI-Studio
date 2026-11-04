@@ -128,7 +128,10 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                                         else if (native.exercise1RmTrend.isEmpty()) Text("Nincs érvényes súly/ismétlés alapú 1RM-adat.", color = palette.textSecondary)
                                         else {
                                             Text("Legutóbbi becslés: ${number.format(native.exercise1RmTrend.last().e1rmKg)} kg", color = palette.textPrimary)
-                                            TrendCanvas(native.exercise1RmTrend.map { it.e1rmKg })
+                                            Box(Modifier.fillMaxWidth().height(160.dp)
+                                                .testTag("statistics_record_chart_${record.exerciseId}")) {
+                                                TrendCanvas(native.exercise1RmTrend.map { it.e1rmKg })
+                                            }
                                         }
                                     } else if (record.distanceMeters != null || record.measurementType == "distance" || record.repUnit in listOf("km", "m")) {
                                         NativeCardioProgressPanel(native, onActivity, onRetry)
