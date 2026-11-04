@@ -4357,6 +4357,14 @@ class TrainPilotViewModel : ViewModel() {
         reloadNativeEnvironment(context, store, db, scope)
     }
 
+    private fun studioModesText(hu: String, en: String, de: String, ro: String): String =
+        when (_uiState.value.language) {
+            AppLanguage.HU -> hu
+            AppLanguage.EN -> en
+            AppLanguage.DE -> de
+            AppLanguage.RO -> ro
+        }
+
     // Rest/sound/haptic settings are immediate, unlike the separately approved modes.
     // Serialize writes and preserve the user's interval work/round defaults.
     private val studioTimerWriteMutex = Mutex()
@@ -4380,7 +4388,10 @@ class TrainPilotViewModel : ViewModel() {
                 }
             } catch (error: kotlinx.coroutines.CancellationException) { throw error }
             catch (error: Exception) {
-                _uiState.update { it.copy(statusBannerMessage = "Az időzítő beállítása nem menthető.") }
+                _uiState.update { it.copy(statusBannerMessage = studioModesText(
+                    "Az időzítő beállítása nem menthető.", "Could not save timer settings.",
+                    "Timereinstellungen konnten nicht gespeichert werden.",
+                    "Setările temporizatorului nu au putut fi salvate.")) }
             }
         }
     }
@@ -4398,7 +4409,9 @@ class TrainPilotViewModel : ViewModel() {
                 120 -> 180
                 else -> 60
             }
-            it.copy(defaultRestSec = next, statusBannerMessage = "Alapértelmezett pihenőidő: $next mp")
+            it.copy(defaultRestSec = next, statusBannerMessage = studioModesText(
+                "Alapértelmezett pihenőidő: $next mp", "Default rest time: $next sec",
+                "Standard-Pausenzeit: $next Sek.", "Timp implicit de pauză: $next sec"))
         }
         persistStudioTimerSettings()
     }
@@ -4475,7 +4488,11 @@ class TrainPilotViewModel : ViewModel() {
             catch (error: Exception) {
                 if (studioModeGeneration == token) _uiState.update { it.copy(
                     progressionModeBusy = false,
-                    statusBannerMessage = error.message ?: "Az előnézet nem készíthető el.") }
+                    statusBannerMessage = studioModesText(
+                        "Nem sikerült elkészíteni a program-összehasonlítást.",
+                        "Could not prepare the program comparison.",
+                        "Programmvergleich konnte nicht erstellt werden.",
+                        "Nu s-a putut pregăti comparația programului.")) }
             }
         }
     }
@@ -4502,12 +4519,24 @@ class TrainPilotViewModel : ViewModel() {
                 }
                 if (studioModeGeneration == token) _uiState.update { it.copy(
                     showProgressionModal = false, progressionModeReview = null,
-                    progressionModeBusy = false, statusBannerMessage = "Edzésmód elmentve.") }
+                    progressionModeBusy = false, statusBannerMessage = studioModesText(
+                        "Edzésmód elmentve.", "Training mode saved.",
+                        "Trainingsmodus gespeichert.", "Mod de antrenament salvat.")) }
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
             catch (error: Exception) {
                 if (studioModeGeneration == token) _uiState.update { it.copy(
                     progressionModeReview = null, progressionModeBusy = false,
-                    statusBannerMessage = error.message ?: "Az edzésmód nem menthető.") }
+                    statusBannerMessage = if (error.message?.contains("Finish the active workout") == true)
+                        studioModesText(
+                            "Az edzésmód csak az aktív edzés befejezése után módosítható.",
+                            "Finish the active workout before changing training mode.",
+                            "Trainingsmodus erst nach Abschluss des aktiven Trainings ändern.",
+                            "Finalizează antrenamentul activ înainte de schimbarea modului.")
+                    else studioModesText(
+                        "Az edzésmód nem menthető. Nyisd meg újra az előnézetet.",
+                        "Could not save the training mode. Reopen the preview.",
+                        "Trainingsmodus konnte nicht gespeichert werden. Vorschau erneut öffnen.",
+                        "Modul de antrenament nu a putut fi salvat. Redeschide previzualizarea.")) }
             }
         }
     }
@@ -4529,12 +4558,18 @@ class TrainPilotViewModel : ViewModel() {
                 }
                 if (studioModeGeneration == token) _uiState.update { it.copy(
                     progressionModeBusy = false, showProgressionModal = false,
-                    statusBannerMessage = "Az előző edzésmód visszaállítva.") }
+                    statusBannerMessage = studioModesText(
+                        "Az előző edzésmód visszaállítva.", "Previous training mode restored.",
+                        "Vorheriger Trainingsmodus wiederhergestellt.",
+                        "Modul de antrenament anterior a fost restaurat.")) }
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
             catch (error: Exception) {
                 if (studioModeGeneration == token) _uiState.update { it.copy(
                     progressionModeBusy = false,
-                    statusBannerMessage = error.message ?: "A módváltás nem vonható vissza.") }
+                    statusBannerMessage = studioModesText(
+                        "A módváltás nem vonható vissza.", "Could not undo training mode change.",
+                        "Trainingsmoduswechsel konnte nicht rückgängig gemacht werden.",
+                        "Schimbarea modului nu a putut fi anulată.")) }
             }
         }
     }
