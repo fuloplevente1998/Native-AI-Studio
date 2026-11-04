@@ -152,15 +152,42 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
         com.example.ui.components.LocalOpenWorkoutHealth provides { showLiveHealth = true },
         com.example.ui.components.LocalRequestWorkoutHealthPermission provides { provider -> requestPlatformPermission(if (provider == com.repforge.app.HealthJournalStore.SAMSUNG) "samsung_permission" else "hc_permission") },
         com.example.ui.components.LocalSyncDailyHealth provides { provider -> requestPlatformPermission(if (provider == com.repforge.app.HealthJournalStore.SAMSUNG) "samsung" else "hc") },
-        LocalOpenExerciseVideo provides { exTitle, exId -> viewModel.openExerciseVideoModal(exTitle, exId) }
+        LocalOpenExerciseVideo provides { exTitle, exId ->
+            val requestedId = exId?.takeIf { it.isNotBlank() }
+            val nameMatches = if (requestedId == null) {
+                uiState.exercises.filter { ex ->
+                    listOf(ex.nameHu, ex.nameEn, ex.nameDe, ex.nameRo)
+                        .any { it.equals(exTitle, ignoreCase = true) }
+                }
+            } else emptyList()
+            val selectedExercise = if (requestedId != null) {
+                uiState.exercises.firstOrNull { it.id == requestedId }
+            } else nameMatches.singleOrNull()
+            val details = com.example.ui.components.resolveExerciseVideoAndNotes(
+                exerciseTitle = exTitle,
+                exerciseId = selectedExercise?.id ?: requestedId,
+                storedVideoUrl = selectedExercise?.videoUrl,
+                isCustom = selectedExercise?.isCustom == true,
+                selectedNotesHu = selectedExercise?.localizedSteps(uiState.language)
+                    ?.joinToString(" ")
+                    ?.takeIf { it.isNotBlank() },
+                allowCatalogByTitle = nameMatches.size <= 1,
+                language = uiState.language.code.lowercase()
+            )
+            val externalUrl = details.link.externalUrl
+            val openedExternally = if (externalUrl != null) {
+                com.example.ui.components.openExternalExerciseVideoUrl(context, externalUrl)
+            } else false
+            if (!openedExternally) {
+                viewModel.openExerciseVideoModal(exTitle, exId)
+            }
+        }
     ) {
         if (showLiveHealth) com.example.ui.components.StudioLiveWorkoutHealthDialog { showLiveHealth = false }
 
-        // 0. Embedded YouTube Exercise Video Modal Dialog
+        // 0. Fallback Exercise Video Modal Dialog (only when missing/invalid URL or external browser launch fails)
         uiState.videoModalExerciseTitle?.let { exTitle ->
             val requestedId = uiState.videoModalExerciseId
-            // Prefer the exact exercise selected in the workout; name-only buttons
-            // may resolve only an unambiguous exact localized name.
             val nameMatches = if (requestedId == null) {
                 uiState.exercises.filter { ex ->
                     listOf(ex.nameHu, ex.nameEn, ex.nameDe, ex.nameRo)
@@ -171,14 +198,12 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                 uiState.exercises.firstOrNull { it.id == requestedId }
             } else nameMatches.singleOrNull()
             ExerciseYouTubeVideoModalDialog(
-                exerciseTitle = exTitle,
+                exerciseTitle = selectedExercise?.localizedName(uiState.language) ?: exTitle,
                 exerciseId = selectedExercise?.id ?: requestedId,
                 storedVideoUrl = selectedExercise?.videoUrl,
                 isCustom = selectedExercise?.isCustom == true,
-                // Multiple exercises may share a name; never pick a catalog
-                // video for an unidentified custom/imported exercise.
                 allowCatalogByTitle = nameMatches.size <= 1,
-                selectedNotesHu = selectedExercise?.stepsHu
+                selectedNotesHu = selectedExercise?.localizedSteps(uiState.language)
                     ?.joinToString(" ")
                     ?.takeIf { it.isNotBlank() },
                 onDismiss = { viewModel.closeExerciseVideoModal() }
@@ -254,6 +279,49 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
             var gentleMode by androidx.compose.runtime.remember(uiState.beginnerGentleProfileActive) {
                 androidx.compose.runtime.mutableStateOf(uiState.beginnerGentleProfileActive)
             }
+            val lang = uiState.language
+            val modalTitle = when (lang) {
+                com.example.model.AppLanguage.HU -> "Edzés beállításai"
+                com.example.model.AppLanguage.EN -> "Workout Settings"
+                com.example.model.AppLanguage.DE -> "Trainingseinstellungen"
+                com.example.model.AppLanguage.RO -> "Setări antrenament"
+            }
+            val defaultRestLabel = when (lang) {
+                com.example.model.AppLanguage.HU -> "Alapértelmezett pihenőidő"
+                com.example.model.AppLanguage.EN -> "Default rest time"
+                com.example.model.AppLanguage.DE -> "Standard-Pausenzeit"
+                com.example.model.AppLanguage.RO -> "Timp de odihnă implicit"
+            }
+            val secUnit = when (lang) {
+                com.example.model.AppLanguage.HU -> "mp"
+                com.example.model.AppLanguage.EN -> "sec"
+                com.example.model.AppLanguage.DE -> "Sek."
+                com.example.model.AppLanguage.RO -> "sec"
+            }
+            val soundAlertLabel = when (lang) {
+                com.example.model.AppLanguage.HU -> "Hangjelzés pihenőidő végén"
+                com.example.model.AppLanguage.EN -> "Sound alert when rest ends"
+                com.example.model.AppLanguage.DE -> "Signalton am Ende der Pause"
+                com.example.model.AppLanguage.RO -> "Sunet la finalul pauzei"
+            }
+            val styleHeaderLabel = when (lang) {
+                com.example.model.AppLanguage.HU -> "Edzésstílus:"
+                com.example.model.AppLanguage.EN -> "Training style:"
+                com.example.model.AppLanguage.DE -> "Trainingsstil:"
+                com.example.model.AppLanguage.RO -> "Stil de antrenament:"
+            }
+            val ruleHeaderLabel = when (lang) {
+                com.example.model.AppLanguage.HU -> "Progressziós szabály:"
+                com.example.model.AppLanguage.EN -> "Progression rule:"
+                com.example.model.AppLanguage.DE -> "Progressionsregel:"
+                com.example.model.AppLanguage.RO -> "Regulă de progresie:"
+            }
+            val gentleProfileLabel = when (lang) {
+                com.example.model.AppLanguage.HU -> "Kezdő kímélő profil"
+                com.example.model.AppLanguage.EN -> "Beginner gentle profile"
+                com.example.model.AppLanguage.DE -> "Schongang-Profil für Einsteiger"
+                com.example.model.AppLanguage.RO -> "Profil blând pentru începători"
+            }
             com.example.ui.components.TrainPilotAlertDialog(
                 onDismissRequest = { viewModel.toggleProgressionModal(false) },
                 containerColor = palette.surface,
@@ -265,7 +333,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Edzés beállításai",
+                            text = modalTitle,
                             style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.weight(1f)
@@ -293,8 +361,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Alapértelmezett pihenőidő", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
-                                Text("${uiState.defaultRestSec} mp", color = palette.primary, fontWeight = FontWeight.Bold)
+                                Text(defaultRestLabel, color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
+                                Text("${uiState.defaultRestSec} $secUnit", color = palette.primary, fontWeight = FontWeight.Bold)
                             }
                         }
                         Surface(
@@ -309,14 +377,14 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Hangjelzés pihenőidő végén", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
+                                Text(soundAlertLabel, color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
                                 androidx.compose.material3.Switch(
                                     checked = uiState.soundAlertEnabled,
                                     onCheckedChange = { viewModel.toggleSoundAlert(it) }
                                 )
                             }
                         }
-                        Text("Edzésstílus:", fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                        Text(styleHeaderLabel, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                         listOf("Erő & Hipertrófia", "Funkcionális & Állóképesség", "Kezdő kímélő (Ízületbarát)").forEach { st ->
                             Row(
                                 modifier = Modifier
@@ -326,10 +394,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 androidx.compose.material3.RadioButton(selected = selectedStyle == st, onClick = { selectedStyle = st })
-                                Text(st, color = palette.textPrimary)
+                                Text(com.example.localization.StudioProfileOptionLabels.trainingStyle(st, lang), color = palette.textPrimary)
                             }
                         }
-                        Text("Progressziós szabály:", fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                        Text(ruleHeaderLabel, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                         listOf("Dupla progresszió (8-12 ism. -> +2.5 kg)", "Lineáris (+1.25 kg hetente)", "RIR-alapú (1-2 RIR megtartása)").forEach { rl ->
                             Row(
                                 modifier = Modifier
@@ -339,7 +407,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 androidx.compose.material3.RadioButton(selected = selectedRule == rl, onClick = { selectedRule = rl })
-                                Text(rl, color = palette.textPrimary)
+                                Text(com.example.localization.StudioProfileOptionLabels.progressionRule(rl, lang), color = palette.textPrimary)
                             }
                         }
                         Row(
@@ -347,7 +415,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Kezdő kímélő profil", color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
+                            Text(gentleProfileLabel, color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
                             androidx.compose.material3.Switch(checked = gentleMode, onCheckedChange = { gentleMode = it })
                         }
                     }
@@ -1091,14 +1159,38 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     )
             ) {
                 val activeExName = uiState.activeWorkoutExercises
-                    .getOrNull(uiState.activeExerciseIndex)?.nameHu
+                    .getOrNull(uiState.activeExerciseIndex)?.localizedName(uiState.language)
                     ?: uiState.activeWorkoutTitleHu
+                val activeStepLabel = when (uiState.language) {
+                    com.example.model.AppLanguage.HU -> "Aktív"
+                    com.example.model.AppLanguage.EN -> "Active"
+                    com.example.model.AppLanguage.DE -> "Aktiv"
+                    com.example.model.AppLanguage.RO -> "Activ"
+                }
                 val exStepText = if (uiState.activeWorkoutExercises.isNotEmpty()) {
                     "${uiState.activeExerciseIndex + 1}/${uiState.activeWorkoutExercises.size}"
-                } else "Aktív"
+                } else activeStepLabel
+                val restPrefix = when (uiState.language) {
+                    com.example.model.AppLanguage.HU -> "Pihenő"
+                    com.example.model.AppLanguage.EN -> "Rest"
+                    com.example.model.AppLanguage.DE -> "Pause"
+                    com.example.model.AppLanguage.RO -> "Pauză"
+                }
                 val restInfo = if (uiState.restTimerRunning && uiState.restTimerRemainingSec > 0) {
-                    String.format(" • Pihenő %02d:%02d", uiState.restTimerRemainingSec / 60, uiState.restTimerRemainingSec % 60)
+                    String.format(" • %s %02d:%02d", restPrefix, uiState.restTimerRemainingSec / 60, uiState.restTimerRemainingSec % 60)
                 } else ""
+                val inProgressPrefix = when (uiState.language) {
+                    com.example.model.AppLanguage.HU -> "Edzés folyamatban"
+                    com.example.model.AppLanguage.EN -> "Workout in progress"
+                    com.example.model.AppLanguage.DE -> "Training läuft"
+                    com.example.model.AppLanguage.RO -> "Antrenament în curs"
+                }
+                val returnBtnLabel = when (uiState.language) {
+                    com.example.model.AppLanguage.HU -> "Vissza az edzéshez ▶"
+                    com.example.model.AppLanguage.EN -> "Back to workout ▶"
+                    com.example.model.AppLanguage.DE -> "Zurück zum Training ▶"
+                    com.example.model.AppLanguage.RO -> "Înapoi la antrenament ▶"
+                }
 
                 Surface(
                     shape = RoundedCornerShape(14.dp),
@@ -1133,7 +1225,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     .background(palette.success)
                             )
                             Text(
-                                text = "Edzés folyamatban ($exStepText): $activeExName$restInfo",
+                                text = "$inProgressPrefix ($exStepText): $activeExName$restInfo",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = palette.textPrimary,
@@ -1146,7 +1238,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             color = palette.primary
                         ) {
                             Text(
-                                text = "Vissza az edzéshez ▶",
+                                text = returnBtnLabel,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = palette.onPrimary,

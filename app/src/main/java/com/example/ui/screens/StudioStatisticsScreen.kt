@@ -119,7 +119,9 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                                     if (!expanded) onExercise(record.exerciseId)
                                 }, verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
-                                        Text(if (state.language.name == "HU") record.nameHu else record.nameEn,
+                                        val recordTitle = state.exercises.firstOrNull { it.id == record.exerciseId }?.localizedName(lang)
+                                            ?: if (lang == com.example.model.AppLanguage.HU) record.nameHu else record.nameEn.ifBlank { record.nameHu }
+                                        Text(recordTitle,
                                             color = palette.textPrimary, style = MaterialTheme.typography.titleMedium,
                                             maxLines = 2, overflow = TextOverflow.Ellipsis)
                                         Text(savedRecordLabel(record, number, lang), color = palette.textSecondary,
@@ -277,7 +279,10 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(day.dateIso, color = palette.textPrimary)
-                        Text(day.stepsSourceLabelHu, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                        val localizedSource = if (day.stepsSourceLabelHu.contains("Nincs", ignoreCase = true)) {
+                            statsTr(lang, "Nincs szinkronizálva", "Not synced", "Nicht synchronisiert", "Nesincronizat")
+                        } else day.stepsSourceLabelHu
+                        Text(localizedSource, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
                     }
                     Text(if (!day.stepsAvailable) "— / —" else
                         "${number.format(day.steps)} / ${if (day.workoutCount == 0) number.format(day.steps) else "—"}", color = palette.textPrimary)

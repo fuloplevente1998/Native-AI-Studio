@@ -235,12 +235,12 @@ fun ActiveStrengthWorkoutScreen(
         ?: uiState.exercises.find { it.id == uiState.selectedExerciseId }
         ?: uiState.exercises.firstOrNull()
     val lang = uiState.language
-    val currentExerciseName = currentExercise?.nameHu ?: "Goblet guggolás"
+    val currentExerciseName = currentExercise?.localizedName(lang) ?: tr(lang, "Goblet guggolás", "Goblet Squat", "Goblet Squat", "Genuflexiune Goblet")
     val currentExerciseId = currentExercise?.id ?: "goblet_squat"
     val restWord = tr(lang, "Pihenő", "Rest", "Pause", "Pauză")
     val secWord = tr(lang, "mp", "s", "Sek.", "sec")
     val currentExerciseSubtitle = if (currentExercise != null) {
-        "${currentExercise.primaryMusclesHu} • ${currentExercise.equipmentHu} • ${currentExercise.defaultSets}×${currentExercise.defaultReps} • $restWord: ${currentExercise.defaultRestSec} $secWord"
+        "${currentExercise.localizedPrimaryMuscles(lang)} • ${currentExercise.localizedEquipment(lang)} • ${currentExercise.defaultSets}×${currentExercise.defaultReps} • $restWord: ${currentExercise.defaultRestSec} $secWord"
     } else {
         tr(lang, "Láb • Kézisúlyzó • 3×8–20 • Pihenő: 90 mp", "Legs • Dumbbell • 3×8–20 • Rest: 90 s", "Beine • Kurzhantel • 3×8–20 • Pause: 90 Sek.", "Picioare • Ganteră • 3×8–20 • Pauză: 90 sec")
     }
@@ -444,14 +444,20 @@ fun ActiveStrengthWorkoutScreen(
         ) {
             // Top Workout Progress & Exercise Sequence Strip + Floating Exercise Switcher
         item {
+            val localizedWorkoutTitle = remember(uiState.activeWorkoutTitleHu, lang, uiState.programs, uiState.exercises) {
+                com.example.model.LoggedWorkoutEntry(
+                    id = "",
+                    titleHu = uiState.activeWorkoutTitleHu
+                ).localizedTitle(lang, uiState.programs, uiState.exercises)
+            }
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 SubScreenTopBar(
                     title = tr(
                         lang,
-                        "${uiState.activeWorkoutTitleHu} • ${currentExerciseIdx + 1} / $totalExercisesCount gyakorlat",
-                        "${uiState.activeWorkoutTitleHu} • ${currentExerciseIdx + 1} / $totalExercisesCount exercises",
-                        "${uiState.activeWorkoutTitleHu} • ${currentExerciseIdx + 1} / $totalExercisesCount Übungen",
-                        "${uiState.activeWorkoutTitleHu} • ${currentExerciseIdx + 1} / $totalExercisesCount exerciții"
+                        "$localizedWorkoutTitle • ${currentExerciseIdx + 1} / $totalExercisesCount gyakorlat",
+                        "$localizedWorkoutTitle • ${currentExerciseIdx + 1} / $totalExercisesCount exercises",
+                        "$localizedWorkoutTitle • ${currentExerciseIdx + 1} / $totalExercisesCount Übungen",
+                        "$localizedWorkoutTitle • ${currentExerciseIdx + 1} / $totalExercisesCount exerciții"
                     ),
                     onBack = onBack,
                     onOpenSettings = onOpenSettings,
@@ -491,7 +497,7 @@ fun ActiveStrengthWorkoutScreen(
                                     .clickable { onSwitchExercise(exItem) }
                             ) {
                                 Text(
-                                    text = "${idx + 1}. ${exItem.nameHu}" + if (isDone && !isCurrent) " ✓" else "",
+                                    text = "${idx + 1}. ${exItem.localizedName(lang)}" + if (isDone && !isCurrent) " ✓" else "",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = when {
@@ -592,12 +598,12 @@ fun ActiveStrengthWorkoutScreen(
                                     text = {
                                         Column {
                                             Text(
-                                                text = exOption.nameHu,
+                                                text = exOption.localizedName(lang),
                                                 color = if (isSel) palette.primary else palette.textPrimary,
                                                 fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium
                                             )
                                             Text(
-                                                text = "${exOption.primaryMusclesHu} • ${exOption.equipmentHu}",
+                                                text = "${exOption.localizedPrimaryMuscles(lang)} • ${exOption.localizedEquipment(lang)}",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = palette.textSecondary
                                             )
@@ -1142,7 +1148,7 @@ fun ActiveStrengthWorkoutScreen(
 
                 // Sticky < Előző | Következő > Navigation Row
                 val hasNextExercise = currentExerciseIdx + 1 < totalExercisesCount
-                val nextExName = workoutExercises.getOrNull(currentExerciseIdx + 1)?.nameHu
+                val nextExName = workoutExercises.getOrNull(currentExerciseIdx + 1)?.localizedName(lang)
                 val prevWord = tr(lang, "Előző", "Previous", "Zurück", "Anterior")
                 val nextWord = tr(lang, "Következő", "Next", "Weiter", "Următorul")
                 Row(
@@ -1272,7 +1278,7 @@ fun ActiveTimedWorkoutScreen(
     val currentExercise = workoutExercises.getOrNull(currentIdx)
         ?: uiState.exercises.find { it.id == uiState.selectedExerciseId }
         ?: uiState.exercises.firstOrNull { it.isTimed }
-    val exerciseNameHu = currentExercise?.nameHu ?: "Plank"
+    val exerciseNameHu = currentExercise?.localizedName(uiState.language) ?: "Plank"
     val defaultTargetSec = (currentExercise?.targetSeconds ?: 45).coerceAtLeast(15)
 
     val nativeModel: com.repforge.app.ui.workout.ActiveWorkoutViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
@@ -1299,13 +1305,13 @@ fun ActiveTimedWorkoutScreen(
                 it.nameHu.contains("függeszkedés", ignoreCase = true)
         }
         val presets = listOf(
-            ExerciseItem(id = "plank", nameHu = "Plank", nameEn = "Plank", isTimed = true, targetSeconds = 45, primaryMusclesHu = "Törzs / Has"),
-            ExerciseItem(id = "side_plank", nameHu = "Oldalsó plank", nameEn = "Side Plank", isTimed = true, targetSeconds = 40, primaryMusclesHu = "Oldalsó hasizom"),
-            ExerciseItem(id = "wall_sit", nameHu = "Falnál ülés (Wall sit)", nameEn = "Wall Sit", isTimed = true, targetSeconds = 60, primaryMusclesHu = "Comb"),
-            ExerciseItem(id = "dead_hang", nameHu = "Függeszkedés (Dead hang)", nameEn = "Dead Hang", isTimed = true, targetSeconds = 45, primaryMusclesHu = "Alkar / Hát"),
-            ExerciseItem(id = "hollow_hold", nameHu = "Hollow body tartás", nameEn = "Hollow Hold", isTimed = true, targetSeconds = 30, primaryMusclesHu = "Hasizom"),
-            ExerciseItem(id = "l_sit", nameHu = "L-tartás (L-sit)", nameEn = "L-Sit", isTimed = true, targetSeconds = 30, primaryMusclesHu = "Törzs"),
-            ExerciseItem(id = "track_run", nameHu = "Kör futás (Időalapú)", nameEn = "Track Run", isTimed = true, targetSeconds = 60, primaryMusclesHu = "Kardió / Láb")
+            ExerciseItem(id = "plank", nameHu = "Plank", nameEn = "Plank", nameDe = "Plank (Unterarmstütz)", nameRo = "Plank", isTimed = true, targetSeconds = 45, primaryMusclesHu = "Törzs / Has"),
+            ExerciseItem(id = "side_plank", nameHu = "Oldalsó plank", nameEn = "Side Plank", nameDe = "Seitlicher Plank", nameRo = "Plank lateral", isTimed = true, targetSeconds = 40, primaryMusclesHu = "Oldalsó hasizom"),
+            ExerciseItem(id = "wall_sit", nameHu = "Falnál ülés (Wall sit)", nameEn = "Wall Sit", nameDe = "Wandsitzen (Wall Sit)", nameRo = "Stat la perete (Wall sit)", isTimed = true, targetSeconds = 60, primaryMusclesHu = "Comb"),
+            ExerciseItem(id = "dead_hang", nameHu = "Függeszkedés (Dead hang)", nameEn = "Dead Hang", nameDe = "Aushängen (Dead Hang)", nameRo = "Atârnare la bară (Dead hang)", isTimed = true, targetSeconds = 45, primaryMusclesHu = "Alkar / Hát"),
+            ExerciseItem(id = "hollow_hold", nameHu = "Hollow body tartás", nameEn = "Hollow Hold", nameDe = "Hollow-Body-Halten", nameRo = "Menținere Hollow body", isTimed = true, targetSeconds = 30, primaryMusclesHu = "Hasizom"),
+            ExerciseItem(id = "l_sit", nameHu = "L-tartás (L-sit)", nameEn = "L-Sit", nameDe = "L-Sitz (L-Sit)", nameRo = "Menținere în L (L-sit)", isTimed = true, targetSeconds = 30, primaryMusclesHu = "Törzs"),
+            ExerciseItem(id = "track_run", nameHu = "Kör futás (Időalapú)", nameEn = "Track Run", nameDe = "Bahnlauf (Zeitbasiert)", nameRo = "Alergare pe pistă (Cronometrat)", isTimed = true, targetSeconds = 60, primaryMusclesHu = "Kardió / Láb")
         )
         (fromDb + presets).distinctBy { it.nameHu.lowercase() }
     }
@@ -1326,13 +1332,17 @@ fun ActiveTimedWorkoutScreen(
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
             item {
+                val localizedWorkoutTitle = com.example.model.LoggedWorkoutEntry(
+                    id = "",
+                    titleHu = uiState.activeWorkoutTitleHu
+                ).localizedTitle(uiState.language, uiState.programs, uiState.exercises)
                 SubScreenTopBar(
                     title = tr(
                         uiState.language,
-                        "${uiState.activeWorkoutTitleHu} • ${currentIdx + 1} / $totalCount gyakorlat",
-                        "${uiState.activeWorkoutTitleHu} • ${currentIdx + 1} / $totalCount exercises",
-                        "${uiState.activeWorkoutTitleHu} • ${currentIdx + 1} / $totalCount Übungen",
-                        "${uiState.activeWorkoutTitleHu} • ${currentIdx + 1} / $totalCount exerciții"
+                        "$localizedWorkoutTitle • ${currentIdx + 1} / $totalCount gyakorlat",
+                        "$localizedWorkoutTitle • ${currentIdx + 1} / $totalCount exercises",
+                        "$localizedWorkoutTitle • ${currentIdx + 1} / $totalCount Übungen",
+                        "$localizedWorkoutTitle • ${currentIdx + 1} / $totalCount exerciții"
                     ),
                     onBack = onBack,
                     onOpenSettings = onOpenSettings,
@@ -1450,11 +1460,11 @@ fun ActiveTimedWorkoutScreen(
                                     )
                                     HorizontalDivider(color = palette.cardBorder)
                                     timedExerciseOptions.forEach { option ->
-                                        val isSel = option.nameHu.equals(exerciseNameHu, ignoreCase = true)
+                                        val isSel = option.id == currentExercise?.id || option.localizedName(lang).equals(exerciseNameHu, ignoreCase = true)
                                         DropdownMenuItem(
                                             text = {
                                                 Text(
-                                                    text = "${option.nameHu} (${option.targetSeconds.coerceAtLeast(30)} $secWord)",
+                                                    text = "${option.localizedName(lang)} (${option.targetSeconds.coerceAtLeast(30)} $secWord)",
                                                     color = if (isSel) palette.primary else palette.textPrimary,
                                                     fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium
                                                 )
@@ -1469,7 +1479,7 @@ fun ActiveTimedWorkoutScreen(
                             }
                             SmallExerciseVideoButton(
                                 exerciseName = exerciseNameHu,
-                                exerciseId = timedExerciseOptions.firstOrNull { it.nameHu == exerciseNameHu }?.id
+                                exerciseId = currentExercise?.id ?: timedExerciseOptions.firstOrNull { it.localizedName(lang) == exerciseNameHu }?.id
                             )
                         }
 
@@ -1794,7 +1804,7 @@ fun ActiveBilateralWorkoutScreen(
 
     val lang = uiState.language
     val secWord = tr(lang, "mp", "s", "Sek.", "sec")
-    val exerciseTitle = currentExercise?.nameHu ?: "Oldalsó plank"
+    val exerciseTitle = currentExercise?.localizedName(lang) ?: tr(lang, "Oldalsó plank", "Side Plank", "Seitlicher Plank", "Plank lateral")
     val defaultTargetSec = currentExercise?.targetSeconds ?: 30
 
     // Determine target set for stopwatch recording (defaults to first uncompleted set)
@@ -2008,7 +2018,7 @@ fun ActiveBilateralWorkoutScreen(
                             }
                             SmallExerciseVideoButton(
                                 exerciseName = exerciseTitle,
-                                exerciseId = uiState.exercises.firstOrNull { it.nameHu == exerciseTitle }?.id
+                                exerciseId = currentExercise?.id ?: uiState.exercises.firstOrNull { it.localizedName(lang) == exerciseTitle || it.nameHu == exerciseTitle }?.id
                             )
                         }
 
@@ -2064,7 +2074,7 @@ fun ActiveBilateralWorkoutScreen(
                                         DropdownMenuItem(
                                             text = {
                                                 Text(
-                                                    text = "${idx + 1}. ${ex.nameHu}",
+                                                    text = "${idx + 1}. ${ex.localizedName(lang)}",
                                                     color = if (idx == uiState.activeExerciseIndex) palette.primary else palette.textPrimary,
                                                     fontWeight = if (idx == uiState.activeExerciseIndex) FontWeight.Bold else FontWeight.Normal
                                                 )
@@ -3468,20 +3478,22 @@ fun WorkoutSummaryScreen(
             } else {
                 uiState.outdoorElapsedLabel.ifBlank { "00:00" }
             }
-            val titleLabel = if (uiState.activeWorkoutTitleHu.contains("Kültéri", ignoreCase = true) || uiState.activeWorkoutTitleHu.contains("Futás", ignoreCase = true)) {
-                uiState.activeWorkoutTitleHu
-            } else {
-                tr(lang, "Kültéri futás", "Outdoor run", "Laufen im Freien", "Alergare în aer liber")
-            }
+            val titleLabel = com.example.model.LoggedWorkoutEntry(
+                id = "",
+                titleHu = uiState.activeWorkoutTitleHu.ifBlank { "Kültéri futás" }
+            ).localizedTitle(lang, uiState.programs, uiState.exercises)
             "$titleLabel • $distLabel"
         } else {
             val completedExsCount = uiState.activeWorkoutExercises.count { ex ->
                 (uiState.activeSetsByExerciseId[ex.id] ?: emptyList()).any { it.completed }
             }
             val totalExsCount = uiState.activeWorkoutExercises.size.coerceAtLeast(1)
-            val displayTitle = uiState.activeWorkoutTitleHu.ifBlank {
-                tr(lang, "Tervezett edzés", "Planned workout", "Geplantes Training", "Antrenament planificat")
-            }
+            val displayTitle = uiState.activeWorkoutTitleHu.takeIf { it.isNotBlank() }?.let { raw ->
+                com.example.model.LoggedWorkoutEntry(
+                    id = "",
+                    titleHu = raw
+                ).localizedTitle(lang, uiState.programs, uiState.exercises)
+            } ?: tr(lang, "Tervezett edzés", "Planned workout", "Geplantes Training", "Antrenament planificat")
             tr(
                 lang,
                 "$displayTitle • $completedExsCount / $totalExsCount gyakorlat",
@@ -3630,7 +3642,7 @@ fun WorkoutSummaryScreen(
                     effort = if (same) com.repforge.app.StudioWorkoutFeedback.efforts.getOrNull(
                         uiState.exerciseFeedbackChoices[exercise.id] ?: -1) else null,
                     note = if (same) uiState.exerciseFeedbackNotes[exercise.id].orEmpty() else "",
-                    language = uiState.language.name.lowercase(), title = exercise.nameHu,
+                    language = uiState.language.name.lowercase(), title = exercise.localizedName(lang),
                     enabled = !uiState.isSavingWorkout,
                     onEffort = { onExerciseEffort(exercise.id, com.repforge.app.StudioWorkoutFeedback.efforts.indexOf(it)) },
                     onNote = { onExerciseNote(exercise.id, it) }, tag = "summary_feedback_${exercise.id}")

@@ -160,16 +160,25 @@ fun LogTabScreen(
     var showInlineCalendar by remember { mutableStateOf(false) }
     var showDatePickerDialog by remember { mutableStateOf(false) }
 
-    val huMonthNames = listOf(
-        "január", "február", "március", "április", "május", "június",
-        "július", "augusztus", "szeptember", "október", "november", "december"
-    )
+    val monthNames = when (uiState.language) {
+        com.example.model.AppLanguage.HU -> listOf("január", "február", "március", "április", "május", "június", "július", "augusztus", "szeptember", "október", "november", "december")
+        com.example.model.AppLanguage.EN -> listOf("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+        com.example.model.AppLanguage.DE -> listOf("Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember")
+        com.example.model.AppLanguage.RO -> listOf("ianuarie", "februarie", "martie", "aprilie", "mai", "iunie", "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie")
+    }
     val huMonthShort = listOf(
         "jan.", "febr.", "márc.", "ápr.", "máj.", "jún.",
         "júl.", "aug.", "szept.", "okt.", "nov.", "dec."
     )
-    val monthFullHu = "${currentYearMonth.year}. ${huMonthNames[currentYearMonth.monthValue - 1]}"
+    val monthShortDisplay = when (uiState.language) {
+        com.example.model.AppLanguage.HU -> huMonthShort
+        com.example.model.AppLanguage.EN -> listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+        com.example.model.AppLanguage.DE -> listOf("Jan.", "Feb.", "Mär.", "Apr.", "Mai", "Jun.", "Jul.", "Aug.", "Sep.", "Okt.", "Nov.", "Dez.")
+        com.example.model.AppLanguage.RO -> listOf("ian.", "feb.", "mar.", "apr.", "mai", "iun.", "iul.", "aug.", "sep.", "oct.", "nov.", "dec.")
+    }
+    val monthFullHu = "${currentYearMonth.year}. ${monthNames[currentYearMonth.monthValue - 1]}"
     val monthPrefixHu = huMonthShort[currentYearMonth.monthValue - 1]
+    val monthPrefixDisplay = monthShortDisplay[currentYearMonth.monthValue - 1]
 
     val rangeMinDay = if (intervalStartDay != null && intervalEndDay != null) {
         minOf(intervalStartDay!!, intervalEndDay!!)
@@ -180,9 +189,9 @@ fun LogTabScreen(
 
     val currentFilterLabel = when {
         intervalStartDay != null && intervalEndDay != null ->
-            "$monthPrefixHu ${rangeMinDay}. – $monthPrefixHu ${rangeMaxDay}."
+            "$monthPrefixDisplay ${rangeMinDay}. – $monthPrefixDisplay ${rangeMaxDay}."
         intervalStartDay != null ->
-            trL(uiState.language, "Innentől: $monthPrefixHu ${intervalStartDay}. (válassz zárónapot)", "From: $monthPrefixHu ${intervalStartDay}. (select end day)", "Ab: $monthPrefixHu ${intervalStartDay}. (Endtag wählen)", "De la: $monthPrefixHu ${intervalStartDay}. (alege ziua finală)")
+            trL(uiState.language, "Innentől: $monthPrefixDisplay ${intervalStartDay}. (válassz zárónapot)", "From: $monthPrefixDisplay ${intervalStartDay}. (select end day)", "Ab: $monthPrefixDisplay ${intervalStartDay}. (Endtag wählen)", "De la: $monthPrefixDisplay ${intervalStartDay}. (alege ziua finală)")
         filterAllMonths ->
             trL(uiState.language, "Összes hónap (${today.year})", "All months (${today.year})", "Alle Monate (${today.year})", "Toate lunile (${today.year})")
         else ->
@@ -192,7 +201,9 @@ fun LogTabScreen(
     val filteredLogs = uiState.loggedWorkouts.filter { entry ->
         val matchesSearch = uiState.logSearchQuery.isBlank() ||
             entry.titleHu.contains(uiState.logSearchQuery, ignoreCase = true) ||
-            entry.summaryExercisesHu.contains(uiState.logSearchQuery, ignoreCase = true)
+            entry.localizedTitle(uiState.language, uiState.programs, uiState.exercises).contains(uiState.logSearchQuery, ignoreCase = true) ||
+            entry.summaryExercisesHu.contains(uiState.logSearchQuery, ignoreCase = true) ||
+            entry.localizedSummaryExercises(uiState.language, uiState.exercises).contains(uiState.logSearchQuery, ignoreCase = true)
 
         val matchesIntervalOrMonth = when {
             rangeMinDay != null && rangeMaxDay != null -> {
@@ -227,7 +238,7 @@ fun LogTabScreen(
             textContentColor = palette.textSecondary,
             title = {
                 Text(
-                    text = "📅 Napló intervallum-szűrő",
+                    text = trL(uiState.language, "📅 Napló intervallum-szűrő", "📅 Log interval filter", "📅 Protokoll-Intervallfilter", "📅 Filtru interval jurnal"),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = palette.textPrimary
@@ -236,12 +247,12 @@ fun LogTabScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "1. koppintás = Innentől, 2. koppintás = Idáig.",
+                        text = trL(uiState.language, "1. koppintás = Innentől, 2. koppintás = Idáig.", "1st tap = From, 2nd tap = To.", "1. Tippen = Von, 2. Tippen = Bis.", "1. atingere = De la, 2. atingere = Până la."),
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.textSecondary
                     )
                     Text(
-                        text = "Aktuális szűrő: $currentFilterLabel",
+                        text = "${trL(uiState.language, "Aktuális szűrő", "Current filter", "Aktueller Filter", "Filtru curent")}: $currentFilterLabel",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = palette.primary
@@ -253,7 +264,7 @@ fun LogTabScreen(
                     onClick = { showDatePickerDialog = false },
                     colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary)
                 ) {
-                    Text("Rendben", fontWeight = FontWeight.Bold)
+                    Text(trL(uiState.language, "Rendben", "OK", "OK", "OK"), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -265,7 +276,7 @@ fun LogTabScreen(
                         showDatePickerDialog = false
                     }
                 ) {
-                    Text("Szűrő törlése", color = palette.textPrimary)
+                    Text(trL(uiState.language, "Szűrő törlése", "Clear filter", "Filter löschen", "Șterge filtrul"), color = palette.textPrimary)
                 }
             }
         )
@@ -407,9 +418,9 @@ fun LogTabScreen(
                                 )
                                 Text(
                                     text = when {
-                                        intervalStartDay == null -> "1. nyomás: Innentől • 2. nyomás: Idáig"
-                                        intervalEndDay == null -> "Innentől: $monthPrefixHu ${intervalStartDay}. → válassz 2. napot (Idáig)"
-                                        else -> "Intervallum: $monthPrefixHu ${rangeMinDay}. – $monthPrefixHu ${rangeMaxDay}."
+                                        intervalStartDay == null -> trL(uiState.language, "1. nyomás: Innentől • 2. nyomás: Idáig", "1st tap: From • 2nd tap: To", "1. Tippen: Von • 2. Tippen: Bis", "1. atingere: De la • 2. atingere: Până la")
+                                        intervalEndDay == null -> trL(uiState.language, "Innentől: $monthPrefixDisplay ${intervalStartDay}. → válassz 2. napot (Idáig)", "From: $monthPrefixDisplay ${intervalStartDay}. → select 2nd day (To)", "Ab: $monthPrefixDisplay ${intervalStartDay}. → 2. Tag wählen (Bis)", "De la: $monthPrefixDisplay ${intervalStartDay}. → alege a 2-a zi (Până la)")
+                                        else -> "${trL(uiState.language, "Intervallum", "Interval", "Intervall", "Interval")}: $monthPrefixDisplay ${rangeMinDay}. – $monthPrefixDisplay ${rangeMaxDay}."
                                     },
                                     style = MaterialTheme.typography.labelSmall,
                                     color = palette.primary
@@ -431,7 +442,7 @@ fun LogTabScreen(
                                         .testTag("log_jump_today_button")
                                 ) {
                                     Text(
-                                        text = "Mai napra ugrás",
+                                        text = trL(uiState.language, "Mai napra ugrás", "Jump to today", "Zu heute springen", "Salt la azi"),
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = palette.primary,
@@ -452,7 +463,7 @@ fun LogTabScreen(
                                         .testTag("log_clear_filter_button")
                                 ) {
                                     Text(
-                                        text = "Szűrő törlése",
+                                        text = trL(uiState.language, "Szűrő törlése", "Clear filter", "Filter löschen", "Șterge filtrul"),
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = palette.textSecondary,
@@ -462,11 +473,17 @@ fun LogTabScreen(
                             }
                         }
 
+                        val logWeekdayHeaders = when (uiState.language) {
+                            com.example.model.AppLanguage.HU -> listOf("H", "K", "Sze", "Cs", "P", "Szo", "V")
+                            com.example.model.AppLanguage.EN -> listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+                            com.example.model.AppLanguage.DE -> listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
+                            com.example.model.AppLanguage.RO -> listOf("Lun", "Mar", "Mie", "Joi", "Vin", "Sâm", "Dum")
+                        }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            listOf("H", "K", "Sze", "Cs", "P", "Szo", "V").forEach { dHdr ->
+                            logWeekdayHeaders.forEach { dHdr ->
                                 Text(
                                     text = dHdr,
                                     style = MaterialTheme.typography.labelSmall,
@@ -763,16 +780,16 @@ internal fun LogWorkoutCard(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(1.dp)
             ) {
+                val lang = com.example.localization.LocalTrainPilotStrings.current.language
                 Text(entry.dateLabelHu,
                     style = MaterialTheme.typography.labelSmall,
                     color = palette.textSecondary,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(entry.titleHu,
+                Text(entry.localizedTitle(lang),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = palette.textPrimary,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                val lang = com.example.localization.LocalTrainPilotStrings.current.language
                 Text(
                     text = if (entry.isOutdoorRun) {
                         "${entry.durationMinutes} ${trL(lang, "perc", "min", "Min.", "min")} · ${entry.distanceKm} km · ${entry.paceLabel}"
@@ -894,7 +911,7 @@ fun LogWorkoutDetailScreen(
                         Column(Modifier.weight(1f)) {
                             Text("${strings.navProgress} · ${strings.navLog}", style = MaterialTheme.typography.labelSmall,
                                 color = palette.primary, modifier = Modifier.testTag("journal_detail_location"))
-                            Text(workout.titleHu, style = MaterialTheme.typography.titleMedium,
+                            Text(workout.localizedTitle(uiState.language, uiState.programs, uiState.exercises), style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold, color = palette.textPrimary,
                                 maxLines = 2, overflow = TextOverflow.Ellipsis)
                             Text(workout.dateLabelHu, style = MaterialTheme.typography.bodySmall,
@@ -990,13 +1007,13 @@ fun LogWorkoutDetailScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = exDetail.nameHu,
+                                    text = exDetail.localizedName(uiState.language, uiState.exercises),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary
                                 )
                                 Text(
-                                    text = exDetail.summaryPrescription,
+                                    text = exDetail.localizedSummaryPrescription(uiState.language),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textSecondary
                                 )
@@ -1005,7 +1022,10 @@ fun LogWorkoutDetailScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                SmallExerciseVideoButton(exerciseName = exDetail.nameHu)
+                                SmallExerciseVideoButton(
+                                    exerciseName = exDetail.localizedName(uiState.language, uiState.exercises),
+                                    exerciseId = uiState.exercises.firstOrNull { it.nameHu.equals(exDetail.nameHu, ignoreCase = true) }?.id
+                                )
                                 Icon(
                                     imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                                     contentDescription = null,
@@ -1027,7 +1047,11 @@ fun LogWorkoutDetailScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = if (workout.isOutdoorRun || exDetail.measurementType == "distance") "${setRow.setNumber}. mérés" else "${setRow.setNumber}. sorozat",
+                                        text = if (workout.isOutdoorRun || exDetail.measurementType == "distance") {
+                                            trL(uiState.language, "${setRow.setNumber}. mérés", "Measurement #${setRow.setNumber}", "${setRow.setNumber}. Messung", "Măsurătoarea #${setRow.setNumber}")
+                                        } else {
+                                            trL(uiState.language, "${setRow.setNumber}. sorozat", "Set #${setRow.setNumber}", "${setRow.setNumber}. Satz", "Seria #${setRow.setNumber}")
+                                        },
                                         style = MaterialTheme.typography.bodySmall,
                                         color = palette.textSecondary
                                     )
@@ -1040,12 +1064,12 @@ fun LogWorkoutDetailScreen(
                                     if (setRow.completed) {
                                         Icon(
                                             imageVector = Icons.Default.CheckCircle,
-                                            contentDescription = "Teljesített mérés",
+                                            contentDescription = trL(uiState.language, "Teljesített mérés", "Completed measurement", "Abgeschlossene Messung", "Măsurătoare finalizată"),
                                             tint = palette.success,
                                             modifier = Modifier.size(18.dp)
                                         )
                                     } else {
-                                        Text("Nem teljesített", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                        Text(trL(uiState.language, "Nem teljesített", "Not completed", "Nicht abgeschlossen", "Nefinalizat"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
                                     }
                                 }
                             }
@@ -1062,19 +1086,20 @@ fun LogWorkoutDetailScreen(
                         modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Kültéri edzés mért adatai", style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
-                            Text("Aktív idő: ${workout.workTimeLabel}", color = palette.textPrimary)
-                            Text("Távolság: ${if (workout.distanceKm > 0f) "%.2f km".format(java.util.Locale.forLanguageTag("hu-HU"), workout.distanceKm) else "Nincs GPS-adat"}",
-                                color = palette.textPrimary)
-                            Text("Átlagtempó: ${workout.paceLabel.takeUnless { it.isBlank() || it == "—" } ?: "Nincs adat"}",
-                                color = palette.textPrimary)
-                            Text("Pulzus és kalória: csak hiteles órás/Health Connect mérés esetén", color = palette.textSecondary)
+                            Text(trL(uiState.language, "Kültéri edzés mért adatai", "Outdoor workout measured data", "Gemessene Daten des Outdoor-Trainings", "Date măsurate ale antrenamentului exterior"), style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
+                            Text("${trL(uiState.language, "Aktív idő", "Active time", "Aktive Zeit", "Timp activ")}: ${workout.workTimeLabel}", color = palette.textPrimary)
+                            val distVal = if (workout.distanceKm > 0f) "%.2f km".format(java.util.Locale.forLanguageTag("hu-HU"), workout.distanceKm) else trL(uiState.language, "Nincs GPS-adat", "No GPS data", "Keine GPS-Daten", "Fără date GPS")
+                            Text("${strings.distanceLabel}: $distVal", color = palette.textPrimary)
+                            val paceVal = workout.paceLabel.takeUnless { it.isBlank() || it == "—" } ?: trL(uiState.language, "Nincs adat", "No data", "Keine Daten", "Fără date")
+                            Text("${strings.avgPaceLabel}: $paceVal", color = palette.textPrimary)
+                            Text(trL(uiState.language, "Pulzus és kalória: csak hiteles órás/Health Connect mérés esetén", "Heart rate & calories: only from verified watch/Health Connect measurements", "Puls & Kalorien: nur aus verifizierten Uhr-/Health-Connect-Messungen", "Puls și calorii: doar din măsurători verificate de ceas/Health Connect"), color = palette.textSecondary)
                         }
                     }
                 } else {
+                    val localizedTitle = workout.localizedTitle(uiState.language, uiState.programs, uiState.exercises)
                     AnatomicalMuscleHeatmapCard(
-                        title = "Edzés izomterhelése (${workout.titleHu})",
-                        subtitle = "Elöl- és hátulnézeti anatómiai terhelés ezen az edzésen",
+                        title = "${strings.muscleLoadTitle} ($localizedTitle)",
+                        subtitle = trL(uiState.language, "Elöl- és hátulnézeti anatómiai terhelés ezen az edzésen", "Front & back anatomical muscle load for this workout", "Anatomische Vorder- und Rückseitenbelastung in diesem Training", "Încărcarea anatomică față și spate la acest antrenament"),
                         realMuscleLoads = uiState.logWorkoutMuscleLoads,
                         periodDays = null
                     )
@@ -1090,11 +1115,14 @@ fun LogWorkoutDetailScreen(
                         .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Adatforrás és szinkron napló", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                        Text("• Rögzítő eszköz: ${if (workout.originDevice == "watch") "Óra" else "Telefon"}", color = palette.textPrimary)
-                        Text("• Wear OS adatok: ${if (workout.sourceWatch) "Edzéshez rögzítve" else "Nem érhető el"}", color = palette.textSecondary)
-                        Text("• Health Connect adatok: ${if (workout.sourceHealthConnect) "Edzéshez rögzítve" else "Nem érhető el"}", color = palette.textSecondary)
-                        Text("• Pulzus és kalória: csak hiteles edzésmérésből jeleníthető meg", color = palette.textSecondary)
+                        Text(trL(uiState.language, "Adatforrás és szinkron napló", "Data source & sync log", "Datenquelle & Synchronisationsprotokoll", "Sursă de date și jurnal de sincronizare"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                        val originLabel = if (workout.originDevice == "watch") trL(uiState.language, "Óra", "Watch", "Uhr", "Ceas") else trL(uiState.language, "Telefon", "Phone", "Telefon", "Telefon")
+                        val recordedLabel = trL(uiState.language, "Edzéshez rögzítve", "Recorded for workout", "Für Training aufgezeichnet", "Înregistrat pentru antrenament")
+                        val unavailableLabel = trL(uiState.language, "Nem érhető el", "Not available", "Nicht verfügbar", "Indisponibil")
+                        Text("• ${trL(uiState.language, "Rögzítő eszköz", "Recording device", "Aufzeichnungsgerät", "Dispozitiv de înregistrare")}: $originLabel", color = palette.textPrimary)
+                        Text("• Wear OS: ${if (workout.sourceWatch) recordedLabel else unavailableLabel}", color = palette.textSecondary)
+                        Text("• Health Connect: ${if (workout.sourceHealthConnect) recordedLabel else unavailableLabel}", color = palette.textSecondary)
+                        Text("• ${trL(uiState.language, "Pulzus és kalória: csak hiteles edzésmérésből jeleníthető meg", "Heart rate & calories: shown only from verified workout measurements", "Puls & Kalorien: nur aus verifizierten Trainingsmessungen sichtbar", "Puls și calorii: afișate doar din măsurători verificate")}", color = palette.textSecondary)
                     }
                 }
             }
@@ -1813,24 +1841,25 @@ internal fun MainProgressVolumeAndMuscleSection(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("PR rekordok ($prCountValue)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                Text("${strings.prRecordsTitle} ($prCountValue)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                                     modifier = Modifier.clickable { onSelectExpandedStatsCard(0) }
                                 ) {
-                                    Text("Bezárás", style = MaterialTheme.typography.labelSmall, color = palette.primary)
+                                    Text(trL(uiState.language, "Bezárás", "Close", "Schließen", "Închide"), style = MaterialTheme.typography.labelSmall, color = palette.primary)
                                     Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
                                 }
                             }
                             if (uiState.prRecords.isEmpty()) {
                                 Text(
-                                    text = "Még nincs rögzített PR rekord. Fejezz be egy edzést a PR-ek számításához!",
+                                    text = trL(uiState.language, "Még nincs rögzített PR rekord. Fejezz be egy edzést a PR-ek számításához!", "No PR records logged yet. Finish a workout to calculate PRs!", "Noch keine PR-Rekorde erfasst. Beende ein Training zur PR-Berechnung!", "Niciun record PR înregistrat încă. Finalizează un antrenament pentru calculul PR-urilor!"),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textSecondary
                                 )
                             } else {
                                 uiState.prRecords.take(4).forEach { pr ->
+                                    val locPrName = pr.localizedExerciseName(uiState.language, uiState.exercises)
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -1841,12 +1870,16 @@ internal fun MainProgressVolumeAndMuscleSection(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text(pr.exerciseNameHu, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                                            Text(pr.typeLabelHu, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                            Text(locPrName, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                            Text(pr.localizedTypeLabel(uiState.language), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
                                         }
-                                        SmallExerciseVideoButton(exerciseName = pr.exerciseNameHu, compactIconOnly = true)
+                                        SmallExerciseVideoButton(
+                                            exerciseName = locPrName,
+                                            compactIconOnly = true,
+                                            exerciseId = uiState.exercises.firstOrNull { it.nameHu.equals(pr.exerciseNameHu, ignoreCase = true) }?.id
+                                        )
                                         Spacer(modifier = Modifier.width(6.dp))
-                                        Text("${pr.previousLabel} → ${pr.newLabel}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = palette.primary)
+                                        Text("${pr.previousLabel} → ${pr.localizedNewLabel(uiState.language)}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = palette.primary)
                                     }
                                 }
                             }
@@ -1857,19 +1890,19 @@ internal fun MainProgressVolumeAndMuscleSection(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Edzések száma ($workoutCountValue)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                Text("${strings.workoutCountTitle} ($workoutCountValue)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                                     modifier = Modifier.clickable { onSelectExpandedStatsCard(1) }
                                 ) {
-                                    Text("Bezárás", style = MaterialTheme.typography.labelSmall, color = palette.primary)
+                                    Text(trL(uiState.language, "Bezárás", "Close", "Schließen", "Închide"), style = MaterialTheme.typography.labelSmall, color = palette.primary)
                                     Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
                                 }
                             }
                             if (periodWorkouts.isEmpty()) {
                                 Text(
-                                    text = "Még nincs naplózott edzés.",
+                                    text = trL(uiState.language, "Még nincs naplózott edzés.", "No logged workouts yet.", "Noch keine protokollierten Trainings.", "Niciun antrenament înregistrat încă."),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textSecondary
                                 )
@@ -1884,7 +1917,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                             .padding(8.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Text("${w.dateLabelHu} • ${w.titleHu}", style = MaterialTheme.typography.bodySmall, color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
+                                        Text("${w.dateLabelHu} • ${w.localizedTitle(uiState.language, uiState.programs, uiState.exercises)}", style = MaterialTheme.typography.bodySmall, color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
                                         Text("${w.durationMinutes} min >", style = MaterialTheme.typography.labelSmall, color = palette.primary, fontWeight = FontWeight.Bold)
                                     }
                                 }
@@ -1896,18 +1929,18 @@ internal fun MainProgressVolumeAndMuscleSection(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Átlagos volumen • $avgVolumeValue", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                Text("${strings.avgVolumeTitle} • $avgVolumeValue", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                                     modifier = Modifier.clickable { onSelectExpandedStatsCard(2) }
                                 ) {
-                                    Text("Bezárás", style = MaterialTheme.typography.labelSmall, color = palette.primary)
+                                    Text(trL(uiState.language, "Bezárás", "Close", "Schließen", "Închide"), style = MaterialTheme.typography.labelSmall, color = palette.primary)
                                     Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
                                 }
                             }
                             if (periodWorkouts.isEmpty()) {
-                                Text("Még nincs rögzített súlyzós volumen.", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                                Text(trL(uiState.language, "Még nincs rögzített súlyzós volumen.", "No logged strength volume yet.", "Noch kein Kraftvolumen protokolliert.", "Niciun volum de forță înregistrat încă."), style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                             } else {
                                 periodWorkouts.take(4).forEach { w ->
                                     Row(
@@ -1919,7 +1952,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                             .padding(8.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Text("${w.dateLabelHu} • ${w.titleHu}", style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
+                                        Text("${w.dateLabelHu} • ${w.localizedTitle(uiState.language, uiState.programs, uiState.exercises)}", style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
                                         Text("${w.totalVolumeKg} kg >", style = MaterialTheme.typography.labelMedium, color = palette.primary, fontWeight = FontWeight.Bold)
                                     }
                                 }
@@ -1931,18 +1964,18 @@ internal fun MainProgressVolumeAndMuscleSection(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Átlagos edzésidő • $avgDurationValue", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                Text("${strings.avgDurationTitle} • $avgDurationValue", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                                     modifier = Modifier.clickable { onSelectExpandedStatsCard(3) }
                                 ) {
-                                    Text("Bezárás", style = MaterialTheme.typography.labelSmall, color = palette.primary)
+                                    Text(trL(uiState.language, "Bezárás", "Close", "Schließen", "Închide"), style = MaterialTheme.typography.labelSmall, color = palette.primary)
                                     Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
                                 }
                             }
                             if (periodWorkouts.isEmpty()) {
-                                Text("Még nincs rögzített edzésidő.", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                                Text(trL(uiState.language, "Még nincs rögzített edzésidő.", "No logged workout duration yet.", "Noch keine Trainingszeit protokolliert.", "Nicio durată de antrenament înregistrată încă."), style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                             } else {
                                 periodWorkouts.take(4).forEach { w ->
                                     Row(
@@ -1954,7 +1987,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                             .padding(8.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Text("${w.dateLabelHu} • ${w.titleHu}", style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
+                                        Text("${w.dateLabelHu} • ${w.localizedTitle(uiState.language, uiState.programs, uiState.exercises)}", style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
                                         Text("${w.durationMinutes} min >", style = MaterialTheme.typography.labelMedium, color = palette.primary, fontWeight = FontWeight.Bold)
                                     }
                                 }
@@ -2028,9 +2061,23 @@ internal fun MainProgressVolumeAndMuscleSection(
                         )
                         Text(
                             text = if (topMuscle != null) {
-                                "A legtöbb sorozatterhelést ez az izomcsoport kapta: ${topMuscle.nameHu} (${topMuscle.setsText})."
+                                val topName = topMuscle.localizedName(uiState.language)
+                                val topSets = topMuscle.localizedSetsText(uiState.language)
+                                trL(
+                                    uiState.language,
+                                    "A legtöbb sorozatterhelést ez az izomcsoport kapta: $topName ($topSets).",
+                                    "Highest set load in this period: $topName ($topSets).",
+                                    "Die meiste Satzbelastung erhielt: $topName ($topSets).",
+                                    "Cea mai mare încărcare pe serii a primit-o: $topName ($topSets)."
+                                )
                             } else {
-                                "Rögzíts edzéseket az izomcsoport-arányok és egyéni fejlődési javaslatok kiszámításához."
+                                trL(
+                                    uiState.language,
+                                    "Rögzíts edzéseket az izomcsoport-arányok és egyéni fejlődési javaslatok kiszámításához.",
+                                    "Log workouts to calculate muscle group ratios and personalized progression tips.",
+                                    "Protokolliere Trainings, um Muskelgruppen-Anteile und Progressionstipps zu berechnen.",
+                                    "Înregistrează antrenamente pentru a calcula proporțiile grupelor musculare și recomandările."
+                                )
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.textSecondary
@@ -2055,18 +2102,47 @@ internal fun MainProgressVolumeAndMuscleSection(
                         HorizontalDivider(color = palette.cardBorder)
                         Text(
                             text = if (lowMuscle != null && periodWorkouts.isNotEmpty()) {
-                                "• Egyensúly javaslat: A(z) ${lowMuscle.nameHu} (${lowMuscle.setsText}) terhelését érdemes +2 munkasorozattal növelni a következő héten."
+                                val lowName = lowMuscle.localizedName(uiState.language)
+                                val lowSets = lowMuscle.localizedSetsText(uiState.language)
+                                trL(
+                                    uiState.language,
+                                    "• Egyensúly javaslat: A(z) $lowName ($lowSets) terhelését érdemes +2 munkasorozattal növelni a következő héten.",
+                                    "• Balance tip: Consider adding +2 working sets for $lowName ($lowSets) next week.",
+                                    "• Balance-Tipp: Erhöhe die Belastung für $lowName ($lowSets) nächste Woche um +2 Arbeitssätze.",
+                                    "• Recomandare echilibru: Crește încărcarea pentru $lowName ($lowSets) cu +2 serii săptămâna viitoare."
+                                )
                             } else {
-                                "• Egyensúly javaslat: Még nincs rögzített izomcsoport-terhelés az elmúlt időszakban."
+                                trL(
+                                    uiState.language,
+                                    "• Egyensúly javaslat: Még nincs rögzített izomcsoport-terhelés az elmúlt időszakban.",
+                                    "• Balance tip: No muscle group load logged in the recent period yet.",
+                                    "• Balance-Tipp: Noch keine Muskelgruppenbelastung im letzten Zeitraum erfasst.",
+                                    "• Recomandare echilibru: Nu există încă încărcare pe grupe musculare în perioada recentă."
+                                )
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.textPrimary
                         )
                         Text(
                             text = if (latestPr != null) {
-                                "• Legutóbbi csúcsteljesítmény: ${latestPr.exerciseNameHu} (${latestPr.newLabel} • ${latestPr.typeLabelHu})."
+                                val prExName = latestPr.localizedExerciseName(uiState.language, uiState.exercises)
+                                val prNewLbl = latestPr.localizedNewLabel(uiState.language)
+                                val prTypeLbl = latestPr.localizedTypeLabel(uiState.language)
+                                trL(
+                                    uiState.language,
+                                    "• Legutóbbi csúcsteljesítmény: $prExName ($prNewLbl • $prTypeLbl).",
+                                    "• Latest personal best: $prExName ($prNewLbl • $prTypeLbl).",
+                                    "• Letzte Bestleistung: $prExName ($prNewLbl • $prTypeLbl).",
+                                    "• Ultima performanță de vârf: $prExName ($prNewLbl • $prTypeLbl)."
+                                )
                             } else {
-                                "• Progresszió: A rögzített sorozatok után itt jelenik meg a következő súlyemelési javaslat."
+                                trL(
+                                    uiState.language,
+                                    "• Progresszió: A rögzített sorozatok után itt jelenik meg a következő súlyemelési javaslat.",
+                                    "• Progression: Your next weight progression suggestion will appear here after logged sets.",
+                                    "• Progression: Nach erfassten Sätzen erscheint hier die nächste Gewichtserhöhungsempfehlung.",
+                                    "• Progresie: După seriile înregistrate, aici va apărea următoarea recomandare de creștere a greutății."
+                                )
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.primary,

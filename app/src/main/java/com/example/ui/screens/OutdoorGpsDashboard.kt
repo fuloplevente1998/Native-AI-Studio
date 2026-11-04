@@ -245,6 +245,45 @@ internal fun OutdoorGpsDashboard(
 private fun DashboardHeader(state: OutdoorGpsDisplay, actions: OutdoorGpsActions, fullscreen: Boolean) {
     val copy = outdoorCopy(state.language)
     val palette = LocalTrainPilotPalette.current
+    val localizedTitle = when (state.title) {
+        "Kültéri futás" -> when (state.language) {
+            AppLanguage.HU -> "Kültéri futás"
+            AppLanguage.EN -> "Outdoor run"
+            AppLanguage.DE -> "Laufen im Freien"
+            AppLanguage.RO -> "Alergare în aer liber"
+        }
+        "Kültéri séta" -> when (state.language) {
+            AppLanguage.HU -> "Kültéri séta"
+            AppLanguage.EN -> "Outdoor walk"
+            AppLanguage.DE -> "Gehen im Freien"
+            AppLanguage.RO -> "Mers în aer liber"
+        }
+        "Kerékpározás" -> when (state.language) {
+            AppLanguage.HU -> "Kerékpározás"
+            AppLanguage.EN -> "Cycling"
+            AppLanguage.DE -> "Radfahren"
+            AppLanguage.RO -> "Ciclism"
+        }
+        "Görkorcsolyázás" -> when (state.language) {
+            AppLanguage.HU -> "Görkorcsolyázás"
+            AppLanguage.EN -> "Inline skating"
+            AppLanguage.DE -> "Inlineskaten"
+            AppLanguage.RO -> "Mers pe role"
+        }
+        "Kültéri túrázás" -> when (state.language) {
+            AppLanguage.HU -> "Kültéri túrázás"
+            AppLanguage.EN -> "Outdoor hike"
+            AppLanguage.DE -> "Wandern im Freien"
+            AppLanguage.RO -> "Drumeție în aer liber"
+        }
+        "Egyéb kültéri edzés" -> when (state.language) {
+            AppLanguage.HU -> "Egyéb kültéri edzés"
+            AppLanguage.EN -> "Other outdoor workout"
+            AppLanguage.DE -> "Sonstiges Outdoor-Training"
+            AppLanguage.RO -> "Alt antrenament în aer liber"
+        }
+        else -> state.title
+    }
     Surface(shape = RoundedCornerShape(16.dp), color = palette.surfaceCard,
         modifier = Modifier.trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(16.dp))) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -256,7 +295,7 @@ private fun DashboardHeader(state: OutdoorGpsDisplay, actions: OutdoorGpsActions
                 }
             }
             Column(Modifier.weight(1f).padding(vertical = 4.dp)) {
-                Text(state.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold,
+                Text(localizedTitle, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold,
                     color = palette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(state.status, style = MaterialTheme.typography.labelSmall,
                     color = if (state.paused) palette.warning else palette.textSecondary,
