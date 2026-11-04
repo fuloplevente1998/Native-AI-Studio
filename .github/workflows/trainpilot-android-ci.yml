@@ -1,4 +1,4 @@
-name: TrainPilot Native Android CI and Debug APK
+name: TrainPilot Native Android Regression Tests
 
 on:
   pull_request:
@@ -33,11 +33,10 @@ permissions:
 
 jobs:
   android-build:
-    name: Compile, unit tests, debug APK
+    name: Compile and full JVM regressions
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      TRAINPILOT_REQUIRE_WEAR_PAIR: "true"
       TRAINPILOT_MAPS_API_KEY: ${{ secrets.TRAINPILOT_MAPS_API_KEY || secrets.MAPS_API_KEY }}
     steps:
       - name: Checkout
@@ -78,32 +77,27 @@ jobs:
         shell: bash
         run: python3 scripts/prefetch_robolectric_sdk.py
 
-      - name: Create temporary CI debug signing key
-        shell: bash
-        run: |
-          keytool -genkeypair -v -keystore debug.keystore             -storepass android -keypass android             -alias androiddebugkey -keyalg RSA -keysize 2048             -validity 10000             -dname 'CN=Android Debug,O=Android,C=US' -noprompt
-          # This key is CI-only. A CI APK will not update an APK signed with a different key.
-
       - name: Verify complete bundled font glyphs and real weights
         run: python3 scripts/verify_font_glyphs.py
 
       - name: Check embedded video user gesture and failure callbacks
         run: node --test scripts/test_exercise_video_player.mjs
 
-      - name: Build debug APK and run JVM tests
+      # Compile real app/Wear sources and test resources, without dexing or R8-packaging
+      # throwaway APKs. Installers are produced and verified only by persistent-signing.
+      - name: Compile phone and Wear and run JVM tests
         shell: bash
         env:
           WEAR_CLOSURE_REGRESSIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.wear_closure_regressions }}
           TARGETED_REGRESSIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.targeted_regressions }}
         run: |
           if [[ "$WEAR_CLOSURE_REGRESSIONS" == "true" ]]; then
-            gradle --no-daemon --stacktrace --profile --continue :app:assembleDebug :wear:assembleDebug :wear:assembleOptimized \
-              :app:testDebugUnitTest --tests 'com.example.WatchDiscardRecoveryRegressionTest' \
+            gradle --no-daemon --stacktrace --profile --continue :app:testDebugUnitTest --tests 'com.example.WatchDiscardRecoveryRegressionTest' \
               --tests 'com.example.PhoneReturnInstallationRegressionTest' --tests 'com.example.HealthSyncAdmissionRegressionTest' \
               :wear:testDebugUnitTest --tests 'com.repforge.app.wear.WearClosureRecoveryTest' \
               --tests 'com.repforge.app.wear.WearSaveSyncTest' --tests 'com.repforge.app.wear.WorkoutOwnership193Test'
           elif [[ "$TARGETED_REGRESSIONS" == "true" ]]; then
-            gradle --no-daemon --stacktrace --profile --continue :app:assembleDebug :wear:assembleDebug :wear:assembleOptimized :app:testDebugUnitTest \
+            gradle --no-daemon --stacktrace --profile --continue :app:testDebugUnitTest \
               --tests 'com.example.StudioProgress*' \
               --tests 'com.example.StudioHealthPermissionActionTest' \
               --tests 'com.example.StudioAppearanceRegressionTest' \
@@ -114,7 +108,7 @@ jobs:
               --tests 'com.example.HealthProviderSelectionRegressionTest' \
               --tests 'com.example.HealthSyncAdmissionRegressionTest'
           else
-            gradle --no-daemon --stacktrace --profile --continue :app:assembleDebug :app:testDebugUnitTest :wear:assembleDebug :wear:assembleOptimized :wear:testDebugUnitTest :shared:testDebugUnitTest
+            gradle --no-daemon --stacktrace --profile --continue :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest
           fi
 
       - name: Verify raw phone, Wear and shared JUnit XML test results
@@ -123,47 +117,6 @@ jobs:
         env:
           TRAINPILOT_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python3 scripts/verify_junit_xml.py
-
-      - name: Report Maps configuration and APK signer without exposing the key
-        if: always()
-        shell: bash
-        run: python3 scripts/verify_android_apk_metadata.py
-
-      - name: Upload APK configuration evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: trainpilot-apk-metadata
-          path: app/build/outputs/apk-verification.json
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Upload debug APK if produced
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: trainpilot-debug-ci-apk
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: warn
-          retention-days: 7
-
-      - name: Upload paired Wear debug APK
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: trainpilot-wear-debug-ci-apk
-          path: wear/build/outputs/apk/debug/*.apk
-          if-no-files-found: warn
-          retention-days: 7
-
-      - name: Upload optimized paired Wear test APK
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: trainpilot-wear-optimized-test-apk
-          path: wear/build/outputs/apk/optimized/*.apk
-          if-no-files-found: warn
-          retention-days: 7
 
       - name: Upload unit test reports
         if: always()
