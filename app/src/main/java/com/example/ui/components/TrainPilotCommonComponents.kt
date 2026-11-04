@@ -1168,8 +1168,8 @@ fun PersonalPlannerModalDialog(
     val daysOptions = listOf(2, 3, 4, 5, 6)
     val durationOptions = listOf(30, 45, 60, 75, 90)
 
-    val heightPresets = (150..205 step 1).filter { it % 5 == 0 || it == 178 || it == 179 || it == 182 }
-    val weightPresets = (45..130 step 5).map { it.toFloat() }
+    val heightPresets = (150..205).toList()
+    val weightPresets = (45..130).map { it.toFloat() }
 
     val muscleOptions = listOf("Láb", "Mell", "Hát", "Váll", "Kar", "Törzs", "Alsó hát", "Térdkímélő")
     val exerciseOptions = listOf(
@@ -1563,63 +1563,7 @@ fun PersonalPlannerModalDialog(
                             }
                         }
 
-                        // Quick multi-select chips so the user can also toggle equipment with 1 tap without opening the dropdown
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            equipments.chunked(2).forEachIndexed { rowIdx, pair ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    pair.forEachIndexed { colIdx, eqName ->
-                                        val isChecked = eqName in selectedEquipments
-                                        val flatIdx = rowIdx * 2 + colIdx
-                                        Surface(
-                                            shape = RoundedCornerShape(10.dp),
-                                            color = if (isChecked) palette.tintedSurface(0.18f) else palette.surface,
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .trainPilotBorder(
-                                                    width = if (isChecked) 1.5.dp else 1.dp,
-                                                    color = if (isChecked) palette.primary else palette.cardBorder,
-                                                    shape = RoundedCornerShape(10.dp)
-                                                )
-                                                .clip(RoundedCornerShape(10.dp))
-                                                .clickable {
-                                                    selectedEquipments = if (isChecked) {
-                                                        if (selectedEquipments.size > 1) selectedEquipments - eqName else selectedEquipments
-                                                    } else {
-                                                        selectedEquipments + eqName
-                                                    }
-                                                }
-                                                .testTag("profile_equipment_chip_$flatIdx")
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                            ) {
-                                                Text(
-                                                    text = if (isChecked) "☑" else "☐",
-                                                    fontSize = 12.sp,
-                                                    color = if (isChecked) palette.primary else palette.textSecondary
-                                                )
-                                                Text(
-                                                    text = eqName,
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    fontWeight = if (isChecked) FontWeight.Bold else FontWeight.Medium,
-                                                    color = if (isChecked) palette.primary else palette.textPrimary,
-                                                    maxLines = 2,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                            }
-                                        }
-                                    }
-                                    if (pair.size == 1) {
-                                        Spacer(modifier = Modifier.weight(1f))
-                                    }
-                                }
-                            }
-                        }
+
                     }
                 }
 

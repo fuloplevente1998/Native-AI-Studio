@@ -1,0 +1,27 @@
+{
+  "source": "8e700a8cf2191eb4c4a9570a9457ad3b825e9a30",
+  "run": 41762992573,
+  "versionCode": 2749,
+  "applicationId": "com.TrainPilot.com",
+  "tests": {
+    "tests": 434,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "modules": {
+    "app": 258,
+    "wear": 176
+  },
+  "phoneBytes": 20253692,
+  "phoneSha256": "d357455bb807e7c1befdecc5b7baabe953c161f4ec3756e304b0e7b4e1baf7da",
+  "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+  "mapsApiKeyConfigured": true,
+  "dataLayerPairIdentityVerified": true,
+  "signedApkArtifact": 13292825255,
+  "rawXmlArtifact": 13292137266,
+  "phoneDownload": "https://drive.google.com/file/d/1bNYaIqRfdtmKpajAmRHvjndZClW7128V/view?usp=drivesdk",
+  "phoneUploadVerified": true,
+  "deviceAccepted": false,
+  "excludes": "PR104 profile and statistics changes"
+}

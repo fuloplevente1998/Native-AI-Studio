@@ -128,7 +128,10 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                                         else if (native.exercise1RmTrend.isEmpty()) Text("Nincs érvényes súly/ismétlés alapú 1RM-adat.", color = palette.textSecondary)
                                         else {
                                             Text("Legutóbbi becslés: ${number.format(native.exercise1RmTrend.last().e1rmKg)} kg", color = palette.textPrimary)
-                                            TrendCanvas(native.exercise1RmTrend.map { it.e1rmKg })
+                                            Box(Modifier.fillMaxWidth().height(160.dp)
+                                                .testTag("statistics_record_chart_${record.exerciseId}")) {
+                                                TrendCanvas(native.exercise1RmTrend.map { it.e1rmKg })
+                                            }
                                         }
                                     } else if (record.distanceMeters != null || record.measurementType == "distance" || record.repUnit in listOf("km", "m")) {
                                         NativeCardioProgressPanel(native, onActivity, onRetry)
@@ -143,7 +146,9 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                     Text(if (state.cardioFilterStepsMode) "Napi aktivitás / lépések" else "Minden mozgás")
                 }
                 if (!state.cardioFilterStepsMode) NativeCardioProgressPanel(native, onActivity, onRetry)
-                DailyActivityStatistics(state, number)
+                if (state.cardioFilterStepsMode || native.selectedCardioId == NativeCardioModel.ALL_ACTIVITIES) {
+                    DailyActivityStatistics(state, number)
+                }
             }
         }
     }
@@ -187,13 +192,7 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
             ).forEach { row ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     row.forEach { (label, value) ->
-                        Surface(shape = MaterialTheme.shapes.large, color = palette.surfaceElevated,
-                            modifier = Modifier.weight(1f).trainPilotBorder(1.dp, palette.cardBorder, MaterialTheme.shapes.large)) {
-                            Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                Text(label, color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
-                                Text(value, color = palette.textPrimary, style = MaterialTheme.typography.headlineSmall)
-                            }
-                        }
+                        StatisticsMetricTile(label, value, Modifier.weight(1f))
                     }
                 }
             }
