@@ -1,0 +1,88 @@
+{
+  "date": "2026-11-04",
+  "sourceSha": "99f2adf74d0e485dad8e37940a981b428b518f99",
+  "versionCode": 2753,
+  "versionName": "0.1.0-beta",
+  "applicationId": "com.TrainPilot.com",
+  "signedRun": 41905695506,
+  "signedRunUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41905695506",
+  "signedArtifactId": 13360792555,
+  "signedArtifactUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41905695506/artifacts/13360792555",
+  "artifactZipSha256": "9ef062a5fe4c476dae48f5fbc5a5c223c91f454c44d2f23957ff1c4bfc1d0cdf",
+  "apks": {
+    "phone": {
+      "bytes": 20433912,
+      "sha256": "49952a51b5ec5794cf5a6272240ad9d4fa64d57f96400edb87412e89e981236d",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "versionCode": "2753"
+    },
+    "wear": {
+      "bytes": 4636863,
+      "sha256": "333d0c9944933385ce4289a881940bf4f3c6b00bf89c1aa0f1bdd4d3c3f332f0",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "versionCode": "2753"
+    }
+  },
+  "mapsApiKeyConfigured": true,
+  "dataLayerPairIdentityVerified": true,
+  "wearCompanionCapabilityRetained": true,
+  "wearHardwareRequired": true,
+  "signedRawJUnit": {
+    "phone": 284,
+    "wear": 176,
+    "sharedNoSource": true,
+    "total": 460,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "photoRegressions": 7
+  },
+  "photoPrCi": {
+    "pr": 113,
+    "run": 41902937087,
+    "headSha": "1b5b763e2078d692d52ac8f9e8f4bd1d5f4bb7e7",
+    "checkoutSha": "453a7f0e4b7c84661965193167285249d51b3146",
+    "sameHeadAndCheckoutTree": true,
+    "total": 462,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "regressionOnlyCi": {
+    "pr": 115,
+    "run": 41906780189,
+    "headSha": "6f508a0a2fc32459baa788114edf74bcf0d128a1",
+    "total": 460,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "gradleProfileSeconds": 378.75,
+    "actionableTasks": 76,
+    "executedTasks": 71,
+    "fromCacheTasks": 5,
+    "apkPackagingDexOrR8Tasks": 0,
+    "gradleUserHomeInitiallyEmpty": true
+  },
+  "signedColdGradleProfileSeconds": 794.13,
+  "mainGradleCacheSaveVerified": true,
+  "deviceAcceptance": "pending",
+  "driveUploaded": false,
+  "delivery": "GitHub artifact ZIP plus unpacked APK copies in the task workspace; no Drive connector available in this session",
+  "warmRegressionCi": {
+    "run": 41908345166,
+    "sourceSha": "05d820a27933c79088e62af390a9dba5b6dad455",
+    "gradleStepSeconds": 23,
+    "jobSeconds": 86,
+    "actionableTasks": 76,
+    "executedTasks": 24,
+    "fromCacheTasks": 52,
+    "testTasksFromCache": true,
+    "rawJUnit": {
+      "tests": 460,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "sourceEquivalentToSignedApplicationAndTests": true
+  }
+}

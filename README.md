@@ -1,5 +1,7 @@
 # TrainPilot – native AI Studio app
 
+**Current source, verified APKs and pending device checks: [CURRENT_STATUS](docs/CURRENT_STATUS.md).**
+
 **Continue from the latest `main`, using the current handoff:**
 
 - [Native implementation / verification handoff](docs/AI_STUDIO_HANDOFF_2026-11-02.md)
@@ -27,8 +29,8 @@ The debug variant here is only the existing test harness (including the Compose 
 
 The phone artifact is release; Wear release already uses R8 and resource shrinking. Download phone and Wear APKs from the same successful signed run. The release workflow also runs all JVM tests and verifies actual manifests, package/version, APK hashes, pinned persistent signer, Maps configuration and phone/Wear capability/identity. `trainpilot-apk-metadata` from older debug CI runs is historical; new verification JSON is bundled with the signed pair.
 
-Latest application
-main source is `b96982d`: **0.1.0-beta / 2738**, after **50/50 targeted regressions**.
+Historical 2738 checkpoint: application
+main source was `b96982d`: **0.1.0-beta / 2738**, after **50/50 targeted regressions**.
 **277/277 full tests pass** in signed Actions `41492179428` (108 phone + 169 Wear; no failures/errors/skips). Signed APKs and source/signer proof
 are recorded in the handoff and PR #22. Existing Gradle signing configurations remain intact.
 

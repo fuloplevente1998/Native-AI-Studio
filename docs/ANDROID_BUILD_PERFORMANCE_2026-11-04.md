@@ -52,4 +52,25 @@ telepíthető debug APK nélkül. Ez nem tesztszűrés: a teljes tesztcsomag vá
 A tényleges APK-k fordítása, pinned aláírása, package/verzió/Maps/páros-ellenőrzése
 az aláírt release job kapuja marad. A PR tesztriport nem állít APK-elfogadást.
 Az új útvonalon a tasklistából és a Gradle profilból ellenőrizhető, hogy nem fut
-assemble, dexBuilder, package vagy minify/R8 a PR teszteléséhez.
+assemble, dexBuilder, APK-package vagy minify/R8 a PR teszteléséhez.
+
+## Első igazolt eredmények
+
+- PR115 / CI41906780189: üres Gradle User Home indulás mellett **6m18.75s**
+  Gradle, 76 task (71 végrehajtva, 5 FROM-CACHE), 460 nyers teszt, 0 hiba/kihagyás.
+  A dekódolt tasklogban nincs APK assemble/package, DEX vagy minify/R8 task.
+  A korábbi fotós CI41902937087 Gradle-lépése 13m03s volt. A modulok termékforrása
+  azonos; a két sablonteszt már hiányzik. Ezek külön mérések, runner-ingadozás lehetséges.
+- Signed main41905695506: **13m14.13s** hideg Gradle, 210 task (183 végrehajtva,
+  27 FROM-CACHE), ugyanaz a 460 teszt. A Gradle main-cache, dependency és transform
+  bejegyzések elmentése a post-step logban igazolt. A telefon release 20 433 912,
+  az R8-optimalizált Wear release 4 636 863 bájt. A signed job továbbra is mindkét
+  variánst fordítja a meglévő debug tesztharness miatt; PR CI-ben nincs APK-csomagolás.
+
+- Meleg-cache mérés mainen: CI41908345166, source05d820a. Gradle-lépés 23 mp,
+  teljes job 1m26s, 76 taskból 52 FROM-CACHE és 24 végrehajtott. Az app/Wear
+  compile és test taskok is FROM-CACHE; a visszaállított 460 XML eredmény
+  hiba/kihagyás nélküli, a GitHub ZIP digest és a source-report visszaellenőrizve.
+  A termék- és tesztforrás azonos a signed99f2adf forrással; a workflow/docs
+  változott. Ez bizonyítja a main-cache visszaolvasását másik jobból. Az új kód
+  újrafordítást igényelhet: a 23 mp nem minden következő APK-ra szóló ígéret.
