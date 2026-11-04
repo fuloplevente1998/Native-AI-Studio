@@ -35,6 +35,8 @@ Amíg `in_progress`, az alábbi fájlok csak olvashatók az AI Studiónak:
 - app/src/main/java/com/example/ui/screens/ActiveMeasurementScreens.kt
 - app/src/main/java/com/example/ui/screens/WorkoutAndPlanningScreens.kt
 - app/src/main/java/com/example/ui/components/StudioWorkoutHandoverBar.kt
+- app/src/main/java/com/example/ui/components/WorkoutPresentationLabels.kt
+- app/src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt (csak a dizájn lezárásáig; aktív egység-megjelenítési projekció)
 - app/src/main/java/com/example/ui/theme/Type.kt
 - app/src/main/java/com/repforge/app/ui/theme/NativeStudioTypography.kt
 - app/src/main/java/com/example/ui/theme/TrainPilotPalettes.kt
@@ -105,6 +107,10 @@ Használd a meglévő AppLanguage/LocalizedStrings és nativeResources mintákat
 - [app/src/main/res/values-en/strings.xml](https://raw.githubusercontent.com/fuloplevente1998/Native-AI-Studio/main/app/src/main/res/values-en/strings.xml)
 - [app/src/main/res/values-de/strings.xml](https://raw.githubusercontent.com/fuloplevente1998/Native-AI-Studio/main/app/src/main/res/values-de/strings.xml)
 - [app/src/main/res/values-ro/strings.xml](https://raw.githubusercontent.com/fuloplevente1998/Native-AI-Studio/main/app/src/main/res/values-ro/strings.xml)
+
+További aktuális belépési utak:
+- https://raw.githubusercontent.com/fuloplevente1998/Native-AI-Studio/main/app/src/main/java/com/example/localization/TrainPilotStrings.kt
+- https://raw.githubusercontent.com/fuloplevente1998/Native-AI-Studio/main/app/src/main/java/com/example/ui/components/WorkoutPresentationLabels.kt
 
 Ezek kezdőpontok, nem a teljes erőforrás-leltár: a repóban a többi values* XML-t és localization/ fájlt is olvasd. HU és RO glyph-készletet az1. rész után újra ellenőrizd az újonnan választott szövegeken.
 

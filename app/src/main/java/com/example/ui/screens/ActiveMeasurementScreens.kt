@@ -233,6 +233,13 @@ fun ActiveStrengthWorkoutScreen(
     } else {
         "Láb • Kézisúlyzó • 3×8–20 • Pihenő: 90 mp"
     }
+    val columnLabels = com.example.ui.components.strengthColumnLabels(currentExercise, uiState.language)
+    val setTableScroll = rememberScrollState()
+    val tableTextScale = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
+    val minimumSetTableWidth = 340.dp * tableTextScale
+    val setControlSize = 48.dp * tableTextScale.coerceAtMost(2f)
+    val setNumberSize = 36.dp * tableTextScale
+    val previousColumnWidth = 48.dp * tableTextScale
     var exerciseDropdownExpanded by remember { mutableStateOf(false) }
 
     // Interactive edit dialog state for filling in reps and weight
@@ -261,7 +268,7 @@ fun ActiveStrengthWorkoutScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "Súly (kg):",
+                        text = columnLabels.weight,
                         style = MaterialTheme.typography.labelMedium,
                         color = palette.primary,
                         fontWeight = FontWeight.Bold
@@ -297,7 +304,7 @@ fun ActiveStrengthWorkoutScreen(
 
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Ismétlések száma:",
+                        text = columnLabels.repetitions,
                         style = MaterialTheme.typography.labelMedium,
                         color = palette.primary,
                         fontWeight = FontWeight.Bold
@@ -605,21 +612,20 @@ fun ActiveStrengthWorkoutScreen(
             )
         }
 
-        // Table column header matching image 3: # | Előző | kg/kar | /láb | RIR | ✓ | —
+        // Header and rows share exact widths and horizontal scrolling at narrow/large-font sizes.
         item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("#", style = MaterialTheme.typography.labelSmall, color = palette.textMuted, modifier = Modifier.width(36.dp), textAlign = TextAlign.Center)
-                Text("Előző", style = MaterialTheme.typography.labelSmall, color = palette.textMuted, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
-                Text("kg/kar", style = MaterialTheme.typography.labelSmall, color = palette.textMuted, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-                Text("/láb", style = MaterialTheme.typography.labelSmall, color = palette.textMuted, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
+            Row(Modifier.horizontalScroll(setTableScroll).width(maxWidth.coerceAtLeast(minimumSetTableWidth)),
+                verticalAlignment = Alignment.CenterVertically) {
+                Text("#", style = MaterialTheme.typography.labelSmall, color = palette.textMuted, modifier = Modifier.width(setNumberSize), textAlign = TextAlign.Center)
+                Text("Előző", style = MaterialTheme.typography.labelSmall, color = palette.textMuted, modifier = Modifier.width(previousColumnWidth), textAlign = TextAlign.Center)
+                Text(columnLabels.weight, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, modifier = Modifier.weight(1f).padding(horizontal = 2.dp), textAlign = TextAlign.Center, maxLines = 2)
+                Text(columnLabels.repetitions, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, modifier = Modifier.weight(1f).padding(horizontal = 2.dp), textAlign = TextAlign.Center, maxLines = 2)
                 Text("RIR", style = MaterialTheme.typography.labelSmall, color = palette.textMuted, modifier = Modifier.weight(0.9f), textAlign = TextAlign.Center)
-                Text("✓", style = MaterialTheme.typography.labelSmall, color = palette.textMuted, modifier = Modifier.width(42.dp), textAlign = TextAlign.Center)
-                Text("—", style = MaterialTheme.typography.labelSmall, color = palette.textMuted, modifier = Modifier.width(36.dp), textAlign = TextAlign.Center)
+                Text("✓", style = MaterialTheme.typography.labelSmall, color = palette.textMuted, modifier = Modifier.width(setControlSize), textAlign = TextAlign.Center)
+                Spacer(Modifier.width(4.dp))
+                Text("−", style = MaterialTheme.typography.labelSmall, color = palette.textMuted, modifier = Modifier.width(setControlSize), textAlign = TextAlign.Center)
+            }
             }
         }
 
@@ -637,25 +643,27 @@ fun ActiveStrengthWorkoutScreen(
                         shape = RoundedCornerShape(16.dp)
                     )
             ) {
-                Column(modifier = Modifier.padding(10.dp)) {
-                    // Top row with values
+                Column(modifier = Modifier.padding(8.dp)) {
+                    // Only this table scrolls horizontally when the text cannot fit safely.
+                    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.horizontalScroll(setTableScroll).width(maxWidth.coerceAtLeast(minimumSetTableWidth)),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // 1. Yellow circle number
+                        // 1. Same rounded control shape as the editable fields and actions
                         Box(
                             modifier = Modifier
-                                .size(34.dp)
-                                .clip(CircleShape)
-                                .background(palette.primary),
+                                .size(setNumberSize)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (setItem.completed) palette.primary else palette.surfaceElevated)
+                                .trainPilotBorder(1.dp, if (isActiveSet) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = "${setItem.setNumber}",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = palette.onPrimary
+                                color = if (setItem.completed) palette.onPrimary else palette.primary
                             )
                         }
 
@@ -664,20 +672,20 @@ fun ActiveStrengthWorkoutScreen(
                             text = "${setItem.weightKg}×${setItem.reps}",
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.textSecondary,
-                            modifier = Modifier.width(56.dp),
+                            modifier = Modifier.width(previousColumnWidth),
                             textAlign = TextAlign.Center
                         )
 
                         // 3. kg/kar input pill
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = palette.background,
+                            shape = RoundedCornerShape(10.dp),
+                            color = palette.surfaceElevated,
                             modifier = Modifier
                                 .weight(1f)
-                                .height(38.dp)
+                                .height(setControlSize)
                                 .padding(horizontal = 2.dp)
-                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
-                                .clip(RoundedCornerShape(8.dp))
+                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(10.dp))
                                 .clickable {
                                     editingSet = setItem
                                     editWeightText = setItem.weightKg.toString()
@@ -697,14 +705,14 @@ fun ActiveStrengthWorkoutScreen(
 
                         // 4. /láb (reps) input pill
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = palette.background,
+                            shape = RoundedCornerShape(10.dp),
+                            color = palette.surfaceElevated,
                             modifier = Modifier
                                 .weight(1f)
-                                .height(38.dp)
+                                .height(setControlSize)
                                 .padding(horizontal = 2.dp)
-                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
-                                .clip(RoundedCornerShape(8.dp))
+                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(10.dp))
                                 .clickable {
                                     editingSet = setItem
                                     editWeightText = setItem.weightKg.toString()
@@ -724,14 +732,14 @@ fun ActiveStrengthWorkoutScreen(
 
                         // 5. RIR input pill
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = palette.background,
+                            shape = RoundedCornerShape(10.dp),
+                            color = palette.surfaceElevated,
                             modifier = Modifier
                                 .weight(0.9f)
-                                .height(38.dp)
+                                .height(setControlSize)
                                 .padding(horizontal = 2.dp)
-                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
-                                .clip(RoundedCornerShape(8.dp))
+                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(10.dp))
                                 .clickable {
                                     val nextRir = if (!setItem.actualRirProvided || setItem.rir >= 3) 0 else setItem.rir + 1
                                     onUpdateSetValuesExact(setItem.setNumber, setItem.weightKg, setItem.reps, nextRir)
@@ -748,12 +756,12 @@ fun ActiveStrengthWorkoutScreen(
 
                         // 6. OK button
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = if (setItem.completed) palette.primary else palette.surfaceElevated,
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (setItem.completed) palette.primary else palette.tintedSurface(0.16f),
                             modifier = Modifier
-                                .size(width = 40.dp, height = 38.dp)
-                                .trainPilotBorder(1.dp, if (setItem.completed) palette.primary else palette.cardBorder, RoundedCornerShape(8.dp))
-                                .clip(RoundedCornerShape(8.dp))
+                                .size(setControlSize)
+                                .trainPilotBorder(1.dp, if (setItem.completed) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(10.dp))
                                 .clickable { onToggleSetCompleted(setItem.setNumber) }
                                 .testTag("toggle_set_${setItem.setNumber}")
                         ) {
@@ -769,20 +777,21 @@ fun ActiveStrengthWorkoutScreen(
 
                         Spacer(modifier = Modifier.width(4.dp))
 
-                        // 7. Red circle minus button (removes set)
+                        // 7. Destructive action uses the same rounded square, with a semantic red frame
                         Surface(
-                            shape = CircleShape,
-                            color = Color(0xFF6B1A1A),
+                            shape = RoundedCornerShape(10.dp),
+                            color = palette.danger.copy(alpha = 0.16f),
                             modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
+                                .size(setControlSize)
+                                .trainPilotBorder(1.dp, palette.danger, RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(10.dp))
                                 .clickable { onDeleteSet(setItem.setNumber) }
                                 .testTag("delete_set_${setItem.setNumber}")
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     text = "—",
-                                    color = Color(0xFFFF8A80),
+                                    color = palette.danger,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp
                                 )
@@ -790,7 +799,8 @@ fun ActiveStrengthWorkoutScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     // Row of quick adjustment chips matching screenshot 3
                     Row(

@@ -8,12 +8,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.repforge.app.R
 
-// Original font bytes from the user-supplied Studio export. These are static regular
-// faces: register their real weight and let Compose synthesize missing bold weights.
-// Font licenses are bundled in assets/font-licenses. Never clamp system fontScale.
-val TrainPilotDisplayFont = FontFamily(Font(R.font.space_grotesk, FontWeight.Normal))
-val TrainPilotBodyFont = FontFamily(Font(R.font.plus_jakarta_sans, FontWeight.Normal))
-val TrainPilotNumericFont = FontFamily(Font(R.font.jetbrains_mono, FontWeight.Normal))
+// Full Latin Extended static instances of the licensed upstream fonts. Register each real
+// weight once for both Studio and native widgets; preserve system fontScale.
+val TrainPilotDisplayFont = FontFamily(
+    Font(R.font.space_grotesk, FontWeight.Normal),
+    Font(R.font.space_grotesk_medium, FontWeight.Medium),
+    Font(R.font.space_grotesk_semibold, FontWeight.SemiBold),
+    Font(R.font.space_grotesk_bold, FontWeight.Bold))
+val TrainPilotBodyFont = FontFamily(
+    Font(R.font.plus_jakarta_sans, FontWeight.Normal),
+    Font(R.font.plus_jakarta_sans_medium, FontWeight.Medium),
+    Font(R.font.plus_jakarta_sans_semibold, FontWeight.SemiBold),
+    Font(R.font.plus_jakarta_sans_bold, FontWeight.Bold))
+val TrainPilotNumericFont = FontFamily(
+    Font(R.font.jetbrains_mono, FontWeight.Normal),
+    Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+    Font(R.font.jetbrains_mono_semibold, FontWeight.SemiBold),
+    Font(R.font.jetbrains_mono_bold, FontWeight.Bold))
 
 private fun studioText(size: Float, height: Int, weight: FontWeight = FontWeight.Normal,
     family: FontFamily = TrainPilotBodyFont) = TextStyle(fontFamily = family,

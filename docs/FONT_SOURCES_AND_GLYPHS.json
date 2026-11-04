@@ -1,0 +1,99 @@
+{
+  "upstreamCommit": "2fe1e8c6b137fb13041a7cfca6fdcd8a910ea4dc",
+  "requiredCharacters": "áéíóöőúüűÁÉÍÓÖŐÚÜŰăâîșțĂÂÎȘȚäöüÄÖÜß",
+  "families": [
+    {
+      "family": "space_grotesk",
+      "source": "https://raw.githubusercontent.com/google/fonts/2fe1e8c6b137fb13041a7cfca6fdcd8a910ea4dc/ofl/spacegrotesk/SpaceGrotesk%5Bwght%5D.ttf",
+      "sourceSha256": "acad6de1fc93436f5c0f1f4137751ef04f1aea3063e7036535970ffcfbd79f72",
+      "instances": [
+        {
+          "path": "app/src/main/res/font/space_grotesk.ttf",
+          "weight": 400,
+          "sha256": "1fce44f492966e5bfd889939e125aea641e5643991c9d3f048fbf6ee496e81bb",
+          "bytes": 88324
+        },
+        {
+          "path": "app/src/main/res/font/space_grotesk_medium.ttf",
+          "weight": 500,
+          "sha256": "7da39ed03c5de358184e83df6091ca0fc7f64e3862be9bf6cf346161992e6090",
+          "bytes": 88332
+        },
+        {
+          "path": "app/src/main/res/font/space_grotesk_semibold.ttf",
+          "weight": 600,
+          "sha256": "3da131a2f97aca90c3851febcdc9aff52a0da9742871d2100c2d64c728259ff9",
+          "bytes": 88216
+        },
+        {
+          "path": "app/src/main/res/font/space_grotesk_bold.ttf",
+          "weight": 700,
+          "sha256": "36974d36c9b19572d84d36bfb127c29d8d27457ee3986771df41af015f8f493a",
+          "bytes": 88256
+        }
+      ]
+    },
+    {
+      "family": "plus_jakarta_sans",
+      "source": "https://raw.githubusercontent.com/google/fonts/2fe1e8c6b137fb13041a7cfca6fdcd8a910ea4dc/ofl/plusjakartasans/PlusJakartaSans%5Bwght%5D.ttf",
+      "sourceSha256": "89b3fb38aa0d275d7a731d0d817a4f1622b316b4d7fbdedcf02ee9099ff68bc8",
+      "instances": [
+        {
+          "path": "app/src/main/res/font/plus_jakarta_sans.ttf",
+          "weight": 400,
+          "sha256": "841f299170eb7b8f081384420c600fba5f045a222730f42eb6330f900a9f88f2",
+          "bytes": 96572
+        },
+        {
+          "path": "app/src/main/res/font/plus_jakarta_sans_medium.ttf",
+          "weight": 500,
+          "sha256": "6d6b79e460c9455de1c25a53143d9a025a16afb2adf0f1ddcdd8e03f1b0f7e0a",
+          "bytes": 96584
+        },
+        {
+          "path": "app/src/main/res/font/plus_jakarta_sans_semibold.ttf",
+          "weight": 600,
+          "sha256": "785feb814cae8c07cb1c7707b3824e669eeb9a99d76d719c84a11b7aeac12dbe",
+          "bytes": 96564
+        },
+        {
+          "path": "app/src/main/res/font/plus_jakarta_sans_bold.ttf",
+          "weight": 700,
+          "sha256": "6cf70bf361f28266fd51d7a3ca8a3e007cb01762237a841163c6db47bb3ab586",
+          "bytes": 96500
+        }
+      ]
+    },
+    {
+      "family": "jetbrains_mono",
+      "source": "https://raw.githubusercontent.com/google/fonts/2fe1e8c6b137fb13041a7cfca6fdcd8a910ea4dc/ofl/jetbrainsmono/JetBrainsMono%5Bwght%5D.ttf",
+      "sourceSha256": "48715a42ec242c21e9f02692891e147d022299a52e48d5e413e1a942193ffeda",
+      "instances": [
+        {
+          "path": "app/src/main/res/font/jetbrains_mono.ttf",
+          "weight": 400,
+          "sha256": "9f760203af06f6e545ca7818ac04478b6685fab55a2a36bfb8be93b455177792",
+          "bytes": 115152
+        },
+        {
+          "path": "app/src/main/res/font/jetbrains_mono_medium.ttf",
+          "weight": 500,
+          "sha256": "6d4ec1b7cf53d0fdc93b8c32c6a957000694c2c868ba63ea0856e4b1c938c1c5",
+          "bytes": 115172
+        },
+        {
+          "path": "app/src/main/res/font/jetbrains_mono_semibold.ttf",
+          "weight": 600,
+          "sha256": "66e0cf93408e2268ed48f4551aba24b6d3ef85eead9c5cae6041f42b07a51313",
+          "bytes": 115084
+        },
+        {
+          "path": "app/src/main/res/font/jetbrains_mono_bold.ttf",
+          "weight": 700,
+          "sha256": "c8268a34460f64f09194ec1fd715c6520669c8d4635bd8d6eb3d67e011782faf",
+          "bytes": 115108
+        }
+      ]
+    }
+  ]
+}

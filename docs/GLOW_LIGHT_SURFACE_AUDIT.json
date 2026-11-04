@@ -1,0 +1,135 @@
+{
+  "palettes": [
+    {
+      "id": 17,
+      "background": "070C09",
+      "card": "1B3024",
+      "inner": "2D4A38",
+      "textMinimum": 5.87
+    },
+    {
+      "id": 18,
+      "background": "060C14",
+      "card": "1A2D44",
+      "inner": "2C4867",
+      "textMinimum": 5.4
+    },
+    {
+      "id": 19,
+      "background": "0E0806",
+      "card": "342117",
+      "inner": "4F3426",
+      "textMinimum": 5.32
+    },
+    {
+      "id": 20,
+      "background": "080917",
+      "card": "222440",
+      "inner": "393B60",
+      "textMinimum": 5.12
+    },
+    {
+      "id": 21,
+      "background": "0E0616",
+      "card": "30203F",
+      "inner": "4B3360",
+      "textMinimum": 5.21
+    },
+    {
+      "id": 22,
+      "background": "050E08",
+      "card": "183222",
+      "inner": "2A5038",
+      "textMinimum": 5.46
+    },
+    {
+      "id": 23,
+      "background": "100B05",
+      "card": "382B16",
+      "inner": "554225",
+      "textMinimum": 5.43
+    },
+    {
+      "id": 24,
+      "background": "050C12",
+      "card": "183044",
+      "inner": "294D68",
+      "textMinimum": 6.23
+    },
+    {
+      "id": 25,
+      "background": "E7D8DC",
+      "card": "FFFFFF",
+      "inner": "F1DDE4",
+      "textMinimum": 4.89
+    },
+    {
+      "id": 26,
+      "background": "DEDAED",
+      "card": "FFFFFF",
+      "inner": "E9DFF7",
+      "textMinimum": 4.74
+    },
+    {
+      "id": 27,
+      "background": "D2E5E1",
+      "card": "FFFFFF",
+      "inner": "DCEEE8",
+      "textMinimum": 4.9
+    },
+    {
+      "id": 28,
+      "background": "E8DEC9",
+      "card": "FFFFFF",
+      "inner": "F1E5CF",
+      "textMinimum": 4.76
+    },
+    {
+      "id": 29,
+      "background": "D5E1EC",
+      "card": "FFFFFF",
+      "inner": "DEEBF6",
+      "textMinimum": 4.83
+    },
+    {
+      "id": 30,
+      "background": "EAD9D0",
+      "card": "FFFFFF",
+      "inner": "F6E1D7",
+      "textMinimum": 4.74
+    },
+    {
+      "id": 31,
+      "background": "D4E4DA",
+      "card": "FFFFFF",
+      "inner": "DDEFE3",
+      "textMinimum": 4.86
+    },
+    {
+      "id": 32,
+      "background": "D9DFED",
+      "card": "FFFFFF",
+      "inner": "E2E9F7",
+      "textMinimum": 4.8
+    }
+  ],
+  "unchangedPaletteIds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "method": "sRGB relative luminance; text tokens >=4.5:1 on background/card/inner; decorative layer distinction also needs device review"
+}

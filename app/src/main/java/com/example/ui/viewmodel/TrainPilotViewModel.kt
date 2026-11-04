@@ -1321,7 +1321,8 @@ class TrainPilotViewModel : ViewModel() {
                                     isTimed = exObj.optString("measurementType").contains("time"),
                                     isBilateral = exObj.optString("measurementType").contains("bilateral") || exObj.optString("repUnit").contains("oldal")
                                 )
-                                list.add(catalogEx)
+                                list.add(com.example.ui.components.withNativeStrengthUnits(catalogEx,
+                                    exObj.opt("loadType") as? String, exObj.opt("repUnit") as? String))
                                 val setsArr = exObj.optJSONArray("sets")
                                 if (setsArr != null && setsArr.length() > 0) {
                                     val sList = (0 until setsArr.length()).mapNotNull { sIdx ->
@@ -3041,7 +3042,9 @@ class TrainPilotViewModel : ViewModel() {
                 }
                 val exercises = (0 until ids.length()).map { index ->
                     val raw = ids.getJSONObject(index)
-                    mapExerciseEntity(requireNotNull(library[raw.getString("id")]))
+                    com.example.ui.components.withNativeStrengthUnits(
+                        mapExerciseEntity(requireNotNull(library[raw.getString("id")])),
+                        raw.opt("loadType") as? String, raw.opt("repUnit") as? String)
                 }
                 val sets = (0 until ids.length()).associate { index ->
                     val raw = ids.getJSONObject(index)
