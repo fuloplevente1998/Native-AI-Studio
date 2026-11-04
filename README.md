@@ -13,18 +13,21 @@ signing configuration must remain intact. No fake Health/Wear/GPS data or silent
 user-data reset. The native watch companion is now `:wear`; the unchanged shared
 native contracts live in `:shared`.
 
-CI uses Gradle 9.3.1 / JDK 17 / Android 36.1:
+CI uses Gradle 9.3.1 / JDK 17 / Android 36.1 and compiles the real phone/Wear sources for the complete JVM regressions:
 
 ```
-:app:assembleDebug :app:testDebugUnitTest
-:wear:assembleDebug :wear:assembleOptimized :wear:testDebugUnitTest :shared:testDebugUnitTest
+:app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest
 ```
 
-Download phone and Wear APKs from the same successful run. Actual manifests and
-signatures are checked together; `trainpilot-apk-metadata` records package/version,
-APK hashes, signer fingerprints and Maps key presence without exposing the key.
-Ordinary CI debug signers are temporary. Device APKs now use the owner-managed persistent
-key through `trainpilot-persistent-signing.yml` / `android-signing`. Latest application
+The debug variant here is only the existing test harness (including the Compose test Activity); CI no longer packages debug or extra optimized test APKs. Device installers come only from `trainpilot-persistent-signing.yml` / `android-signing` on main:
+
+```
+:app:assembleRelease :wear:assembleRelease
+```
+
+The phone artifact is release; Wear release already uses R8 and resource shrinking. Download phone and Wear APKs from the same successful signed run. The release workflow also runs all JVM tests and verifies actual manifests, package/version, APK hashes, pinned persistent signer, Maps configuration and phone/Wear capability/identity. `trainpilot-apk-metadata` from older debug CI runs is historical; new verification JSON is bundled with the signed pair.
+
+Latest application
 main source is `b96982d`: **0.1.0-beta / 2738**, after **50/50 targeted regressions**.
 **277/277 full tests pass** in signed Actions `41492179428` (108 phone + 169 Wear; no failures/errors/skips). Signed APKs and source/signer proof
 are recorded in the handoff and PR #22. Existing Gradle signing configurations remain intact.

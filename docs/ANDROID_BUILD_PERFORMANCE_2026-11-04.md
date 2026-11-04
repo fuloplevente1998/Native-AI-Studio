@@ -37,3 +37,19 @@ FROM-CACHE taskok és profil. Konkrét gyorsulást csak ezek összevetése után
 A forrásváltozás továbbra is invalidálhat fordítást. A kiadási futás debug JVM-
 tesztjei egyelőre megmaradnak: a Compose teszt-Activity a debug manifestből jön,
 így a puszta testReleaseUnitTest-re csere nem bizonyítottan egyenértékű.
+
+## Csak release telepítők, külön teszt-APK csomagolás nélkül
+
+A felhasználó csak release telefonos APK-t és optimalizált Wear APK-t kér.
+A signed folyamat már ezt állítja elő: Wear release `isMinifyEnabled=true`,
+`isShrinkResources=true`. A PR CI ezentúl csak a teljes JVM/Robolectric csomagot
+futtatja, a valós telefon/Wear forrás és erőforrás lefordításával. Nem hívja az
+assembleDebug / assembleOptimized taskokat, így nem dexel és R8-csomagol felesleges
+telepítőket. Az ideiglenes debug kulcs és a debug APK artifactok is megszűnnek.
+A debug UnitTest variáns a meglévő Compose teszt-Activity miatt egyelőre megmarad,
+telepíthető debug APK nélkül. Ez nem tesztszűrés: a teljes tesztcsomag változatlan.
+
+A tényleges APK-k fordítása, pinned aláírása, package/verzió/Maps/páros-ellenőrzése
+az aláírt release job kapuja marad. A PR tesztriport nem állít APK-elfogadást.
+Az új útvonalon a tasklistából és a Gradle profilból ellenőrizhető, hogy nem fut
+assemble, dexBuilder, package vagy minify/R8 a PR teszteléséhez.
