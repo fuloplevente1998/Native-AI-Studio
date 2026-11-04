@@ -1,0 +1,25 @@
+{
+  "pr": 101,
+  "sourceHead": "5f0277347cc30b1de06d455791f0cef3e7d72a2e",
+  "ciCheckout": "ab12cd66e9c575a7e99fc98cbf1335c219f25e4c",
+  "run": 41733206574,
+  "job": 126256024416,
+  "rawXmlArtifact": 13278204861,
+  "metadataArtifact": 13277263281,
+  "tests": {
+    "tests": 434,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "modules": {
+    "phone": 258,
+    "wear": 176
+  },
+  "fontFacesVerified": 12,
+  "videoJsChecks": 7,
+  "appVersionCode": 2748,
+  "newSignedApkCreated": false,
+  "deviceAccepted": false,
+  "mainSource": "4737d72c75f191b18980bc40885633c1c43b5c99"
+}

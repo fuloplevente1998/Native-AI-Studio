@@ -1,5 +1,15 @@
 # TrainPilot Native – aktuális állapot, 2026-11-03
 
+## Friss main dizájn – PR101, 2026-11-04
+
+A dizájncsomag mainen: **4737d72c75f191b18980bc40885633c1c43b5c99**. Teljes CI434 =258 telefon+176Wear, 0 failure/error/skipped, 12 valódi fontarc glyph/súly/hash/licenc ellenőrzés és JS7 PASS. [Bizonyíték](DESIGN_CI_2026-11-04.json), [változások](DESIGN_FONT_THEME_IMPLEMENTATION.md).
+
+Elkészült forrásban: #95 egységes sorozatvezérlők/egységfeliratok, #97 ismételt napcímek, #98 teljes ékezetes fontok és valódi súlyok, #99 glow/világos felületek és natív kijelölések, valamint a telefon/óra átadási sáv kompakt dizájnja. Motor és parancsok változatlanok; az aktív egységek csak UI-projekcióban maradnak meg. A készülékes vizuális elfogadás a következő APK-val szükséges.
+
+Az AI Studio most átveheti a **friss main** képernyőinek nyelvi bekötését, a kész dizájn megőrzésével. [Main/raw átadó](https://raw.githubusercontent.com/fuloplevente1998/Native-AI-Studio/main/docs/AI_STUDIO_LANGUAGES_VIDEO_DATA_HANDOFF_2748.md), [állapotjelző](DESIGN_WORK_STATUS.md). További AI Studio-scope: videóhiba, régi feedback audit, végül adatvédelmi tájékoztató.
+
+**Az alábbi2748 továbbra is a legutóbb átadott aláírt APK, régebbi f74133a alkalmazásforrással; nem tartalmazza az új PR101-dizájnt.** Ez a kör nem készített új aláírt kiadást. A korábbi #95-hátralévő státuszt a fenti friss implementáció felülírja.
+
 ## Legfrissebb kiadás: 2748 / PR90
 
 **[Telefonos APK letöltése – 2748](https://drive.google.com/file/d/1SquNqT68gJtxt5zGQUuqlPlVU-_kEr9C/view?usp=drivesdk)**. Elég a telefonos appot frissíteni; a Wear alkalmazáslogika változatlan, órás újratelepítés nem szükséges. Package `com.TrainPilot.com`, versionName `0.1.0-beta`, versionCode2748, a megszokott állandó aláíró.
