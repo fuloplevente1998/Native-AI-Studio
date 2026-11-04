@@ -4342,24 +4342,37 @@ class TrainPilotViewModel : ViewModel() {
         reloadNativeEnvironment(context, store, db, scope)
     }
 
-    fun toggleSoundAlert(enabled: Boolean) {
-        _uiState.update { it.copy(soundAlertEnabled = enabled) }
-        val store = nativeSettingsStore
-        val scope = nativeScope
-        if (store != null && scope != null) {
-            val current = _uiState.value
-            scope.launch(Dispatchers.IO) {
-                try {
+    // Rest/sound/haptic settings are immediate, unlike the separately approved modes.
+    // Serialize writes and preserve the user's interval work/round defaults.
+    private val studioTimerWriteMutex = Mutex()
+
+    private fun persistStudioTimerSettings() {
+        val store = nativeSettingsStore ?: return
+        val scope = nativeScope ?: return
+        scope.launch(Dispatchers.IO) {
+            try {
+                studioTimerWriteMutex.withLock {
+                    val saved = store.current()
+                    val ui = _uiState.value
                     store.setTimerDefaults(
-                        workSeconds = 30,
-                        restSeconds = current.defaultRestSec,
-                        rounds = 3,
-                        sound = enabled,
-                        vibration = current.vibrationEnabled
+                        workSeconds = saved.workSeconds,
+                        restSeconds = ui.defaultRestSec,
+                        rounds = saved.rounds,
+                        sound = ui.soundAlertEnabled,
+                        vibration = ui.vibrationEnabled,
+                        autoAdvance = saved.intervalAutoAdvance
                     )
-                } catch (_: Throwable) {}
+                }
+            } catch (error: kotlinx.coroutines.CancellationException) { throw error }
+            catch (error: Exception) {
+                _uiState.update { it.copy(statusBannerMessage = "Az időzítő beállítása nem menthető.") }
             }
         }
+    }
+
+    fun toggleSoundAlert(enabled: Boolean) {
+        _uiState.update { it.copy(soundAlertEnabled = enabled) }
+        persistStudioTimerSettings()
     }
 
     fun cycleDefaultRestTimer() {
@@ -4372,22 +4385,7 @@ class TrainPilotViewModel : ViewModel() {
             }
             it.copy(defaultRestSec = next, statusBannerMessage = "Alapértelmezett pihenőidő: $next mp")
         }
-        val store = nativeSettingsStore
-        val scope = nativeScope
-        if (store != null && scope != null) {
-            val current = _uiState.value
-            scope.launch(Dispatchers.IO) {
-                try {
-                    store.setTimerDefaults(
-                        workSeconds = 30,
-                        restSeconds = current.defaultRestSec,
-                        rounds = 3,
-                        sound = current.soundAlertEnabled,
-                        vibration = current.vibrationEnabled
-                    )
-                } catch (_: Throwable) {}
-            }
-        }
+        persistStudioTimerSettings()
     }
 
     private var pendingStudioMode: com.repforge.app.data.store.NativeTrainingModeChange.Preview? = null
@@ -4501,17 +4499,7 @@ class TrainPilotViewModel : ViewModel() {
 
     fun toggleVibrationAlert(enabled: Boolean) {
         _uiState.update { it.copy(vibrationEnabled = enabled) }
-        val store = nativeSettingsStore ?: return
-        val scope = nativeScope ?: return
-        val current = _uiState.value
-        scope.launch(Dispatchers.IO) {
-            try {
-                store.setTimerDefaults(workSeconds = 30, restSeconds = current.defaultRestSec,
-                    rounds = 3, sound = current.soundAlertEnabled, vibration = enabled)
-            } catch (error: Exception) {
-                _uiState.update { it.copy(statusBannerMessage = "A rezgés nem menthető.") }
-            }
-        }
+        persistStudioTimerSettings()
     }
 
     fun selectBackupFormat(format: String) {
