@@ -102,13 +102,28 @@ data class WeeklyHealthDaySummary(
     val pulse: PulseDayReading? = null
 )
 
-/** Comparison only; the canonical CAS-protected #197 proposal stays private to the ViewModel. */
+/** Read-only comparison for the exact saved native program and mode proposal. */
+data class StudioTrainingModeRow(
+    val day: String,
+    val exercise: String,
+    val beforeSets: Int?,
+    val afterSets: Int?,
+    val beforeReps: String,
+    val afterReps: String,
+    val restSeconds: Int?,
+    val beforeWeight: Double?,
+    val afterWeight: Double?,
+    val rir: String
+)
+
 data class StudioTrainingModeReview(
     val beforeStyle: String,
     val beforeProgression: String,
     val afterStyle: String,
     val afterProgression: String,
-    val inheritGlobal: Boolean
+    val inheritGlobal: Boolean,
+    val programName: String,
+    val rows: List<StudioTrainingModeRow>
 )
 
 data class TrainPilotUiState(
@@ -4389,11 +4404,13 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     private var pendingStudioMode: com.repforge.app.data.store.NativeTrainingModeChange.Preview? = null
+    private var pendingStudioComparison: com.repforge.app.ui.settings.NativeTrainingModeComparison.Snapshot? = null
     private var studioModeGeneration = 0L
 
     fun toggleProgressionModal(show: Boolean) {
         studioModeGeneration++
         pendingStudioMode = null
+        pendingStudioComparison = null
         _uiState.update {
             it.copy(showProgressionModal = show, progressionModeReview = null,
                 progressionModeBusy = false)
@@ -4403,6 +4420,7 @@ class TrainPilotViewModel : ViewModel() {
     fun discardProgressionPreview() {
         studioModeGeneration++
         pendingStudioMode = null
+        pendingStudioComparison = null
         _uiState.update { it.copy(progressionModeReview = null, progressionModeBusy = false) }
     }
 
@@ -4415,6 +4433,7 @@ class TrainPilotViewModel : ViewModel() {
             rule !in setOf("double", "linear", "rir") || (inherit && scopeName != "program")) return
         val token = ++studioModeGeneration
         pendingStudioMode = null
+        pendingStudioComparison = null
         _uiState.update { it.copy(progressionModeBusy = true, progressionModeReview = null) }
         scope.launch {
             try {
@@ -4426,8 +4445,13 @@ class TrainPilotViewModel : ViewModel() {
                     mode.prepare(saved.trainingModes197Json, saved.activeProgramId, scopeName,
                         if (scopeName == "program") saved.activeProgramId else null, style, rule)
                 }
+                val snapshot = withContext(Dispatchers.IO) {
+                    com.repforge.app.ui.settings.NativeTrainingModeComparison.read(
+                        requireNotNull(nativeContext), proposal)
+                }
                 if (studioModeGeneration != token || !_uiState.value.showProgressionModal) return@launch
                 pendingStudioMode = proposal
+                pendingStudioComparison = snapshot
                 _uiState.update { it.copy(
                     progressionModeBusy = false,
                     progressionModeReview = StudioTrainingModeReview(
@@ -4435,7 +4459,17 @@ class TrainPilotViewModel : ViewModel() {
                         beforeProgression = proposal.before.progressionMode,
                         afterStyle = proposal.after.trainingStyle,
                         afterProgression = proposal.after.progressionMode,
-                        inheritGlobal = proposal.inheritGlobal)
+                        inheritGlobal = proposal.inheritGlobal,
+                        programName = snapshot.programName,
+                        rows = snapshot.rows.map { row ->
+                            StudioTrainingModeRow(
+                                day = row.day, exercise = row.exercise,
+                                beforeSets = row.beforeSets, afterSets = row.afterSets,
+                                beforeReps = row.beforeReps, afterReps = row.afterReps,
+                                restSeconds = row.restSeconds,
+                                beforeWeight = row.beforeWeight, afterWeight = row.afterWeight,
+                                rir = row.rir)
+                        })
                 ) }
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
             catch (error: Exception) {
@@ -4448,14 +4482,21 @@ class TrainPilotViewModel : ViewModel() {
 
     fun approveProgressionSettings() {
         val proposal = pendingStudioMode ?: return
+        val comparison = pendingStudioComparison ?: return
+        val context = nativeContext ?: return
         val store = nativeSettingsStore ?: return
         val scope = nativeScope ?: return
         if (_uiState.value.progressionModeBusy || _uiState.value.progressionModeReview == null) return
         val token = ++studioModeGeneration
         pendingStudioMode = null
+        pendingStudioComparison = null
         _uiState.update { it.copy(progressionModeBusy = true) }
         scope.launch {
             try {
+                check(withContext(Dispatchers.IO) {
+                    com.repforge.app.ui.settings.NativeTrainingModeComparison.isCurrent(
+                        context, proposal, comparison)
+                }) { "Az előnézetben használt program időközben megváltozott." }
                 check(com.repforge.app.data.store.NativeTrainingModeChange.approve(store, proposal)) {
                     "A beállítás időközben módosult. Nyisd meg újra az előnézetet."
                 }
