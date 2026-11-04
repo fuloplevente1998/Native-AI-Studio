@@ -153,15 +153,42 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
         com.example.ui.components.LocalOpenWorkoutHealth provides { showLiveHealth = true },
         com.example.ui.components.LocalRequestWorkoutHealthPermission provides { provider -> requestPlatformPermission(if (provider == com.repforge.app.HealthJournalStore.SAMSUNG) "samsung_permission" else "hc_permission") },
         com.example.ui.components.LocalSyncDailyHealth provides { provider -> requestPlatformPermission(if (provider == com.repforge.app.HealthJournalStore.SAMSUNG) "samsung" else "hc") },
-        LocalOpenExerciseVideo provides { exTitle, exId -> viewModel.openExerciseVideoModal(exTitle, exId) }
+        LocalOpenExerciseVideo provides { exTitle, exId ->
+            val requestedId = exId?.takeIf { it.isNotBlank() }
+            val nameMatches = if (requestedId == null) {
+                uiState.exercises.filter { ex ->
+                    listOf(ex.nameHu, ex.nameEn, ex.nameDe, ex.nameRo)
+                        .any { it.equals(exTitle, ignoreCase = true) }
+                }
+            } else emptyList()
+            val selectedExercise = if (requestedId != null) {
+                uiState.exercises.firstOrNull { it.id == requestedId }
+            } else nameMatches.singleOrNull()
+            val details = com.example.ui.components.resolveExerciseVideoAndNotes(
+                exerciseTitle = exTitle,
+                exerciseId = selectedExercise?.id ?: requestedId,
+                storedVideoUrl = selectedExercise?.videoUrl,
+                isCustom = selectedExercise?.isCustom == true,
+                selectedNotesHu = selectedExercise?.localizedSteps(uiState.language)
+                    ?.joinToString(" ")
+                    ?.takeIf { it.isNotBlank() },
+                allowCatalogByTitle = nameMatches.size <= 1,
+                language = uiState.language.code.lowercase()
+            )
+            val externalUrl = details.link.externalUrl
+            val openedExternally = if (externalUrl != null) {
+                com.example.ui.components.openExternalExerciseVideoUrl(context, externalUrl)
+            } else false
+            if (!openedExternally) {
+                viewModel.openExerciseVideoModal(exTitle, exId)
+            }
+        }
     ) {
         if (showLiveHealth) com.example.ui.components.StudioLiveWorkoutHealthDialog { showLiveHealth = false }
 
-        // 0. Embedded YouTube Exercise Video Modal Dialog
+        // 0. Fallback Exercise Video Modal Dialog (only when missing/invalid URL or external browser launch fails)
         uiState.videoModalExerciseTitle?.let { exTitle ->
             val requestedId = uiState.videoModalExerciseId
-            // Prefer the exact exercise selected in the workout; name-only buttons
-            // may resolve only an unambiguous exact localized name.
             val nameMatches = if (requestedId == null) {
                 uiState.exercises.filter { ex ->
                     listOf(ex.nameHu, ex.nameEn, ex.nameDe, ex.nameRo)
@@ -172,14 +199,12 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                 uiState.exercises.firstOrNull { it.id == requestedId }
             } else nameMatches.singleOrNull()
             ExerciseYouTubeVideoModalDialog(
-                exerciseTitle = exTitle,
+                exerciseTitle = selectedExercise?.localizedName(uiState.language) ?: exTitle,
                 exerciseId = selectedExercise?.id ?: requestedId,
                 storedVideoUrl = selectedExercise?.videoUrl,
                 isCustom = selectedExercise?.isCustom == true,
-                // Multiple exercises may share a name; never pick a catalog
-                // video for an unidentified custom/imported exercise.
                 allowCatalogByTitle = nameMatches.size <= 1,
-                selectedNotesHu = selectedExercise?.stepsHu
+                selectedNotesHu = selectedExercise?.localizedSteps(uiState.language)
                     ?.joinToString(" ")
                     ?.takeIf { it.isNotBlank() },
                 onDismiss = { viewModel.closeExerciseVideoModal() }
@@ -981,14 +1006,38 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     )
             ) {
                 val activeExName = uiState.activeWorkoutExercises
-                    .getOrNull(uiState.activeExerciseIndex)?.nameHu
+                    .getOrNull(uiState.activeExerciseIndex)?.localizedName(uiState.language)
                     ?: uiState.activeWorkoutTitleHu
+                val activeStepLabel = when (uiState.language) {
+                    com.example.model.AppLanguage.HU -> "Aktív"
+                    com.example.model.AppLanguage.EN -> "Active"
+                    com.example.model.AppLanguage.DE -> "Aktiv"
+                    com.example.model.AppLanguage.RO -> "Activ"
+                }
                 val exStepText = if (uiState.activeWorkoutExercises.isNotEmpty()) {
                     "${uiState.activeExerciseIndex + 1}/${uiState.activeWorkoutExercises.size}"
-                } else "Aktív"
+                } else activeStepLabel
+                val restPrefix = when (uiState.language) {
+                    com.example.model.AppLanguage.HU -> "Pihenő"
+                    com.example.model.AppLanguage.EN -> "Rest"
+                    com.example.model.AppLanguage.DE -> "Pause"
+                    com.example.model.AppLanguage.RO -> "Pauză"
+                }
                 val restInfo = if (uiState.restTimerRunning && uiState.restTimerRemainingSec > 0) {
-                    String.format(" • Pihenő %02d:%02d", uiState.restTimerRemainingSec / 60, uiState.restTimerRemainingSec % 60)
+                    String.format(" • %s %02d:%02d", restPrefix, uiState.restTimerRemainingSec / 60, uiState.restTimerRemainingSec % 60)
                 } else ""
+                val inProgressPrefix = when (uiState.language) {
+                    com.example.model.AppLanguage.HU -> "Edzés folyamatban"
+                    com.example.model.AppLanguage.EN -> "Workout in progress"
+                    com.example.model.AppLanguage.DE -> "Training läuft"
+                    com.example.model.AppLanguage.RO -> "Antrenament în curs"
+                }
+                val returnBtnLabel = when (uiState.language) {
+                    com.example.model.AppLanguage.HU -> "Vissza az edzéshez ▶"
+                    com.example.model.AppLanguage.EN -> "Back to workout ▶"
+                    com.example.model.AppLanguage.DE -> "Zurück zum Training ▶"
+                    com.example.model.AppLanguage.RO -> "Înapoi la antrenament ▶"
+                }
 
                 Surface(
                     shape = RoundedCornerShape(14.dp),
@@ -1023,7 +1072,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     .background(palette.success)
                             )
                             Text(
-                                text = "Edzés folyamatban ($exStepText): $activeExName$restInfo",
+                                text = "$inProgressPrefix ($exStepText): $activeExName$restInfo",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = palette.textPrimary,
@@ -1036,7 +1085,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             color = palette.primary
                         ) {
                             Text(
-                                text = "Vissza az edzéshez ▶",
+                                text = returnBtnLabel,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = palette.onPrimary,

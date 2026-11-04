@@ -389,6 +389,19 @@ class TrainPilotViewModel : ViewModel() {
     } ?: JSONObject()
 
 
+    private fun tr(
+        hu: String,
+        en: String,
+        de: String = en,
+        ro: String = en,
+        lang: AppLanguage = _uiState.value.language
+    ): String = when (lang) {
+        AppLanguage.HU -> hu
+        AppLanguage.EN -> en
+        AppLanguage.DE -> de
+        AppLanguage.RO -> ro
+    }
+
     private fun translateMuscleTokenHu(token: String): String {
         return when (token.trim().lowercase()) {
             "chest", "mell", "mellkas", "push" -> "Mell"
@@ -475,13 +488,28 @@ class TrainPilotViewModel : ViewModel() {
             ?: entity.defaultReps.toIntOrNull()
             ?: 10
 
-        val parsedSteps = entity.notesHu
+        fun parseNotesToSteps(raw: String, fallback: String): List<String> = raw
             .split(Regex("(?<=\\.)\\s+|\\n+"))
             .map { it.trim() }
             .filter { it.isNotBlank() }
-            .ifEmpty {
-                listOf("Helyes kivitelezés: ügyelj az egyenes hátra és a kontrollált mozgástartományra.")
-            }
+            .ifEmpty { listOf(fallback) }
+
+        val parsedStepsHu = parseNotesToSteps(
+            entity.notesHu,
+            "Helyes kivitelezés: ügyelj az egyenes hátra és a kontrollált mozgástartományra."
+        )
+        val parsedStepsEn = parseNotesToSteps(
+            entity.notesEn.ifBlank { entity.notesHu },
+            "Proper execution: keep a neutral spine and controlled range of motion."
+        )
+        val parsedStepsDe = parseNotesToSteps(
+            entity.notesDe.ifBlank { entity.notesEn.ifBlank { entity.notesHu } },
+            "Saubere Ausführung: gerader Rücken und kontrollierter Bewegungsumfang."
+        )
+        val parsedStepsRo = parseNotesToSteps(
+            entity.notesRo.ifBlank { entity.notesEn.ifBlank { entity.notesHu } },
+            "Execuție corectă: menține spatele drept și mișcarea controlată."
+        )
         val isTimedFlag = entity.measurementType.contains("time", ignoreCase = true) ||
             entity.repUnit.contains("mp", ignoreCase = true) ||
             entity.repUnit.contains("sec", ignoreCase = true)
@@ -495,8 +523,8 @@ class TrainPilotViewModel : ViewModel() {
             id = entity.id,
             nameHu = entity.nameHu.ifBlank { entity.nameEn }.ifBlank { "Gyakorlat" },
             nameEn = entity.nameEn.ifBlank { entity.nameHu }.ifBlank { "Exercise" },
-            nameDe = entity.nameDe.ifBlank { entity.nameHu },
-            nameRo = entity.nameRo.ifBlank { entity.nameHu },
+            nameDe = entity.nameDe.ifBlank { entity.nameEn.ifBlank { entity.nameHu } },
+            nameRo = entity.nameRo.ifBlank { entity.nameEn.ifBlank { entity.nameHu } },
             category = cat,
             equipmentHu = cleanEquipmentHu,
             primaryMusclesHu = cleanPrimaryHu,
@@ -508,9 +536,12 @@ class TrainPilotViewModel : ViewModel() {
             isTimed = isTimedFlag || isBilateralFlag,
             isBilateral = isBilateralFlag,
             targetSeconds = defaultTargetSec,
-            stepsHu = parsedSteps,
+            stepsHu = parsedStepsHu,
+            stepsEn = parsedStepsEn,
+            stepsDe = parsedStepsDe,
+            stepsRo = parsedStepsRo,
             coachStatusHu = "Normál terhelés",
-            coachHintHu = parsedSteps.firstOrNull() ?: "Kezdj könnyebben; ma ne erőltesd a progressziót.",
+            coachHintHu = parsedStepsHu.firstOrNull() ?: "Kezdj könnyebben; ma ne erőltesd a progressziót.",
             videoUrl = entity.videoUrl.orEmpty(),
             isCustom = entity.custom,
             loadType = entity.loadType, repUnit = entity.repUnit, measurementType = entity.measurementType,
@@ -596,11 +627,16 @@ class TrainPilotViewModel : ViewModel() {
                 ticket.requireCurrent(context)
                 currentPrograms.forEachIndexed { pIdx, prog ->
                     val existing = db.programDao().getProgramWithDaysById(prog.id)?.program
+                    val persistedDesc = if (!prog.isCustom) {
+                        existing?.description.orEmpty()
+                    } else prog.subtitleHu
                     val rawProgJson = JSONObject(existing?.rawJson ?: "{}").apply {
                         put("id", prog.id)
                         put("nameHu", prog.nameHu)
                         put("nameEn", prog.nameEn)
-                        put("description", prog.subtitleHu)
+                        put("nameDe", prog.nameDe)
+                        put("nameRo", prog.nameRo)
+                        put("description", persistedDesc)
                         put("isActive", prog.isActive)
                         put("isCustom", prog.isCustom)
                     }
@@ -608,11 +644,11 @@ class TrainPilotViewModel : ViewModel() {
                         id = prog.id,
                         nameHu = prog.nameHu,
                         nameEn = prog.nameEn,
-                        nameDe = prog.nameHu,
-                        nameRo = prog.nameHu,
+                        nameDe = prog.nameDe.ifBlank { prog.nameEn.ifBlank { prog.nameHu } },
+                        nameRo = prog.nameRo.ifBlank { prog.nameEn.ifBlank { prog.nameHu } },
                         location = prog.tagsHu.firstOrNull() ?: "Otthon / Edzőterem",
                         level = prog.tagsHu.getOrNull(1) ?: "Kezdő",
-                        description = prog.subtitleHu,
+                        description = persistedDesc,
                         builtin = !prog.isCustom,
                         generated = prog.id.startsWith("custom_plan_"),
                         sourceType = if (prog.isCustom) "user" else "builtin",
@@ -623,9 +659,16 @@ class TrainPilotViewModel : ViewModel() {
                         updatedAt = nowMs,
                         rawJson = rawProgJson.toString()
                     )
-                    val progEntity = existing?.copy(nameHu = prog.nameHu, nameEn = prog.nameEn,
-                        description = prog.subtitleHu, sortOrder = pIdx, updatedAt = nowMs,
-                        rawJson = rawProgJson.toString()) ?: created
+                    val progEntity = existing?.copy(
+                        nameHu = prog.nameHu,
+                        nameEn = prog.nameEn,
+                        nameDe = prog.nameDe.ifBlank { existing.nameDe.ifBlank { prog.nameEn } },
+                        nameRo = prog.nameRo.ifBlank { existing.nameRo.ifBlank { prog.nameEn } },
+                        description = persistedDesc,
+                        sortOrder = pIdx,
+                        updatedAt = nowMs,
+                        rawJson = rawProgJson.toString()
+                    ) ?: created
                     val progDays = prog.days.mapIndexed { dIdx, day ->
                         val dayKey = day.id.substringAfter("${prog.id}:").ifBlank { "day_${dIdx + 1}" }
                         val compositeId = if (day.id.contains(":")) day.id else "${prog.id}:$dayKey"
@@ -647,8 +690,8 @@ class TrainPilotViewModel : ViewModel() {
                             dayId = dayKey,
                             nameHu = day.titleHu,
                             nameEn = day.titleEn,
-                            nameDe = day.titleHu,
-                            nameRo = day.titleHu,
+                            nameDe = day.titleDe.ifBlank { day.titleEn.ifBlank { day.titleHu } },
+                            nameRo = day.titleRo.ifBlank { day.titleEn.ifBlank { day.titleHu } },
                             sortOrder = dIdx,
                             exercisesJson = exArr.toString()
                         )
@@ -665,13 +708,25 @@ class TrainPilotViewModel : ViewModel() {
                     check(db.programDao().getProgramWithDaysById(active.id)?.days?.isNotEmpty() == true)
                     store.setActiveProgramId(active.id)
                     _uiState.update { it.copy(profileComplete = true,
-                        statusBannerMessage = "Profil és egyéni terv tartósan elmentve.") }
+                        statusBannerMessage = tr(
+                            "Profil és egyéni terv tartósan elmentve.",
+                            "Profile and personalized plan saved.",
+                            "Profil und individueller Plan dauerhaft gespeichert.",
+                            "Profilul și planul personalizat au fost salvate.",
+                            it.language
+                        )) }
                 }
                 }
             }.onFailure { failure ->
                 if (failure is kotlinx.coroutines.CancellationException) throw failure
-                if (revision == programWriteRevision) programWriteError = "A terv/profil mentése nem sikerült. Próbáld újra."
-                _uiState.update { it.copy(statusBannerMessage = "A terv/profil mentése nem sikerült. Próbáld újra.") }
+                val errMsg = tr(
+                    "A terv/profil mentése nem sikerült. Próbáld újra.",
+                    "Failed to save plan/profile. Please try again.",
+                    "Speichern von Plan/Profil fehlgeschlagen. Bitte erneut versuchen.",
+                    "Salvarea planului/profilului a eșuat. Încearcă din nou."
+                )
+                if (revision == programWriteRevision) programWriteError = errMsg
+                _uiState.update { it.copy(statusBannerMessage = errMsg) }
             }
             }
         }
@@ -804,8 +859,13 @@ class TrainPilotViewModel : ViewModel() {
     private fun mapProgramRows(programs: List<ProgramEntity>, days: List<ProgramDayEntity>,
         exercisesMap: Map<String, ExerciseItem>, activeId: String? = null): List<TrainingProgramModel> {
         val explicitActive = programs.any { runCatching { JSONObject(it.rawJson).optBoolean("isActive") }.getOrDefault(false) }
+        val (builtinProgs, builtinDays) = runCatching { TrainPilotDatabase.defaultPrograms() }.getOrElse { emptyList<ProgramEntity>() to emptyList<ProgramDayEntity>() }
+        val builtinProgById = builtinProgs.associateBy { it.id }
+        val builtinDayByComposite = builtinDays.associateBy { it.compositeId }
         return programs.mapIndexed { pIdx, prog ->
+                val catalogProg = if (prog.builtin) builtinProgById[prog.id] else null
                 val progDays = days.filter { it.programId == prog.id }.sortedWith(compareBy<ProgramDayEntity> { it.sortOrder }.thenBy { it.dayId }).mapIndexed { dIdx, dayEntity ->
+                    val catalogDay = if (prog.builtin) builtinDayByComposite[dayEntity.compositeId] else null
                     val dayExercises = runCatching {
                         val recipes = JSONObject(prog.rawJson).optJSONObject("prescriptions") ?: JSONObject()
                         val arr = JSONArray(dayEntity.exercisesJson)
@@ -823,29 +883,80 @@ class TrainPilotViewModel : ViewModel() {
                                 defaultRestSec = rx.optInt("rest", rx.optInt("restSec", source.defaultRestSec)))
                         }
                     }.getOrElse { emptyList() }
+                    val resolvedDayHu = dayEntity.nameHu.ifBlank { catalogDay?.nameHu.orEmpty() }.ifBlank { "Edzésnap ${dIdx + 1}" }
+                    val resolvedDayEn = (catalogDay?.nameEn?.takeIf { dayEntity.nameHu == catalogDay.nameHu && (dayEntity.nameEn.isBlank() || dayEntity.nameEn == dayEntity.nameHu) }
+                        ?: dayEntity.nameEn.takeIf { it.isNotBlank() })
+                        .orEmpty().ifBlank { resolvedDayHu }
+                    val resolvedDayDe = (catalogDay?.nameDe?.takeIf { dayEntity.nameHu == catalogDay.nameHu && (dayEntity.nameDe.isBlank() || dayEntity.nameDe == dayEntity.nameHu) }
+                        ?: dayEntity.nameDe.takeIf { it.isNotBlank() })
+                        .orEmpty().ifBlank { resolvedDayEn }
+                    val resolvedDayRo = (catalogDay?.nameRo?.takeIf { dayEntity.nameHu == catalogDay.nameHu && (dayEntity.nameRo.isBlank() || dayEntity.nameRo == dayEntity.nameHu) }
+                        ?: dayEntity.nameRo.takeIf { it.isNotBlank() })
+                        .orEmpty().ifBlank { resolvedDayEn }
                     com.example.model.ProgramDayModel(
                         id = dayEntity.compositeId,
                         dayCode = if (dIdx < 26) "${'A' + dIdx} nap" else "${dIdx + 1}. nap",
-                        titleHu = dayEntity.nameHu.ifBlank { "Edzésnap ${dIdx + 1}" },
-                        titleEn = dayEntity.nameEn.ifBlank { "Day ${dIdx + 1}" },
+                        titleHu = resolvedDayHu,
+                        titleEn = resolvedDayEn,
                         durationMinutes = 60,
-                        exercises = dayExercises
+                        exercises = dayExercises,
+                        titleDe = resolvedDayDe,
+                        titleRo = resolvedDayRo
                     )
                 }
-                val locHu = prog.location.ifBlank { "Otthon / Edzőterem" }
-                val lvlHu = prog.level.ifBlank { "Kezdő" }
-                val builtSubtitleHu = prog.description.ifBlank { "$locHu • $lvlHu • ${progDays.size} edzésnap" }
+                val locHu = prog.location.ifBlank { catalogProg?.location.orEmpty() }.ifBlank { "Otthon / Edzőterem" }
+                val lvlHu = prog.level.ifBlank { catalogProg?.level.orEmpty() }.ifBlank { "Kezdő" }
+                val metaSource = catalogProg ?: prog
+                val locEn = if (prog.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "location", "en")
+                    else com.example.model.translateProgramTag(locHu, AppLanguage.EN)
+                val locDe = if (prog.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "location", "de")
+                    else com.example.model.translateProgramTag(locHu, AppLanguage.DE)
+                val locRo = if (prog.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "location", "ro")
+                    else com.example.model.translateProgramTag(locHu, AppLanguage.RO)
+                val lvlEn = if (prog.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "level", "en")
+                    else com.example.model.translateProgramTag(lvlHu, AppLanguage.EN)
+                val lvlDe = if (prog.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "level", "de")
+                    else com.example.model.translateProgramTag(lvlHu, AppLanguage.DE)
+                val lvlRo = if (prog.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "level", "ro")
+                    else com.example.model.translateProgramTag(lvlHu, AppLanguage.RO)
+
+                val customUserDesc = prog.description.takeIf {
+                    !prog.builtin && it.isNotBlank()
+                }
+                val builtSubtitleHu = customUserDesc ?: prog.description.ifBlank { "$locHu • $lvlHu • ${progDays.size} edzésnap" }
+                val builtSubtitleEn = customUserDesc ?: "$locEn • $lvlEn • ${progDays.size} workout days"
+                val builtSubtitleDe = customUserDesc ?: "$locDe • $lvlDe • ${progDays.size} Trainingstage"
+                val builtSubtitleRo = customUserDesc ?: "$locRo • $lvlRo • ${progDays.size} zile de antrenament"
+
+                val resolvedNameHu = prog.nameHu.ifBlank { catalogProg?.nameHu.orEmpty() }.ifBlank { prog.nameEn }.ifBlank { "Edzésterv ${pIdx + 1}" }
+                val resolvedNameEn = (catalogProg?.nameEn?.takeIf { prog.nameHu == catalogProg.nameHu && (prog.nameEn.isBlank() || prog.nameEn == prog.nameHu) }
+                    ?: prog.nameEn.takeIf { it.isNotBlank() })
+                    .orEmpty().ifBlank { resolvedNameHu }
+                val resolvedNameDe = (catalogProg?.nameDe?.takeIf { prog.nameHu == catalogProg.nameHu && (prog.nameDe.isBlank() || prog.nameDe == prog.nameHu) }
+                    ?: prog.nameDe.takeIf { it.isNotBlank() })
+                    .orEmpty().ifBlank { resolvedNameEn }
+                val resolvedNameRo = (catalogProg?.nameRo?.takeIf { prog.nameHu == catalogProg.nameHu && (prog.nameRo.isBlank() || prog.nameRo == prog.nameHu) }
+                    ?: prog.nameRo.takeIf { it.isNotBlank() })
+                    .orEmpty().ifBlank { resolvedNameEn }
+
                 TrainingProgramModel(
                     id = prog.id,
-                    nameHu = prog.nameHu.ifBlank { prog.nameEn }.ifBlank { "Edzésterv ${pIdx + 1}" },
-                    nameEn = prog.nameEn.ifBlank { prog.nameHu }.ifBlank { "Program ${pIdx + 1}" },
+                    nameHu = resolvedNameHu,
+                    nameEn = resolvedNameEn,
                     subtitleHu = builtSubtitleHu,
-                    subtitleEn = prog.description.ifBlank { "${progDays.size} workout days" },
+                    subtitleEn = builtSubtitleEn,
                     tagsHu = listOf(locHu, lvlHu),
                     isCustom = !prog.builtin,
                     isActive = if (activeId != null && programs.any { it.id == activeId }) prog.id == activeId
                         else if (explicitActive) JSONObject(prog.rawJson).optBoolean("isActive") else pIdx == 0,
-                    days = progDays
+                    days = progDays,
+                    nameDe = resolvedNameDe,
+                    nameRo = resolvedNameRo,
+                    subtitleDe = builtSubtitleDe,
+                    subtitleRo = builtSubtitleRo,
+                    tagsEn = listOf(locEn, lvlEn),
+                    tagsDe = listOf(locDe, lvlDe),
+                    tagsRo = listOf(locRo, lvlRo)
                 )
             }
     }
@@ -1611,7 +1722,13 @@ class TrainPilotViewModel : ViewModel() {
         _uiState.update {
             it.copy(
                 selectedPaletteId = paletteId,
-                statusBannerMessage = "Színpaletta frissítve (#$paletteId)"
+                statusBannerMessage = tr(
+                    "Színpaletta frissítve (#$paletteId)",
+                    "Color palette updated (#$paletteId)",
+                    "Farbpalette aktualisiert (#$paletteId)",
+                    "Paletă de culori actualizată (#$paletteId)",
+                    it.language
+                )
             )
         }
         val store = nativeSettingsStore
@@ -1654,7 +1771,13 @@ class TrainPilotViewModel : ViewModel() {
         _uiState.update {
             it.copy(
                 language = lang,
-                statusBannerMessage = "Nyelv: ${lang.label} (${lang.code})"
+                statusBannerMessage = tr(
+                    "Nyelv: ${lang.label} (${lang.code})",
+                    "Language: ${lang.label} (${lang.code})",
+                    "Sprache: ${lang.label} (${lang.code})",
+                    "Limbă: ${lang.label} (${lang.code})",
+                    lang
+                )
             )
         }
         val store = nativeSettingsStore
@@ -1693,7 +1816,13 @@ class TrainPilotViewModel : ViewModel() {
                 weeklyGoalTarget = cleanWeekly,
                 stepsGoal = cleanSteps,
                 showGoalsDialog = false,
-                statusBannerMessage = "Célok elmentve: $cleanWeekly edzés, $cleanSteps lépés"
+                statusBannerMessage = tr(
+                    "Célok elmentve: $cleanWeekly edzés, $cleanSteps lépés",
+                    "Goals saved: $cleanWeekly workouts, $cleanSteps steps",
+                    "Ziele gespeichert: $cleanWeekly Trainings, $cleanSteps Schritte",
+                    "Obiective salvate: $cleanWeekly antrenamente, $cleanSteps pași",
+                    it.language
+                )
             )
         }
         if (db == null || scope == null) return
@@ -1813,46 +1942,80 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    fun renameEditorProgram(name: String) = editStudioProgram("Programnév elmentve.") { draft, _ ->
+    fun renameEditorProgram(name: String) = editStudioProgram(
+        tr("Programnév elmentve.", "Program name saved.", "Programmname gespeichert.", "Numele programului a fost salvat.")
+    ) { draft, _ ->
         draft.copy(name = name.trim())
     }
 
     fun copyEditorProgram() {
         val state = _uiState.value
-        mutateStudioLibrary("Saját programmásolat elkészült. Aktiválás a programlistában.", editor = true) { context, db, _ ->
+        val copySuffix = tr(" – másolat", " – copy", " – Kopie", " – copie", state.language)
+        mutateStudioLibrary(
+            tr(
+                "Saját programmásolat elkészült. Aktiválás a programlistában.",
+                "Custom program copy created. Activate it in the program list.",
+                "Eigene Programmkopie erstellt. In der Programmliste aktivieren.",
+                "Copia personalizată a programului a fost creată. Activeaz-o în listă.",
+                state.language
+            ),
+            editor = true
+        ) { context, db, _ ->
             val opened = requireNotNull(db.programDao().getProgramWithDaysById(state.editingProgramId))
             val language = state.language.name.lowercase(java.util.Locale.ROOT)
             val draft = com.repforge.app.NativeProgramEditor.from(opened, language)
             com.repforge.app.NativeProgramEditor.save(context, db, opened,
-                draft.copy(name = (draft.name.take(107) + " – másolat")), language, clone = true)
+                draft.copy(name = (draft.name.take(107) + copySuffix)), language, clone = true)
         }
     }
 
     fun deleteEditorProgram() {
         val id = _uiState.value.editingProgramId
-        mutateStudioLibrary("Program végleg törölve a tárból.", editor = true) { context, db, store ->
+        mutateStudioLibrary(
+            tr(
+                "Program végleg törölve a tárból.",
+                "Program permanently deleted.",
+                "Programm dauerhaft gelöscht.",
+                "Program șters definitiv."
+            ),
+            editor = true
+        ) { context, db, store ->
             com.repforge.app.NativeProgramEditor.delete(context, db,
                 requireNotNull(db.programDao().getProgramWithDaysById(id)), store)
             null
         }
     }
 
-    fun addEditorDay(name: String) = editStudioProgram("Edzésnap hozzáadva.", selectLastDay = true) { draft, _ ->
+    fun addEditorDay(name: String) = editStudioProgram(
+        tr("Edzésnap hozzáadva.", "Workout day added.", "Trainingstag hinzugefügt.", "Zi de antrenament adăugată."),
+        selectLastDay = true
+    ) { draft, _ ->
         com.repforge.app.NativeProgramEditor.addDay(draft, name.trim())
     }
 
-    fun deleteEditorDay() = editStudioProgram("Edzésnap törölve.") { draft, dayId ->
+    fun deleteEditorDay() = editStudioProgram(
+        tr("Edzésnap törölve.", "Workout day deleted.", "Trainingstag gelöscht.", "Zi de antrenament ștearsă.")
+    ) { draft, dayId ->
         require(dayId != null && draft.days.size > 1)
         draft.copy(days = draft.days.filterNot { it.id == dayId })
     }
 
-    fun removeEditorExercise(id: String) = editStudioProgram("Gyakorlat eltávolítva az edzésnapból.") { draft, dayId ->
+    fun removeEditorExercise(id: String) = editStudioProgram(
+        tr(
+            "Gyakorlat eltávolítva az edzésnapból.",
+            "Exercise removed from workout day.",
+            "Übung aus dem Trainingstag entfernt.",
+            "Exercițiu eliminat din ziua de antrenament."
+        )
+    ) { draft, dayId ->
         require(dayId != null)
         draft.copy(days = draft.days.map { day -> if (day.id != dayId) day else day.copy(
             entries = day.entries.filterNot { com.repforge.app.NativeProgramEditor.exerciseId(it) == id }) })
     }
 
-    fun toggleExerciseFavorite(id: String) = mutateStudioLibrary("Kedvencek frissítve.") { context, db, _ ->
+    fun toggleExerciseFavorite(id: String) = mutateStudioLibrary(
+        tr("Kedvencek frissítve.", "Favorites updated.", "Favoriten aktualisiert.", "Favorite actualizate.")
+    ) { context, db, _ ->
         com.repforge.app.NativeExerciseFavorites.toggle(context, db, id)
         null
     }
@@ -1874,7 +2037,13 @@ class TrainPilotViewModel : ViewModel() {
             state.copy(
                 programs = updated,
                 editingProgramId = programId,
-                statusBannerMessage = "Aktív program frissítve"
+                statusBannerMessage = tr(
+                    "Aktív program frissítve",
+                    "Active program updated",
+                    "Aktives Programm aktualisiert",
+                    "Program activ actualizat",
+                    state.language
+                )
             )
         }
         persistProgramsToRoomAsync()
@@ -1941,7 +2110,13 @@ class TrainPilotViewModel : ViewModel() {
             state.copy(
                 programs = updatedPrograms,
                 expandedEditorExerciseId = null,
-                statusBannerMessage = "Gyakorlat beállításai elmentve"
+                statusBannerMessage = tr(
+                    "Gyakorlat beállításai elmentve",
+                    "Exercise settings saved",
+                    "Übungseinstellungen gespeichert",
+                    "Setările exercițiului au fost salvate",
+                    state.language
+                )
             )
         }
         persistProgramsToRoomAsync()
@@ -1961,9 +2136,16 @@ class TrainPilotViewModel : ViewModel() {
                     prog.copy(days = updatedDays)
                 }
             }
+            val exName = exercise.localizedName(state.language)
             state.copy(
                 programs = updatedPrograms,
-                statusBannerMessage = "${exercise.nameHu} hozzáadva az edzésnaphoz"
+                statusBannerMessage = tr(
+                    "${exercise.nameHu} hozzáadva az edzésnaphoz",
+                    "$exName added to workout day",
+                    "$exName zum Trainingstag hinzugefügt",
+                    "$exName adăugat în ziua de antrenament",
+                    state.language
+                )
             )
         }
         persistProgramsToRoomAsync()
@@ -1991,7 +2173,13 @@ class TrainPilotViewModel : ViewModel() {
             }
             state.copy(
                 programs = updatedPrograms,
-                statusBannerMessage = "Gyakorlatsorrend frissítve"
+                statusBannerMessage = tr(
+                    "Gyakorlatsorrend frissítve",
+                    "Exercise order updated",
+                    "Übungsreihenfolge aktualisiert",
+                    "Ordinea exercițiilor a fost actualizată",
+                    state.language
+                )
             )
         }
         persistProgramsToRoomAsync()
@@ -2023,7 +2211,13 @@ class TrainPilotViewModel : ViewModel() {
             }
             state.copy(
                 programs = merged,
-                statusBannerMessage = "Programok sorrendje frissítve"
+                statusBannerMessage = tr(
+                    "Programok sorrendje frissítve",
+                    "Program order updated",
+                    "Programmreihenfolge aktualisiert",
+                    "Ordinea programelor a fost actualizată",
+                    state.language
+                )
             )
         }
         persistProgramsToRoomAsync()
@@ -2073,7 +2267,13 @@ class TrainPilotViewModel : ViewModel() {
                 editingDayIndex = 0,
                 currentSubScreen = SubScreen.PROGRAM_EDITOR,
                 backStack = back,
-                statusBannerMessage = "Új egyedi program létrehozva: $cleanName"
+                statusBannerMessage = tr(
+                    "Új egyedi program létrehozva: $cleanName",
+                    "New custom program created: $cleanName",
+                    "Neues eigenes Programm erstellt: $cleanName",
+                    "Program personalizat nou creat: $cleanName",
+                    state.language
+                )
             )
         }
         persistProgramsToRoomAsync()
@@ -2121,6 +2321,9 @@ class TrainPilotViewModel : ViewModel() {
             isTimed = isTimed,
             targetSeconds = 60,
             stepsHu = parsedSteps,
+            stepsEn = parsedSteps,
+            stepsDe = parsedSteps,
+            stepsRo = parsedSteps,
             coachStatusHu = "Egyedi gyakorlat",
             coachHintHu = cleanDesc,
             videoUrl = cleanVideoUrl,
@@ -2149,9 +2352,21 @@ class TrainPilotViewModel : ViewModel() {
                 selectedExerciseId = newExercise.id,
                 showAddCustomExerciseDialog = false,
                 statusBannerMessage = if (addToCurrentProgramDay) {
-                    "Új gyakorlat elmentve a Room adatbázisba és hozzáadva a programhoz: $cleanName"
+                    tr(
+                        "Új gyakorlat elmentve a Room adatbázisba és hozzáadva a programhoz: $cleanName",
+                        "New exercise saved to Room database and added to program: $cleanName",
+                        "Neue Übung in Room-Datenbank gespeichert und zum Programm hinzugefügt: $cleanName",
+                        "Exercițiu nou salvat în baza de date Room și adăugat în program: $cleanName",
+                        state.language
+                    )
                 } else {
-                    "Új egyedi gyakorlat elmentve a Room adatbázisba: $cleanName"
+                    tr(
+                        "Új egyedi gyakorlat elmentve a Room adatbázisba: $cleanName",
+                        "New custom exercise saved to Room database: $cleanName",
+                        "Neue eigene Übung in Room-Datenbank gespeichert: $cleanName",
+                        "Exercițiu personalizat nou salvat în baza de date Room: $cleanName",
+                        state.language
+                    )
                 }
             )
         }
@@ -2570,7 +2785,13 @@ class TrainPilotViewModel : ViewModel() {
             state.copy(
                 activeSets = updated,
                 activeSetsByExerciseId = updatedMap,
-                statusBannerMessage = "$setNumber. sorozat frissítve (Bal: ${cleanLeft} mp • Jobb: ${cleanRight} mp)"
+                statusBannerMessage = tr(
+                    "$setNumber. sorozat frissítve (Bal: ${cleanLeft} mp • Jobb: ${cleanRight} mp)",
+                    "Set #$setNumber updated (Left: ${cleanLeft} sec • Right: ${cleanRight} sec)",
+                    "Satz #$setNumber aktualisiert (Links: ${cleanLeft} Sek. • Rechts: ${cleanRight} Sek.)",
+                    "Seria #$setNumber actualizată (Stânga: ${cleanLeft} sec • Dreapta: ${cleanRight} sec)",
+                    state.language
+                )
             )
         }
         persistCanonicalActiveSessionAsync()
@@ -2650,7 +2871,13 @@ class TrainPilotViewModel : ViewModel() {
             state.copy(
                 activeSets = renumbered,
                 activeSetsByExerciseId = updatedMap,
-                statusBannerMessage = "$setNumber. sorozat törölve"
+                statusBannerMessage = tr(
+                    "$setNumber. sorozat törölve",
+                    "Set #$setNumber deleted",
+                    "Satz #$setNumber gelöscht",
+                    "Seria #$setNumber ștearsă",
+                    state.language
+                )
             )
         }
         persistCanonicalActiveSessionAsync()
@@ -2680,7 +2907,13 @@ class TrainPilotViewModel : ViewModel() {
             state.copy(
                 activeSets = updatedSets,
                 activeSetsByExerciseId = updatedMap,
-                statusBannerMessage = "$nextNumber. sorozat hozzáadva"
+                statusBannerMessage = tr(
+                    "$nextNumber. sorozat hozzáadva",
+                    "Set #$nextNumber added",
+                    "Satz #$nextNumber hinzugefügt",
+                    "Seria #$nextNumber adăugată",
+                    state.language
+                )
             )
         }
         persistCanonicalActiveSessionAsync()
@@ -2866,12 +3099,22 @@ class TrainPilotViewModel : ViewModel() {
                 else -> locationHu
             }
 
+            val goalEn = com.example.localization.StudioProfileOptionLabels.goal(goalHu, AppLanguage.EN)
+            val goalDe = com.example.localization.StudioProfileOptionLabels.goal(goalHu, AppLanguage.DE)
+            val goalRo = com.example.localization.StudioProfileOptionLabels.goal(goalHu, AppLanguage.RO)
+            val locEn = com.example.localization.StudioProfileOptionLabels.location(locationHu, AppLanguage.EN)
+            val locDe = com.example.localization.StudioProfileOptionLabels.location(locationHu, AppLanguage.DE)
+            val locRo = com.example.localization.StudioProfileOptionLabels.location(locationHu, AppLanguage.RO)
+            val expEn = com.example.localization.StudioProfileOptionLabels.experience(experienceHu, AppLanguage.EN)
+            val expDe = com.example.localization.StudioProfileOptionLabels.experience(experienceHu, AppLanguage.DE)
+            val expRo = com.example.localization.StudioProfileOptionLabels.experience(experienceHu, AppLanguage.RO)
+
             val newProgram = TrainingProgramModel(
                 id = generatedProgramId,
                 nameHu = "Egyéni $goalHu Terv ($locationHu)",
-                nameEn = "Personalized $goalHu Plan",
+                nameEn = "Personalized $goalEn Plan ($locEn)",
                 subtitleHu = "$experienceHu • Heti $daysPerWeek nap • $durationMin perc • $shortGearTag",
-                subtitleEn = "$experienceHu • $daysPerWeek days/week",
+                subtitleEn = "$expEn • $daysPerWeek days/week • $durationMin min",
                 tagsHu = listOf(goalHu, locationHu, shortGearTag, "Egyéni").distinct(),
                 isCustom = true,
                 isActive = true,
@@ -2880,19 +3123,30 @@ class TrainPilotViewModel : ViewModel() {
                         id = "${generatedProgramId}_dayA",
                         dayCode = "A nap",
                         titleHu = "A nap • Fő fókusz",
-                        titleEn = "Day A",
+                        titleEn = "Day A • Primary Focus",
                         durationMinutes = durationMin,
-                        exercises = finalDayA
+                        exercises = finalDayA,
+                        titleDe = "Tag A • Hauptfokus",
+                        titleRo = "Ziua A • Focus principal"
                     ),
                     com.example.model.ProgramDayModel(
                         id = "${generatedProgramId}_dayB",
                         dayCode = "B nap",
                         titleHu = "B nap • Kiegészítő fókusz",
-                        titleEn = "Day B",
+                        titleEn = "Day B • Secondary Focus",
                         durationMinutes = durationMin,
-                        exercises = finalDayB
+                        exercises = finalDayB,
+                        titleDe = "Tag B • Zusatzfokus",
+                        titleRo = "Ziua B • Focus secundar"
                     )
-                )
+                ),
+                nameDe = "Individueller $goalDe-Plan ($locDe)",
+                nameRo = "Plan personalizat $goalRo ($locRo)",
+                subtitleDe = "$expDe • $daysPerWeek Tage/Woche • $durationMin Min.",
+                subtitleRo = "$expRo • $daysPerWeek zile/săpt. • $durationMin min",
+                tagsEn = listOf(goalEn, locEn, "Custom").distinct(),
+                tagsDe = listOf(goalDe, locDe, "Individuell").distinct(),
+                tagsRo = listOf(goalRo, locRo, "Personalizat").distinct()
             )
 
             val updatedPrograms = listOf(newProgram) + state.programs.map { it.copy(isActive = false) }
@@ -2911,7 +3165,13 @@ class TrainPilotViewModel : ViewModel() {
                 programs = updatedPrograms,
                 editingProgramId = generatedProgramId,
                 showPersonalPlannerModal = false,
-                statusBannerMessage = "Profil és terv mentése…"
+                statusBannerMessage = tr(
+                    "Profil és terv mentése…",
+                    "Saving profile and plan…",
+                    "Profil und Plan werden gespeichert…",
+                    "Se salvează profilul și planul…",
+                    state.language
+                )
             )
         }
         persistProgramsToRoomAsync(JSONObject()
@@ -2938,7 +3198,13 @@ class TrainPilotViewModel : ViewModel() {
                 state.copy(
                     activeSets = updated,
                     activeSetsByExerciseId = updatedMap,
-                    statusBannerMessage = "${lastCompleted.setNumber}. sorozat visszavonva"
+                    statusBannerMessage = tr(
+                        "${lastCompleted.setNumber}. sorozat visszavonva",
+                        "Set #${lastCompleted.setNumber} undone",
+                        "Satz #${lastCompleted.setNumber} rückgängig gemacht",
+                        "Seria #${lastCompleted.setNumber} anulată",
+                        state.language
+                    )
                 )
             }
         }
@@ -2968,7 +3234,13 @@ class TrainPilotViewModel : ViewModel() {
                 soundAlertEnabled = sound,
                 vibrationEnabled = vibration,
                 autoStepIntervals = autoStep,
-                statusBannerMessage = "Intervallumok: ${workSec}mp munka / ${restSec}mp pihenő × $rounds"
+                statusBannerMessage = tr(
+                    "Intervallumok: ${workSec}mp munka / ${restSec}mp pihenő × $rounds",
+                    "Intervals: ${workSec}s work / ${restSec}s rest × $rounds",
+                    "Intervalle: ${workSec}s Arbeit / ${restSec}s Pause × $rounds",
+                    "Intervale: ${workSec}s lucru / ${restSec}s pauză × $rounds",
+                    it.language
+                )
             )
         }
     }
@@ -3797,7 +4069,17 @@ class TrainPilotViewModel : ViewModel() {
 
     fun saveNewBodyWeight(weightKg: Float, dateStr: String = "") {
         if (weightKg <= 20f || weightKg >= 350f) {
-            _uiState.update { it.copy(statusBannerMessage = "Érvénytelen testsúly: 20 és 350 kg között adható meg!") }
+            _uiState.update {
+                it.copy(
+                    statusBannerMessage = tr(
+                        "Érvénytelen testsúly: 20 és 350 kg között adható meg!",
+                        "Invalid body weight: enter a value between 20 and 350 kg!",
+                        "Ungültiges Körpergewicht: bitte zwischen 20 und 350 kg eingeben!",
+                        "Greutate corporală invalidă: introdu o valoare între 20 și 350 kg!",
+                        it.language
+                    )
+                )
+            }
             return
         }
         val parsedLocalDate = parseUserEnteredDateToLocalDate(dateStr)
@@ -3810,7 +4092,13 @@ class TrainPilotViewModel : ViewModel() {
                 it.copy(
                     currentBodyWeightKg = weightKg,
                     showAddWeightDialog = false,
-                    statusBannerMessage = "Testsúlymérés rögzítve ($dayKey): $weightKg kg"
+                    statusBannerMessage = tr(
+                        "Testsúlymérés rögzítve ($dayKey): $weightKg kg",
+                        "Body weight recorded ($dayKey): $weightKg kg",
+                        "Körpergewicht erfasst ($dayKey): $weightKg kg",
+                        "Greutate corporală înregistrată ($dayKey): $weightKg kg",
+                        it.language
+                    )
                 )
             }
             return
@@ -3836,7 +4124,13 @@ class TrainPilotViewModel : ViewModel() {
                             currentBodyWeightKg = latestByDayKey,
                             bodyWeightLogs = mappedLogs,
                             showAddWeightDialog = false,
-                            statusBannerMessage = "Testsúlymérés sikeresen elmentve ($dayKey): $weightKg kg"
+                            statusBannerMessage = tr(
+                                "Testsúlymérés sikeresen elmentve ($dayKey): $weightKg kg",
+                                "Body weight saved ($dayKey): $weightKg kg",
+                                "Körpergewicht gespeichert ($dayKey): $weightKg kg",
+                                "Greutate corporală salvată ($dayKey): $weightKg kg",
+                                it.language
+                            )
                         )
                     }
                 }
@@ -3844,7 +4138,13 @@ class TrainPilotViewModel : ViewModel() {
                 android.util.Log.e("TrainPilotViewModel", "Failed to save body weight to Room", e)
                 withContext(Dispatchers.Main) {
                     _uiState.update {
-                        it.copy(statusBannerMessage = "Nem sikerült elmenteni a testsúlymérést: ${e.localizedMessage ?: "adatbázishiba"}")
+                        it.copy(statusBannerMessage = tr(
+                            "Nem sikerült elmenteni a testsúlymérést: ${e.localizedMessage ?: "adatbázishiba"}",
+                            "Failed to save body weight: ${e.localizedMessage ?: "database error"}",
+                            "Speichern des Körpergewichts fehlgeschlagen: ${e.localizedMessage ?: "Datenbankfehler"}",
+                            "Salvarea greutății a eșuat: ${e.localizedMessage ?: "eroare bază de date"}",
+                            it.language
+                        ))
                     }
                 }
             }
@@ -3855,7 +4155,17 @@ class TrainPilotViewModel : ViewModel() {
         val db = nativeDatabase
         val scope = nativeScope
         if (db == null || scope == null) {
-            _uiState.update { it.copy(statusBannerMessage = "A testsúly-adatbázis nem érhető el.") }
+            _uiState.update {
+                it.copy(
+                    statusBannerMessage = tr(
+                        "A testsúly-adatbázis nem érhető el.",
+                        "Body weight database is unavailable.",
+                        "Körpergewichts-Datenbank nicht verfügbar.",
+                        "Baza de date pentru greutate nu este disponibilă.",
+                        it.language
+                    )
+                )
+            }
             return
         }
         scope.launch(Dispatchers.IO) {
@@ -3871,13 +4181,29 @@ class TrainPilotViewModel : ViewModel() {
                         it.copy(
                             bodyWeightLogs = mappedLogs,
                             currentBodyWeightKg = latestKg,
-                            statusBannerMessage = "Testsúlymérés törölve."
+                            statusBannerMessage = tr(
+                                "Testsúlymérés törölve.",
+                                "Body weight entry deleted.",
+                                "Körpergewichtseintrag gelöscht.",
+                                "Înregistrare greutate ștearsă.",
+                                it.language
+                            )
                         )
                     }
                 }
             } catch (e: Throwable) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                _uiState.update { it.copy(statusBannerMessage = "A testsúly törlése nem sikerült; a mérés megmaradt.") }
+                _uiState.update {
+                    it.copy(
+                        statusBannerMessage = tr(
+                            "A testsúly törlése nem sikerült; a mérés megmaradt.",
+                            "Failed to delete body weight entry.",
+                            "Löschen des Körpergewichts fehlgeschlagen.",
+                            "Ștergerea greutății a eșuat.",
+                            it.language
+                        )
+                    )
+                }
                 android.util.Log.e("TrainPilotViewModel", "Failed to delete body weight log from Room", e)
             }
         }
@@ -3888,7 +4214,11 @@ class TrainPilotViewModel : ViewModel() {
             val next = !it.primaryHealthSourceSamsung
             it.copy(
                 primaryHealthSourceSamsung = next,
-                statusBannerMessage = if (next) "Elsődleges forrás: Samsung Health" else "Elsődleges forrás: Health Connect"
+                statusBannerMessage = if (next) {
+                    tr("Elsődleges forrás: Samsung Health", "Primary source: Samsung Health", "Primärquelle: Samsung Health", "Sursă principală: Samsung Health", it.language)
+                } else {
+                    tr("Elsődleges forrás: Health Connect", "Primary source: Health Connect", "Primärquelle: Health Connect", "Sursă principală: Health Connect", it.language)
+                }
             )
         }
     }

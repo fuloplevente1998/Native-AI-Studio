@@ -59,12 +59,23 @@ internal object StudioProfileOptionLabels {
         "Gumiszalagos evezések, lehúzások és izolációk" to listOf("Band rows, pulldowns and isolation movements", "Rudern, Latzug und Isolationsübungen mit Band", "Ramat, tracțiuni și exerciții de izolare cu bandă"),
         "Kettlebell swing, goblet guggolás és nyomás" to listOf("Kettlebell swings, goblet squats and presses", "Kettlebell Swings, Goblet Squats und Drücken", "Balansări cu kettlebell, genuflexiuni goblet și împins"),
         "Lábtoló, hátlehúzó, csigás és vezetett gépek" to listOf("Leg press, pulldown, cable and guided machines", "Beinpresse, Latzug, Kabelzug und geführte Geräte", "Presă pentru picioare, tracțiuni, cabluri și aparate ghidate"),
+        "Erő & Hipertrófia" to listOf("Strength & Hypertrophy", "Kraft & Hypertrophie", "Forță & Hipertrofie"),
+        "Funkcionális & Állóképesség" to listOf("Functional & Endurance", "Funktionell & Ausdauer", "Funcțional & Rezistență"),
+        "Kezdő kímélő (Ízületbarát)" to listOf("Gentle Beginner (Joint-friendly)", "Sanft für Anfänger (Gelenkschonend)", "Începător blând (Protejarea articulațiilor)"),
+        "Dupla progresszió (8-12 ism. -> +2.5 kg)" to listOf("Double progression (8-12 reps -> +2.5 kg)", "Doppelte Progression (8-12 Wdh. -> +2.5 kg)", "Progresie dublă (8-12 rep. -> +2.5 kg)"),
+        "Lineáris (+1.25 kg hetente)" to listOf("Linear (+1.25 kg weekly)", "Linear (+1.25 kg wöchentlich)", "Liniară (+1.25 kg săptămânal)"),
+        "RIR-alapú (1-2 RIR megtartása)" to listOf("RIR-based (maintain 1-2 RIR)", "RIR-basiert (1-2 RIR beibehalten)", "Bazată pe RIR (menținere 1-2 RIR)")
     )
     fun label(value: String, language: AppLanguage): String {
         if (language == AppLanguage.HU) return value
         val index = when (language) { AppLanguage.EN -> 0; AppLanguage.DE -> 1; AppLanguage.RO -> 2; else -> return value }
         return labels[value]?.get(index) ?: value
     }
+    fun goal(value: String, language: AppLanguage): String = label(value, language)
+    fun location(value: String, language: AppLanguage): String = label(value, language)
+    fun experience(value: String, language: AppLanguage): String = label(value, language)
+    fun trainingStyle(value: String, language: AppLanguage): String = label(value, language)
+    fun progressionRule(value: String, language: AppLanguage): String = label(value, language)
     fun description(value: String, language: AppLanguage): String =
         value.split(" • ").joinToString(" • ") { label(it, language) }
 }

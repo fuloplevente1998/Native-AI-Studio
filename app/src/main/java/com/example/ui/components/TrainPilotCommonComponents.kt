@@ -2144,7 +2144,8 @@ fun QuickWorkoutSheet(
                             }
                         }
                         SmallExerciseVideoButton(
-                            exerciseName = selectedStrengthEx?.nameHu ?: "Fekvenyomás"
+                            exerciseName = selectedStrengthEx?.localizedName(strings.language) ?: "Fekvenyomás",
+                            exerciseId = selectedStrengthEx?.id
                         )
                     }
 
@@ -2292,7 +2293,8 @@ fun QuickWorkoutSheet(
                             }
                         }
                         SmallExerciseVideoButton(
-                            exerciseName = selectedTimedEx?.nameHu ?: "Plank"
+                            exerciseName = selectedTimedEx?.localizedName(strings.language) ?: "Plank",
+                            exerciseId = selectedTimedEx?.id
                         )
                     }
 

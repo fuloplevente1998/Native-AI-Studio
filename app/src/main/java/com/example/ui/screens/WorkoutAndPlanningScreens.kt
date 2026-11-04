@@ -421,7 +421,7 @@ fun WorkoutTabScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = day.dayCode,
+                                    text = day.localizedDayCode(state.language),
                                     style = MaterialTheme.typography.labelLarge,
                                     color = if (isPrimaryDay) palette.primary else palette.textSecondary
                                 )
@@ -432,7 +432,7 @@ fun WorkoutTabScreen(
                                 )
                             }
                             com.example.ui.components.secondaryWorkoutDayTitle(
-                                day.dayCode, day.localizedTitle(state.language))?.let { distinctTitle ->
+                                day.localizedDayCode(state.language), day.localizedTitle(state.language))?.let { distinctTitle ->
                             Text(
                                 text = distinctTitle,
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -446,7 +446,7 @@ fun WorkoutTabScreen(
                                 color = palette.surfaceElevated
                             ) {
                                 Text(
-                                    text = programEquipmentCategoryLabel(activeProgram.nameHu),
+                                    text = programEquipmentCategoryLabel(activeProgram.nameHu, state.language),
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                     color = palette.primary,
                                     maxLines = 1,
@@ -515,8 +515,18 @@ fun WorkoutTabScreen(
                             style = MaterialTheme.typography.titleSmall,
                             color = palette.textPrimary
                         )
+                        val localizedStyle = when {
+                            state.trainingStyleHu.contains("Erő-alap", ignoreCase = true) -> trW(state.language, state.trainingStyleHu, "Strength-focused (lower reps, higher weight)", "Kraftfokus (weniger Wdh., höheres Gewicht)", "Focus pe forță (repetări mai puține, greutate mai mare)")
+                            state.trainingStyleHu.contains("Állóképesség", ignoreCase = true) -> trW(state.language, state.trainingStyleHu, "Endurance / Toning (12–15+ reps)", "Ausdauer / Definition (12–15+ Wdh.)", "Anduranță / Tonifiere (12–15+ repetări)")
+                            else -> trW(state.language, state.trainingStyleHu, "Balanced (strength + muscle, 8–12 reps)", "Ausgewogen (Kraft + Muskel, 8–12 Wdh.)", "Echilibrat (forță + masă, 8–12 repetări)")
+                        }
+                        val localizedRule = when {
+                            state.progressionRuleHu.contains("Óvatos", ignoreCase = true) -> trW(state.language, state.progressionRuleHu, "Conservative progression (first +reps, then weight)", "Vorsichtige Progression (zuerst +Wdh., dann Gewicht)", "Progresie prudentă (întâi +repetări, apoi greutate)")
+                            state.progressionRuleHu.contains("Kézi", ignoreCase = true) -> trW(state.language, state.progressionRuleHu, "Manual control (recommendation only)", "Manuelle Steuerung (nur Empfehlung)", "Control manual (doar recomandare)")
+                            else -> trW(state.language, state.progressionRuleHu, "Standard progression (+1–2 reps or +2 kg)", "Standard-Progression (+1–2 Wdh. oder +2 kg)", "Progresie standard (+1–2 repetări sau +2 kg)")
+                        }
                         Text(
-                            text = "${state.trainingStyleHu} • ${state.progressionRuleHu}",
+                            text = "$localizedStyle • $localizedRule",
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.textSecondary
                         )
@@ -820,7 +830,7 @@ fun ProgramsListScreen(
                                 color = palette.primary.copy(alpha = 0.14f)
                             ) {
                                 Text(
-                                    text = programEquipmentCategoryLabel(activeProgram.nameHu),
+                                    text = programEquipmentCategoryLabel(activeProgram.nameHu, state.language),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = palette.primary,
                                     fontWeight = FontWeight.SemiBold,
@@ -994,7 +1004,7 @@ fun ProgramsListScreen(
                                 color = palette.surfaceElevated
                             ) {
                                 Text(
-                                    text = programEquipmentCategoryLabel(program.nameHu),
+                                    text = programEquipmentCategoryLabel(program.nameHu, state.language),
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                     color = palette.primary,
                                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
@@ -1117,7 +1127,8 @@ fun ProgramEditorScreen(
         ?: com.example.model.TrainingProgramModel(id = "custom_program", nameHu = "Egyéni program", nameEn = "Custom Program", subtitleHu = "Saját program", subtitleEn = "Custom Program", tagsHu = emptyList(), isCustom = true, isActive = false, days = emptyList())
     val dayIndex = state.editingDayIndex.coerceIn(0, (program.days.size - 1).coerceAtLeast(0))
     val currentDay = program.days.getOrNull(dayIndex)
-    var programName by remember(program.id, program.nameHu) { mutableStateOf(program.nameHu) }
+    val initialProgramName = if (program.isCustom) program.nameHu else program.localizedName(state.language)
+    var programName by remember(program.id, initialProgramName) { mutableStateOf(initialProgramName) }
 
     Column(
         modifier = Modifier
@@ -1144,7 +1155,7 @@ fun ProgramEditorScreen(
                 singleLine = true
             )
 
-            if (programName.trim() != program.nameHu) Button(
+            if (programName.trim() != initialProgramName) Button(
                 onClick = { onRenameProgram(programName) }, enabled = !state.libraryMutationBusy && programName.isNotBlank(),
                 modifier = Modifier.fillMaxWidth().testTag("studio_program_save_name")) {
                 Text(trW(state.language, "Programnév mentése", "Save program name", "Programmname speichern", "Salvează numele programului"))
@@ -1175,7 +1186,7 @@ fun ProgramEditorScreen(
                             modifier = Modifier.padding(vertical = 10.dp, horizontal = 6.dp)
                         ) {
                             Text(
-                                text = d.dayCode,
+                                text = d.localizedDayCode(state.language),
                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                 color = if (selected) palette.onPrimary else palette.textPrimary,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -1353,7 +1364,7 @@ fun ProgramEditorScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text(
-                                        text = ex.equipmentHu,
+                                        text = ex.localizedEquipment(state.language),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = palette.textPrimary,
                                         modifier = Modifier.padding(10.dp)
@@ -1523,6 +1534,23 @@ fun CalendarPlannerScreen(
     var movingEvent by remember { mutableStateOf<com.example.model.CalendarDayEvent?>(null) }
     var activeFieldDialog by remember { mutableStateOf<String?>(null) }
 
+    val localizeCadenceLabel: (String) -> String = { raw ->
+        when {
+            raw.contains("Minden második", ignoreCase = true) -> trW(state.language, "Minden második nap", "Every second day", "Jeden zweiten Tag", "La fiecare două zile")
+            raw.contains("Heti 3", ignoreCase = true) -> trW(state.language, "Heti 3 nap (H-Sze-P)", "3 days/week (M-W-F)", "3 Tage/Woche (Mo-Mi-Fr)", "3 zile/săpt. (L-Mi-V)")
+            raw.contains("Heti 4", ignoreCase = true) -> trW(state.language, "Heti 4 nap", "4 days/week", "4 Tage/Woche", "4 zile/săpt.")
+            raw.contains("Minden nap", ignoreCase = true) -> trW(state.language, "Minden nap", "Every day", "Jeden Tag", "În fiecare zi")
+            else -> raw
+        }
+    }
+    val localizeFirstDayLabel: (String) -> String = { raw ->
+        when {
+            raw.contains("Automatikus", ignoreCase = true) -> trW(state.language, "Automatikus", "Automatic", "Automatisch", "Automat")
+            raw.contains("B", ignoreCase = true) -> trW(state.language, "Alap B", "Day B", "Tag B", "Ziua B")
+            else -> trW(state.language, "Alap A", "Day A", "Tag A", "Ziua A")
+        }
+    }
+
     // 1. Modify Event Dialog
     editingEvent?.let { ev ->
         var splitSel by remember(ev.id) { mutableStateOf(ev.splitBadge) }
@@ -1532,10 +1560,22 @@ fun CalendarPlannerScreen(
             onDismissRequest = { editingEvent = null },
             containerColor = palette.surface,
             titleContentColor = palette.textPrimary,
-            title = { Text("Edzésnap módosítása (${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${ev.dayOfMonth}.)", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
+            title = {
+                Text(
+                    text = trW(
+                        state.language,
+                        "Edzésnap módosítása (${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${ev.dayOfMonth}.)",
+                        "Edit workout day (${displayedYearMonth.year}-${displayedYearMonth.monthValue.toString().padStart(2, '0')}-${ev.dayOfMonth.toString().padStart(2, '0')})",
+                        "Trainingstag bearbeiten (${ev.dayOfMonth.toString().padStart(2, '0')}.${displayedYearMonth.monthValue.toString().padStart(2, '0')}.${displayedYearMonth.year})",
+                        "Modifică ziua de antrenament (${ev.dayOfMonth.toString().padStart(2, '0')}.${displayedYearMonth.monthValue.toString().padStart(2, '0')}.${displayedYearMonth.year})"
+                    ),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Edzésnap típusa (A / B):", style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
+                    Text(trW(state.language, "Edzésnap típusa (A / B):", "Workout day type (A / B):", "Trainingstag-Typ (A / B):", "Tipul zilei de antrenament (A / B):"), style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf("A", "B").forEach { sp ->
                             val isSel = splitSel == sp
@@ -1547,12 +1587,12 @@ fun CalendarPlannerScreen(
                                     .clickable { splitSel = sp }
                             ) {
                                 Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 10.dp)) {
-                                    Text("Alap $sp", fontWeight = FontWeight.Bold, color = if (isSel) palette.onPrimary else palette.textPrimary)
+                                    Text(trW(state.language, "Alap $sp", "Day $sp", "Tag $sp", "Ziua $sp"), fontWeight = FontWeight.Bold, color = if (isSel) palette.onPrimary else palette.textPrimary)
                                 }
                             }
                         }
                     }
-                    Text("Időpont:", style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
+                    Text(trW(state.language, "Időpont:", "Time:", "Uhrzeit:", "Ora:"), style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf("08:00", "10:00", "16:00", "18:00").forEach { tm ->
                             val isSel = timeSel == tm
@@ -1569,7 +1609,7 @@ fun CalendarPlannerScreen(
                             }
                         }
                     }
-                    Text("Időtartam (perc):", style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
+                    Text(trW(state.language, "Időtartam (perc):", "Duration (min):", "Dauer (Min.):", "Durată (min):"), style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf(45, 60, 75, 90).forEach { dr ->
                             val isSel = durSel == dr
@@ -1581,7 +1621,7 @@ fun CalendarPlannerScreen(
                                     .clickable { durSel = dr }
                             ) {
                                 Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 8.dp)) {
-                                    Text("$dr p", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = if (isSel) palette.onPrimary else palette.textPrimary)
+                                    Text("$dr ${trW(state.language, "p", "m", "M", "m")}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = if (isSel) palette.onPrimary else palette.textPrimary)
                                 }
                             }
                         }
@@ -1596,12 +1636,12 @@ fun CalendarPlannerScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary)
                 ) {
-                    Text("Mentés", fontWeight = FontWeight.Bold)
+                    Text(strings.saveBtn, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TrainPilotOutlinedButton(onClick = { editingEvent = null }) {
-                    Text("Mégse", color = palette.textPrimary)
+                    Text(strings.cancelBtn, color = palette.textPrimary)
                 }
             }
         )
@@ -1615,12 +1655,24 @@ fun CalendarPlannerScreen(
             onDismissRequest = { movingEvent = null },
             containerColor = palette.surface,
             titleContentColor = palette.textPrimary,
-            title = { Text("Edzés áthelyezése (${ev.dayOfMonth}. napról)", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
+            title = {
+                Text(
+                    text = trW(
+                        state.language,
+                        "Edzés áthelyezése (${ev.dayOfMonth}. napról)",
+                        "Move workout (from day ${ev.dayOfMonth})",
+                        "Training verschieben (von Tag ${ev.dayOfMonth})",
+                        "Mută antrenamentul (din ziua ${ev.dayOfMonth})"
+                    ),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Válaszd ki az új napot ebben a hónapban:", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                    Text(trW(state.language, "Válaszd ki az új napot ebben a hónapban:", "Select the new day in this month:", "Wähle den neuen Tag in diesem Monat:", "Selectează noua zi din această lună:"), style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                     EditorStepperBox(
-                        label = "Új naptári nap (1–${displayedYearMonth.lengthOfMonth()})",
+                        label = trW(state.language, "Új naptári nap (1–${displayedYearMonth.lengthOfMonth()})", "New calendar day (1–${displayedYearMonth.lengthOfMonth()})", "Neuer Kalendertag (1–${displayedYearMonth.lengthOfMonth()})", "Zi calendaristică nouă (1–${displayedYearMonth.lengthOfMonth()})"),
                         valueText = "${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${targetDay.toString().padStart(2, '0')}.",
                         onMinus = { targetDay = (targetDay - 1).coerceAtLeast(1) },
                         onPlus = { targetDay = (targetDay + 1).coerceAtMost(displayedYearMonth.lengthOfMonth()) }
@@ -1643,7 +1695,13 @@ fun CalendarPlannerScreen(
                                 tint = palette.primary
                             )
                             Text(
-                                text = "Következő tervezett edzések automatikus eltolása",
+                                text = trW(
+                                    state.language,
+                                    "Következő tervezett edzések automatikus eltolása",
+                                    "Automatically shift following planned workouts",
+                                    "Folgende geplante Trainings automatisch verschieben",
+                                    "Decalează automat următoarele antrenamente planificate"
+                                ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = palette.textPrimary
                             )
@@ -1659,12 +1717,12 @@ fun CalendarPlannerScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary)
                 ) {
-                    Text("Áthelyezés", fontWeight = FontWeight.Bold)
+                    Text(trW(state.language, "Áthelyezés", "Move", "Verschieben", "Mută"), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TrainPilotOutlinedButton(onClick = { movingEvent = null }) {
-                    Text("Mégse", color = palette.textPrimary)
+                    Text(strings.cancelBtn, color = palette.textPrimary)
                 }
             }
         )
@@ -1679,26 +1737,27 @@ fun CalendarPlannerScreen(
             title = {
                 Text(
                     text = when (fieldKey) {
-                        "cadence" -> "Tervezési ritmus"
-                        "firstDay" -> "Első edzésnap"
-                        "startDate" -> "Kezdőnap kiválasztása"
-                        "time" -> "Edzés időpontja"
-                        "duration" -> "Időtartam (perc)"
-                        else -> "Hetek száma"
+                        "cadence" -> trW(state.language, "Tervezési ritmus", "Planning cadence", "Planungsrhythmus", "Ritm de planificare")
+                        "firstDay" -> trW(state.language, "Első edzésnap", "First workout day", "Erster Trainingstag", "Prima zi de antrenament")
+                        "startDate" -> trW(state.language, "Kezdőnap kiválasztása", "Select start date", "Startdatum wählen", "Selectează data de început")
+                        "time" -> trW(state.language, "Edzés időpontja", "Workout time", "Trainingszeit", "Ora antrenamentului")
+                        "duration" -> trW(state.language, "Időtartam (perc)", "Duration (min)", "Dauer (Min.)", "Durată (min)")
+                        else -> trW(state.language, "Hetek száma", "Number of weeks", "Anzahl der Wochen", "Număr de săptămâni")
                     },
                     style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold
                 )
             },
             text = {
-                val options: List<String> = when (fieldKey) {
-                    "cadence" -> listOf("Minden második nap", "Heti 3 nap (H-Sze-P)", "Heti 4 nap", "Minden nap")
-                    "firstDay" -> listOf("Alap A", "Alap B")
+                val options: List<Pair<String, String>> = when (fieldKey) {
+                    "cadence" -> listOf("Minden második nap", "Heti 3 nap (H-Sze-P)", "Heti 4 nap", "Minden nap").map { it to localizeCadenceLabel(it) }
+                    "firstDay" -> listOf("Alap A", "Alap B").map { it to localizeFirstDayLabel(it) }
                     "startDate" -> (1..displayedYearMonth.lengthOfMonth()).map { d ->
-                        "${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${d.toString().padStart(2, '0')}."
+                        val dateStr = "${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${d.toString().padStart(2, '0')}."
+                        dateStr to dateStr
                     }
-                    "time" -> listOf("07:00", "08:30", "10:00", "16:00", "17:30", "18:00", "19:30")
-                    "duration" -> listOf("30", "45", "60", "75", "90")
-                    else -> listOf("1", "2", "4", "6", "8", "12")
+                    "time" -> listOf("07:00", "08:30", "10:00", "16:00", "17:30", "18:00", "19:30").map { it to it }
+                    "duration" -> listOf("30", "45", "60", "75", "90").map { it to it }
+                    else -> listOf("1", "2", "4", "6", "8", "12").map { it to it }
                 }
                 Column(
                     modifier = Modifier
@@ -1706,7 +1765,7 @@ fun CalendarPlannerScreen(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    options.forEach { opt ->
+                    options.forEach { (canonicalVal, displayLabel) ->
                         Surface(
                             shape = RoundedCornerShape(10.dp),
                             color = palette.surfaceElevated,
@@ -1714,18 +1773,18 @@ fun CalendarPlannerScreen(
                                 .fillMaxWidth()
                                 .clickable {
                                     when (fieldKey) {
-                                        "cadence" -> onUpdatePlanningParams(opt, state.planningFirstDayHu, state.planningStartDate, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
-                                        "firstDay" -> onUpdatePlanningParams(state.planningCadenceHu, opt, state.planningStartDate, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
-                                        "startDate" -> onUpdatePlanningParams(state.planningCadenceHu, state.planningFirstDayHu, opt, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
-                                        "time" -> onUpdatePlanningParams(state.planningCadenceHu, state.planningFirstDayHu, state.planningStartDate, opt, state.planningDurationMin, state.planningWeeksCount)
-                                        "duration" -> onUpdatePlanningParams(state.planningCadenceHu, state.planningFirstDayHu, state.planningStartDate, state.planningTime, opt.toIntOrNull() ?: 60, state.planningWeeksCount)
-                                        "weeks" -> onUpdatePlanningParams(state.planningCadenceHu, state.planningFirstDayHu, state.planningStartDate, state.planningTime, state.planningDurationMin, opt.toIntOrNull() ?: 4)
+                                        "cadence" -> onUpdatePlanningParams(canonicalVal, state.planningFirstDayHu, state.planningStartDate, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
+                                        "firstDay" -> onUpdatePlanningParams(state.planningCadenceHu, canonicalVal, state.planningStartDate, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
+                                        "startDate" -> onUpdatePlanningParams(state.planningCadenceHu, state.planningFirstDayHu, canonicalVal, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
+                                        "time" -> onUpdatePlanningParams(state.planningCadenceHu, state.planningFirstDayHu, state.planningStartDate, canonicalVal, state.planningDurationMin, state.planningWeeksCount)
+                                        "duration" -> onUpdatePlanningParams(state.planningCadenceHu, state.planningFirstDayHu, state.planningStartDate, state.planningTime, canonicalVal.toIntOrNull() ?: 60, state.planningWeeksCount)
+                                        "weeks" -> onUpdatePlanningParams(state.planningCadenceHu, state.planningFirstDayHu, state.planningStartDate, state.planningTime, state.planningDurationMin, canonicalVal.toIntOrNull() ?: 4)
                                     }
                                     activeFieldDialog = null
                                 }
                         ) {
                             Text(
-                                text = opt,
+                                text = displayLabel,
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                                 color = palette.textPrimary,
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
@@ -1736,7 +1795,7 @@ fun CalendarPlannerScreen(
             },
             confirmButton = {
                 TrainPilotOutlinedButton(onClick = { activeFieldDialog = null }) {
-                    Text("Bezárás", color = palette.textPrimary)
+                    Text(trW(strings.language, "Bezárás", "Close", "Schließen", "Închide"), color = palette.textPrimary)
                 }
             }
         )
@@ -1836,9 +1895,15 @@ fun CalendarPlannerScreen(
                         }
                     }
 
-                    // Weekday headers: H   K   Sze   Cs   P   Szo   V
+                    // Weekday headers
+                    val weekdayShortHeaders = when (state.language) {
+                        com.example.model.AppLanguage.HU -> listOf("H", "K", "Sze", "Cs", "P", "Szo", "V")
+                        com.example.model.AppLanguage.EN -> listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+                        com.example.model.AppLanguage.DE -> listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
+                        com.example.model.AppLanguage.RO -> listOf("Lun", "Mar", "Mie", "Joi", "Vin", "Sâm", "Dum")
+                    }
                     Row(modifier = Modifier.fillMaxWidth()) {
-                        listOf("H", "K", "Sze", "Cs", "P", "Szo", "V").forEach { d ->
+                        weekdayShortHeaders.forEach { d ->
                             Text(
                                 text = d,
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
@@ -1945,7 +2010,7 @@ fun CalendarPlannerScreen(
                         Column(Modifier.weight(1f)) {
                             Text(activeProgramTitle, color = palette.textPrimary, style = MaterialTheme.typography.titleSmall,
                                 maxLines = 2, overflow = TextOverflow.Ellipsis)
-                            Text("${state.planningCadenceHu} • ${state.planningTime}", color = palette.textSecondary,
+                            Text("${localizeCadenceLabel(state.planningCadenceHu)} • ${state.planningTime}", color = palette.textSecondary,
                                 style = MaterialTheme.typography.labelSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         }
                         if (state.calendarUndoStack.isNotEmpty()) IconButton(onClick = onUndoCalendarAction,
@@ -2007,7 +2072,7 @@ fun CalendarPlannerScreen(
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = ev.titleHu,
+                                            text = ev.localizedTitle(state.language, state.programs),
                                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                             color = palette.textPrimary
                                         )
@@ -2108,7 +2173,7 @@ fun CalendarPlannerScreen(
                             )
                         ) {
                             Text(
-                                text = "Újratervezés",
+                                text = trW(state.language, "Újratervezés", "Replan", "Neu planen", "Replanificare"),
                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold)
                             )
                         }
@@ -2120,32 +2185,37 @@ fun CalendarPlannerScreen(
                         }
                     }
 
+                    val cadenceMap = listOf("Minden második nap", "Heti 3 nap (H-Sze-P)", "Heti 4 nap", "Minden nap").associateBy { localizeCadenceLabel(it) }
+                    val firstDayMap = listOf("Alap A", "Alap B").associateBy { localizeFirstDayLabel(it) }
+
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         PlannerFieldTile(
                             modifier = Modifier.weight(1f),
-                            label = "Tervezési ritmus",
-                            value = state.planningCadenceHu,
+                            label = trW(state.language, "Tervezési ritmus", "Planning cadence", "Planungsrhythmus", "Ritm de planificare"),
+                            value = localizeCadenceLabel(state.planningCadenceHu),
                             showChevron = true,
-                            dropdownOptions = listOf("Minden második nap", "Heti 3 nap (H-Sze-P)", "Heti 4 nap", "Minden nap"),
+                            dropdownOptions = cadenceMap.keys.toList(),
                             onSelectOption = { opt ->
-                                onUpdatePlanningParams(opt, state.planningFirstDayHu, state.planningStartDate, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
+                                val canonical = cadenceMap[opt] ?: opt
+                                onUpdatePlanningParams(canonical, state.planningFirstDayHu, state.planningStartDate, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
                             }
                         )
                         PlannerFieldTile(
                             modifier = Modifier.weight(1f),
-                            label = "Első edzésnap",
-                            value = state.planningFirstDayHu,
+                            label = trW(state.language, "Első edzésnap", "First workout day", "Erster Trainingstag", "Prima zi de antrenament"),
+                            value = localizeFirstDayLabel(state.planningFirstDayHu),
                             showChevron = true,
-                            dropdownOptions = listOf("Alap A", "Alap B"),
+                            dropdownOptions = firstDayMap.keys.toList(),
                             onSelectOption = { opt ->
-                                onUpdatePlanningParams(state.planningCadenceHu, opt, state.planningStartDate, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
+                                val canonical = firstDayMap[opt] ?: opt
+                                onUpdatePlanningParams(state.planningCadenceHu, canonical, state.planningStartDate, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
                             }
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         PlannerFieldTile(
                             modifier = Modifier.weight(1f),
-                            label = "Kezdőnap",
+                            label = trW(state.language, "Kezdőnap", "Start date", "Startdatum", "Data de început"),
                             value = state.planningStartDate,
                             showCalendarIcon = true,
                             dropdownOptions = monthDates,
@@ -2155,7 +2225,7 @@ fun CalendarPlannerScreen(
                         )
                         PlannerFieldTile(
                             modifier = Modifier.weight(1f),
-                            label = "Időpont",
+                            label = trW(state.language, "Időpont", "Time", "Uhrzeit", "Ora"),
                             value = state.planningTime,
                             dropdownOptions = listOf("07:00", "08:30", "10:00", "16:00", "17:30", "18:00", "19:30"),
                             onSelectOption = { opt ->
@@ -2166,7 +2236,7 @@ fun CalendarPlannerScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         PlannerFieldTile(
                             modifier = Modifier.weight(1f),
-                            label = "Időtartam (perc)",
+                            label = trW(state.language, "Időtartam (perc)", "Duration (min)", "Dauer (Min.)", "Durată (min)"),
                             value = "${state.planningDurationMin}",
                             dropdownOptions = listOf("30", "45", "60", "75", "90"),
                             onSelectOption = { opt ->
@@ -2175,7 +2245,7 @@ fun CalendarPlannerScreen(
                         )
                         PlannerFieldTile(
                             modifier = Modifier.weight(1f),
-                            label = "Hetek száma",
+                            label = trW(state.language, "Hetek száma", "Weeks count", "Anzahl Wochen", "Număr săptămâni"),
                             value = "${state.planningWeeksCount}",
                             dropdownOptions = listOf("1", "2", "4", "6", "8", "12"),
                             onSelectOption = { opt ->
@@ -2196,7 +2266,7 @@ fun CalendarPlannerScreen(
                             .height(52.dp)
                     ) {
                         Text(
-                            text = "Edzések megtervezése",
+                            text = trW(state.language, "Edzések megtervezése", "Plan workouts", "Trainings planen", "Planifică antrenamentele"),
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
                         )
                     }
@@ -2215,7 +2285,7 @@ fun CalendarPlannerScreen(
         var selectedNewStartDate by remember { mutableStateOf(defaultTomorrow) }
 
         val selectedProgObj = state.programs.firstOrNull { it.id == selectedProgId } ?: activeProgram
-        val selectedProgName = selectedProgObj?.nameHu ?: activeProgramTitle
+        val selectedProgName = selectedProgObj?.localizedName(state.language) ?: activeProgramTitle
         val monthDatesForReplan = remember(displayedYearMonth) {
             (1..displayedYearMonth.lengthOfMonth()).map { d ->
                 "${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${d.toString().padStart(2, '0')}."
@@ -2248,7 +2318,7 @@ fun CalendarPlannerScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Edzések újratervezése",
+                            text = trW(state.language, "Edzések újratervezése", "Replan workouts", "Trainings neu planen", "Replanificare antrenamente"),
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
                             color = palette.textPrimary
                         )
@@ -2272,19 +2342,25 @@ fun CalendarPlannerScreen(
                     }
 
                     Text(
-                        text = "Bármelyik edzésnappal újratervezhetsz. Programváltáskor a hátralévő tervet az új program váltja fel. A naplózott és aktív edzések megmaradnak.",
+                        text = trW(
+                            state.language,
+                            "Bármelyik edzésnappal újratervezhetsz. Programváltáskor a hátralévő tervet az új program váltja fel. A naplózott és aktív edzések megmaradnak.",
+                            "Replan starting with any workout day. Switching programs replaces the remaining plan while keeping logged and active workouts.",
+                            "Du kannst mit jedem Trainingstag neu planen. Beim Programmwechsel wird der restliche Plan ersetzt, protokollierte und aktive Trainings bleiben erhalten.",
+                            "Poți replanifica începând cu orice zi de antrenament. La schimbarea programului, restul planului este înlocuit, iar antrenamentele salvate și active rămân."
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = palette.textSecondary
                     )
 
                     // Program selector (floating dropdown)
                     PlannerFieldTile(
-                        label = "Program",
+                        label = trW(state.language, "Program", "Program", "Programm", "Program"),
                         value = selectedProgName,
                         showChevron = true,
-                        dropdownOptions = state.programs.map { it.nameHu },
+                        dropdownOptions = state.programs.map { it.localizedName(state.language) },
                         onSelectOption = { chosenName ->
-                            state.programs.firstOrNull { it.nameHu == chosenName }?.let { chosen ->
+                            state.programs.firstOrNull { it.localizedName(state.language) == chosenName || it.nameHu == chosenName }?.let { chosen ->
                                 selectedProgId = chosen.id
                                 onActivateProgram(chosen.id)
                             }
@@ -2292,18 +2368,18 @@ fun CalendarPlannerScreen(
                     )
 
                     // Első edzésnap selector (floating dropdown)
-                    val firstDayOptions = listOf("Automatikus", "Alap A", "Alap B")
+                    val firstDayOptionsMap = listOf("Automatikus", "Alap A", "Alap B").associateBy { localizeFirstDayLabel(it) }
                     PlannerFieldTile(
-                        label = "Első edzésnap",
-                        value = selectedFirstDay,
+                        label = trW(state.language, "Első edzésnap", "First workout day", "Erster Trainingstag", "Prima zi de antrenament"),
+                        value = localizeFirstDayLabel(selectedFirstDay),
                         showChevron = true,
-                        dropdownOptions = firstDayOptions,
-                        onSelectOption = { selectedFirstDay = it }
+                        dropdownOptions = firstDayOptionsMap.keys.toList(),
+                        onSelectOption = { selectedFirstDay = firstDayOptionsMap[it] ?: it }
                     )
 
                     // Új kezdőnap selector (floating dropdown)
                     PlannerFieldTile(
-                        label = "Új kezdőnap",
+                        label = trW(state.language, "Új kezdőnap", "New start date", "Neues Startdatum", "Noua dată de început"),
                         value = selectedNewStartDate,
                         showCalendarIcon = true,
                         showChevron = true,
@@ -2313,7 +2389,7 @@ fun CalendarPlannerScreen(
 
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Program: $selectedProgName",
+                        text = "${trW(state.language, "Program", "Program", "Programm", "Program")}: $selectedProgName",
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
                         color = palette.textPrimary
                     )
@@ -2324,9 +2400,9 @@ fun CalendarPlannerScreen(
                         .mapNotNull { it.trim().toIntOrNull() }
                         .lastOrNull() ?: today.dayOfMonth
                     val previewItems = listOf(
-                        "Alap B" to "${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${(startD - 2).coerceAtLeast(1).toString().padStart(2, '0')}. ${state.planningTime} → $selectedNewStartDate ${state.planningTime}",
-                        "Alap A" to "$selectedNewStartDate ${state.planningTime} → ${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${(startD + 2).coerceAtMost(31).toString().padStart(2, '0')}. ${state.planningTime}",
-                        "Alap B" to "${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${(startD + 2).coerceAtMost(31).toString().padStart(2, '0')}. ${state.planningTime} → ${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${(startD + 4).coerceAtMost(31).toString().padStart(2, '0')}. ${state.planningTime}"
+                        localizeFirstDayLabel("Alap B") to "${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${(startD - 2).coerceAtLeast(1).toString().padStart(2, '0')}. ${state.planningTime} → $selectedNewStartDate ${state.planningTime}",
+                        localizeFirstDayLabel("Alap A") to "$selectedNewStartDate ${state.planningTime} → ${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${(startD + 2).coerceAtMost(31).toString().padStart(2, '0')}. ${state.planningTime}",
+                        localizeFirstDayLabel("Alap B") to "${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${(startD + 2).coerceAtMost(31).toString().padStart(2, '0')}. ${state.planningTime} → ${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${(startD + 4).coerceAtMost(31).toString().padStart(2, '0')}. ${state.planningTime}"
                     )
                     previewItems.forEach { (splitTitle, shiftText) ->
                         Column(
@@ -2363,7 +2439,7 @@ fun CalendarPlannerScreen(
                             .height(54.dp)
                     ) {
                         Text(
-                            text = "Terv frissítése",
+                            text = trW(state.language, "Terv frissítése", "Update plan", "Plan aktualisieren", "Actualizează planul"),
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
                         )
                     }
@@ -2547,6 +2623,10 @@ fun ExerciseLibraryScreen(
         val matchesSearch = state.exerciseSearchQuery.isBlank() ||
             ex.nameHu.contains(state.exerciseSearchQuery, ignoreCase = true) ||
             ex.nameEn.contains(state.exerciseSearchQuery, ignoreCase = true) ||
+            ex.nameDe.contains(state.exerciseSearchQuery, ignoreCase = true) ||
+            ex.nameRo.contains(state.exerciseSearchQuery, ignoreCase = true) ||
+            ex.localizedPrimaryMuscles(state.language).contains(state.exerciseSearchQuery, ignoreCase = true) ||
+            ex.localizedEquipment(state.language).contains(state.exerciseSearchQuery, ignoreCase = true) ||
             ex.primaryMusclesHu.contains(state.exerciseSearchQuery, ignoreCase = true) ||
             ex.equipmentHu.contains(state.exerciseSearchQuery, ignoreCase = true)
         matchesCategory && matchesSearch && (!state.favoriteExercisesOnly || ex.id in state.favoriteExerciseIds)
@@ -2762,7 +2842,7 @@ fun ExerciseLibraryScreen(
                             }
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "${ex.primaryMusclesHu} • ${ex.equipmentHu} • ${ex.defaultSets}×${ex.defaultReps}",
+                                text = "${ex.localizedPrimaryMuscles(state.language)} • ${ex.localizedEquipment(state.language)} • ${ex.defaultSets}×${ex.defaultReps}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.textSecondary,
                                 maxLines = 1,
@@ -3016,7 +3096,7 @@ fun ExerciseDetailScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "${trW(state.language, "Anatómiai kivitelezés", "Anatomical execution", "Anatomische Ausführung", "Execuție anatomică")} • ${exercise.primaryMusclesHu}",
+                            text = "${trW(state.language, "Anatómiai kivitelezés", "Anatomical execution", "Anatomische Ausführung", "Execuție anatomică")} • ${exercise.localizedPrimaryMuscles(state.language)}",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.White,
                             fontWeight = FontWeight.SemiBold
@@ -3054,9 +3134,9 @@ fun ExerciseDetailScreen(
                     modifier = Modifier.padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    ExerciseMetaRow(label = trW(state.language, "Eszköz", "Equipment", "Gerät", "Echipament"), value = exercise.equipmentHu)
-                    ExerciseMetaRow(label = trW(state.language, "Fő izmok", "Primary muscles", "Hauptmuskeln", "Mușchi principali"), value = exercise.primaryMusclesHu)
-                    ExerciseMetaRow(label = trW(state.language, "Másodlagos izmok", "Secondary muscles", "Sekundärmuskeln", "Mușchi secundari"), value = exercise.secondaryMusclesHu)
+                    ExerciseMetaRow(label = trW(state.language, "Eszköz", "Equipment", "Gerät", "Echipament"), value = exercise.localizedEquipment(state.language))
+                    ExerciseMetaRow(label = trW(state.language, "Fő izmok", "Primary muscles", "Hauptmuskeln", "Mușchi principali"), value = exercise.localizedPrimaryMuscles(state.language))
+                    ExerciseMetaRow(label = trW(state.language, "Másodlagos izmok", "Secondary muscles", "Sekundärmuskeln", "Mușchi secundari"), value = exercise.localizedSecondaryMuscles(state.language))
                 }
             }
 
@@ -3072,7 +3152,7 @@ fun ExerciseDetailScreen(
             }
             AnatomicalMuscleHeatmapCard(
                 title = "${strings.muscleLoadTitle} (${exercise.localizedName(state.language)})",
-                subtitle = "${exercise.primaryMusclesHu} • ${exercise.secondaryMusclesHu}",
+                subtitle = "${exercise.localizedPrimaryMuscles(state.language)} • ${exercise.localizedSecondaryMuscles(state.language)}",
                 highlightedMuscleId = mappedMuscleId
             )
 
@@ -3082,13 +3162,7 @@ fun ExerciseDetailScreen(
                 color = palette.textPrimary
             )
 
-            val steps = exercise.stepsHu.ifEmpty {
-                listOf(
-                    "Vedd fel a stabil kiinduló testhelyzetet.",
-                    "Hajtsd végre a mozdulatot kontrollált tempóban.",
-                    "Tartsd meg a feszülést, majd térj vissza a kiinduló helyzetbe."
-                )
-            }
+            val steps = exercise.localizedSteps(state.language)
             steps.forEachIndexed { idx, stepText ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -3192,18 +3266,20 @@ fun AddCustomExerciseModalDialog(
     ) -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
+    val strings = LocalTrainPilotStrings.current
+    val lang = strings.language
     var nameHu by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(ExerciseCategory.LEGS) }
     var categoryDropdownOpen by remember { mutableStateOf(false) }
 
     val equipmentOptions = listOf(
-        "Saját testsúly / Kültéri (pl. Kör futás)",
-        "Kézi súlyzó (Dumbbell)",
-        "Rúd és tárcsa (Barbell)",
-        "Kondigép / Kábel",
-        "Gumiszalag / Kettlebell"
+        "Saját testsúly / Kültéri (pl. Kör futás)" to trW(lang, "Saját testsúly / Kültéri (pl. Kör futás)", "Bodyweight / Outdoor (e.g. Track run)", "Eigengewicht / Outdoor (z. B. Bahnlauf)", "Greutate corporală / Exterior (ex. Alergare pe pistă)"),
+        "Kézi súlyzó (Dumbbell)" to trW(lang, "Kézi súlyzó (Dumbbell)", "Dumbbell", "Kurzhantel (Dumbbell)", "Ganteră (Dumbbell)"),
+        "Rúd és tárcsa (Barbell)" to trW(lang, "Rúd és tárcsa (Barbell)", "Barbell & plates", "Langhantel & Scheiben (Barbell)", "Haltere și discuri (Barbell)"),
+        "Kondigép / Kábel" to trW(lang, "Kondigép / Kábel", "Gym machine / Cable", "Fitnessgerät / Kabelzug", "Aparat sală / Cablu"),
+        "Gumiszalag / Kettlebell" to trW(lang, "Gumiszalag / Kettlebell", "Resistance band / Kettlebell", "Widerstandsband / Kettlebell", "Bandă elastică / Kettlebell")
     )
-    var selectedEquipment by remember { mutableStateOf(equipmentOptions.first()) }
+    var selectedEquipment by remember { mutableStateOf(equipmentOptions.first().first) }
     var equipmentDropdownOpen by remember { mutableStateOf(false) }
 
     var descriptionHu by remember { mutableStateOf("") }
@@ -3218,7 +3294,7 @@ fun AddCustomExerciseModalDialog(
         textContentColor = palette.textSecondary,
         title = {
             Text(
-                text = "Új egyedi gyakorlat hozzáadása",
+                text = trW(lang, "Új egyedi gyakorlat hozzáadása", "Add new custom exercise", "Neue eigene Übung hinzufügen", "Adaugă exercițiu personalizat nou"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
                 color = palette.textPrimary
@@ -3232,7 +3308,13 @@ fun AddCustomExerciseModalDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "Adj meg saját gyakorlatot (pl. Kör futás, Saját köredzés), válassz kategóriát és írd le a végrehajtás lépéseit:",
+                    text = trW(
+                        lang,
+                        "Adj meg saját gyakorlatot (pl. Kör futás, Saját köredzés), válassz kategóriát és írd le a végrehajtás lépéseit:",
+                        "Enter your custom exercise, choose a category, and describe the execution steps:",
+                        "Gib deine eigene Übung ein, wähle eine Kategorie und beschreibe die Ausführungsschritte:",
+                        "Introdu propriul exercițiu, alege o categorie și descrie pașii de execuție:"
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary
                 )
@@ -3240,7 +3322,7 @@ fun AddCustomExerciseModalDialog(
                 OutlinedTextField(
                     value = nameHu,
                     onValueChange = { nameHu = it },
-                    label = { Text("Gyakorlat neve (pl. Kör futás)") },
+                    label = { Text(trW(lang, "Gyakorlat neve (pl. Kör futás)", "Exercise name (e.g. Track run)", "Übungsname (z. B. Bahnlauf)", "Numele exercițiului (ex. Alergare pe pistă)")) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -3264,8 +3346,8 @@ fun AddCustomExerciseModalDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text("Izomcsoport / Kategória", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                Text(selectedCategory.labelHu, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                Text(trW(lang, "Izomcsoport / Kategória", "Muscle group / Category", "Muskelgruppe / Kategorie", "Grupă musculară / Categorie"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                Text(selectedCategory.localized(lang), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                             }
                             Icon(
                                 imageVector = if (categoryDropdownOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
@@ -3283,7 +3365,7 @@ fun AddCustomExerciseModalDialog(
                             DropdownMenuItem(
                                 text = {
                                     Text(
-                                        text = cat.labelHu,
+                                        text = cat.localized(lang),
                                         color = if (cat == selectedCategory) palette.primary else palette.textPrimary,
                                         fontWeight = if (cat == selectedCategory) FontWeight.Bold else FontWeight.Normal
                                     )
@@ -3314,8 +3396,9 @@ fun AddCustomExerciseModalDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Eszköz / Mérés jellege", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                Text(selectedEquipment, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                Text(trW(lang, "Eszköz / Mérés jellege", "Equipment / Measurement type", "Gerät / Messart", "Echipament / Tip măsurare"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                val displayEq = equipmentOptions.firstOrNull { it.first == selectedEquipment }?.second ?: selectedEquipment
+                                Text(displayEq, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                             }
                             Icon(
                                 imageVector = if (equipmentDropdownOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
@@ -3329,17 +3412,17 @@ fun AddCustomExerciseModalDialog(
                         onDismissRequest = { equipmentDropdownOpen = false },
                         modifier = Modifier.background(palette.surfaceElevated)
                     ) {
-                        equipmentOptions.forEach { eq ->
+                        equipmentOptions.forEach { (canonicalEq, displayEq) ->
                             DropdownMenuItem(
                                 text = {
                                     Text(
-                                        text = eq,
-                                        color = if (eq == selectedEquipment) palette.primary else palette.textPrimary,
-                                        fontWeight = if (eq == selectedEquipment) FontWeight.Bold else FontWeight.Normal
+                                        text = displayEq,
+                                        color = if (canonicalEq == selectedEquipment) palette.primary else palette.textPrimary,
+                                        fontWeight = if (canonicalEq == selectedEquipment) FontWeight.Bold else FontWeight.Normal
                                     )
                                 },
                                 onClick = {
-                                    selectedEquipment = eq
+                                    selectedEquipment = canonicalEq
                                     equipmentDropdownOpen = false
                                 }
                             )
@@ -3350,8 +3433,8 @@ fun AddCustomExerciseModalDialog(
                 OutlinedTextField(
                     value = descriptionHu,
                     onValueChange = { descriptionHu = it },
-                    label = { Text("Leírás / Végrehajtási lépések") },
-                    placeholder = { Text("Pl. 400m egyenletes tempójú kör futás, majd 60 mp séta pihenő...") },
+                    label = { Text(trW(lang, "Leírás / Végrehajtási lépések", "Description / Execution steps", "Beschreibung / Ausführungsschritte", "Descriere / Pași de execuție")) },
+                    placeholder = { Text(trW(lang, "Pl. 400m egyenletes tempójú kör futás, majd 60 mp séta pihenő...", "E.g. 400m steady pace run, then 60 s walking rest...", "Z. B. 400 m gleichmäßiger Lauf, dann 60 Sek. Gehpause...", "Ex. alergare 400 m ritm constant, apoi 60 sec pauză de mers...")) },
                     minLines = 3,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -3361,7 +3444,7 @@ fun AddCustomExerciseModalDialog(
                 OutlinedTextField(
                     value = videoUrl,
                     onValueChange = { videoUrl = it },
-                    label = { Text("Videó link vagy YouTube azonosító (opcionális)") },
+                    label = { Text(trW(lang, "Videó link vagy YouTube azonosító (opcionális)", "Video URL or YouTube ID (optional)", "Video-Link oder YouTube-ID (optional)", "Link video sau ID YouTube (opțional)")) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -3374,7 +3457,7 @@ fun AddCustomExerciseModalDialog(
                         .clickable { isTimed = !isTimed }
                 ) {
                     Checkbox(checked = isTimed, onCheckedChange = { isTimed = it })
-                    Text("Időalapú gyakorlat (másodperc / perc mérés)", style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
+                    Text(trW(lang, "Időalapú gyakorlat (másodperc / perc mérés)", "Timed exercise (seconds / minutes measurement)", "Zeitbasierte Übung (Sekunden-/Minutenmessung)", "Exercițiu cronometrat (măsurare în secunde / minute)"), style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
                 }
 
                 Row(
@@ -3385,7 +3468,7 @@ fun AddCustomExerciseModalDialog(
                         .clickable { addToCurrentProgramDay = !addToCurrentProgramDay }
                 ) {
                     Checkbox(checked = addToCurrentProgramDay, onCheckedChange = { addToCurrentProgramDay = it })
-                    Text("Hozzáadás az aktuálisan szerkesztett programnaphoz", style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
+                    Text(trW(lang, "Hozzáadás az aktuálisan szerkesztett programnaphoz", "Add to currently edited program day", "Zum aktuell bearbeiteten Programmtag hinzufügen", "Adaugă la ziua de program editată curent"), style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
                 }
             }
         },
@@ -3408,12 +3491,12 @@ fun AddCustomExerciseModalDialog(
                 ),
                 modifier = Modifier.testTag("custom_exercise_save_button")
             ) {
-                Text("Gyakorlat mentése", fontWeight = FontWeight.Bold)
+                Text(strings.saveBtn, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TrainPilotOutlinedButton(onClick = onDismiss) {
-                Text("Mégse", color = palette.textPrimary)
+                Text(strings.cancelBtn, color = palette.textPrimary)
             }
         }
     )
