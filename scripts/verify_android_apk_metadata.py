@@ -85,18 +85,7 @@ if requires_wear:
 def declared_gradle_version(module: str, field: str) -> str:
     """Use the version declared by the module, never a stale pinned release number."""
     source = pathlib.Path(module, "build.gradle.kts").read_text(encoding="utf-8")
-    pattern = rf'(?m)^\s*{re.escape(field)}\s*=\s*(\d+|"[^"\n]+")\s*(?://.*)?
-    assert len(expected) == 64, "Pinned release certificate missing"
-    assert result["signerSha256"].lower() == expected, "Release signer differs from configured persistent key"
-    assert result["applicationId"] == "com.TrainPilot.com", "Application identity changed"
-    for field in ("versionCode", "versionName"):
-        phone_expected = declared_gradle_version("app", field)
-        wear_expected = declared_gradle_version("wear", field)
-        assert (
-            result[field] == result["wear"][field] == phone_expected == wear_expected
-        ), f"Package {field} differs from phone/Wear Gradle declarations"
-    assert result["mapsApiKeyConfigured"], "Maps key not embedded"
-
+    pattern = rf'(?m)^\s*{re.escape(field)}\s*=\s*(\d+|"[^"\n]+")\s*(?://.*)?$'
     matches = re.findall(pattern, source)
     assert len(matches) == 1, f"Expected one literal {field} in {module}/build.gradle.kts"
     return matches[0].strip('"')
@@ -107,6 +96,10 @@ if release:
     assert len(expected) == 64, "Pinned release certificate missing"
     assert result["signerSha256"].lower() == expected, "Release signer differs from configured persistent key"
     assert result["applicationId"] == "com.TrainPilot.com", "Application identity changed"
-    assert result["versionCode"] == result["wear"]["versionCode"] == "2752", "Package versions differ"
-    assert result["versionName"] == result["wear"]["versionName"] == "0.1.0-beta", "Package versions differ"
+    for field in ("versionCode", "versionName"):
+        phone_expected = declared_gradle_version("app", field)
+        wear_expected = declared_gradle_version("wear", field)
+        assert (
+            result[field] == result["wear"][field] == phone_expected == wear_expected
+        ), f"Package {field} differs from phone/Wear Gradle declarations"
     assert result["mapsApiKeyConfigured"], "Maps key not embedded"
