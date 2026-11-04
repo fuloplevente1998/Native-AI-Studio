@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,6 +21,9 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
@@ -35,6 +39,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -141,7 +148,7 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
         picker.show()
     }
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Column(Modifier.fillMaxSize().background(colors.bg).padding(16.dp).testTag("health_record_browser")) {
+        Column(Modifier.fillMaxSize().background(colors.bg).padding(16.dp).testTag("health_record_browser"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column(Modifier.weight(1f)) {
                     Text(resources.getString(if (type == "SleepSessionRecord") R.string.health_record_sleep else R.string.health_records_title),
@@ -155,7 +162,7 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
                 }
             }
             // Pick valid calendar dates first; apply both bounds atomically to the paged SQL query.
-            Row(Modifier.fillMaxWidth().padding(top = 12.dp),
+            Row(Modifier.fillMaxWidth().padding(top = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column(Modifier.weight(1f)) {
                     Text(resources.getString(R.string.health_range_from), color = colors.muted)
@@ -189,15 +196,17 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
             page?.let { current ->
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     item { FilterChip(selected = query.source.isEmpty(), onClick = { restart("") },
-                        label = { Text(resources.getString(R.string.health_records_origins)) }) }
+                        label = { Text(resources.getString(R.string.health_records_origins)) },
+                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = colors.card2, selectedLabelColor = colors.accentText)) }) }
                     items(current.origins, key = { it.source }) { origin ->
                         FilterChip(selected = query.source == origin.source, onClick = { restart(origin.source) },
                             modifier = Modifier.testTag("health_origin_${origin.source}"),
-                            label = { Text(healthSourceDisplayName(origin.source, origin.name)) })
+                            label = { Text(healthSourceDisplayName(origin.source, origin.name)) },
+                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = colors.card2, selectedLabelColor = colors.accentText)) })
                     }
                 }
-                Text(resources.getString(R.string.health_records_raw_notice), color = colors.muted)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(resources.getString(R.string.health_records_raw_notice), color = colors.muted, fontSize = 12.sp, lineHeight = 16.sp)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     TextButton(enabled = previous.isNotEmpty(), modifier = Modifier.testTag("health_records_previous"), onClick = {
                         val last = previous.last()
                         previous = previous.dropLast(1)
@@ -232,19 +241,23 @@ private fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName:
     val scalar = NativeHealthRecords.number(data, "value")
         ?: if (row.type == "SleepSessionRecord") NativeHealthRecords.number(data, "durationMinutes") else null
     val displayUnit = if (row.type == "SleepSessionRecord" && data.has("durationMinutes")) "min" else unit
-    Card(Modifier.fillMaxWidth().testTag("health_record_${row.id}"), colors = CardDefaults.cardColors(containerColor = colors.card)) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(text.getString(NativeHealthRecords.title(row.type)), color = colors.text, fontWeight = FontWeight.Bold)
-            Text(text.getString(R.string.health_record_source, "${healthChannelName(row.channel, text)} · ${healthSourceDisplayName(row.source, sourceName)}"), color = colors.muted)
-            Text(text.getString(R.string.health_record_start, healthRecordTime(row.startMs, language)), color = colors.muted)
+    Card(Modifier.fillMaxWidth().testTag("health_record_${row.id}"),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = colors.card),
+        border = com.repforge.app.ui.theme.TrainPilotFrames.stroke(1.dp, colors.emphasisBorder)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            Text(text.getString(NativeHealthRecords.title(row.type)), color = colors.text, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            Text(healthSourceDisplayName(row.source, sourceName), color = colors.accentText, fontSize = 12.sp)
+            HorizontalDivider(color = colors.emphasisBorder)
+            Text(text.getString(R.string.health_record_start, healthRecordTime(row.startMs, language)), color = colors.muted, fontSize = 12.sp)
             if (row.endMs != row.startMs) Text(text.getString(R.string.health_record_end, healthRecordTime(row.endMs, language)), color = colors.muted)
-            Text(text.getString(R.string.health_record_modified, healthRecordTime(row.modifiedMs, language)), color = colors.muted)
+            Text(text.getString(R.string.health_record_modified, healthRecordTime(row.modifiedMs, language)), color = colors.muted, fontSize = 12.sp)
             if (row.type == "BloodPressureRecord") {
-                Text("${healthRecordNumber(NativeHealthRecords.number(data, "systolic"), language)} / ${healthRecordNumber(NativeHealthRecords.number(data, "diastolic"), language)} $unit", color = colors.accentText)
+                Text("${healthRecordNumber(NativeHealthRecords.number(data, "systolic"), language)} / ${healthRecordNumber(NativeHealthRecords.number(data, "diastolic"), language)} $unit", color = colors.accentText, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             } else if (scalar != null) {
                 if (row.type == "SleepSessionRecord") Text(text.getString(
                     if (data.optString("durationKind") == "asleep_stages") R.string.health_sleep_asleep else R.string.health_sleep_duration), color = colors.muted)
-                Text("${healthRecordNumber(scalar, language)} $displayUnit", color = colors.accentText)
+                Text("${healthRecordNumber(scalar, language)} $displayUnit", color = colors.accentText, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             }
             val count = data.optJSONArray("stages")?.length() ?: data.optJSONArray("samples")?.length() ?: 0
             if (count > 0) {
