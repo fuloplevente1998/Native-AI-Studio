@@ -1,16 +1,20 @@
-# Natív hibák és javítások – aktuális nyilvántartás, 2026-11-03
+# Natív hibák és javítások – aktuális nyilvántartás, 2026-11-04
 
 ## Aktuális hibák – 2026-11-04, 2753-as készülékes visszajelzés
 
-A felhasználó két új hiba rögzítését és a korábbi nyitott jegyek lezárását kérte.
+A felhasználó előbb két új hiba rögzítését és a korábbi nyitott jegyek lezárását kérte;
+az ezt követő 4409.jpg visszajelzés új #120 feladatként került melléjük.
+A 4410.jpg a régi #84 UI-jegy újranyitását indokolja, csak a szerkesztő-dizájnra.
 Ebben a körben nincs alkalmazáskód-javítás, tesztfuttatás vagy új APK.
 
 | Aktív jegy | Megfigyelés / elvárt eredmény | Referencia |
 |---|---|---|
 | [#117](https://github.com/fuloplevente1998/Native-AI-Studio/issues/117) | Naptár szinkron: „A Google-művelet nem sikerült. (404)”. Pontos API/erőforrás és ok kivizsgálandó; a kapcsolt fiók és korábbi Drive-időpont nem naptárszinkron-bizonyíték. | 4407.jpg, felhasználói csatolmány |
 | [#118](https://github.com/fuloplevente1998/Native-AI-Studio/issues/118) | Témák kinyitva: a fejléc és mind a négy témaválasztó sor kapjon közös külső keretet az Edzés és értesítések mintájára. A belső panelek lágyabbak, a témák és mentett választás megmaradnak. | 4406.jpg és 4408.jpg, felhasználói csatolmányok |
+| [#120](https://github.com/fuloplevente1998/Native-AI-Studio/issues/120) | Edzésrészletek: a WearOS/Samsung/HC források a Forrás fülre, a Statisztikákra egységes pulzus/kcal összesítő. Tükrözött/átfedő mérések csak egyszer, eredet és időablak megőrzésével; eredeti adatok nem törlendők. | 4409.jpg, felhasználói csatolmány |
+| [#84](https://github.com/fuloplevente1998/Native-AI-Studio/issues/84) | Újranyitva: naplós edzés- és visszajelzés-szerkesztő kompakt, közös keretes/fényes/színátmenetes app-dizájnja, valódi témahíddal és biztonságos látható Mentéssel. Előzmény #93 PR; más régi UI-részfeladat nem aktivált. | 4410.jpg, felhasználói csatolmány |
 
-**Lezárva a felhasználó kifejezett kérésére:** #35, #59, #69, #71, #75, #84.
+**Lezárva a felhasználó kifejezett kérésére:** #35, #59, #69, #71, #75.
 A korábban halasztott #82 adatvédelmi tájékoztató `not_planned` státusszal lezárva;
 nem jelenti az implementációját. A többi lezárás sem új, tételes paritás-/készülékes
 mérés: az eredeti bizonyítékok az egyes jegyekben megmaradnak. Új konkrét tünet
