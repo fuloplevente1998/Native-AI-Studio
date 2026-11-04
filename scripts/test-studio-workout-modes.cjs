@@ -26,6 +26,9 @@ for (const key of ['NativeTrainingModeChange.approve', 'mode.prepareInherit(', '
     has(model, key, 'Canonical persistence');
 }
 has(model, 'progressionModeReview = StudioTrainingModeReview(', 'Prepared comparison');
+has(model, 'NativeTrainingModeComparison.read(', 'Actual program comparison');
+has(model, 'NativeTrainingModeComparison.isCurrent(', 'Program snapshot revalidation');
+has(dialog, 'studio_modes_comparison_$index', 'Per-exercise before/after display');
 has(model, 'studioModeGeneration != token', 'Stale preview guard');
 has(model, 'studioTimerWriteMutex.withLock', 'Serialized timers');
 has(model, 'workSeconds = saved.workSeconds', 'Preserve work timer');
