@@ -102,6 +102,15 @@ data class WeeklyHealthDaySummary(
     val pulse: PulseDayReading? = null
 )
 
+/** Comparison only; the canonical CAS-protected #197 proposal stays private to the ViewModel. */
+data class StudioTrainingModeReview(
+    val beforeStyle: String,
+    val beforeProgression: String,
+    val afterStyle: String,
+    val afterProgression: String,
+    val inheritGlobal: Boolean
+)
+
 data class TrainPilotUiState(
     // Theme & Localization & Accessibility
     val selectedPaletteId: Int = 1, // Default: 01 • Grafit & Arany
@@ -186,6 +195,16 @@ data class TrainPilotUiState(
     val trainingStyleHu: String = "Normál hipertrófia",
     val progressionRuleHu: String = "Dupla progresszió",
     val beginnerGentleProfileActive: Boolean = false,
+    val trainingStyleCode: String = "normal",
+    val progressionModeCode: String = "double",
+    val programTrainingStyleCode: String = "normal",
+    val programProgressionModeCode: String = "double",
+    val programTrainingModeSource: String = "legacy",
+    val activeTrainingModeProgramId: String = "",
+    val globalTrainingModeUndo: Boolean = false,
+    val programTrainingModeUndo: Boolean = false,
+    val progressionModeReview: StudioTrainingModeReview? = null,
+    val progressionModeBusy: Boolean = false,
 
     // Calendar & Replan State (Mockup 1/4 #4 + main Naptár & Újratervezés)
     val calendarYearMonth: String = YearMonth.now().toString(),
@@ -1018,12 +1037,28 @@ class TrainPilotViewModel : ViewModel() {
         }
 
         observersScope.launch {
-            settingsStore.settingsFlow.map { it.trainingModes197Json }.distinctUntilChanged().collect { raw ->
-                val mode = com.repforge.app.data.store.NativeTrainingModes.globalChoice(raw)
-                _uiState.update { it.copy(
-                    trainingStyleHu = if (mode.trainingStyle == "hit") "HIT-inspirált" else "Normál hipertrófia",
-                    progressionRuleHu = when (mode.progressionMode) { "linear" -> "Lineáris progresszió"; "rir" -> "RIR/Coach"; else -> "Dupla progresszió" }) }
-            }
+            settingsStore.settingsFlow.map { it.trainingModes197Json to it.activeProgramId }
+                .distinctUntilChanged().collect { (raw, programId) ->
+                    val global = com.repforge.app.data.store.NativeTrainingModes.globalChoice(raw)
+                    val program = com.repforge.app.data.store.NativeTrainingModes.resolveSavedJson(raw, programId)
+                    val changes = com.repforge.app.data.store.NativeTrainingModeChange
+                    _uiState.update { it.copy(
+                        trainingStyleHu = if (global.trainingStyle == "hit") "HIT-inspirált" else "Normál hipertrófia",
+                        progressionRuleHu = when (global.progressionMode) {
+                            "linear" -> "Lineáris progresszió"
+                            "rir" -> "RIR/Coach"
+                            else -> "Dupla progresszió"
+                        },
+                        trainingStyleCode = global.trainingStyle,
+                        progressionModeCode = global.progressionMode,
+                        programTrainingStyleCode = program.trainingStyle,
+                        programProgressionModeCode = program.progressionMode,
+                        programTrainingModeSource = program.source,
+                        activeTrainingModeProgramId = programId,
+                        globalTrainingModeUndo = changes.undoValue(raw, "global", null) != null,
+                        programTrainingModeUndo = changes.undoValue(raw, "program", programId) != null
+                    ) }
+                }
         }
 
         observersScope.launch(Dispatchers.Main.immediate) {
@@ -4355,27 +4390,127 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
+    private var pendingStudioMode: com.repforge.app.data.store.NativeTrainingModeChange.Preview? = null
+    private var studioModeGeneration = 0L
+
     fun toggleProgressionModal(show: Boolean) {
-        _uiState.update { it.copy(showProgressionModal = show) }
+        studioModeGeneration++
+        pendingStudioMode = null
+        _uiState.update {
+            it.copy(showProgressionModal = show, progressionModeReview = null,
+                progressionModeBusy = false)
+        }
     }
 
-    fun updateProgressionSettings(styleHu: String, ruleHu: String, gentleBeginner: Boolean) {
-        val scope = nativeScope ?: return
+    fun discardProgressionPreview() {
+        studioModeGeneration++
+        pendingStudioMode = null
+        _uiState.update { it.copy(progressionModeReview = null, progressionModeBusy = false) }
+    }
+
+    /** No writes in preview: approval uses exactly this prepared DataStore snapshot. */
+    fun previewProgressionSettings(style: String, rule: String, scopeName: String, inherit: Boolean) {
         val store = nativeSettingsStore ?: return
+        val scope = nativeScope ?: return
+        if (_uiState.value.progressionModeBusy || !_uiState.value.showProgressionModal) return
+        if (scopeName !in setOf("global", "program") || style !in setOf("normal", "hit") ||
+            rule !in setOf("double", "linear", "rir") || (inherit && scopeName != "program")) return
+        val token = ++studioModeGeneration
+        pendingStudioMode = null
+        _uiState.update { it.copy(progressionModeBusy = true, progressionModeReview = null) }
         scope.launch {
             try {
                 val saved = store.current()
-                val proposal = com.repforge.app.data.store.NativeTrainingModeChange.prepare(
-                    saved.trainingModes197Json, saved.activeProgramId, "global", null,
-                    if (styleHu.contains("HIT", true)) "hit" else "normal",
-                    when { ruleHu.contains("Lineáris", true) -> "linear"; ruleHu.contains("RIR", true) || ruleHu.contains("Coach", true) -> "rir"; else -> "double" })
-                check(com.repforge.app.data.store.NativeTrainingModeChange.approve(store, proposal)) {
-                    "A progresszió beállításai megváltoztak. Nyisd meg újra a beállítást."
+                val mode = com.repforge.app.data.store.NativeTrainingModeChange
+                val proposal = if (inherit) {
+                    mode.prepareInherit(saved.trainingModes197Json, saved.activeProgramId, saved.activeProgramId)
+                } else {
+                    mode.prepare(saved.trainingModes197Json, saved.activeProgramId, scopeName,
+                        if (scopeName == "program") saved.activeProgramId else null, style, rule)
                 }
-                _uiState.update { it.copy(beginnerGentleProfileActive = gentleBeginner,
-                    showProgressionModal = false, statusBannerMessage = "A progresszió beállításai tartósan elmentve.") }
+                if (studioModeGeneration != token || !_uiState.value.showProgressionModal) return@launch
+                pendingStudioMode = proposal
+                _uiState.update { it.copy(
+                    progressionModeBusy = false,
+                    progressionModeReview = StudioTrainingModeReview(
+                        beforeStyle = proposal.before.trainingStyle,
+                        beforeProgression = proposal.before.progressionMode,
+                        afterStyle = proposal.after.trainingStyle,
+                        afterProgression = proposal.after.progressionMode,
+                        inheritGlobal = proposal.inheritGlobal)
+                ) }
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
-            catch (error: Exception) { _uiState.update { it.copy(statusBannerMessage = error.message ?: "A progresszió nem menthető.") } }
+            catch (error: Exception) {
+                if (studioModeGeneration == token) _uiState.update { it.copy(
+                    progressionModeBusy = false,
+                    statusBannerMessage = error.message ?: "Az előnézet nem készíthető el.") }
+            }
+        }
+    }
+
+    fun approveProgressionSettings() {
+        val proposal = pendingStudioMode ?: return
+        val store = nativeSettingsStore ?: return
+        val scope = nativeScope ?: return
+        if (_uiState.value.progressionModeBusy || _uiState.value.progressionModeReview == null) return
+        val token = ++studioModeGeneration
+        pendingStudioMode = null
+        _uiState.update { it.copy(progressionModeBusy = true) }
+        scope.launch {
+            try {
+                check(com.repforge.app.data.store.NativeTrainingModeChange.approve(store, proposal)) {
+                    "A beállítás időközben módosult. Nyisd meg újra az előnézetet."
+                }
+                if (studioModeGeneration == token) _uiState.update { it.copy(
+                    showProgressionModal = false, progressionModeReview = null,
+                    progressionModeBusy = false, statusBannerMessage = "Edzésmód elmentve.") }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (error: Exception) {
+                if (studioModeGeneration == token) _uiState.update { it.copy(
+                    progressionModeReview = null, progressionModeBusy = false,
+                    statusBannerMessage = error.message ?: "Az edzésmód nem menthető.") }
+            }
+        }
+    }
+
+    fun undoProgressionSettings(scopeName: String) {
+        val store = nativeSettingsStore ?: return
+        val scope = nativeScope ?: return
+        if (scopeName !in setOf("global", "program") || _uiState.value.progressionModeBusy) return
+        val token = ++studioModeGeneration
+        pendingStudioMode = null
+        _uiState.update { it.copy(progressionModeBusy = true, progressionModeReview = null) }
+        scope.launch {
+            try {
+                val saved = store.current()
+                check(com.repforge.app.data.store.NativeTrainingModeChange.undo(store, scopeName,
+                    if (scopeName == "program") saved.activeProgramId else null)) {
+                    "Nincs visszavonható módváltás."
+                }
+                if (studioModeGeneration == token) _uiState.update { it.copy(
+                    progressionModeBusy = false, showProgressionModal = false,
+                    statusBannerMessage = "Az előző edzésmód visszaállítva.") }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (error: Exception) {
+                if (studioModeGeneration == token) _uiState.update { it.copy(
+                    progressionModeBusy = false,
+                    statusBannerMessage = error.message ?: "A módváltás nem vonható vissza.") }
+            }
+        }
+    }
+
+    fun toggleVibrationAlert(enabled: Boolean) {
+        _uiState.update { it.copy(vibrationEnabled = enabled) }
+        val store = nativeSettingsStore ?: return
+        val scope = nativeScope ?: return
+        val current = _uiState.value
+        scope.launch(Dispatchers.IO) {
+            try {
+                store.setTimerDefaults(workSeconds = 30, restSeconds = current.defaultRestSec,
+                    rounds = 3, sound = current.soundAlertEnabled, vibration = enabled)
+            } catch (error: Exception) {
+                _uiState.update { it.copy(statusBannerMessage = "A rezgés nem menthető.") }
+            }
         }
     }
 
