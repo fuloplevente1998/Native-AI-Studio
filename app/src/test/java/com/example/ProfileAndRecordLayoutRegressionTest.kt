@@ -67,14 +67,15 @@ class ProfileAndRecordLayoutRegressionTest {
                 onRetry = {}, onRefreshRecords = {})
         } }
         val record = compose.onNodeWithTag("statistics_record_pullover")
-        val collapsed = record.getUnclippedBoundsInRoot().height
+        val initialBounds = record.getUnclippedBoundsInRoot()
+        val collapsed = initialBounds.bottom - initialBounds.top
         compose.onNodeWithText("Pullover").performClick()
         val chart = compose.onNodeWithTag("statistics_record_chart_pullover", useUnmergedTree = true)
         chart.performScrollTo().assertIsDisplayed()
         val plot = chart.getUnclippedBoundsInRoot()
         val card = record.getUnclippedBoundsInRoot()
-        assertTrue(plot.height >= 160.dp)
-        assertTrue(card.height >= collapsed + 160.dp)
+        assertTrue(plot.bottom - plot.top >= 160.dp)
+        assertTrue(card.bottom - card.top >= collapsed + 160.dp)
         assertTrue(plot.top >= card.top && plot.bottom <= card.bottom)
     }
     @Test fun specificCardioFilterHidesDailyActivityUntilAllIsSelected() {
