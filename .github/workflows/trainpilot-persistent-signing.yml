@@ -1,5 +1,5 @@
 name: TrainPilot persistent signed APK pair
-# 2749: signed main with verified font, theme, workout-row and handover design fixes.
+# 2751: signed main with reviewed AI Studio integration and localized profile choices.
 
 on:
   workflow_dispatch:

@@ -1050,6 +1050,8 @@ fun PersonalPlannerModalDialog(
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
     val lang = strings.language
+    fun option(value: String) = com.example.localization.StudioProfileOptionLabels.label(value, lang)
+    fun detail(value: String) = com.example.localization.StudioProfileOptionLabels.description(value, lang)
     var heightCm by remember { mutableIntStateOf(initialHeightCm) }
     var weightKg by remember { mutableFloatStateOf(initialWeightKg) }
     var selectedGoal by remember { mutableStateOf(initialGoalHu) }
@@ -1400,34 +1402,34 @@ fun PersonalPlannerModalDialog(
                             Text("🎯", fontSize = 16.sp)
                             Column {
                                 Text(tr(lang, "Cél és edzettség", "Goal & fitness level", "Ziel & Fitnesslevel", "Obiectiv și nivel de fitness"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                                Text("$selectedGoal • $selectedExperience • $selectedLocation", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                Text("${option(selectedGoal)} • ${option(selectedExperience)} • ${option(selectedLocation)}", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
                             }
                         }
 
                         PlannerDropdownBox(
                             dropdownKey = "goal",
                             label = tr(lang, "Elsődleges cél", "Primary goal", "Primäres Ziel", "Obiectiv principal"),
-                            selectedValue = selectedGoal,
-                            options = goals,
-                            onSelect = { _, value -> selectedGoal = value },
+                            selectedValue = option(selectedGoal),
+                            options = goals.map(::option),
+                            onSelect = { index, _ -> selectedGoal = goals[index] },
                             testTag = "profile_goal_box"
                         )
 
                         PlannerDropdownBox(
                             dropdownKey = "experience",
                             label = tr(lang, "Tapasztalati szint", "Experience level", "Erfahrungsstufe", "Nivel de experiență"),
-                            selectedValue = selectedExperience,
-                            options = experiences,
-                            onSelect = { _, value -> selectedExperience = value },
+                            selectedValue = option(selectedExperience),
+                            options = experiences.map(::option),
+                            onSelect = { index, _ -> selectedExperience = experiences[index] },
                             testTag = "profile_experience_box"
                         )
 
                         PlannerDropdownBox(
                             dropdownKey = "location",
                             label = tr(lang, "Edzés helyszíne", "Workout location", "Trainingsort", "Locație antrenament"),
-                            selectedValue = selectedLocation,
-                            options = locations,
-                            onSelect = { _, value -> selectedLocation = value },
+                            selectedValue = option(selectedLocation),
+                            options = locations.map(::option),
+                            onSelect = { index, _ -> selectedLocation = locations[index] },
                             testTag = "profile_location_box"
                         )
                     }
@@ -1506,7 +1508,7 @@ fun PersonalPlannerModalDialog(
                                         )
                                     }
                                     Text(
-                                        text = selectedEquipment,
+                                        text = selectedEquipments.joinToString(", ") { option(it) },
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = palette.textPrimary
@@ -1550,13 +1552,13 @@ fun PersonalPlannerModalDialog(
                                                 }
                                                 Column(modifier = Modifier.weight(1f)) {
                                                     Text(
-                                                        text = eqName,
+                                                        text = option(eqName),
                                                         style = MaterialTheme.typography.bodyMedium,
                                                         fontWeight = if (isChecked) FontWeight.Bold else FontWeight.SemiBold,
                                                         color = if (isChecked) palette.primary else palette.textPrimary
                                                     )
                                                     Text(
-                                                        text = eqDesc,
+                                                        text = option(eqDesc),
                                                         style = MaterialTheme.typography.labelSmall,
                                                         color = palette.textSecondary
                                                     )
@@ -1720,7 +1722,7 @@ fun PersonalPlannerModalDialog(
                                         text = if (excludedMuscles.isEmpty()) {
                                             tr(lang, "Nincs kizárt terület (koppints a választáshoz)", "No excluded areas (tap to select)", "Keine ausgeschlossenen Bereiche (tippen zur Auswahl)", "Nicio zonă exclusă (atinge pentru a selecta)")
                                         } else {
-                                            tr(lang, "Kizárva: ${excludedMuscles.joinToString(", ")}", "Excluded: ${excludedMuscles.joinToString(", ")}", "Ausgeschlossen: ${excludedMuscles.joinToString(", ")}", "Excluse: ${excludedMuscles.joinToString(", ")}")
+                                            tr(lang, "Kizárva: ${excludedMuscles.joinToString(", ") { option(it) }}", "Excluded: ${excludedMuscles.joinToString(", ") { option(it) }}", "Ausgeschlossen: ${excludedMuscles.joinToString(", ") { option(it) }}", "Excluse: ${excludedMuscles.joinToString(", ") { option(it) }}")
                                         },
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = if (excludedMuscles.isEmpty()) FontWeight.Normal else FontWeight.SemiBold,
@@ -1764,7 +1766,7 @@ fun PersonalPlannerModalDialog(
                                                     }
                                                 }
                                                 Text(
-                                                    text = muscle,
+                                                    text = option(muscle),
                                                     style = MaterialTheme.typography.bodyMedium,
                                                     color = palette.textPrimary
                                                 )
@@ -1823,7 +1825,7 @@ fun PersonalPlannerModalDialog(
                                         text = if (excludedExercises.isEmpty()) {
                                             tr(lang, "Nincs kizárt gyakorlat (koppints a választáshoz)", "No excluded exercises (tap to select)", "Keine ausgeschlossenen Übungen (tippen zur Auswahl)", "Niciun exercițiu exclus (atinge pentru a selecta)")
                                         } else {
-                                            tr(lang, "Kizárva: ${excludedExercises.joinToString(", ")}", "Excluded: ${excludedExercises.joinToString(", ")}", "Ausgeschlossen: ${excludedExercises.joinToString(", ")}", "Excluse: ${excludedExercises.joinToString(", ")}")
+                                            tr(lang, "Kizárva: ${excludedExercises.joinToString(", ") { option(it) }}", "Excluded: ${excludedExercises.joinToString(", ") { option(it) }}", "Ausgeschlossen: ${excludedExercises.joinToString(", ") { option(it) }}", "Excluse: ${excludedExercises.joinToString(", ") { option(it) }}")
                                         },
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = if (excludedExercises.isEmpty()) FontWeight.Normal else FontWeight.SemiBold,
@@ -1868,13 +1870,13 @@ fun PersonalPlannerModalDialog(
                                                 }
                                                 Column {
                                                     Text(
-                                                        text = exName,
+                                                        text = option(exName),
                                                         style = MaterialTheme.typography.bodyMedium,
                                                         fontWeight = FontWeight.SemiBold,
                                                         color = palette.textPrimary
                                                     )
                                                     Text(
-                                                        text = exSub,
+                                                        text = detail(exSub),
                                                         style = MaterialTheme.typography.bodySmall,
                                                         color = palette.textSecondary
                                                     )
@@ -2163,7 +2165,7 @@ fun QuickWorkoutSheet(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = selectedStrengthEx?.let { "${it.nameHu} (${it.category.labelHu})" } ?: tr(
+                                    text = selectedStrengthEx?.let { "${it.localizedName(strings.language)} (${it.category.localized(strings.language)})" } ?: tr(
                                         strings.language,
                                         "Válassz gyakorlatot...",
                                         "Choose an exercise...",
@@ -2203,7 +2205,7 @@ fun QuickWorkoutSheet(
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            text = "${ex.nameHu} • ${ex.category.labelHu}",
+                                            text = "${ex.localizedName(strings.language)} • ${ex.category.localized(strings.language)}",
                                             fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
                                             color = if (isSel) palette.primary else palette.textPrimary
                                         )
@@ -2232,10 +2234,10 @@ fun QuickWorkoutSheet(
                         Text(
                             text = tr(
                                 strings.language,
-                                "▶ Indítás: ${selectedStrengthEx?.nameHu ?: strings.modeStrengthLabel}",
-                                "▶ Start: ${selectedStrengthEx?.nameHu ?: strings.modeStrengthLabel}",
-                                "▶ Start: ${selectedStrengthEx?.nameHu ?: strings.modeStrengthLabel}",
-                                "▶ Start: ${selectedStrengthEx?.nameHu ?: strings.modeStrengthLabel}"
+                                "▶ Indítás: ${selectedStrengthEx?.localizedName(strings.language) ?: strings.modeStrengthLabel}",
+                                "▶ Start: ${selectedStrengthEx?.localizedName(strings.language) ?: strings.modeStrengthLabel}",
+                                "▶ Start: ${selectedStrengthEx?.localizedName(strings.language) ?: strings.modeStrengthLabel}",
+                                "▶ Start: ${selectedStrengthEx?.localizedName(strings.language) ?: strings.modeStrengthLabel}"
                             ),
                             fontWeight = FontWeight.Bold
                         )
@@ -2311,7 +2313,7 @@ fun QuickWorkoutSheet(
                             ) {
                                 val secUnit = tr(strings.language, "mp", "s", "Sek.", "sec")
                                 Text(
-                                    text = selectedTimedEx?.let { "${it.nameHu} (${it.targetSeconds} $secUnit)" } ?: "Plank",
+                                    text = selectedTimedEx?.let { "${it.localizedName(strings.language)} (${it.targetSeconds} $secUnit)" } ?: "Plank",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary,
@@ -2346,7 +2348,7 @@ fun QuickWorkoutSheet(
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            text = "${ex.nameHu} (${ex.targetSeconds} $secUnit)",
+                                            text = "${ex.localizedName(strings.language)} (${ex.targetSeconds} $secUnit)",
                                             fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
                                             color = if (isSel) palette.primary else palette.textPrimary
                                         )
@@ -2375,10 +2377,10 @@ fun QuickWorkoutSheet(
                         Text(
                             text = tr(
                                 strings.language,
-                                "▶ Indítás: ${selectedTimedEx?.nameHu ?: "Időalapú edzés"}",
-                                "▶ Start: ${selectedTimedEx?.nameHu ?: strings.modeTimedLabel}",
-                                "▶ Start: ${selectedTimedEx?.nameHu ?: strings.modeTimedLabel}",
-                                "▶ Start: ${selectedTimedEx?.nameHu ?: strings.modeTimedLabel}"
+                                "▶ Indítás: ${selectedTimedEx?.localizedName(strings.language) ?: "Időalapú edzés"}",
+                                "▶ Start: ${selectedTimedEx?.localizedName(strings.language) ?: strings.modeTimedLabel}",
+                                "▶ Start: ${selectedTimedEx?.localizedName(strings.language) ?: strings.modeTimedLabel}",
+                                "▶ Start: ${selectedTimedEx?.localizedName(strings.language) ?: strings.modeTimedLabel}"
                             ),
                             fontWeight = FontWeight.Bold
                         )
