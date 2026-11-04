@@ -82,6 +82,26 @@ if requires_wear:
     if not release:
         assert result["wear"]["bytes"] < result["wearDebugBytes"], "Wear optimization did not reduce APK size"
 
+def declared_gradle_version(module: str, field: str) -> str:
+    """Use the version declared by the module, never a stale pinned release number."""
+    source = pathlib.Path(module, "build.gradle.kts").read_text(encoding="utf-8")
+    pattern = rf'(?m)^\s*{re.escape(field)}\s*=\s*(\d+|"[^"\n]+")\s*(?://.*)?
+    assert len(expected) == 64, "Pinned release certificate missing"
+    assert result["signerSha256"].lower() == expected, "Release signer differs from configured persistent key"
+    assert result["applicationId"] == "com.TrainPilot.com", "Application identity changed"
+    for field in ("versionCode", "versionName"):
+        phone_expected = declared_gradle_version("app", field)
+        wear_expected = declared_gradle_version("wear", field)
+        assert (
+            result[field] == result["wear"][field] == phone_expected == wear_expected
+        ), f"Package {field} differs from phone/Wear Gradle declarations"
+    assert result["mapsApiKeyConfigured"], "Maps key not embedded"
+
+    matches = re.findall(pattern, source)
+    assert len(matches) == 1, f"Expected one literal {field} in {module}/build.gradle.kts"
+    return matches[0].strip('"')
+
+
 if release:
     expected = os.environ.get("TRAINPILOT_RELEASE_CERT_SHA256", "").replace(":", "").lower().strip()
     assert len(expected) == 64, "Pinned release certificate missing"
