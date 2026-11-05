@@ -23,12 +23,12 @@ import com.repforge.app.ui.text.nativeResources
 @Composable
 internal fun ExerciseFeedbackControl(effort: String?, note: String, language: String,
     onEffort: (String?) -> Unit, onNote: (String) -> Unit, title: String = "",
-    enabled: Boolean = true, effortLocked: Boolean = false, tag: String) {
+    enabled: Boolean = true, effortLocked: Boolean = false, initiallyExpanded: Boolean = false, tag: String) {
     val text = nativeResources(LocalContext.current, language)
     val labels = listOf(R.string.journal_effort_easy, R.string.journal_effort_light,
         R.string.journal_effort_good, R.string.journal_effort_challenging,
         R.string.journal_effort_hard, R.string.journal_effort_pain)
-    var expanded by rememberSaveable(tag) { mutableStateOf(false) }
+    var expanded by rememberSaveable(tag) { mutableStateOf(initiallyExpanded) }
     val selected = StudioWorkoutFeedback.efforts.indexOf(if (effort == "good") "right" else effort)
     val colors = LocalTrainPilotColors.current
     Surface(Modifier.fillMaxWidth().testTag(tag), color = colors.card,

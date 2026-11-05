@@ -111,6 +111,11 @@ class StudioCoachDomainRegressionTest {
         compose.onNodeWithTag("studio_active_coach_no_history").assertDoesNotExist()
         compose.onNodeWithTag("studio_active_coach_refresh").performClick()
         assertEquals(1, refreshes)
+        // Background invalidation keeps valid advice visible while it is recomputed.
+        compose.runOnIdle { state.value = state.value.copy(loading = true) }
+        compose.onNodeWithTag("studio_active_coach_loading").assertDoesNotExist()
+        compose.onNodeWithTag("studio_active_coach_weight").assertTextContains("22.5 kg", substring = true)
+        compose.onNodeWithTag("studio_active_coach_refresh").assertIsNotEnabled()
         compose.runOnIdle { state.value = WorkoutCoachAdviceState("press", loading = false,
             row = CoachExerciseAdvice("press", "Press", advice.copy(action = "start", reason = "start", historyCount = 0))) }
         compose.onNodeWithTag("studio_active_coach_no_history").assertExists()

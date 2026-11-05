@@ -177,7 +177,7 @@ internal fun StudioWorkoutCoachAdvice(state: WorkoutCoachAdviceState, onReload: 
     val lang = com.example.localization.LocalTrainPilotStrings.current.language.code
     val text = nativeResources(LocalContext.current, lang)
     when {
-        state.loading -> {
+        state.loading && state.row == null -> {
             CircularProgressIndicator(Modifier.size(24.dp).testTag("studio_active_coach_loading"))
             Text(coachTr(lang, "Előzmények betöltése…", "Loading history…", "Verlauf wird geladen…", "Se încarcă istoricul…"), color = palette.textSecondary)
         }
@@ -218,14 +218,20 @@ internal fun StudioWorkoutCoachAdvice(state: WorkoutCoachAdviceState, onReload: 
 
 /** Apply only through the existing snapshot/ownership/settings/history-checked native proposal. */
 @Composable
-internal fun StudioWorkoutCoachPanel(exerciseId: String) {
-    // The native VM has ticking observers: dispose it with this panel, not at Activity destruction.
-    val app = LocalContext.current.applicationContext as android.app.Application
+internal fun rememberStudioWorkoutCoachOwner(): androidx.lifecycle.ViewModelStoreOwner {
+    // Retain across lazy-item disposal; clear when the exercise screen leaves composition.
     val store = remember { androidx.lifecycle.ViewModelStore() }
     val owner = remember { object : androidx.lifecycle.ViewModelStoreOwner {
         override val viewModelStore = store
     } }
     DisposableEffect(store) { onDispose { store.clear() } }
+    return owner
+}
+
+@Composable
+internal fun StudioWorkoutCoachPanel(exerciseId: String,
+    owner: androidx.lifecycle.ViewModelStoreOwner = rememberStudioWorkoutCoachOwner()) {
+    val app = LocalContext.current.applicationContext as android.app.Application
     val model: com.repforge.app.ui.workout.ActiveWorkoutViewModel = viewModel(
         viewModelStoreOwner = owner,
         factory = androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(app))

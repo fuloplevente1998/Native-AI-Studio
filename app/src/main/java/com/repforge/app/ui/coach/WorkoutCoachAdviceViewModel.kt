@@ -42,16 +42,20 @@ internal class WorkoutCoachAdviceViewModel internal constructor(application: App
             val target = ActiveWorkoutStore.snapshotFlow.map(::targetFrame).distinctUntilChanged()
             val inputs = combine(selectedExercise, target, settings.settingsFlow) { id, frame, prefs ->
                 Triple(id, frame, prefs)
-            }
+            }.distinctUntilChanged()
             val changes = db.invalidationTracker.createFlow("workout_history", "workout_history_exercises",
                 "workout_history_sets", "history_tombstones", "exercise_library", "programs", "program_days")
+            var renderedContext: Pair<String?, com.repforge.app.data.store.TrainPilotUserSettings>? = null
             refresh.flatMapLatest {
                 combine(inputs, changes) { input, _ -> input }.catch {
                     // Settings/observer failures are read errors too. Refresh resubscribes.
                     _state.value = WorkoutCoachAdviceState(selectedExercise.value, loading = false, error = true)
                 }
             }.collectLatest { (id, raw, prefs) ->
-                _state.value = WorkoutCoachAdviceState(id)
+                val retained = _state.value.row.takeIf {
+                    _state.value.exerciseId == id && renderedContext == (raw to prefs)
+                }
+                _state.value = WorkoutCoachAdviceState(id, row = retained)
                 if (id.isBlank() || raw == null) {
                     _state.value = WorkoutCoachAdviceState(id, loading = false)
                     return@collectLatest
@@ -70,8 +74,10 @@ internal class WorkoutCoachAdviceViewModel internal constructor(application: App
                         }
                     }
                     // A selection change may arrive while Room is reading. Never publish its old advice.
-                    if (selectedExercise.value == id && targetFrame(ActiveWorkoutStore.snapshotFlow.value) == raw)
+                    if (selectedExercise.value == id && targetFrame(ActiveWorkoutStore.snapshotFlow.value) == raw) {
+                        renderedContext = raw to prefs
                         _state.value = WorkoutCoachAdviceState(id, loading = false, row = row)
+                    }
                 } catch (cancelled: CancellationException) { throw cancelled }
                 catch (_: Exception) { _state.value = WorkoutCoachAdviceState(id, loading = false, error = true) }
             }
