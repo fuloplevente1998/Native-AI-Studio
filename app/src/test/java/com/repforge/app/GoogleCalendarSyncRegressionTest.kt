@@ -51,7 +51,7 @@ class GoogleCalendarSyncRegressionTest {
     }
 
     @After fun tearDown() {
-        singleton.set(null, previousDb)
+        singleton.set(null, null)
         db.close()
     }
 

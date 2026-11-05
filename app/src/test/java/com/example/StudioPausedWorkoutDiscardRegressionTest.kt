@@ -67,7 +67,7 @@ class StudioPausedWorkoutDiscardRegressionTest {
             assertFalse(PhoneWorkoutExecution.store(context).snapshot()!!.optBoolean("active"))
             assertTrue(native { db.workoutHistoryDao().isTombstoned(id, JSONObject.quote(id)) })
             assertTrue(Admission.safeOnMain(context))
-        } finally { parent.cancel() }
+        } finally { parent.cancel(); await { parent.isCompleted } }
     }
     @Test fun staleStudioDiscardIdCannotDeleteTheCurrentWorkout() {
         val frame = start()
@@ -83,7 +83,7 @@ class StudioPausedWorkoutDiscardRegressionTest {
             assertTrue(ActiveWorkoutStore.current(context)!!.optBoolean("active"))
             assertEquals(id, ActiveWorkoutStore.current(context)!!.getString("workoutId"))
             assertTrue(native { db.workoutHistoryDao().getTombstones().isEmpty() })
-        } finally { parent.cancel() }
+        } finally { parent.cancel(); await { parent.isCompleted } }
     }
     @Test fun gpsCanStartAgainAfterDiscardWithoutReusingTheClosedExecutionId() {
         val parent = kotlinx.coroutines.SupervisorJob()
@@ -104,7 +104,7 @@ class StudioPausedWorkoutDiscardRegressionTest {
             assertNotEquals(first.getString("workoutId"), second.getString("workoutId"))
             assertEquals("outdoor", second.getString("programId"))
             assertTrue(second.getLong("generation") > first.getLong("generation"))
-        } finally { parent.cancel() }
+        } finally { parent.cancel(); await { parent.isCompleted } }
     }
 
     @Test fun programSelectionDoesNotReplaceTheGpsSessionAndDiscardStillUsesItsId() {
@@ -124,7 +124,7 @@ class StudioPausedWorkoutDiscardRegressionTest {
             model.stopActiveWorkoutSession(id)
             await { !model.uiState.value.isSavingWorkout && !model.uiState.value.isWorkoutSessionActive }
             assertTrue(native { db.workoutHistoryDao().isTombstoned(id, JSONObject.quote(id)) })
-        } finally { parent.cancel() }
+        } finally { parent.cancel(); await { parent.isCompleted } }
     }
 
     private fun await(condition: () -> Boolean) {

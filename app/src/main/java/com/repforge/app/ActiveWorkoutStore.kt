@@ -113,7 +113,10 @@ internal object ActiveWorkoutStore {
     @Synchronized
     fun current(context: Context): JSONObject? {
         val raw = prefs(context).getString(SNAPSHOT, "")
-        if (raw.isNullOrEmpty()) return null
+        if (raw.isNullOrEmpty()) {
+            _snapshotFlow.value = null
+            return null
+        }
         return try {
             JSONObject(raw).also { _snapshotFlow.value = it }
         } catch (_: Exception) {

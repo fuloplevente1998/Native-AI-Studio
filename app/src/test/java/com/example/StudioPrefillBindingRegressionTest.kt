@@ -59,7 +59,7 @@ class StudioPrefillBindingRegressionTest {
             settings.setActiveProgramId("studio-test")
         }
     }
-    @After fun close() { parent.cancel(); shadowOf(Looper.getMainLooper()).idle(); db.close() }
+    @After fun close() { parent.cancel(); await { parent.isCompleted }; db.close() }
 
     private fun <T> native(operation: suspend () -> T): T {
         val worker = Executors.newSingleThreadExecutor()

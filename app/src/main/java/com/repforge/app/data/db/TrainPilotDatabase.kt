@@ -37,16 +37,37 @@ abstract class TrainPilotDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: TrainPilotDatabase? = null
 
+        @Volatile
+        private var createdInstance: TrainPilotDatabase? = null
+
+        @Volatile
+        private var createdContext: Context? = null
+
         @JvmStatic
         fun getInstance(context: Context): TrainPilotDatabase {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: Room.databaseBuilder(
-                    context.applicationContext,
-                    TrainPilotDatabase::class.java,
-                    DATABASE_NAME
-                )
-                    .build()
-                    .also { INSTANCE = it }
+            val app = context.applicationContext ?: context
+            val current = INSTANCE
+            if (current != null && (current !== createdInstance || createdContext === app)) {
+                return current
+            }
+            return synchronized(this) {
+                val again = INSTANCE
+                if (again != null && (again !== createdInstance || createdContext === app)) {
+                    again
+                } else {
+                    runCatching { again?.close() }
+                    Room.databaseBuilder(
+                        app,
+                        TrainPilotDatabase::class.java,
+                        DATABASE_NAME
+                    )
+                        .build()
+                        .also {
+                            createdInstance = it
+                            createdContext = app
+                            INSTANCE = it
+                        }
+                }
             }
         }
 

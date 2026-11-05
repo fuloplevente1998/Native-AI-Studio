@@ -43,12 +43,19 @@ class StudioSessionMeasurementRegressionTest {
     @Before fun prepare() {
         val field = PhoneWorkoutExecution::class.java.getDeclaredField("store").apply { isAccessible = true }
         (field.get(null) as? PhoneWorkoutExecutionStore)?.close(); field.set(null, null)
+        val roomField = TrainPilotDatabase::class.java.getDeclaredField("INSTANCE").apply { isAccessible = true }
+        (roomField.get(null) as? TrainPilotDatabase)?.close()
         db = Room.inMemoryDatabaseBuilder(context, TrainPilotDatabase::class.java).build()
+        roomField.set(null, db)
         native { db.exerciseLibraryDao().upsertExercises(TrainPilotDatabase.defaultExercises()) }
     }
 
     @After fun close() {
-        models.clear(); parent.cancel(); shadowOf(Looper.getMainLooper()).idle(); db.close()
+        models.clear()
+        parent.cancel()
+        await { parent.isCompleted }
+        db.close()
+        TrainPilotDatabase::class.java.getDeclaredField("INSTANCE").apply { isAccessible = true }.set(null, null)
     }
 
     private fun model() = TrainPilotViewModel().also {
@@ -485,7 +492,10 @@ class StudioSessionMeasurementRegressionTest {
         val service = Robolectric.buildService(IntervalTimerService::class.java).create()
         try {
             arm(service.get(), frame)
-            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(50))
+            await {
+                shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(50))
+                measurement.uiState.value.stopwatchRunning
+            }
             assertTrue(measurement.uiState.value.stopwatchRunning)
             assertFalse(target(frame).resolve(PhoneWorkoutExecution.store(context).snapshot()!!).set.optBoolean("done"))
         } finally { service.destroy() }

@@ -47,6 +47,7 @@ class StudioCloudRefreshRegressionTest {
             @Suppress("UNCHECKED_CAST")
             (it.get(ActiveWorkoutStore) as MutableStateFlow<JSONObject?>)
         }
+        shadowOf(Looper.getMainLooper()).idle()
         val baseline = snapshots.subscriptionCount.value
         val model = TrainPilotViewModel()
         fun saveGoal(goal: Int) = runBlocking {

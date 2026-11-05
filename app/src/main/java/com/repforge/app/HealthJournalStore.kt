@@ -36,10 +36,22 @@ internal class HealthJournalStore(context: Context) :
         private var instance: HealthJournalStore? = null
 
         @JvmStatic
+        private var createdInstance: HealthJournalStore? = null
+
+        @JvmStatic
+        private var createdContext: Context? = null
+
+        @JvmStatic
         fun get(context: Context): HealthJournalStore {
             synchronized(LOCK) {
-                if (instance == null) {
-                    instance = HealthJournalStore(context.applicationContext)
+                val app = context.applicationContext ?: context
+                val current = instance
+                if (current == null || (current === createdInstance && createdContext !== app)) {
+                    runCatching { current?.close() }
+                    val fresh = HealthJournalStore(app)
+                    createdInstance = fresh
+                    createdContext = app
+                    instance = fresh
                 }
                 return instance!!
             }

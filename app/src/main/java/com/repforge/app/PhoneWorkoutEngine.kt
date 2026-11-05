@@ -448,11 +448,25 @@ internal object PhoneWorkoutExecution {
     private var store: PhoneWorkoutExecutionStore? = null
 
     @JvmStatic
+    private var createdStore: PhoneWorkoutExecutionStore? = null
+
+    @JvmStatic
+    private var createdContext: Context? = null
+
+    @JvmStatic
     fun store(context: Context): PhoneWorkoutExecutionStore {
         if (Looper.myLooper() != Looper.getMainLooper()) {
             throw IllegalStateException("Execution requires main looper")
         }
-        if (store == null) store = PhoneWorkoutExecutionStore(context)
+        val app = context.applicationContext ?: context
+        val current = store
+        if (current == null || (current === createdStore && createdContext !== app)) {
+            runCatching { current?.close() }
+            val fresh = PhoneWorkoutExecutionStore(app)
+            createdStore = fresh
+            createdContext = app
+            store = fresh
+        }
         return store!!
     }
 

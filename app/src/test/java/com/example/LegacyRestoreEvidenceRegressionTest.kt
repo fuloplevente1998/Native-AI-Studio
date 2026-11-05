@@ -79,7 +79,13 @@ class LegacyRestoreEvidenceRegressionTest {
         (health.get(null) as? HealthJournalStore)?.close(); health.set(null, null)
         awaitNative { TrainPilotDatabase.getInstance(context).clearAllTables(); TrainPilotSettingsStore(context).resetAllSettingsForEraseLocal() }
     }
-    @After fun close() { models.clear() }
+    @After fun close() {
+        models.clear()
+        val room = TrainPilotDatabase::class.java.getDeclaredField("INSTANCE").apply { isAccessible = true }
+        (room.get(null) as? TrainPilotDatabase)?.close(); room.set(null, null)
+        val health = HealthJournalStore::class.java.getDeclaredField("instance").apply { isAccessible = true }
+        (health.get(null) as? HealthJournalStore)?.close(); health.set(null, null)
+    }
     private fun restore() {
         val image = Bitmap.createBitmap(8, 8, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.RED) }
         val bytes = ByteArrayOutputStream().also { image.compress(Bitmap.CompressFormat.JPEG, 90, it) }.toByteArray()

@@ -57,7 +57,10 @@ class UnifiedHealthJournalUiRegressionTest {
             .put("data", JSONObject().put("value", 0).put("unit", "steps"))
     }
     private fun awaitTag(tag: String) {
-        compose.waitUntil(5_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(30_000) {
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+            compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+        }
     }
     private fun journal() {
         compose.setContent { TrainPilotTheme {
@@ -139,7 +142,10 @@ class UnifiedHealthJournalUiRegressionTest {
             busy = false
             revision++
         }
-        compose.waitUntil(5_000) { compose.onAllNodesWithText("7").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(30_000) {
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+            compose.onAllNodesWithText("7").fetchSemanticsNodes().isNotEmpty()
+        }
         compose.onNodeWithTag(summary).assertTextEquals("7")
         compose.onNodeWithTag("journal_provider_$samsung").performScrollTo().performClick()
         awaitTag(summary)

@@ -62,7 +62,10 @@ internal object WearLiveHealthStore {
     fun current(context: Context): JSONObject? {
         return try {
             val raw = context.getSharedPreferences(PREFS, 0).getString("health", "")
-            if (raw.isNullOrEmpty()) null else JSONObject(raw).also { _liveHealthFlow.value = it }
+            if (raw.isNullOrEmpty()) {
+                _liveHealthFlow.value = null
+                null
+            } else JSONObject(raw).also { _liveHealthFlow.value = it }
         } catch (_: Exception) {
             null
         }

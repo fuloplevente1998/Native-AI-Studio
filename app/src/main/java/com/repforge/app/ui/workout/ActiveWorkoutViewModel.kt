@@ -306,7 +306,7 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
 
     private fun loadExerciseLibrary() {
         viewModelScope.launch(Dispatchers.IO) {
-            val list = database.exerciseLibraryDao().getAllExercises()
+            val list = runCatching { database.exerciseLibraryDao().getAllExercises() }.getOrElse { emptyList() }
             _uiState.value = _uiState.value.copy(availableLibraryExercises = list)
         }
     }
