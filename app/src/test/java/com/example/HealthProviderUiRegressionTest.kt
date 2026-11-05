@@ -4,7 +4,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.example.localization.TrainPilotStrings
-import com.example.ui.components.LocalSyncDailyHealth
 import com.example.model.AppLanguage
 import com.example.ui.screens.HealthTabScreen
 import com.example.ui.theme.TrainPilotTheme
@@ -27,8 +26,8 @@ import org.robolectric.annotation.LooperMode
 class HealthProviderUiRegressionTest {
     @get:Rule val compose = createComposeRule()
 
-    @Test fun healthTodayShowsSixTilesWithoutSummaryAndPreservesSelectedProviderSyncDetails() {
-        var requestedProvider = ""
+    @Test fun healthTodayAndBottomSyncShareCallbackAndKeepEachProvidersSuccessProof() {
+        var syncRequests = 0
         val partialMessage = "Samsung Health: részleges hozzáférés"
         var state by mutableStateOf(TrainPilotUiState(
             expandedHealthConnect = true,
@@ -39,17 +38,14 @@ class HealthProviderUiRegressionTest {
             dailySteps = 7699,
             activeCaloriesKcal = 329,
             dailyHealthLastSyncIso = "2026-11-02T22:07:00Z",
+            healthLastSyncByProvider = mapOf(HealthJournalStore.SAMSUNG to "2026-11-02T22:07:00Z"),
             healthSyncPartial = true,
             healthSyncMessage = partialMessage
         ))
-        compose.setContent {
-            CompositionLocalProvider(LocalSyncDailyHealth provides { requestedProvider = it }) {
-                TrainPilotTheme {
-                    HealthTabScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU),
-                        {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
-                }
-            }
-        }
+        compose.setContent { TrainPilotTheme {
+            HealthTabScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU),
+                {}, {}, {}, { _, _ -> }, {}, { syncRequests++ }, {}, {})
+        } }
         val list = compose.onNodeWithTag("health_tab_screen")
         compose.onNodeWithTag("studio_daily_health_status").assertDoesNotExist()
         compose.onNodeWithTag("daily_health_values").assertDoesNotExist()
@@ -59,11 +55,23 @@ class HealthProviderUiRegressionTest {
         compose.onNodeWithText("7699").assertExists()
         compose.onNodeWithText("329 kcal").assertExists()
         compose.onNodeWithTag("health_today_header_sync").performClick()
-        assertEquals(HealthJournalStore.SAMSUNG, requestedProvider)
+        assertEquals(1, syncRequests)
 
-        list.performScrollToNode(hasTestTag("health_selected_provider_last_sync"))
-        compose.onNodeWithTag("health_selected_provider_last_sync")
-            .assertTextContains("Kiválasztott forrás: Samsung Health • Utolsó sikeres szinkron:", substring = true)
+        list.performScrollToNode(hasTestTag("health_last_sync_${HealthJournalStore.SAMSUNG}"))
+        compose.onNodeWithTag("health_last_sync_${HealthJournalStore.SAMSUNG}")
+            .assertTextContains("Samsung Health • Utolsó sikeres szinkron:", substring = true)
+        compose.onNodeWithTag("health_last_sync_${HealthJournalStore.HC}")
+            .assertTextContains("Még nincs sikeres szinkron", substring = true)
+        list.performScrollToNode(hasTestTag("health_sync_button"))
+        compose.onNodeWithTag("health_sync_button").performClick()
+        assertEquals(2, syncRequests)
+        compose.runOnIdle { state = state.copy(healthSyncBusy = true) }
+        compose.onNodeWithTag("health_sync_button").assertIsNotEnabled()
+        assertEquals(2, syncRequests)
+        list.performScrollToNode(hasTestTag("health_today_header_sync"))
+        compose.onNodeWithTag("health_today_header_sync").assertIsNotEnabled()
+        compose.runOnIdle { state = state.copy(healthSyncBusy = false) }
+        list.performScrollToNode(hasTestTag("health_provider_samsung"))
         compose.onNodeWithTag("health_provider_samsung").assertExists()
         list.performScrollToNode(hasTestTag("health_sync_result"))
         compose.onNodeWithTag("health_sync_result").assertTextEquals(partialMessage)

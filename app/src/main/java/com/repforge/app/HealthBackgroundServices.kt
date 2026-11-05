@@ -644,7 +644,10 @@ class HealthBackgroundJob : JobService() {
                 access.requireForeground()
                 if (store.generation() != epoch) throw IllegalStateException("Dataset changed")
                 val meta = JSONObject().put("lastAttemptAt", Instant.now().toString())
-                if (complete) meta.put("lastSyncAt", Instant.now().toString())
+                if (complete) {
+                    val at = Instant.now().toString()
+                    meta.put("lastSyncAt", at).put("lastSyncAt_${HealthJournalStore.HC}", at)
+                }
                 store.syncMeta(meta)
             } catch (_: Exception) {
                 retry = !stopped.get() && permitted(this)

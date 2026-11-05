@@ -168,6 +168,11 @@ data class TrainPilotUiState(
     val dailyHealthAvailableFields: Set<String> = emptySet(),
     val dailyHealthSourceLabel: String = "Health Connect",
     val dailyHealthLastSyncIso: String = "—",
+    val healthLastSyncByProvider: Map<String, String> = emptyMap(),
+    val healthRefreshRevision: Long = 0L,
+    val healthAutoOnOpen: Boolean = true,
+    val healthBackgroundOptedIn: Boolean = false,
+    val healthBackgroundScheduled: Boolean = false,
     val healthGrantedCount: Int = 0,
     val healthPermissionCount: Int = 0,
     val lastHealthSyncLabel: String = "—",
@@ -1127,6 +1132,15 @@ class TrainPilotViewModel : ViewModel() {
     fun pauseActiveWorkout(paused: Boolean = true): Boolean {
         val ctx = nativeContext ?: return !_uiState.value.isWorkoutSessionActive
         val current = ActiveWorkoutStore.current(ctx)?.takeIf { it.optBoolean("active") } ?: return true
+        if (current.optString("timerOwner", "phone") == "watch" && !paused) {
+            return try {
+                WearSyncRepository.requestWatchWorkoutContinuation(ctx) { message -> showBannerMessage(message) }
+                true
+            } catch (failure: Exception) {
+                showBannerMessage(failure.message ?: "Az órás folytatás nem kérhető.")
+                false
+            }
+        }
         // A running GPS session and acknowledged watch owner intentionally continue in background.
         if (current.optString("timerOwner", "phone") != "phone" ||
             (_uiState.value.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS &&
@@ -1141,7 +1155,20 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    fun onAppBackground() { pauseWhenLeavingMeasurement() }
+    fun onAppBackground() {
+        // Screen-off is not an explicit workout pause. The already armed foreground
+        // recorder continues; never start/resume a clock from this lifecycle callback.
+        val ctx = nativeContext ?: return
+        runCatching {
+            val frame = ActiveWorkoutStore.current(ctx) ?: return@runCatching
+            if (frame.optBoolean("active") && frame.optString("timerOwner", "phone") == "phone" &&
+                !frame.optBoolean("finalizationPending") && !com.repforge.shared.WorkoutOwnership193.pending(frame) &&
+                PhoneOwnership193.phoneAllowed(ctx, frame.optString("workoutId"))) {
+                PhoneWorkoutExecution.store(ctx).checkpointStopwatch(frame.optString("workoutId"),
+                    frame.optLong("generation"), android.os.SystemClock.elapsedRealtime())
+            }
+        }
+    }
 
     private fun pauseWhenLeavingMeasurement(): Boolean =
         if (_uiState.value.currentSubScreen in setOf(SubScreen.ACTIVE_STRENGTH, SubScreen.ACTIVE_TIMED, SubScreen.ACTIVE_BILATERAL, SubScreen.ACTIVE_OUTDOOR_GPS))
@@ -3267,17 +3294,15 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun adjustRestTimer(deltaSec: Int) {
-        _uiState.update {
-            it.copy(restTimerRemainingSec = (it.restTimerRemainingSec + deltaSec).coerceIn(0, 600))
-        }
+        _uiState.update { com.repforge.app.StudioRestTimer.adjust(nativeContext, it, deltaSec) }
     }
 
     fun toggleRestTimerRunning() {
-        _uiState.update { it.copy(restTimerRunning = !it.restTimerRunning) }
+        _uiState.update { com.repforge.app.StudioRestTimer.toggle(nativeContext, it) }
     }
 
     fun skipRestTimer() {
-        _uiState.update { it.copy(restTimerRemainingSec = 0, restTimerRunning = false) }
+        _uiState.update { com.repforge.app.StudioRestTimer.skip(nativeContext, it) }
     }
 
     fun updateIntervalSettings(workSec: Int, restSec: Int, rounds: Int, sound: Boolean, vibration: Boolean, autoStep: Boolean) {

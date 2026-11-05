@@ -26,6 +26,12 @@ class WearDataListenerService : WearableListenerService() {
         for (event in dataEvents) {
             if (event.type != DataEvent.TYPE_CHANGED) continue
             val item = event.dataItem
+            if(item.uri.path?.startsWith(com.repforge.shared.WorkoutContinuation.PATH_PREFIX)==true) {
+                try { WearWorkoutContinuation.receive(this,DataMapItem.fromDataItem(item).dataMap.getString("command"),item.uri.host) }
+                catch(_:Exception) { /* The owner's durable resume intent remains recoverable after a failed callback. */ }
+                finally { com.google.android.gms.wearable.Wearable.getDataClient(this).deleteDataItems(item.uri) }
+                continue
+            }
             if(com.repforge.shared.OwnershipTransport193.receive(this,item) { message,origin,local ->
                 WearOwnership193.receive(this,message,origin,local)
             })continue

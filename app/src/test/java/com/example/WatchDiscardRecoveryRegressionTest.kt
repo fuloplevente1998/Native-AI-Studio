@@ -92,6 +92,12 @@ class WatchDiscardRecoveryRegressionTest {
                 "UPDATE workout_history SET workoutKey = ?, syncId = ? WHERE id = ?",
                 arrayOf("old", "different-sync", "saved-real"))
             assertTrue(db.workoutHistoryDao().hasSavedWorkoutId("old"))
+            // A late start or periodic mirror after upgrade must not resurrect saved aliases either.
+            for (action in listOf("startWorkout", "startQuickWorkout", "addQuickExercise", "watchAutomationState", "resumeWorkout")) {
+                assertTrue(NativeWatchDiscardAdmission.rejectsResurrection(db, command.put("action", action)))
+                assertTrue(NativeWatchDiscardAdmission.rejectsResurrection(db, command.put("action", action).put("workoutId", "saved-real")))
+                assertFalse(NativeWatchDiscardAdmission.rejectsResurrection(db, command.put("action", action).put("workoutId", "recoverable-draft")))
+            }
             assertEquals(NativeWatchDiscardAdmission.Decision.REJECT,
                 NativeDataReplacement.mutate(context) { NativeWatchDiscardAdmission.reconcile(context, db, orphan()) })
             assertFalse(db.workoutHistoryDao().isTombstoned("old", JSONObject.quote("old")))

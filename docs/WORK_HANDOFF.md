@@ -3,6 +3,27 @@
 Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
+## Új készülékes csomag – közös integráció
+
+A #149–#153 visszajelzések kódja együtt: PR154 pihenő, PR155 naptár,
+PR156 Wear session/folytatás, PR157 napló UI, PR158 univerzális healthsync.
+`fix/device-feedback-integration` megőrzi az összes eredeti ág commitját.
+A közös VM-hook bekötve: a telefonos Folytatás watch-owner esetén az órán kér
+explicit folytatást, optimista tulajdonosváltás nélkül. Az app onStop többé
+nem publikál automatikus workout pause-t pusztán képernyő-kikapcsolásra;
+a már futó natív stopwatch checkpointolódik, indítás/folytatás nem történik.
+Kifejezett Szünet/Vissza/Elhagyás változatlan. Új regresszió védi ezt.
+
+Az egészség-napló és app-életciklus kész bekötése: [#149 részletek](HEALTH_SYNC_FOLLOWUP_149.md).
+Az eredeti WIP-státusz a [korábbi pillanatképben](DEVICE_FEEDBACK_FOLLOWUP_2026-11-05.md)
+már történeti; az integráció után nincs hátramaradt UI/VM-hook.
+A következő kapu egyetlen teljes main-CI, eredménye külön rögzítendő.
+Új APK és fizikai Samsung/HC/Wear elfogadás még nincs; a jegyeket nem zárjuk pusztán CI-re.
+
+**Új visszajelzések a kiadott APK után:** [folyamatban lévő javítások és pontos
+korlátok](DEVICE_FEEDBACK_FOLLOWUP_2026-11-05.md). A korábbi13as csomag elkészült;
+az új health/Wear/pihenő/naptár csomag még nem került telepítőbe.
+
 ## Aktuális main
 
 **Mind a 13 visszajelzéshez tartozó javítás mainre került.** A felhasználó kifejezett
@@ -77,3 +98,28 @@ A következő lépés a kiadott APK-k készülékes visszatesztje;
 a forrás, a signed build és a teljes közös CI már ellenőrzött. A bizonyítékot rögzítő későbbi
 dokumentációs commit nem változtatja az alkalmazás/teszt/workflow forrását.
 APK-kéréskor csak a meglévő signed workflow: telefon release + R8/shrunk Wear release.
+
+#152 / draft PR156 további javítás: pontos owner/epoch/pauseRevision célzású
+telefon→óra explicit resume transport; késői watch snapshot epoch/pause/sequence
+befogadási guard; már mentett history és alias újraaktiválásának tiltása.
+Öt új regresszió, kibővített Room-alias védelem; statikus ellenőrzés tiszta,
+JVM/CI még nem futott. A közös VM resume-hookot a root integrátor köti be;
+állapot és fizikai mérési korlátok a készülékes followup dokumentumban.
+
+## #151 UI-folytatás – integrációra vár
+
+Ág: `design/health-provider-journal` (draft PR átadáskor). A naplóban csak a felső
+Samsung Health / Health Connect választó marad; origin csak rekord-metaadat.
+Kis szolgáltatófrissítő natív callbackkel, busy/hiba állapot és revision alapú
+újraolvasás; lenyitott napokon csak AVAILABLE metrikák, a valós nulla megmarad.
+A felső és alsó kézi szinkron ugyanazt a callbacket használja. Footer mindkét
+provider sikeres idejét és az engedélyezett automatikus ütemezést jelzi; a meglévő
+Wear-kártya címe „TrainPilot Wear OS – edzésmérések”.
+
+A módosított Compose-regressziók a provider-projekciót, összes eredet rekordjait,
+hiány/tiltás/hiba elrejtését, nullát, natív revision-frissítést, busy/hiba állapotot
+és a két szinkrongomb callbackjét fedik. `git diff --check` rendben; helyi
+Gradle/CI nem futott. Az ág a párhuzamos #149 natív UiState-mezőket és a root
+`onReadHealthSource` bekötést igényli, ezért teljes CI csak a közös integráción.
+Az origin-selector és hiányzó metrikasor régi tesztelvárásait a #151 kifejezett
+új UX-e miatt cseréltük le; dátum/lapozás/generation védelmek megmaradtak.

@@ -110,7 +110,11 @@ internal object NativeWorkoutEditing {
         else store.prepare(incoming, frame.getLong("executionRevision"))
         // If publication fails the edited native frame remains durable. A later
         // projection restores it, instead of replacing it with stale UI fields.
-        return project(context)
+        val saved = project(context)
+        // Editing commits used to update only the local projection. Publish that
+        // exact durable revision too; do not project again or create another clock.
+        runCatching { WearSyncRepository.publishActiveWorkoutSnapshot(context, saved) }
+        return saved
     }
 
     fun completeStrengthSet(context: Context, exerciseId: String, setId: String): JSONObject {

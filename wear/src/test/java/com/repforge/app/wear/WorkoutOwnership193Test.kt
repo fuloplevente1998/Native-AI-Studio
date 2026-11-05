@@ -6,6 +6,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class WorkoutOwnership193Test {
+    @Test fun nativeReceiptSequenceIsNotHiddenByAnOlderMirrorSequence() {
+        val raw = current().put("localSequence", 4).put("watchSequence", 9)
+        val parsed = WorkoutSnapshotStore.parse(raw.toString())!!
+        assertEquals(9L, parsed.localSequence)
+        assertEquals(9L, WorkoutSnapshotStore.parse(WorkoutSnapshotStore.encode(parsed).toString())!!.localSequence)
+        assertEquals(12L, WorkoutSnapshotStore.parse(raw.put("localSequence", 12).toString())!!.localSequence)
+    }
+
     @Test fun frozenTimerCheckpointSurvivesTypedSnapshotAndConsentRoundTrip() {
         val checkpoint=JSONObject("""{"schema":1,"source":"phone","sourceEpoch":0,"resumeRequested":false,"timer":{"key":"native|4|9","elapsedMs":96000,"remainingMs":14000,"round":2,"phase":"rest","steps":[{"exerciseId":"plank","setId":"set:1","baseSeconds":7}],"ledger":{"workMs":60000,"restMs":36000,"pausedMs":24000}}}""")
         val source=current().put("timerCheckpoint193",checkpoint)

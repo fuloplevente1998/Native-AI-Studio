@@ -6,7 +6,7 @@ package com.repforge.app.ui.health
  * result based on this UI ticket alone: validate the journal generation at each write site.
  */
 internal class NativeHealthAutoRefreshGate(
-    private val intervalMs: Long = 10L * 60L * 1000L
+    private val intervalMs: Long = NativeHealthAppRefreshPolicy.FOREGROUND_INTERVAL_MS
 ) {
     init { require(intervalMs > 0L) }
 
@@ -45,10 +45,11 @@ internal class NativeHealthAutoRefreshGate(
         optedIn: Boolean,
         permitted: Boolean,
         safeToRead: Boolean,
-        snapshot: Snapshot
+        snapshot: Snapshot,
+        ignoreAutoInterval: Boolean = false
     ): Ticket? {
         if (running != null || !permitted || !safeToRead || (trigger == Trigger.AUTO && !optedIn)) return null
-        if (trigger == Trigger.AUTO) {
+        if (trigger == Trigger.AUTO && !ignoreAutoInterval) {
             val previous = lastAutoStartMs
             val key = "${snapshot.provider}|${snapshot.day}"
             if (previous != null && lastAutoKey == key &&
