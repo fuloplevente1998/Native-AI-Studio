@@ -1,6 +1,24 @@
 # TrainPilot Native – aktuális állapot, 2026-11-05
 
-## Közös main-integráció – #133–#141
+## Teljes javítócsomag mainen – 13 jegy, 523 ellenőrzött teszt
+
+**Mind a 13 visszajelzés javítása mainen:** #70, #84, #117, #118, #120, #122,
+#123, #125, #126, #128, #129, #130, #131. A #144/#145 befejezi az Egészségnaplót,
+az app-stílusú dátumválasztót és a Coacht; #146 a napi összegző blokkhatárát javítja.
+**Bevizsgált forrás `5b3285c1eab6af0e9d8383f948ff1d61fcf4f66b`, közös
+Actions41979889219 SUCCESS: 523 = 347 telefon + 176 Wear, 0 failure/error/skipped.**
+Nyers XML, verification commit és artifact SHA256 ellenőrizve; shared NO-SOURCE.
+[Végső bizonyíték](FINAL_MAIN_CI_2026-11-05.json),
+[rövid átadó](WORK_HANDOFF.md), [telefonos tesztlista](TEST_MAIN_FOLLOWUP_2026-11-05.md).
+
+A felhasználó kérésére a kész ágak csoportosan mainre kerültek, majd közös CI futott;
+a javító ágak külön teljes tesztköreit `[skip ci]` kerülte el, workflow-gyengítés nélkül.
+Az új gyökér AGENTS.md rögzíti a munkarendet és a GPT-6.1 Sol thinking-szinteket.
+**Új APK még nem készült**, verzió és signer változatlan. Az eddig átadott 2753-as
+telepítők régebbi forrást tartalmaznak; fizikai Google/Samsung/HC/Wear/vizuális elfogadás
+továbbra is külön feladat, a jegyeket nem zártuk le pusztán a CI alapján.
+
+## Első közös main-integráció – #133–#141 (történeti)
 
 A felhasználó kérésére kilenc elkészült PR mainre került, külön ágankénti új CI-körök
 helyett közös teljes futással. #142 egyetlen hibás tesztfixture előkészítését javítja;
@@ -10,7 +28,8 @@ ellenőrizve. [Gépi bizonyíték](BATCH_MAIN_CI_2026-11-05.json).
 Részletes csomag és megőrzött WIP-ágak:
 [rövid átadó](WORK_HANDOFF.md). A main tartalmazza a naptár-, témakeret-, óraikon-,
 tervezés-, naplószerkesztő-, session/stopper-, gombkontraszt- és edzés-health javításokat.
-Coach #70 és az egységes Egészségnapló/dátumpicker #122/#123 még nincs mainen.
+Coach #70 és az egységes Egészségnapló/dátumpicker #122/#123 akkor még nem volt mainen;
+azóta a fenti második csomag befejezte őket.
 Új APK most nem készült; a 2753-as kiadás továbbra is korábbi forrást tartalmaz.
 
 ## Új munkafázis – 2026-11-05

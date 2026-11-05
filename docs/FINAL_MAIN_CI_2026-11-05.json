@@ -1,0 +1,66 @@
+{
+  "run": 41979889219,
+  "source": "5b3285c1eab6af0e9d8383f948ff1d61fcf4f66b",
+  "artifact": 13393252803,
+  "artifactBytes": 247285,
+  "artifactSha256": "15e55ad1c9efb610119c9a772c07a415f09410817f776ad92257ff11fb54c1e0",
+  "counts": {
+    "tests": 523,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "modules": {
+    "app": 347,
+    "wear": 176
+  },
+  "sharedNoSource": true,
+  "followupClasses": {
+    "TEST-com.example.HealthDatePickerUiRegressionTest.xml": 4,
+    "TEST-com.example.UnifiedHealthJournalUiRegressionTest.xml": 3,
+    "TEST-com.example.WorkoutCoachAdviceRegressionTest.xml": 11,
+    "TEST-com.repforge.app.ui.health.NativeHealthJournalRegressionTest.xml": 9
+  },
+  "physicalAcceptance": false,
+  "apkProduced": false,
+  "mergedPRs": [
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142,
+    143,
+    144,
+    145,
+    146
+  ],
+  "issues": [
+    70,
+    84,
+    117,
+    118,
+    120,
+    122,
+    123,
+    125,
+    126,
+    128,
+    129,
+    130,
+    131
+  ],
+  "workflow": "trainpilot-android-ci.yml",
+  "previousCompileFailure": {
+    "run": 41979378818,
+    "source": "aa0bf2c59b417778ced1f8212bd0d55434042a36",
+    "reason": "StudioHealthMetricsBrowser summary row forEach missing closing brace",
+    "fixedByPR": 146,
+    "testsPassedClaimed": false
+  },
+  "firstBatchEvidence": "BATCH_MAIN_CI_2026-11-05.json"
+}
