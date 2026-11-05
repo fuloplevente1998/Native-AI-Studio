@@ -68,6 +68,63 @@ class StudioSessionMeasurementRegressionTest {
             exercise.getString("id"), exercise.getJSONArray("sets").getJSONObject(0).getString("setId"))
     }
 
+    @Test fun watchSetEditSurvivesTheNextCanonicalPhoneProjection() {
+        val model = model()
+        model.startQuickStrengthWithExercise(strength(model))
+        await { model.uiState.value.isWorkoutSessionActive }
+        val frame = ActiveWorkoutStore.current(context)!!
+        val target = target(frame)
+        val command = JSONObject().put("action", "updateSet").put("workoutId", target.workoutId)
+            .put("ownerEpoch193", frame.optLong("ownerEpoch193")).put("pauseRevision", frame.optLong("pauseRevision"))
+            .put("sequence", 1).put("exerciseIndex", 0).put("exerciseId", target.exerciseId)
+            .put("setIndex", 0).put("setId", target.setId).put("field", "weight").put("value", "17.5")
+        WearSyncRepository.commitWatchEditorMutation(context, frame, command)
+        val durable = PhoneWorkoutExecution.store(context).snapshot()!!
+        assertEquals(17.5, target.resolve(durable).set.getDouble("weight"), 0.0)
+        val projected = NativeWorkoutEditing.project(context)
+        assertEquals(17.5, target.resolve(projected).set.getDouble("weight"), 0.0)
+        assertEquals(1L, projected.getLong("localSequence"))
+        assertEquals(frame.getLong("generation"), projected.getLong("generation"))
+    }
+
+    @Test fun staleWatchTargetCannotEditAnotherCanonicalSet() {
+        val model = model()
+        model.startQuickStrengthWithExercise(strength(model))
+        await { model.uiState.value.isWorkoutSessionActive }
+        val frame = ActiveWorkoutStore.current(context)!!
+        val target = target(frame)
+        val before = target.resolve(PhoneWorkoutExecution.store(context).snapshot()!!).set.toString()
+        val command = JSONObject().put("action", "updateSet").put("workoutId", target.workoutId)
+            .put("ownerEpoch193", frame.optLong("ownerEpoch193")).put("pauseRevision", frame.optLong("pauseRevision"))
+            .put("exerciseIndex", 0).put("exerciseId", target.exerciseId).put("setIndex", 0)
+            .put("setId", "old-set").put("field", "weight").put("value", "99")
+        try {
+            WearSyncRepository.commitWatchEditorMutation(context, frame, command)
+            fail("A stale watch target was accepted")
+        } catch (_: IllegalStateException) { }
+        assertEquals(before, target.resolve(PhoneWorkoutExecution.store(context).snapshot()!!).set.toString())
+    }
+
+    @Test fun manualStrengthRecordingDoesNotRequireAutomaticWorkoutPlanning() {
+        val model = model()
+        model.startQuickStrengthWithExercise(strength(model))
+        await { model.uiState.value.isWorkoutSessionActive }
+        val frame = PhoneWorkoutExecution.store(context).snapshot()!!
+        val target = target(frame)
+        frame.put("automaticEnabled", false)
+        target.resolve(frame).set.put("reps", "12").put("weight", 10)
+        PhoneWorkoutExecution.store(context).prepare(frame, frame.getLong("executionRevision"))
+        val service = Robolectric.buildService(IntervalTimerService::class.java).create()
+        try {
+            arm(service.get(), PhoneWorkoutExecution.store(context).snapshot()!!)
+            NativeWorkoutEditing.completeStrengthSet(context, target.exerciseId, target.setId)
+            val recorded = PhoneWorkoutExecution.store(context).snapshot()!!
+            assertTrue(target.resolve(recorded).set.getBoolean("done"))
+            assertFalse(recorded.getBoolean("automaticEnabled"))
+            assertFalse(recorded.has("transition"))
+        } finally { service.destroy() }
+    }
+
     @Test fun repeatedQuickTimedStartKeepsTheCanonicalWorkoutAndStableSetIds() {
         val model = model()
         model.startQuickTimedWithExercise(timed(model))

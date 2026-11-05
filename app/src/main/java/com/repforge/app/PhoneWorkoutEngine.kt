@@ -506,7 +506,7 @@ internal object PhoneWorkoutExecution {
         // automaticEnabled controls plan generation, not recording an already
         // measured set. Ownership, arming and target checks still apply.
         val manualMeasuredResult = frame?.optInt("nativeEditorProjection") == 1 &&
-            command.optString("action") in setOf("completeTimedSet", "completeGpsSet", "completeMeasuredSet")
+            command.optString("action") in setOf("completeSet", "completeTimedSet", "completeGpsSet", "completeMeasuredSet")
         if (frame == null ||
             !frame.optBoolean("active") ||
             (!frame.optBoolean("automaticEnabled") && !manualMeasuredResult) ||

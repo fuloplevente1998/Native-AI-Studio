@@ -241,7 +241,7 @@ object WorkoutSnapshotStore {
                 restEndAt = root.optLong("restEndAt", 0L),
                 exercises = exercises,
                 dayName = root.optString("dayName", root.optString("dayId")),
-                localSequence = root.optLong("localSequence", root.optLong("watchSequence", 0L)),
+                localSequence = maxOf(root.optLong("localSequence"), root.optLong("watchSequence")),
                 quickWorkout = root.optBoolean("quickWorkout", root.optString("dayId") == "quick" && root.optString("programId").isBlank()),
                 automation = WearAutomatic.parse(root.optJSONObject("automation")),
                 timerOwner = root.optString("timerOwner",root.optJSONObject("automation")?.optString("owner") ?: "phone"),

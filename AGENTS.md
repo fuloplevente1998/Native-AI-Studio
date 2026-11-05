@@ -29,7 +29,10 @@ Alapmodell: **GPT-6.1 Sol**. A munkához válassz gondolkodási szintet:
 | Fejlesztés és ismert működés bekötése | Medium (`medium`) | Meglévő adatmodell megjelenítése |
 | Vizuális dizájn/layout | Medium (`medium`) | Keret, ikon, szín és kompakt elrendezés |
 | Kódhiba vizsgálata és javítása | High (`high`) | Hibás API-útvonal, elutasított művelet |
-| Összetett debug, versenyhelyzet, CI-kapu hibája | Extra High (`xhigh`) | Dupla edzés, ownership, restore, stopperállapot |
+| Összetett debug, versenyhelyzet, CI-kapu hibája | High (`high`) | Dupla edzés, ownership, restore, stopperállapot |
+
+Extra High (`xhigh`) agentet ne indíts: a 2026-11-05-i újabb felhasználói
+utasítás legfeljebb High szintet enged hibakereséshez.
 
 A szint feladaton belül is változhat. A dizájnhoz tartozó összetett állapot- vagy
 teszthibát a hibakeresési sor szerint kezeld. Az új kérés felülírja az eredeti

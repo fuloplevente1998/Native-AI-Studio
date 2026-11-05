@@ -3,6 +3,10 @@
 Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
+**Új visszajelzések a kiadott APK után:** [folyamatban lévő javítások és pontos
+korlátok](DEVICE_FEEDBACK_FOLLOWUP_2026-11-05.md). A korábbi13as csomag elkészült;
+az új health/Wear/pihenő/naptár csomag még nem került telepítőbe.
+
 ## Aktuális main
 
 **Mind a 13 visszajelzéshez tartozó javítás mainre került.** A felhasználó kifejezett

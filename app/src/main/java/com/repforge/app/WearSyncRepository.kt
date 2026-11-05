@@ -203,8 +203,7 @@ object WearSyncRepository {
                                     WearCommandReceipts.complete(appContext, command, "superseded", uri)
                                     return@withContext
                                 }
-                                val next = applyWatchMutationToSnapshot(current, command)
-                                val saved = ActiveWorkoutStore.saveOwned(appContext, next)
+                                val saved = commitWatchEditorMutation(appContext, current, command)
                                 publishActiveWorkoutSnapshot(appContext, saved)
                                 WearCommandReceipts.complete(appContext, command, "applied", uri)
                             }
@@ -407,6 +406,42 @@ object WearSyncRepository {
             }
         } catch (_: Exception) {
         }
+    }
+
+    /** Phone-owned native edits must reach its durable engine before acknowledging the watch. */
+    internal fun commitWatchEditorMutation(context: Context, current: JSONObject, command: JSONObject): JSONObject {
+        check(PhoneOwnership193.commandAllowed(context, command)) { "Workout ownership changed" }
+        val action = command.optString("action")
+        val phoneEditor = current.optInt("nativeEditorProjection") == 1 && current.optString("timerOwner") == "phone"
+        if (!phoneEditor || action !in setOf("updateSet", "selectExercise", "nextExercise", "prevExercise")) {
+            return ActiveWorkoutStore.saveOwned(context, applyWatchMutationToSnapshot(current, command))
+        }
+        val frame = NativeWorkoutEditing.project(context)
+        check(frame.optString("workoutId") == command.optString("workoutId") &&
+            !frame.optBoolean("workoutPaused") && frame.optLong("pauseRevision") == command.optLong("pauseRevision")) {
+            "Workout pause or identity changed"
+        }
+        val exercises = frame.getJSONArray("exercises")
+        if (action in setOf("updateSet", "selectExercise")) {
+            val exercise = exercises.getJSONObject(command.getInt("exerciseIndex"))
+            check(exercise.getString("id") == command.getString("exerciseId")) { "Exercise identity changed" }
+            if (action == "updateSet") {
+                val set = exercise.getJSONArray("sets").getJSONObject(command.getInt("setIndex"))
+                check(set.getString("setId") == command.getString("setId") && !set.optBoolean("done")) {
+                    "Set identity changed"
+                }
+                check(command.optString("field") in setOf("weight", "reps", "leftSeconds", "rightSeconds")) {
+                    "Unsupported set field"
+                }
+            }
+        }
+        val next = applyWatchMutationToSnapshot(frame, command)
+        if (next.optInt("currentExercise") != frame.optInt("currentExercise")) {
+            NativeSetStopwatch.sealPause(next)
+            NativeSetStopwatch.pause(next, trackPause = false)
+            next.put("selectionRevision", frame.optLong("selectionRevision") + 1L)
+        }
+        return NativeWorkoutEditing.commitEdit(context, next, clockEdit = action != "updateSet")
     }
 
     private fun applyWatchMutationToSnapshot(current: JSONObject, command: JSONObject): JSONObject {
