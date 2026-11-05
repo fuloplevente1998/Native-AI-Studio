@@ -139,14 +139,18 @@ internal fun StudioHealthMetricsBrowser(initialProvider: String, language: Strin
                             Triple(key, metric.label, if (metric.isAvailable) "${metric.valueText} ${metric.unit}".trim() else "—")
                         }
                     // Two columns keep the existing compact boxed journal readable with larger text.
-                    summary.chunked(2).forEach { cells -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        cells.forEach { (metricKey, title, value) -> Surface(shape = RoundedCornerShape(10.dp), color = palette.surfaceCard, modifier = Modifier.weight(1f)) {
-                            Column(Modifier.padding(8.dp)) {
-                                Text(title, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                Text(value, color = palette.textPrimary, fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.testTag("journal_summary_${date}_$metricKey"))
+                    summary.chunked(2).forEach { cells ->
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            cells.forEach { (metricKey, title, value) ->
+                                Surface(shape = RoundedCornerShape(10.dp), color = palette.surfaceCard, modifier = Modifier.weight(1f)) {
+                                    Column(Modifier.padding(8.dp)) {
+                                        Text(title, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                        Text(value, color = palette.textPrimary, fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.testTag("journal_summary_${date}_$metricKey"))
+                                    }
+                                }
                             }
-                        } }
+                        }
                     }
                     if (expanded) {
                         Text(label("Mentett napi mérések • 26 metrika", "Stored daily measurements • 26 metrics",
