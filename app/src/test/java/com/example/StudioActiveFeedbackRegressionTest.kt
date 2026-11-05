@@ -11,6 +11,8 @@ import com.example.model.ExerciseItem
 import com.example.model.SubScreen
 import com.example.ui.components.rememberExerciseFeedbackNext
 import com.example.ui.components.rememberStudioWorkoutCoachOwner
+import com.example.ui.components.StudioExerciseFeedbackReview
+import com.example.ui.components.StudioWorkoutOverallFeedback
 import com.example.ui.theme.TrainPilotTheme
 import com.example.ui.viewmodel.TrainPilotUiState
 import org.junit.Assert.*
@@ -29,6 +31,52 @@ class StudioActiveFeedbackRegressionTest {
         activeWorkoutId = "session", activeWorkoutGeneration = 7,
         currentSubScreen = SubScreen.ACTIVE_STRENGTH,
         activeWorkoutExercises = listOf(ExerciseItem("press", "Nyomás"), ExerciseItem("row", "Evezés")))
+
+    @Test fun summaryReviewsExistingExerciseAnswerAndOnlyExplicitEditOpensTheChoices() {
+        val effort = mutableStateOf<String?>("hard")
+        var edits = 0
+        compose.setContent { TrainPilotTheme {
+            StudioExerciseFeedbackReview(effort.value, "Már megadott jegyzet", "hu", "Nyomás", true,
+                { effort.value = it; edits++ }, {}, "review_press")
+        } }
+        compose.onNodeWithTag("review_press_answer").assertTextContains("Túl nehéz", substring = true)
+        compose.onNodeWithTag("review_press_editor_hard").assertDoesNotExist()
+        compose.runOnIdle { assertEquals(0, edits) }
+        compose.onNodeWithTag("review_press_edit").performClick()
+        compose.onNodeWithTag("review_press_editor_hard").assertIsSelected()
+        compose.onNodeWithTag("review_press_editor_pain").performClick()
+        compose.onNodeWithTag("review_press_editor_pain").assertIsSelected()
+        compose.onNodeWithTag("review_press_answer").assertTextContains("Fájdalom", substring = true)
+        compose.runOnIdle { assertEquals(1, edits); assertEquals("pain", effort.value) }
+    }
+
+    @Test fun overallRatingStartsCollapsedAndItsAnswerLeavesTheExerciseReviewUntouched() {
+        val overall = mutableStateOf<String?>(null)
+        var exerciseEdits = 0
+        compose.setContent { TrainPilotTheme { androidx.compose.foundation.layout.Column {
+            StudioWorkoutOverallFeedback(overall.value, "", "hu", true, { overall.value = it }, {}, "overall")
+            StudioExerciseFeedbackReview("hard", "", "hu", "Nyomás", true,
+                { exerciseEdits++ }, {}, "review_press")
+        } } }
+        compose.onNodeWithTag("overall_choices_pain").assertDoesNotExist()
+        compose.onNodeWithTag("overall_toggle").performClick()
+        compose.onNodeWithTag("overall_choices_pain").performClick()
+        compose.onNodeWithTag("review_press_answer").assertTextContains("Túl nehéz", substring = true)
+        compose.runOnIdle { assertEquals("pain", overall.value); assertEquals(0, exerciseEdits) }
+    }
+
+    @Test fun alreadyAnsweredExerciseContinuesWithoutAskingForTheSameFeedbackAgain() {
+        var next = 0
+        var answers = 0
+        compose.setContent { TrainPilotTheme {
+            val state = initial().copy(exerciseFeedbackWorkoutId = "session", exerciseFeedbackChoices = mapOf("press" to 2))
+            val action = rememberExerciseFeedbackNext(state, { next++ }, { _, _ -> answers++ }, { _, _ -> answers++ })
+            Button(action, Modifier.testTag("next_trigger")) { Text("Next") }
+        } }
+        compose.onNodeWithTag("next_trigger").performClick()
+        compose.onNodeWithTag("active_feedback_prompt").assertDoesNotExist()
+        compose.runOnIdle { assertEquals(1, next); assertEquals(0, answers) }
+    }
 
     @Test fun coachViewModelsSurviveItemRemovalAndClearOnlyWhenExerciseScreenCloses() {
         val screen = mutableStateOf(true)
@@ -86,7 +134,6 @@ class StudioActiveFeedbackRegressionTest {
             Button(action, Modifier.testTag("next_trigger")) { Text("Next") }
         } }
         compose.onNodeWithTag("next_trigger").performClick()
-        compose.onNodeWithTag("active_feedback_session_press_selector").performClick()
         compose.onNodeWithTag("active_feedback_session_press_hard").performClick()
         compose.runOnIdle { assertEquals("press", answer?.first); assertEquals(4, answer?.second); assertEquals(0, next) }
         compose.onNodeWithTag("active_feedback_next").performClick()

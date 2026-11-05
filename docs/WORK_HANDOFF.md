@@ -4,7 +4,22 @@ Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
 
-## Legújabb átadás – #171 aktív edzés, 2753 / 7a90d39
+## Folyamatban – #175 ikonos gyakorlat-visszajelzés és összesítő
+
+Root egyedül, design/exercise-feedback-chips ág. A képen szereplő öt nehézségi
+válasz + külön Fájdalom közvetlen, kompakt, tördelődő ikonos gombként jelenik meg
+az aktív gyakorlat alatt és a Következő előtti kérdésben. Minden Fájdalom-gomb
+alapból finom piros keretet kap, kiválasztva erősebb kiemelést; a fájdalmas
+összesítő-kártyák is finom piros keretet kapnak. Megjegyzés opcionálisan nyitható.
+A már megválaszolt gyakorlat Következő gombja nem kérdez újra. Összesítőn a meglévő
+válasz látszik Módosítás/Pótlás gombbal; összbenyomás külön, alapból összecsukva.
+Mentési/Coach logika változatlan: workout feedback nem írja felül az explicit
+exercise effortot; a Coach hiányzó saját válasznál fallbackként használhatja az
+összválaszt, a globális fájdalom óvatossági jelzés. Négy új regresszió és a meglévő
+felugró teszt közvetlen gombos UX-re igazítása. Diff-check tiszta, teljes signed
+Actions-kapu és fizikai/vizuális elfogadás még hátravan. Verzió/signer változatlan.
+
+## Korábbi átadás – #171 aktív edzés, 2753 / 7a90d39
 
 PR172 és PR173 mainen, root egyedül, új agent nélkül. A gyakorlatcsík korábbi
 indexalapú pipája kizárólag vizuális volt; most csak nem üres, teljesen kész

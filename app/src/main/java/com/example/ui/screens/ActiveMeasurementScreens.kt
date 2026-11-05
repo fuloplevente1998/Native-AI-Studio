@@ -3610,14 +3610,6 @@ fun WorkoutSummaryScreen(
         else Result.success(null)
     } }
 
-    val moods = listOf(
-        tr(lang, "😄 Túl könnyű", "😄 Too easy", "😄 Zu leicht", "😄 Prea ușor"),
-        tr(lang, "🙂 Könnyű", "🙂 Easy", "🙂 Leicht", "🙂 Ușor"),
-        tr(lang, "💪 Pont jó", "💪 Just right", "💪 Genau richtig", "💪 Tocmai bun"),
-        tr(lang, "😤 Nehéz", "😤 Hard", "😤 Schwer", "😤 Greu"),
-        tr(lang, "🥵 Túl nehéz", "🥵 Too hard", "🥵 Zu schwer", "🥵 Prea greu"),
-        tr(lang, "⚠️ Fájdalom", "⚠️ Pain", "⚠️ Schmerz", "⚠️ Durere")
-    )
 
     LazyColumn(
         modifier = Modifier
@@ -3726,70 +3718,33 @@ fun WorkoutSummaryScreen(
             }
         }
 
-        // Mood selector ("Milyen volt az edzés?")
-        item {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = tr(lang, "Milyen volt az edzés?", "How was the workout?", "Wie war das Training?", "Cum a fost antrenamentul?"),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = palette.textPrimary
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        moods.forEachIndexed { idx, moodLabel ->
-                            val selected = uiState.summaryFeedbackWorkoutId == uiState.activeWorkoutId && uiState.workoutSummaryMoodIndex == idx
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (selected) palette.primary else palette.surfaceElevated,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable { onSelectMood(idx) }
-                                    .testTag("mood_chip_$idx")
-                            ) {
-                                Text(
-                                    text = moodLabel,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (selected) palette.onPrimary else palette.textPrimary,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-                    OutlinedTextField(
-                        value = if (uiState.summaryFeedbackWorkoutId == uiState.activeWorkoutId) uiState.workoutSummaryNote else "",
-                        onValueChange = onUpdateNote,
-                        placeholder = {
-                            Text(
-                                tr(
-                                    lang,
-                                    "Megjegyzés hozzáadása az edzéshez...",
-                                    "Add a note to the workout...",
-                                    "Notiz zum Training hinzufügen...",
-                                    "Adaugă o notă la antrenament..."
-                                ),
-                                color = palette.textMuted
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp)
-                    )
-                }
+        if (uiState.activeWorkoutExercises.isNotEmpty()) item(key = "exercise_feedback_heading") {
+            Text(tr(lang, "Gyakorlatok visszajelzései", "Exercise feedback", "Übungsfeedback", "Feedback exerciții"),
+                color = palette.textPrimary, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        }
+        uiState.activeWorkoutExercises.forEach { exercise ->
+            item(key = "exercise_feedback_${exercise.id}") {
+                val same = uiState.exerciseFeedbackWorkoutId == uiState.activeWorkoutId
+                com.example.ui.components.StudioExerciseFeedbackReview(
+                    effort = if (same) com.repforge.app.StudioWorkoutFeedback.efforts.getOrNull(
+                        uiState.exerciseFeedbackChoices[exercise.id] ?: -1) else null,
+                    note = if (same) uiState.exerciseFeedbackNotes[exercise.id].orEmpty() else "",
+                    language = uiState.language.name.lowercase(), title = exercise.localizedName(lang),
+                    enabled = !uiState.isSavingWorkout,
+                    onEffort = { onExerciseEffort(exercise.id, com.repforge.app.StudioWorkoutFeedback.efforts.indexOf(it)) },
+                    onNote = { onExerciseNote(exercise.id, it) }, tag = "summary_feedback_${exercise.id}")
             }
+        }
+
+        // Optional overall feeling is separate from the exercise answers.
+        item(key = "overall_feedback") {
+            val same = uiState.summaryFeedbackWorkoutId == uiState.activeWorkoutId
+            com.example.ui.components.StudioWorkoutOverallFeedback(
+                effort = if (same) com.repforge.app.StudioWorkoutFeedback.efforts.getOrNull(uiState.workoutSummaryMoodIndex) else null,
+                note = if (same) uiState.workoutSummaryNote else "",
+                language = lang.name.lowercase(), enabled = !uiState.isSavingWorkout,
+                onEffort = { onSelectMood(com.repforge.app.StudioWorkoutFeedback.efforts.indexOf(it)) },
+                onNote = onUpdateNote, tag = "workout_overall_${uiState.activeWorkoutId}")
         }
 
         // Dedicated Workout Photos Card ("Edzésfotók")
@@ -4085,20 +4040,6 @@ fun WorkoutSummaryScreen(
                         )
                     }
                 }
-            }
-        }
-
-        uiState.activeWorkoutExercises.forEach { exercise ->
-            item(key = "exercise_feedback_${exercise.id}") {
-                val same = uiState.exerciseFeedbackWorkoutId == uiState.activeWorkoutId
-                com.example.ui.components.ExerciseFeedbackControl(
-                    effort = if (same) com.repforge.app.StudioWorkoutFeedback.efforts.getOrNull(
-                        uiState.exerciseFeedbackChoices[exercise.id] ?: -1) else null,
-                    note = if (same) uiState.exerciseFeedbackNotes[exercise.id].orEmpty() else "",
-                    language = uiState.language.name.lowercase(), title = exercise.localizedName(lang),
-                    enabled = !uiState.isSavingWorkout,
-                    onEffort = { onExerciseEffort(exercise.id, com.repforge.app.StudioWorkoutFeedback.efforts.indexOf(it)) },
-                    onNote = { onExerciseNote(exercise.id, it) }, tag = "summary_feedback_${exercise.id}")
             }
         }
 

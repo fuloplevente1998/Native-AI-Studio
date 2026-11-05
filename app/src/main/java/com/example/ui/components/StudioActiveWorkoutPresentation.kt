@@ -46,17 +46,17 @@ internal fun StudioActiveWorkoutSessionInfo(state: TrainPilotUiState) {
 
 @Composable
 internal fun StudioActiveExerciseFeedback(state: TrainPilotUiState,
-    onEffort: (String, Int) -> Unit, onNote: (String, String) -> Unit, expanded: Boolean = false) {
+    onEffort: (String, Int) -> Unit, onNote: (String, String) -> Unit) {
     val exercise = state.activeWorkoutExercises.getOrNull(state.activeExerciseIndex) ?: return
     val same = state.exerciseFeedbackWorkoutId == state.activeWorkoutId
-    ExerciseFeedbackControl(
+    ExerciseFeedbackChips(
         effort = if (same) StudioWorkoutFeedback.efforts.getOrNull(state.exerciseFeedbackChoices[exercise.id] ?: -1) else null,
         note = if (same) state.exerciseFeedbackNotes[exercise.id].orEmpty() else "",
         language = state.language.name.lowercase(),
         title = feedbackWord(state, "Milyen volt?", "How was it?", "Wie war es?", "Cum a fost?") + " · " + exercise.localizedName(state.language),
         onEffort = { onEffort(exercise.id, StudioWorkoutFeedback.efforts.indexOf(it)) },
         onNote = { onNote(exercise.id, it) }, enabled = state.isWorkoutSessionActive && !state.isSavingWorkout,
-        initiallyExpanded = expanded, tag = "active_feedback_${state.activeWorkoutId}_${exercise.id}")
+        tag = "active_feedback_${state.activeWorkoutId}_${exercise.id}")
 }
 
 /** The dialog belongs to this exact session/selection; a remote selection dismisses it. */
@@ -69,7 +69,7 @@ internal fun rememberExerciseFeedbackNext(state: TrainPilotUiState, onNext: () -
     if (pending) TrainPilotAlertDialog(onDismissRequest = { pending = false },
         modifier = Modifier.testTag("active_feedback_prompt"),
         title = { Text(feedbackWord(state, "Gyakorlat visszajelzés", "Exercise feedback", "Übungsfeedback", "Feedback exercițiu")) },
-        text = { StudioActiveExerciseFeedback(state, onEffort, onNote, expanded = true) },
+        text = { StudioActiveExerciseFeedback(state, onEffort, onNote) },
         confirmButton = { TextButton(onClick = { if (pending) { pending = false; onNext() } },
             enabled = !state.isSavingWorkout, modifier = Modifier.testTag("active_feedback_next")) {
             Text(feedbackWord(state, "Tovább", "Continue", "Weiter", "Continuă"))
@@ -78,5 +78,12 @@ internal fun rememberExerciseFeedbackNext(state: TrainPilotUiState, onNext: () -
             enabled = !state.isSavingWorkout, modifier = Modifier.testTag("active_feedback_skip")) {
             Text(feedbackWord(state, "Kihagyás", "Skip", "Überspringen", "Omite"))
         } })
-    return { if (state.isWorkoutSessionActive && !state.isSavingWorkout && exerciseId != null) pending = true }
+    return {
+        if (state.isWorkoutSessionActive && !state.isSavingWorkout && exerciseId != null) {
+            val answered = state.exerciseFeedbackWorkoutId == state.activeWorkoutId &&
+                (StudioWorkoutFeedback.efforts.getOrNull(state.exerciseFeedbackChoices[exerciseId] ?: -1) != null ||
+                    state.exerciseFeedbackNotes[exerciseId].orEmpty().isNotBlank())
+            if (answered) onNext() else pending = true
+        }
+    }
 }
