@@ -1,4 +1,5 @@
 name: TrainPilot persistent signed APK pair
+# 2753: device-feedback fixes PR159/160/161, verified 550 JVM tests; signed pair trigger only.
 # 2751: signed main with reviewed AI Studio integration and localized profile choices.
 # 2752: PR109 signed phone/Wear pair build trigger; workflow steps unchanged.
 # PR110: one-time signed pair trigger after verified squash merge ac3987f3; workflow steps unchanged.
