@@ -256,9 +256,9 @@ class StudioProgressUiRegressionTest {
         compose.onNodeWithTag("calendar_add_B").performClick()
         compose.onNodeWithTag("calendar_day_dialog_close").performClick()
         compose.onNodeWithTag("calendar_day_dialog").assertDoesNotExist()
-        compose.onNodeWithTag("calendar_planning_open").performClick()
-        compose.onNodeWithTag("calendar_planning_dialog").assertExists()
-        compose.onNodeWithTag("calendar_planning_dialog_close").performClick()
+        compose.onNodeWithTag("calendar_planning_block").assertExists()
+        compose.onNodeWithTag("calendar_planning_open").assertDoesNotExist()
+        compose.onNodeWithTag("calendar_planning_dialog").assertDoesNotExist()
         assertEquals(listOf("A", "B"), adds); assertEquals(1, undos)
     }
 

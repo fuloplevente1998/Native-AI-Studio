@@ -1524,7 +1524,6 @@ fun CalendarPlannerScreen(
     }
     val monthHeaderText = "${displayedYearMonth.year}. ${huMonthNames[displayedYearMonth.monthValue - 1]}"
     var openedDay by androidx.compose.runtime.saveable.rememberSaveable(state.calendarYearMonth) { mutableStateOf<Int?>(null) }
-    var planningOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val selectedDay = openedDay ?: state.selectedCalendarDay
     val dayEvents = state.calendarEvents.filter { it.dayOfMonth == selectedDay && it.dateIso.startsWith(displayedYearMonth.toString()) }
     val activeProgram = state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
@@ -2018,8 +2017,141 @@ fun CalendarPlannerScreen(
                             Text("↶", color = palette.primary, style = MaterialTheme.typography.headlineSmall,
                                 modifier = Modifier.semantics { contentDescription = trW(state.language, "Visszavonás (${state.calendarUndoStack.size})", "Undo (${state.calendarUndoStack.size})", "Rückgängig (${state.calendarUndoStack.size})", "Anulează (${state.calendarUndoStack.size})") })
                         }
-                        TrainPilotOutlinedButton(onClick = { planningOpen = true },
-                            modifier = Modifier.heightIn(min = 48.dp).testTag("calendar_planning_open")) { Text(trW(state.language, "Tervezés", "Planning", "Planung", "Planificare")) }
+                    }
+                }
+            }
+            // 3. Calendar planning stays visible below the month grid.
+            Surface(
+                shape = RoundedCornerShape(22.dp),
+                color = palette.surfaceCard,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("calendar_planning_block")
+                    .trainPilotBorder(TrainPilotFrames.panelWidth, palette.cardBorder, RoundedCornerShape(22.dp))
+            ) {
+                Column(
+                    modifier = Modifier.padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = activeProgramTitle,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = palette.textPrimary,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 10.dp)
+                        )
+                        Button(
+                            onClick = { onOpenReplanModal(true) },
+                            modifier = Modifier.heightIn(min = 46.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = palette.primary,
+                                contentColor = palette.onPrimary
+                            )
+                        ) {
+                            Text(
+                                text = trW(state.language, "Újratervezés", "Replan", "Neu planen", "Replanificare"),
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold)
+                            )
+                        }
+                    }
+
+                    val monthDates = remember(displayedYearMonth) {
+                        (1..displayedYearMonth.lengthOfMonth()).map { d ->
+                            "${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${d.toString().padStart(2, '0')}."
+                        }
+                    }
+
+                    val cadenceMap = listOf("Minden második nap", "Heti 3 nap (H-Sze-P)", "Heti 4 nap", "Minden nap").associateBy { localizeCadenceLabel(it) }
+                    val firstDayMap = listOf("Alap A", "Alap B").associateBy { localizeFirstDayLabel(it) }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        PlannerFieldTile(
+                            modifier = Modifier.weight(1f),
+                            label = trW(state.language, "Tervezési ritmus", "Planning cadence", "Planungsrhythmus", "Ritm de planificare"),
+                            value = localizeCadenceLabel(state.planningCadenceHu),
+                            showChevron = true,
+                            dropdownOptions = cadenceMap.keys.toList(),
+                            onSelectOption = { opt ->
+                                val canonical = cadenceMap[opt] ?: opt
+                                onUpdatePlanningParams(canonical, state.planningFirstDayHu, state.planningStartDate, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
+                            }
+                        )
+                        PlannerFieldTile(
+                            modifier = Modifier.weight(1f),
+                            label = trW(state.language, "Első edzésnap", "First workout day", "Erster Trainingstag", "Prima zi de antrenament"),
+                            value = localizeFirstDayLabel(state.planningFirstDayHu),
+                            showChevron = true,
+                            dropdownOptions = firstDayMap.keys.toList(),
+                            onSelectOption = { opt ->
+                                val canonical = firstDayMap[opt] ?: opt
+                                onUpdatePlanningParams(state.planningCadenceHu, canonical, state.planningStartDate, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
+                            }
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        PlannerFieldTile(
+                            modifier = Modifier.weight(1f),
+                            label = trW(state.language, "Kezdőnap", "Start date", "Startdatum", "Data de început"),
+                            value = state.planningStartDate,
+                            showCalendarIcon = true,
+                            dropdownOptions = monthDates,
+                            onSelectOption = { opt ->
+                                onUpdatePlanningParams(state.planningCadenceHu, state.planningFirstDayHu, opt, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
+                            }
+                        )
+                        PlannerFieldTile(
+                            modifier = Modifier.weight(1f),
+                            label = trW(state.language, "Időpont", "Time", "Uhrzeit", "Ora"),
+                            value = state.planningTime,
+                            dropdownOptions = listOf("07:00", "08:30", "10:00", "16:00", "17:30", "18:00", "19:30"),
+                            onSelectOption = { opt ->
+                                onUpdatePlanningParams(state.planningCadenceHu, state.planningFirstDayHu, state.planningStartDate, opt, state.planningDurationMin, state.planningWeeksCount)
+                            }
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        PlannerFieldTile(
+                            modifier = Modifier.weight(1f),
+                            label = trW(state.language, "Időtartam (perc)", "Duration (min)", "Dauer (Min.)", "Durată (min)"),
+                            value = "${state.planningDurationMin}",
+                            dropdownOptions = listOf("30", "45", "60", "75", "90"),
+                            onSelectOption = { opt ->
+                                onUpdatePlanningParams(state.planningCadenceHu, state.planningFirstDayHu, state.planningStartDate, state.planningTime, opt.toIntOrNull() ?: 60, state.planningWeeksCount)
+                            }
+                        )
+                        PlannerFieldTile(
+                            modifier = Modifier.weight(1f),
+                            label = trW(state.language, "Hetek száma", "Weeks count", "Anzahl Wochen", "Număr săptămâni"),
+                            value = "${state.planningWeeksCount}",
+                            dropdownOptions = listOf("1", "2", "4", "6", "8", "12"),
+                            onSelectOption = { opt ->
+                                onUpdatePlanningParams(state.planningCadenceHu, state.planningFirstDayHu, state.planningStartDate, state.planningTime, state.planningDurationMin, opt.toIntOrNull() ?: 4)
+                            }
+                        )
+                    }
+
+                    Button(
+                        onClick = onPlanMonthlyWorkouts,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = palette.primary,
+                            contentColor = palette.onPrimary
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                    ) {
+                        Text(
+                            text = trW(state.language, "Edzések megtervezése", "Plan workouts", "Trainings planen", "Planifică antrenamentele"),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
+                        )
                     }
                 }
             }
@@ -2135,145 +2267,7 @@ fun CalendarPlannerScreen(
             }
         }
     }
-    if (planningOpen) {
-        com.example.ui.components.CompactCalendarDialog(title = trW(state.language, "Tervezés", "Planning", "Planung", "Planificare"), tag = "calendar_planning_dialog",
-            onClose = { planningOpen = false }) {
-            // 3. EXACT SCREENSHOT 7 MONTHLY PLANNER & REPLAN CARD
-            Surface(
-                shape = RoundedCornerShape(22.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .trainPilotBorder(TrainPilotFrames.panelWidth, palette.cardBorder, RoundedCornerShape(22.dp))
-            ) {
-                Column(
-                    modifier = Modifier.padding(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = activeProgramTitle,
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            color = palette.textPrimary,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 10.dp)
-                        )
-                        Button(
-                            onClick = { planningOpen = false; onOpenReplanModal(true) },
-                            modifier = Modifier.heightIn(min = 46.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = palette.primary,
-                                contentColor = palette.onPrimary
-                            )
-                        ) {
-                            Text(
-                                text = trW(state.language, "Újratervezés", "Replan", "Neu planen", "Replanificare"),
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold)
-                            )
-                        }
-                    }
 
-                    val monthDates = remember(displayedYearMonth) {
-                        (1..displayedYearMonth.lengthOfMonth()).map { d ->
-                            "${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${d.toString().padStart(2, '0')}."
-                        }
-                    }
-
-                    val cadenceMap = listOf("Minden második nap", "Heti 3 nap (H-Sze-P)", "Heti 4 nap", "Minden nap").associateBy { localizeCadenceLabel(it) }
-                    val firstDayMap = listOf("Alap A", "Alap B").associateBy { localizeFirstDayLabel(it) }
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        PlannerFieldTile(
-                            modifier = Modifier.weight(1f),
-                            label = trW(state.language, "Tervezési ritmus", "Planning cadence", "Planungsrhythmus", "Ritm de planificare"),
-                            value = localizeCadenceLabel(state.planningCadenceHu),
-                            showChevron = true,
-                            dropdownOptions = cadenceMap.keys.toList(),
-                            onSelectOption = { opt ->
-                                val canonical = cadenceMap[opt] ?: opt
-                                onUpdatePlanningParams(canonical, state.planningFirstDayHu, state.planningStartDate, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
-                            }
-                        )
-                        PlannerFieldTile(
-                            modifier = Modifier.weight(1f),
-                            label = trW(state.language, "Első edzésnap", "First workout day", "Erster Trainingstag", "Prima zi de antrenament"),
-                            value = localizeFirstDayLabel(state.planningFirstDayHu),
-                            showChevron = true,
-                            dropdownOptions = firstDayMap.keys.toList(),
-                            onSelectOption = { opt ->
-                                val canonical = firstDayMap[opt] ?: opt
-                                onUpdatePlanningParams(state.planningCadenceHu, canonical, state.planningStartDate, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
-                            }
-                        )
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        PlannerFieldTile(
-                            modifier = Modifier.weight(1f),
-                            label = trW(state.language, "Kezdőnap", "Start date", "Startdatum", "Data de început"),
-                            value = state.planningStartDate,
-                            showCalendarIcon = true,
-                            dropdownOptions = monthDates,
-                            onSelectOption = { opt ->
-                                onUpdatePlanningParams(state.planningCadenceHu, state.planningFirstDayHu, opt, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
-                            }
-                        )
-                        PlannerFieldTile(
-                            modifier = Modifier.weight(1f),
-                            label = trW(state.language, "Időpont", "Time", "Uhrzeit", "Ora"),
-                            value = state.planningTime,
-                            dropdownOptions = listOf("07:00", "08:30", "10:00", "16:00", "17:30", "18:00", "19:30"),
-                            onSelectOption = { opt ->
-                                onUpdatePlanningParams(state.planningCadenceHu, state.planningFirstDayHu, state.planningStartDate, opt, state.planningDurationMin, state.planningWeeksCount)
-                            }
-                        )
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        PlannerFieldTile(
-                            modifier = Modifier.weight(1f),
-                            label = trW(state.language, "Időtartam (perc)", "Duration (min)", "Dauer (Min.)", "Durată (min)"),
-                            value = "${state.planningDurationMin}",
-                            dropdownOptions = listOf("30", "45", "60", "75", "90"),
-                            onSelectOption = { opt ->
-                                onUpdatePlanningParams(state.planningCadenceHu, state.planningFirstDayHu, state.planningStartDate, state.planningTime, opt.toIntOrNull() ?: 60, state.planningWeeksCount)
-                            }
-                        )
-                        PlannerFieldTile(
-                            modifier = Modifier.weight(1f),
-                            label = trW(state.language, "Hetek száma", "Weeks count", "Anzahl Wochen", "Număr săptămâni"),
-                            value = "${state.planningWeeksCount}",
-                            dropdownOptions = listOf("1", "2", "4", "6", "8", "12"),
-                            onSelectOption = { opt ->
-                                onUpdatePlanningParams(state.planningCadenceHu, state.planningFirstDayHu, state.planningStartDate, state.planningTime, state.planningDurationMin, opt.toIntOrNull() ?: 4)
-                            }
-                        )
-                    }
-
-                    Button(
-                        onClick = { onPlanMonthlyWorkouts(); planningOpen = false },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = palette.primary,
-                            contentColor = palette.onPrimary
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp)
-                    ) {
-                        Text(
-                            text = trW(state.language, "Edzések megtervezése", "Plan workouts", "Trainings planen", "Planifică antrenamentele"),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
-                        )
-                    }
-                }
-            }
-        }
-    }
 
     // 4. EXACT SCREENSHOT 8 "Edzések újratervezése" MODAL DIALOG
     if (state.showReplanModal) {
