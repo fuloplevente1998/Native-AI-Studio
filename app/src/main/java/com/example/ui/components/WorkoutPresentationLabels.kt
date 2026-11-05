@@ -2,9 +2,14 @@ package com.example.ui.components
 
 import com.example.model.AppLanguage
 import com.example.model.ExerciseItem
+import com.example.model.ExerciseSetItem
 
 /** Display-only labels; no load, repetitions, side count or volume conversion. */
 internal data class StrengthColumnLabels(val weight: String, val repetitions: String)
+
+/** Visiting an exercise, or completing just one set, is not completion. */
+internal fun exerciseFullyCompleted(sets: List<ExerciseSetItem>?): Boolean =
+    !sets.isNullOrEmpty() && sets.all { it.completed }
 
 internal fun strengthColumnLabels(exercise: ExerciseItem?, language: AppLanguage): StrengthColumnLabels {
     fun word(hu: String, en: String, de: String, ro: String) = when (language) {

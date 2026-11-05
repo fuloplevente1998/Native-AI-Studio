@@ -118,6 +118,27 @@ class StudioSessionMeasurementRegressionTest {
         assertTrue(PhoneWorkoutExecution.store(context).snapshot()?.optBoolean("active") != true)
     }
 
+    @Test fun exerciseStripNavigationPreservesEverySetAndNeverMarksVisitedExercisesDone() {
+        val model = model()
+        val first = strength(model)
+        val second = timed(model)
+        model.startWorkoutWithExercises(listOf(first, second))
+        awaitStarted(model)
+        val before = ActiveWorkoutStore.current(context)!!
+        val original = before.getJSONArray("exercises").toString()
+        model.switchCurrentActiveExercise(second)
+        await { model.uiState.value.selectedExerciseId == second.id }
+        assertEquals(original, ActiveWorkoutStore.current(context)!!.getJSONArray("exercises").toString())
+        assertTrue(model.uiState.value.activeSetsByExerciseId.values.flatten().none { it.completed })
+        model.switchCurrentActiveExercise(first)
+        await { model.uiState.value.selectedExerciseId == first.id }
+        val after = ActiveWorkoutStore.current(context)!!
+        assertEquals(original, after.getJSONArray("exercises").toString())
+        assertEquals(before.getString("workoutId"), after.getString("workoutId"))
+        assertEquals(before.getLong("generation"), after.getLong("generation"))
+        assertTrue(model.uiState.value.activeSets.none { it.completed })
+    }
+
     @Test fun watchSelectionUpdatesTheStudioTargetAndRepeatedStartKeepsOneNativeStopwatch() {
         val model = model()
         val timed = timed(model)

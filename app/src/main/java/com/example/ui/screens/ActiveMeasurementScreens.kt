@@ -253,7 +253,8 @@ fun ActiveStrengthWorkoutScreen(
     onPreviousExercise: () -> Unit = onBack,
     onNextExercise: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
     onSwitchExercise: (ExerciseItem) -> Unit = {},
-    onOpenExerciseLibrary: () -> Unit = {}
+    onOpenExerciseLibrary: () -> Unit = {},
+    exerciseFeedback: @Composable () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val restMin = uiState.restTimerRemainingSec / 60
@@ -278,6 +279,7 @@ fun ActiveStrengthWorkoutScreen(
     } else {
         tr(lang, "Láb • Kézisúlyzó • 3×8–20 • Pihenő: 90 mp", "Legs • Dumbbell • 3×8–20 • Rest: 90 s", "Beine • Kurzhantel • 3×8–20 • Pause: 90 Sek.", "Picioare • Ganteră • 3×8–20 • Pauză: 90 sec")
     }
+    val coachOwner = com.example.ui.components.rememberStudioWorkoutCoachOwner()
     val columnLabels = com.example.ui.components.strengthColumnLabels(currentExercise, uiState.language)
     val setTableScroll = rememberScrollState()
     val tableTextScale = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
@@ -503,8 +505,8 @@ fun ActiveStrengthWorkoutScreen(
                     ) {
                         workoutExercises.forEachIndexed { idx, exItem ->
                             val isCurrent = idx == currentExerciseIdx
-                            val isDone = idx < currentExerciseIdx ||
-                                (uiState.activeSetsByExerciseId[exItem.id]?.any { it.completed } == true)
+                            val isDone = com.example.ui.components.exerciseFullyCompleted(
+                                if (isCurrent) uiState.activeSets else uiState.activeSetsByExerciseId[exItem.id])
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
                                 color = when {
@@ -929,7 +931,8 @@ fun ActiveStrengthWorkoutScreen(
         }
 
         // Canonical history-based preview and explicit approval; no local progress formula.
-        item { com.example.ui.components.StudioWorkoutCoachPanel(uiState.selectedExerciseId) }
+        item(key = "active_exercise_feedback") { exerciseFeedback() }
+        item(key = "active_coach") { com.example.ui.components.StudioWorkoutCoachPanel(uiState.selectedExerciseId, coachOwner) }
 
         }
 
@@ -1315,7 +1318,8 @@ fun ActiveTimedWorkoutScreen(
     onPreviousExercise: () -> Unit = onBack,
     onNextExercise: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
     onSwitchExercise: (ExerciseItem) -> Unit = {},
-    onOpenExerciseLibrary: () -> Unit = {}
+    onOpenExerciseLibrary: () -> Unit = {},
+    exerciseFeedback: @Composable () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val workoutExercises = remember(uiState.activeWorkoutExercises, uiState.exercises) {
@@ -1773,6 +1777,7 @@ fun ActiveTimedWorkoutScreen(
             }
         }
 
+            item(key = "active_exercise_feedback") { exerciseFeedback() }
         }
 
         // Fixed Sticky Bottom navigation buttons
@@ -1850,7 +1855,8 @@ fun ActiveBilateralWorkoutScreen(
     onPreviousExercise: () -> Unit = onBack,
     onNextExercise: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
     onSwitchExercise: (com.example.model.ExerciseItem) -> Unit = {},
-    onOpenExerciseLibrary: () -> Unit = {}
+    onOpenExerciseLibrary: () -> Unit = {},
+    exerciseFeedback: @Composable () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
 
@@ -2825,6 +2831,7 @@ fun ActiveBilateralWorkoutScreen(
                     }
                 }
             }
+            item(key = "active_exercise_feedback") { exerciseFeedback() }
         }
 
         // Fixed Sticky Bottom Area: Rest Timer Dock + Előző / Következő Navigation

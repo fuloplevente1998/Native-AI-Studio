@@ -389,6 +389,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         com.example.ui.components.StudioWorkoutHandoverBar(uiState, strings) {
                             viewModel.toggleWatchControlMode(context as? android.app.Activity)
                         }
+                        com.example.ui.components.StudioActiveWorkoutSessionInfo(uiState)
                     }
                 }
             }
@@ -410,6 +411,12 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     .border(TrainPilotFrames.page(palette.cardBorder, palette.primary), RoundedCornerShape(24.dp))
                     .padding(1.dp)
             ) {
+                val nextWithFeedback = if (com.example.ui.components.isActiveMeasurementScreen(uiState.currentSubScreen))
+                    com.example.ui.components.rememberExerciseFeedbackNext(uiState,
+                        onNext = viewModel::nextActiveExercise,
+                        onEffort = { id, index -> viewModel.updateExerciseFeedback(id, index = index) },
+                        onNote = { id, note -> viewModel.updateExerciseFeedback(id, note = note) })
+                    else ({})
                 when (uiState.currentSubScreen) {
                     SubScreen.PROGRAMS_LIST -> {
                         ProgramsListScreen(
@@ -553,7 +560,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onAddSet = { viewModel.addSet() },
                             onToggleAutoMode = { enabled -> viewModel.toggleAutoMode(enabled) },
                             onPreviousExercise = { viewModel.previousActiveExercise() },
-                            onNextExercise = { viewModel.nextActiveExercise() },
+                            onNextExercise = nextWithFeedback,
+                            exerciseFeedback = { com.example.ui.components.StudioActiveExerciseFeedback(uiState,
+                                onEffort = { id, index -> viewModel.updateExerciseFeedback(id, index = index) },
+                                onNote = { id, note -> viewModel.updateExerciseFeedback(id, note = note) }) },
                             onSwitchExercise = { ex -> viewModel.switchCurrentActiveExercise(ex) },
                             onOpenExerciseLibrary = { viewModel.openActiveExerciseLibrary() }
                         )
@@ -567,7 +577,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                             onSelectMeasurementMode = { mode -> viewModel.navigateToSubScreen(mode, MainTab.WORKOUT) },
                             onPreviousExercise = { viewModel.previousActiveExercise() },
-                            onNextExercise = { viewModel.nextActiveExercise() },
+                            onNextExercise = nextWithFeedback,
+                            exerciseFeedback = { com.example.ui.components.StudioActiveExerciseFeedback(uiState,
+                                onEffort = { id, index -> viewModel.updateExerciseFeedback(id, index = index) },
+                                onNote = { id, note -> viewModel.updateExerciseFeedback(id, note = note) }) },
                             onSwitchExercise = { ex -> viewModel.switchCurrentActiveExercise(ex) },
                             onOpenExerciseLibrary = { viewModel.openActiveExerciseLibrary() }
                         )
@@ -593,7 +606,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onToggleRestRunning = { viewModel.toggleRestTimerRunning() },
                             onSkipRest = { viewModel.skipRestTimer() },
                             onPreviousExercise = { viewModel.previousActiveExercise() },
-                            onNextExercise = { viewModel.nextActiveExercise() },
+                            onNextExercise = nextWithFeedback,
+                            exerciseFeedback = { com.example.ui.components.StudioActiveExerciseFeedback(uiState,
+                                onEffort = { id, index -> viewModel.updateExerciseFeedback(id, index = index) },
+                                onNote = { id, note -> viewModel.updateExerciseFeedback(id, note = note) }) },
                             onSwitchExercise = { ex -> viewModel.switchCurrentActiveExercise(ex) },
                             onOpenExerciseLibrary = { viewModel.openActiveExerciseLibrary() }
                         )

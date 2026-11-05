@@ -4,7 +4,23 @@ Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
 
-## Legújabb átadás – telefonos elvetés lezárja az órás sessiont, 2753 / d2766f7
+## Folyamatban – #171 aktív edzés visszajelzések
+
+Root egyedül, fix/active-workout-feedback-followup ágon. A felső gyakorlatcsík
+korábban az aktuálisnál kisebb indexet is késznek festette; a navigáció nem
+állította készre a natív sorozatokat. Most csak nem üres, teljesen kész sorozatlista
+kap pipát. Közös kompakt nap/idő sor a meglévő dayName és activeIntervals alapján;
+explicit szünet alatt megáll, újranyitás nem indít második órát. Képernyő-kikapcsolás
+háttérmérési szerződése változatlan. Coach-store képernyő-élettartamú, lazy-scroll
+nem törli; azonos cél újraolvasásakor a meglévő tanács látható marad.
+Visszajelzés a sorozatok után a strength/timed/bilateral oldalon; Következő előtt
+opcionális app-stílusú kérdés, explicit kihagyással. Session/generation/gyakorlat/
+képernyő változás bezárja a régi kérdést. A meglévő stabil ID-s feedback-mentés
+és opcionális összegzés megmarad. Hét új regresszió, a meglévő Coach UI-teszt
+kibővítve; helyi diff-check rendben, teljes signed Actions-kapu és fizikai próba
+még hátravan. Verzió/signer/workflow változatlan.
+
+## Korábbi átadás – telefonos elvetés lezárja az órás sessiont, 2753 / d2766f7
 
 #168 / PR169 mainen: a közös natív discard finalizer a tartós törlés után publikálja
 a lezárt snapshotot és frissíti az órás kezdőlapot. A Studio és a natív képernyő
