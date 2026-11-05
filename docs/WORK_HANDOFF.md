@@ -68,7 +68,7 @@ két új agenttel befejezve. **A Coach/egészségnapló már nem félkész WIP.*
 
 A készülékes elfogadás továbbra is külön feladat, a jegyeket nem zártuk le pusztán
 CI alapján. [Közös telefonos ellenőrzőlista](TEST_MAIN_FOLLOWUP_2026-11-05.md).
-Következő lépés a felhasználó által kért következő APK és a készülékes visszateszt;
+APK-kérés esetén a következő lépés a signed build és a készülékes visszateszt;
 a forrás és a teljes közös CI már ellenőrzött. A bizonyítékot rögzítő későbbi
 dokumentációs commit nem változtatja az alkalmazás/teszt/workflow forrását.
 APK-kéréskor csak a meglévő signed workflow: telefon release + R8/shrunk Wear release.
