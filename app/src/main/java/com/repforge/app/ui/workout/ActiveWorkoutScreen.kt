@@ -1,5 +1,8 @@
 package com.repforge.app.ui.workout
 
+import com.example.ui.components.WorkoutControlAppearance
+import androidx.compose.foundation.layout.heightIn
+
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
@@ -319,11 +322,18 @@ fun ActiveWorkoutScreen(
             val navigationTargets = state.exercises.map { ex -> ex.sets.firstOrNull()?.let {
                 NativeWorkoutTarget(state.workoutId, state.generation, ex.exerciseId, it.setId)
             } }
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                TextButton(onClick = { navigationTargets.getOrNull(selectedIndex - 1)?.let(viewModel::selectExercise) },
-                    enabled = selectedIndex > 0 && state.timerOwner == "phone" && !state.isFinishing) { Text(strings.getString(R.string.native_workout_previous), color = colors.accent) }
-                Text("${if (state.exercises.isEmpty()) 0 else selectedIndex + 1} / ${state.exercises.size}", color = colors.muted, modifier = Modifier.padding(top = 14.dp))
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                TrainPilotOutlinedButton(onClick = { navigationTargets.getOrNull(selectedIndex - 1)?.let(viewModel::selectExercise) },
+                    enabled = selectedIndex > 0 && state.timerOwner == "phone" && !state.isFinishing,
+                    colors = WorkoutControlAppearance.secondaryColors(),
+                    border = WorkoutControlAppearance.secondaryBorder(selectedIndex > 0 && state.timerOwner == "phone" && !state.isFinishing),
+                    shape = RoundedCornerShape(12.dp), modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
+                    Text(strings.getString(R.string.native_workout_previous))
+                }
+                Text("${if (state.exercises.isEmpty()) 0 else selectedIndex + 1} / ${state.exercises.size}", color = colors.muted)
                 TextButton(onClick = { navigationTargets.getOrNull(selectedIndex + 1)?.let(viewModel::selectExercise) },
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                     enabled = selectedIndex < state.exercises.lastIndex && state.timerOwner == "phone" && !state.isFinishing) { Text(strings.getString(R.string.native_workout_next), color = colors.accent) }
             }
 

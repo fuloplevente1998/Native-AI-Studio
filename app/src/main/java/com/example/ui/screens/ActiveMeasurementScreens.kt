@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.WorkoutControlAppearance
+
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
@@ -1193,18 +1195,17 @@ fun ActiveStrengthWorkoutScreen(
                 ) {
                     TrainPilotOutlinedButton(
                         onClick = onPreviousExercise,
+                        colors = WorkoutControlAppearance.secondaryColors(),
+                        border = WorkoutControlAppearance.secondaryBorder(),
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp)
+                            .heightIn(min = 48.dp)
                             .testTag("active_prev_exercise_btn")
                     ) {
                         Text(
                             text = if (currentExerciseIdx > 0) "< $prevWord (${currentExerciseIdx}/$totalExercisesCount)" else "< $prevWord",
-                            color = palette.textPrimary,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
 
@@ -1781,10 +1782,12 @@ fun ActiveTimedWorkoutScreen(
             ) {
                 TrainPilotOutlinedButton(
                     onClick = onPreviousExercise,
+                    colors = WorkoutControlAppearance.secondaryColors(),
+                    border = WorkoutControlAppearance.secondaryBorder(),
                     shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.weight(1f).height(48.dp)
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                 ) {
-                    Text(tr(lang, "< Előző", "< Previous", "< Zurück", "< Anterior"), color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
+                    Text(tr(lang, "< Előző", "< Previous", "< Zurück", "< Anterior"), fontWeight = FontWeight.SemiBold)
                 }
                 Button(
                     onClick = onNextExercise,
@@ -2904,13 +2907,15 @@ fun ActiveBilateralWorkoutScreen(
                 ) {
                     TrainPilotOutlinedButton(
                         onClick = onPreviousExercise,
+                        colors = WorkoutControlAppearance.secondaryColors(),
+                        border = WorkoutControlAppearance.secondaryBorder(),
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp)
+                            .heightIn(min = 48.dp)
                             .testTag("bilateral_prev_exercise_btn")
                     ) {
-                        Text(tr(lang, "< Előző", "< Previous", "< Zurück", "< Anterior"), color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
+                        Text(tr(lang, "< Előző", "< Previous", "< Zurück", "< Anterior"), fontWeight = FontWeight.SemiBold)
                     }
                     Button(
                         onClick = onNextExercise,
@@ -4109,14 +4114,16 @@ fun WorkoutSummaryScreen(
             Spacer(modifier = Modifier.height(8.dp))
             TrainPilotOutlinedButton(
                 onClick = onDiscardWorkout,
+                colors = WorkoutControlAppearance.discardColors(),
+                border = WorkoutControlAppearance.discardBorder(),
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
+                    .heightIn(min = 48.dp)
             ) {
-                Icon(imageVector = Icons.Default.DeleteOutline, contentDescription = null, tint = palette.danger)
+                Icon(imageVector = Icons.Default.DeleteOutline, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(strings.discardWorkoutAction, color = palette.danger, fontWeight = FontWeight.SemiBold)
+                Text(strings.discardWorkoutAction, fontWeight = FontWeight.SemiBold)
             }
         }
     }
