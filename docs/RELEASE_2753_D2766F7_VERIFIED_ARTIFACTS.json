@@ -1,0 +1,143 @@
+{
+  "sourceSha": "d2766f715b1f98276a0460eedba75f43266b547a",
+  "applicationId": "com.TrainPilot.com",
+  "versionCode": 2753,
+  "versionName": "0.1.0-beta",
+  "artifactZipSha256": "3a2cacf409f6e15847ae17cd8541fb693437b22a5a809155b6de13403490bc46",
+  "testArtifactZipSha256": "c80a1f80b36ab0a986b5cc0b922fca2b0e6a2880d49b6fd99c77223ef3a562d4",
+  "apks": {
+    "phone": {
+      "bytes": 20515832,
+      "sha256": "128918c4eb6f9c467b0b0fd759f3ad0c6a31086e608cea5f529313b231035b5d",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "manifest": {
+        "versionCode": 2753,
+        "versionName": "0.1.0-beta",
+        "package": "com.TrainPilot.com"
+      }
+    },
+    "wear": {
+      "bytes": 4636863,
+      "sha256": "986204126534cc4adde15f16f21aea9423d0fff520ed275dac534a3ad0a292ce",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "manifest": {
+        "versionCode": 2753,
+        "versionName": "0.1.0-beta",
+        "package": "com.TrainPilot.com"
+      }
+    }
+  },
+  "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+  "downloadedManifestAndV2CertificateVerified": true,
+  "rawJUnit": {
+    "commit": "d2766f715b1f98276a0460eedba75f43266b547a",
+    "modules": {
+      "phone": {
+        "files": 69,
+        "tests": 374,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "wear": {
+        "files": 32,
+        "tests": 181,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "shared": {
+        "files": 0,
+        "tests": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": true
+      }
+    },
+    "total": {
+      "tests": 555,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "ciMetadata": {
+    "applicationId": "com.TrainPilot.com",
+    "versionCode": "2753",
+    "versionName": "0.1.0-beta",
+    "apkSha256": "128918c4eb6f9c467b0b0fd759f3ad0c6a31086e608cea5f529313b231035b5d",
+    "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+    "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+    "mapsApiKeyConfigured": true,
+    "ciCheckout": "d2766f715b1f98276a0460eedba75f43266b547a",
+    "wear": {
+      "applicationId": "com.TrainPilot.com",
+      "versionCode": "2753",
+      "versionName": "0.1.0-beta",
+      "apkSha256": "986204126534cc4adde15f16f21aea9423d0fff520ed275dac534a3ad0a292ce",
+      "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "variant": "release",
+      "bytes": 4636863
+    },
+    "wearCompanionCapabilityRetained": true,
+    "dataLayerPairIdentityVerified": true,
+    "wearHardwareRequired": true
+  },
+  "signedRun": 42114786836,
+  "signedRunUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/42114786836",
+  "signedRunConclusion": "success",
+  "signedArtifactId": 13456011679,
+  "testArtifactId": 13456696220,
+  "issue": 168,
+  "implementationPullRequest": 169,
+  "driveFolderId": "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9",
+  "drive": {
+    "phone": {
+      "id": "1v7ZPkmJjq4ogZf2pQUJrSTQufe3H_v7c",
+      "title": "TrainPilot-2753-d2766f7-phone-release.apk",
+      "mime_type": "application/vnd.android.package-archive",
+      "size": "20515832",
+      "url": "https://drive.google.com/file/d/1v7ZPkmJjq4ogZf2pQUJrSTQufe3H_v7c/view?usp=drivesdk",
+      "display_url": "https://drive.google.com/file/d/1v7ZPkmJjq4ogZf2pQUJrSTQufe3H_v7c/view?usp=drivesdk",
+      "file_or_folder": "file",
+      "created_time": null,
+      "modified_time": null,
+      "parent_ids": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "drive_id": null,
+      "current_user_can_share": null,
+      "has_augmented_permissions": null,
+      "shared": null,
+      "permissions": null,
+      "source_visibility_status": "access_not_verified"
+    },
+    "wear": {
+      "id": "1CKvcr7q74Z772HhjDXfXP2COjQVxmsZW",
+      "title": "TrainPilot-2753-d2766f7-wear-release.apk",
+      "mime_type": "application/vnd.android.package-archive",
+      "size": "4636863",
+      "url": "https://drive.google.com/file/d/1CKvcr7q74Z772HhjDXfXP2COjQVxmsZW/view?usp=drivesdk",
+      "display_url": "https://drive.google.com/file/d/1CKvcr7q74Z772HhjDXfXP2COjQVxmsZW/view?usp=drivesdk",
+      "file_or_folder": "file",
+      "created_time": null,
+      "modified_time": null,
+      "parent_ids": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "drive_id": null,
+      "current_user_can_share": null,
+      "has_augmented_permissions": null,
+      "shared": null,
+      "permissions": null,
+      "source_visibility_status": "access_not_verified"
+    }
+  },
+  "driveMetadataReadbackVerified": true,
+  "physicalDeviceAcceptance": "pending",
+  "scope": "Active workout discard on phone propagates terminal snapshot to matching watch workout. Saved journal deletion is outside this fix."
+}

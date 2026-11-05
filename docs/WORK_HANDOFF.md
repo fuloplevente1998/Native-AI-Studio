@@ -4,7 +4,36 @@ Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
 
-## Legújabb átadás – órás indítás és előtöltés, 2753 / 184ee46
+## Legújabb átadás – telefonos elvetés lezárja az órás sessiont, 2753 / d2766f7
+
+#168 / PR169 mainen: a közös natív discard finalizer a tartós törlés után publikálja
+a lezárt snapshotot és frissíti az órás kezdőlapot. A Studio és a natív képernyő
+ugyanazt az útvonalat használja. Peer-visszakapcsoláskor újraküldhető a megőrzött
+lezárás. Az óra azonos workout ID / owner epoch, nem régebbi revision és kezdés
+utáni időbélyeg mellett fogadja el a lezárást helyi sequence-változás esetén is.
+Másik session, régi epoch/revision/időbélyeg nem törölhet aktív edzést.
+A munka kizárólag root által, új agent nélkül készült.
+
+Signed forrás **d2766f715b1f98276a0460eedba75f43266b547a**, run **42114786836 SUCCESS**.
+Egy közös signed build és teljes JVM-kapu: **555 =374 telefon +181 Wear**,
+0 failure/error/skipped, shared NO-SOURCE. Három új regresszió: commit utáni
+publikáció szállítási hibával; helyi sequence melletti lezárás; idegen/elavult
+lezárás elutasítása. Tesztgyengítés és külön ismételt teljes CI nélkül.
+Letöltött ZIP-digest, nyers XML/source/count, tényleges APK-hash/bináris manifest/
+APK v2 tanúsítvány és a CI persistent-signer/páros kapuja ellenőrizve.
+Változatlan2753 / 0.1.0-beta / com.TrainPilot.com, korábbi tartós signer.
+
+- [Telefon release](https://drive.google.com/file/d/1v7ZPkmJjq4ogZf2pQUJrSTQufe3H_v7c/view?usp=drivesdk)
+- [Wear optimalizált release](https://drive.google.com/file/d/1CKvcr7q74Z772HhjDXfXP2COjQVxmsZW/view?usp=drivesdk)
+- TrainPilot Native mappa, régi fájlok megőrizve; név/MIME/bájt/parent visszaolvasva.
+  [Gépi bizonyíték](RELEASE_2753_D2766F7_VERIFIED_ARTIFACTS.json).
+- Mindkét alkalmazás frissítendő. Fizikai próba: telefonos aktív Elvetés után az óra
+  zárjon, kapcsolatkimaradás/visszatérés után se maradjon futó session.
+- #168 készülékes elfogadásig nyitva. A mentett naplóedzés törlését ez a javítás
+  nem célozza; a felhasználónak feltett pontosító kérdésre még nincs válasz.
+- Ez a későbbi dokumentációs commit nem változtat az ellenőrzött appforráson.
+
+## Korábbi átadás – órás indítás és előtöltés, 2753 / 184ee46
 
 #165 / PR166 mainen: a Studio az új, órán indított sessiont élőben átveszi a
 meglévő snapshot-projekcióba, navigáció és telefonos motorindítás nélkül. Az órás
