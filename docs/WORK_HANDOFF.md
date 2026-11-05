@@ -20,6 +20,14 @@ képernyő változás bezárja a régi kérdést. A meglévő stabil ID-s feedba
 kibővítve; helyi diff-check rendben, teljes signed Actions-kapu és fizikai próba
 még hátravan. Verzió/signer/workflow változatlan.
 
+Az első signed run42126841059: fordítás sikeres, 562 tesztből egy új navigációs
+regresszió elakadt. Oka: a kijelölt gyakorlat már megjelent a snapshotból, de az
+aszinkron katalógus/presentation job még futott, ezért a gyors visszalépési kérést
+az isActive guard eldobta. A már sorban lévő gyakorlat kiválasztása most közvetlen,
+szigorúan session/generation/target ID-hoz kötött natív select, a meglévő snapshot
+observerrel. A könyvtári csere külön aszinkron/védett út marad. Ugyanaz a regresszió
+gyors egymás utáni két kattintást is ellenőriz; nincs várakozásnövelés vagy gyengítés.
+
 ## Korábbi átadás – telefonos elvetés lezárja az órás sessiont, 2753 / d2766f7
 
 #168 / PR169 mainen: a közös natív discard finalizer a tartós törlés után publikálja

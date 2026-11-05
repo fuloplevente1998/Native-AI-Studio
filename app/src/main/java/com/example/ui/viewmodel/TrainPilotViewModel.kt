@@ -3766,7 +3766,26 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun switchCurrentActiveExercise(exercise: ExerciseItem) {
-        try { switchCurrentActiveExercise(exercise, currentExerciseSelection()) }
+        try {
+            val state = _uiState.value
+            if (state.activeWorkoutExercises.any { it.id == exercise.id }) {
+                // A queued pill is navigation, not an asynchronous library replacement.
+                // Commit immediately: a previous library/presentation job must not drop a tap.
+                val context = requireNotNull(nativeContext)
+                val frame = com.repforge.app.NativeWorkoutEditing.project(context)
+                check(frame.optString("workoutId") == state.activeWorkoutId &&
+                    frame.optLong("generation") == state.activeWorkoutGeneration) { "Az edzés időközben megváltozott." }
+                val rows = frame.getJSONArray("exercises")
+                val selected = (0 until rows.length()).map { rows.getJSONObject(it) }
+                    .single { it.optString("id") == exercise.id }
+                com.repforge.app.NativeWorkoutEditing.selectExercise(context,
+                    com.repforge.app.NativeWorkoutTarget(frame.getString("workoutId"), frame.getLong("generation"),
+                        exercise.id, selected.getJSONArray("sets").getJSONObject(0).getString("setId")))
+                // The existing snapshot observer projects the committed selection and mode.
+                return
+            }
+            switchCurrentActiveExercise(exercise, currentExerciseSelection())
+        }
         catch (error: Exception) { _uiState.update { it.copy(statusBannerMessage = error.message) } }
     }
 
