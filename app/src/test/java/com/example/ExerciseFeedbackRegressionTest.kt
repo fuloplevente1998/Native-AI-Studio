@@ -21,6 +21,23 @@ class ExerciseFeedbackRegressionTest {
                 .put("setId", "stable").put("done", true).put("weight", 25).put("reps", "8").put("actualRir", 0)))))
     private fun exercise(workout: JSONObject) = workout.getJSONArray("exercises").getJSONObject(0)
 
+    @Test fun overallAnswersNeverOverwriteExplicitExerciseAnswersAndFallbackOnlyFillsMissingEffort() {
+        val raw = workout()
+        Feedback.applyExercises(raw, "live", mapOf("squat" to 4), mapOf("squat" to "Saját gyakorlatválasz"), 1)
+        val own = exercise(raw).toString()
+        for (index in Feedback.efforts.indices) {
+            raw.put("feedback", Feedback.chosen(index, "Az egész edzés", 2))
+            assertEquals(own, exercise(raw).toString())
+            assertEquals("hard", Feedback.readOwnExerciseEffort(exercise(raw)))
+            assertEquals("hard", Feedback.readExerciseEffort(exercise(raw), raw))
+            assertEquals("Saját gyakorlatválasz", Feedback.readExerciseNote(exercise(raw)))
+            val missing = JSONObject().put("id", "unanswered")
+            val overall = Feedback.efforts[index].let { if (it == "right") "good" else it }
+            assertEquals(overall, Feedback.readExerciseEffort(missing, raw))
+            assertFalse(missing.has("effort")) // read-only fallback does not manufacture an exercise answer
+        }
+    }
+
     @Test fun annotationsMergeOntoLatestCanonicalSetsAndReachCoach() {
         val input = workout()
         Feedback.attachExerciseEdits(input, "live", mapOf("squat" to 5), mapOf("squat" to "Térdfájdalom"))
