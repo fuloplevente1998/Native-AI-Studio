@@ -153,11 +153,11 @@ interface WorkoutHistoryDao {
     suspend fun getCoachExerciseCandidates(exerciseId: String, fromEpoch: Long, toEpoch: Long,
         beforeEpoch: Long?, beforeId: String, limit: Int): List<WorkoutHistoryEntity>
 
-    /** Bounded read fallback for legacy timestamps whose raw date was not epoch-indexed. */
+    /** Legacy local/date-only finished values were indexed as zero or as startedEpochMs. */
     @Query("""
         SELECT DISTINCT w.* FROM workout_history w
         INNER JOIN workout_history_exercises e ON e.workoutHistoryId = w.id
-        WHERE e.exerciseId = :exerciseId AND w.finishedEpochMs <= 0
+        WHERE e.exerciseId = :exerciseId AND (w.finishedEpochMs <= 0 OR w.finishedEpochMs = w.startedEpochMs)
           AND (:beforeId IS NULL OR w.id < :beforeId)
           AND NOT EXISTS (SELECT 1 FROM history_tombstones t
             WHERE t.primaryId IN (w.id, w.syncId, w.workoutKey) OR t.workoutKey = w.workoutKey)

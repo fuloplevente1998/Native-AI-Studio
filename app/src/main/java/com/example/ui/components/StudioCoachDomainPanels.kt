@@ -170,6 +170,52 @@ internal fun StudioCoachNextTrainingCard(
     }
 }
 
+/** Canonical read-only advice is available independently of explicit mode approval. */
+@Composable
+internal fun StudioWorkoutCoachAdvice(state: WorkoutCoachAdviceState, onReload: () -> Unit) {
+    val palette = LocalTrainPilotPalette.current
+    val lang = com.example.localization.LocalTrainPilotStrings.current.language.code
+    val text = nativeResources(LocalContext.current, lang)
+    when {
+        state.loading -> {
+            CircularProgressIndicator(Modifier.size(24.dp).testTag("studio_active_coach_loading"))
+            Text(coachTr(lang, "Előzmények betöltése…", "Loading history…", "Verlauf wird geladen…", "Se încarcă istoricul…"), color = palette.textSecondary)
+        }
+        state.error -> Text(coachTr(lang, "A Coach adatai nem olvashatók. Próbáld újra a frissítést.", "Coach data could not be read. Try refreshing again.", "Coach-Daten konnten nicht gelesen werden. Bitte erneut aktualisieren.", "Datele Coach nu pot fi citite. Încearcă din nou actualizarea."),
+            color = palette.danger, modifier = Modifier.testTag("studio_active_coach_error"))
+        state.row != null -> {
+            val row = state.row
+            Text(NativeCoachAdviceText.label(text, row.advice.action), color = palette.primary,
+                modifier = Modifier.testTag("studio_active_coach_action"))
+            Text(NativeCoachAdviceText.reason(text, row.advice.reason), color = palette.textSecondary,
+                modifier = Modifier.testTag("studio_active_coach_reason"))
+            Text(coachTr(lang, "Megfelelő előzmény: ${row.advice.historyCount}", "Matching history: ${row.advice.historyCount}", "Passender Verlauf: ${row.advice.historyCount}", "Istoric relevant: ${row.advice.historyCount}"), color = palette.textSecondary)
+            if (row.advice.historyCount == 0 && row.advice.reason != "distance" &&
+                row.modePreview?.reason !in setOf("invalid-target", "non-strength-activity")) Text(coachTr(lang,
+                "Az elmúlt 90 napból nincs megfelelő, összehasonlítható előzmény ehhez a gyakorlathoz.",
+                "No matching, comparable history for this exercise in the last 90 days.",
+                "Kein passender, vergleichbarer Verlauf für diese Übung in den letzten 90 Tagen.",
+                "Nu există istoric comparabil pentru acest exercițiu în ultimele 90 de zile."),
+                color = palette.textSecondary, modifier = Modifier.testTag("studio_active_coach_no_history"))
+            if (row.advice.target.text.isNotBlank()) Text("${coachTr(lang, "Cél", "Target", "Ziel", "Țintă")}: ${row.advice.target.text}", color = palette.textSecondary)
+            if (row.advice.action in setOf("increase", "reduce", "start") && row.advice.weight > 0)
+                Text("${coachTr(lang, "Javasolt súly", "Suggested weight", "Empfohlenes Gewicht", "Greutate recomandată")}: ${row.advice.weight} kg" + when (row.loadType) {
+                    "per_hand" -> coachTr(lang, " kézenként", " per hand", " pro Hand", " pe mână")
+                    "total" -> coachTr(lang, " összesen", " total", " gesamt", " total")
+                    "single_dumbbell" -> coachTr(lang, " egy súlyzóval", " single dumbbell", " mit einer Kurzhantel", " cu o ganteră")
+                    else -> ""
+                }, color = palette.textPrimary, modifier = Modifier.testTag("studio_active_coach_weight"))
+            if (row.advice.nextReps.isNotEmpty()) Text("${coachTr(lang, "Javasolt ismétlések", "Suggested reps", "Empfohlene Wdh.", "Repetări recomandate")}: ${row.advice.nextReps.joinToString(" / ")}",
+                color = palette.textPrimary, modifier = Modifier.testTag("studio_active_coach_reps"))
+        }
+        else -> Text(coachTr(lang, "Nincs kiválasztott aktív gyakorlat.", "No active exercise selected.", "Keine aktive Übung ausgewählt.", "Niciun exercițiu activ selectat."), color = palette.textSecondary)
+    }
+    TextButton(onClick = onReload, enabled = !state.loading,
+        modifier = Modifier.testTag("studio_active_coach_refresh")) {
+        Text(coachTr(lang, "Coach frissítése", "Refresh Coach", "Coach aktualisieren", "Actualizează Coach"))
+    }
+}
+
 /** Apply only through the existing snapshot/ownership/settings/history-checked native proposal. */
 @Composable
 internal fun StudioWorkoutCoachPanel(exerciseId: String) {
@@ -184,6 +230,10 @@ internal fun StudioWorkoutCoachPanel(exerciseId: String) {
         viewModelStoreOwner = owner,
         factory = androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(app))
     val state by model.uiState.collectAsStateWithLifecycle()
+    val adviceModel: WorkoutCoachAdviceViewModel = viewModel(viewModelStoreOwner = owner,
+        factory = androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(app))
+    LaunchedEffect(exerciseId) { adviceModel.selectExercise(exerciseId) }
+    val adviceState by adviceModel.state.collectAsStateWithLifecycle()
     val palette = LocalTrainPilotPalette.current
     val lang = com.example.localization.LocalTrainPilotStrings.current.language.code
     if (state.modeReviewOpen) AlertDialog(
@@ -198,9 +248,8 @@ internal fun StudioWorkoutCoachPanel(exerciseId: String) {
             .trainPilotBorder(1.dp, palette.sectionBorder, RoundedCornerShape(18.dp))) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("TrainPilot Coach", style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
-            if (!state.explicitTrainingMode) {
-                Text(coachTr(lang, "A tartós progressziós módot az edzés előtt választhatod ki a Beállításokban. Az előző alkalom értékei ettől függetlenül betöltődnek.", "You can select the persistent progression mode in Settings before a workout. Previous session values still prefill.", "Den dauerhaften Progressionsmodus kannst du vor dem Training in den Einstellungen wählen.", "Poți selecta modul de progresie în Setări înainte de antrenament. Valorile anterioare se încarcă oricum."), color = palette.textSecondary)
-            } else {
+            StudioWorkoutCoachAdvice(if (adviceState.exerciseId == exerciseId) adviceState else WorkoutCoachAdviceState(exerciseId), adviceModel::reload)
+            if (state.explicitTrainingMode) {
                 OutlinedButton(onClick = { model.previewTrainingModeWeight(exerciseId) },
                     enabled = !state.modeProposalLoading && !state.isFinishing && !state.isPaused && state.timerOwner == "phone",
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("studio_active_coach_preview")) {

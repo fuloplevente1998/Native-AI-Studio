@@ -45,8 +45,13 @@ internal class NativeCoachAdviceRepository(private val db: TrainPilotDatabase) {
         val programId = if (frame.isNull("programId")) "" else frame.optString("programId")
         val quick = programId.isBlank() && (frame.optBoolean("quickWorkout") || frame.optString("type") == "quick")
         require(quick || programId.isNotBlank()) { "Missing workout context" }
-        val raw = if (quick) JSONObject() else JSONObject(requireNotNull(
-            db.programDao().getProgramWithDaysById(programId)) { "Missing program" }.program.rawJson)
+        val raw = if (quick) JSONObject() else {
+            val program = requireNotNull(db.programDao().getProgramWithDaysById(programId)) { "Missing program" }
+            val dayId = (if (frame.isNull("dayId")) "" else frame.optString("dayId"))
+                .ifBlank { frame.optString("workout") }
+            require(dayId.isNotBlank() && program.days.any { it.dayId == dayId }) { "Missing program day" }
+            JSONObject(program.program.rawJson)
+        }
         val rx = JSONObject((active.optJSONObject("prescription")
             ?: raw.optJSONObject("prescriptions")?.optJSONObject(exerciseId))?.toString() ?: "{}")
         for (key in listOf("loadType", "repUnit", "measurementType"))
@@ -59,55 +64,55 @@ internal class NativeCoachAdviceRepository(private val db: TrainPilotDatabase) {
         settings: TrainPilotUserSettings, readiness: NativeCoachReadiness.Result, now: Instant,
         quickWorkout: Boolean = false, activeExercise: JSONObject? = null): CoachExerciseAdvice {
         val id = library.id
-            val lib = JSONObject(library.rawJson).put("id", id).put("loadType", library.loadType)
-                .put("repUnit", library.repUnit).put("measurementType", library.measurementType)
-                .put("reps", library.defaultReps).put("sets", library.defaultSets).put("weight", library.defaultWeight)
-                .put("custom", library.custom)
-            activeExercise?.let { active ->
-                for (key in listOf("loadType", "repUnit", "measurementType"))
-                    if (!active.isNull(key) && active.optString(key).isNotBlank()) lib.put(key, active.get(key))
-            }
-            val selectedMode = NativeTrainingModes.resolveSavedJson(settings.trainingModes197Json, programId.takeIf { it.isNotBlank() })
-            val prescription = NativeCoachExerciseAdvice.target(lib, rx)
-            val rows = recent(id, programId, lib, rx, raw, now, quickWorkout)
-            val occurrences = rows.map { NativeCoachExerciseAdvice.occurrence(it.first, it.second, prescription) }
-            val base = occurrences.firstOrNull()?.weight ?: 0.0
-            val load = rx.optString("loadType", library.loadType)
-            val merged = JSONObject(lib.toString()).put("loadType", load)
-            val observed = if (load == "bodyweight") null else observedStep(id, load)
-            val step = NativeCoachExerciseAdvice.step(merged, base, settings.progressionSteps, observed)
-            // Explicit #197 mode proposals use the same canonical history/target/step.
-            // Unselected legacy keeps its existing unmodified recommendation motor.
-            val preview = NativeTrainingModeProgression.compute(selectedMode, merged,
-                prescription, occurrences, readiness, step)
-            val recommendation = if (preview == null) NativeCoachExerciseAdvice.recommend(
-                lib, rx, occurrences, prescription, readiness, step)
-            else NativeCoachExerciseAdvice.Advice(
-                action = if (preview.action == "variation") "hold" else preview.action,
-                reason = "mode197:${preview.trainingStyle}:${preview.reason}",
-                weight = preview.proposedWeight, baseWeight = preview.baselineWeight,
-                autoApply = false, historyCount = preview.historyCount, target = prescription,
-                nextReps = preview.nextReps
-            )
-            val lastRaw = db.workoutHistoryDao().getCoachExerciseCandidates(id, Long.MIN_VALUE, Long.MAX_VALUE, null, "", 1).firstOrNull()
-                ?.let { JSONObject(it.rawJson).optJSONArray("exercises") }
-            val lastEffort = (0 until (lastRaw?.length() ?: 0)).mapNotNull { lastRaw?.optJSONObject(it) }
-                .firstOrNull { it.optString("id") == id }?.optString("effort")
-            val name = when (settings.language) {
-                "en" -> library.nameEn; "de" -> library.nameDe; "ro" -> library.nameRo; else -> library.nameHu
-            }.ifBlank { library.nameHu }
-            return CoachExerciseAdvice(id, name, NativeCoachExerciseAdvice.forCoach(recommendation, lastEffort, readiness),
-                load, preview, buildString {
-                    append(raw.toString()); append("\\u001f")
-                    append(lib.toString()); append("\\u001f")
-                    append(rx.toString()); append("\\u001f")
-                    append(step); append("\\u001f")
-                    append(settings.progressionSteps.toSortedMap().toString()); append("\\u001f")
-                    rows.forEach { (workout, exercise) ->
-                        append(workout.toString()); append("\\u001e"); append(exercise.toString()); append("\\u001f")
-                    }
-                    append(readiness.toString()); append("\\u001f"); append(settings.trainingModes197Json)
-                })
+        val lib = JSONObject(library.rawJson).put("id", id).put("loadType", library.loadType)
+            .put("repUnit", library.repUnit).put("measurementType", library.measurementType)
+            .put("reps", library.defaultReps).put("sets", library.defaultSets).put("weight", library.defaultWeight)
+            .put("custom", library.custom)
+        activeExercise?.let { active ->
+            for (key in listOf("loadType", "repUnit", "measurementType"))
+                if (!active.isNull(key) && active.optString(key).isNotBlank()) lib.put(key, active.get(key))
+        }
+        val selectedMode = NativeTrainingModes.resolveSavedJson(settings.trainingModes197Json, programId.takeIf { it.isNotBlank() })
+        val prescription = NativeCoachExerciseAdvice.target(lib, rx)
+        val rows = recent(id, programId, lib, rx, raw, now, quickWorkout)
+        val occurrences = rows.map { NativeCoachExerciseAdvice.occurrence(it.first, it.second, prescription) }
+        val base = occurrences.firstOrNull()?.weight ?: 0.0
+        val load = rx.optString("loadType", library.loadType)
+        val merged = JSONObject(lib.toString()).put("loadType", load)
+        val observed = if (load == "bodyweight") null else observedStep(id, load)
+        val step = NativeCoachExerciseAdvice.step(merged, base, settings.progressionSteps, observed)
+        // Explicit #197 mode proposals use the same canonical history/target/step.
+        // Unselected legacy keeps its existing unmodified recommendation motor.
+        val preview = NativeTrainingModeProgression.compute(selectedMode, merged,
+            prescription, occurrences, readiness, step)
+        val recommendation = if (preview == null) NativeCoachExerciseAdvice.recommend(
+            lib, rx, occurrences, prescription, readiness, step)
+        else NativeCoachExerciseAdvice.Advice(
+            action = if (preview.action == "variation") "hold" else preview.action,
+            reason = "mode197:${preview.trainingStyle}:${preview.reason}",
+            weight = preview.proposedWeight, baseWeight = preview.baselineWeight,
+            autoApply = false, historyCount = preview.historyCount, target = prescription,
+            nextReps = preview.nextReps
+        )
+        val lastRaw = db.workoutHistoryDao().getCoachExerciseCandidates(id, Long.MIN_VALUE, Long.MAX_VALUE, null, "", 1).firstOrNull()
+            ?.let { JSONObject(it.rawJson).optJSONArray("exercises") }
+        val lastEffort = (0 until (lastRaw?.length() ?: 0)).mapNotNull { lastRaw?.optJSONObject(it) }
+            .firstOrNull { it.optString("id") == id }?.optString("effort")
+        val name = when (settings.language) {
+            "en" -> library.nameEn; "de" -> library.nameDe; "ro" -> library.nameRo; else -> library.nameHu
+        }.ifBlank { library.nameHu }
+        return CoachExerciseAdvice(id, name, NativeCoachExerciseAdvice.forCoach(recommendation, lastEffort, readiness),
+            load, preview, buildString {
+                append(raw.toString()); append("\\u001f")
+                append(lib.toString()); append("\\u001f")
+                append(rx.toString()); append("\\u001f")
+                append(step); append("\\u001f")
+                append(settings.progressionSteps.toSortedMap().toString()); append("\\u001f")
+                rows.forEach { (workout, exercise) ->
+                    append(workout.toString()); append("\\u001e"); append(exercise.toString()); append("\\u001f")
+                }
+                append(readiness.toString()); append("\\u001f"); append(settings.trainingModes197Json)
+            })
     }
 
     internal suspend fun recent(id: String, programId: String, lib: JSONObject, rx: JSONObject,
@@ -131,7 +136,7 @@ internal class NativeCoachAdviceRepository(private val db: TrainPilotDatabase) {
             if (page.size < 32) break
             before = page.last().finishedEpochMs; beforeId = page.last().id
         }
-        // Old local/date-only timestamps may have epoch=0 despite a valid raw date.
+        // Old local/date-only timestamps may have epoch=0 or the start epoch despite a valid raw date.
         // Stream only that exercise's unindexed rows; keep at most four occurrences.
         var legacyBefore: String? = null
         while (true) {
