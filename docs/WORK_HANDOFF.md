@@ -3,6 +3,23 @@
 Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
+## Új készülékes csomag – közös integráció
+
+A #149–#153 visszajelzések kódja együtt: PR154 pihenő, PR155 naptár,
+PR156 Wear session/folytatás, PR157 napló UI, PR158 univerzális healthsync.
+`fix/device-feedback-integration` megőrzi az összes eredeti ág commitját.
+A közös VM-hook bekötve: a telefonos Folytatás watch-owner esetén az órán kér
+explicit folytatást, optimista tulajdonosváltás nélkül. Az app onStop többé
+nem publikál automatikus workout pause-t pusztán képernyő-kikapcsolásra;
+a már futó natív stopwatch checkpointolódik, indítás/folytatás nem történik.
+Kifejezett Szünet/Vissza/Elhagyás változatlan. Új regresszió védi ezt.
+
+Az egészség-napló és app-életciklus kész bekötése: [#149 részletek](HEALTH_SYNC_FOLLOWUP_149.md).
+Az eredeti WIP-státusz a [korábbi pillanatképben](DEVICE_FEEDBACK_FOLLOWUP_2026-11-05.md)
+már történeti; az integráció után nincs hátramaradt UI/VM-hook.
+A következő kapu egyetlen teljes main-CI, eredménye külön rögzítendő.
+Új APK és fizikai Samsung/HC/Wear elfogadás még nincs; a jegyeket nem zárjuk pusztán CI-re.
+
 **Új visszajelzések a kiadott APK után:** [folyamatban lévő javítások és pontos
 korlátok](DEVICE_FEEDBACK_FOLLOWUP_2026-11-05.md). A korábbi13as csomag elkészült;
 az új health/Wear/pihenő/naptár csomag még nem került telepítőbe.

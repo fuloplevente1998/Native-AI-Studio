@@ -125,6 +125,32 @@ class StudioSessionMeasurementRegressionTest {
         } finally { service.destroy() }
     }
 
+    @Test fun screenOffPreservesTheArmedWorkoutAndExplicitPauseStillStopsIt() {
+        val model = model()
+        model.startQuickTimedWithExercise(timed(model))
+        awaitStarted(model)
+        val frame = ActiveWorkoutStore.current(context)!!
+        val target = target(frame)
+        val service = Robolectric.buildService(IntervalTimerService::class.java).create()
+        try {
+            arm(service.get(), frame)
+            NativeWorkoutEditing.startStopwatch(context, target, "left")
+            ShadowSystemClock.advanceBy(Duration.ofSeconds(2))
+            model.onAppBackground()
+            val background = PhoneWorkoutExecution.store(context).snapshot()!!
+            assertFalse(background.optBoolean("workoutPaused"))
+            assertEquals(frame.optLong("pauseRevision"), background.optLong("pauseRevision"))
+            assertTrue(NativeSetStopwatch.running(background.getJSONObject(NativeSetStopwatch.FIELD)))
+            ShadowSystemClock.advanceBy(Duration.ofSeconds(3))
+            assertTrue(NativeSetStopwatch.elapsed(background.getJSONObject(NativeSetStopwatch.FIELD)) >= 5_000)
+            assertTrue(model.pauseActiveWorkout())
+            val paused = PhoneWorkoutExecution.store(context).snapshot()!!
+            assertTrue(paused.optBoolean("workoutPaused"))
+            assertFalse(NativeSetStopwatch.running(paused.getJSONObject(NativeSetStopwatch.FIELD)))
+            assertTrue(paused.optLong("pauseRevision") > background.optLong("pauseRevision"))
+        } finally { service.destroy() }
+    }
+
     @Test fun repeatedQuickTimedStartKeepsTheCanonicalWorkoutAndStableSetIds() {
         val model = model()
         model.startQuickTimedWithExercise(timed(model))
