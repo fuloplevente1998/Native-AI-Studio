@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.localization.LocalizedStrings
 import com.example.model.AppLanguage
@@ -59,15 +60,18 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                     }
                 }
                 val action: @Composable () -> Unit = {
+                    val actionLabel = if (state.watchControlPending) word("Folyamatban…", "In progress…", "Läuft…", "În curs…")
+                        else if (state.phoneControlsWorkout) strings.handoverToWatchAction else strings.reclaimToPhoneAction
                     TrainPilotOutlinedButton(onClick = onToggle, enabled = enabled,
                         shape = RoundedCornerShape(10.dp), contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                         colors = ButtonDefaults.outlinedButtonColors(containerColor = palette.tintedSurface(0.12f),
                             contentColor = palette.primary, disabledContainerColor = palette.surfaceElevated,
                             disabledContentColor = palette.textSecondary.copy(alpha = 0.6f)),
                         modifier = Modifier.heightIn(min = 48.dp).testTag("workout_handover_action")) {
-                        Text(if (state.watchControlPending) word("Folyamatban…", "In progress…", "Läuft…", "În curs…")
-                            else if (state.phoneControlsWorkout) strings.handoverToWatchAction else strings.reclaimToPhoneAction,
-                            style = MaterialTheme.typography.labelMedium)
+                        Icon(Icons.Default.Watch, contentDescription = null,
+                            tint = palette.primary, modifier = Modifier.size(18.dp))
+                        Text(actionLabel, style = MaterialTheme.typography.labelMedium,
+                            maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                 }
                 val fontScale = LocalDensity.current.fontScale
