@@ -678,7 +678,7 @@ internal class HealthJournalStore(context: Context) :
             return JSONObject()
                 .put("provider", meta(db, "provider", HC))
                 .put("primary", meta(db, "primary", HC))
-                .put("autoOnOpen", meta(db, "autoOnOpen", "false").toBoolean())
+                .put("autoOnOpen", meta(db, "autoOnOpen", "true").toBoolean())
                 .put("logWatchSteps", meta(db, "logWatchSteps", "false").toBoolean())
                 .put("hcDailySource", meta(db, "hcDailySource", "auto"))
                 .put("bleBackground", meta(db, "bleBackground", "false").toBoolean())

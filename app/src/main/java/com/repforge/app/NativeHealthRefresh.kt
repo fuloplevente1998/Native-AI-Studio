@@ -29,6 +29,7 @@ internal object NativeHealthRefresh {
 
     private data class Prepared(
         val provider: String,
+        val selectedProvider: String,
         val journalGeneration: Long,
         val replacement: NativeDataReplacement.Continuation,
         val zone: ZoneId,
@@ -57,15 +58,17 @@ internal object NativeHealthRefresh {
         requestSamsungPermission: Boolean = false,
         progress: (NativeHealthSync.Progress) -> Unit = {},
         onPermissionFinished: () -> Unit = {},
-        requireScreenGuard: () -> Unit = {}
+        requireScreenGuard: () -> Unit = {},
+        providerOverride: String? = null
     ): Result<JSONObject> = execute(context, activity, LocalDate.now(), requestSamsungPermission,
-        requireScreenGuard, full, progress, onPermissionFinished)
+        requireScreenGuard, full, progress, onPermissionFinished, providerOverride)
 
     private suspend fun execute(
         context: Context, activity: Activity, day: LocalDate, requestSamsungPermission: Boolean,
         requireScreenGuard: () -> Unit, fullSync: Boolean? = null,
         progress: (NativeHealthSync.Progress) -> Unit = {},
-        onPermissionFinished: () -> Unit = {}
+        onPermissionFinished: () -> Unit = {},
+        providerOverride: String? = null
     ): Result<JSONObject> = withContext(Dispatchers.Main.immediate) {
         val owner = activity as? LifecycleOwner
             ?: return@withContext Result.failure(IllegalStateException("Foreground lifecycle required"))
@@ -104,11 +107,13 @@ internal object NativeHealthRefresh {
             val prepared = withContext(Dispatchers.IO) {
                 NativeDataReplacement.mutate(context) {
                     val store = HealthJournalStore.get(context)
-                    val provider = store.preferences().optString("provider", HealthJournalStore.HC)
+                    val selectedProvider = store.preferences().optString("provider", HealthJournalStore.HC)
+                    val provider = providerOverride ?: selectedProvider
+                    require(selectedProvider in setOf(HealthJournalStore.HC, HealthJournalStore.SAMSUNG))
                     check(provider == HealthJournalStore.HC || provider == HealthJournalStore.SAMSUNG) {
                         "Unknown health provider"
                     }
-                    Prepared(provider, store.generation(),
+                    Prepared(provider, selectedProvider, store.generation(),
                         NativeDataReplacement.continuationForCurrentData(context), ZoneId.systemDefault(),
                         if (provider == HealthJournalStore.HC) grantedBeforePrepare else emptySet(), LocalDate.now())
                 }
@@ -129,7 +134,7 @@ internal object NativeHealthRefresh {
                 check(ZoneId.systemDefault() == prepared.zone) { "Health timezone changed; refresh again" }
                 val store = HealthJournalStore.get(context)
                 check(store.generation() == prepared.journalGeneration &&
-                    store.preferences().optString("provider", HealthJournalStore.HC) == prepared.provider) {
+                    store.preferences().optString("provider", HealthJournalStore.HC) == prepared.selectedProvider) {
                     "Health provider or dataset changed; refresh again"
                 }
                 Unit
@@ -225,7 +230,7 @@ internal object NativeHealthRefresh {
                 val scope = "v1|${prepared.provider}|${prepared.zone.id}|${grants.sorted().joinToString(",")}"
                 val report = NativeHealthSync.run(provider, journal, scope, prepared.localDay, fullSync, guard,
                     { value -> withContext(Dispatchers.Main.immediate) { screenGuard(); progress(value) } })
-                JSONObject().put("partial", !report.successful).put("full", report.full)
+                JSONObject().put("partial", !report.successful).put("full", report.full).put("retryable", report.retryable)
                     .put("completedDays", report.completedDays).put("failedDays", org.json.JSONArray(report.failedDays.map { it.toString() }))
             }
             withContext(Dispatchers.IO) { requirePermissionIdentity(); requireCommitIdentity() }
