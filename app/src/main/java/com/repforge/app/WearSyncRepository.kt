@@ -559,6 +559,42 @@ object WearSyncRepository {
         Wearable.getDataClient(context).putDataItem(mapRequest.asPutDataRequest().setUrgent())
     }
 
+    internal suspend fun watchExerciseForStart(db: TrainPilotDatabase,
+        lib: com.repforge.app.data.db.ExerciseLibraryEntity,
+        settings: com.repforge.app.data.store.TrainPilotUserSettings, overrideSets: JSONArray? = null): JSONObject {
+        val setsArr = JSONArray()
+        if (overrideSets != null && overrideSets.length() > 0) {
+            for (j in 0 until overrideSets.length()) {
+                val s = overrideSets.optJSONObject(j) ?: continue
+                setsArr.put(
+                    JSONObject()
+                        .put("set", s.optInt("set", j + 1))
+                        .put("weight", s.opt("weight")?.toString().orEmpty())
+                        .put("reps", s.optString("reps", lib.defaultReps))
+                )
+            }
+        } else {
+            for (j in 1..lib.defaultSets.coerceAtLeast(1)) {
+                setsArr.put(
+                    JSONObject()
+                        .put("set", j)
+                        .put("weight", if (lib.defaultWeight > 0.0) lib.defaultWeight.toString() else "0")
+                        .put("reps", lib.defaultReps)
+                )
+            }
+        }
+        val exercise = JSONObject()
+            .put("id", lib.id)
+            .put("name", if (settings.language == "en") lib.nameEn else lib.nameHu)
+            .put("loadType", lib.loadType)
+            .put("repUnit", lib.repUnit)
+            .put("measurementType", lib.measurementType)
+            .put("targetReps", lib.defaultReps)
+            .put("sets", setsArr)
+        NativeWorkoutSession.prefillFromHistory(db, exercise, setsArr)
+        return exercise
+    }
+
     /**
      * Builds the canonical WatchHomeSnapshot from Room + DataStore and publishes it
      * to `/trainpilot/watch-home` so the watch has up-to-date programs, calendar,
@@ -577,40 +613,12 @@ object WearSyncRepository {
             val activeProgram = programsWithDays.firstOrNull { it.program.id == settings.activeProgramId }
                 ?: programsWithDays.firstOrNull()
 
-            fun buildWatchExerciseJson(exId: String, overrideSets: JSONArray? = null): JSONObject? {
+            suspend fun buildWatchExerciseJson(exId: String, overrideSets: JSONArray? = null): JSONObject? {
                 val lib = allExercises[exId] ?: return null
-                val setsArr = JSONArray()
-                if (overrideSets != null && overrideSets.length() > 0) {
-                    for (j in 0 until overrideSets.length()) {
-                        val s = overrideSets.optJSONObject(j) ?: continue
-                        setsArr.put(
-                            JSONObject()
-                                .put("set", s.optInt("set", j + 1))
-                                .put("weight", s.opt("weight")?.toString().orEmpty())
-                                .put("reps", s.optString("reps", lib.defaultReps))
-                        )
-                    }
-                } else {
-                    for (j in 1..lib.defaultSets.coerceAtLeast(1)) {
-                        setsArr.put(
-                            JSONObject()
-                                .put("set", j)
-                                .put("weight", if (lib.defaultWeight > 0.0) lib.defaultWeight.toString() else "0")
-                                .put("reps", lib.defaultReps)
-                        )
-                    }
-                }
-                return JSONObject()
-                    .put("id", lib.id)
-                    .put("name", if (settings.language == "en") lib.nameEn else lib.nameHu)
-                    .put("loadType", lib.loadType)
-                    .put("repUnit", lib.repUnit)
-                    .put("measurementType", lib.measurementType)
-                    .put("targetReps", lib.defaultReps)
-                    .put("sets", setsArr)
+                return watchExerciseForStart(db, lib, settings, overrideSets)
             }
 
-            fun buildWatchDayJson(progId: String, progName: String, dayId: String, dayName: String, exercisesJson: String): JSONObject? {
+            suspend fun buildWatchDayJson(progId: String, progName: String, dayId: String, dayName: String, exercisesJson: String): JSONObject? {
                 val rawArr = try {
                     JSONArray(exercisesJson)
                 } catch (_: Exception) {

@@ -85,6 +85,39 @@ class StudioSessionMeasurementRegressionTest {
             .put("sequence", sequence).put("exerciseIndex", index).put("exerciseId", exercise.getString("id")))
     }
 
+    @Test fun watchOwnedStartAppearsWithoutRebindingAndItsSelectionFollowsWithoutNavigation() {
+        val model = model()
+        val first = strength(model)
+        val second = timed(model)
+        val before = model.uiState.value
+        fun exercise(id: String, unit: String, type: String, setId: String) = JSONObject()
+            .put("id", id).put("repUnit", unit).put("measurementType", type).put("loadType", "per_hand")
+            .put("sets", org.json.JSONArray().put(JSONObject().put("setId", setId).put("weight", 12)
+                .put("reps", "10").put("done", false)))
+        val frame = JSONObject().put("workoutId", "watch-live-start").put("active", true)
+            .put("timerOwner", "watch").put("ownershipProtocol193", 1).put("ownerEpoch193", 0)
+            .put("currentExercise", 0).put("started", java.time.Instant.now().toString())
+            .put("exercises", org.json.JSONArray().put(exercise(first.id, first.repUnit, first.measurementType, "w1"))
+                .put(exercise(second.id, "mp/oldal", "time", "w2")))
+        ActiveWorkoutStore.saveOwned(context, frame)
+        await { model.uiState.value.activeWorkoutId == "watch-live-start" }
+        assertTrue(model.uiState.value.isWorkoutSessionActive)
+        assertFalse(model.uiState.value.phoneControlsWorkout)
+        assertEquals(before.currentSubScreen, model.uiState.value.currentSubScreen)
+        assertEquals(before.backStack, model.uiState.value.backStack)
+        val current = ActiveWorkoutStore.current(context)!!
+        WearSyncRepository.commitWatchEditorMutation(context, current, JSONObject().put("action", "selectExercise")
+            .put("workoutId", "watch-live-start").put("ownerEpoch193", 0).put("sequence", 2)
+            .put("exerciseIndex", 1).put("exerciseId", second.id))
+        await { model.uiState.value.activeExerciseIndex == 1 }
+        assertEquals(second.id, model.uiState.value.selectedExerciseId)
+        assertEquals("w2", model.uiState.value.activeSets.single().id)
+        assertEquals(before.currentSubScreen, model.uiState.value.currentSubScreen)
+        assertEquals(before.backStack, model.uiState.value.backStack)
+        assertEquals("watch", ActiveWorkoutStore.current(context)!!.getString("timerOwner"))
+        assertTrue(PhoneWorkoutExecution.store(context).snapshot()?.optBoolean("active") != true)
+    }
+
     @Test fun watchSelectionUpdatesTheStudioTargetAndRepeatedStartKeepsOneNativeStopwatch() {
         val model = model()
         val timed = timed(model)
