@@ -206,7 +206,7 @@ class StudioSessionMeasurementRegressionTest {
 
     @Test fun singleStopwatchPauseReopenResumeAndRecordUseOnlyMeasuredTimeOnce() {
         val model = model()
-        val single = model.uiState.value.exercises.first { it.isTimed && !it.isBilateral }
+        val single = model.uiState.value.exercises.first { it.measurementType == "time" && it.isTimed && !it.isBilateral }
         model.startQuickTimedWithExercise(single); awaitStarted(model)
         val frame = ActiveWorkoutStore.current(context)!!
         val service = Robolectric.buildService(IntervalTimerService::class.java).create()
@@ -316,7 +316,7 @@ class StudioSessionMeasurementRegressionTest {
 
     @Test fun explicitManualSecondsCanBeRecordedWithoutInventingMeasuredWork() {
         val model = model()
-        val single = model.uiState.value.exercises.first { it.isTimed && !it.isBilateral }
+        val single = model.uiState.value.exercises.first { it.measurementType == "time" && it.isTimed && !it.isBilateral }
         model.startQuickTimedWithExercise(single); awaitStarted(model)
         val frame = ActiveWorkoutStore.current(context)!!
         val measurement = nativeModel()
