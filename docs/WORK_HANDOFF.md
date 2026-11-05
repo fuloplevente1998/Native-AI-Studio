@@ -3,6 +3,30 @@
 Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
+## Végleges új készülékes csomag – main, teljes CI igazolva
+
+- #149–#153 javításai: PR159 csomag, PR160 Robolectric-környezet pótlás,
+  PR161 kanonikus Wear gyakorlatválasztás/projekció; mind mainre került.
+- Végső alkalmazásforrás main **cc8e1c4d3384d1f562dff0d7dd8817840ef69049**.
+  Run **42059924773 SUCCESS: 550 = 371 telefon + 179 Wear**, 0 failure/error/skipped;
+  shared NO-SOURCE. Tesztelt commit cde018ad8f3d860b6fb9210875885295c73fb791,
+  tesztelt és main Git-tree pontosan azonos: f436936a3673ef485064e57833428d208e634015.
+- A végső nyers XML-verifier kimenetét a kész job logjából olvastuk vissza.
+  A végső ZIP külön bájtellenőrzése a megszakadt környezet miatt nem történt meg;
+  ezt a gépi bizonyíték kifejezetten jelzi, nem állít független hash-ellenőrzést.
+  Az előző main-run547 nyers XML/ZIP/source/digest ellenőrzése megtörtént.
+- Az első közös run hat új tesztje Android JSONObject stub miatt bukott;
+  kizárólag három hiányzó Robolectric runner pótlása kellett, elvárás nem gyengült.
+- Képernyő-kikapcsolás többé nem automatikus workout pause; explicit pause/back
+  megmarad. Mindkét Folytatás az aktuális ownerhez intézett szigorú kérést használ.
+  Órás gyakorlatválasztás együtt frissíti a Studio méréscélpontját és sorozatait,
+  más oldalon végzett böngészés/navigáció megőrzésével.
+- [Gépi bizonyíték](DEVICE_FEEDBACK_CI_VERIFICATION_2026-11-05.json).
+  Új APK nem készült, fizikai Samsung/HC/Wear/kalória és vizuális elfogadás még nincs;
+  #149–#153 ezért nyitva marad. Utolsó átadott telepítők továbbra2753/79c2736.
+- A munkakörnyezet az utolsó kódpush után unavailable lett. A végső CI és merge
+  GitHub-csatlakozóval befejezve, workflow-változtatás nélkül. Nincs futó agent.
+
 ## Új készülékes csomag – közös integráció
 
 A #149–#153 visszajelzések kódja együtt: PR154 pihenő, PR155 naptár,
