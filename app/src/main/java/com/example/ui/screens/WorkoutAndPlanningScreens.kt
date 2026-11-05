@@ -1802,9 +1802,9 @@ fun CalendarPlannerScreen(
 
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
         val calendarWeeks = ((displayedYearMonth.atDay(1).dayOfWeek.value - 1 + displayedYearMonth.lengthOfMonth() + 6) / 7)
-        // Normal phone windows fit the month and a compact planner row. Scrolling
-        // remains a fallback for very short windows and accessibility font sizes.
-        val calendarCellHeight = ((maxHeight - 200.dp) / calendarWeeks.toFloat()).coerceIn(36.dp, 42.dp)
+        // Reserve space for the complete three-row planner, its actions and month header.
+        // Never shrink touch targets: short windows and large fonts use the page scroll.
+        val calendarCellHeight = ((maxHeight - 424.dp) / calendarWeeks.toFloat()).coerceIn(48.dp, 52.dp)
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                 .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 4.dp)
@@ -1999,27 +1999,6 @@ fun CalendarPlannerScreen(
                     }
                 }
             }
-            Surface(shape = RoundedCornerShape(16.dp), color = palette.surfaceCard,
-                modifier = Modifier.fillMaxWidth().trainPilotBorder(TrainPilotFrames.panelWidth,
-                    palette.cardBorder, RoundedCornerShape(16.dp))) {
-                Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Column(Modifier.weight(1f)) {
-                            Text(activeProgramTitle, color = palette.textPrimary, style = MaterialTheme.typography.titleSmall,
-                                maxLines = 2, overflow = TextOverflow.Ellipsis)
-                            Text("${localizeCadenceLabel(state.planningCadenceHu)} • ${state.planningTime}", color = palette.textSecondary,
-                                style = MaterialTheme.typography.labelSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        }
-                        if (state.calendarUndoStack.isNotEmpty()) IconButton(onClick = onUndoCalendarAction,
-                            modifier = Modifier.size(48.dp).testTag("calendar_undo_action")) {
-                            Text("↶", color = palette.primary, style = MaterialTheme.typography.headlineSmall,
-                                modifier = Modifier.semantics { contentDescription = trW(state.language, "Visszavonás (${state.calendarUndoStack.size})", "Undo (${state.calendarUndoStack.size})", "Rückgängig (${state.calendarUndoStack.size})", "Anulează (${state.calendarUndoStack.size})") })
-                        }
-                    }
-                }
-            }
             // 3. Calendar planning stays visible below the month grid.
             Surface(
                 shape = RoundedCornerShape(22.dp),
@@ -2030,25 +2009,30 @@ fun CalendarPlannerScreen(
                     .trainPilotBorder(TrainPilotFrames.panelWidth, palette.cardBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(
-                    modifier = Modifier.padding(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = activeProgramTitle,
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            color = palette.textPrimary,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 10.dp)
-                        )
+                        Column(Modifier.weight(1f)) {
+                            Text(activeProgramTitle, color = palette.textPrimary,
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("${localizeCadenceLabel(state.planningCadenceHu)} • ${state.planningTime}",
+                                color = palette.textSecondary, style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        if (state.calendarUndoStack.isNotEmpty()) IconButton(onClick = onUndoCalendarAction,
+                            modifier = Modifier.size(48.dp).testTag("calendar_undo_action")) {
+                            Text("↶", color = palette.primary, style = MaterialTheme.typography.headlineSmall,
+                                modifier = Modifier.semantics { contentDescription = trW(state.language, "Visszavonás (${state.calendarUndoStack.size})", "Undo (${state.calendarUndoStack.size})", "Rückgängig (${state.calendarUndoStack.size})", "Anulează (${state.calendarUndoStack.size})") })
+                        }
                         Button(
                             onClick = { onOpenReplanModal(true) },
-                            modifier = Modifier.heightIn(min = 46.dp),
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("calendar_replan_action"),
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = palette.primary,
@@ -2073,7 +2057,8 @@ fun CalendarPlannerScreen(
 
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         PlannerFieldTile(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).testTag("calendar_field_cadence"),
+                            compact = true,
                             label = trW(state.language, "Tervezési ritmus", "Planning cadence", "Planungsrhythmus", "Ritm de planificare"),
                             value = localizeCadenceLabel(state.planningCadenceHu),
                             showChevron = true,
@@ -2084,7 +2069,8 @@ fun CalendarPlannerScreen(
                             }
                         )
                         PlannerFieldTile(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).testTag("calendar_field_first_day"),
+                            compact = true,
                             label = trW(state.language, "Első edzésnap", "First workout day", "Erster Trainingstag", "Prima zi de antrenament"),
                             value = localizeFirstDayLabel(state.planningFirstDayHu),
                             showChevron = true,
@@ -2097,7 +2083,8 @@ fun CalendarPlannerScreen(
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         PlannerFieldTile(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).testTag("calendar_field_start_date"),
+                            compact = true,
                             label = trW(state.language, "Kezdőnap", "Start date", "Startdatum", "Data de început"),
                             value = state.planningStartDate,
                             showCalendarIcon = true,
@@ -2107,7 +2094,8 @@ fun CalendarPlannerScreen(
                             }
                         )
                         PlannerFieldTile(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).testTag("calendar_field_time"),
+                            compact = true,
                             label = trW(state.language, "Időpont", "Time", "Uhrzeit", "Ora"),
                             value = state.planningTime,
                             dropdownOptions = listOf("07:00", "08:30", "10:00", "16:00", "17:30", "18:00", "19:30"),
@@ -2118,7 +2106,8 @@ fun CalendarPlannerScreen(
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         PlannerFieldTile(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).testTag("calendar_field_duration"),
+                            compact = true,
                             label = trW(state.language, "Időtartam (perc)", "Duration (min)", "Dauer (Min.)", "Durată (min)"),
                             value = "${state.planningDurationMin}",
                             dropdownOptions = listOf("30", "45", "60", "75", "90"),
@@ -2127,7 +2116,8 @@ fun CalendarPlannerScreen(
                             }
                         )
                         PlannerFieldTile(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).testTag("calendar_field_weeks"),
+                            compact = true,
                             label = trW(state.language, "Hetek száma", "Weeks count", "Anzahl Wochen", "Număr săptămâni"),
                             value = "${state.planningWeeksCount}",
                             dropdownOptions = listOf("1", "2", "4", "6", "8", "12"),
@@ -2146,7 +2136,7 @@ fun CalendarPlannerScreen(
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp)
+                            .heightIn(min = 48.dp).testTag("calendar_plan_action")
                     ) {
                         Text(
                             text = trW(state.language, "Edzések megtervezése", "Plan workouts", "Trainings planen", "Planifică antrenamentele"),
@@ -2477,6 +2467,7 @@ private fun PlannerFieldTile(
     modifier: Modifier = Modifier,
     label: String,
     value: String,
+    compact: Boolean = false,
     showChevron: Boolean = false,
     showCalendarIcon: Boolean = false,
     dropdownOptions: List<String>? = null,
@@ -2487,7 +2478,7 @@ private fun PlannerFieldTile(
     var expanded by remember { mutableStateOf(false) }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        Text(
+        if (!compact) Text(
             text = label,
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
             color = palette.textSecondary
@@ -2515,18 +2506,27 @@ private fun PlannerFieldTile(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                        .heightIn(min = 48.dp)
+                        .padding(horizontal = if (compact) 8.dp else 14.dp, vertical = if (compact) 4.dp else 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = value,
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.ExtraBold),
-                        color = palette.textPrimary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
+                    Column(Modifier.weight(1f)) {
+                        if (compact) Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = palette.textSecondary,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = value,
+                            style = (if (compact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge)
+                                .copy(fontWeight = FontWeight.ExtraBold),
+                            color = palette.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                     if (showCalendarIcon) {
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(text = "📅", style = MaterialTheme.typography.bodyMedium)
