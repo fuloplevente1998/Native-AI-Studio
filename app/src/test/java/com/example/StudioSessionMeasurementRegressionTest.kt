@@ -319,19 +319,25 @@ class StudioSessionMeasurementRegressionTest {
         val single = model.uiState.value.exercises.first { it.measurementType == "time" && it.isTimed && !it.isBilateral }
         model.startQuickTimedWithExercise(single); awaitStarted(model)
         val frame = ActiveWorkoutStore.current(context)!!
-        val measurement = nativeModel()
-        val target = target(frame)
-        measurement.adjustSetStopwatch(target, "single", 15)
-        measurement.adjustSetStopwatch(target, "single", -5)
-        val adjusted = PhoneWorkoutExecution.store(context).snapshot()!!
-        assertFalse(NativeSetStopwatch.running(adjusted.getJSONObject(NativeSetStopwatch.FIELD)))
-        assertEquals(10_000L, NativeSetStopwatch.elapsed(adjusted.getJSONObject(NativeSetStopwatch.FIELD)))
-        assertEquals(0L, NativeMeasuredTime.summary(adjusted).workMs)
-        measurement.recordSetStopwatch(target, "single")
-        val recorded = PhoneWorkoutExecution.store(context).snapshot()!!
-        assertEquals("10", target.resolve(recorded).set.getString("reps"))
-        assertTrue(target.resolve(recorded).set.getBoolean("done"))
-        assertEquals(0L, NativeMeasuredTime.summary(recorded).workMs)
+        // Explicit recording still requires the real editor's armed controller.
+        // Manual seconds must not bypass this lifetime/ownership contract.
+        val service = Robolectric.buildService(IntervalTimerService::class.java).create()
+        try {
+            arm(service.get(), frame)
+            val measurement = nativeModel()
+            val target = target(frame)
+            measurement.adjustSetStopwatch(target, "single", 15)
+            measurement.adjustSetStopwatch(target, "single", -5)
+            val adjusted = PhoneWorkoutExecution.store(context).snapshot()!!
+            assertFalse(NativeSetStopwatch.running(adjusted.getJSONObject(NativeSetStopwatch.FIELD)))
+            assertEquals(10_000L, NativeSetStopwatch.elapsed(adjusted.getJSONObject(NativeSetStopwatch.FIELD)))
+            assertEquals(0L, NativeMeasuredTime.summary(adjusted).workMs)
+            measurement.recordSetStopwatch(target, "single")
+            val recorded = PhoneWorkoutExecution.store(context).snapshot()!!
+            assertEquals("10", target.resolve(recorded).set.getString("reps"))
+            assertTrue(target.resolve(recorded).set.getBoolean("done"))
+            assertEquals(0L, NativeMeasuredTime.summary(recorded).workMs)
+        } finally { service.destroy() }
     }
 
     private fun awaitStarted(model: TrainPilotViewModel) {
