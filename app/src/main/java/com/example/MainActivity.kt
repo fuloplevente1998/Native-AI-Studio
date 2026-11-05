@@ -130,6 +130,28 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val strings = TrainPilotStrings.forLanguage(uiState.language)
     val requestPlatformPermission = com.example.ui.components.rememberStudioPermissionRequest(context, viewModel)
+    val nativeHealth: com.repforge.app.ui.health.HealthDashboardViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val health by nativeHealth.uiState.collectAsStateWithLifecycle()
+    val activity = context as? android.app.Activity
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner, activity) {
+        val lifecycle = lifecycleOwner.lifecycle
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, _ ->
+            if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) nativeHealth.appVisible(activity)
+            else nativeHealth.appHidden(activity)
+        }
+        lifecycle.addObserver(observer)
+        if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) nativeHealth.appVisible(activity)
+        onDispose { lifecycle.removeObserver(observer); nativeHealth.appHidden(activity) }
+    }
+    androidx.compose.runtime.LaunchedEffect(health.healthRefreshing, health.syncMessage, health.syncFailed, health.syncPartial) {
+        if (health.healthRefreshing || health.syncMessage.isNotBlank())
+            viewModel.updateHealthSyncStatus(health.healthRefreshing, partial = health.syncPartial,
+                failed = health.syncFailed, message = health.syncMessage)
+    }
+    androidx.compose.runtime.LaunchedEffect(health.refreshRevision, health.provider) {
+        if (!health.healthRefreshing) viewModel.reloadHealthJournal()
+    }
 
     var showLiveHealth by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
@@ -925,24 +947,20 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             }
 
                             MainTab.HEALTH -> {
-                                val nativeHealth: com.repforge.app.ui.health.HealthDashboardViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-                                val health by nativeHealth.uiState.collectAsStateWithLifecycle()
-                                val activity = context as? android.app.Activity
                                 androidx.compose.runtime.DisposableEffect(activity) {
                                     nativeHealth.healthScreenVisible(activity)
                                     nativeHealth.refreshSamsungGrants(activity)
                                     onDispose { nativeHealth.healthScreenHidden(activity) }
                                 }
-                                androidx.compose.runtime.LaunchedEffect(health.statusMessage, health.lastSyncAt, health.lastReadAt, health.provider, health.healthRefreshing, health.syncMessage, health.syncFailed, health.syncPartial) {
-                                    if (health.healthRefreshing || health.syncMessage.isNotBlank())
-                                        viewModel.updateHealthSyncStatus(health.healthRefreshing, partial = health.syncPartial,
-                                            failed = health.syncFailed, message = health.syncMessage)
-                                    if (!health.healthRefreshing) viewModel.reloadHealthJournal()
-                                }
                                 HealthTabScreen(
                                     onOpenLoggedWorkout = viewModel::openLogWorkoutDetail,
                                     uiState = uiState.copy(primaryHealthSourceSamsung = health.provider == com.repforge.app.HealthJournalStore.SAMSUNG,
                                         lastHealthSyncLabel = health.lastSyncAt, lastHealthReadLabel = health.lastReadAt,
+                                        healthLastSyncByProvider = health.lastSyncByProvider,
+                                        healthRefreshRevision = health.refreshRevision,
+                                        healthAutoOnOpen = health.autoOnOpen,
+                                        healthBackgroundOptedIn = health.hcBackground,
+                                        healthBackgroundScheduled = health.hcBackgroundScheduled,
                                         samsungGrantedCount = health.samsungGrantedCount,
                                         healthProviderStatus = (if (health.provider == com.repforge.app.HealthJournalStore.SAMSUNG)
                                             if (health.samsungInstalled && health.samsungAvailable) "Samsung Health • szolgáltató elérhető" else "Samsung Health • alkalmazás vagy SDK nem érhető el"
@@ -955,7 +973,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onTogglePrimaryHealthSource = { nativeHealth.setProvider(
                                         if (health.provider == com.repforge.app.HealthJournalStore.SAMSUNG) com.repforge.app.HealthJournalStore.HC
                                         else com.repforge.app.HealthJournalStore.SAMSUNG, activity) },
-                                    onTriggerHealthSync = { nativeHealth.syncHealth(activity) },
+                                    onTriggerHealthSync = { nativeHealth.syncAllHealth(activity) },
+                                    onReadHealthSource = { source -> nativeHealth.syncProviderHealth(activity, source) },
                                     onNavigateToSubScreen = { viewModel.navigateToSubScreen(it) },
                                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
                                     onOpenGoalsDialog = { viewModel.toggleGoalsDialog(true) },

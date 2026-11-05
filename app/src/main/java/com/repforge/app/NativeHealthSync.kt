@@ -18,7 +18,7 @@ internal object NativeHealthSync {
     }
     enum class Stage { PREPARING, CHANGES, DAYS, COMPLETE }
     data class Progress(val stage: Stage, val completed: Int = 0, val total: Int = 0, val pages: Int = 0)
-    data class Report(val full: Boolean, val completedDays: Int, val failedDays: List<LocalDate>) {
+    data class Report(val full: Boolean, val completedDays: Int, val failedDays: List<LocalDate>, val retryable: Boolean = false) {
         val successful: Boolean get() = failedDays.isEmpty()
     }
     interface Provider {
@@ -100,6 +100,7 @@ internal object NativeHealthSync {
 
         val failures = sortedSetOf<LocalDate>()
         val completed = mutableSetOf<LocalDate>()
+        val transientDays = mutableSetOf<LocalDate>()
         suspend fun read(days: Set<LocalDate>) {
             check(days.size <= 530) { "Too many dirty Health days; retry in smaller batches" }
             var done = 0
@@ -109,9 +110,13 @@ internal object NativeHealthSync {
                 provider.requireIdentity()
                 val success = try { provider.readDay(day) }
                 catch (cancelled: CancellationException) { throw cancelled }
-                catch (_: Exception) { guard(); false }
+                catch (failure: Exception) {
+                    guard()
+                    if (com.repforge.app.ui.health.NativeHealthAppRefreshPolicy.transient(failure)) transientDays.add(day)
+                    false
+                }
                 guard()
-                if (success) { failures.remove(day); completed.add(day) }
+                if (success) { failures.remove(day); completed.add(day); transientDays.remove(day) }
                 else { failures.add(day); completed.remove(day) }
                 progress(Progress(Stage.DAYS, ++done, days.size, pages))
             }
@@ -130,6 +135,6 @@ internal object NativeHealthSync {
         provider.requireIdentity() // Permission IPC outside the local publication lease.
         if (failures.isEmpty()) journal.commit(old, Checkpoint(scope, candidate, true), full, now())
         progress(Progress(Stage.COMPLETE, completed.size, completed.size + failures.size, pages))
-        return Report(full, completed.size, failures.toList())
+        return Report(full, completed.size, failures.toList(), failures.any { it in transientDays })
     }
 }
