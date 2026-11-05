@@ -77,3 +77,21 @@ A következő lépés a kiadott APK-k készülékes visszatesztje;
 a forrás, a signed build és a teljes közös CI már ellenőrzött. A bizonyítékot rögzítő későbbi
 dokumentációs commit nem változtatja az alkalmazás/teszt/workflow forrását.
 APK-kéréskor csak a meglévő signed workflow: telefon release + R8/shrunk Wear release.
+
+## #151 UI-folytatás – integrációra vár
+
+Ág: `design/health-provider-journal` (draft PR átadáskor). A naplóban csak a felső
+Samsung Health / Health Connect választó marad; origin csak rekord-metaadat.
+Kis szolgáltatófrissítő natív callbackkel, busy/hiba állapot és revision alapú
+újraolvasás; lenyitott napokon csak AVAILABLE metrikák, a valós nulla megmarad.
+A felső és alsó kézi szinkron ugyanazt a callbacket használja. Footer mindkét
+provider sikeres idejét és az engedélyezett automatikus ütemezést jelzi; a meglévő
+Wear-kártya címe „TrainPilot Wear OS – edzésmérések”.
+
+A módosított Compose-regressziók a provider-projekciót, összes eredet rekordjait,
+hiány/tiltás/hiba elrejtését, nullát, natív revision-frissítést, busy/hiba állapotot
+és a két szinkrongomb callbackjét fedik. `git diff --check` rendben; helyi
+Gradle/CI nem futott. Az ág a párhuzamos #149 natív UiState-mezőket és a root
+`onReadHealthSource` bekötést igényli, ezért teljes CI csak a közös integráción.
+Az origin-selector és hiányzó metrikasor régi tesztelvárásait a #151 kifejezett
+új UX-e miatt cseréltük le; dátum/lapozás/generation védelmek megmaradtak.
