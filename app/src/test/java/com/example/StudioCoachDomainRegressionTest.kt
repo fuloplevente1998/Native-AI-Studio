@@ -4,6 +4,8 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.example.ui.components.StudioCoachRecommendations
 import com.example.ui.components.StudioCoachNextTrainingCard
+import com.example.ui.components.StudioWorkoutCoachAdvice
+import androidx.compose.runtime.mutableStateOf
 import com.example.ui.theme.TrainPilotTheme
 import com.repforge.app.StudioWorkoutFeedback
 import com.repforge.app.ui.coach.*
@@ -91,5 +93,31 @@ class StudioCoachDomainRegressionTest {
         assertTrue(result.pain); assertTrue(requireNotNull(result.score) <= 54.0)
         assertTrue(com.example.ui.components.studioCoachReadinessText(result).contains("Fájdalomjelzés"))
         assertFalse(com.example.ui.components.studioCoachReadinessText(result).contains("teljes értékű"))
+    }
+
+    @Test fun activeCoachDisplaysRealAdviceAndSeparatesLoadingNoHistoryAndReadFailure() {
+        var refreshes = 0
+        val advice = NativeCoachExerciseAdvice.Advice("increase", "stable", 22.5, 20.0,
+            false, 3, NativeCoachExerciseAdvice.Target("reps", text = "8-12"))
+        val state = mutableStateOf(WorkoutCoachAdviceState("press"))
+        compose.setContent { TrainPilotTheme { androidx.compose.foundation.layout.Column {
+            StudioWorkoutCoachAdvice(state.value) { refreshes++ }
+        } } }
+        compose.onNodeWithTag("studio_active_coach_loading").assertExists()
+        compose.onNodeWithTag("studio_active_coach_refresh").assertIsNotEnabled()
+        compose.runOnIdle { state.value = WorkoutCoachAdviceState("press", loading = false,
+            row = CoachExerciseAdvice("press", "Press", advice, "total")) }
+        compose.onNodeWithTag("studio_active_coach_weight").assertTextContains("22.5 kg", substring = true)
+        compose.onNodeWithTag("studio_active_coach_no_history").assertDoesNotExist()
+        compose.onNodeWithTag("studio_active_coach_refresh").performClick()
+        assertEquals(1, refreshes)
+        compose.runOnIdle { state.value = WorkoutCoachAdviceState("press", loading = false,
+            row = CoachExerciseAdvice("press", "Press", advice.copy(action = "start", reason = "start", historyCount = 0))) }
+        compose.onNodeWithTag("studio_active_coach_no_history").assertExists()
+        compose.onNodeWithTag("studio_active_coach_error").assertDoesNotExist()
+        compose.runOnIdle { state.value = WorkoutCoachAdviceState("press", loading = false, error = true) }
+        compose.onNodeWithTag("studio_active_coach_error").assertExists()
+        compose.onNodeWithTag("studio_active_coach_no_history").assertDoesNotExist()
+        compose.onNodeWithTag("studio_active_coach_weight").assertDoesNotExist()
     }
 }
