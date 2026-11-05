@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -33,14 +34,17 @@ internal fun JournalEffortDropdown(selected: String?, choices: List<Pair<String,
         Surface(onClick = { expanded = true }, enabled = enabled,
             shape = RoundedCornerShape(12.dp),
             color = if (answer != null) selectedFill else colors.card2,
-            border = TrainPilotFrames.stroke(0.75.dp, if (answer != null) colors.accent else colors.line),
+            border = TrainPilotFrames.control(if (answer != null) colors.accent else colors.line, selected = answer != null),
             modifier = Modifier.fillMaxWidth().testTag(tag)) {
-            Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 12.dp, vertical = 8.dp),
+            Row(Modifier.heightIn(min = 48.dp).background(Brush.horizontalGradient(listOf(
+                if (answer != null) selectedFill else colors.card2, colors.card)))
+                .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (answer != null) Icon(Icons.Default.Check, null, tint = colors.accent, modifier = Modifier.size(20.dp))
+                if (answer != null) Icon(Icons.Default.Check, null, tint = colors.accentText, modifier = Modifier.size(20.dp))
                 Text(answer?.second ?: prompt, Modifier.weight(1f), fontWeight = FontWeight.SemiBold,
-                    color = if (answer != null) colors.accent else colors.text)
-                Icon(Icons.Default.ExpandMore, prompt, tint = colors.accent)
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (answer != null) colors.accentText else colors.text)
+                Icon(Icons.Default.ExpandMore, prompt, tint = colors.accentText)
             }
         }
         DropdownMenu(expanded = expanded && enabled, onDismissRequest = { expanded = false },
@@ -48,8 +52,8 @@ internal fun JournalEffortDropdown(selected: String?, choices: List<Pair<String,
             choices.forEach { (key, label) ->
                 val chosen = answer?.first == key
                 DropdownMenuItem(text = { Text(label, fontWeight = if (chosen) FontWeight.Bold else FontWeight.Normal,
-                    color = if (chosen) colors.accent else colors.text) },
-                    trailingIcon = { if (chosen) Icon(Icons.Default.Check, null, tint = colors.accent) },
+                    color = if (chosen) colors.accentText else colors.text) },
+                    trailingIcon = { if (chosen) Icon(Icons.Default.Check, null, tint = colors.accentText) },
                     onClick = { onSelect(key); expanded = false },
                     modifier = Modifier.heightIn(min = 48.dp)
                         .background(if (chosen) selectedFill else colors.card)

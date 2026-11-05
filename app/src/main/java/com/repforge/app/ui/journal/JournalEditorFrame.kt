@@ -1,6 +1,7 @@
 package com.repforge.app.ui.journal
 
 import android.graphics.Rect
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -8,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -50,7 +52,8 @@ internal fun JournalEditorFrame(title: String, saving: Boolean, onCancel: () -> 
                 .trainPilotSoftGlow(colors.accent, shape)
                 .border(TrainPilotFrames.page(colors.line, colors.accent), shape)
                 .testTag("journal_editor_visible_viewport")) {
-            Column(Modifier.fillMaxSize().padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
+                colors.accent.copy(alpha = 0.06f), colors.card, colors.card2))).padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                     TrainPilotRedCloseButton(onClick = { if (!saving) onCancel() },
@@ -59,5 +62,17 @@ internal fun JournalEditorFrame(title: String, saving: Boolean, onCancel: () -> 
                 content()
             }
         }
+    }
+}
+
+/** Softer palette-derived boxes inside the editor's single page frame. */
+@Composable
+internal fun JournalEditorPanel(content: @Composable ColumnScope.() -> Unit) {
+    val colors = LocalTrainPilotColors.current
+    Surface(color = colors.card2, shape = RoundedCornerShape(12.dp),
+        border = TrainPilotFrames.stroke(TrainPilotFrames.panelWidth, colors.line)) {
+        Column(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(
+            colors.accent.copy(alpha = 0.05f), colors.card2))).padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp), content = content)
     }
 }
