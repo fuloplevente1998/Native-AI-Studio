@@ -144,7 +144,7 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                             Text("${s + 1}.", style = MaterialTheme.typography.labelLarge,
-                                                color = colors.accent, modifier = Modifier
+                                                color = colors.accentText, modifier = Modifier
                                                     .background(colors.accent.copy(alpha = 0.10f), RoundedCornerShape(8.dp))
                                                     .padding(horizontal = 8.dp, vertical = 6.dp))
                                             Row(Modifier.weight(1f).heightIn(min = 48.dp)
@@ -253,7 +253,7 @@ internal fun journalEditorFieldColors(): TextFieldColors {
     return OutlinedTextFieldDefaults.colors(
         focusedTextColor = colors.text, unfocusedTextColor = colors.text,
         focusedContainerColor = colors.card, unfocusedContainerColor = colors.card,
-        focusedBorderColor = colors.accent, unfocusedBorderColor = colors.line.copy(alpha = 0.4f),
-        focusedLabelColor = colors.accent, unfocusedLabelColor = colors.muted,
+        focusedBorderColor = colors.selectedBorder, unfocusedBorderColor = colors.line.copy(alpha = 0.4f),
+        focusedLabelColor = colors.accentText, unfocusedLabelColor = colors.muted,
         cursorColor = colors.accent)
 }

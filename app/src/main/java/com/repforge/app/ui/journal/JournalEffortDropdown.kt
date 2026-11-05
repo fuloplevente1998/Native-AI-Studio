@@ -40,11 +40,11 @@ internal fun JournalEffortDropdown(selected: String?, choices: List<Pair<String,
                 if (answer != null) selectedFill else colors.card2, colors.card)))
                 .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (answer != null) Icon(Icons.Default.Check, null, tint = colors.accent, modifier = Modifier.size(20.dp))
+                if (answer != null) Icon(Icons.Default.Check, null, tint = colors.accentText, modifier = Modifier.size(20.dp))
                 Text(answer?.second ?: prompt, Modifier.weight(1f), fontWeight = FontWeight.SemiBold,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (answer != null) colors.accent else colors.text)
-                Icon(Icons.Default.ExpandMore, prompt, tint = colors.accent)
+                    color = if (answer != null) colors.accentText else colors.text)
+                Icon(Icons.Default.ExpandMore, prompt, tint = colors.accentText)
             }
         }
         DropdownMenu(expanded = expanded && enabled, onDismissRequest = { expanded = false },
@@ -52,8 +52,8 @@ internal fun JournalEffortDropdown(selected: String?, choices: List<Pair<String,
             choices.forEach { (key, label) ->
                 val chosen = answer?.first == key
                 DropdownMenuItem(text = { Text(label, fontWeight = if (chosen) FontWeight.Bold else FontWeight.Normal,
-                    color = if (chosen) colors.accent else colors.text) },
-                    trailingIcon = { if (chosen) Icon(Icons.Default.Check, null, tint = colors.accent) },
+                    color = if (chosen) colors.accentText else colors.text) },
+                    trailingIcon = { if (chosen) Icon(Icons.Default.Check, null, tint = colors.accentText) },
                     onClick = { onSelect(key); expanded = false },
                     modifier = Modifier.heightIn(min = 48.dp)
                         .background(if (chosen) selectedFill else colors.card)

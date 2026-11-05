@@ -40,10 +40,10 @@ internal fun ExerciseFeedbackControl(effort: String?, note: String, language: St
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.Start) {
                     Text(heading, style = MaterialTheme.typography.labelMedium, color = colors.muted)
                     Text(if (selected >= 0) text.getString(labels[selected]) else "—",
-                        style = MaterialTheme.typography.bodyMedium, color = colors.accent)
+                        style = MaterialTheme.typography.bodyMedium, color = colors.accentText)
                 }
                 Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null,
-                    tint = colors.accent, modifier = Modifier.size(20.dp))
+                    tint = colors.accentText, modifier = Modifier.size(20.dp))
             }
             if (expanded) {
                 if (effortLocked) Text(text.getString(R.string.journal_feedback_locked), style = MaterialTheme.typography.bodySmall)
