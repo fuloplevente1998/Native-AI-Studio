@@ -137,6 +137,12 @@ class StudioSessionMeasurementRegressionTest {
         assertEquals(before.getString("workoutId"), after.getString("workoutId"))
         assertEquals(before.getLong("generation"), after.getLong("generation"))
         assertTrue(model.uiState.value.activeSets.none { it.completed })
+        // Accept a second tap before the asynchronous display observer has caught up.
+        model.switchCurrentActiveExercise(second)
+        model.switchCurrentActiveExercise(first)
+        assertEquals(first.id, target(ActiveWorkoutStore.current(context)!!).exerciseId)
+        await { model.uiState.value.selectedExerciseId == first.id }
+        assertEquals(original, ActiveWorkoutStore.current(context)!!.getJSONArray("exercises").toString())
     }
 
     @Test fun watchSelectionUpdatesTheStudioTargetAndRepeatedStartKeepsOneNativeStopwatch() {
