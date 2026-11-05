@@ -28,6 +28,9 @@ import com.repforge.app.ui.text.nativeResources
 import com.repforge.app.ui.theme.LocalTrainPilotColors
 import com.repforge.app.ui.theme.TrainPilotExtendedColors
 
+internal enum class WorkoutHealthView { Sources, Summary }
+internal val LocalWorkoutHealthView = staticCompositionLocalOf { WorkoutHealthView.Sources }
+
 /** Reuse the native Room observer and guarded Health reader behind the Studio journal. */
 @Composable
 internal fun studioWorkoutHealthContent(
@@ -44,7 +47,8 @@ internal fun studioWorkoutHealthContent(
     val palette = LocalTrainPilotPalette.current
     val text = remember(context, language) { nativeResources(context, language) }
     var resumed by remember(owner) { mutableStateOf(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) }
-    var attempted by rememberSaveable(workoutId, state.healthProvider) { mutableStateOf(false) }
+    val expandedSource = rememberSaveable(workoutId) { mutableStateOf<String?>(null) }
+    var attemptedProviders by rememberSaveable(workoutId) { mutableStateOf(listOf<String>()) }
     DisposableEffect(owner) {
         val observer = LifecycleEventObserver { _, _ -> resumed = owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) }
         owner.lifecycle.addObserver(observer)
@@ -71,8 +75,8 @@ internal fun studioWorkoutHealthContent(
             hc != null && NativeWorkoutHealth.matchesWindow(hc, workout) && NativeWorkoutHealth.metrics(hc, false).isNotEmpty())
         // Health Connect can receive watch/Samsung records after the workout was saved.
         // A previous empty response must not suppress future foreground refresh attempts.
-        if (resumed && !attempted && !hasHealthMetrics) {
-            attempted = true
+        if (resumed && state.healthProvider !in attemptedProviders && !hasHealthMetrics) {
+            attemptedProviders = attemptedProviders + state.healthProvider
             // Foreground only; the native adapter checks actual OS grants, active windows,
             // deletion/restore generations and lifecycle again before attaching the response.
             model.refreshWorkoutHealth(activity)
@@ -88,12 +92,17 @@ internal fun studioWorkoutHealthContent(
         CompositionLocalProvider(LocalTrainPilotColors provides nativeColors) {
             if (detail != null) {
                 Column(Modifier.fillMaxWidth().testTag("studio_workout_health")) {
-                    JournalHealthPanel(detail, text, language, state.healthRefreshing, state.healthError, !state.deleting,
+                    if (LocalWorkoutHealthView.current == WorkoutHealthView.Summary) {
+                        com.repforge.app.ui.journal.JournalWorkoutHealthSummary(detail, text, language)
+                        state.healthError?.let { Text(text.getString(it), color = palette.danger,
+                            modifier = Modifier.testTag("journal_summary_refresh_error")) }
+                    } else JournalHealthPanel(detail, text, language, state.healthRefreshing, state.healthError, !state.deleting,
                         provider = state.healthProvider, status = state.healthStatus, selectProvider = model::selectWorkoutHealthProvider,
+                        expandedState = expandedSource,
                         permissions = { _ ->
                             if (state.healthError in setOf(R.string.journal_health_permission, R.string.journal_samsung_permission)) {
                                 TrainPilotOutlinedButton(onClick = {
-                                    attempted = false
+                                    attemptedProviders = attemptedProviders - state.healthProvider
                                     if (state.healthProvider == com.repforge.app.HealthJournalStore.SAMSUNG && activity != null)
                                         model.requestSamsungWorkoutPermission(activity)
                                     else requestPermissions()

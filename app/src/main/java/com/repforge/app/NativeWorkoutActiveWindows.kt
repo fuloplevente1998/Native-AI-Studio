@@ -39,6 +39,7 @@ internal object NativeWorkoutActiveWindows {
                 Instant.parse(it.getString("end")) == window.end) { "Health window mismatch" }
         } }
         val out = JSONObject().put("start", workout.getString("started")).put("end", workout.getString("finished"))
+            .put("measurementWindows", org.json.JSONArray(rows.map { JSONObject(it.toString()) }))
             .put("activeIntervals", org.json.JSONArray(windows.map {
                 JSONObject().put("start", it.start.toString()).put("end", it.end.toString())
             })).put("partial", rows.any { it.optBoolean("partial") || (it.optJSONArray("failedFields")?.length() ?: 0) > 0 })

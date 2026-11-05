@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
 import com.repforge.app.HealthJournalStore
 import com.repforge.app.NativeWorkoutHealth
+import com.repforge.app.NativeWorkoutHealthSummary
 import com.repforge.app.NativeWorkoutHealthSource
 import com.repforge.app.NativeSavedWearHealth
 import com.repforge.app.R
@@ -42,19 +43,25 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     language: String, refreshing: Boolean, error: Int?, enabled: Boolean,
     provider: String = HealthJournalStore.HC, status: String? = null,
     selectProvider: (String) -> Unit = {}, permissions: (@Composable (String) -> Unit)? = null,
+    expandedState: MutableState<String?>? = null,
     refresh: () -> Unit) {
     val colors = LocalTrainPilotColors.current
     val workout = detail.workout
     val raw = remember(workout.rawJson) { parseHealth(workout.rawJson) }
     val wear = remember(workout.wearMetricsJson, workout.rawJson) { NativeSavedWearHealth.read(workout) }
     val document = remember(workout.health240Json) { parseHealth(workout.health240Json) }
+    val summary = remember(workout) { NativeWorkoutHealthSummary.read(workout) }
+    fun local(hu: String, en: String, de: String, ro: String) = when (language.substringBefore('-')) {
+        "hu" -> hu; "de" -> de; "ro" -> ro; else -> en
+    }
     val locale = remember(language) { Locale.forLanguageTag(language) }
     val number = remember(locale) { NumberFormat.getNumberInstance(locale).apply { maximumFractionDigits = 1 } }
     val date = remember(locale) { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
         .withLocale(locale).withZone(ZoneId.systemDefault()) }
     fun time(value: String) = runCatching { date.format(Instant.parse(value)) }.getOrDefault("—")
     // Do not restore the previous version's independent Boolean slots as a String state.
-    var expandedSource by rememberSaveable(workout.id, key = "journal_source_v2_${workout.id}") { mutableStateOf<String?>(null) }
+    val localExpanded = rememberSaveable(workout.id, key = "journal_source_v2_${workout.id}") { mutableStateOf<String?>(null) }
+    var expandedSource by (expandedState ?: localExpanded)
     val wearExpanded = expandedSource == "wear"
     val samsungExpanded = expandedSource == HealthJournalStore.SAMSUNG
     val hcExpanded = expandedSource == HealthJournalStore.HC
@@ -86,6 +93,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
         }
         JournalHealthSourceContent("wear", "TrainPilot WearOS", wearExpanded) {
             Text("Health Services", color = colors.muted)
+            JournalHealthSourceEvidence(summary, "wear", language)
             if (wear != null && raw?.optBoolean("nativeHealthWindowStale") == true) {
                 Text(text.getString(R.string.journal_edit_stale), color = colors.muted)
                 raw.optJSONObject("nativeOriginalHealthWindow")?.let {
@@ -105,7 +113,13 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
             val selected = source == provider
             JournalHealthSourceContent(tag, NativeWorkoutHealthSource.label(source),
                 if (source == HealthJournalStore.SAMSUNG) samsungExpanded else hcExpanded) {
-                Text("${text.getString(R.string.journal_health_window)}: ${time(workout.started)} – ${time(workout.finished)}")
+                JournalHealthSourceEvidence(summary, source, language)
+                Text("${text.getString(R.string.journal_health_window)}: ${time(health?.let { it.optString("windowStart", it.optString("start")) } ?: workout.started)} – ${time(health?.let { it.optString("windowEnd", it.optString("end")) } ?: workout.finished)}")
+                health?.optJSONArray("measurementWindows")?.let { windows ->
+                    for (index in 0 until windows.length()) windows.optJSONObject(index)?.let { window ->
+                        Text("${window.optString("start")} – ${window.optString("end")}", color = colors.muted)
+                    }
+                }
                 if (!current) Text(text.getString(if (health == null) R.string.journal_no_data else R.string.journal_health_stale),
                     color = colors.muted, modifier = Modifier.testTag("journal_${tag}_health_status"))
                 else {
@@ -115,6 +129,17 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                     if (metrics.isEmpty()) Text(text.getString(R.string.journal_health_empty), color = colors.muted)
                     if (data.optBoolean("partial") || (data.optJSONArray("warnings")?.length() ?: 0) > 0)
                         Text(text.getString(R.string.journal_health_partial), color = colors.muted)
+                    if (metrics.containsKey("workoutCalories")) {
+                        val types = data.optJSONArray("workoutEnergyTypes")
+                        val names = (0 until (types?.length() ?: 0)).map { types!!.optString(it) }.map { type ->
+                            when (type) {
+                                "active" -> text.getString(R.string.health_metric_activecalories)
+                                "total" -> text.getString(R.string.health_metric_totalcalories)
+                                else -> local("Edzésenergia; aktív/teljes bontás nélkül", "Session energy; active/total split unavailable", "Trainingsenergie; Aktiv-/Gesamtaufteilung fehlt", "Energie sesiune; fără separare activă/totală")
+                            }
+                        }.distinct()
+                        Text(names.joinToString().ifBlank { local("Energiatípus nem ismert", "Energy type unknown", "Energieart unbekannt", "Tip energie necunoscut") }, color = colors.muted)
+                    }
                     if (data.optBoolean("workoutEnergyProrated")) Text(text.getString(R.string.journal_health_prorated), color = colors.muted)
                     val sources = data.optJSONArray("sources")
                     val labels = data.optJSONObject("sourceLabels")
@@ -141,6 +166,23 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
         }
     }
 }
+
+@Composable
+private fun JournalHealthSourceEvidence(summary: NativeWorkoutHealthSummary.Result, source: String, language: String) {
+    val colors = LocalTrainPilotColors.current
+    fun local(hu: String, en: String, de: String, ro: String) = when (language.substringBefore('-')) {
+        "hu" -> hu; "de" -> de; "ro" -> ro; else -> en
+    }
+        for (relation in summary.relationships.filter { it.first == source || it.second == source }) {
+            val other = NativeWorkoutHealthSummary.label(if (relation.first == source) relation.second else relation.first)
+            Text(if (relation.confirmedMirror) local("Azonos rekordkapcsolat", "Shared record identity", "Gemeinsame Datensatzidentität", "Identitate comună înregistrare") + ": $other"
+                else local("Átfedő mérés; lehetséges tükrözés", "Overlapping measurement; possible mirror", "Überlappende Messung; mögliche Spiegelung", "Măsurare suprapusă; posibilă copie") + ": $other", color = colors.muted)
+        }
+        Text(local("Az összesítő az átfedést egyszer veszi figyelembe; az eredeti forrásadat itt megmarad.",
+            "The summary counts overlaps once; original source data is preserved here.",
+            "Die Übersicht zählt Überlappungen einmal; Originaldaten bleiben hier erhalten.",
+            "Rezumatul numără suprapunerile o dată; datele originale sunt păstrate aici."), color = colors.muted)
+    }
 
 @Composable
 private fun JournalHealthSourceContent(source: String, title: String, expanded: Boolean,

@@ -1001,6 +1001,7 @@ fun LogWorkoutDetailScreen(
                             .weight(1f)
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { onSelectDetailTab(idx) }
+                            .testTag("log_detail_tab_$idx")
                     ) {
                         Text(
                             text = label,
@@ -1152,19 +1153,21 @@ fun LogWorkoutDetailScreen(
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(trL(uiState.language, "Adatforrás és szinkron napló", "Data source & sync log", "Datenquelle & Synchronisationsprotokoll", "Sursă de date și jurnal de sincronizare"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                         val originLabel = if (workout.originDevice == "watch") trL(uiState.language, "Óra", "Watch", "Uhr", "Ceas") else trL(uiState.language, "Telefon", "Phone", "Telefon", "Telefon")
-                        val recordedLabel = trL(uiState.language, "Edzéshez rögzítve", "Recorded for workout", "Für Training aufgezeichnet", "Înregistrat pentru antrenament")
-                        val unavailableLabel = trL(uiState.language, "Nem érhető el", "Not available", "Nicht verfügbar", "Indisponibil")
                         Text("• ${trL(uiState.language, "Rögzítő eszköz", "Recording device", "Aufzeichnungsgerät", "Dispozitiv de înregistrare")}: $originLabel", color = palette.textPrimary)
-                        Text("• Wear OS: ${if (workout.sourceWatch) recordedLabel else unavailableLabel}", color = palette.textSecondary)
-                        Text("• Health Connect: ${if (workout.sourceHealthConnect) recordedLabel else unavailableLabel}", color = palette.textSecondary)
                         Text("• ${trL(uiState.language, "Pulzus és kalória: csak hiteles edzésmérésből jeleníthető meg", "Heart rate & calories: shown only from verified workout measurements", "Puls & Kalorien: nur aus verifizierten Trainingsmessungen sichtbar", "Puls și calorii: afișate doar din măsurători verificate")}", color = palette.textSecondary)
                     }
                 }
             }
         }
 
-        // The health controller lives outside LazyColumn; scrolling never restarts provider reads.
-        item(key = "workout_health") { workoutHealth() }
+        // The native observer remains outside this list; changing tabs only changes presentation.
+        if (uiState.logDetailTabIndex in 1..2) item(key = "workout_health") {
+            androidx.compose.runtime.CompositionLocalProvider(
+                com.example.ui.components.LocalWorkoutHealthView provides
+                    if (uiState.logDetailTabIndex == 1) com.example.ui.components.WorkoutHealthView.Summary
+                    else com.example.ui.components.WorkoutHealthView.Sources
+            ) { workoutHealth() }
+        }
 
                         // Fotók (2) & Útvonal megtekintése buttons
         item {
@@ -1202,7 +1205,7 @@ fun LogWorkoutDetailScreen(
         }
 
         // Egészségügyi forrás: TrainPilot óra & Health Connect (Mockup 3/4 #2 custom icons)
-        item {
+        if (uiState.logDetailTabIndex == 2) item {
             Text(
                 text = trL(uiState.language, "Egészségügyi forrás", "Health source", "Gesundheitsquelle", "Sursă de sănătate"),
                 style = MaterialTheme.typography.labelMedium,
