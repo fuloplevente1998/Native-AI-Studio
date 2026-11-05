@@ -2,8 +2,9 @@ package com.repforge.app.ui.journal
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import com.repforge.app.ui.theme.TrainPilotFrames
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,7 +14,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -77,31 +80,34 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                     LazyColumn(Modifier.weight(1f).testTag("journal_editor_list"), verticalArrangement = Arrangement.spacedBy(6.dp),
                         contentPadding = PaddingValues(top = 4.dp, bottom = 12.dp)) {
                         item {
-                            Text(text.getString(R.string.journal_edit_time_hint), color = colors.muted,
-                                style = MaterialTheme.typography.labelSmall)
-                            JournalEditField(started, { started = it; invalid = false }, text.getString(R.string.journal_edit_started),
-                                "journal_editor_started", !state.saving, KeyboardType.Text)
-                            JournalEditField(finished, { finished = it; invalid = false }, text.getString(R.string.journal_edit_finished),
-                                "journal_editor_finished", !state.saving, KeyboardType.Text)
+                            JournalEditorPanel {
+                                Text(text.getString(R.string.journal_edit_time_hint), color = colors.muted,
+                                    style = MaterialTheme.typography.labelSmall)
+                                JournalEditField(started, { started = it; invalid = false }, text.getString(R.string.journal_edit_started),
+                                    "journal_editor_started", !state.saving, KeyboardType.Text)
+                                JournalEditField(finished, { finished = it; invalid = false }, text.getString(R.string.journal_edit_finished),
+                                    "journal_editor_finished", !state.saving, KeyboardType.Text)
+                            }
                         }
                         item {
-                            Text(text.getString(R.string.journal_feedback), style = MaterialTheme.typography.titleMedium)
-                            if (feedbackLocked) Text(text.getString(R.string.journal_feedback_locked), color = colors.muted)
-                            val choices = listOf("easy" to R.string.journal_effort_easy, "light" to R.string.journal_effort_light,
-                                "good" to R.string.journal_effort_good, "challenging" to R.string.journal_effort_challenging,
-                                "hard" to R.string.journal_effort_hard, "pain" to R.string.journal_effort_pain)
-                            JournalEffortDropdown(draft.feedbackEffort,
-                                choices.map { (key, label) -> key to text.getString(label) },
-                                text.getString(R.string.journal_feedback), !state.saving && !feedbackLocked,
-                                onSelect = { onChange(draft.copy(feedbackEffort = it)) })
-                        }
-                        item {
-                            OutlinedTextField(draft.note, { onChange(draft.copy(note = it)) },
-                                label = { Text(when (language) {
-                                    "en" -> "Workout note"; "de" -> "Trainingsnotiz"; "ro" -> "Notiță antrenament"; else -> "Edzésjegyzet"
-                                }) }, enabled = !state.saving, minLines = 1, maxLines = 3,
-                                shape = RoundedCornerShape(12.dp), textStyle = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.fillMaxWidth().testTag("journal_editor_note"))
+                            JournalEditorPanel {
+                                Text(text.getString(R.string.journal_feedback), style = MaterialTheme.typography.titleSmall)
+                                if (feedbackLocked) Text(text.getString(R.string.journal_feedback_locked), color = colors.muted)
+                                val choices = listOf("easy" to R.string.journal_effort_easy, "light" to R.string.journal_effort_light,
+                                    "good" to R.string.journal_effort_good, "challenging" to R.string.journal_effort_challenging,
+                                    "hard" to R.string.journal_effort_hard, "pain" to R.string.journal_effort_pain)
+                                JournalEffortDropdown(draft.feedbackEffort,
+                                    choices.map { (key, label) -> key to text.getString(label) },
+                                    text.getString(R.string.journal_feedback), !state.saving && !feedbackLocked,
+                                    onSelect = { onChange(draft.copy(feedbackEffort = it)) })
+                                OutlinedTextField(draft.note, { onChange(draft.copy(note = it)) },
+                                    label = { Text(when (language) {
+                                        "en" -> "Workout note"; "de" -> "Trainingsnotiz"; "ro" -> "Notiță antrenament"; else -> "Edzésjegyzet"
+                                    }) }, enabled = !state.saving, minLines = 1, maxLines = 3,
+                                    shape = RoundedCornerShape(12.dp), textStyle = MaterialTheme.typography.bodyMedium,
+                                    colors = journalEditorFieldColors(),
+                                    modifier = Modifier.fillMaxWidth().testTag("journal_editor_note"))
+                            }
                         }
                         draft.exercises.forEachIndexed { e, exercise ->
                             val source = exercise.originalIndex?.let { original.getJSONObject(it) }
@@ -115,14 +121,14 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                             val distance = type == "distance" || unit in setOf("km", "m")
                             val bodyweight = (source?.optString("loadType") ?: library?.loadType) == "bodyweight"
                             item {
-                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    Text(name, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                                    TextButton(onClick = { onChange(draft.copy(exercises = draft.exercises.filterIndexed { i, _ -> i != e })) },
-                                        enabled = !state.saving && draft.exercises.size > 1,
-                                        modifier = Modifier.testTag("journal_editor_remove_exercise_$e")) { Text(text.getString(R.string.journal_edit_remove)) }
+                                JournalEditorPanel {
+                                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                        Text(name, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                                        TextButton(onClick = { onChange(draft.copy(exercises = draft.exercises.filterIndexed { i, _ -> i != e })) },
+                                            enabled = !state.saving && draft.exercises.size > 1,
+                                            modifier = Modifier.heightIn(min = 48.dp).testTag("journal_editor_remove_exercise_$e"),
+                                            colors = ButtonDefaults.textButtonColors(contentColor = colors.dangerText)) { Text(text.getString(R.string.journal_edit_remove)) }
                                 }
-                            }
-                            item {
                                 com.example.ui.components.ExerciseFeedbackControl(
                                     effort = exercise.effort, note = exercise.note, language = language,
                                     onEffort = { replaceExercise(e, exercise.copy(effort = it)) },
@@ -130,36 +136,57 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                                     enabled = !state.saving,
                                     effortLocked = feedbackLocked || source?.optJSONObject("feedback")?.optBoolean("applied") == true,
                                     tag = "journal_exercise_feedback_$e")
+                                }
                             }
                             exercise.sets.forEachIndexed { s, set ->
                                 item {
-                                    Surface(color = colors.card2, shape = RoundedCornerShape(14.dp),
-                                        border = TrainPilotFrames.stroke(0.75.dp, colors.line)) {
-                                    Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                            Text("${s + 1}.", Modifier.weight(1f))
-                                            Checkbox(set.done, { editSet(e, s, set.copy(done = it)) }, enabled = !state.saving,
-                                                modifier = Modifier.testTag("journal_editor_done_${e}_$s"))
-                                            Text(text.getString(R.string.journal_edit_done))
+                                    JournalEditorPanel {
+                                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            Text("${s + 1}.", style = MaterialTheme.typography.labelLarge,
+                                                color = colors.accent, modifier = Modifier
+                                                    .background(colors.accent.copy(alpha = 0.10f), RoundedCornerShape(8.dp))
+                                                    .padding(horizontal = 8.dp, vertical = 6.dp))
+                                            Row(Modifier.weight(1f).heightIn(min = 48.dp)
+                                                .toggleable(set.done, enabled = !state.saving, role = Role.Checkbox,
+                                                    onValueChange = { editSet(e, s, set.copy(done = it)) })
+                                                .testTag("journal_editor_done_${e}_$s"),
+                                                verticalAlignment = Alignment.CenterVertically) {
+                                                Checkbox(set.done, onCheckedChange = null, enabled = !state.saving)
+                                                Text(text.getString(R.string.journal_edit_done),
+                                                    style = MaterialTheme.typography.labelMedium)
+                                            }
                                             TextButton(onClick = { replaceExercise(e, exercise.copy(sets = exercise.sets.filterIndexed { i, _ -> i != s })) },
                                                 enabled = !state.saving && exercise.sets.size > 1,
-                                                modifier = Modifier.testTag("journal_editor_remove_set_${e}_$s")) { Text(text.getString(R.string.journal_edit_remove)) }
+                                                colors = ButtonDefaults.textButtonColors(contentColor = colors.dangerText),
+                                                modifier = Modifier.heightIn(min = 48.dp).testTag("journal_editor_remove_set_${e}_$s")) {
+                                                Text(text.getString(R.string.journal_edit_remove), style = MaterialTheme.typography.labelMedium)
+                                            }
                                         }
-                                        if (!bodyweight) JournalEditField(set.weight, { editSet(e, s, set.copy(weight = it)) },
-                                            text.getString(R.string.journal_edit_weight), "journal_editor_weight_${e}_$s", !state.saving)
                                         if (bilateral) {
-                                            JournalEditField(set.left, { editSet(e, s, set.copy(left = it)) }, text.getString(R.string.journal_edit_left),
-                                                "journal_editor_left_${e}_$s", !state.saving)
-                                            JournalEditField(set.right, { editSet(e, s, set.copy(right = it)) }, text.getString(R.string.journal_edit_right),
-                                                "journal_editor_right_${e}_$s", !state.saving)
-                                        } else JournalEditField(set.reps, { editSet(e, s, set.copy(reps = it)) },
-                                            text.getString(if (distance || type == "time" || SetEditorRules212.normalizeUnit(unit).startsWith("mp"))
-                                                R.string.journal_edit_seconds else R.string.journal_edit_reps), "journal_editor_reps_${e}_$s", !state.saving)
+                                            if (!bodyweight) JournalEditField(set.weight, { editSet(e, s, set.copy(weight = it)) },
+                                                text.getString(R.string.journal_edit_weight), "journal_editor_weight_${e}_$s", !state.saving)
+                                            JournalEditorFieldPair(
+                                                first = { JournalEditField(set.left, { editSet(e, s, set.copy(left = it)) },
+                                                    text.getString(R.string.journal_edit_left), "journal_editor_left_${e}_$s", !state.saving) },
+                                                second = { JournalEditField(set.right, { editSet(e, s, set.copy(right = it)) },
+                                                    text.getString(R.string.journal_edit_right), "journal_editor_right_${e}_$s", !state.saving) })
+                                        } else {
+                                            JournalEditorFieldPair(
+                                                first = {
+                                                    if (!bodyweight) JournalEditField(set.weight, { editSet(e, s, set.copy(weight = it)) },
+                                                        text.getString(R.string.journal_edit_weight), "journal_editor_weight_${e}_$s", !state.saving)
+                                                    else JournalEditField(set.rir, { editSet(e, s, set.copy(rir = it)) },
+                                                        text.getString(R.string.journal_edit_rir), "journal_editor_rir_${e}_$s", !state.saving)
+                                                },
+                                                second = { JournalEditField(set.reps, { editSet(e, s, set.copy(reps = it)) },
+                                                    text.getString(if (distance || type == "time" || SetEditorRules212.normalizeUnit(unit).startsWith("mp"))
+                                                        R.string.journal_edit_seconds else R.string.journal_edit_reps), "journal_editor_reps_${e}_$s", !state.saving) })
+                                        }
                                         if (distance) JournalEditField(set.distance, { editSet(e, s, set.copy(distance = it)) },
                                             text.getString(R.string.journal_edit_distance), "journal_editor_distance_${e}_$s", !state.saving)
-                                        JournalEditField(set.rir, { editSet(e, s, set.copy(rir = it)) }, text.getString(R.string.journal_edit_rir),
-                                            "journal_editor_rir_${e}_$s", !state.saving)
-                                    }
+                                        if (!bodyweight || bilateral) JournalEditField(set.rir, { editSet(e, s, set.copy(rir = it)) },
+                                            text.getString(R.string.journal_edit_rir), "journal_editor_rir_${e}_$s", !state.saving)
                                     }
                                 }
                             }
@@ -199,5 +226,34 @@ private fun JournalEditField(value: String, change: (String) -> Unit, label: Str
     enabled: Boolean, keyboard: KeyboardType = KeyboardType.Decimal) {
     OutlinedTextField(value, change, label = { Text(label) }, singleLine = true, enabled = enabled,
         shape = RoundedCornerShape(12.dp), textStyle = MaterialTheme.typography.bodyMedium,
+        colors = journalEditorFieldColors(),
         keyboardOptions = KeyboardOptions(keyboardType = keyboard), modifier = Modifier.fillMaxWidth().testTag(tag))
+}
+
+/** Keep numeric values side by side only when labels and scaled text have room. */
+@Composable
+private fun JournalEditorFieldPair(first: @Composable () -> Unit, second: @Composable () -> Unit) {
+    val fontScale = LocalDensity.current.fontScale
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        if (maxWidth >= 300.dp && fontScale <= 1.3f) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) { first() }
+                Box(Modifier.weight(1f)) { second() }
+            }
+        } else Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            first()
+            second()
+        }
+    }
+}
+
+@Composable
+internal fun journalEditorFieldColors(): TextFieldColors {
+    val colors = LocalTrainPilotColors.current
+    return OutlinedTextFieldDefaults.colors(
+        focusedTextColor = colors.text, unfocusedTextColor = colors.text,
+        focusedContainerColor = colors.card, unfocusedContainerColor = colors.card,
+        focusedBorderColor = colors.accent, unfocusedBorderColor = colors.line.copy(alpha = 0.4f),
+        focusedLabelColor = colors.accent, unfocusedLabelColor = colors.muted,
+        cursorColor = colors.accent)
 }

@@ -2,9 +2,13 @@ package com.example.ui.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -28,11 +32,18 @@ internal fun ExerciseFeedbackControl(effort: String?, note: String, language: St
     val selected = StudioWorkoutFeedback.efforts.indexOf(if (effort == "good") "right" else effort)
     val colors = LocalTrainPilotColors.current
     Surface(Modifier.fillMaxWidth().testTag(tag), color = colors.card,
-        shape = RoundedCornerShape(16.dp), border = TrainPilotFrames.stroke(0.75.dp, colors.line)) {
-        Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
-            TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth()) {
+        shape = RoundedCornerShape(12.dp), border = TrainPilotFrames.control(colors.line)) {
+        Column(Modifier.padding(horizontal = 8.dp, vertical = 2.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp)) {
                 val heading = title.ifBlank { text.getString(R.string.journal_feedback) }
-                Text("$heading · ${if (selected >= 0) text.getString(labels[selected]) else "—"} ${if (expanded) "⌃" else "⌄"}")
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.Start) {
+                    Text(heading, style = MaterialTheme.typography.labelMedium, color = colors.muted)
+                    Text(if (selected >= 0) text.getString(labels[selected]) else "—",
+                        style = MaterialTheme.typography.bodyMedium, color = colors.accent)
+                }
+                Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null,
+                    tint = colors.accent, modifier = Modifier.size(20.dp))
             }
             if (expanded) {
                 if (effortLocked) Text(text.getString(R.string.journal_feedback_locked), style = MaterialTheme.typography.bodySmall)
@@ -47,6 +58,8 @@ internal fun ExerciseFeedbackControl(effort: String?, note: String, language: St
                 }
                 OutlinedTextField(note, { onNote(it.take(3000)) }, enabled = enabled,
                     label = { Text(when (language) { "en" -> "Exercise note"; "de" -> "Übungsnotiz"; "ro" -> "Notiță exercițiu"; else -> "Gyakorlatjegyzet" }) },
+                    shape = RoundedCornerShape(12.dp), textStyle = MaterialTheme.typography.bodyMedium,
+                    colors = com.repforge.app.ui.journal.journalEditorFieldColors(),
                     modifier = Modifier.fillMaxWidth().testTag("${tag}_note"), maxLines = 4)
             }
         }
