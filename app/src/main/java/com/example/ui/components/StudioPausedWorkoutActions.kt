@@ -9,14 +9,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import com.example.ui.theme.LocalTrainPilotPalette
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 /** Deletion is explicit, confirmed, and bound to the workout shown when the dialog opened. */
 @Composable
 internal fun StudioPausedWorkoutActions(workoutId: String, phoneControls: Boolean, busy: Boolean,
     continueLabel: String, onContinue: () -> Unit, onDiscard: (String) -> Unit) {
-    val palette = LocalTrainPilotPalette.current
     val lang = com.example.localization.LocalTrainPilotStrings.current.language
     fun word(hu: String, en: String, de: String, ro: String) = when (lang) {
         com.example.model.AppLanguage.HU -> hu
@@ -31,6 +29,8 @@ internal fun StudioPausedWorkoutActions(workoutId: String, phoneControls: Boolea
             .testTag("home_continue_workout_button")) { Text(continueLabel) }
         TrainPilotOutlinedButton(onClick = { pendingId = workoutId },
             enabled = !busy && phoneControls && workoutId.isNotBlank(), shape = RoundedCornerShape(14.dp),
+            colors = WorkoutControlAppearance.discardColors(),
+            border = WorkoutControlAppearance.discardBorder(!busy && phoneControls && workoutId.isNotBlank()),
             modifier = Modifier.heightIn(min = 50.dp).testTag("home_discard_workout_button")) {
             Text(word("Elvetés", "Discard", "Verwerfen", "Renunță"))
         }
@@ -45,12 +45,15 @@ internal fun StudioPausedWorkoutActions(workoutId: String, phoneControls: Boolea
                 "Antrenamentul neterminat nu va fi salvat în jurnal. Antrenamentele salvate anterior rămân intacte."
             )) },
             confirmButton = {
-                TextButton(onClick = {
+                TrainPilotOutlinedButton(onClick = {
                     val id = pendingId
                     pendingId = null
                     if (id == workoutId && phoneControls && !busy && !id.isNullOrBlank()) onDiscard(id)
-                }, enabled = phoneControls && !busy, modifier = Modifier.testTag("home_confirm_discard")) {
-                    Text(word("Elvetés", "Discard", "Verwerfen", "Renunță"), color = palette.danger)
+                }, enabled = phoneControls && !busy,
+                    colors = WorkoutControlAppearance.discardColors(),
+                    border = WorkoutControlAppearance.discardBorder(phoneControls && !busy),
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("home_confirm_discard")) {
+                    Text(word("Elvetés", "Discard", "Verwerfen", "Renunță"))
                 }
             }, dismissButton = {
                 TextButton(onClick = { pendingId = null }, modifier = Modifier.testTag("home_cancel_discard")) {

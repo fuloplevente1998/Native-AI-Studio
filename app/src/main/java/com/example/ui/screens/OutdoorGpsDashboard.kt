@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.WorkoutControlAppearance
+
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
@@ -290,7 +292,10 @@ private fun DashboardHeader(state: OutdoorGpsDisplay, actions: OutdoorGpsActions
             if (fullscreen) {
                 com.example.ui.components.TrainPilotRedCloseButton(actions.back, testTag = "gps_close_fullscreen")
             } else {
-                IconButton(actions.back, modifier = Modifier.size(48.dp)) {
+                TrainPilotOutlinedButton(actions.back, modifier = Modifier.size(48.dp),
+                    shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(0.dp),
+                    colors = WorkoutControlAppearance.secondaryColors(),
+                    border = WorkoutControlAppearance.secondaryBorder()) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = copy.back, tint = palette.textPrimary)
                 }
             }
