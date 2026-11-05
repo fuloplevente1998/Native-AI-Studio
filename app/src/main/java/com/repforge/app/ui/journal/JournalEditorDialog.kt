@@ -33,6 +33,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /** Functional editor over a ViewModel-owned isolated draft. Only Save touches Room. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun JournalEditorDialog(state: JournalEditState, language: String,
     onChange: (NativeJournalEditor.Draft) -> Unit, onSave: (NativeJournalEditor.Draft) -> Unit, onCancel: () -> Unit) {
@@ -141,13 +142,14 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                             exercise.sets.forEachIndexed { s, set ->
                                 item {
                                     JournalEditorPanel {
-                                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        FlowRow(Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                            verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                             Text("${s + 1}.", style = MaterialTheme.typography.labelLarge,
                                                 color = colors.accentText, modifier = Modifier
                                                     .background(colors.accent.copy(alpha = 0.10f), RoundedCornerShape(8.dp))
                                                     .padding(horizontal = 8.dp, vertical = 6.dp))
-                                            Row(Modifier.weight(1f).heightIn(min = 48.dp)
+                                            Row(Modifier.widthIn(min = 120.dp).heightIn(min = 48.dp)
                                                 .toggleable(set.done, enabled = !state.saving, role = Role.Checkbox,
                                                     onValueChange = { editSet(e, s, set.copy(done = it)) })
                                                 .testTag("journal_editor_done_${e}_$s"),
