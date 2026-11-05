@@ -56,6 +56,25 @@ internal object NativeDetailedHealthMetrics {
         else -> ""
     }
 
+    private fun metadataPrefix(key: String): String = when (key) {
+        "weightKg" -> "weight"
+        "bodyFatPercent" -> "bodyFat"
+        "oxygenSaturationPercent" -> "oxygenSaturation"
+        "hrvRmssdMs" -> "hrv"
+        "bodyFatMassKg" -> "bodyFatMass"
+        "skeletalMuscleMassKg" -> "skeletalMuscleMass"
+        "fatFreeMassKg" -> "fatFreeMass"
+        "totalBodyWaterLiters" -> "totalBodyWater"
+        "basalMetabolicRateKcal" -> "basalMetabolicRate"
+        "bloodPressureSystolic", "bloodPressureDiastolic" -> "bloodPressure"
+        "bloodGlucoseMmolL" -> "bloodGlucose"
+        else -> key
+    }
+    fun origin(raw: JSONObject?, key: String): String? =
+        raw?.optString(metadataPrefix(key) + "Source")?.takeIf { it.isNotBlank() && it != "null" }
+    fun timestamp(raw: JSONObject?, key: String): String? =
+        raw?.optString(metadataPrefix(key) + "Time")?.takeIf { it.isNotBlank() && it != "null" }
+
     enum class Status { AVAILABLE, NO_DATA, DENIED, ERROR }
     fun status(raw: JSONObject?, key: String, provider: String, date: LocalDate,
         now: Instant = Instant.now(), zone: ZoneId = ZoneId.systemDefault()): Status {
@@ -79,6 +98,10 @@ internal object NativeDetailedHealthMetrics {
         val value = when (val v = raw.opt(key)) { is Number -> v.toDouble(); is String -> v.toDoubleOrNull(); else -> null }
             ?.takeIf { it.isFinite() && it >= 0 } ?: return Status.NO_DATA
         if (key in setOf("steps", "heartRateSamples") && value % 1.0 != 0.0) return Status.NO_DATA
+        timestamp(raw, key)?.let { stamp ->
+            val at = runCatching { Instant.parse(stamp) }.getOrNull() ?: return Status.NO_DATA
+            if (at.atZone(zone).toLocalDate() != date || at > now) return Status.NO_DATA
+        }
         val zeroAllowed = key in setOf("steps", "activeCalories", "totalCalories", "distanceMeters", "heartRateSamples", "energyScore", "sleepScore")
         if (!zeroAllowed && value == 0.0 || key in setOf("energyScore", "sleepScore", "oxygenSaturationPercent", "bodyFatPercent") && value > 100)
             return Status.NO_DATA

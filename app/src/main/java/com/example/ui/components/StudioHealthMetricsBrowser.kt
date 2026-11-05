@@ -1,6 +1,12 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -8,132 +14,187 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.ui.theme.LocalTrainPilotPalette
 import com.repforge.app.HealthJournalStore
 import com.repforge.app.NativeDataReplacement
-import com.repforge.app.NativeHealthProviderData
 import com.repforge.app.NativeWorkoutHealthSource
-import com.repforge.app.ui.health.HealthRecordBrowser
-import com.repforge.app.ui.health.NativeDetailedHealthMetrics
-import com.repforge.app.ui.health.NativeHealthMetrics
+import com.repforge.app.ui.health.*
+import com.repforge.app.ui.theme.TrainPilotFrames
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.time.LocalDate
+import java.util.Locale
 
-/** A read-only exact-day browser. Changing its day/provider never changes today's tiles. */
+/** One read-only, paged journal. A day header and its details share one admitted projection. */
 @Composable
 internal fun StudioHealthMetricsBrowser(initialProvider: String, language: String, refreshKey: String) {
-    var opened by rememberSaveable { mutableStateOf(false) }
-    var provider by rememberSaveable(initialProvider) { mutableStateOf(initialProvider) }
-    var day by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
-    var reload by remember { mutableIntStateOf(0) }
-    var recordType by rememberSaveable { mutableStateOf<String?>(null) }
-    var editingDate by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current.applicationContext
-    fun label(hu: String, en: String, de: String = en, ro: String = en) = when (language.lowercase()) {
-        "en" -> en
-        "de" -> de
-        "ro" -> ro
-        else -> hu
+    val palette = LocalTrainPilotPalette.current
+    fun label(hu: String, en: String, de: String = en, ro: String = en) = when (language.lowercase(Locale.ROOT)) {
+        "en" -> en; "de" -> de; "ro" -> ro; else -> hu
     }
-    TrainPilotOutlinedButton(onClick = { opened = true }, modifier = Modifier.fillMaxWidth().testTag("health_all_metrics")) {
-        Text(label(
-            "Mind a 26 metrika • dátum és forrás",
-            "All 26 metrics • date and source",
-            "Alle 26 Metriken • Datum und Quelle",
-            "Toate cele 26 de metrici • dată și sursă"
-        ))
-    }
-    if (!opened) return
-    val date = LocalDate.parse(day)
-    var raw by remember(provider, day, reload, refreshKey) { mutableStateOf<JSONObject?>(null) }
-    var loading by remember(provider, day, reload, refreshKey) { mutableStateOf(true) }
-    var failed by remember(provider, day, reload, refreshKey) { mutableStateOf(false) }
-    LaunchedEffect(provider, day, reload, refreshKey) {
+    var provider by rememberSaveable(initialProvider) { mutableStateOf(initialProvider) }
+    var source by rememberSaveable(provider) { mutableStateOf("") }
+    var from by rememberSaveable { mutableStateOf(LocalDate.now().minusDays(29).toString()) }
+    var to by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
+    var end by rememberSaveable { mutableStateOf(to) }
+    var draftFrom by rememberSaveable { mutableStateOf(from) }
+    var draftTo by rememberSaveable { mutableStateOf(to) }
+    var editing by rememberSaveable { mutableStateOf<String?>(null) }
+    var reload by rememberSaveable { mutableIntStateOf(0) }
+    val range = HealthJournalRange(LocalDate.parse(from), LocalDate.parse(to), LocalDate.parse(end))
+    val revision = "$refreshKey:$reload"
+    var snapshotJson by remember(provider, source, from, to, end, revision) { mutableStateOf<String?>(null) }
+    var failed by remember(provider, source, from, to, end, revision) { mutableStateOf(false) }
+    val snapshot = remember(snapshotJson) { snapshotJson?.let(::JSONObject) }
+    LaunchedEffect(provider, source, range, revision) {
+        if (snapshotJson != null) return@LaunchedEffect
         try {
-            val store = HealthJournalStore.get(context)
             val ticket = NativeDataReplacement.continuationForCurrentData(context)
-            val generation = withContext(Dispatchers.IO) { store.generation() }
             val result = withContext(Dispatchers.IO) {
-                check(store.pendingRestore().isEmpty())
-                NativeHealthProviderData.day(store, provider, date)
+                NativeDataReplacement.mutate(context) { NativeHealthJournal.load(HealthJournalStore.get(context), provider, source, range) }
             }
             ticket.requireCurrent(context)
-            check(withContext(Dispatchers.IO) { store.generation() == generation && store.pendingRestore().isEmpty() })
-            raw = result
-        } catch (cancel: kotlinx.coroutines.CancellationException) { throw cancel
-        } catch (_: Exception) { failed = true
-        } finally { loading = false }
+            snapshotJson = result.toString()
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { failed = true }
     }
-    if (recordType != null) {
-        StudioNativeEditorTheme {
-            HealthRecordBrowser(day, provider, recordType!!, language, onClose = { recordType = null })
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC).forEach { selected ->
+            FilterChip(selected = provider == selected, onClick = { if (provider != selected) provider = selected },
+                label = { Text(NativeWorkoutHealthSource.label(selected)) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                    .testTag("journal_provider_$selected"))
         }
-    } else CompactCalendarDialog(label("Egészségmetrikák", "Health metrics", "Gesundheitsmetriken", "Metrici de sănătate"), "health_metrics_dialog", { opened = false }) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC).forEach { source ->
-                FilterChip(selected = provider == source, onClick = { provider = source },
-                    label = { Text(NativeWorkoutHealthSource.label(source)) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp))
+    }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        TrainPilotOutlinedButton(onClick = { editing = "from" }, modifier = Modifier.weight(1f).testTag("journal_range_from")) {
+            Column { Text(label("Kezdőnap", "From", "Von", "De la")); Text(draftFrom) }
+        }
+        TrainPilotOutlinedButton(onClick = { editing = "to" }, modifier = Modifier.weight(1f).testTag("journal_range_to")) {
+            Column { Text(label("Zárónap", "To", "Bis", "Până la")); Text(draftTo) }
+        }
+    }
+    val valid = HealthJournalStore.validDay(draftFrom) && HealthJournalStore.validDay(draftTo) && draftFrom <= draftTo
+    if (!valid) Text(label("A kezdőnap nem lehet későbbi a zárónapnál.", "From must not be after To.",
+        "Von darf nicht nach Bis liegen.", "Data de început nu poate depăși data de sfârșit."), color = palette.danger)
+    if (draftFrom != from || draftTo != to) TrainPilotOutlinedButton(onClick = {
+        from = draftFrom; to = draftTo; end = draftTo
+    }, enabled = valid, modifier = Modifier.fillMaxWidth().testTag("journal_range_apply")) {
+        Text(label("Időszak alkalmazása", "Apply period", "Zeitraum anwenden", "Aplică perioada"))
+    }
+    snapshot?.let { current ->
+        val origins = current.getJSONArray("sources")
+        LazyRow(modifier = Modifier.testTag("journal_origins"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            item { FilterChip(selected = source.isEmpty(), onClick = { source = "" }, label = {
+                Text(label("Szolgáltatói összesítő", "Provider summary", "Anbieterübersicht", "Rezumat furnizor"))
+            }, modifier = Modifier.testTag("journal_origin_all")) }
+            items((0 until origins.length()).map { origins.getJSONObject(it) }.distinctBy { it.getString("source") },
+                key = { it.getString("source") }) { origin ->
+                val id = origin.getString("source")
+                FilterChip(selected = source == id, onClick = { if (source != id) source = id }, label = {
+                    Text(friendlyHealthSourceName(id, origin.optString("name"), NativeWorkoutHealthSource.label(provider)))
+                }, modifier = Modifier.testTag("journal_origin_$id"))
+            }
+            // Keep the explicit selection visible on pages without records from that origin.
+            if (source.isNotEmpty() && (0 until origins.length()).none { origins.getJSONObject(it).getString("source") == source }) {
+                item { FilterChip(selected = true, onClick = {}, label = {
+                    Text(friendlyHealthSourceName(source, "", NativeWorkoutHealthSource.label(provider)))
+                }, modifier = Modifier.testTag("journal_origin_$source")) }
             }
         }
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = { day = date.minusDays(1).toString() }, modifier = Modifier.testTag("metrics_previous_day")) { Text("‹") }
-            TextButton(onClick = { editingDate = true }, modifier = Modifier.weight(1f).testTag("metrics_select_date")) { Text(day) }
-            TextButton(onClick = { day = date.plusDays(1).toString() }, enabled = date < LocalDate.now(),
-                modifier = Modifier.testTag("metrics_next_day")) { Text("›") }
-        }
-        Row(Modifier.fillMaxWidth()) {
-            TextButton(onClick = { day = LocalDate.now().toString() }, modifier = Modifier.weight(1f)) { Text(label("Ma", "Today", "Heute", "Azi")) }
-            TextButton(onClick = { reload++ }, modifier = Modifier.weight(1f).testTag("metrics_reload")) { Text(label("Újraolvasás", "Reload", "Neu laden", "Reîncarcă")) }
-            TextButton(onClick = { recordType = "" }, modifier = Modifier.weight(1f)) { Text(label("Rekordok", "Records", "Einträge", "Înregistrări")) }
-        }
-        when {
-            loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
-            failed -> Text(label("Az adatok nem tölthetők be. Próbáld újra.", "Could not load data. Try again.", "Daten konnten nicht geladen werden. Bitte erneut versuchen.", "Datele nu au putut fi încărcate. Încearcă din nou."), color = MaterialTheme.colorScheme.error)
-            else -> {
-                Text(label("Mentett napi mérések", "Stored daily measurements", "Gespeicherte Tagesmessungen", "Măsurători zilnice salvate"), style = MaterialTheme.typography.labelSmall)
-                val metrics = NativeHealthMetrics.parse(context, NativeDetailedHealthMetrics.admitted(raw, provider, date), language)
-                metrics.forEach { metric ->
-                    val status = NativeDetailedHealthMetrics.status(raw, metric.key, provider, date)
-                    HorizontalDivider()
-                    TextButton(onClick = { recordType = NativeDetailedHealthMetrics.recordType(metric.key) },
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("health_metric_${metric.key}")) {
+    }
+    TextButton(onClick = { reload++ }, enabled = snapshot != null || failed,
+        modifier = Modifier.fillMaxWidth().testTag("journal_reload")) { Text(label("Újraolvasás", "Reload", "Neu laden", "Reîncarcă")) }
+    when {
+        failed -> Text(label("Az adatok nem tölthetők be. Próbáld újra.", "Could not load data. Try again.",
+            "Daten konnten nicht geladen werden. Bitte erneut versuchen.", "Datele nu au putut fi încărcate. Încearcă din nou."), color = palette.danger)
+        snapshot == null -> LinearProgressIndicator(Modifier.fillMaxWidth())
+        else -> range.days.forEach { date -> key(date) {
+            val raw = NativeHealthJournal.day(snapshot, provider, source, date)
+            val metrics = NativeHealthMetrics.parse(context, NativeDetailedHealthMetrics.admitted(raw, provider, date), language)
+            var expanded by rememberSaveable(provider, source, date) { mutableStateOf(false) }
+            var type by rememberSaveable(provider, source, date) { mutableStateOf("") }
+            Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceElevated,
+                border = TrainPilotFrames.stroke(1.dp, palette.cardBorder), modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_day_$date")) {
                         Column(Modifier.weight(1f)) {
-                            Text(metric.label, style = MaterialTheme.typography.bodyMedium)
-                            val source = when (status) {
-                                NativeDetailedHealthMetrics.Status.AVAILABLE -> {
-                                    val originKey = when (metric.key) {
-                                        "weightKg" -> "weightSource"; "bodyFatPercent" -> "bodyFatSource"
-                                        "oxygenSaturationPercent" -> "oxygenSaturationSource"; "hrvRmssdMs" -> "hrvSource"
-                                        else -> metric.key + "Source"
-                                    }
-                                    val origin = raw?.optString(originKey).orEmpty().takeIf { it.isNotBlank() && it != "null" }
-                                    listOfNotNull(NativeWorkoutHealthSource.label(provider), origin,
-                                        raw?.optString(metric.key + "Time")?.takeIf { it.isNotBlank() && it != "null" }).distinct().joinToString(" · ")
-                                }
-                                NativeDetailedHealthMetrics.Status.DENIED -> label("Olvasási engedély hiányzik", "Read permission missing", "Leseberechtigung fehlt", "Permisiunea de citire lipsește")
-                                NativeDetailedHealthMetrics.Status.ERROR -> label("Az olvasás hibát jelzett", "Read failed", "Lesefehler aufgetreten", "Citirea a eșuat")
-                                NativeDetailedHealthMetrics.Status.NO_DATA -> label("Nincs elérhető adat", "No available data", "Keine Daten verfügbar", "Nu există date disponibile")
-                            }
-                            Text(source, style = MaterialTheme.typography.labelSmall)
+                            Text(date.toString(), fontWeight = FontWeight.ExtraBold, color = palette.textPrimary)
+                            Text(NativeWorkoutHealthSource.label(provider), color = palette.primary, style = MaterialTheme.typography.labelSmall)
+                            if (source.isNotEmpty()) Text(friendlyHealthSourceName(source, "", NativeWorkoutHealthSource.label(provider)),
+                                color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
                         }
-                        Text(if (metric.isAvailable) "${metric.valueText} ${metric.unit}".trim() else "—")
+                        Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = label("Napi részletek", "Day details", "Tagesdetails", "Detalii zilnice"), tint = palette.primary)
+                    }
+                    val sleep = NativeHealthJournal.sleepMinutes(raw, provider, date)
+                    val summary = listOf(Triple("sleep", label("Alvás", "Sleep", "Schlaf", "Somn"), sleep?.let { "${it.toInt()} min" } ?: "—")) +
+                        listOf("steps", "activeCalories", "averageHeartRate").map { key ->
+                            val metric = metrics.first { it.key == key }
+                            Triple(key, metric.label, if (metric.isAvailable) "${metric.valueText} ${metric.unit}".trim() else "—")
+                        }
+                    // Two columns keep the existing compact boxed journal readable with larger text.
+                    summary.chunked(2).forEach { cells -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        cells.forEach { (metricKey, title, value) -> Surface(shape = RoundedCornerShape(10.dp), color = palette.surfaceCard, modifier = Modifier.weight(1f)) {
+                            Column(Modifier.padding(8.dp)) {
+                                Text(title, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                Text(value, color = palette.textPrimary, fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.testTag("journal_summary_${date}_$metricKey"))
+                            }
+                        } }
+                    }
+                    if (expanded) {
+                        Text(label("Mentett napi mérések • 26 metrika", "Stored daily measurements • 26 metrics",
+                            "Gespeicherte Tagesmessungen • 26 Metriken", "Măsurători zilnice salvate • 26 de metrici"), color = palette.primary)
+                        if (raw?.optBoolean("partial") == true) Text(label("Részleges adat / újraolvasás szükséges", "Partial data / reload required",
+                            "Teilweise Daten / neu laden erforderlich", "Date parțiale / reîncărcare necesară"), color = palette.textSecondary)
+                        metrics.forEach { metric ->
+                            val status = NativeDetailedHealthMetrics.status(raw, metric.key, provider, date)
+                            HorizontalDivider(color = palette.cardBorder)
+                            TextButton(onClick = { type = NativeDetailedHealthMetrics.recordType(metric.key) },
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_metric_${date}_${metric.key}")) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(metric.label, color = palette.textPrimary)
+                                    val description = when (status) {
+                                        NativeDetailedHealthMetrics.Status.AVAILABLE -> {
+                                            listOfNotNull(NativeWorkoutHealthSource.label(provider),
+                                                NativeDetailedHealthMetrics.origin(raw, metric.key),
+                                                NativeDetailedHealthMetrics.timestamp(raw, metric.key), date.toString()).distinct().joinToString(" · ")
+                                        }
+                                        NativeDetailedHealthMetrics.Status.DENIED -> label("Olvasási engedély hiányzik", "Read permission missing", "Leseberechtigung fehlt", "Permisiunea de citire lipsește")
+                                        NativeDetailedHealthMetrics.Status.ERROR -> label("Az olvasás hibát jelzett", "Read failed", "Lesefehler", "Citirea a eșuat")
+                                        NativeDetailedHealthMetrics.Status.NO_DATA -> label("Nincs elérhető adat", "No available data", "Keine Daten verfügbar", "Nu există date disponibile")
+                                    }
+                                    Text(description, color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
+                                }
+                                Text(if (metric.isAvailable) "${metric.valueText} ${metric.unit}".trim() else "—", color = palette.primary)
+                            }
+                        }
+                        HorizontalDivider(color = palette.cardBorder)
+                        TextButton(onClick = { type = "" }, modifier = Modifier.testTag("journal_records_all_$date")) {
+                            Text(label("Összes napi rekord / alvásfázisok", "All day records / sleep stages", "Alle Tageseinträge / Schlafphasen", "Toate înregistrările zilei / faze de somn"))
+                        }
+                        if (type.isNotEmpty()) Text(com.repforge.app.ui.text.nativeResources(context, language).getString(NativeHealthRecords.title(type)), color = palette.primary)
+                    }
+                    StudioNativeEditorTheme {
+                        HealthRecordDayDetails(date, provider, source, type, language, snapshot.getLong("generation"),
+                            "$revision:${snapshot.getLong("generation")}", expanded)
                     }
                 }
             }
-        }
+        } }
     }
-    if (editingDate) {
-        var input by rememberSaveable(day) { mutableStateOf(day) }
-        val parsed = runCatching { LocalDate.parse(input) }.getOrNull()?.takeIf { it <= LocalDate.now() }
-        TrainPilotAlertDialog(onDismissRequest = { editingDate = false },
-            title = { Text(label("Dátum választása", "Select date", "Datum auswählen", "Selectează data")) },
-            text = { OutlinedTextField(input, { input = it }, singleLine = true,
-                label = { Text("YYYY-MM-DD") }, isError = parsed == null, modifier = Modifier.testTag("metrics_date_input")) },
-            confirmButton = { TextButton(onClick = { day = parsed!!.toString(); editingDate = false }, enabled = parsed != null,
-                modifier = Modifier.testTag("metrics_date_confirm")) { Text("OK") } },
-            dismissButton = { TextButton(onClick = { editingDate = false }) { Text(label("Mégse", "Cancel", "Abbrechen", "Anulează")) } })
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        TextButton(onClick = { end = range.newer().pageEnd.toString() }, enabled = range.pageEnd < range.to,
+            modifier = Modifier.weight(1f).testTag("journal_newer")) { Text(label("Újabb napok", "Newer days", "Neuere Tage", "Zile mai noi")) }
+        TextButton(onClick = { end = range.older().pageEnd.toString() }, enabled = range.pageStart > range.from,
+            modifier = Modifier.weight(1f).testTag("journal_older")) { Text(label("Korábbi napok", "Older days", "Ältere Tage", "Zile mai vechi")) }
     }
+    if (editing != null) CompactDatePickerDialog(LocalDate.parse(if (editing == "from") draftFrom else draftTo), language,
+        onDismiss = { editing = null }, onConfirm = { if (editing == "from") draftFrom = it.toString() else draftTo = it.toString(); editing = null })
 }

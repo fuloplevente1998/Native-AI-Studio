@@ -184,7 +184,7 @@ private fun parseWeightEntryLocalDate(rawDate: String, fallback: java.time.Local
 
 /**
  * 5. EGÉSZSÉG (A csatolt 3 main Egészség képernyőkép pontos, lenyitható felépítése:
- * Mai állapot + Pulzustrend + Testsúlynapló + További Health-adatok + Egészségnapló + Health Connect)
+ * Mai állapot + Pulzustrend + Testsúlynapló + Egészségnapló + Health Connect)
  */
 @Composable
 fun HealthTabScreen(
@@ -508,8 +508,8 @@ fun HealthTabScreen(
                                     "calories" -> listOf(
                                         tr(uiState.language, "Aktív kalória részletek • $activeEnergy", "Active Calories Details • $activeEnergy", "Aktive Kalorien Details • $activeEnergy", "Detalii calorii active • $activeEnergy"),
                                         tr(uiState.language, "Aktív energia: $activeEnergy • Teljes napi energia (nyugalmival): $totalEnergy", "Active energy: $activeEnergy • Total daily energy (with resting): $totalEnergy", "Aktive Energie: $activeEnergy • Tagesgesamtenergie (inkl. Ruhe): $totalEnergy", "Energie activă: $activeEnergy • Energie zilnică totală: $totalEnergy"),
-                                        tr(uiState.language, "További Health-adatok megnyitása lent", "Open More Health Data below", "Weitere Gesundheitsdaten unten öffnen", "Deschide mai multe date de sănătate mai jos")
-                                    ) to { onToggleHealthSection("extra") }
+                                        tr(uiState.language, "Egészségnapló megnyitása lent", "Open Health Journal below", "Gesundheitstagebuch unten öffnen", "Deschide jurnalul de sănătate mai jos")
+                                    ) to { onToggleHealthSection("journal") }
                                     "pulse" -> listOf(
                                         tr(uiState.language, "Mai pulzus", "Today's Heart Rate", "Heutiger Puls", "Pulsul de azi"),
                                         tr(uiState.language, "Nyugalmi: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Tartomány: $heartRange", "Resting: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Range: $heartRange", "Ruhepuls: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Bereich: $heartRange", "Repaus: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Interval: $heartRange"),
@@ -1405,24 +1405,7 @@ fun HealthTabScreen(
             }
         }
 
-        // 2. Expandable Section: További Health-adatok (Screenshot 1)
-        item {
-            ExpandableHealthSectionCard(
-                icon = Icons.Default.Restore,
-                title = strings.moreHealthDataTitle,
-                subtitle = null,
-                expanded = uiState.expandedHealthExtraData,
-                onToggle = { onToggleHealthSection("extra") }
-            ) {
-                com.example.ui.components.StudioHealthMetricsBrowser(
-                    initialProvider = if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG
-                        else com.repforge.app.HealthJournalStore.HC,
-                    language = uiState.language.name.lowercase(),
-                    refreshKey = "${uiState.dailyHealthLastSyncIso}:${uiState.healthSyncBusy}")
-            }
-        }
-
-        // 3. Expandable Section: Egészségnapló (Screenshot 1)
+        // One journal: the selected provider/day projection supplies summaries and inline details.
         item {
             ExpandableHealthSectionCard(
                 icon = Icons.Default.Favorite,
@@ -1431,129 +1414,11 @@ fun HealthTabScreen(
                 expanded = uiState.expandedHealthJournal,
                 onToggle = { onToggleHealthSection("journal") }
             ) {
-                com.example.ui.components.StudioHealthRecordBrowserButton(
-                    if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG
-                    else com.repforge.app.HealthJournalStore.HC, uiState.language.name.lowercase())
-                val sleepWord = strings.sleepTitle
-                val stepsWord = strings.stepsTitle
-                val calWord = tr(uiState.language, "Kalória", "Calories", "Kalorien", "Calorii")
-                val pulseWord = strings.pulseLabel
-
-                data class JournalDaySummary(
-                    val dayLabel: String,
-                    val sourceLabel: String,
-                    val metrics: List<Pair<String, String>>
-                )
-
-                val journalEntries = if (uiState.weeklyHealthDays.isNotEmpty()) {
-                    uiState.weeklyHealthDays.reversed().map { day ->
-                        JournalDaySummary(
-                            dayLabel = day.dayLabelHu,
-                            sourceLabel = day.sourceLabelHu,
-                            metrics = listOf(
-                                sleepWord to day.sleepLabel,
-                                stepsWord to if (day.steps > 0) day.steps.toString() else "—",
-                                calWord to if (day.activeCaloriesKcal > 0) "${day.activeCaloriesKcal} kcal" else "—"
-                            )
-                        )
-                    }
-                } else {
-                    listOf(
-                        JournalDaySummary(
-                            dayLabel = today.toString(),
-                            sourceLabel = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect",
-                            metrics = listOf(
-                                sleepWord to uiState.sleepDurationLabel,
-                                pulseWord to if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—",
-                                stepsWord to if (uiState.dailySteps > 0) uiState.dailySteps.toString() else "—",
-                                calWord to if (uiState.activeCaloriesKcal > 0) "${uiState.activeCaloriesKcal} kcal" else "—"
-                            )
-                        )
-                    )
-                }
-
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    journalEntries.forEach { entry ->
-                        Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = palette.surfaceElevated,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, palette.cardBorder),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = entry.dayLabel,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = palette.textPrimary
-                                    )
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(palette.primary.copy(alpha = 0.14f))
-                                            .padding(horizontal = 8.dp, vertical = 3.dp)
-                                    ) {
-                                        Text(
-                                            text = entry.sourceLabel,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = palette.primary
-                                        )
-                                    }
-                                }
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    entry.metrics.forEach { (label, value) ->
-                                        Column(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .clip(RoundedCornerShape(10.dp))
-                                                .background(palette.surfaceCard)
-                                                .padding(horizontal = 8.dp, vertical = 6.dp),
-                                            verticalArrangement = Arrangement.spacedBy(2.dp)
-                                        ) {
-                                            Text(
-                                                text = label,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = palette.textSecondary,
-                                                maxLines = 1
-                                            )
-                                            Text(
-                                                text = value,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (value == "—") palette.textSecondary else palette.textPrimary,
-                                                maxLines = 1
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                val weeklyPulse = uiState.weeklyHealthDays.mapNotNull { it.pulse }
-                if (weeklyPulse.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        tr(uiState.language, "Pulzus – elmúlt 7 nap", "Heart Rate – Last 7 Days", "Puls – Letzte 7 Tage", "Puls – Ultimele 7 zile"),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = palette.primary
-                    )
-                    HealthPulseWeekRows(weeklyPulse)
-                }
+                com.example.ui.components.StudioHealthMetricsBrowser(
+                    initialProvider = if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG
+                        else com.repforge.app.HealthJournalStore.HC,
+                    language = uiState.language.name.lowercase(),
+                    refreshKey = "${uiState.dailyHealthLastSyncIso}:${uiState.healthSyncBusy}")
             }
         }
 
