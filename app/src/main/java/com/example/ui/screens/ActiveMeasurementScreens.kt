@@ -215,6 +215,20 @@ fun MeasurementModeSwitcherRow(
     }
 }
 
+
+@Composable
+private fun StudioRestCountdown(state: TrainPilotUiState, onAdjust: (Int) -> Unit) {
+    val frame by ActiveWorkoutStore.snapshotFlow.collectAsState()
+    val allowed = com.repforge.app.StudioRestTimer.allowed(state, frame)
+    LaunchedEffect(state.activeWorkoutId, state.activeWorkoutGeneration, allowed,
+        state.restTimerRunning, state.restTimerRemainingSec) {
+        if (allowed && state.restTimerRunning && state.restTimerRemainingSec > 0) {
+            delay(1000L)
+            onAdjust(-1)
+        }
+    }
+}
+
 /**
  * 1. SÚLYZÓS EDZÉS (Mockup 2/4 #1)
  */
@@ -440,13 +454,7 @@ fun ActiveStrengthWorkoutScreen(
     }
     val isRestTimerLargeMode = restTimerManualOverride ?: isScrolledDown
 
-    // Live 1-second countdown for the Rest Timer when running
-    LaunchedEffect(uiState.restTimerRunning, uiState.restTimerRemainingSec) {
-        if (uiState.restTimerRunning && uiState.restTimerRemainingSec > 0) {
-            delay(1000L)
-            onAdjustRestTimer(-1)
-        }
-    }
+    StudioRestCountdown(uiState, onAdjustRestTimer)
 
     Column(
         modifier = Modifier
@@ -949,6 +957,7 @@ fun ActiveStrengthWorkoutScreen(
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                if (com.repforge.app.StudioRestTimer.visible(uiState)) {
                 val progress = (uiState.restTimerRemainingSec.toFloat() / uiState.defaultRestSec.coerceAtLeast(1)).coerceIn(0f, 1f)
                 if (!isRestTimerLargeMode) {
                     // COMPACT FLAT STICKY REST TIMER BAR
@@ -1181,6 +1190,8 @@ fun ActiveStrengthWorkoutScreen(
                             }
                         }
                     }
+                }
+
                 }
 
                 // Sticky < Előző | Következő > Navigation Row
@@ -1877,7 +1888,8 @@ fun ActiveBilateralWorkoutScreen(
     // Modal dialog for manual bilateral set editing
     var editingBilateralSet by remember { mutableStateOf<com.example.model.ExerciseSetItem?>(null) }
     var showExerciseDropdown by remember { mutableStateOf(false) }
-    var restTimerLargeMode by remember { mutableStateOf(false) }
+    var restTimerLargeMode by remember(com.repforge.app.StudioRestTimer.visible(uiState)) { mutableStateOf(false) }
+    StudioRestCountdown(uiState, onAdjustRestTimer)
 
     // Dedicated Bilateral Set Editor Modal ("külön ablak adat rögzítésre")
     editingBilateralSet?.let { setToEdit ->
@@ -2829,6 +2841,7 @@ fun ActiveBilateralWorkoutScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Sticky compact/expandable Rest Timer strip
+                if (com.repforge.app.StudioRestTimer.visible(uiState)) {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = palette.surfaceCard,
@@ -2897,6 +2910,8 @@ fun ActiveBilateralWorkoutScreen(
                             )
                         }
                     }
+                }
+
                 }
 
                 val hasNextExercise = uiState.activeExerciseIndex + 1 < workoutExercises.size
