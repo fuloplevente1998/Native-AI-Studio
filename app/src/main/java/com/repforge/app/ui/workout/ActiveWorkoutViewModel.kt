@@ -1153,9 +1153,7 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
         _uiState.value = _uiState.value.copy(isFinishing = true)
         viewModelScope.launch {
             try {
-                val closed = TrainPilotWorkoutFinalization(context, database).discardWorkout(current)
-                runCatching { WearSyncRepository.publishActiveWorkoutSnapshot(context, closed) }
-                WearSyncRepository.refreshWatchHomeAsync(context)
+                TrainPilotWorkoutFinalization(context, database).discardWorkout(current)
                 _uiState.value = _uiState.value.copy(isFinishing = false)
                 onDiscarded()
             } catch (cancelled: kotlinx.coroutines.CancellationException) {

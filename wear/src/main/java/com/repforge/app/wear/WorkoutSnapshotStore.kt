@@ -115,9 +115,8 @@ object WorkoutSnapshotStore {
         val revision = root.optLong("revision", 0L)
         if (revision < (current?.revision ?: 0L)) return current
         if (!root.optBoolean("active", true)) {
-            // Do not let an old phone tombstone erase a newly started offline workout.
-            val localStarted = try { java.time.Instant.parse(current?.started).toEpochMilli() } catch (_: Exception) { 0L }
-            if (current?.revision == 0L && (current.localSequence > 0L || root.optLong("syncedAt") < localStarted)) return current
+            if (current == null || !acceptsPhoneWorkoutClosure(current, root)) return current
+            WearClosureStore.rememberClosed193(context, current.workoutId)
             clear(context)
             return null
         }
@@ -347,3 +346,13 @@ internal fun nativePhoneExecution(workout: WearWorkout, action: String, exercise
     workout.nativeExecutionProtocol == 2 && workout.generation > 0 && workout.executionRevision > 0 && workout.timerOwner == "phone" &&
         (action == "automaticControl" && (value == "start" || value == "resumeUndo") || action == "completeSet" && exercise != null &&
             exercise.repUnit.replace("\\s+".toRegex(), "").lowercase() in listOf("", "ism.", "reps", "/kar", "/láb") && exercise.measurementType != "distance")
+
+/** A terminal phone snapshot is scoped to one workout and the acknowledged ownership epoch. */
+internal fun acceptsPhoneWorkoutClosure(current: WearWorkout, closed: JSONObject): Boolean {
+    val startedAt = runCatching { java.time.Instant.parse(current.started).toEpochMilli() }.getOrNull() ?: return false
+    return !closed.optBoolean("active", true) && current.workoutId.isNotBlank() &&
+        closed.optString("workoutId") == current.workoutId &&
+        closed.optLong("ownerEpoch193") == current.ownerEpoch193 &&
+        closed.optLong("revision", -1) >= current.revision &&
+        closed.optLong("syncedAt") >= startedAt
+}
