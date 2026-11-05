@@ -81,3 +81,10 @@ A következő lépés a kiadott APK-k készülékes visszatesztje;
 a forrás, a signed build és a teljes közös CI már ellenőrzött. A bizonyítékot rögzítő későbbi
 dokumentációs commit nem változtatja az alkalmazás/teszt/workflow forrását.
 APK-kéréskor csak a meglévő signed workflow: telefon release + R8/shrunk Wear release.
+
+#152 / draft PR156 további javítás: pontos owner/epoch/pauseRevision célzású
+telefon→óra explicit resume transport; késői watch snapshot epoch/pause/sequence
+befogadási guard; már mentett history és alias újraaktiválásának tiltása.
+Öt új regresszió, kibővített Room-alias védelem; statikus ellenőrzés tiszta,
+JVM/CI még nem futott. A közös VM resume-hookot a root integrátor köti be;
+állapot és fizikai mérési korlátok a készülékes followup dokumentumban.

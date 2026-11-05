@@ -48,3 +48,41 @@ A compact_calendar_followup és rest_timer_zero_followup agentek használati lim
 miatt leálltak. Megmaradt kódjukat az integrátor fejezte be a fenti PR-okhoz.
 Nincs aktívan tovább dolgozó agent. Új utasítás: kizárólag low/medium/high,
 összetett hibakeresés is high; extra high indítása tiltott (AGENTS.md frissítve).
+
+## #152 folytatás – watch-owner és késői kézbesítés
+
+A `fix/wear-session-sync` / draft PR #156 további kódjavításai:
+
+- A telefon explicit folytatáskérést címezhet az óra által birtokolt, szünetelő
+  workout pontos ID/epoch/pauseRevision értékére. Az óra tényleges telefon-node
+  eredetet, legfeljebb15másodperces frissességet, committed ownershipot és helyi
+  closure/undo állapotot ellenőriz, majd a meglévő `WearOwnership193.resume` menti
+  a folytatást és annak tartós outbox-kérését. A telefon nem változtat optimistán
+  ownert vagy pause állapotot. Kapcsolat hiányában látható újrapróbálható hiba van.
+  A Home és sticky gomb meglévő közös `returnToActiveWorkout` útjához a root
+  integrátor köti be ezt a hívást a közös tulajdonú `TrainPilotViewModel.kt`-ban;
+  e bekötés nélkül a draft ág önmagában még csak navigál watch-owner esetén.
+- A telefon a watch finalSnapshot írása előtt ellenőrzi az envelope és payload
+  workout/epoch egyezését, a kanonikus owner/epochot, a pauseRevisiont és a delivery
+  sequence monotonitását. Késői régi snapshot `superseded` nyugtát kap; nem fordítja
+  vissza a pause/owner állapotot vagy újabb editet. Snapshot nélküli implicit
+  folytatás nem gyárt új pauseRevisiont a telefonon. Draft nélküli újraaktiválás
+  csak explicit start parancson érkezhet, periodic mirroron nem.
+- A resurrection szűrő a törlési tombstone mellett a már mentett Room history ID-t,
+  syncId-t, workoutKey-t és legacy started aliast is ellenőrzi. A helyi draftokat
+  nem törli, valódi helyreállítást nem állít automatikusan hibásnak.
+
+Ezek bizonyított kódrések javításai, nem a készülékes hibák közös gyökerének
+bizonyítékai. A meglévő natív editor publication/set-edit/max-sequence/manual
+strength részjavítások reviewja során az ARM, target, restore és tulajdonos őrök
+megmaradtak. Öt új tiszta logikai regresszió és a meglévő Room legacy-alias teszt
+kibővítése készült. `git diff --check`, továbbá a módosított Kotlin fájlok
+határoló-/literális-JSON ellenőrzése tiszta; fordító/JVM teszt még nem futott.
+Helyi Gradle nincs és nem települt; külön CI nem indult. Következő kapu a közös
+root-integráció teljes main-CI-je, majd fizikai telefon–óra páros próba.
+
+A mérési szolgáltatás kódútja továbbra is kizárólag `workoutPaused` alapján kéri
+az ExerciseClient pause/resume műveletét; restEndAt vagy automata rest fázis nem
+állítja meg az egészségedzést. Auto-pause kikapcsolt. Nincs kcal-skálázás vagy
+mérési képletváltoztatás. Valódi activeIntervals, Health Services activeDuration,
+forrás és szenzorablak nélkül a200 vs350–500kcal eltérés oka továbbra sem eldönthető.
