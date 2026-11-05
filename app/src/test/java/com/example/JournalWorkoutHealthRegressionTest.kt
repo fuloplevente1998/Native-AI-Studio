@@ -229,12 +229,13 @@ class JournalWorkoutHealthRegressionTest {
         val model = com.repforge.app.ui.journal.JournalViewModel(context as android.app.Application)
         models.put("journal", model)
         var canonicalSources = false
+        var tab by androidx.compose.runtime.mutableStateOf(1)
         compose.setContent {
             TrainPilotTheme {
                 val health = com.example.ui.components.studioWorkoutHealthContent("fresh", "hu", {},
                     { id, wear, hc -> canonicalSources = id == "fresh" && wear && hc }, model)
                 LogWorkoutDetailScreen(TrainPilotUiState(loggedWorkouts = listOf(entry), selectedLogWorkoutId = entry.id,
-                    logDetailTabIndex = 1), TrainPilotStrings.forLanguage(AppLanguage.HU), {}, {}, {}, {}, {}, {}, {}, {},
+                    logDetailTabIndex = tab), TrainPilotStrings.forLanguage(AppLanguage.HU), {}, {}, { tab = it }, {}, {}, {}, {}, {},
                     workoutHealth = health)
             }
         }
@@ -249,6 +250,15 @@ class JournalWorkoutHealthRegressionTest {
         assertTrue("No duplicate top spacer", header.top - list.getUnclippedBoundsInRoot().top <= 10.dp)
         compose.onNodeWithTag("journal_detail_location").assertTextEquals("Fejlődés · Napló")
         compose.onNodeWithText("Edzés részletei").assertDoesNotExist()
+        list.performScrollToNode(hasTestTag("journal_summary_heart_averageHeartRate_value"))
+        compose.onNodeWithTag("journal_summary_heart_averageHeartRate_value").assertTextEquals("130 bpm")
+        list.performScrollToNode(hasTestTag("journal_summary_energy_totalCalories_value"))
+        compose.onNodeWithTag("journal_summary_energy_totalCalories_value").assertTextEquals("200 kcal")
+        compose.onNodeWithTag("journal_health_source_group").assertDoesNotExist()
+        compose.onNodeWithTag("log_detail_open_watch_sync").assertDoesNotExist()
+        list.performScrollToNode(hasTestTag("log_detail_tab_2"))
+        compose.onNodeWithTag("log_detail_tab_2").performClick()
+        compose.onNodeWithTag("journal_workout_health_summary").assertDoesNotExist()
         list.performScrollToNode(hasTestTag("journal_provider_health_connect"))
         compose.onNodeWithTag("journal_provider_health_connect").performClick()
         list.performScrollToNode(hasTestTag("journal_hc_averageHeartRate_value"))
@@ -259,6 +269,17 @@ class JournalWorkoutHealthRegressionTest {
         compose.onNodeWithTag("journal_provider_wear").performClick()
         list.performScrollToNode(hasTestTag("journal_wear_totalCalories_value"))
         compose.onNodeWithTag("journal_wear_totalCalories_value").assertTextEquals("200 kcal")
+        list.performScrollToNode(hasTestTag("log_detail_tab_1"))
+        compose.onNodeWithTag("log_detail_tab_1").performClick()
+        list.performScrollToNode(hasTestTag("journal_summary_energy_totalCalories_value"))
+        compose.onNodeWithTag("journal_summary_energy_totalCalories_value").assertTextEquals("200 kcal")
+        compose.onNodeWithTag("journal_health_source_group").assertDoesNotExist()
+        list.performScrollToNode(hasTestTag("log_detail_tab_2"))
+        compose.onNodeWithTag("log_detail_tab_2").performClick()
+        list.performScrollToNode(hasTestTag("journal_wear_totalCalories_value"))
+        compose.onNodeWithTag("journal_wear_totalCalories_value").assertTextEquals("200 kcal")
+        assertFalse(model.uiState.value.healthRefreshing)
+        assertNull(model.uiState.value.healthError)
     }
     @Test fun emptyCachedResponseRetriesOnOpenAndNeverAdvertisesMissingMeasurements() {
         // The foreground-only refresh contract needs an explicitly resumed host and
