@@ -502,7 +502,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 viewModel.addExerciseToActiveProgramDay(ex)
                             },
                             onStartDemoWithExercise = {
-                                currentDetailExercise?.let(viewModel::selectLibraryExercise)
+                                if (currentDetailExercise != null) viewModel.selectLibraryExercise(currentDetailExercise)
+                                else viewModel.startPlannedWorkout()
                             }
                         )
                     }
@@ -621,7 +622,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 if (viewModel.pauseActiveWorkout()) viewModel.selectTab(MainTab.HOME)
                             },
                             onDiscardWorkout = {
-                                viewModel.stopActiveWorkoutSession()
+                                viewModel.stopActiveWorkoutSession(uiState.activeWorkoutId, uiState.activeWorkoutGeneration)
                             }
                         )
                     }
@@ -758,7 +759,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
                                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                                     onCycleDemoMode = { mode -> viewModel.cycleHomeDemoMode(mode) },
-                                    onDiscardWorkout = { id -> viewModel.stopActiveWorkoutSession(id) },
+                                    onDiscardWorkout = { id -> viewModel.stopActiveWorkoutSession(id, uiState.activeWorkoutGeneration) },
                                     onStartOrContinueWorkout = {
                                         if (uiState.isWorkoutSessionActive && uiState.workoutStartedEpochMs > 0L) {
                                             viewModel.returnToActiveWorkout()

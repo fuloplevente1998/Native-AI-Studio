@@ -71,7 +71,7 @@ class StudioSessionMeasurementRegressionTest {
     @Test fun repeatedQuickTimedStartKeepsTheCanonicalWorkoutAndStableSetIds() {
         val model = model()
         model.startQuickTimedWithExercise(timed(model))
-        await { ActiveWorkoutStore.current(context)?.optBoolean("active") == true }
+        awaitStarted(model)
         val first = ActiveWorkoutStore.current(context)!!
         model.startQuickTimedWithExercise(timed(model))
         shadowOf(Looper.getMainLooper()).idle()
@@ -97,11 +97,11 @@ class StudioSessionMeasurementRegressionTest {
     @Test fun swappingBilateralExerciseKeepsTheNativeAndDisplayedMeasurementMetadataTogether() {
         val model = model()
         model.startQuickTimedWithExercise(timed(model))
-        await { ActiveWorkoutStore.current(context)?.optBoolean("active") == true }
+        awaitStarted(model)
         val before = ActiveWorkoutStore.current(context)!!
         val replacement = strength(model)
         model.switchCurrentActiveExercise(replacement)
-        shadowOf(Looper.getMainLooper()).idle()
+        await { model.uiState.value.activeWorkoutExercises.getOrNull(model.uiState.value.activeExerciseIndex)?.id == replacement.id }
         val after = ActiveWorkoutStore.current(context)!!
         assertEquals(before.getString("workoutId"), after.getString("workoutId"))
         assertEquals(before.getLong("generation"), after.getLong("generation"))
@@ -113,7 +113,7 @@ class StudioSessionMeasurementRegressionTest {
     @Test fun repeatedNativeStartCannotImplicitlyStopOrRecordTheRunningSide() {
         val model = model()
         model.startQuickTimedWithExercise(timed(model))
-        await { ActiveWorkoutStore.current(context)?.optBoolean("active") == true }
+        awaitStarted(model)
         val frame = ActiveWorkoutStore.current(context)!!
         val service = Robolectric.buildService(IntervalTimerService::class.java).create()
         try {
@@ -133,7 +133,7 @@ class StudioSessionMeasurementRegressionTest {
     @Test fun closingNativeWorkoutClearsBothStudioAndMeasurementProjections() {
         val model = model()
         model.startQuickTimedWithExercise(timed(model))
-        await { ActiveWorkoutStore.current(context)?.optBoolean("active") == true }
+        awaitStarted(model)
         val measurement = nativeModel()
         val before = ActiveWorkoutStore.current(context)!!
         native { TrainPilotWorkoutFinalization(context, db).discardWorkout(before) }
@@ -143,6 +143,150 @@ class StudioSessionMeasurementRegressionTest {
         assertEquals("", measurement.uiState.value.workoutId)
         assertTrue(measurement.uiState.value.exercises.isEmpty())
         assertFalse(PhoneWorkoutExecution.store(context).snapshot()!!.optBoolean("active"))
+    }
+
+    @Test fun librarySwitchUsesCanonicalMetadataInBothDirectionsAndCanBeReopened() {
+        val model = model()
+        model.startQuickTimedWithExercise(timed(model)); awaitStarted(model)
+        val before = ActiveWorkoutStore.current(context)!!
+        val weighted = strength(model)
+        model.openActiveExerciseLibrary()
+        assertEquals(SubScreen.EXERCISE_LIBRARY, model.uiState.value.currentSubScreen)
+        model.selectLibraryExercise(weighted)
+        await { model.uiState.value.currentSubScreen == SubScreen.ACTIVE_STRENGTH }
+        assertEquals(weighted.id, target(ActiveWorkoutStore.current(context)!!).exerciseId)
+        assertEquals(before.getString("workoutId"), model.uiState.value.activeWorkoutId)
+        assertEquals(before.getLong("generation"), ActiveWorkoutStore.current(context)!!.getLong("generation"))
+        model.openActiveExerciseLibrary(); model.selectLibraryExercise(timed(model))
+        await { model.uiState.value.currentSubScreen == SubScreen.ACTIVE_BILATERAL }
+        val reloaded = this.model()
+        assertEquals(SubScreen.ACTIVE_BILATERAL, reloaded.uiState.value.activeWorkoutSubScreen)
+        assertEquals(target(ActiveWorkoutStore.current(context)!!).exerciseId, reloaded.uiState.value.selectedExerciseId)
+    }
+
+    @Test fun partiallyRecordedSideSurvivesSwapAndItsLateCallbacksCannotTargetTheNewExercise() {
+        val model = model()
+        model.startQuickTimedWithExercise(timed(model)); awaitStarted(model)
+        val before = ActiveWorkoutStore.current(context)!!
+        val service = Robolectric.buildService(IntervalTimerService::class.java).create()
+        try {
+            arm(service.get(), before)
+            val previous = target(before)
+            NativeWorkoutEditing.startStopwatch(context, previous, "left")
+            ShadowSystemClock.advanceBy(Duration.ofSeconds(3))
+            val recorded = NativeWorkoutEditing.stopStopwatch(context, previous)
+            val originalSet = previous.resolve(recorded).set.toString()
+            model.openActiveExerciseLibrary(); model.selectLibraryExercise(strength(model))
+            await { model.uiState.value.currentSubScreen == SubScreen.ACTIVE_STRENGTH }
+            val changed = ActiveWorkoutStore.current(context)!!
+            assertEquals(originalSet, previous.resolve(changed).set.toString())
+            assertNotEquals(previous.setId, target(changed).setId)
+            assertFalse(target(changed).resolve(changed).set.optBoolean("done"))
+            assertThrows(IllegalStateException::class.java) { NativeWorkoutEditing.startStopwatch(context, previous, "right") }
+            assertThrows(IllegalStateException::class.java) { NativeWorkoutEditing.stopStopwatch(context, previous) }
+            assertEquals(originalSet, previous.resolve(PhoneWorkoutExecution.store(context).snapshot()!!).set.toString())
+        } finally { service.destroy() }
+    }
+
+    @Test fun staleLibrarySelectionAfterDiscardRestoreAndNewStartCannotEditTheNewSession() {
+        val model = model()
+        model.startQuickTimedWithExercise(timed(model)); awaitStarted(model)
+        val first = ActiveWorkoutStore.current(context)!!
+        model.openActiveExerciseLibrary()
+        native { TrainPilotWorkoutFinalization(context, db).discardWorkout(first) }
+        native { NativeDataReplacement.exclusively(context) { } }
+        model.startQuickStrengthWithExercise(strength(model)); awaitStarted(model)
+        val second = ActiveWorkoutStore.current(context)!!
+        model.selectLibraryExercise(timed(model))
+        await { model.uiState.value.statusBannerMessage != null }
+        assertEquals(second.getString("workoutId"), model.uiState.value.activeWorkoutId)
+        assertEquals(second.getJSONArray("exercises").toString(), PhoneWorkoutExecution.store(context).snapshot()!!.getJSONArray("exercises").toString())
+        assertNotEquals(first.getString("workoutId"), second.getString("workoutId"))
+    }
+
+    @Test fun singleStopwatchPauseReopenResumeAndRecordUseOnlyMeasuredTimeOnce() {
+        val model = model()
+        val single = model.uiState.value.exercises.first { it.isTimed && !it.isBilateral }
+        model.startQuickTimedWithExercise(single); awaitStarted(model)
+        val frame = ActiveWorkoutStore.current(context)!!
+        val service = Robolectric.buildService(IntervalTimerService::class.java).create()
+        try {
+            arm(service.get(), frame)
+            val measurement = nativeModel()
+            val target = target(frame)
+            measurement.startSetStopwatch(target, "single")
+            await { measurement.uiState.value.stopwatchRunning }
+            ShadowSystemClock.advanceBy(Duration.ofSeconds(2))
+            measurement.pauseSetStopwatch(target)
+            assertFalse(target.resolve(PhoneWorkoutExecution.store(context).snapshot()!!).set.optBoolean("done"))
+            ShadowSystemClock.advanceBy(Duration.ofSeconds(30))
+            val reopened = nativeModel()
+            assertEquals(2L, reopened.uiState.value.stopwatchSeconds)
+            reopened.startSetStopwatch(target, "single")
+            await { reopened.uiState.value.stopwatchRunning }
+            ShadowSystemClock.advanceBy(Duration.ofSeconds(3))
+            reopened.pauseSetStopwatch(target)
+            ShadowSystemClock.advanceBy(Duration.ofSeconds(10))
+            reopened.recordSetStopwatch(target, "single")
+            val recorded = PhoneWorkoutExecution.store(context).snapshot()!!
+            assertEquals("5", target.resolve(recorded).set.getString("reps"))
+            assertTrue(target.resolve(recorded).set.getBoolean("done"))
+            reopened.recordSetStopwatch(target, "single")
+            assertEquals(recorded.getLong("executionRevision"), PhoneWorkoutExecution.store(context).snapshot()!!.getLong("executionRevision"))
+        } finally { service.destroy() }
+    }
+
+    @Test fun bilateralZeroStopAndFirstSideNeverCompleteAndDoubleRecordIsIdempotent() {
+        val model = model()
+        model.startQuickTimedWithExercise(timed(model)); awaitStarted(model)
+        val frame = ActiveWorkoutStore.current(context)!!
+        val service = Robolectric.buildService(IntervalTimerService::class.java).create()
+        try {
+            arm(service.get(), frame)
+            val target = target(frame)
+            NativeWorkoutEditing.startStopwatch(context, target, "left")
+            val zero = NativeWorkoutEditing.stopStopwatch(context, target)
+            assertFalse(target.resolve(zero).set.optBoolean("done"))
+            assertEquals(0L, target.resolve(zero).set.optLong("leftSeconds"))
+            NativeWorkoutEditing.startStopwatch(context, target, "left")
+            ShadowSystemClock.advanceBy(Duration.ofSeconds(2))
+            val left = NativeWorkoutEditing.stopStopwatch(context, target)
+            assertFalse(target.resolve(left).set.optBoolean("done"))
+            assertEquals(2L, target.resolve(left).set.optLong("leftSeconds"))
+            assertEquals(left.getLong("executionRevision"), NativeWorkoutEditing.stopStopwatch(context, target).getLong("executionRevision"))
+            NativeWorkoutEditing.startStopwatch(context, target, "right")
+            ShadowSystemClock.advanceBy(Duration.ofSeconds(4))
+            val both = NativeWorkoutEditing.stopStopwatch(context, target)
+            assertTrue(target.resolve(both).set.optBoolean("done"))
+            assertEquals(4L, target.resolve(both).set.optLong("rightSeconds"))
+            assertEquals(both.getLong("executionRevision"), NativeWorkoutEditing.stopStopwatch(context, target).getLong("executionRevision"))
+        } finally { service.destroy() }
+    }
+
+    @Test fun duplicateAndLateDiscardCannotDeleteANewerSession() {
+        val model = model()
+        model.startQuickTimedWithExercise(timed(model)); awaitStarted(model)
+        val first = ActiveWorkoutStore.current(context)!!
+        val firstId = first.getString("workoutId")
+        model.stopActiveWorkoutSession(firstId, first.getLong("generation"))
+        model.stopActiveWorkoutSession(firstId, first.getLong("generation"))
+        await { !model.uiState.value.isSavingWorkout && !model.uiState.value.isWorkoutSessionActive }
+        val tombstone = native { db.workoutHistoryDao().getTombstones().single() }
+        model.stopActiveWorkoutSession(firstId, first.getLong("generation"))
+        await { !model.uiState.value.isSavingWorkout }
+        assertEquals(tombstone, native { db.workoutHistoryDao().getTombstones().single() })
+        model.startQuickStrengthWithExercise(strength(model)); awaitStarted(model)
+        val second = ActiveWorkoutStore.current(context)!!
+        model.stopActiveWorkoutSession(firstId, first.getLong("generation"))
+        await { !model.uiState.value.isSavingWorkout }
+        assertTrue(PhoneWorkoutExecution.store(context).snapshot()!!.getBoolean("active"))
+        assertEquals(second.getString("workoutId"), ActiveWorkoutStore.current(context)!!.getString("workoutId"))
+        assertEquals(tombstone, native { db.workoutHistoryDao().getTombstones().single() })
+    }
+
+    private fun awaitStarted(model: TrainPilotViewModel) {
+        await { ActiveWorkoutStore.current(context)?.let { it.optBoolean("active") &&
+            model.uiState.value.activeWorkoutId == it.optString("workoutId") && model.uiState.value.isWorkoutSessionActive } == true }
     }
 
     private fun arm(service: IntervalTimerService, frame: JSONObject) {

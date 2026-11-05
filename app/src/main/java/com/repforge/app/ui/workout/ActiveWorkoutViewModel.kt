@@ -445,6 +445,7 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
                 result
             }
         )
+        refreshStopwatchUi()
     }
 
     private fun refreshStopwatchUi() {

@@ -248,6 +248,7 @@ data class TrainPilotUiState(
     val isSavingWorkout: Boolean = false,
     val isWorkoutSessionActive: Boolean = false,
     val activeWorkoutId: String = "",
+    val activeWorkoutGeneration: Long = 0L,
     val workoutStartedEpochMs: Long = 0L,
     val activeWorkoutSubScreen: SubScreen = SubScreen.ACTIVE_STRENGTH,
     val activeWorkoutTitleHu: String = "Otthoni A/B – Alap • A nap",
@@ -1224,7 +1225,7 @@ class TrainPilotViewModel : ViewModel() {
                 if (frame?.optBoolean("active") != true) {
                     if (frame != null) _uiState.update { state ->
                         if (state.activeWorkoutId != frame.optString("workoutId")) state
-                        else state.copy(isWorkoutSessionActive = false, activeWorkoutId = "", workoutStartedEpochMs = 0L,
+                        else state.copy(isWorkoutSessionActive = false, activeWorkoutId = "", activeWorkoutGeneration = 0L, workoutStartedEpochMs = 0L,
                             activeWorkoutExercises = emptyList(), activeSets = emptyList(), activeSetsByExerciseId = emptyMap(),
                             timedCurrentSec = 0, homeDemoMode = HomeDemoMode.PLANNED_NEXT,
                             currentSubScreen = if (state.currentSubScreen in activeMeasurementScreens) SubScreen.NONE else state.currentSubScreen,
@@ -1605,6 +1606,7 @@ class TrainPilotViewModel : ViewModel() {
                         outdoorRouteKey = restoredActiveSnap?.optString("studioGpsKey") ?: st.outdoorRouteKey,
                         outdoorGpsEnabled = restoredActiveSnap?.takeIf { it.has("studioIndoor") }?.let { !it.optBoolean("studioIndoor") } ?: st.outdoorGpsEnabled,
                         activeWorkoutId = restoredActiveSnap?.optString("workoutId").orEmpty(),
+                        activeWorkoutGeneration = restoredActiveSnap?.optLong("generation") ?: 0L,
                         workoutStartedEpochMs = restoredActiveSnap?.optLong("startedEpochMs", 0L)?.takeIf { it > 0L } ?: st.workoutStartedEpochMs,
                         activeWorkoutSubScreen = if (restoredActiveSnap?.has("studioIndoor") == true) SubScreen.ACTIVE_OUTDOOR_GPS
                             else if (restoredActiveSnap != null) targetSubScreenForExercise(currentActiveEx) else st.activeWorkoutSubScreen,
@@ -1704,28 +1706,33 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    fun stopActiveWorkoutSession(expectedWorkoutId: String? = null) {
+    fun stopActiveWorkoutSession(expectedWorkoutId: String? = null, expectedGeneration: Long? = null) {
         if (_uiState.value.isSavingWorkout) return
         val ctx = nativeContext ?: return
         val db = nativeDatabase ?: return
         val scope = nativeScope ?: return
         val targetId = expectedWorkoutId ?: _uiState.value.activeWorkoutId.takeIf(String::isNotBlank) ?: return
+        val targetGeneration = expectedGeneration?.takeIf { it > 0 } ?: _uiState.value.activeWorkoutGeneration.takeIf { it > 0 }
         _uiState.update { it.copy(isSavingWorkout = true) }
         scope.launch(Dispatchers.Main.immediate) {
             try {
                 check(!com.repforge.app.NativeDataReplacement.blocked(ctx)) { "Adatcsere van folyamatban." }
                 val snapshot = ActiveWorkoutStore.current(ctx)
                 val execution = PhoneWorkoutExecution.store(ctx).snapshot()
-                val alreadyClosed = targetId != null && _uiState.value.activeWorkoutId == targetId && snapshot?.optString("workoutId") == targetId &&
-                    !snapshot.optBoolean("active") && execution?.optString("workoutId") == targetId && !execution.optBoolean("active")
+                val alreadyClosed = snapshot?.optString("workoutId") == targetId && !snapshot.optBoolean("active") &&
+                    execution?.optString("workoutId") == targetId && !execution.optBoolean("active") &&
+                    (targetGeneration == null || execution.optLong("generation") == targetGeneration)
                 val active = snapshot?.takeIf { it.optBoolean("active") }
-                if (targetId != null && !alreadyClosed) check(active?.optString("workoutId") == targetId &&
+                if (!alreadyClosed) check(active?.optString("workoutId") == targetId &&
+                    (targetGeneration == null || active.optLong("generation") == targetGeneration) &&
                     _uiState.value.activeWorkoutId == targetId) { "Az elvetendő edzés megváltozott. Nyisd meg újra a műveletet." }
                 if (active != null) {
                     check(active.optString("workoutId") == _uiState.value.activeWorkoutId)
                     TrainPilotWorkoutFinalization(ctx, db).discardWorkout(active)
                 }
-                _uiState.update { it.copy(isWorkoutSessionActive = false, activeWorkoutId = "", workoutStartedEpochMs = 0,
+                _uiState.update {
+                    if (it.activeWorkoutId.isNotBlank() && it.activeWorkoutId != targetId) return@update it
+                    it.copy(isWorkoutSessionActive = false, activeWorkoutId = "", activeWorkoutGeneration = 0L, workoutStartedEpochMs = 0,
                     outdoorRouteKey = "", outdoorGpsEnabled = false, homeDemoMode = HomeDemoMode.PLANNED_NEXT,
                     activeWorkoutExercises = emptyList(), activeSets = emptyList(), activeSetsByExerciseId = emptyMap(),
                     backStack = it.backStack.filterNot { route -> route.subScreen in activeMeasurementScreens },
@@ -3411,15 +3418,14 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    private suspend fun presentCanonicalWorkout(frame: JSONObject) {
-        val ids = frame.getJSONArray("exercises")
+    private suspend fun presentCanonicalWorkout(requested: JSONObject) {
         val library = withContext(Dispatchers.IO) {
             requireNotNull(nativeDatabase).exerciseLibraryDao().getAllExercises().associateBy { it.id }
         }
-        val current = ActiveWorkoutStore.current(requireNotNull(nativeContext))
-        check(current?.optBoolean("active") == true && current.optString("workoutId") == frame.optString("workoutId") &&
-            current.optLong("generation") == frame.optLong("generation") &&
-            current.optLong("executionRevision") == frame.optLong("executionRevision")) { "Az edzés időközben megváltozott." }
+        val frame = requireNotNull(ActiveWorkoutStore.current(requireNotNull(nativeContext)))
+        check(frame.optBoolean("active") && frame.optString("workoutId") == requested.optString("workoutId") &&
+            frame.optLong("generation") == requested.optLong("generation")) { "Az edzés időközben megváltozott." }
+        val ids = frame.getJSONArray("exercises")
         val exercises = (0 until ids.length()).map { index ->
             val raw = ids.getJSONObject(index)
             com.example.ui.components.withNativeStrengthUnits(
@@ -3447,7 +3453,7 @@ class TrainPilotViewModel : ViewModel() {
         val first = exercises[currentIndex]
         val target = targetSubScreenForExercise(first)
         _uiState.update { state -> state.copy(
-            isWorkoutSessionActive = true, activeWorkoutId = frame.getString("workoutId"),
+            isWorkoutSessionActive = true, activeWorkoutId = frame.getString("workoutId"), activeWorkoutGeneration = frame.getLong("generation"),
             workoutStartedEpochMs = Instant.parse(frame.getString("started")).toEpochMilli(),
             activeWorkoutSubScreen = target, activeWorkoutTitleHu = frame.optString("programName"),
             activeWorkoutExercises = exercises, activeExerciseIndex = currentIndex, selectedExerciseId = first.id,
@@ -3669,7 +3675,7 @@ class TrainPilotViewModel : ViewModel() {
         val selection = exerciseSelection
         if (selection != null) {
             exerciseSelection = null
-            switchCurrentActiveExercise(exercise, selection)
+            switchCurrentActiveExercise(exercise, selection, resume = true)
         } else if (exercise.isTimed || exercise.isBilateral) startQuickTimedWithExercise(exercise)
         else startQuickStrengthWithExercise(exercise)
     }
@@ -3679,7 +3685,7 @@ class TrainPilotViewModel : ViewModel() {
         catch (error: Exception) { _uiState.update { it.copy(statusBannerMessage = error.message) } }
     }
 
-    private fun switchCurrentActiveExercise(exercise: ExerciseItem, selection: ExerciseSelection) {
+    private fun switchCurrentActiveExercise(exercise: ExerciseItem, selection: ExerciseSelection, resume: Boolean = false) {
         if (exerciseSelectionJob?.isActive == true) return
         val ctx = nativeContext ?: return
         val db = nativeDatabase ?: return
@@ -3692,7 +3698,9 @@ class TrainPilotViewModel : ViewModel() {
                     com.repforge.app.NativeWorkoutSession.buildExercise(db, source, requireNotNull(nativeSettingsStore).current())
                 }
                 selection.data.requireCurrent(ctx)
-                val saved = com.repforge.app.StudioWorkoutBridge.switchExercise(ctx, selection.target, replacement)
+                var saved = com.repforge.app.StudioWorkoutBridge.switchExercise(ctx, selection.target, replacement)
+                // The library's explicit Start action resumes this exact edited session.
+                if (resume && saved.optBoolean("workoutPaused")) saved = com.repforge.app.StudioWorkoutBridge.pause(ctx, false)
                 presentCanonicalWorkout(saved)
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
             catch (error: Exception) { _uiState.update { it.copy(statusBannerMessage = error.message ?: "A gyakorlat nem cserélhető.") } }

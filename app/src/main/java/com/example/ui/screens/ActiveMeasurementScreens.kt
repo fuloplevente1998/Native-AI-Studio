@@ -1358,7 +1358,7 @@ fun ActiveTimedWorkoutScreen(
             .testTag("active_timed_screen")
     ) {
         native.statusMessage?.let { Text(it, color = palette.danger) }
-        if (target == null) Text(tr(lang, "Nincs mérhető sorozat az aktuális natív gyakorlatban.",
+        if (target == null) Text(tr(uiState.language, "Nincs mérhető sorozat az aktuális natív gyakorlatban.",
             "No measurable set in the current native exercise.", "Kein messbarer Satz in der aktuellen nativen Übung.",
             "Nu există o serie măsurabilă în exercițiul nativ curent."), color = palette.textSecondary)
 
@@ -2001,7 +2001,7 @@ fun ActiveBilateralWorkoutScreen(
             .testTag("active_bilateral_screen")
     ) {
         native.statusMessage?.let { Text(it, color = palette.danger) }
-        if (target == null) Text(tr(lang, "Nincs mérhető sorozat az aktuális natív gyakorlatban.",
+        if (target == null) Text(tr(uiState.language, "Nincs mérhető sorozat az aktuális natív gyakorlatban.",
             "No measurable set in the current native exercise.", "Kein messbarer Satz in der aktuellen nativen Übung.",
             "Nu există o serie măsurabilă în exercițiul nativ curent."), color = palette.textSecondary)
 
