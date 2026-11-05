@@ -1,5 +1,7 @@
 # TrainPilot – native AI Studio app
 
+**Agent workflow and model/thinking rules: [AGENTS.md](AGENTS.md). Short continuation handoff: [WORK_HANDOFF](docs/WORK_HANDOFF.md).**
+
 **Current source, verified APKs and pending device checks: [CURRENT_STATUS](docs/CURRENT_STATUS.md).**
 
 **Continue from the latest `main`, using the current handoff:**
