@@ -20,6 +20,13 @@ class WearCommandListenerService : WearableListenerService() {
         const val COMMAND_PATH_PREFIX: String = WearDataLayerPaths.COMMAND_PATH_PREFIX
     }
 
+    override fun onPeerConnected(peer: com.google.android.gms.wearable.Node) {
+        // Retry the durable terminal projection when a previous Data Layer write failed.
+        val current = ActiveWorkoutStore.current(this) ?: return
+        if (!current.optBoolean("active", true) && current.optString("workoutId").isNotBlank())
+            runCatching { WearSyncRepository.publishActiveWorkoutSnapshot(this, current) }
+    }
+
     private fun queue(command: JSONObject, uri: Uri?) {
         try {
             WearCommandQueueStore.enqueue(this, command, uri?.toString())

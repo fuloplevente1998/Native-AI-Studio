@@ -20,7 +20,8 @@ import java.time.Instant
 /** One finalization path for the phone UI and durable watch finish commands. */
 internal class TrainPilotWorkoutFinalization(
     private val context: Context,
-    private val database: TrainPilotDatabase = TrainPilotDatabase.getInstance(context)
+    private val database: TrainPilotDatabase = TrainPilotDatabase.getInstance(context),
+    private val publishDiscard: (JSONObject) -> Unit = { WearSyncRepository.publishActiveWorkoutSnapshot(context, it) }
 ) {
     companion object { private val mutex = Mutex() }
 
@@ -92,6 +93,11 @@ internal class TrainPilotWorkoutFinalization(
                     // The native frame is already inactive, so it cannot accept another recording.
                     execution.suspendCommands(false)
                     ActiveWorkoutStore.clear(context)
+                }
+                // Both phone UIs use this durable boundary; transport failure must not undo deletion.
+                withContext(Dispatchers.Main.immediate) {
+                    runCatching { publishDiscard(closed) }
+                    WearSyncRepository.refreshWatchHomeAsync(context)
                 }
                 // Route cleanup is after durable deletion. Failure must not resurrect the workout.
                 withContext(Dispatchers.IO) {

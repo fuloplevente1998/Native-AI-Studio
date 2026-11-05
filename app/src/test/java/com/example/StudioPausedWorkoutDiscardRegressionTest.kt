@@ -46,6 +46,24 @@ class StudioPausedWorkoutDiscardRegressionTest {
             }
         } finally { future.cancel(true); worker.shutdownNow() }
     }
+    @Test fun commonDiscardPublishesOnlyAfterNativeCloseAndKeepsDeletionIfTransportFails() {
+        val frame = start()
+        var published: JSONObject? = null
+        val closed = native {
+            TrainPilotWorkoutFinalization(context, db) { terminal ->
+                assertFalse(terminal.getBoolean("active"))
+                assertFalse(ActiveWorkoutStore.current(context)!!.getBoolean("active"))
+                assertFalse(PhoneWorkoutExecution.store(context).snapshot()!!.getBoolean("active"))
+                published = JSONObject(terminal.toString())
+                throw IllegalStateException("temporary Data Layer failure")
+            }.discardWorkout(frame)
+        }
+        assertEquals(frame.getString("workoutId"), published!!.getString("workoutId"))
+        assertEquals(closed.toString(), published!!.toString())
+        assertFalse(ActiveWorkoutStore.current(context)!!.getBoolean("active"))
+        assertTrue(native { db.workoutHistoryDao().isTombstoned(frame.getString("workoutId"), JSONObject.quote(frame.getString("workoutId"))) })
+    }
+
     private fun start(): JSONObject = NativeWorkoutSession.installPrepared(context,
         NativeWorkoutSession.quickCandidate(JSONObject("""
             {"id":"press","name":"Press","repUnit":"ism.","measurementType":"reps","loadType":"weight",
