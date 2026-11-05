@@ -22,6 +22,9 @@ internal object NativeSetStopwatch {
 
     fun running(clock: JSONObject) = clock.optBoolean("running") && clock.optString("process") == process
 
+    /** Only an explicit adjustment in this process authorizes a manually entered record. */
+    fun allowAdjustedRecord(clock: JSONObject) { clock.put("manualRecordProcess", process) }
+
     fun pausedElapsed(clock: JSONObject, now: Long = SystemClock.elapsedRealtime()): Long =
         if (clock.optString("process") == process && !clock.optBoolean("running") && clock.has("pauseBegan"))
             (now - clock.getLong("pauseBegan")).coerceIn(0L, IntervalTimeline.MAX_MS) else 0L
@@ -73,7 +76,8 @@ internal object NativeSetStopwatch {
             clock.getString("exerciseId") == target.exerciseId && !resolved.set.optBoolean("done") && timed(resolved.exercise)) { "A stopper célpontja megváltozott." }
         // Only this process's running or explicitly paused clock can be recorded.
         // A checkpoint restored after process death still needs explicit Resume.
-        check(running(clock) || (clock.optString("process") == process && clock.has("pauseBegan"))) {
+        check(running(clock) || (clock.optString("process") == process && clock.has("pauseBegan")) ||
+            clock.optString("manualRecordProcess") == process) {
             "A stopper megszakadt. Folytasd vagy nullázd a mérést."
         }
         val seconds = elapsed(clock, now) / 1000L

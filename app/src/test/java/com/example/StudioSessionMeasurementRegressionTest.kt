@@ -314,6 +314,26 @@ class StudioSessionMeasurementRegressionTest {
         assertEquals(tombstone, native { db.workoutHistoryDao().getTombstones().single() })
     }
 
+    @Test fun explicitManualSecondsCanBeRecordedWithoutInventingMeasuredWork() {
+        val model = model()
+        val single = model.uiState.value.exercises.first { it.isTimed && !it.isBilateral }
+        model.startQuickTimedWithExercise(single); awaitStarted(model)
+        val frame = ActiveWorkoutStore.current(context)!!
+        val measurement = nativeModel()
+        val target = target(frame)
+        measurement.adjustSetStopwatch(target, "single", 15)
+        measurement.adjustSetStopwatch(target, "single", -5)
+        val adjusted = PhoneWorkoutExecution.store(context).snapshot()!!
+        assertFalse(NativeSetStopwatch.running(adjusted.getJSONObject(NativeSetStopwatch.FIELD)))
+        assertEquals(10_000L, NativeSetStopwatch.elapsed(adjusted.getJSONObject(NativeSetStopwatch.FIELD)))
+        assertEquals(0L, NativeMeasuredTime.summary(adjusted).workMs)
+        measurement.recordSetStopwatch(target, "single")
+        val recorded = PhoneWorkoutExecution.store(context).snapshot()!!
+        assertEquals("10", target.resolve(recorded).set.getString("reps"))
+        assertTrue(target.resolve(recorded).set.getBoolean("done"))
+        assertEquals(0L, NativeMeasuredTime.summary(recorded).workMs)
+    }
+
     private fun awaitStarted(model: TrainPilotViewModel) {
         await { ActiveWorkoutStore.current(context)?.let { it.optBoolean("active") &&
             model.uiState.value.activeWorkoutId == it.optString("workoutId") && model.uiState.value.isWorkoutSessionActive } == true }

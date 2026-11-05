@@ -564,6 +564,7 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
             val adjusted = (previous + deltaSeconds * 1000L).coerceIn(0, IntervalTimeline.MAX_MS)
             // Explicit manual edits change the displayed/recorded seconds, never invent measured work time.
             clock.put("elapsedMs", adjusted).put("creditBaseMs", clock.optLong("creditBaseMs") + adjusted - previous)
+            NativeSetStopwatch.allowAdjustedRecord(clock)
             parseSnapshotToUi(NativeWorkoutEditing.commitEdit(context, frame, clockEdit = true))
             refreshStopwatchUi()
         } catch (error: Exception) { showStatus(error.message ?: "A stopper nem módosítható.") }
