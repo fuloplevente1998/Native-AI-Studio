@@ -679,12 +679,13 @@ internal fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName
                 HorizontalDivider(color = colors.line)
                 val series = remember(row.data, offset) { NativeHealthRecordSeries.page(data, offset) }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    series.items.forEach { item ->
+                    series.items.forEachIndexed { index, item ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(colors.card2)
+                                .testTag("health_record_series_${row.id}_${offset + index}")
                                 .padding(horizontal = 10.dp, vertical = 8.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -712,13 +713,15 @@ internal fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             TextButton(
                                 enabled = offset > 0,
-                                onClick = { offset = maxOf(0, offset - NativeHealthRecordSeries.PAGE_SIZE) }
+                                onClick = { offset = maxOf(0, offset - NativeHealthRecordSeries.PAGE_SIZE) },
+                                modifier = Modifier.testTag("health_record_series_previous_${row.id}")
                             ) {
                                 Text(text.getString(R.string.health_records_newer))
                             }
                             TextButton(
                                 enabled = offset + NativeHealthRecordSeries.PAGE_SIZE < series.total,
-                                onClick = { offset += NativeHealthRecordSeries.PAGE_SIZE }
+                                onClick = { offset += NativeHealthRecordSeries.PAGE_SIZE },
+                                modifier = Modifier.testTag("health_record_series_next_${row.id}")
                             ) {
                                 Text(text.getString(R.string.health_records_older))
                             }

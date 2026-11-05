@@ -8,6 +8,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.LocalTrainPilotPalette
@@ -38,18 +41,22 @@ internal fun CompactDatePickerDialog(
         "health_date_picker", onDismiss) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { monthIso = month.minusYears(1).toString() }, enabled = month.year > 1,
-                modifier = Modifier.testTag("health_date_previous_year")) { Text("« " + label("Év", "Year", "Jahr", "An")) }
+                modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).testTag("health_date_previous_year")
+                    .semantics { contentDescription = label("Előző év", "Previous year", "Vorheriges Jahr", "Anul anterior") }) { Text("«") }
             Text(month.year.toString(), color = palette.textPrimary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
             TextButton(onClick = { monthIso = month.plusYears(1).toString() }, enabled = month.year < 9999,
-                modifier = Modifier.testTag("health_date_next_year")) { Text(label("Év", "Year", "Jahr", "An") + " »") }
+                modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).testTag("health_date_next_year")
+                    .semantics { contentDescription = label("Következő év", "Next year", "Nächstes Jahr", "Anul următor") }) { Text("»") }
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { monthIso = month.minusMonths(1).toString() }, enabled = month.year > 1 || month.monthValue > 1,
-                modifier = Modifier.testTag("health_date_previous_month")) { Text("‹") }
+                modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).testTag("health_date_previous_month")
+                    .semantics { contentDescription = label("Előző hónap", "Previous month", "Vorheriger Monat", "Luna anterioară") }) { Text("‹") }
             Text(month.month.getDisplayName(TextStyle.FULL, locale), color = palette.textPrimary,
                 modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
             TextButton(onClick = { monthIso = month.plusMonths(1).toString() }, enabled = month.year < 9999 || month.monthValue < 12,
-                modifier = Modifier.testTag("health_date_next_month")) { Text("›") }
+                modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).testTag("health_date_next_month")
+                    .semantics { contentDescription = label("Következő hónap", "Next month", "Nächster Monat", "Luna următoare") }) { Text("›") }
         }
         Row(Modifier.fillMaxWidth()) {
             (1..7).forEach { day -> Text(java.time.DayOfWeek.of(day).getDisplayName(TextStyle.SHORT, locale),
@@ -70,7 +77,10 @@ internal fun CompactDatePickerDialog(
                             color = if (chosen) palette.primary.copy(alpha = 0.16f) else palette.surface,
                             modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                                 .trainPilotBorder(1.dp, if (chosen) palette.primary else palette.cardBorder, shape)
-                                .testTag("health_date_day_$number")) {
+                                .testTag("health_date_day_$number").semantics {
+                                    this.selected = chosen
+                                    contentDescription = date.toString()
+                                }) {
                             Box(contentAlignment = Alignment.Center) { Text(number.toString(), color = palette.textPrimary) }
                         }
                     }
@@ -80,11 +90,11 @@ internal fun CompactDatePickerDialog(
         Text(selected.format(DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.LONG).withLocale(locale)),
             color = palette.primary, modifier = Modifier.testTag("health_date_selected"))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TrainPilotOutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f).testTag("health_date_cancel")) {
+            TrainPilotOutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("health_date_cancel")) {
                 Text(label("Mégse", "Cancel", "Abbrechen", "Anulează"))
             }
             TrainPilotOutlinedButton(onClick = { onConfirm(selected) }, enabled = HealthJournalStore.validDay(selectedIso),
-                modifier = Modifier.weight(1f).testTag("health_date_confirm")) { Text("OK") }
+                modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("health_date_confirm")) { Text("OK") }
         }
     }
 }

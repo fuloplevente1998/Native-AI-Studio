@@ -14,6 +14,7 @@ import com.repforge.app.R
 import com.repforge.app.ui.text.nativeResources
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
@@ -23,14 +24,18 @@ internal fun HealthRecordDayDetails(day: LocalDate, provider: String, source: St
     language: String, generation: Long, refreshKey: String, visible: Boolean) {
     val context = LocalContext.current
     val text = nativeResources(context, language)
-    var cursors by rememberSaveable(day, provider, source, type, refreshKey) { mutableStateOf(listOf("")) }
-    var cached by remember(day, provider, source, type, refreshKey) { mutableStateOf<HealthRecordPage?>(null) }
-    var error by remember(day, provider, source, type, refreshKey) { mutableStateOf(false) }
+    var cursors by rememberSaveable(day, provider, source, type, generation, refreshKey) { mutableStateOf(listOf("")) }
+    var cached by remember(day, provider, source, type, generation, refreshKey) { mutableStateOf<HealthRecordPage?>(null) }
+    var error by remember(day, provider, source, type, generation, refreshKey) { mutableStateOf(false) }
     val cursor = cursors.last().takeIf { it.isNotEmpty() }?.split(":")?.let { HealthRecordCursor(it[0].toLong(), it[1].toLong()) }
     val query = HealthRecordQuery(day, provider, source, type, cursor, generation)
     // Folding and unfolding retain the current page; measurement JSON never enters saved-instance state.
-    LaunchedEffect(visible, query, cached) {
-        if (!visible || cached != null || error) return@LaunchedEffect
+    val isVisible by rememberUpdatedState(visible)
+    LaunchedEffect(query, refreshKey) {
+        if (cached != null || error) return@LaunchedEffect
+        // Wait for the first expansion, but do not cancel an in-flight SQLite read on folding.
+        // Its result remains cached, so opening the same day again never repeats that read.
+        snapshotFlow { isVisible }.first { it }
         try {
             val ticket = NativeDataReplacement.continuationForCurrentData(context)
             val page = withContext(Dispatchers.IO) {

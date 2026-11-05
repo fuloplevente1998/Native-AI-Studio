@@ -89,7 +89,7 @@ internal fun StudioHealthMetricsBrowser(initialProvider: String, language: Strin
     }
     snapshot?.let { current ->
         val origins = current.getJSONArray("sources")
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        LazyRow(modifier = Modifier.testTag("journal_origins"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             item { FilterChip(selected = source.isEmpty(), onClick = { source = "" }, label = {
                 Text(label("Szolgáltatói összesítő", "Provider summary", "Anbieterübersicht", "Rezumat furnizor"))
             }, modifier = Modifier.testTag("journal_origin_all")) }
@@ -99,6 +99,12 @@ internal fun StudioHealthMetricsBrowser(initialProvider: String, language: Strin
                 FilterChip(selected = source == id, onClick = { if (source != id) source = id }, label = {
                     Text(friendlyHealthSourceName(id, origin.optString("name"), NativeWorkoutHealthSource.label(provider)))
                 }, modifier = Modifier.testTag("journal_origin_$id"))
+            }
+            // Keep the explicit selection visible on pages without records from that origin.
+            if (source.isNotEmpty() && (0 until origins.length()).none { origins.getJSONObject(it).getString("source") == source }) {
+                item { FilterChip(selected = true, onClick = {}, label = {
+                    Text(friendlyHealthSourceName(source, "", NativeWorkoutHealthSource.label(provider)))
+                }, modifier = Modifier.testTag("journal_origin_$source")) }
             }
         }
     }
@@ -116,26 +122,29 @@ internal fun StudioHealthMetricsBrowser(initialProvider: String, language: Strin
             Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceElevated,
                 border = TrainPilotFrames.stroke(1.dp, palette.cardBorder), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().testTag("journal_day_$date")) {
+                    TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_day_$date")) {
                         Column(Modifier.weight(1f)) {
                             Text(date.toString(), fontWeight = FontWeight.ExtraBold, color = palette.textPrimary)
                             Text(NativeWorkoutHealthSource.label(provider), color = palette.primary, style = MaterialTheme.typography.labelSmall)
+                            if (source.isNotEmpty()) Text(friendlyHealthSourceName(source, "", NativeWorkoutHealthSource.label(provider)),
+                                color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
                         }
                         Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                             contentDescription = label("Napi részletek", "Day details", "Tagesdetails", "Detalii zilnice"), tint = palette.primary)
                     }
                     val sleep = NativeHealthJournal.sleepMinutes(raw, provider, date)
-                    val summary = listOf(label("Alvás", "Sleep", "Schlaf", "Somn") to (sleep?.let { "${it.toInt()} min" } ?: "—")) +
+                    val summary = listOf(Triple("sleep", label("Alvás", "Sleep", "Schlaf", "Somn"), sleep?.let { "${it.toInt()} min" } ?: "—")) +
                         listOf("steps", "activeCalories", "averageHeartRate").map { key ->
-                            val metric = metrics.first { it.key == key }; metric.label to if (metric.isAvailable) "${metric.valueText} ${metric.unit}".trim() else "—"
+                            val metric = metrics.first { it.key == key }
+                            Triple(key, metric.label, if (metric.isAvailable) "${metric.valueText} ${metric.unit}".trim() else "—")
                         }
                     // Two columns keep the existing compact boxed journal readable with larger text.
                     summary.chunked(2).forEach { cells -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        cells.forEach { (title, value) -> Surface(shape = RoundedCornerShape(10.dp), color = palette.surfaceCard, modifier = Modifier.weight(1f)) {
+                        cells.forEach { (metricKey, title, value) -> Surface(shape = RoundedCornerShape(10.dp), color = palette.surfaceCard, modifier = Modifier.weight(1f)) {
                             Column(Modifier.padding(8.dp)) {
                                 Text(title, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
                                 Text(value, color = palette.textPrimary, fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.testTag("journal_summary_${date}_$title"))
+                                    modifier = Modifier.testTag("journal_summary_${date}_$metricKey"))
                             }
                         } }
                     }
