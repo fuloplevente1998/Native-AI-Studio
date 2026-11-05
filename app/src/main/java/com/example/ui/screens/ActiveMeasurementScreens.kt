@@ -1358,6 +1358,9 @@ fun ActiveTimedWorkoutScreen(
             .testTag("active_timed_screen")
     ) {
         native.statusMessage?.let { Text(it, color = palette.danger) }
+        if (target == null) Text(tr(lang, "Nincs mérhető sorozat az aktuális natív gyakorlatban.",
+            "No measurable set in the current native exercise.", "Kein messbarer Satz in der aktuellen nativen Übung.",
+            "Nu există o serie măsurabilă în exercițiul nativ curent."), color = palette.textSecondary)
 
         LazyColumn(
             modifier = Modifier
@@ -1590,7 +1593,8 @@ fun ActiveTimedWorkoutScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Button(
-                            onClick = { target?.let { if (isRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.toggleSetStopwatch(it, "single") } },
+                            onClick = { target?.let { if (isRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.startSetStopwatch(it, "single") } },
+                            enabled = target != null,
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (isRunning) palette.primary else palette.success,
@@ -1846,7 +1850,7 @@ fun ActiveBilateralWorkoutScreen(
     val firstUncompletedSetNum = uiState.activeSets.firstOrNull { !it.completed }?.setNumber
         ?: uiState.activeSets.lastOrNull()?.setNumber
         ?: 1
-    var selectedTargetSetNumber by remember(firstUncompletedSetNum, uiState.activeSets.size) {
+    var selectedTargetSetNumber by remember(uiState.activeWorkoutId, currentExercise?.id, firstUncompletedSetNum, uiState.activeSets.size) {
         mutableIntStateOf(firstUncompletedSetNum)
     }
 
@@ -1997,6 +2001,9 @@ fun ActiveBilateralWorkoutScreen(
             .testTag("active_bilateral_screen")
     ) {
         native.statusMessage?.let { Text(it, color = palette.danger) }
+        if (target == null) Text(tr(lang, "Nincs mérhető sorozat az aktuális natív gyakorlatban.",
+            "No measurable set in the current native exercise.", "Kein messbarer Satz in der aktuellen nativen Übung.",
+            "Nu există o serie măsurabilă în exercițiul nativ curent."), color = palette.textSecondary)
 
         LazyColumn(
             modifier = Modifier
@@ -2249,7 +2256,8 @@ fun ActiveBilateralWorkoutScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Button(
-                                onClick = { target?.let { if (leftRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.toggleSetStopwatch(it, "left") } },
+                                onClick = { target?.let { if (leftRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.startSetStopwatch(it, "left") } },
+                            enabled = target != null,
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (leftRunning) palette.warning else palette.success,
@@ -2416,7 +2424,8 @@ fun ActiveBilateralWorkoutScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Button(
-                                onClick = { target?.let { if (rightRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.toggleSetStopwatch(it, "right") } },
+                                onClick = { target?.let { if (rightRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.startSetStopwatch(it, "right") } },
+                            enabled = target != null,
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (rightRunning) palette.warning else palette.success,

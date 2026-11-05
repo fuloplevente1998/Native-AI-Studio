@@ -470,13 +470,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onSelectCategory = { viewModel.selectExerciseCategory(it) },
                             onSelectExercise = { exId -> viewModel.openExerciseDetail(exId) },
                             onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true) },
-                            onStartExerciseNow = { ex ->
-                                if (ex.isBilateral || ex.isTimed || ex.nameHu.contains("oldalsó plank", ignoreCase = true)) {
-                                    viewModel.startQuickTimedWithExercise(ex)
-                                } else {
-                                    viewModel.startQuickStrengthWithExercise(ex)
-                                }
-                            },
+                            onStartExerciseNow = { ex -> viewModel.selectLibraryExercise(ex) },
                             onAddExerciseToQueue = { ex ->
                                 viewModel.addExerciseToWorkoutQueue(ex)
                                 viewModel.addExerciseToActiveProgramDay(ex)
@@ -508,15 +502,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 viewModel.addExerciseToActiveProgramDay(ex)
                             },
                             onStartDemoWithExercise = {
-                                if (currentDetailExercise != null) {
-                                    if (currentDetailExercise.isBilateral || currentDetailExercise.isTimed || currentDetailExercise.nameHu.contains("oldalsó plank", ignoreCase = true)) {
-                                        viewModel.startQuickTimedWithExercise(currentDetailExercise)
-                                    } else {
-                                        viewModel.startQuickStrengthWithExercise(currentDetailExercise)
-                                    }
-                                } else {
-                                    viewModel.startPlannedWorkout()
-                                }
+                                currentDetailExercise?.let(viewModel::selectLibraryExercise)
                             }
                         )
                     }
@@ -546,7 +532,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onPreviousExercise = { viewModel.previousActiveExercise() },
                             onNextExercise = { viewModel.nextActiveExercise() },
                             onSwitchExercise = { ex -> viewModel.switchCurrentActiveExercise(ex) },
-                            onOpenExerciseLibrary = { viewModel.navigateToSubScreen(SubScreen.EXERCISE_LIBRARY) }
+                            onOpenExerciseLibrary = { viewModel.openActiveExerciseLibrary() }
                         )
                     }
 
@@ -559,8 +545,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onSelectMeasurementMode = { mode -> viewModel.navigateToSubScreen(mode, MainTab.WORKOUT) },
                             onPreviousExercise = { viewModel.previousActiveExercise() },
                             onNextExercise = { viewModel.nextActiveExercise() },
-                            onSwitchExercise = { ex -> viewModel.startQuickTimedWithExercise(ex) },
-                            onOpenExerciseLibrary = { viewModel.navigateToSubScreen(SubScreen.EXERCISE_LIBRARY) }
+                            onSwitchExercise = { ex -> viewModel.switchCurrentActiveExercise(ex) },
+                            onOpenExerciseLibrary = { viewModel.openActiveExerciseLibrary() }
                         )
                     }
 
@@ -586,7 +572,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onPreviousExercise = { viewModel.previousActiveExercise() },
                             onNextExercise = { viewModel.nextActiveExercise() },
                             onSwitchExercise = { ex -> viewModel.switchCurrentActiveExercise(ex) },
-                            onOpenExerciseLibrary = { viewModel.navigateToSubScreen(SubScreen.EXERCISE_LIBRARY) }
+                            onOpenExerciseLibrary = { viewModel.openActiveExerciseLibrary() }
                         )
                     }
 

@@ -6,6 +6,40 @@ import java.time.Instant
 
 /** AI Studio presentation adapter to the existing native execution/editing APIs. Main thread only. */
 internal object StudioWorkoutBridge {
+    /** A library choice edits its original native session, never starts a replacement session. */
+    fun switchExercise(context: android.content.Context, target: NativeWorkoutTarget, replacement: JSONObject): JSONObject {
+        val frame = NativeWorkoutEditing.project(context)
+        val original = target.resolve(frame)
+        check(original.exerciseIndex == frame.optInt("currentExercise")) { "Az aktuális gyakorlat megváltozott." }
+        check(!NativeGpsMeasurement.busy(frame)) { "Előbb fejezd be a GPS-mérést." }
+        val exercises = frame.getJSONArray("exercises")
+        val existing = (0 until exercises.length()).firstOrNull {
+            exercises.getJSONObject(it).optString("id") == replacement.getString("id")
+        }
+        if (existing != null) {
+            val exercise = exercises.getJSONObject(existing)
+            return NativeWorkoutEditing.selectExercise(context, NativeWorkoutTarget(target.workoutId, target.generation,
+                exercise.getString("id"), exercise.getJSONArray("sets").getJSONObject(0).getString("setId")))
+        }
+        NativeSetStopwatch.sealPause(frame)
+        NativeSetStopwatch.pause(frame, trackPause = false)
+        val clock = frame.optJSONObject(NativeSetStopwatch.FIELD)
+        val rows = original.exercise.getJSONArray("sets")
+        val hasRecordedValues = (0 until rows.length()).any { index ->
+            val set = rows.getJSONObject(index)
+            set.optBoolean("done") || set.optLong("leftSeconds") > 0 || set.optLong("rightSeconds") > 0 ||
+                set.optBoolean("leftRecorded") || set.optBoolean("rightRecorded") || set.optDouble("distanceMeters") > 0
+        }
+        // Keep a partially measured exercise addressable under its original IDs. A new
+        // exercise gets fresh native sets and cannot inherit its stopwatch or side values.
+        val keepOriginal = hasRecordedValues || (clock?.optString("exerciseId") == target.exerciseId && NativeSetStopwatch.elapsed(clock) > 0)
+        val index = if (keepOriginal) exercises.length() else original.exerciseIndex
+        if (!keepOriginal && clock?.optString("exerciseId") == target.exerciseId) frame.remove(NativeSetStopwatch.FIELD)
+        exercises.put(index, JSONObject(replacement.toString()))
+        frame.put("currentExercise", index).put("selectionRevision", frame.optLong("selectionRevision") + 1L)
+        return NativeWorkoutEditing.commitEdit(context, frame, clockEdit = true)
+    }
+
     fun persist(context: android.content.Context, candidate: JSONObject): JSONObject {
         val existing = ActiveWorkoutStore.current(context)?.takeIf { it.optBoolean("active") }
             ?: return NativeWorkoutSession.installPrepared(context, candidate)
