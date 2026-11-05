@@ -1,6 +1,5 @@
 package com.repforge.app.ui.health
 
-import android.app.DatePickerDialog
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -47,7 +46,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -109,10 +107,7 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
     var reloadToken by remember(day, channel, type) { mutableStateOf(0) }
     var draftFrom by remember(day, channel, type) { mutableStateOf(LocalDate.parse(day)) }
     var draftTo by remember(day, channel, type) { mutableStateOf(LocalDate.parse(day)) }
-    var activePicker by remember { mutableStateOf<DatePickerDialog?>(null) }
-    DisposableEffect(context, language, day, channel, type) {
-        onDispose { activePicker?.dismiss(); activePicker = null }
-    }
+    var editingBound by rememberSaveable(day, channel, type) { mutableStateOf<String?>(null) }
     val validRange = !draftFrom.isAfter(draftTo) &&
         HealthJournalStore.validDay(draftFrom.toString()) && HealthJournalStore.validDay(draftTo.toString())
     val rangeChanged = draftFrom != query.fromDay || draftTo != query.toDay
@@ -162,19 +157,11 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
         clearPage()
     }
 
-    fun pickDate(selected: LocalDate, update: (LocalDate) -> Unit) {
-        activePicker?.dismiss()
-        // Keep the Activity window token/theme while using the app-selected language.
-        val pickerContext = android.view.ContextThemeWrapper(context, context.theme).apply {
-            applyOverrideConfiguration(resources.configuration)
-        }
-        val picker = DatePickerDialog(pickerContext, { _, year, month, pickedDay ->
-            runCatching { LocalDate.of(year, month + 1, pickedDay) }
-                .getOrNull()?.takeIf { HealthJournalStore.validDay(it.toString()) }?.let(update)
-        }, selected.year, selected.monthValue - 1, selected.dayOfMonth)
-        picker.setOnDismissListener { if (activePicker === picker) activePicker = null }
-        activePicker = picker
-        picker.show()
+    if (editingBound != null) {
+        com.example.ui.components.CompactDatePickerDialog(
+            initialDate = if (editingBound == "from") draftFrom else draftTo,
+            language = language, onDismiss = { editingBound = null },
+            onConfirm = { if (editingBound == "from") draftFrom = it else draftTo = it; editingBound = null })
     }
 
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -260,7 +247,7 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
                             label = resources.getString(R.string.health_range_from),
                             date = draftFrom,
                             testTag = "health_range_from",
-                            onClick = { pickDate(draftFrom) { draftFrom = it } },
+                            onClick = { editingBound = "from" },
                             modifier = Modifier.weight(1f)
                         )
                         Icon(
@@ -273,7 +260,7 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
                             label = resources.getString(R.string.health_range_to),
                             date = draftTo,
                             testTag = "health_range_to",
-                            onClick = { pickDate(draftTo) { draftTo = it } },
+                            onClick = { editingBound = "to" },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -533,7 +520,7 @@ private fun SourceFilterPill(
 }
 
 @Composable
-private fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName: String) {
+internal fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName: String) {
     val text = nativeResources(LocalContext.current, language)
     val colors = LocalTrainPilotColors.current
     val langCode = language.lowercase(Locale.ROOT)
@@ -557,7 +544,7 @@ private fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName:
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, colors.line, RoundedCornerShape(22.dp))
+            .border(com.repforge.app.ui.theme.TrainPilotFrames.stroke(1.dp, colors.line), RoundedCornerShape(22.dp))
             .testTag("health_record_${row.id}"),
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = colors.card)
@@ -765,7 +752,7 @@ private fun formatSleepDurationHero(minutesValue: Double, langCode: String): Str
 
 private fun formatRecordTimeWindow(startMs: Long, endMs: Long): String = runCatching {
     val zone = ZoneId.systemDefault()
-    val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
+    val timeFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
     val startZdt = Instant.ofEpochMilli(startMs).atZone(zone)
     val startStr = startZdt.format(timeFmt)
     if (endMs != startMs && endMs > 0L) {
@@ -777,7 +764,7 @@ private fun formatRecordTimeWindow(startMs: Long, endMs: Long): String = runCatc
 }.getOrDefault("")
 
 private fun healthRecordShortTime(value: Long, language: String): String = runCatching {
-    DateTimeFormatter.ofPattern("HH:mm").withLocale(Locale.forLanguageTag(language))
+    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withLocale(Locale.forLanguageTag(language))
         .withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(value))
 }.getOrDefault("—")
 
