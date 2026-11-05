@@ -197,6 +197,7 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
     private var timeSummaryAt = 0L
     private var modeTicket: NativeTrainingModeProposal.Ticket? = null
     private var modeSettingsRaw: String? = null
+    private var stopwatchStartJob: kotlinx.coroutines.Job? = null
 
     init {
         viewModelScope.launch {
@@ -231,6 +232,13 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
             ActiveWorkoutStore.snapshotFlow.collect { snapshot ->
                 if (snapshot != null && snapshot.optBoolean("active", false)) {
                     parseSnapshotToUi(snapshot)
+                } else if (snapshot != null && snapshot.optString("workoutId") == _uiState.value.workoutId) {
+                    stopwatchStartJob?.cancel()
+                    lowerStopwatch = null
+                    timeFrame = null
+                    timeTotals = null
+                    latestTimer = null
+                    _uiState.value = ActiveWorkoutUiState(availableLibraryExercises = _uiState.value.availableLibraryExercises)
                 }
             }
         }
@@ -437,6 +445,7 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
                 result
             }
         )
+        refreshStopwatchUi()
     }
 
     private fun refreshStopwatchUi() {
@@ -479,8 +488,41 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
         } catch (error: Exception) { _uiState.value = _uiState.value.copy(statusMessage = error.message ?: "A stopper nem vezérelhető.") }
     }
 
+    /** Explicit Studio Start cannot turn a stale second tap into Stop and record. */
+    fun startSetStopwatch(target: NativeWorkoutTarget, side: String) {
+        if (stopwatchStartJob?.isActive == true) return
+        if (editableSnapshot() == null) { showStatus("A telefon jelenleg nem vezérli ezt az edzést."); return }
+        stopwatchStartJob = viewModelScope.launch {
+            try {
+                val data = com.repforge.app.NativeDataReplacement.continuationForCurrentData(context)
+                val frame = editableSnapshot() ?: error("A telefon jelenleg nem vezérli ezt az edzést.")
+                target.resolve(frame)
+                check(!frame.optBoolean("workoutPaused")) { "Az edzés szünetel. Folytasd az aktív edzést." }
+                onEditorVisible()
+                val ready = kotlinx.coroutines.withTimeoutOrNull(3_000) {
+                    while (!IntervalTimerService.armed(target.workoutId, target.generation)) {
+                        val current = editableSnapshot() ?: error("Az edzés vezérlése megváltozott.")
+                        check(target.resolve(current).exerciseIndex == current.optInt("currentExercise") &&
+                            !current.optBoolean("workoutPaused")) { "A stopper célpontja megváltozott." }
+                        delay(50)
+                    }
+                    true
+                } == true
+                check(ready) { "A háttéridőzítő még nem áll készen. Próbáld újra az indítást." }
+                data.requireCurrent(context)
+                val saved = NativeWorkoutEditing.startStopwatch(context, target, side)
+                parseSnapshotToUi(saved)
+                refreshStopwatchUi()
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (error: Exception) { showStatus(error.message ?: "A stopper nem indítható.") }
+        }
+    }
+
+    fun cancelPendingStopwatchStart() { stopwatchStartJob?.cancel() }
+
     /** Studio separates Pause (no completion) from explicit Stop and record. */
     fun pauseSetStopwatch(target: NativeWorkoutTarget) {
+        stopwatchStartJob?.cancel()
         val frame = editableSnapshot() ?: return
         if (resolveTarget(frame, target) == null) return
         try {
@@ -494,12 +536,12 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun recordSetStopwatch(target: NativeWorkoutTarget, side: String) {
+        stopwatchStartJob?.cancel()
         val frame = editableSnapshot() ?: return
         if (resolveTarget(frame, target) == null) return
         try {
             val clock = frame.optJSONObject(NativeSetStopwatch.FIELD) ?: error("Előbb indítsd el a mérést.")
             check(clock.optString("setId") == target.setId && clock.optString("side") == side && NativeSetStopwatch.elapsed(clock) >= 1000)
-            if (!NativeSetStopwatch.running(clock)) NativeWorkoutEditing.startStopwatch(context, target, side)
             val saved = NativeWorkoutEditing.stopStopwatch(context, target)
             parseSnapshotToUi(saved)
             refreshStopwatchUi()
@@ -522,12 +564,14 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
             val adjusted = (previous + deltaSeconds * 1000L).coerceIn(0, IntervalTimeline.MAX_MS)
             // Explicit manual edits change the displayed/recorded seconds, never invent measured work time.
             clock.put("elapsedMs", adjusted).put("creditBaseMs", clock.optLong("creditBaseMs") + adjusted - previous)
+            NativeSetStopwatch.allowAdjustedRecord(clock)
             parseSnapshotToUi(NativeWorkoutEditing.commitEdit(context, frame, clockEdit = true))
             refreshStopwatchUi()
         } catch (error: Exception) { showStatus(error.message ?: "A stopper nem módosítható.") }
     }
 
     fun resetSetStopwatch(target: NativeWorkoutTarget) {
+        stopwatchStartJob?.cancel()
         if (editableSnapshot() == null) return
         try {
             val saved = NativeWorkoutEditing.resetStopwatch(context, target)

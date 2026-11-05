@@ -502,9 +502,14 @@ internal object PhoneWorkoutExecution {
             }
             return receipt
         }
+        // Explicit native measured results are valid in manual workouts as well.
+        // automaticEnabled controls plan generation, not recording an already
+        // measured set. Ownership, arming and target checks still apply.
+        val manualMeasuredResult = frame?.optInt("nativeEditorProjection") == 1 &&
+            command.optString("action") in setOf("completeTimedSet", "completeGpsSet", "completeMeasuredSet")
         if (frame == null ||
             !frame.optBoolean("active") ||
-            !frame.optBoolean("automaticEnabled") ||
+            (!frame.optBoolean("automaticEnabled") && !manualMeasuredResult) ||
             db.commandsSuspended() ||
             frame.optBoolean("workoutPaused")
         ) {

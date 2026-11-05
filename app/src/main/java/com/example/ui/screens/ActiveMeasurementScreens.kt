@@ -452,6 +452,7 @@ fun ActiveStrengthWorkoutScreen(
             .background(palette.background)
             .testTag("active_strength_screen")
     ) {
+        uiState.statusBannerMessage?.let { Text(it, color = palette.danger) }
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -1323,6 +1324,7 @@ fun ActiveTimedWorkoutScreen(
     val nativeSet = nativeExercise?.sets?.firstOrNull { !it.isCompleted }
     val target = nativeSet?.let { com.repforge.app.NativeWorkoutTarget(native.workoutId, native.generation,
         checkNotNull(nativeExercise).exerciseId, it.setId) }
+    DisposableEffect(target) { onDispose { nativeModel.cancelPendingStopwatchStart() } }
     val currentSec = if (native.stopwatchSetId == nativeSet?.setId) native.stopwatchSeconds.toInt() else 0
     val isRunning = native.stopwatchSetId == nativeSet?.setId && native.stopwatchRunning
     var targetSec by remember(currentExercise?.id) { mutableIntStateOf(defaultTargetSec) }
@@ -1357,7 +1359,11 @@ fun ActiveTimedWorkoutScreen(
             .background(palette.background)
             .testTag("active_timed_screen")
     ) {
+        uiState.statusBannerMessage?.let { Text(it, color = palette.danger) }
         native.statusMessage?.let { Text(it, color = palette.danger) }
+        if (target == null) Text(tr(uiState.language, "Nincs mérhető sorozat az aktuális natív gyakorlatban.",
+            "No measurable set in the current native exercise.", "Kein messbarer Satz in der aktuellen nativen Übung.",
+            "Nu există o serie măsurabilă în exercițiul nativ curent."), color = palette.textSecondary)
 
         LazyColumn(
             modifier = Modifier
@@ -1590,7 +1596,8 @@ fun ActiveTimedWorkoutScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Button(
-                            onClick = { target?.let { if (isRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.toggleSetStopwatch(it, "single") } },
+                            onClick = { target?.let { if (isRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.startSetStopwatch(it, "single") } },
+                            enabled = target != null,
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (isRunning) palette.primary else palette.success,
@@ -1637,6 +1644,7 @@ fun ActiveTimedWorkoutScreen(
                         onClick = {
                             target?.let { nativeModel.recordSetStopwatch(it, "single") }
                         },
+                        enabled = target != null && currentSec > 0,
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = palette.surfaceElevated,
@@ -1846,7 +1854,7 @@ fun ActiveBilateralWorkoutScreen(
     val firstUncompletedSetNum = uiState.activeSets.firstOrNull { !it.completed }?.setNumber
         ?: uiState.activeSets.lastOrNull()?.setNumber
         ?: 1
-    var selectedTargetSetNumber by remember(firstUncompletedSetNum, uiState.activeSets.size) {
+    var selectedTargetSetNumber by remember(uiState.activeWorkoutId, currentExercise?.id, firstUncompletedSetNum, uiState.activeSets.size) {
         mutableIntStateOf(firstUncompletedSetNum)
     }
 
@@ -1857,6 +1865,7 @@ fun ActiveBilateralWorkoutScreen(
     val nativeSet = nativeExercise?.sets?.firstOrNull { it.setNumber == selectedTargetSetNumber }
     val target = nativeSet?.let { com.repforge.app.NativeWorkoutTarget(native.workoutId, native.generation,
         checkNotNull(nativeExercise).exerciseId, it.setId) }
+    DisposableEffect(target) { onDispose { nativeModel.cancelPendingStopwatchStart() } }
     val leftSec = if (native.stopwatchSetId == nativeSet?.setId && native.stopwatchSide == "left") native.stopwatchSeconds.toInt() else nativeSet?.leftSeconds ?: 0
     val rightSec = if (native.stopwatchSetId == nativeSet?.setId && native.stopwatchSide == "right") native.stopwatchSeconds.toInt() else nativeSet?.rightSeconds ?: 0
     val leftRunning = native.stopwatchSetId == nativeSet?.setId && native.stopwatchSide == "left" && native.stopwatchRunning
@@ -1996,7 +2005,11 @@ fun ActiveBilateralWorkoutScreen(
             .background(palette.background)
             .testTag("active_bilateral_screen")
     ) {
+        uiState.statusBannerMessage?.let { Text(it, color = palette.danger) }
         native.statusMessage?.let { Text(it, color = palette.danger) }
+        if (target == null) Text(tr(uiState.language, "Nincs mérhető sorozat az aktuális natív gyakorlatban.",
+            "No measurable set in the current native exercise.", "Kein messbarer Satz in der aktuellen nativen Übung.",
+            "Nu există o serie măsurabilă în exercițiul nativ curent."), color = palette.textSecondary)
 
         LazyColumn(
             modifier = Modifier
@@ -2249,7 +2262,8 @@ fun ActiveBilateralWorkoutScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Button(
-                                onClick = { target?.let { if (leftRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.toggleSetStopwatch(it, "left") } },
+                                onClick = { target?.let { if (leftRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.startSetStopwatch(it, "left") } },
+                            enabled = target != null,
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (leftRunning) palette.warning else palette.success,
@@ -2274,6 +2288,7 @@ fun ActiveBilateralWorkoutScreen(
                                 onClick = {
                                     target?.let { nativeModel.recordSetStopwatch(it, "left") }
                                 },
+                                enabled = target != null && native.stopwatchSetId == nativeSet?.setId && native.stopwatchSide == "left" && native.stopwatchSeconds > 0 && nativeSet?.isCompleted == false,
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = palette.primary,
@@ -2416,7 +2431,8 @@ fun ActiveBilateralWorkoutScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Button(
-                                onClick = { target?.let { if (rightRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.toggleSetStopwatch(it, "right") } },
+                                onClick = { target?.let { if (rightRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.startSetStopwatch(it, "right") } },
+                            enabled = target != null,
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (rightRunning) palette.warning else palette.success,
@@ -2441,6 +2457,7 @@ fun ActiveBilateralWorkoutScreen(
                                 onClick = {
                                     target?.let { nativeModel.recordSetStopwatch(it, "right") }
                                 },
+                                enabled = target != null && native.stopwatchSetId == nativeSet?.setId && native.stopwatchSide == "right" && native.stopwatchSeconds > 0 && nativeSet?.isCompleted == false,
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = palette.primary,

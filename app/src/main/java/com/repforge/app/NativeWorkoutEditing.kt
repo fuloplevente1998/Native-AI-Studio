@@ -132,11 +132,16 @@ internal object NativeWorkoutEditing {
 
     fun startStopwatch(context: Context, target: NativeWorkoutTarget, side: String): JSONObject {
         val frame = project(context)
+        check(target.resolve(frame).exerciseIndex == frame.optInt("currentExercise")) { "A stopper célpontja már nem az aktuális gyakorlat." }
         check(IntervalTimerService.armed(frame.getString("workoutId"), frame.getLong("generation"))) { "A háttéridőzítő még nem áll készen." }
         val timer = IntervalTimerService.snapshot(context)
         check(!timer.optBoolean("running") && (timer.optBoolean("stopped") || timer.optBoolean("interrupted") ||
             timer.optString("key").isEmpty() || timer.optString("phase") == "complete")) { "Előbb fejezd be a futó pihenőt vagy intervallumot." }
         check(!NativeGpsMeasurement.busy(frame)) { "Előbb fejezd be a GPS-mérést." }
+        frame.optJSONObject(NativeSetStopwatch.FIELD)?.let { clock ->
+            if (NativeSetStopwatch.running(clock) && clock.optString("exerciseId") == target.exerciseId &&
+                clock.optString("setId") == target.setId && clock.optString("side") == side) return frame
+        }
         NativeSetStopwatch.start(frame, target, side)
         return try { commitEdit(context, frame, clockEdit = true) }
         finally { IntervalTimerService.trackSetStopwatch(target.workoutId, target.generation) }
@@ -156,11 +161,15 @@ internal object NativeWorkoutEditing {
 
     fun stopStopwatch(context: Context, target: NativeWorkoutTarget): JSONObject {
         val frame = project(context)
-        target.resolve(frame)
+        check(target.resolve(frame).exerciseIndex == frame.optInt("currentExercise")) { "A stopper célpontja már nem az aktuális gyakorlat." }
         check(!frame.optBoolean("workoutPaused")) { "Az edzés szünetel." }
         val clock = frame.getJSONObject(NativeSetStopwatch.FIELD)
+        check(clock.optString("exerciseId") == target.exerciseId && clock.optString("setId") == target.setId) {
+            "A stopper célpontja megváltozott."
+        }
+        if (clock.optBoolean("recorded")) return frame
         val command = JSONObject().put("action", "completeTimedSet").put("nativeExecutionProtocol", 2)
-            .put("commandId", UUID.randomUUID().toString()).put("workoutId", target.workoutId).put("generation", target.generation)
+            .put("commandId", "stopwatch-stop:" + clock.getString("id")).put("workoutId", target.workoutId).put("generation", target.generation)
             .put("executionRevision", frame.getLong("executionRevision")).put("ownerEpoch193", frame.optLong("ownerEpoch193"))
             .put("exerciseId", target.exerciseId).put("setId", target.setId).put("clockId", clock.getString("id"))
         val stopped = NativeSetStopwatch.stopped(frame, command)
