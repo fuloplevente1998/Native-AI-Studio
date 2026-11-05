@@ -66,7 +66,11 @@ internal data class GoogleSyncCompletion(val action: GoogleSyncAction, val synce
  * Native replacement of GoogleSyncPlugin + #18 multi-device Drive merge engine.
  * Access tokens are never written to prefs, backups, or logs; UI forwards only an opaque consent result.
  */
-class GoogleSyncRepository internal constructor(context: Context, private val operations: NativeGoogleOperationGate) {
+class GoogleSyncRepository internal constructor(
+    context: Context,
+    private val operations: NativeGoogleOperationGate,
+    private val connectionFactory: (URL) -> HttpURLConnection = { it.openConnection() as HttpURLConnection }
+) {
     constructor(context: Context) : this(context, processOperations)
 
     companion object {
@@ -501,7 +505,23 @@ class GoogleSyncRepository internal constructor(context: Context, private val op
                 try { request(accessToken, "POST", "$base?sendUpdates=none", operation.payload) }
                 catch (err: ApiError) {
                     if (err.code != 409) throw err
-                    request(accessToken, "PUT", "$base/$id?sendUpdates=none", operation.payload)
+                    try { request(accessToken, "PUT", "$base/$id?sendUpdates=none", operation.payload) }
+                    catch (missing: ApiError) {
+                        if (missing.code != 404 && missing.code != 410) throw missing
+                        // A conflict followed by a missing event may be a concurrent deletion.
+                        // Verify the calendar first; never replace it on an uncertain event write.
+                        currentCoroutineContext().ensureActive()
+                        dataTicket.requireCurrent(appContext)
+                        requireManagedCalendar(accessToken, calendarId)
+                        dataTicket.requireCurrent(appContext)
+                        try { request(accessToken, "POST", "$base?sendUpdates=none", operation.payload) }
+                        catch (conflict: ApiError) {
+                            if (conflict.code != 409) throw conflict
+                            currentCoroutineContext().ensureActive()
+                            dataTicket.requireCurrent(appContext)
+                            request(accessToken, "PUT", "$base/$id?sendUpdates=none", operation.payload)
+                        }
+                    }
                 }
             }
             count++
@@ -1142,26 +1162,31 @@ class GoogleSyncRepository internal constructor(context: Context, private val op
         }
     }
 
+    private fun requireManagedCalendar(accessToken: String, id: String) {
+        val calendar = request(accessToken, "GET", "https://www.googleapis.com/calendar/v3/calendars/${enc(id)}", null)
+        if (MANAGED_CALENDAR_DESC != calendar.optString("description")) {
+            throw IOException("This is not a TrainPilot-managed calendar.")
+        }
+    }
+
     private suspend fun ensureManagedCalendar(accessToken: String, dataTicket: NativeDataReplacement.Continuation): String {
-        var id = prefs().getString("calendar", "") ?: ""
+        var id = prefs().getString("calendar", "").orEmpty()
+        val unavailable = mutableSetOf<String>()
         if (id.isNotEmpty()) {
             try {
-                val c = request(accessToken, "GET", "https://www.googleapis.com/calendar/v3/calendars/${enc(id)}", null)
-                if (MANAGED_CALENDAR_DESC != c.optString("description")) {
-                    throw IOException("This is not a TrainPilot-managed calendar.")
-                }
+                requireManagedCalendar(accessToken, id)
                 return id
             } catch (e: ApiError) {
                 if (e.code != 404 && e.code != 410) throw e
-                NativeDataReplacement.mutate(appContext) {
-                    dataTicket.requireCurrent(appContext)
-                    check(prefs().edit().remove("calendar").commit()) { "A Google-naptár állapota nem menthető." }
-                }
+                unavailable.add(id)
+                // Keep the old reference until a usable replacement has been obtained.
                 id = ""
             }
         }
         var page = ""
         do {
+            currentCoroutineContext().ensureActive()
+            dataTicket.requireCurrent(appContext)
             val r = request(
                 accessToken,
                 "GET",
@@ -1173,8 +1198,18 @@ class GoogleSyncRepository internal constructor(context: Context, private val op
             if (a != null) {
                 for (i in 0 until a.length()) {
                     val c = a.getJSONObject(i)
-                    if (MANAGED_CALENDAR_DESC == c.optString("description") && "owner" == c.optString("accessRole")) {
-                        id = c.getString("id")
+                    val candidate = c.optString("id")
+                    if (MANAGED_CALENDAR_DESC != c.optString("description") ||
+                        "owner" != c.optString("accessRole") || c.optBoolean("deleted") ||
+                        candidate.isBlank() || candidate in unavailable) continue
+                    try {
+                        // CalendarList metadata can outlive access to the calendar itself.
+                        requireManagedCalendar(accessToken, candidate)
+                        id = candidate
+                        break
+                    } catch (e: ApiError) {
+                        if (e.code != 404 && e.code != 410) throw e
+                        unavailable.add(candidate)
                     }
                 }
             }
@@ -1186,6 +1221,7 @@ class GoogleSyncRepository internal constructor(context: Context, private val op
                 .put("summary", "TrainPilot edzések")
                 .put("description", MANAGED_CALENDAR_DESC)
                 .put("timeZone", TimeZone.getDefault().id)
+            dataTicket.requireCurrent(appContext)
             id = request(accessToken, "POST", "https://www.googleapis.com/calendar/v3/calendars", c).getString("id")
         }
         NativeDataReplacement.mutate(appContext) {
@@ -1218,7 +1254,7 @@ class GoogleSyncRepository internal constructor(context: Context, private val op
     private fun download(accessToken: String, url: String, limit: Int): ByteArray {
         var attempt = 0
         while (true) {
-            val c = (URL(url).openConnection() as HttpURLConnection).apply {
+            val c = connectionFactory(URL(url)).apply {
                 instanceFollowRedirects = false
                 connectTimeout = 20_000
                 readTimeout = 45_000
@@ -1258,7 +1294,7 @@ class GoogleSyncRepository internal constructor(context: Context, private val op
         val retryable = GoogleRequestPolicy.canRetry(method, url, eventId)
         var attempt = 0
         while (true) {
-            val c = (URL(url).openConnection() as HttpURLConnection).apply {
+            val c = connectionFactory(URL(url)).apply {
                 instanceFollowRedirects = false
                 connectTimeout = 20_000
                 readTimeout = 30_000
@@ -1274,7 +1310,9 @@ class GoogleSyncRepository internal constructor(context: Context, private val op
                 }
                 val status = c.responseCode
                 if (status !in 200..299) {
-                    val error = apiError(c, status)
+                    val error = apiError(c, status).let { error ->
+                        ApiError(error.code, error.reason, GoogleRequestPolicy.calendarOperation(method, url))
+                    }
                     if (retryable && attempt < 3 && GoogleRequestPolicy.transientStatus(status, error.reason)) {
                         val delay = GoogleRequestPolicy.delay(attempt, c.getHeaderField("Retry-After"), System.currentTimeMillis())
                         if (delay >= 0L) {
@@ -1316,7 +1354,8 @@ class GoogleSyncRepository internal constructor(context: Context, private val op
 
     private fun enc(x: String): String = URLEncoder.encode(x, "UTF-8")
 
-    private class ApiError(val code: Int, val reason: String) : IOException("HTTP $code ($reason)")
+    private class ApiError(val code: Int, val reason: String, val operation: String? = null) :
+        IOException("HTTP $code ($reason)" + operation?.let { " [$it]" }.orEmpty())
 
     private fun apiError(connection: HttpURLConnection, code: Int): ApiError {
         var reason = ""
@@ -1388,6 +1427,6 @@ class GoogleSyncRepository internal constructor(context: Context, private val op
             "ro" -> 3
             else -> 1
         }
-        return "${messages[idx]} (${error.code})"
+        return "${messages[idx]} (${error.code}" + error.operation?.let { "; $it" }.orEmpty() + ")"
     }
 }

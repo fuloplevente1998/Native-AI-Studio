@@ -41,6 +41,22 @@ internal object GoogleRequestPolicy {
         return messages[index]
     }
 
+    /** Fixed labels only: never expose account/calendar/event IDs, query data or tokens. */
+    fun calendarOperation(method: String, url: String): String? {
+        val uri = runCatching { java.net.URI(url) }.getOrNull() ?: return null
+        if (uri.scheme != "https" || uri.host != "www.googleapis.com") return null
+        val path = uri.rawPath
+        val resource = when {
+            path == "/calendar/v3/users/me/calendarList" -> "calendar list"
+            path == "/calendar/v3/calendars" -> "calendar collection"
+            path.matches(Regex("/calendar/v3/calendars/[^/]+/events/[^/]+")) -> "calendar event"
+            path.matches(Regex("/calendar/v3/calendars/[^/]+/events")) -> "calendar events"
+            path.matches(Regex("/calendar/v3/calendars/[^/]+")) -> "calendar"
+            else -> return null
+        }
+        return if (method in setOf("GET", "POST", "PUT", "DELETE")) "$method $resource" else null
+    }
+
     @JvmStatic
     fun canRetry(method: String, url: String, eventId: String?): Boolean {
         return method == "GET" ||
