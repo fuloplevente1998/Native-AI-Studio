@@ -1,11 +1,10 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,14 +31,22 @@ import java.util.Locale
 
 /** One read-only, paged journal. A day header and its details share one admitted projection. */
 @Composable
-internal fun StudioHealthMetricsBrowser(initialProvider: String, language: String, refreshKey: String) {
+internal fun StudioHealthMetricsBrowser(
+    initialProvider: String,
+    language: String,
+    refreshKey: String,
+    onRefreshProvider: ((String) -> Unit)? = null,
+    refreshBusy: Boolean = false,
+    refreshError: String? = null
+) {
     val context = LocalContext.current.applicationContext
     val palette = LocalTrainPilotPalette.current
     fun label(hu: String, en: String, de: String = en, ro: String = en) = when (language.lowercase(Locale.ROOT)) {
         "en" -> en; "de" -> de; "ro" -> ro; else -> hu
     }
     var provider by rememberSaveable(initialProvider) { mutableStateOf(initialProvider) }
-    var source by rememberSaveable(provider) { mutableStateOf("") }
+    // Provider projection is authoritative; origins remain record metadata, never another filter.
+    val source = ""
     var from by rememberSaveable { mutableStateOf(LocalDate.now().minusDays(29).toString()) }
     var to by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
     var end by rememberSaveable { mutableStateOf(to) }
@@ -87,29 +94,17 @@ internal fun StudioHealthMetricsBrowser(initialProvider: String, language: Strin
     }, enabled = valid, modifier = Modifier.fillMaxWidth().testTag("journal_range_apply")) {
         Text(label("Időszak alkalmazása", "Apply period", "Zeitraum anwenden", "Aplică perioada"))
     }
-    snapshot?.let { current ->
-        val origins = current.getJSONArray("sources")
-        LazyRow(modifier = Modifier.testTag("journal_origins"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            item { FilterChip(selected = source.isEmpty(), onClick = { source = "" }, label = {
-                Text(label("Szolgáltatói összesítő", "Provider summary", "Anbieterübersicht", "Rezumat furnizor"))
-            }, modifier = Modifier.testTag("journal_origin_all")) }
-            items((0 until origins.length()).map { origins.getJSONObject(it) }.distinctBy { it.getString("source") },
-                key = { it.getString("source") }) { origin ->
-                val id = origin.getString("source")
-                FilterChip(selected = source == id, onClick = { if (source != id) source = id }, label = {
-                    Text(friendlyHealthSourceName(id, origin.optString("name"), NativeWorkoutHealthSource.label(provider)))
-                }, modifier = Modifier.testTag("journal_origin_$id"))
-            }
-            // Keep the explicit selection visible on pages without records from that origin.
-            if (source.isNotEmpty() && (0 until origins.length()).none { origins.getJSONObject(it).getString("source") == source }) {
-                item { FilterChip(selected = true, onClick = {}, label = {
-                    Text(friendlyHealthSourceName(source, "", NativeWorkoutHealthSource.label(provider)))
-                }, modifier = Modifier.testTag("journal_origin_$source")) }
-            }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        IconButton(onClick = {
+            if (onRefreshProvider != null) onRefreshProvider(provider) else reload++
+        }, enabled = !refreshBusy && (snapshot != null || failed), modifier = Modifier.testTag("journal_reload")) {
+            if (refreshBusy) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            else Icon(Icons.Default.Refresh,
+                contentDescription = label("Szolgáltató frissítése", "Refresh provider", "Anbieter aktualisieren", "Actualizează furnizorul"),
+                tint = palette.primary)
         }
     }
-    TextButton(onClick = { reload++ }, enabled = snapshot != null || failed,
-        modifier = Modifier.fillMaxWidth().testTag("journal_reload")) { Text(label("Újraolvasás", "Reload", "Neu laden", "Reîncarcă")) }
+    if (!refreshError.isNullOrBlank()) Text(refreshError, color = palette.danger, modifier = Modifier.testTag("journal_refresh_error"))
     when {
         failed -> Text(label("Az adatok nem tölthetők be. Próbáld újra.", "Could not load data. Try again.",
             "Daten konnten nicht geladen werden. Bitte erneut versuchen.", "Datele nu au putut fi încărcate. Încearcă din nou."), color = palette.danger)
@@ -153,27 +148,21 @@ internal fun StudioHealthMetricsBrowser(initialProvider: String, language: Strin
                         }
                     }
                     if (expanded) {
-                        Text(label("Mentett napi mérések • 26 metrika", "Stored daily measurements • 26 metrics",
-                            "Gespeicherte Tagesmessungen • 26 Metriken", "Măsurători zilnice salvate • 26 de metrici"), color = palette.primary)
+                        Text(label("Elérhető napi mérések", "Available daily measurements",
+                            "Verfügbare Tagesmessungen", "Măsurători zilnice disponibile"), color = palette.primary)
                         if (raw?.optBoolean("partial") == true) Text(label("Részleges adat / újraolvasás szükséges", "Partial data / reload required",
                             "Teilweise Daten / neu laden erforderlich", "Date parțiale / reîncărcare necesară"), color = palette.textSecondary)
-                        metrics.forEach { metric ->
-                            val status = NativeDetailedHealthMetrics.status(raw, metric.key, provider, date)
+                        metrics.filter { metric -> metric.isAvailable &&
+                            NativeDetailedHealthMetrics.status(raw, metric.key, provider, date) == NativeDetailedHealthMetrics.Status.AVAILABLE
+                        }.forEach { metric ->
                             HorizontalDivider(color = palette.cardBorder)
                             TextButton(onClick = { type = NativeDetailedHealthMetrics.recordType(metric.key) },
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_metric_${date}_${metric.key}")) {
                                 Column(Modifier.weight(1f)) {
                                     Text(metric.label, color = palette.textPrimary)
-                                    val description = when (status) {
-                                        NativeDetailedHealthMetrics.Status.AVAILABLE -> {
-                                            listOfNotNull(NativeWorkoutHealthSource.label(provider),
-                                                NativeDetailedHealthMetrics.origin(raw, metric.key),
-                                                NativeDetailedHealthMetrics.timestamp(raw, metric.key), date.toString()).distinct().joinToString(" · ")
-                                        }
-                                        NativeDetailedHealthMetrics.Status.DENIED -> label("Olvasási engedély hiányzik", "Read permission missing", "Leseberechtigung fehlt", "Permisiunea de citire lipsește")
-                                        NativeDetailedHealthMetrics.Status.ERROR -> label("Az olvasás hibát jelzett", "Read failed", "Lesefehler", "Citirea a eșuat")
-                                        NativeDetailedHealthMetrics.Status.NO_DATA -> label("Nincs elérhető adat", "No available data", "Keine Daten verfügbar", "Nu există date disponibile")
-                                    }
+                                    val description = listOfNotNull(NativeWorkoutHealthSource.label(provider),
+                                        NativeDetailedHealthMetrics.origin(raw, metric.key),
+                                        NativeDetailedHealthMetrics.timestamp(raw, metric.key), date.toString()).distinct().joinToString(" · ")
                                     Text(description, color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
                                 }
                                 Text(if (metric.isAvailable) "${metric.valueText} ${metric.unit}".trim() else "—", color = palette.primary)

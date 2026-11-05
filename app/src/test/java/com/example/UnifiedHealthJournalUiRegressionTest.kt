@@ -67,7 +67,7 @@ class UnifiedHealthJournalUiRegressionTest {
         } }
     }
 
-    @Test fun dayExpansionAndProviderOriginSelectionShowTheSameStoredProjectionInline() {
+    @Test fun dayExpansionShowsProviderProjectionAndAllOriginsWithoutAnotherSelector() {
         store.healthDay(day.toString(), JSONObject().put("steps", 0), store.generation())
         store.healthDay(day.toString(), JSONObject().put("source", "watch").put("steps", 0), store.generation())
         store.healthDay(day.toString(), JSONObject().put("source", "phone").put("steps", 10), store.generation())
@@ -89,16 +89,64 @@ class UnifiedHealthJournalUiRegressionTest {
         compose.onNodeWithTag(summary).assertTextEquals("321")
         compose.onNodeWithTag("health_record_hcwatch").assertDoesNotExist()
         compose.onNodeWithTag("journal_provider_$hc").performScrollTo().performClick()
-        awaitTag("journal_origins")
-        compose.onNodeWithTag("journal_origins").performScrollTo().performScrollToNode(hasTestTag("journal_origin_phone"))
-        compose.onNodeWithTag("journal_origin_phone").performClick()
         awaitTag(summary)
-        compose.onNodeWithTag(summary).assertTextEquals("10")
+        // #151: provider aggregate remains authoritative; origin-specific values are never added.
+        compose.onNodeWithTag(summary).assertTextEquals("0")
+        compose.onNodeWithTag("journal_origins").assertDoesNotExist()
+        compose.onNodeWithTag("journal_origin_all").assertDoesNotExist()
+        compose.onNodeWithTag("journal_origin_phone").assertDoesNotExist()
         compose.onNodeWithTag("journal_day_$day").performScrollTo().performClick()
         awaitTag("health_record_hcphone")
-        compose.onNodeWithTag("health_record_hcwatch").assertDoesNotExist()
-        compose.onNodeWithTag("journal_metric_${day}_weightKg").performScrollTo().assertTextContains("—")
+        compose.onNodeWithTag("health_record_hcwatch").assertExists()
+        compose.onNodeWithTag("journal_metric_${day}_weightKg").assertDoesNotExist()
         compose.runOnIdle { assertEquals(snapshot, store.exportSnapshot().toString()) }
+    }
+
+    @Test fun availableZeroRemainsVisibleWhileDeniedErroredAndMissingRowsAreHidden() {
+        store.healthDay(day.toString(), JSONObject().put("steps", 0).put("weightKg", 70)
+            .put("activeCalories", 20).put("averageHeartRate", 80)
+            .put("permissions", JSONObject().put("READ_WEIGHT", false))
+            .put("failedFields", JSONArray().put("activeCalories"))
+            .put("metricProviders", JSONObject().put("averageHeartRate", samsung)), store.generation())
+        journal()
+        awaitTag("journal_day_$day")
+        compose.onNodeWithTag("journal_day_$day").performScrollTo().performClick()
+        compose.onNodeWithTag("journal_metric_${day}_steps").performScrollTo().assertTextContains("0")
+        listOf("weightKg", "activeCalories", "averageHeartRate", "vo2Max").forEach {
+            compose.onNodeWithTag("journal_metric_${day}_$it").assertDoesNotExist()
+        }
+    }
+
+    @Test fun refreshReadsSelectedProviderAndWaitsForNativeRevisionWhileBusyBlocksRepeat() {
+        store.healthDay(day.toString(), JSONObject().put("steps", 1), store.generation())
+        val requests = mutableListOf<String>()
+        var revision by mutableLongStateOf(0)
+        var busy by mutableStateOf(false)
+        var error by mutableStateOf<String?>(null)
+        compose.setContent { TrainPilotTheme {
+            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+                StudioHealthMetricsBrowser(hc, "en", revision.toString(),
+                    onRefreshProvider = { requests.add(it); busy = true }, refreshBusy = busy, refreshError = error)
+            }
+        } }
+        val summary = "journal_summary_${day}_steps"
+        awaitTag(summary)
+        compose.onNodeWithTag("journal_reload").performScrollTo().performClick()
+        assertEquals(listOf(hc), requests)
+        compose.onNodeWithTag("journal_reload").assertIsNotEnabled()
+        compose.runOnIdle {
+            store.healthDay(day.toString(), JSONObject().put("steps", 7), store.generation())
+            busy = false
+            revision++
+        }
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("7").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag(summary).assertTextEquals("7")
+        compose.onNodeWithTag("journal_provider_$samsung").performScrollTo().performClick()
+        awaitTag(summary)
+        compose.onNodeWithTag("journal_reload").performScrollTo().performClick()
+        assertEquals(listOf(hc, samsung), requests)
+        compose.runOnIdle { busy = false; error = "Samsung Health: PERMISSION_DENIED"; revision++ }
+        compose.onNodeWithTag("journal_refresh_error").assertTextEquals("Samsung Health: PERMISSION_DENIED")
     }
 
     @Test fun cancellingDateSelectionPreservesRangeAndAnInvalidRangeCannotBeApplied() {

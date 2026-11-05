@@ -202,10 +202,10 @@ fun HealthTabScreen(
     onDeleteWeightLog: (String) -> Unit = {},
     onSelectHealthSource: (Boolean) -> Unit = { onTogglePrimaryHealthSource() },
     onRequestHealthPermissions: () -> Unit = { onNavigateToSubScreen(SubScreen.PERMISSIONS_SCREEN) },
-    onOpenLoggedWorkout: (String) -> Unit = { onNavigateToSubScreen(SubScreen.LOG_WORKOUT_DETAIL) }
+    onOpenLoggedWorkout: (String) -> Unit = { onNavigateToSubScreen(SubScreen.LOG_WORKOUT_DETAIL) },
+    onReadHealthSource: ((String) -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
-    val requestDailyHealthSync = com.example.ui.components.LocalSyncDailyHealth.current
     val today = remember { java.time.LocalDate.now() }
     val todayHuLabel = remember(today) {
         today.format(java.time.format.DateTimeFormatter.ofPattern("yyyy. MMM d.", java.util.Locale("hu", "HU")))
@@ -453,8 +453,7 @@ fun HealthTabScreen(
                             }
                         }
                         IconButton(
-                            onClick = { requestDailyHealthSync(if (uiState.primaryHealthSourceSamsung)
-                                com.repforge.app.HealthJournalStore.SAMSUNG else com.repforge.app.HealthJournalStore.HC) },
+                            onClick = onTriggerHealthSync,
                             enabled = !uiState.healthSyncBusy,
                             modifier = Modifier.testTag("health_today_header_sync")
                         ) {
@@ -1418,7 +1417,10 @@ fun HealthTabScreen(
                     initialProvider = if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG
                         else com.repforge.app.HealthJournalStore.HC,
                     language = uiState.language.name.lowercase(),
-                    refreshKey = "${uiState.dailyHealthLastSyncIso}:${uiState.healthSyncBusy}")
+                    refreshKey = "${uiState.healthRefreshRevision}:${uiState.healthSyncBusy}",
+                    onRefreshProvider = onReadHealthSource,
+                    refreshBusy = uiState.healthSyncBusy,
+                    refreshError = uiState.healthSyncMessage.takeIf { uiState.healthSyncFailed })
             }
         }
 
@@ -1496,26 +1498,6 @@ fun HealthTabScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary
                 )
-                // Show source-scoped verification here, not above the six daily measurement tiles.
-                val selectedProviderSyncTime = remember(uiState.dailyHealthLastSyncIso, uiState.language) {
-                    runCatching {
-                        java.time.format.DateTimeFormatter.ofPattern("yyyy.MM.dd. HH:mm")
-                            .withZone(java.time.ZoneId.systemDefault())
-                            .format(java.time.Instant.parse(uiState.dailyHealthLastSyncIso))
-                    }.getOrDefault(tr(uiState.language, "Még nincs igazolt szinkron", "No verified sync yet", "Noch keine bestätigte Synchronisierung", "Nicio sincronizare verificată încă"))
-                }
-                Text(
-                    text = tr(
-                        uiState.language,
-                        "Kiválasztott forrás: ${uiState.dailyHealthSourceLabel} • Utolsó sikeres szinkron: $selectedProviderSyncTime",
-                        "Selected source: ${uiState.dailyHealthSourceLabel} • Last successful sync: $selectedProviderSyncTime",
-                        "Gewählte Quelle: ${uiState.dailyHealthSourceLabel} • Letzter Sync: $selectedProviderSyncTime",
-                        "Sursă selectată: ${uiState.dailyHealthSourceLabel} • Ultima sincronizare: $selectedProviderSyncTime"
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = palette.textSecondary,
-                    modifier = Modifier.testTag("health_selected_provider_last_sync")
-                )
             }
         }
 
@@ -1538,7 +1520,9 @@ fun HealthTabScreen(
                 ) {
                     MockupWatchGraphicBadge(size = 46.dp)
                     Column(modifier = Modifier.weight(1f)) {
-                        val watchTitle = if (uiState.watchAppAvailable) "${strings.watchAndSyncTitle} (${uiState.watchName})" else strings.watchAndSyncTitle
+                        val wearTitle = tr(uiState.language, "TrainPilot Wear OS – edzésmérések", "TrainPilot Wear OS – workout measurements",
+                            "TrainPilot Wear OS – Trainingsmessungen", "TrainPilot Wear OS – măsurători antrenament")
+                        val watchTitle = if (uiState.watchAppAvailable) "$wearTitle (${uiState.watchName})" else wearTitle
                         Text(
                             text = watchTitle,
                             style = MaterialTheme.typography.titleMedium,
@@ -1613,11 +1597,36 @@ fun HealthTabScreen(
                     }
                 }
 
+                listOf(com.repforge.app.HealthJournalStore.SAMSUNG, com.repforge.app.HealthJournalStore.HC).forEach { provider ->
+                    val lastSuccess = uiState.healthLastSyncByProvider[provider]
+                    val time = runCatching {
+                        java.time.format.DateTimeFormatter.ofPattern("yyyy.MM.dd. HH:mm")
+                            .withZone(java.time.ZoneId.systemDefault()).format(java.time.Instant.parse(lastSuccess))
+                    }.getOrDefault(tr(uiState.language, "Még nincs sikeres szinkron", "No successful sync yet", "Noch kein erfolgreicher Sync", "Nicio sincronizare reușită încă"))
+                    Text("${com.repforge.app.NativeWorkoutHealthSource.label(provider)} • ${tr(uiState.language, "Utolsó sikeres szinkron", "Last successful sync", "Letzter erfolgreicher Sync", "Ultima sincronizare reușită")}: $time",
+                        style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
+                        modifier = Modifier.testTag("health_last_sync_$provider"))
+                }
                 Text(
-                    text = "${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} • ${tr(uiState.language, "utolsó teljes szinkron", "last full sync", "letzter Voll-Sync", "ultima sincronizare completă")}: ${uiState.lastHealthSyncLabel}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = palette.textSecondary
-                )
+                    if (uiState.healthAutoOnOpen) tr(uiState.language,
+                        "Automatikus frissítés appnyitáskor és előtérben 5 percenként.",
+                        "Automatic refresh on app opening and every 5 minutes in the foreground.",
+                        "Automatische Aktualisierung beim App-Start und im Vordergrund alle 5 Minuten.",
+                        "Actualizare automată la deschiderea aplicației și la fiecare 5 minute în prim-plan.")
+                    else tr(uiState.language, "Automatikus frissítés kikapcsolva.", "Automatic refresh is off.", "Automatische Aktualisierung deaktiviert.", "Actualizarea automată este oprită."),
+                    style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
+                    modifier = Modifier.testTag("health_auto_refresh_status"))
+                Text(
+                    when {
+                        uiState.healthBackgroundOptedIn && uiState.healthBackgroundScheduled -> tr(uiState.language,
+                            "Health Connect háttérfrissítés: kb. 15 percenként; az Android késleltetheti.",
+                            "Health Connect background refresh: about every 15 minutes; Android may delay it.",
+                            "Health Connect im Hintergrund: etwa alle 15 Minuten; Android kann dies verzögern.",
+                            "Health Connect în fundal: aproximativ la fiecare 15 minute; Android poate întârzia actualizarea.")
+                        uiState.healthBackgroundOptedIn -> tr(uiState.language, "Health Connect háttérfrissítés nincs ütemezve; ellenőrizd az engedélyeket.", "Health Connect background refresh is not scheduled; check permissions.", "Health Connect-Hintergrundaktualisierung nicht geplant; Berechtigungen prüfen.", "Actualizarea Health Connect în fundal nu este programată; verifică permisiunile.")
+                        else -> tr(uiState.language, "Health Connect háttérfrissítés kikapcsolva.", "Health Connect background refresh is off.", "Health Connect-Hintergrundaktualisierung deaktiviert.", "Actualizarea Health Connect în fundal este oprită.")
+                    }, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
+                    modifier = Modifier.testTag("health_background_refresh_status"))
                 if (uiState.healthSyncMessage.isNotBlank()) Text(uiState.healthSyncMessage,
                     color = if (uiState.healthSyncFailed) palette.danger else if (uiState.healthSyncPartial) palette.warning else palette.textPrimary,
                     modifier = Modifier.testTag("health_sync_result"))

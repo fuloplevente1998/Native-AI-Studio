@@ -88,3 +88,21 @@ befogadási guard; már mentett history és alias újraaktiválásának tiltása
 Öt új regresszió, kibővített Room-alias védelem; statikus ellenőrzés tiszta,
 JVM/CI még nem futott. A közös VM resume-hookot a root integrátor köti be;
 állapot és fizikai mérési korlátok a készülékes followup dokumentumban.
+
+## #151 UI-folytatás – integrációra vár
+
+Ág: `design/health-provider-journal` (draft PR átadáskor). A naplóban csak a felső
+Samsung Health / Health Connect választó marad; origin csak rekord-metaadat.
+Kis szolgáltatófrissítő natív callbackkel, busy/hiba állapot és revision alapú
+újraolvasás; lenyitott napokon csak AVAILABLE metrikák, a valós nulla megmarad.
+A felső és alsó kézi szinkron ugyanazt a callbacket használja. Footer mindkét
+provider sikeres idejét és az engedélyezett automatikus ütemezést jelzi; a meglévő
+Wear-kártya címe „TrainPilot Wear OS – edzésmérések”.
+
+A módosított Compose-regressziók a provider-projekciót, összes eredet rekordjait,
+hiány/tiltás/hiba elrejtését, nullát, natív revision-frissítést, busy/hiba állapotot
+és a két szinkrongomb callbackjét fedik. `git diff --check` rendben; helyi
+Gradle/CI nem futott. Az ág a párhuzamos #149 natív UiState-mezőket és a root
+`onReadHealthSource` bekötést igényli, ezért teljes CI csak a közös integráción.
+Az origin-selector és hiányzó metrikasor régi tesztelvárásait a #151 kifejezett
+új UX-e miatt cseréltük le; dátum/lapozás/generation védelmek megmaradtak.
