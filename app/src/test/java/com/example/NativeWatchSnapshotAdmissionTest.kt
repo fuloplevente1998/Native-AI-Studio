@@ -1,10 +1,15 @@
 package com.example
 
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import com.repforge.app.NativeWatchSnapshotAdmission
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class NativeWatchSnapshotAdmissionTest {
     private fun current() = JSONObject("""{"active":true,"workoutId":"session","timerOwner":"watch","ownershipProtocol193":1,"ownerEpoch193":2,"pauseRevision":20,"workoutPaused":false,"localSequence":5,"exercises":[{"id":"press","sets":[{"setId":"set-1","reps":"12"}]}]}""")
     private fun command(frame: JSONObject = current(), sequence: Long = 6) = JSONObject()
