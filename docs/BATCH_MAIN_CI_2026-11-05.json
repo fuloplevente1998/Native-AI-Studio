@@ -1,0 +1,48 @@
+{
+  "run": 41977716578,
+  "source": "fb1f7c7bf42514dd700dd8ac5ea47ad26b2219d4",
+  "artifact": 13392209366,
+  "artifactSha256": "65484a26df3ac260969455af79fdae9b59140ca4b3985db09f2182fba1579e44",
+  "counts": {
+    "tests": 495,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "modules": {
+    "app": 319,
+    "wear": 176
+  },
+  "sharedNoSource": true,
+  "physicalAcceptance": false,
+  "apkProduced": false,
+  "mergedPRs": [
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142
+  ],
+  "previousRun": {
+    "id": 41977131307,
+    "source": "42a511b43308da26756c8ee67d735e9e941f1063",
+    "tests": 495,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "failure": "explicitManualSecondsCanBeRecordedWithoutInventingMeasuredWork fixture omitted required foreground ARM; PR142 corrects setup, expectations unchanged",
+    "artifact": 13392158848,
+    "artifactSha256": "40b508621ff498f0665cf019ae6f69f7cb8e2c4a81e87095cdef87c805586a80"
+  },
+  "notIncludedIssues": [
+    70,
+    122,
+    123
+  ],
+  "workflow": "trainpilot-android-ci.yml"
+}

@@ -4,7 +4,56 @@ Belépési pont: [AGENTS.md](../AGENTS.md). Részletes kiadási és készüléke
 előzmény: [CURRENT_STATUS.md](CURRENT_STATUS.md). Az élő GitHub-állapot elsőbbséget
 élvez az alábbi pillanatképpel szemben.
 
-## Ellenőrzött kiindulás
+## Aktuális közös main-csomag
+
+A felhasználó kifejezett kérésére **#133–#141 mind mainre mergelve**, egy közös
+ellenőrzéssel az ágankénti újabb futtatások helyett. Alkalmazásforrás:
+`42a511b43308da26756c8ee67d735e9e941f1063`, utána #142 csak tesztfixture-javítás.
+**Bevizsgált teljes forrás: `fb1f7c7bf42514dd700dd8ac5ea47ad26b2219d4`.**
+Közös run **`41977716578` SUCCESS: 495 = 319 telefon + 176 Wear**,
+0 failure/error/skipped; shared NO-SOURCE. Letöltött nyers XML, verification commit
+és ZIP digest ellenőrizve. [Gépi bizonyíték](BATCH_MAIN_CI_2026-11-05.json).
+
+Az első közös `41977131307` futásban 495-ből 494 PASS, egy új kézi stopperfixture
+nem indította el a valódi felületen kötelező foreground kontrollert. #142 ezt az
+előkészítést javítja, az elvárások és alkalmazásvédelmek változatlanok. Külön PR CI
+nem készült, ugyanaz a közös main-kapu futott újra. Nincs kihagyott/törölt regresszió.
+
+- #133/#125: Wear óraikon; #134/#118: Témák közös kerete;
+  #135/#131: állandó Tervezés, a napi lebegő ablak megőrzésével.
+- #136: gyökér AGENTS, modell/thinking és munkarend, közös main-CI szabály.
+- #137/#128–130: kanonikus gyorsindítás/csere, explicit stoppervezérlés,
+  megőrzött részleges mérés és kézi korrekció, elvetés utáni projekciótisztítás.
+  Root followup: kézi natív mérés rögzíthető automatikus tervvezérlés nélkül is;
+  ownership/ARM/target/restore ellenőrzések megmaradnak. Két fixture valódi
+  időalapú gyakorlatot választ a futás helyett. 14 új session-regresszió.
+- #138/#117: ellenőrzött távoli naptárhivatkozás, korlátozott stabil-ID-s
+  eseményhelyreállítás és azonosítómentes hibatípus. A telefonos 404 eredeti
+  konkrét oka nem ismert, valós Google-próba még szükséges.
+- #139/#84: kompakt, palettás editor/feedback boxok, adaptív mezők.
+- #140/#126: felismerhető Előző/Vissza és veszélyszínű Elvetés, változatlan
+  callbackek/tiltások/megerősítés/piros X.
+- #141/#120: szolgáltatói panelek a Forrás fülön; egy hiteles, átfedést kizáró
+  pulzus/energia összesítő a Statisztikákon. [Adatszerződés](WORKOUT_HEALTH_SUMMARY_2026-11-05.md).
+
+**Nem része a mainnek:** #70 Coach és #122/#123 egységes egészségnapló/dátumválasztó.
+Az agentek használati limit miatt leálltak, a félkész kód megőrizve a GitHubon:
+
+- `fix/70-workout-coach` / `cf1ae8c`: részleges, nem tesztelt repository/DAO/read
+  projekció. A panel némító explicitTrainingMode-kapuja azonosítva, UI-bekötés és
+  regressziók hiányoznak. Nincs új képlet vagy automatikus súlymódosítás engedélyezve.
+- `fix/122-123-unified-health-journal` / `a4ea347`: részleges, nem tesztelt inline
+  napló/26 metrika/rekordrészletek és app-stílusú dátumpicker. #134 ága az alapja,
+  folytatáskor friss mainhez kell igazítani. Új tesztek és source review hiányoznak.
+
+Mindkét WIP-ág `[skip ci]` committal, PR és készre jelentés nélkül tárolt.
+Folytatásuk friss mainre igazítva két új agenttel elindult; nincs ágankénti CI,
+csak a következő elkészült csomag közös main-ellenőrzése. A fenti WIP-hash-ek az
+átvétel előtti megőrzött állapotot jelölik, nem kész implementációt.
+Nincs új APK, verzióemelés vagy fizikai elfogadás. A meglevő 2753-as telepítők
+nem tartalmazzák ezt a main-csomagot. A jegyek készülékes elfogadása külön követendő.
+
+## Ellenőrzött kiindulás (történeti)
 
 - Main: `0d867e0c63e3c44e3364d210b46e1cae650d8380` (#132), a három új dizájn-PR
   még draft; az ellenőrzéskor mainen nem volt új alkalmazásváltozás.
@@ -12,7 +61,7 @@ előzmény: [CURRENT_STATUS.md](CURRENT_STATUS.md). Az élő GitHub-állapot els
   [Kiadási bizonyíték](RELEASE_2753_PHOTOS_VERIFIED_ARTIFACTS.json).
 - 13 aktív jegy: 5 funkció, 6 dizájn, 2 adat/felület; a lista a CURRENT_STATUS elején.
 
-## Más chatek már elkészített PR-jei – nem újra kiosztandók
+## Más chatek eredeti PR-ellenőrzése (történeti, azóta mergelve)
 
 | PR / jegy | Változás | Ellenőrzött head / Actions run |
 | --- | --- | --- |
@@ -26,7 +75,7 @@ artifact SHA256 és commitigazolás egyezik; mindhárom nyers XML összesítése
 jelenlétét védi, a tervezési callbackek működését nem. Készülékes megjelenés még
 ellenőrizendő; nem mergelt és nem új APK-ba csomagolt eredmények.
 
-## Most engedélyezett végrehajtás
+## A párhuzamos munkakör eredeti kiosztása (történeti)
 
 A felhasználó 2026-11-05-én kérte az agent-szabályok rögzítését és a munka
 megkezdését; korábban külön párhuzamos agentmunkát is kért.

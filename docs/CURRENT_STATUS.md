@@ -1,5 +1,18 @@
 # TrainPilot Native – aktuális állapot, 2026-11-05
 
+## Közös main-integráció – #133–#141
+
+A felhasználó kérésére kilenc elkészült PR mainre került, külön ágankénti új CI-körök
+helyett közös teljes futással. #142 egyetlen hibás tesztfixture előkészítését javítja;
+**bevizsgált forrás `fb1f7c7`, Actions `41977716578` SUCCESS: 495 = 319 telefon +
+176 Wear, 0 failure/error/skipped**. A nyers XML, source-SHA és artifact-digest
+ellenőrizve. [Gépi bizonyíték](BATCH_MAIN_CI_2026-11-05.json).
+Részletes csomag és megőrzött WIP-ágak:
+[rövid átadó](WORK_HANDOFF.md). A main tartalmazza a naptár-, témakeret-, óraikon-,
+tervezés-, naplószerkesztő-, session/stopper-, gombkontraszt- és edzés-health javításokat.
+Coach #70 és az egységes Egészségnapló/dátumpicker #122/#123 még nincs mainen.
+Új APK most nem készült; a 2753-as kiadás továbbra is korábbi forrást tartalmaz.
+
 ## Új munkafázis – 2026-11-05
 
 A felhasználó kérésére a javítási munka elindult. Az alábbi 2026-11-04-i
