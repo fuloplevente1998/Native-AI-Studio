@@ -4,29 +4,41 @@ Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
 
-## Folyamatban – #171 aktív edzés visszajelzések
+## Legújabb átadás – #171 aktív edzés, 2753 / 7a90d39
 
-Root egyedül, fix/active-workout-feedback-followup ágon. A felső gyakorlatcsík
-korábban az aktuálisnál kisebb indexet is késznek festette; a navigáció nem
-állította készre a natív sorozatokat. Most csak nem üres, teljesen kész sorozatlista
-kap pipát. Közös kompakt nap/idő sor a meglévő dayName és activeIntervals alapján;
-explicit szünet alatt megáll, újranyitás nem indít második órát. Képernyő-kikapcsolás
-háttérmérési szerződése változatlan. Coach-store képernyő-élettartamú, lazy-scroll
-nem törli; azonos cél újraolvasásakor a meglévő tanács látható marad.
-Visszajelzés a sorozatok után a strength/timed/bilateral oldalon; Következő előtt
-opcionális app-stílusú kérdés, explicit kihagyással. Session/generation/gyakorlat/
-képernyő változás bezárja a régi kérdést. A meglévő stabil ID-s feedback-mentés
-és opcionális összegzés megmarad. Hét új regresszió, a meglévő Coach UI-teszt
-kibővítve; helyi diff-check rendben, teljes signed Actions-kapu és fizikai próba
-még hátravan. Verzió/signer/workflow változatlan.
+PR172 és PR173 mainen, root egyedül, új agent nélkül. A gyakorlatcsík korábbi
+indexalapú pipája kizárólag vizuális volt; most csak nem üres, teljesen kész
+sorozatlista jelöl kész gyakorlatot. Közös kompakt nap/idő sor a kanonikus dayName
+és activeIntervals alapján. Explicit szünet alatt megáll, újranyitás nem nullázza
+és nem indít új órát. A képernyő-kikapcsolás háttérmérési szerződése megmarad.
+Coach-store a képernyővel él, lazy-scroll nem törli; azonos cél háttérfrissítése
+közben megmarad a tanács. Visszajelzés strength/timed/bilateral sorozatok után;
+Következő előtt opcionális app-stílusú kérdés. Kihagyás nem gyárt választ;
+session/generation/gyakorlat/képernyő-váltás bezárja a korábbi kérdést.
+A meglévő stabil ID-s visszajelzés-mentés és összegzés megmarad.
 
-Az első signed run42126841059: fordítás sikeres, 562 tesztből egy új navigációs
-regresszió elakadt. Oka: a kijelölt gyakorlat már megjelent a snapshotból, de az
-aszinkron katalógus/presentation job még futott, ezért a gyors visszalépési kérést
-az isActive guard eldobta. A már sorban lévő gyakorlat kiválasztása most közvetlen,
-szigorúan session/generation/target ID-hoz kötött natív select, a meglévő snapshot
-observerrel. A könyvtári csere külön aszinkron/védett út marad. Ugyanaz a regresszió
-gyors egymás utáni két kattintást is ellenőriz; nincs várakozásnövelés vagy gyengítés.
+Az első signed run42126841059 egy új navigációs teszten bukott (561/562 sikeres).
+Valódi ok: a snapshot már frissült, de a még aktív katalógus/presentation job guardja
+eldobta a gyors visszaváltást. PR173 a sorban lévő gyakorlatot közvetlen, pontos
+session/generation/exercise/set ID-s natív selecttel választja, a meglévő snapshot
+observerrel. A könyvtári csere saját védett útja megmarad. Nincs timeout-emelés,
+tesztgyengítés vagy kihagyás; ugyanaz a regresszió két gyors kattintást is tesztel.
+
+Végső signed forrás **7a90d3909bfdb7d7a70ed2faeea5d05154d0e84e**,
+run **42128194228 SUCCESS**: **562 =381 telefon +181 Wear**,
+0 failure/error/skipped, shared NO-SOURCE. Hét új regresszió és kibővített Coach
+UI-teszt. Letöltött ZIP digest, nyers XML/source/count, tényleges APK-hash/bináris
+manifest/APK v2 tanúsítvány és CI tartós signer/páros/capability kapu ellenőrizve.
+Változatlan2753 / 0.1.0-beta / com.TrainPilot.com, korábbi tartós signer.
+
+- [Telefon release](https://drive.google.com/file/d/1ub26ZT5kzlFkkz3Lq7SCM7XOkjJCXhvP/view?usp=drivesdk)
+- [Wear optimalizált release](https://drive.google.com/file/d/10m3o3mqPpf-DuR2QUkCpWkAIraCOAobl/view?usp=drivesdk)
+- TrainPilot Native mappa, korábbi APK-k megőrizve; név/MIME/bájt/parent visszaolvasva.
+  [Gépi bizonyíték](RELEASE_2753_7A90D39_VERIFIED_ARTIFACTS.json).
+- Fizikai/vizuális próba még hátravan, #171 nyitva marad: mini-sáv gyors oda-vissza,
+  részleges/teljes pipák, Alap A/B nap, explicit szünet és újranyitás, Coach görgetés,
+  visszajelzés kiválasztás/kihagyás és órás váltás közbeni modal-bezárás.
+- Nincs helyi Gradle/emulátor; a későbbi dokumentációs commit nem módosít appforrást.
 
 ## Korábbi átadás – telefonos elvetés lezárja az órás sessiont, 2753 / d2766f7
 
