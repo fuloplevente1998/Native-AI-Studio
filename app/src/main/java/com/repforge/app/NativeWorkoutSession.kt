@@ -126,6 +126,20 @@ internal object NativeWorkoutSession {
         withContext(NonCancellable + Dispatchers.Main.immediate) { installPrepared(app, candidate) }
     }
 
+    internal suspend fun prefillFromHistory(db: TrainPilotDatabase, exercise: JSONObject, sets: JSONArray) {
+        if (NativeWorkoutStartValues.strength(exercise)) {
+            var offset = 0
+            val now = System.currentTimeMillis()
+            while (true) {
+                val rows = db.workoutHistoryDao().getPrefillCandidates(exercise.getString("id"), exercise.getString("loadType"),
+                    exercise.getString("repUnit"), now, 32, offset)
+                for (row in rows) NativeWorkoutStartValues.prefill(exercise, sets, JSONObject(row.rawJson), now)
+                offset += rows.size
+                if (rows.size < 32 || (0 until sets.length()).all { sets.getJSONObject(it).has("previousValues228") }) break
+            }
+        }
+    }
+
     /** Only an explicit successful new start returns a GPS intent. Never persisted/replayed on recovery. */
     data class Launch(val snapshot: JSONObject, val gpsTarget: NativeWorkoutTarget? = null)
 
@@ -189,17 +203,7 @@ internal object NativeWorkoutSession {
         val weight = if (exercise.optString("loadType") == "bodyweight") 0.0
             else rx.optDouble("weight", source.defaultWeight).also { require(it.isFinite() && it >= 0) }
         val sets = NativeWorkoutStartValues.blankSets(rx.optInt("sets", source.defaultSets), weight)
-        if (NativeWorkoutStartValues.strength(exercise)) {
-            var offset = 0
-            val now = System.currentTimeMillis()
-            while (true) {
-                val rows = db.workoutHistoryDao().getPrefillCandidates(source.id, exercise.getString("loadType"),
-                    exercise.getString("repUnit"), now, 32, offset)
-                for (row in rows) NativeWorkoutStartValues.prefill(exercise, sets, JSONObject(row.rawJson), now)
-                offset += rows.size
-                if (rows.size < 32 || (0 until sets.length()).all { sets.getJSONObject(it).has("previousValues228") }) break
-            }
-        }
+        prefillFromHistory(db, exercise, sets)
         exercise.remove("actualRir")
         return exercise.put("sets", sets)
     }

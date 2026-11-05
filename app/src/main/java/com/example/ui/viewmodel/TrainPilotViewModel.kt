@@ -1263,7 +1263,29 @@ class TrainPilotViewModel : ViewModel() {
                     val canonicalId = frame.optJSONArray("exercises")
                         ?.optJSONObject(frame.optInt("currentExercise", -1))?.optString("id")?.takeIf { it.isNotBlank() }
                     _uiState.update { state ->
-                        if (state.activeWorkoutId != frame.optString("workoutId")) return@update state
+                        val incomingId = frame.optString("workoutId")
+                        if (incomingId.isBlank()) return@update state
+                        val adopting = state.activeWorkoutId != incomingId
+                        if (adopting && (incomingId.isBlank() || state.isWorkoutSessionActive ||
+                            frame.optString("timerOwner") != "watch" || frame.optBoolean("finalizationPending") ||
+                            frame.optBoolean("discardPending") || com.repforge.shared.WorkoutOwnership193.pending(frame))) return@update state
+                        val rawExercises = frame.optJSONArray("exercises") ?: JSONArray()
+                        val watchProjection = frame.optString("timerOwner") == "watch"
+                        if (watchProjection && (rawExercises.length() == 0 ||
+                            (0 until rawExercises.length()).any { rawExercises.optJSONObject(it)?.optString("id").isNullOrBlank() } ||
+                            frame.optInt("currentExercise", -1) !in 0 until rawExercises.length())) return@update state
+                        val projectedExercises = if (adopting || watchProjection) (0 until rawExercises.length()).map { index ->
+                            val raw = rawExercises.getJSONObject(index)
+                            val id = raw.getString("id")
+                            val catalog = state.exercises.firstOrNull { it.id == id }
+                                ?: ExerciseItem(id = id, nameHu = raw.optString("name", id))
+                            com.example.ui.components.withNativeStrengthUnits(catalog,
+                                raw.opt("loadType") as? String, raw.opt("repUnit") as? String).copy(
+                                measurementType = raw.optString("measurementType"),
+                                isTimed = com.repforge.app.NativeSetStopwatch.timed(raw),
+                                isBilateral = com.repforge.app.NativeSetStopwatch.bilateral(raw))
+                        } else state.activeWorkoutExercises
+                        if ((adopting || watchProjection) && (projectedExercises.isEmpty() || projectedExercises.map { it.id }.distinct().size != projectedExercises.size)) return@update state
                         val nativeSets = mutableMapOf<String, List<ExerciseSetItem>>()
                         val exercises = frame.optJSONArray("exercises") ?: JSONArray()
                         for (index in 0 until exercises.length()) {
@@ -1282,17 +1304,24 @@ class TrainPilotViewModel : ViewModel() {
                             }
                         }
                         val canonicalIndex = canonicalId?.let { id ->
-                            state.activeWorkoutExercises.indices.singleOrNull { state.activeWorkoutExercises[it].id == id }
+                            projectedExercises.indices.singleOrNull { projectedExercises[it].id == id }
                         }
-                        val selectedIndex = canonicalIndex ?: state.activeExerciseIndex
-                        val selected = state.activeWorkoutExercises.getOrNull(selectedIndex)
+                        val selectedIndex = canonicalIndex ?: if (adopting) 0 else state.activeExerciseIndex
+                        val selected = projectedExercises.getOrNull(selectedIndex)
                         val exerciseChanged = canonicalIndex != null &&
                             selected?.id != state.activeWorkoutExercises.getOrNull(state.activeExerciseIndex)?.id
                         // Follow a committed selection without replaying navigation or resetting a mode
                         // chosen for the same exercise. Outdoor keeps its dedicated GPS/indoor screen.
-                        val targetScreen = if (exerciseChanged && state.activeWorkoutSubScreen != SubScreen.ACTIVE_OUTDOOR_GPS)
+                        val targetScreen = if ((adopting || exerciseChanged) && (adopting || state.activeWorkoutSubScreen != SubScreen.ACTIVE_OUTDOOR_GPS))
                             targetSubScreenForExercise(selected) else state.activeWorkoutSubScreen
-                        state.copy(phoneControlsWorkout = frame.optString("timerOwner", "phone") == "phone" &&
+                        state.copy(isWorkoutSessionActive = true,
+                            activeWorkoutId = incomingId,
+                            activeWorkoutGeneration = frame.optLong("generation"),
+                            activeWorkoutExercises = projectedExercises,
+                            workoutStartedEpochMs = runCatching { Instant.parse(frame.getString("started")).toEpochMilli() }.getOrDefault(state.workoutStartedEpochMs),
+                            activeWorkoutTitleHu = if (adopting) frame.optString("programName").ifBlank { frame.optString("dayName") } else state.activeWorkoutTitleHu,
+                            homeDemoMode = if (adopting) HomeDemoMode.PAUSED_WORKOUT else state.homeDemoMode,
+                            phoneControlsWorkout = frame.optString("timerOwner", "phone") == "phone" &&
                                 !watchHandoffBusy && !com.repforge.app.NativePhoneReturnInstallation.requiresInstallation(frame) &&
                                 !com.repforge.app.NativeWatchHandoffReceipt.pending(frame, watchJournal()),
                             watchControlPending = watchHandoffBusy || com.repforge.app.NativeWatchHandoffReceipt.pending(frame, watchJournal()),
@@ -1300,9 +1329,9 @@ class TrainPilotViewModel : ViewModel() {
                             selectedExerciseId = if (state.currentSubScreen in setOf(SubScreen.EXERCISE_LIBRARY, SubScreen.EXERCISE_DETAIL))
                                 state.selectedExerciseId else selected?.id ?: state.selectedExerciseId,
                             activeWorkoutSubScreen = targetScreen,
-                            currentSubScreen = if (exerciseChanged && state.currentSubScreen in activeMeasurementScreens &&
+                            currentSubScreen = if (!adopting && exerciseChanged && state.currentSubScreen in activeMeasurementScreens &&
                                 state.currentSubScreen != SubScreen.ACTIVE_OUTDOOR_GPS) targetScreen else state.currentSubScreen,
-                            activeSetsByExerciseId = state.activeSetsByExerciseId + nativeSets,
+                            activeSetsByExerciseId = (if (adopting) emptyMap() else state.activeSetsByExerciseId) + nativeSets,
                             activeSets = nativeSets[selected?.id] ?: state.activeSets)
                     }
                     val displayed = _uiState.value

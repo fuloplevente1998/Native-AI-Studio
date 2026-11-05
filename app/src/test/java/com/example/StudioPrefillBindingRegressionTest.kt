@@ -98,6 +98,22 @@ class StudioPrefillBindingRegressionTest {
         requireNotNull(db.workoutHistoryDao().getWorkoutWithDetailsById("previous-different-program")).workout.rawJson
     }
 
+    @Test fun watchProgramAndQuickPayloadUseTheSamePerSetHistoryAsPhoneStart() {
+        val previous = seedPrevious()
+        for (override in listOf<JSONArray?>(null, JSONArray().put(JSONObject().put("set", 1).put("weight", 33).put("reps", "8–12")))) {
+            val payload = native { WearSyncRepository.watchExerciseForStart(db, exercise, settings.current(), override) }
+            val first = payload.getJSONArray("sets").getJSONObject(0)
+            assertEquals(17.5, first.getDouble("weight"), 0.001)
+            assertEquals("12", first.getString("reps"))
+            assertFalse(first.optBoolean("done"))
+            assertFalse(first.has("actualRir"))
+            assertFalse(first.has("leftSeconds"))
+            assertFalse(first.has("distanceMeters"))
+        }
+        val saved = native { db.workoutHistoryDao().getWorkoutWithDetailsById("previous-different-program")!!.workout.rawJson }
+        assertEquals(previous, saved)
+    }
+
     @Test fun actualCoachDayUsesPerSetHistoryAndKeepsIdsManualValuesAndMissingRir() {
         val before = seedPrevious()
         val model = model()
