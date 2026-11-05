@@ -1,5 +1,8 @@
 package com.repforge.app.ui.health
 
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import com.repforge.app.HealthJournalStore
 import com.repforge.app.NativeHealthProviderBatch as Batch
 import com.repforge.app.NativeHealthSync
@@ -9,6 +12,8 @@ import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class NativeHealthProviderBatchTest {
     @Test fun firstProviderFailureStillReadsTheOtherWithoutOverlappingOrChangingSelection() = runBlocking {
         val visited = mutableListOf<String>()

@@ -1,11 +1,16 @@
 package com.example
 
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import com.example.ui.viewmodel.TrainPilotUiState
 import com.repforge.app.StudioRestTimer
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class StudioRestTimerRegressionTest {
     @Test fun expirationHidesTheStripAndCannotRestartAnEmptyRest() {
         val active = TrainPilotUiState(restTimerRemainingSec = 1, restTimerRunning = true)
