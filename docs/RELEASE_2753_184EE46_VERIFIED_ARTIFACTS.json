@@ -1,0 +1,152 @@
+{
+  "sourceSha": "184ee4613efeae9d8f9d5b40138d9a7b848a7fbf",
+  "applicationId": "com.TrainPilot.com",
+  "versionCode": 2753,
+  "versionName": "0.1.0-beta",
+  "artifactZipSha256": "dbf426330caac5106471f392883762795cf512c3ba69c3e14e35ba44f8a12876",
+  "testArtifactZipSha256": "11742e3f6bd003c7636888f295118ecf1235ff9f59100884291eec9b67ee4a4c",
+  "apks": {
+    "phone": {
+      "bytes": 20515832,
+      "sha256": "e54150f96f14b6ca91ba037465568237b393dd58d67b717f658351fc0cec20fb",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "manifest": {
+        "versionCode": 2753,
+        "versionName": "0.1.0-beta",
+        "package": "com.TrainPilot.com"
+      }
+    },
+    "wear": {
+      "bytes": 4636863,
+      "sha256": "5479bebb1a64bcd6d7e42ef4f4d1be2bbb20cba463e387d4370b9cf14f125e81",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "manifest": {
+        "versionCode": 2753,
+        "versionName": "0.1.0-beta",
+        "package": "com.TrainPilot.com"
+      }
+    }
+  },
+  "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+  "downloadedManifestAndV2CertificateVerified": true,
+  "rawJUnit": {
+    "commit": "184ee4613efeae9d8f9d5b40138d9a7b848a7fbf",
+    "modules": {
+      "phone": {
+        "files": 69,
+        "tests": 373,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "wear": {
+        "files": 31,
+        "tests": 179,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "shared": {
+        "files": 0,
+        "tests": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": true
+      }
+    },
+    "total": {
+      "tests": 552,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "ciMetadata": {
+    "applicationId": "com.TrainPilot.com",
+    "versionCode": "2753",
+    "versionName": "0.1.0-beta",
+    "apkSha256": "e54150f96f14b6ca91ba037465568237b393dd58d67b717f658351fc0cec20fb",
+    "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+    "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+    "mapsApiKeyConfigured": true,
+    "ciCheckout": "184ee4613efeae9d8f9d5b40138d9a7b848a7fbf",
+    "wear": {
+      "applicationId": "com.TrainPilot.com",
+      "versionCode": "2753",
+      "versionName": "0.1.0-beta",
+      "apkSha256": "5479bebb1a64bcd6d7e42ef4f4d1be2bbb20cba463e387d4370b9cf14f125e81",
+      "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "variant": "release",
+      "bytes": 4636863
+    },
+    "wearCompanionCapabilityRetained": true,
+    "dataLayerPairIdentityVerified": true,
+    "wearHardwareRequired": true
+  },
+  "signedRun": 42108228191,
+  "signedRunUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/42108228191",
+  "signedArtifactId": 13452299518,
+  "testArtifactId": 13452559002,
+  "mainCi": {
+    "runId": 42107477482,
+    "sourceSha": "184ee4613efeae9d8f9d5b40138d9a7b848a7fbf",
+    "tests": 552,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "artifactId": 13453112281,
+    "artifactZipSha256": "3e704f170e5655f5f0e858871c8f233634ecec8d87e712ff9b619bb56283ecc5"
+  },
+  "drive": {
+    "folderId": "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9",
+    "phone": {
+      "id": "1BAxrBRFj0Ws-LdjF1b3nGEYUD5nzgL71",
+      "title": "TrainPilot-2753-184ee46-phone-release.apk",
+      "mime_type": "application/vnd.android.package-archive",
+      "size": "20515832",
+      "url": "https://drive.google.com/file/d/1BAxrBRFj0Ws-LdjF1b3nGEYUD5nzgL71/view?usp=drivesdk",
+      "display_url": "https://drive.google.com/file/d/1BAxrBRFj0Ws-LdjF1b3nGEYUD5nzgL71/view?usp=drivesdk",
+      "file_or_folder": "file",
+      "created_time": null,
+      "modified_time": null,
+      "parent_ids": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "drive_id": null,
+      "current_user_can_share": null,
+      "has_augmented_permissions": null,
+      "shared": null,
+      "permissions": null,
+      "source_visibility_status": "access_not_verified"
+    },
+    "wear": {
+      "id": "1IqSqhWmpPwfuMtmmaLzNSACbCEtZSgY-",
+      "title": "TrainPilot-2753-184ee46-wear-release.apk",
+      "mime_type": "application/vnd.android.package-archive",
+      "size": "4636863",
+      "url": "https://drive.google.com/file/d/1IqSqhWmpPwfuMtmmaLzNSACbCEtZSgY-/view?usp=drivesdk",
+      "display_url": "https://drive.google.com/file/d/1IqSqhWmpPwfuMtmmaLzNSACbCEtZSgY-/view?usp=drivesdk",
+      "file_or_folder": "file",
+      "created_time": null,
+      "modified_time": null,
+      "parent_ids": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "drive_id": null,
+      "current_user_can_share": null,
+      "has_augmented_permissions": null,
+      "shared": null,
+      "permissions": null,
+      "source_visibility_status": "access_not_verified"
+    },
+    "metadataReadbackVerified": true,
+    "previousFilesPreserved": true
+  },
+  "issue": 165,
+  "changePr": 166,
+  "physicalAcceptancePending": true
+}

@@ -3,6 +3,31 @@
 Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
+
+## Legújabb átadás – órás indítás és előtöltés, 2753 / 184ee46
+
+#165 / PR166 mainen: a Studio az új, órán indított sessiont élőben átveszi a
+meglévő snapshot-projekcióba, navigáció és telefonos motorindítás nélkül. Az órás
+aktuális listát és stabil ID-s gyakorlatválasztást követi; másik aktív UI-sessiont
+és hibás/pending/finalizing új sessiont nem ír felül. Telefonos előtöltés már volt;
+az órára küldött program/quick payload most ugyanazt a natív per-set history
+súly/ismétlés előtöltést használja. Mért idő/teljesítés/RIR nem öröklődik.
+Két regresszió az óratulajdonos live-start/selection állapotát és a watch-payload
+history-előtöltést védi. A munkát kizárólag root végezte, új agent nélkül.
+
+Forrás184ee4613efeae9d8f9d5b40138d9a7b848a7fbf. Main-CI42107477482 és
+signed run42108228191 SUCCESS: 552 =373telefon +179Wear, 0failure/error/skipped,
+shared NO-SOURCE. Nyers XML, source, ZIP digest, letöltött APK-hash, bináris manifest,
+APK v2 tanúsítvány és CI apksigner/persistent pin ellenőrizve. Változatlan2753,
+0.1.0-beta és com.TrainPilot.com; release phone +R8/shrunk release Wear ugyanabból a jobból.
+
+- [Telefon release](https://drive.google.com/file/d/1BAxrBRFj0Ws-LdjF1b3nGEYUD5nzgL71/view?usp=drivesdk)
+- [Wear optimalizált release](https://drive.google.com/file/d/1IqSqhWmpPwfuMtmmaLzNSACbCEtZSgY-/view?usp=drivesdk)
+- TrainPilot Native mappa; név/MIME/bájt/parent metadata readback rendben;
+  korábbi APK-k megőrizve. [Gépi bizonyíték](RELEASE_2753_184EE46_VERIFIED_ARTIFACTS.json).
+- Fizikai telefon–óra/előttöltés próba a felhasználónál még hátravan, #165 nyitva marad.
+
+
 ## Legújabb átadott APK-pár – 2753 / 93733ec
 
 Az AI Studio mainre pusholt singleton-/teszt-életciklus javítása bekerült a valódi
