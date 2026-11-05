@@ -47,7 +47,8 @@ internal object NativeWatchDiscardAdmission {
 
     suspend fun rejectsResurrection(db: TrainPilotDatabase, command: JSONObject): Boolean =
         command.optString("action") in setOf("startWorkout", "startQuickWorkout", "addQuickExercise", "watchAutomationState", "resumeWorkout") &&
-            db.workoutHistoryDao().isTombstoned(command.optString("workoutId"), JSONObject.quote(command.optString("workoutId")))
+            (db.workoutHistoryDao().isTombstoned(command.optString("workoutId"), JSONObject.quote(command.optString("workoutId"))) ||
+                db.workoutHistoryDao().hasSavedWorkoutId(command.optString("workoutId")))
 
     /** Called under the existing replacement lease; only the targeted deletion marker/journal can change. */
     suspend fun reconcile(context: Context, db: TrainPilotDatabase, command: JSONObject): Decision {

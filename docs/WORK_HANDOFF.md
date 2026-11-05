@@ -3,6 +3,10 @@
 Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
+**Új visszajelzések a kiadott APK után:** [folyamatban lévő javítások és pontos
+korlátok](DEVICE_FEEDBACK_FOLLOWUP_2026-11-05.md). A korábbi13as csomag elkészült;
+az új health/Wear/pihenő/naptár csomag még nem került telepítőbe.
+
 ## Aktuális main
 
 **Mind a 13 visszajelzéshez tartozó javítás mainre került.** A felhasználó kifejezett
@@ -77,3 +81,10 @@ A következő lépés a kiadott APK-k készülékes visszatesztje;
 a forrás, a signed build és a teljes közös CI már ellenőrzött. A bizonyítékot rögzítő későbbi
 dokumentációs commit nem változtatja az alkalmazás/teszt/workflow forrását.
 APK-kéréskor csak a meglévő signed workflow: telefon release + R8/shrunk Wear release.
+
+#152 / draft PR156 további javítás: pontos owner/epoch/pauseRevision célzású
+telefon→óra explicit resume transport; késői watch snapshot epoch/pause/sequence
+befogadási guard; már mentett history és alias újraaktiválásának tiltása.
+Öt új regresszió, kibővített Room-alias védelem; statikus ellenőrzés tiszta,
+JVM/CI még nem futott. A közös VM resume-hookot a root integrátor köti be;
+állapot és fizikai mérési korlátok a készülékes followup dokumentumban.

@@ -761,7 +761,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onCycleDemoMode = { mode -> viewModel.cycleHomeDemoMode(mode) },
                                     onDiscardWorkout = { id -> viewModel.stopActiveWorkoutSession(id, uiState.activeWorkoutGeneration) },
                                     onStartOrContinueWorkout = {
-                                        if (uiState.isWorkoutSessionActive && uiState.workoutStartedEpochMs > 0L) {
+                                        if (uiState.isWorkoutSessionActive) {
                                             viewModel.returnToActiveWorkout()
                                         } else {
                                             viewModel.startPlannedWorkout()

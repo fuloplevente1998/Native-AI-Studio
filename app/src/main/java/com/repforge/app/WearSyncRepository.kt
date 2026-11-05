@@ -43,6 +43,30 @@ object WearSyncRepository {
 
     private val syncScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    /** The watch performs and durably publishes its own resume; the phone never changes owner or pause optimistically. */
+    fun requestWatchWorkoutContinuation(context: Context, onFailure: (String) -> Unit) {
+        check(!NativeDataReplacement.blocked(context)) { "Adat-visszaállítás vagy törlés van folyamatban." }
+        val current = ActiveWorkoutStore.current(context) ?: error("Nincs aktív edzés.")
+        if (!current.optBoolean("workoutPaused")) return
+        val command = com.repforge.shared.WorkoutContinuation.request(current, UUID.randomUUID().toString(), System.currentTimeMillis())
+        Wearable.getNodeClient(context).connectedNodes.addOnSuccessListener { peers ->
+            val latest = ActiveWorkoutStore.current(context)
+            if (NativeDataReplacement.blocked(context) || latest == null ||
+                !com.repforge.shared.WorkoutContinuation.accepts(latest, command, System.currentTimeMillis())) {
+                onFailure("Az órás edzés állapota megváltozott. Nyisd meg újra a folytatást.")
+                return@addOnSuccessListener
+            }
+            if (peers.size != 1) {
+                onFailure("Az órás folytatáshoz csatlakoztasd az órát, majd próbáld újra.")
+                return@addOnSuccessListener
+            }
+            val map = PutDataMapRequest.create(com.repforge.shared.WorkoutContinuation.PATH_PREFIX + command.getString("commandId"))
+            map.dataMap.putString("command", command.toString())
+            Wearable.getDataClient(context).putDataItem(map.asPutDataRequest().setUrgent())
+                .addOnFailureListener { onFailure("Az órás folytatáskérés küldése nem sikerült. Próbáld újra.") }
+        }.addOnFailureListener { onFailure("Az órakapcsolat nem ellenőrizhető. Próbáld újra.") }
+    }
+
     fun refreshWatchHomeAsync(context: Context) {
         val app = context.applicationContext
         syncScope.launch { runCatching { publishWatchHomeSnapshot(app) } }
@@ -154,7 +178,13 @@ object WearSyncRepository {
                                     toSave.put("watchSourceNode193", origin)
                                 }
                                 withContext(Dispatchers.Main) {
-                                    val saved = ActiveWorkoutStore.saveOwned(appContext, toSave)
+                                    val admitted = NativeWatchSnapshotAdmission.snapshot(ActiveWorkoutStore.current(appContext),
+                                        JSONObject(command.toString()).put("finalSnapshot", toSave))
+                                    if (admitted == null || !PhoneOwnership193.commandAllowed(appContext, command)) {
+                                        WearCommandReceipts.complete(appContext, command, "superseded", uri)
+                                        return@withContext
+                                    }
+                                    val saved = ActiveWorkoutStore.saveOwned(appContext, admitted)
                                     PhoneGpsRoute193.authorizeOwned(appContext, saved)
                                     publishActiveWorkoutSnapshot(appContext, saved)
                                     WearCommandReceipts.complete(appContext, command, "applied", uri)
@@ -167,30 +197,22 @@ object WearSyncRepository {
                         }
 
                         "addQuickExercise", "watchAutomationState", "resumeWorkout" -> {
-                            val finalSnapshot = command.optJSONObject("finalSnapshot")
                             withContext(Dispatchers.Main) {
                                 val current = ActiveWorkoutStore.current(appContext)
-                                if (finalSnapshot != null &&
-                                    (current == null || current.optString("workoutId") == command.optString("workoutId"))
-                                ) {
-                                    val next = JSONObject(finalSnapshot.toString()).put("active", true)
-                                    val saved = ActiveWorkoutStore.saveOwned(appContext, next)
-                                    PhoneGpsRoute193.authorizeOwned(appContext, saved)
-                                    publishActiveWorkoutSnapshot(appContext, saved)
-                                    WearCommandReceipts.complete(appContext, command, "applied", uri)
-                                } else if ("resumeWorkout" == action && current != null && current.optString("workoutId") == command.optString("workoutId")) {
-                                    val now = System.currentTimeMillis()
-                                    val next = JSONObject(current.toString())
-                                        .put("workoutPaused", false)
-                                        .put("pauseRevision", max(command.optLong("pauseRevision", now), current.optLong("pauseRevision") + 1L))
-                                    val intervals = next.optJSONArray("activeIntervals") ?: JSONArray()
-                                    intervals.put(JSONObject().put("start", Instant.ofEpochMilli(now).toString()).put("end", JSONObject.NULL))
-                                    next.put("activeIntervals", intervals)
-                                    PhoneWorkoutExecution.setWorkoutPause(appContext, next)
-                                    WearCommandReceipts.complete(appContext, command, "applied", uri)
-                                } else {
+                                val next = NativeWatchSnapshotAdmission.snapshot(current, command)
+                                if (next == null || !PhoneOwnership193.commandAllowed(appContext, command)) {
                                     WearCommandReceipts.complete(appContext, command, "superseded", uri)
+                                    return@withContext
                                 }
+                                // Recovery without a local draft is reserved for explicit start.
+                                if (current == null || !current.optBoolean("active", true)) {
+                                    WearCommandReceipts.complete(appContext, command, "superseded", uri)
+                                    return@withContext
+                                }
+                                val saved = ActiveWorkoutStore.saveOwned(appContext, next)
+                                PhoneGpsRoute193.authorizeOwned(appContext, saved)
+                                publishActiveWorkoutSnapshot(appContext, saved)
+                                WearCommandReceipts.complete(appContext, command, "applied", uri)
                             }
                         }
 
@@ -203,8 +225,7 @@ object WearSyncRepository {
                                     WearCommandReceipts.complete(appContext, command, "superseded", uri)
                                     return@withContext
                                 }
-                                val next = applyWatchMutationToSnapshot(current, command)
-                                val saved = ActiveWorkoutStore.saveOwned(appContext, next)
+                                val saved = commitWatchEditorMutation(appContext, current, command)
                                 publishActiveWorkoutSnapshot(appContext, saved)
                                 WearCommandReceipts.complete(appContext, command, "applied", uri)
                             }
@@ -407,6 +428,42 @@ object WearSyncRepository {
             }
         } catch (_: Exception) {
         }
+    }
+
+    /** Phone-owned native edits must reach its durable engine before acknowledging the watch. */
+    internal fun commitWatchEditorMutation(context: Context, current: JSONObject, command: JSONObject): JSONObject {
+        check(PhoneOwnership193.commandAllowed(context, command)) { "Workout ownership changed" }
+        val action = command.optString("action")
+        val phoneEditor = current.optInt("nativeEditorProjection") == 1 && current.optString("timerOwner") == "phone"
+        if (!phoneEditor || action !in setOf("updateSet", "selectExercise", "nextExercise", "prevExercise")) {
+            return ActiveWorkoutStore.saveOwned(context, applyWatchMutationToSnapshot(current, command))
+        }
+        val frame = NativeWorkoutEditing.project(context)
+        check(frame.optString("workoutId") == command.optString("workoutId") &&
+            !frame.optBoolean("workoutPaused") && frame.optLong("pauseRevision") == command.optLong("pauseRevision")) {
+            "Workout pause or identity changed"
+        }
+        val exercises = frame.getJSONArray("exercises")
+        if (action in setOf("updateSet", "selectExercise")) {
+            val exercise = exercises.getJSONObject(command.getInt("exerciseIndex"))
+            check(exercise.getString("id") == command.getString("exerciseId")) { "Exercise identity changed" }
+            if (action == "updateSet") {
+                val set = exercise.getJSONArray("sets").getJSONObject(command.getInt("setIndex"))
+                check(set.getString("setId") == command.getString("setId") && !set.optBoolean("done")) {
+                    "Set identity changed"
+                }
+                check(command.optString("field") in setOf("weight", "reps", "leftSeconds", "rightSeconds")) {
+                    "Unsupported set field"
+                }
+            }
+        }
+        val next = applyWatchMutationToSnapshot(frame, command)
+        if (next.optInt("currentExercise") != frame.optInt("currentExercise")) {
+            NativeSetStopwatch.sealPause(next)
+            NativeSetStopwatch.pause(next, trackPause = false)
+            next.put("selectionRevision", frame.optLong("selectionRevision") + 1L)
+        }
+        return NativeWorkoutEditing.commitEdit(context, next, clockEdit = action != "updateSet")
     }
 
     private fun applyWatchMutationToSnapshot(current: JSONObject, command: JSONObject): JSONObject {
