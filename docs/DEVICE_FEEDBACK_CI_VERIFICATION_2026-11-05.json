@@ -1,0 +1,65 @@
+{
+  "repository": "fuloplevente1998/Native-AI-Studio",
+  "date": "2026-11-05",
+  "verifiedBaseline": {
+    "sourceCommit": "1b74891a789587f8d6b50cdf22ab4fbeb88c668c",
+    "runId": 42057226829,
+    "runUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/42057226829",
+    "conclusion": "success",
+    "artifact": {
+      "id": 13429238583,
+      "sha256": "ab3ab85efb865799ec1e578177fcc883ae61f59ac8c87dc022917410b9a339ae"
+    },
+    "rawXml": {
+      "phone": {
+        "tests": 368,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "wear": {
+        "tests": 179,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "shared": {
+        "noSource": true
+      },
+      "total": {
+        "tests": 547,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "verification": "Artifact ZIP SHA-256 and all raw JUnit XML counts independently checked; bundled verification commit matches source."
+  },
+  "previousFailedRun": {
+    "runId": 42055912861,
+    "sourceCommit": "9b4c17707d8f1f363b500f012ae158843e2e6646",
+    "phoneFailures": 6,
+    "wearFailures": 0,
+    "artifactSha256": "ba9a5a98f2d85b1f75b85ebede1930f4d6349e1b327a27a759e587d702662ebb",
+    "resolution": "PR160 adds missing API34 Robolectric runners to three Android JSONObject test classes; assertions and product code unchanged."
+  },
+  "finalSelectionFix": {
+    "pr": 161,
+    "codeCommit": "a42dac8c702662c1d2ea4c10177e95b06efc7d3c",
+    "status": "pending full CI",
+    "additionalPhoneRegressionTests": 3
+  },
+  "environment": {
+    "status": "unavailable after final code push",
+    "fallback": "Existing automatic pull-request full CI; no workflow or check changes. Compare tested tree with eventual main tree."
+  },
+  "apk": {
+    "newApkBuilt": false
+  },
+  "physicalAcceptance": {
+    "samsungHealth": false,
+    "healthConnect": false,
+    "phoneWearPair": false,
+    "calendarVisual": false
+  }
+}

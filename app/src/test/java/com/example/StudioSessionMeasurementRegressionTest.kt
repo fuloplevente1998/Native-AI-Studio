@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.model.SubScreen
+import com.example.model.MainTab
 import com.example.ui.viewmodel.TrainPilotViewModel
 import com.repforge.app.*
 import com.repforge.app.data.db.TrainPilotDatabase
@@ -66,6 +67,133 @@ class StudioSessionMeasurementRegressionTest {
         val exercise = frame.getJSONArray("exercises").getJSONObject(frame.optInt("currentExercise"))
         return NativeWorkoutTarget(frame.getString("workoutId"), frame.getLong("generation"),
             exercise.getString("id"), exercise.getJSONArray("sets").getJSONObject(0).getString("setId"))
+    }
+
+    private fun watchSelect(index: Int, sequence: Long = 1): JSONObject {
+        val frame = ActiveWorkoutStore.current(context)!!
+        val exercise = frame.getJSONArray("exercises").getJSONObject(index)
+        return WearSyncRepository.commitWatchEditorMutation(context, frame, JSONObject()
+            .put("action", "selectExercise").put("workoutId", frame.getString("workoutId"))
+            .put("ownerEpoch193", frame.optLong("ownerEpoch193")).put("pauseRevision", frame.optLong("pauseRevision"))
+            .put("sequence", sequence).put("exerciseIndex", index).put("exerciseId", exercise.getString("id")))
+    }
+
+    @Test fun watchSelectionUpdatesTheStudioTargetAndRepeatedStartKeepsOneNativeStopwatch() {
+        val model = model()
+        val timed = timed(model)
+        model.startWorkoutWithExercises(listOf(strength(model), timed))
+        awaitStarted(model)
+        val before = ActiveWorkoutStore.current(context)!!
+        val backStack = model.uiState.value.backStack
+        val measurement = nativeModel()
+        watchSelect(1)
+        await { model.uiState.value.selectedExerciseId == timed.id }
+        val state = model.uiState.value
+        val durable = PhoneWorkoutExecution.store(context).snapshot()!!
+        assertEquals(1, durable.getInt("currentExercise"))
+        assertEquals(1, state.activeExerciseIndex)
+        assertEquals(SubScreen.ACTIVE_BILATERAL, state.activeWorkoutSubScreen)
+        assertEquals(SubScreen.ACTIVE_BILATERAL, state.currentSubScreen)
+        assertEquals(backStack, state.backStack)
+        assertEquals(before.getString("workoutId"), durable.getString("workoutId"))
+        assertEquals(before.getLong("generation"), durable.getLong("generation"))
+        val selectedSet = state.activeSets.first { !it.completed }
+        assertEquals(selectedSet.id, target(durable).setId)
+        val selectedTarget = NativeWorkoutTarget(state.activeWorkoutId, state.activeWorkoutGeneration,
+            state.selectedExerciseId, selectedSet.id)
+        val service = Robolectric.buildService(IntervalTimerService::class.java).create()
+        try {
+            arm(service.get(), durable)
+            measurement.startSetStopwatch(selectedTarget, "left")
+            measurement.startSetStopwatch(selectedTarget, "left")
+            await { measurement.uiState.value.stopwatchRunning }
+            val firstClock = PhoneWorkoutExecution.store(context).snapshot()!!.getJSONObject(NativeSetStopwatch.FIELD).getString("id")
+            measurement.startSetStopwatch(selectedTarget, "left")
+            shadowOf(Looper.getMainLooper()).idle()
+            val after = PhoneWorkoutExecution.store(context).snapshot()!!
+            assertEquals(firstClock, after.getJSONObject(NativeSetStopwatch.FIELD).getString("id"))
+            assertEquals(selectedSet.id, measurement.uiState.value.stopwatchSetId)
+            assertFalse(selectedTarget.resolve(after).set.optBoolean("done"))
+            assertEquals(backStack, model.uiState.value.backStack)
+        } finally { service.destroy() }
+    }
+
+    @Test fun unchangedSelectionPreservesModeAndRemoteSelectionPreservesHomeAndExerciseBrowsing() {
+        val model = model()
+        val timed = timed(model)
+        model.startWorkoutWithExercises(listOf(strength(model), timed))
+        awaitStarted(model)
+        model.navigateToSubScreen(SubScreen.ACTIVE_TIMED)
+        assertTrue(model.pauseActiveWorkout(false))
+        val modeStack = model.uiState.value.backStack
+        watchSelect(0)
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(SubScreen.ACTIVE_TIMED, model.uiState.value.currentSubScreen)
+        assertEquals(SubScreen.ACTIVE_TIMED, model.uiState.value.activeWorkoutSubScreen)
+        assertEquals(modeStack, model.uiState.value.backStack)
+        model.selectTab(MainTab.HOME)
+        assertTrue(model.pauseActiveWorkout(false))
+        val homeStack = model.uiState.value.backStack
+        watchSelect(1, 2)
+        await { model.uiState.value.selectedExerciseId == timed.id }
+        assertEquals(MainTab.HOME, model.uiState.value.currentTab)
+        assertEquals(SubScreen.NONE, model.uiState.value.currentSubScreen)
+        assertEquals(SubScreen.ACTIVE_BILATERAL, model.uiState.value.activeWorkoutSubScreen)
+        assertEquals(homeStack, model.uiState.value.backStack)
+        NativeWorkoutEditing.project(context)
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(SubScreen.NONE, model.uiState.value.currentSubScreen)
+        assertEquals(homeStack, model.uiState.value.backStack)
+        val browsing = model.uiState.value.exercises.first { it.id != timed.id && it.id != strength(model).id }
+        model.openExerciseDetail(browsing.id)
+        val detailStack = model.uiState.value.backStack
+        watchSelect(0, 3)
+        await { model.uiState.value.activeExerciseIndex == 0 }
+        assertEquals(browsing.id, model.uiState.value.selectedExerciseId)
+        assertEquals(SubScreen.EXERCISE_DETAIL, model.uiState.value.currentSubScreen)
+        assertEquals(detailStack, model.uiState.value.backStack)
+        NativeWorkoutEditing.project(context)
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(browsing.id, model.uiState.value.selectedExerciseId)
+        model.navigateToSubScreen(SubScreen.EXERCISE_LIBRARY)
+        val libraryStack = model.uiState.value.backStack
+        watchSelect(1, 4)
+        await { model.uiState.value.activeExerciseIndex == 1 }
+        assertEquals(browsing.id, model.uiState.value.selectedExerciseId)
+        assertEquals(SubScreen.EXERCISE_LIBRARY, model.uiState.value.currentSubScreen)
+        assertEquals(libraryStack, model.uiState.value.backStack)
+        model.returnToActiveWorkout()
+        assertEquals(timed.id, model.uiState.value.selectedExerciseId)
+        assertEquals(SubScreen.ACTIVE_BILATERAL, model.uiState.value.currentSubScreen)
+    }
+
+    @Test fun reorderedSnapshotMapsSelectionByIdAndUnknownIdWarnsOnlyOnceWithoutGuessing() {
+        val model = model()
+        val timed = timed(model)
+        model.startWorkoutWithExercises(listOf(strength(model), timed))
+        awaitStarted(model)
+        val frame = ActiveWorkoutStore.current(context)!!
+        val rows = frame.getJSONArray("exercises")
+        val reordered = JSONObject(frame.toString()).put("currentExercise", 0)
+            .put("exercises", org.json.JSONArray().put(rows.getJSONObject(1)).put(rows.getJSONObject(0)))
+        ActiveWorkoutStore.saveOwned(context, reordered)
+        await { model.uiState.value.selectedExerciseId == timed.id }
+        assertEquals(1, model.uiState.value.activeExerciseIndex)
+        val before = model.uiState.value
+        val unknown = JSONObject(reordered.toString()).apply {
+            getJSONArray("exercises").getJSONObject(0).put("id", "unknown-watch-exercise")
+        }
+        ActiveWorkoutStore.saveOwned(context, unknown)
+        await { model.uiState.value.statusBannerMessage?.contains("nem található") == true }
+        assertEquals(before.activeExerciseIndex, model.uiState.value.activeExerciseIndex)
+        assertEquals(before.selectedExerciseId, model.uiState.value.selectedExerciseId)
+        assertEquals(before.activeSets, model.uiState.value.activeSets)
+        assertEquals(before.currentSubScreen, model.uiState.value.currentSubScreen)
+        assertEquals(before.backStack, model.uiState.value.backStack)
+        model.clearBannerMessage()
+        ActiveWorkoutStore.saveOwned(context, unknown)
+        shadowOf(Looper.getMainLooper()).idle()
+        assertNull(model.uiState.value.statusBannerMessage)
     }
 
     @Test fun watchSetEditSurvivesTheNextCanonicalPhoneProjection() {
