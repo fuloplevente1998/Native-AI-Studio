@@ -91,6 +91,11 @@ A fázisjelzés nem új jóváhagyási kör.
 - PR CI: teljes JVM regresszió, debug APK-csomagolás nélkül. Átadandó telepítő:
   telefon **release**, Wear **R8 + resource shrinking release**, azonos signed runból.
   Ne futtasd újra a teljes kaput minden apró lépésre; a meglévő cache maradjon meg.
+- Több elkészült javításnál a felhasználó közös main-integrációt és egyetlen
+  közös CI-kört kér (2026-11-05). Az engedélyezett csomagban ne indíts minden
+  ágra külön teljes futást; az automatikus PR-kör a javító commitban `[skip ci]`
+  jelöléssel kihagyható, utána a teljes main-kapu kötelező. A workflow ellenőrzéseit
+  ne gyengítsd. Félkész kód nem része a kész csomagnak; külön APK-kör nem kell.
 - Pontos source SHA és nyers XML alapján jelents: tesztszám, failure/error/skipped.
   A letöltött artifact digestjét ellenőrizd. APK-nál package/verzió/hash/tartós signer
   és phone/Wear páros ellenőrzés kell. Teljes aláírt URL-t vagy hosszú logot ne írj ki.
