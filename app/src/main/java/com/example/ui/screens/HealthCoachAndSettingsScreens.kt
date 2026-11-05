@@ -5,6 +5,7 @@ import com.repforge.app.ui.theme.trainPilotSoftGlow
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
+import com.repforge.app.ui.theme.TrainPilotFrames
 
 import com.example.model.workoutsOn
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
@@ -2365,27 +2366,53 @@ fun SettingsMainScreen(
             )
         }
 
-        // The expandable theme card already supplies its own title.
-
+        // One shared frame owns the compact header and the expanded category panels.
         item {
             val toggleThemesHint = if (expandedMainThemesSection) {
                 tr(uiState.language, "Koppints a 4 téma stílus becsukásához", "Tap to collapse 4 theme categories", "Tippen zum Einklappen der 4 Themenkategorien", "Atinge pentru a restrânge cele 4 categorii de teme")
             } else {
                 tr(uiState.language, "Koppints a 4 téma stílus kinyitásához", "Tap to expand 4 theme categories", "Tippen zum Ausklappen der 4 Themenkategorien", "Atinge pentru a extinde cele 4 categorii de teme")
             }
-            SettingsActionRowCard(
-                title = strings.themes32Title,
-                subtitle = "${currentPaletteObj.localizedName(uiState.language)} • $toggleThemesHint",
-                badgeText = "#${uiState.selectedPaletteId}",
-                onClick = { expandedMainThemesSection = !expandedMainThemesSection },
-                testTag = "settings_open_palettes_row",
-                isExpanded = expandedMainThemesSection
-            )
-        }
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = palette.surfaceCard,
+                modifier = Modifier.fillMaxWidth()
+                    .trainPilotBorder(TrainPilotFrames.page(palette.sectionBorder, palette.primary), RoundedCornerShape(18.dp))
+                    .testTag("settings_themes_group")
+            ) {
+                Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color.Transparent,
+                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).clickable {
+                            expandedMainThemesSection = !expandedMainThemesSection
+                        }.testTag("settings_open_palettes_row")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(strings.themes32Title, style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                                Text("${currentPaletteObj.localizedName(uiState.language)} • $toggleThemesHint",
+                                    style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Surface(shape = RoundedCornerShape(8.dp), color = palette.primary.copy(alpha = 0.18f)) {
+                                Text(text = "#${uiState.selectedPaletteId}", style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold, color = palette.primary,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(imageVector = if (expandedMainThemesSection) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null, tint = palette.textSecondary)
+                        }
+                    }
 
-        // 4 Expandable Theme Categories inside Settings (Matt témák | Kontrasztos témák | Fényes / Glow témák | Világos témák)
-        if (expandedMainThemesSection) {
-            item {
+                    // 4 expandable theme categories inside the shared Settings/Themes frame.
+                    if (expandedMainThemesSection) {
                 val allPalettes = TrainPilotPalettes.allPalettes
                 val categories = listOf(
                     Triple(tr(uiState.language, "Matt témák (Sötét / Prémium matt)", "Matte Themes (Dark / Premium Matte)", "Matte Themen (Dunkel / Premium Matt)", "Teme mate (Întunecat / Mat premium)"), allPalettes.filter { it.id in 1..8 }, expandedMatteThemes) to { expandedMatteThemes = !expandedMatteThemes },
@@ -2394,17 +2421,15 @@ fun SettingsMainScreen(
                     Triple(tr(uiState.language, "Világos témák (Nappali / Light)", "Light Themes (Daylight / Light)", "Helle Themen (Tag / Hell)", "Teme luminoase (Zi / Light)"), allPalettes.filter { it.id in 25..32 }, expandedLightThemes) to { expandedLightThemes = !expandedLightThemes }
                 )
 
-            Surface(shape = RoundedCornerShape(18.dp), color = palette.surfaceCard,
-                modifier = Modifier.fillMaxWidth().trainPilotBorder(1.5.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                    .testTag("settings_themes_group")) {
-            Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 categories.forEachIndexed { categoryIndex, entry ->
                     val (catInfo, onToggleCat) = entry
                     val (catTitle, catPalettes, isExpanded) = catInfo
                     Surface(
                         shape = RoundedCornerShape(18.dp),
                         color = palette.surfaceElevated,
-                        modifier = Modifier.fillMaxWidth().testTag("settings_theme_category_$categoryIndex")
+                        modifier = Modifier.fillMaxWidth()
+                            .trainPilotBorder(TrainPilotFrames.panelWidth, palette.cardBorder, RoundedCornerShape(18.dp))
+                            .testTag("settings_theme_category_$categoryIndex")
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Row(
@@ -2516,9 +2541,9 @@ fun SettingsMainScreen(
                         }
                     }
                 }
+                    }
+                }
             }
-            }
-        }
         }
 
         item {
