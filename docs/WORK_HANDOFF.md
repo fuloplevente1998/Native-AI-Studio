@@ -3,6 +3,26 @@
 Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
+## Legújabb átadott APK-pár – 2753 / 93733ec
+
+Az AI Studio mainre pusholt singleton-/teszt-életciklus javítása bekerült a valódi
+aláírt buildbe. Forrás **93733ec43ca723cb9fd33d488afdac562800bbcc**.
+Signed run **42100315171 SUCCESS**: 550 = 371 telefon +179 Wear,
+0 failure/error/skipped, shared NO-SOURCE. Mindkét letöltött ZIP API-digestje,
+nyers XML/count/source, APK-hash, bináris manifest és APK v2 tanúsítvány-fingerprint
+függetlenül visszaellenőrizve; a job apksigner/pinned-signer kapuja is sikeres.
+Package com.TrainPilot.com; változatlan2753/0.1.0-beta; régi tartós aláíró.
+Telefon release és Wear R8/resource-shrunk release ugyanabból a jobból.
+
+- [Telefon release APK](https://drive.google.com/file/d/1J-hKuoVRT7jympxbuZFgVWIBjUedr8eQ/view?usp=drivesdk): 20 515 832 bájt.
+- [Wear optimalizált release APK](https://drive.google.com/file/d/10VuBwoIEyGOR-bazIZ3ZWakqb04-9wmZ/view?usp=drivesdk): 4 636 863 bájt.
+- Mindkettő a TrainPilot Native mappában, név/MIME/size/parent metaadat-visszaolvasással
+  ellenőrizve. Régi fájlok megőrizve. [Gépi bizonyíték](RELEASE_2753_93733EC_VERIFIED_ARTIFACTS.json).
+- A korábbi81f2999 signed run42061730570 három UI-idling teszthibával bukott;
+  abból nem adtunk át telepítőt. A93733ec új valódi signed kapuja teljesen zöld.
+- Készülékes Samsung/HC/Wear/kalória/vizuális elfogadás továbbra külön ellenőrzés;
+  a jegyek pusztán CI-re nem zárhatók. Nem fut további agent vagy build.
+
 ## Végleges új készülékes csomag – main, teljes CI igazolva
 
 - #149–#153 javításai: PR159 csomag, PR160 Robolectric-környezet pótlás,

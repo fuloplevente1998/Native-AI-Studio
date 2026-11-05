@@ -1,0 +1,122 @@
+{
+  "date": "2026-11-05",
+  "sourceSha": "93733ec43ca723cb9fd33d488afdac562800bbcc",
+  "versionCode": 2753,
+  "versionName": "0.1.0-beta",
+  "applicationId": "com.TrainPilot.com",
+  "versionUnchanged": true,
+  "signedRun": 42100315171,
+  "signedRunUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/42100315171",
+  "signedArtifactId": 13448468359,
+  "artifactZipSha256": "9c7506a99229db282da0acd55cd42d99f3730e0b7799e167726ad0f1bcf42677",
+  "testArtifactId": 13448494829,
+  "testArtifactZipSha256": "97cbc537c247933ffd38ab6f14b1993ea3c704d2731d53dc9ee506593e484bba",
+  "apks": {
+    "phone": {
+      "bytes": 20515832,
+      "sha256": "00e016c9ac40a6db19fb9e46120a59a29c25ca11faf1a4394eb95b47210bb5b3",
+      "variant": "release"
+    },
+    "wear": {
+      "bytes": 4636863,
+      "sha256": "95bf2acd3077b0be3020363e4031d500ce06e886d902c1ff5bb8a23c10c8b7d4",
+      "variant": "release",
+      "minifyEnabled": true,
+      "shrinkResources": true
+    }
+  },
+  "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+  "downloadedManifestAndV2CertificateVerified": true,
+  "ciApksignerVerificationPassed": true,
+  "mapsApiKeyConfigured": true,
+  "dataLayerPairIdentityVerified": true,
+  "wearCompanionCapabilityRetained": true,
+  "wearHardwareRequired": true,
+  "signedRawJUnit": {
+    "commit": "93733ec43ca723cb9fd33d488afdac562800bbcc",
+    "modules": {
+      "phone": {
+        "files": 69,
+        "tests": 371,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "wear": {
+        "files": 31,
+        "tests": 179,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "shared": {
+        "files": 0,
+        "tests": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": true
+      }
+    },
+    "total": {
+      "tests": 550,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "drive": {
+    "folderId": "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9",
+    "phone": {
+      "id": "1J-hKuoVRT7jympxbuZFgVWIBjUedr8eQ",
+      "title": "TrainPilot-2753-93733ec-phone-release.apk",
+      "mime_type": "application/vnd.android.package-archive",
+      "size": "20515832",
+      "url": "https://drive.google.com/file/d/1J-hKuoVRT7jympxbuZFgVWIBjUedr8eQ/view?usp=drivesdk",
+      "display_url": "https://drive.google.com/file/d/1J-hKuoVRT7jympxbuZFgVWIBjUedr8eQ/view?usp=drivesdk",
+      "file_or_folder": "file",
+      "created_time": null,
+      "modified_time": null,
+      "parent_ids": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "drive_id": null,
+      "current_user_can_share": null,
+      "has_augmented_permissions": null,
+      "shared": null,
+      "permissions": null,
+      "source_visibility_status": "access_not_verified"
+    },
+    "wear": {
+      "id": "10VuBwoIEyGOR-bazIZ3ZWakqb04-9wmZ",
+      "title": "TrainPilot-2753-93733ec-wear-release.apk",
+      "mime_type": "application/vnd.android.package-archive",
+      "size": "4636863",
+      "url": "https://drive.google.com/file/d/10VuBwoIEyGOR-bazIZ3ZWakqb04-9wmZ/view?usp=drivesdk",
+      "display_url": "https://drive.google.com/file/d/10VuBwoIEyGOR-bazIZ3ZWakqb04-9wmZ/view?usp=drivesdk",
+      "file_or_folder": "file",
+      "created_time": null,
+      "modified_time": null,
+      "parent_ids": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "drive_id": null,
+      "current_user_can_share": null,
+      "has_augmented_permissions": null,
+      "shared": null,
+      "permissions": null,
+      "source_visibility_status": "access_not_verified"
+    },
+    "metadataReadbackVerified": true,
+    "previousFilesPreserved": true
+  },
+  "previousFailedSignedRun": {
+    "id": 42061730570,
+    "source": "81f29992582fc2c5c8b4ad6ea62c99ac8ae9997e",
+    "reason": "3 Android UI AppNotIdle failures; no verified APK pair uploaded from that run."
+  },
+  "aiStudioFixCommit": "93733ec43ca723cb9fd33d488afdac562800bbcc",
+  "physicalAcceptancePending": true
+}
