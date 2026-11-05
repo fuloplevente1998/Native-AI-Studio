@@ -263,6 +263,36 @@ class StudioSessionMeasurementRegressionTest {
         } finally { service.destroy() }
     }
 
+    @Test fun explicitStartWaitsForForegroundArmingWithoutRequiringASecondTap() {
+        val model = model()
+        model.startQuickTimedWithExercise(timed(model)); awaitStarted(model)
+        val frame = ActiveWorkoutStore.current(context)!!
+        val measurement = nativeModel()
+        measurement.startSetStopwatch(target(frame), "left")
+        shadowOf(Looper.getMainLooper()).idle()
+        assertFalse(measurement.uiState.value.stopwatchRunning)
+        val service = Robolectric.buildService(IntervalTimerService::class.java).create()
+        try {
+            arm(service.get(), frame)
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(50))
+            assertTrue(measurement.uiState.value.stopwatchRunning)
+            assertFalse(target(frame).resolve(PhoneWorkoutExecution.store(context).snapshot()!!).set.optBoolean("done"))
+        } finally { service.destroy() }
+    }
+
+    @Test fun unavailableForegroundArmingReturnsAVisibleReasonAndNeverCreatesMeasuredTime() {
+        val model = model()
+        model.startQuickTimedWithExercise(timed(model)); awaitStarted(model)
+        val frame = ActiveWorkoutStore.current(context)!!
+        val measurement = nativeModel()
+        measurement.startSetStopwatch(target(frame), "left")
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(3))
+        assertFalse(measurement.uiState.value.stopwatchRunning)
+        assertTrue(measurement.uiState.value.statusMessage.orEmpty().contains("háttéridőzítő"))
+        assertFalse(PhoneWorkoutExecution.store(context).snapshot()!!.has(NativeSetStopwatch.FIELD))
+        assertFalse(target(frame).resolve(PhoneWorkoutExecution.store(context).snapshot()!!).set.optBoolean("done"))
+    }
+
     @Test fun duplicateAndLateDiscardCannotDeleteANewerSession() {
         val model = model()
         model.startQuickTimedWithExercise(timed(model)); awaitStarted(model)

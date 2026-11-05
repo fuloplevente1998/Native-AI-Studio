@@ -1525,14 +1525,17 @@ class TrainPilotViewModel : ViewModel() {
                                     isBilateral = exObj.optString("measurementType").contains("bilateral") || exObj.optString("repUnit").contains("oldal")
                                 )
                                 list.add(com.example.ui.components.withNativeStrengthUnits(catalogEx,
-                                    exObj.opt("loadType") as? String, exObj.opt("repUnit") as? String))
+                                    exObj.opt("loadType") as? String, exObj.opt("repUnit") as? String).copy(
+                                        measurementType = exObj.optString("measurementType"),
+                                        isTimed = com.repforge.app.NativeSetStopwatch.timed(exObj),
+                                        isBilateral = com.repforge.app.NativeSetStopwatch.bilateral(exObj)))
                                 val setsArr = exObj.optJSONArray("sets")
                                 if (setsArr != null && setsArr.length() > 0) {
                                     val sList = (0 until setsArr.length()).mapNotNull { sIdx ->
                                         val sObj = setsArr.optJSONObject(sIdx) ?: return@mapNotNull null
                                         val doneFlag = sObj.optBoolean("done", false)
-                                        val lSec = sObj.optInt("leftSec", 30)
-                                        val rSec = sObj.optInt("rightSec", 30)
+                                        val lSec = sObj.optInt("leftSeconds", sObj.optInt("leftSec", 0))
+                                        val rSec = sObj.optInt("rightSeconds", sObj.optInt("rightSec", 0))
                                         ExerciseSetItem(
                                             setNumber = sObj.optInt("setNumber", sObj.optInt("set", sIdx + 1)),
                                             weightKg = sObj.optDouble("weight", catalogEx.defaultWeightKg.toDouble()).toFloat(),

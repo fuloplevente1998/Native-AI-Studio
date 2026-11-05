@@ -494,6 +494,7 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
         if (editableSnapshot() == null) { showStatus("A telefon jelenleg nem vezérli ezt az edzést."); return }
         stopwatchStartJob = viewModelScope.launch {
             try {
+                val data = com.repforge.app.NativeDataReplacement.continuationForCurrentData(context)
                 val frame = editableSnapshot() ?: error("A telefon jelenleg nem vezérli ezt az edzést.")
                 target.resolve(frame)
                 check(!frame.optBoolean("workoutPaused")) { "Az edzés szünetel. Folytasd az aktív edzést." }
@@ -508,6 +509,7 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
                     true
                 } == true
                 check(ready) { "A háttéridőzítő még nem áll készen. Próbáld újra az indítást." }
+                data.requireCurrent(context)
                 val saved = NativeWorkoutEditing.startStopwatch(context, target, side)
                 parseSnapshotToUi(saved)
                 refreshStopwatchUi()
@@ -515,6 +517,8 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
             catch (error: Exception) { showStatus(error.message ?: "A stopper nem indítható.") }
         }
     }
+
+    fun cancelPendingStopwatchStart() { stopwatchStartJob?.cancel() }
 
     /** Studio separates Pause (no completion) from explicit Stop and record. */
     fun pauseSetStopwatch(target: NativeWorkoutTarget) {
