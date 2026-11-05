@@ -1,5 +1,23 @@
 # TrainPilot Native – aktuális állapot, 2026-11-05
 
+## Legutóbb átadott APK-pár: main 79c2736 – mind a 13 javítással
+
+**[Telefonos release APK](https://drive.google.com/file/d/1ojzyCK6nNf6c4lRmwUKIy-TeNDFwYedk/view?usp=drivesdk)** – 20 483 064 bájt.
+**[Optimalizált Wear release APK](https://drive.google.com/file/d/1kVlR_A50qfjLriOBUBSl8Cwbn8CrqKD7/view?usp=drivesdk)** – 4 636 863 bájt.
+Mindkettő a meglévő TrainPilot Native Drive-mappában, a régi fájlok megőrizve;
+név, MIME, pontos méret és szülőmappa visszaolvasva.
+
+Signed forrás `79c2736dac267d4cb0c7dc630a088c20159af7f2`, run41981126439 SUCCESS.
+Nyers XML: **523 = 347 telefon + 176 Wear**, 0 failure/error/skipped, shared NO-SOURCE.
+Mindkét valódi APK hash-e, v2 signer-ujjlenyomata, CI package/verzió/Maps/páros/
+capability ellenőrzése és az artifact ZIP digest ellenőrizve. Tartós signer változatlan.
+[Kiadási bizonyíték](RELEASE_2753_79C2736_VERIFIED_ARTIFACTS.json).
+
+A verziókód a repószabály szerint változatlanul **2753**, versionName `0.1.0-beta`;
+az új fájlokat a **79c2736** forrásazonosító különbözteti meg a régi `99f2adf` APK-któl.
+Ez a pár már tartalmazza az összes alábbi main-javítást. A tényleges készülékes
+elfogadás továbbra is külön feladat: [telefonos tesztlista](TEST_MAIN_FOLLOWUP_2026-11-05.md).
+
 ## Teljes javítócsomag mainen – 13 jegy, 523 ellenőrzött teszt
 
 **Mind a 13 visszajelzés javítása mainen:** #70, #84, #117, #118, #120, #122,
@@ -14,8 +32,8 @@ Nyers XML, verification commit és artifact SHA256 ellenőrizve; shared NO-SOURC
 A felhasználó kérésére a kész ágak csoportosan mainre kerültek, majd közös CI futott;
 a javító ágak külön teljes tesztköreit `[skip ci]` kerülte el, workflow-gyengítés nélkül.
 Az új gyökér AGENTS.md rögzíti a munkarendet és a GPT-6.1 Sol thinking-szinteket.
-**Új APK még nem készült**, verzió és signer változatlan. Az eddig átadott 2753-as
-telepítők régebbi forrást tartalmaznak; fizikai Google/Samsung/HC/Wear/vizuális elfogadás
+Ebben a forrásintegrációs körben még nem készült APK; azóta a fenti 79c2736 kiadás
+elkészült, verzió és signer változatlan. Fizikai Google/Samsung/HC/Wear/vizuális elfogadás
 továbbra is külön feladat, a jegyeket nem zártuk le pusztán a CI alapján.
 
 ## Első közös main-integráció – #133–#141 (történeti)

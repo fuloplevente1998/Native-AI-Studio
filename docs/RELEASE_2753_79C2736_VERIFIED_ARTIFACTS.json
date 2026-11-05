@@ -1,0 +1,77 @@
+{
+  "date": "2026-11-05",
+  "sourceSha": "79c2736dac267d4cb0c7dc630a088c20159af7f2",
+  "versionCode": 2753,
+  "versionName": "0.1.0-beta",
+  "applicationId": "com.TrainPilot.com",
+  "versionUnchanged": true,
+  "signedRun": 41981126439,
+  "signedRunUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41981126439",
+  "signedArtifactId": 13393943632,
+  "signedArtifactUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/41981126439/artifacts/13393943632",
+  "artifactZipSha256": "871664e8be7ea0a88211f348044525899945906d57b457813ceddd00e1952c3f",
+  "testArtifactId": 13394058112,
+  "testArtifactZipSha256": "f05e3a55e6dd6f9b1768f7cd1fe413097f20677c5cf42c5e1b21f58409cdc3e2",
+  "apks": {
+    "phone": {
+      "bytes": 20483064,
+      "sha256": "f0b274fd4e54f10abf9a2b496dac68b546ee1b347478649f6a8f124117a08a61"
+    },
+    "wear": {
+      "bytes": 4636863,
+      "sha256": "244c06166a473afa00e0d72fca069e30f5e1800cc9fe3ecd89c6b94d7ab625c7",
+      "variant": "release",
+      "minifyEnabled": true,
+      "shrinkResources": true
+    }
+  },
+  "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+  "apkV2SignerFingerprintVerified": true,
+  "ciApksignerVerificationPassed": true,
+  "mapsApiKeyConfigured": true,
+  "dataLayerPairIdentityVerified": true,
+  "wearCompanionCapabilityRetained": true,
+  "wearHardwareRequired": true,
+  "signedRawJUnit": {
+    "phone": 347,
+    "wear": 176,
+    "total": 523,
+    "sharedNoSource": true,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "drive": {
+    "folderId": "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9",
+    "phone": {
+      "id": "1ojzyCK6nNf6c4lRmwUKIy-TeNDFwYedk",
+      "url": "https://drive.google.com/file/d/1ojzyCK6nNf6c4lRmwUKIy-TeNDFwYedk/view?usp=drivesdk",
+      "name": "TrainPilot-2753-79c2736-phone-release.apk",
+      "bytes": 20483064
+    },
+    "wear": {
+      "id": "1kVlR_A50qfjLriOBUBSl8Cwbn8CrqKD7",
+      "url": "https://drive.google.com/file/d/1kVlR_A50qfjLriOBUBSl8Cwbn8CrqKD7/view?usp=drivesdk",
+      "name": "TrainPilot-2753-79c2736-wear-release.apk",
+      "bytes": 4636863
+    },
+    "metadataReadbackVerified": true,
+    "previousFilesPreserved": true
+  },
+  "deviceAcceptance": "pending",
+  "containsIssues": [
+    70,
+    84,
+    117,
+    118,
+    120,
+    122,
+    123,
+    125,
+    126,
+    128,
+    129,
+    130,
+    131
+  ]
+}

@@ -1,7 +1,7 @@
 # Közös telefonos elfogadás – következő javított APK
 
-Ez a lista a következő, az új mainből fordított telefonos APK-hoz tartozik.
-A korábban átadott 2753 nem tartalmazza ezeket a javításokat. CI nem helyettesíti
+Ez a lista a 79c2736 mainből fordított, új 2753-as telefonos APK-hoz tartozik.
+A korábbi 99f2adf forrású 2753 nem tartalmazza ezeket a javításokat. CI nem helyettesíti
 a valós Google/Samsung/Health Connect/Wear és vizuális készülékes próbát.
 
 1. Google-naptár: valós fiókkal szinkron, majd ismétlés. Nincs dupla esemény vagy

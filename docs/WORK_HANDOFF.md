@@ -62,13 +62,18 @@ két új agenttel befejezve. **A Coach/egészségnapló már nem félkész WIP.*
 
 ## Kiadás és következő ellenőrzés
 
-**Új APK nem készült, verzió és signer nem változott.** Legutóbb átadott telepítő:
-2753, signed forrás `99f2adf`; ez nem tartalmazza az új main-javításokat.
-[Kiadási bizonyíték](RELEASE_2753_PHOTOS_VERIFIED_ARTIFACTS.json).
+**A javított APK-pár átadva a Drive-on:** signed forrás
+`79c2736dac267d4cb0c7dc630a088c20159af7f2`, run41981126439 SUCCESS.
+Telefon release 20 483 064 bájt, R8/shrunk Wear release 4 636 863 bájt.
+Nyers 523 teszt, 0 failure/error/skipped, actual APK hash/v2 signer, source és
+CI package/verzió/Maps/páros/capability ellenőrizve, Drive-metaadat visszaolvasva.
+[Kiadási bizonyíték és letöltések](RELEASE_2753_79C2736_VERIFIED_ARTIFACTS.json).
+Verziókód **2753**, versionName `0.1.0-beta` és signer változatlan; az új fájlnévben
+`79c2736` szerepel. A korábbi `99f2adf` forrású 2753 másik, régebbi APK-pár.
 
 A készülékes elfogadás továbbra is külön feladat, a jegyeket nem zártuk le pusztán
 CI alapján. [Közös telefonos ellenőrzőlista](TEST_MAIN_FOLLOWUP_2026-11-05.md).
-APK-kérés esetén a következő lépés a signed build és a készülékes visszateszt;
-a forrás és a teljes közös CI már ellenőrzött. A bizonyítékot rögzítő későbbi
+A következő lépés a kiadott APK-k készülékes visszatesztje;
+a forrás, a signed build és a teljes közös CI már ellenőrzött. A bizonyítékot rögzítő későbbi
 dokumentációs commit nem változtatja az alkalmazás/teszt/workflow forrását.
 APK-kéréskor csak a meglévő signed workflow: telefon release + R8/shrunk Wear release.
