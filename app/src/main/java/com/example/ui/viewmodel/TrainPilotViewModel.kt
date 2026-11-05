@@ -3267,17 +3267,15 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun adjustRestTimer(deltaSec: Int) {
-        _uiState.update {
-            it.copy(restTimerRemainingSec = (it.restTimerRemainingSec + deltaSec).coerceIn(0, 600))
-        }
+        _uiState.update { com.repforge.app.StudioRestTimer.adjust(nativeContext, it, deltaSec) }
     }
 
     fun toggleRestTimerRunning() {
-        _uiState.update { it.copy(restTimerRunning = !it.restTimerRunning) }
+        _uiState.update { com.repforge.app.StudioRestTimer.toggle(nativeContext, it) }
     }
 
     fun skipRestTimer() {
-        _uiState.update { it.copy(restTimerRemainingSec = 0, restTimerRunning = false) }
+        _uiState.update { com.repforge.app.StudioRestTimer.skip(nativeContext, it) }
     }
 
     fun updateIntervalSettings(workSec: Int, restSec: Int, rounds: Int, sound: Boolean, vibration: Boolean, autoStep: Boolean) {
