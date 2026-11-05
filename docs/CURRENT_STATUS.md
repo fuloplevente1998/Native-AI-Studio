@@ -1,4 +1,16 @@
-# TrainPilot Native – aktuális állapot, 2026-11-04
+# TrainPilot Native – aktuális állapot, 2026-11-05
+
+## Új munkafázis – 2026-11-05
+
+A felhasználó kérésére a javítási munka elindult. Az alábbi 2026-11-04-i
+„csak rögzítés” megjegyzések az akkori állapotot jelölik. A három másik chatből
+érkező #133/#134/#135 draft PR-t átnéztük; mindhárom aktuális headjén 460 hibamentes
+nyers teszteredmény ellenőrizve. Még nem main és nem új APK.
+
+Most külön ágakon a #128/#129/#130 session/stopper hibacsoport és a #117 Google
+naptárszinkron vizsgálata/javítása indul. Az új gyökér [AGENTS.md](../AGENTS.md)
+rögzíti a GPT-6.1 Sol és low/medium/high/xhigh munkaszabályt. A pontos ágtulajdonos,
+ellenőrzött PR-headek és következő lépés a [rövid átadóban](WORK_HANDOFF.md).
 
 ## Legújabb készülékes visszajelzés – 2026-11-04 / 2753
 
