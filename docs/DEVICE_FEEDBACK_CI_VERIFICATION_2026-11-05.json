@@ -46,12 +46,12 @@
   "finalSelectionFix": {
     "pr": 161,
     "codeCommit": "a42dac8c702662c1d2ea4c10177e95b06efc7d3c",
-    "status": "pending full CI",
+    "status": "verified and merged",
     "additionalPhoneRegressionTests": 3
   },
   "environment": {
     "status": "unavailable after final code push",
-    "fallback": "Existing automatic pull-request full CI; no workflow or check changes. Compare tested tree with eventual main tree."
+    "fallback": "Completed existing automatic PR full CI and verified exact Git tree identity after main merge. No workflow changes."
   },
   "apk": {
     "newApkBuilt": false
@@ -61,5 +61,59 @@
     "healthConnect": false,
     "phoneWearPair": false,
     "calendarVisual": false
+  },
+  "finalVerification": {
+    "runId": 42059924773,
+    "runUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/42059924773",
+    "event": "pull_request",
+    "conclusion": "success",
+    "testedCommit": "cde018ad8f3d860b6fb9210875885295c73fb791",
+    "testedTree": "f436936a3673ef485064e57833428d208e634015",
+    "mergedMainCommit": "cc8e1c4d3384d1f562dff0d7dd8817840ef69049",
+    "mergedMainTree": "f436936a3673ef485064e57833428d208e634015",
+    "testedAndMergedTreesIdentical": true,
+    "report": {
+      "commit": "cde018ad8f3d860b6fb9210875885295c73fb791",
+      "modules": {
+        "phone": {
+          "files": 69,
+          "tests": 371,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "noSource": false
+        },
+        "wear": {
+          "files": 31,
+          "tests": 179,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "noSource": false
+        },
+        "shared": {
+          "files": 0,
+          "tests": 0,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "noSource": true
+        }
+      },
+      "total": {
+        "tests": 550,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "reportSource": "Existing workflow's raw JUnit XML verifier JSON, read and validated from the completed job logs.",
+    "artifact": {
+      "id": 13431631731,
+      "apiReportedSha256": "dfba3ba11372dbb88e2eb514ed3a9def10ca21b4d2d79412bbf92d8d694075fb",
+      "archiveDownloaded": false,
+      "independentArchiveHashVerified": false,
+      "reason": "Execution environment disconnected. Earlier baseline archive was independently downloaded and verified; final run was checked through workflow verification output and Git tree identity."
+    }
   }
 }
