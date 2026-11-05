@@ -50,6 +50,12 @@ object WearSyncRepository {
         if (!current.optBoolean("workoutPaused")) return
         val command = com.repforge.shared.WorkoutContinuation.request(current, UUID.randomUUID().toString(), System.currentTimeMillis())
         Wearable.getNodeClient(context).connectedNodes.addOnSuccessListener { peers ->
+            val latest = ActiveWorkoutStore.current(context)
+            if (NativeDataReplacement.blocked(context) || latest == null ||
+                !com.repforge.shared.WorkoutContinuation.accepts(latest, command, System.currentTimeMillis())) {
+                onFailure("Az órás edzés állapota megváltozott. Nyisd meg újra a folytatást.")
+                return@addOnSuccessListener
+            }
             if (peers.size != 1) {
                 onFailure("Az órás folytatáshoz csatlakoztasd az órát, majd próbáld újra.")
                 return@addOnSuccessListener
