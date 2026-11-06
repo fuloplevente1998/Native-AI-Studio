@@ -3,6 +3,30 @@
 Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
+## Átadott friss APK-pár –1.0-beta2755 /3dde06f
+
+AI Studio bf61e1a hét feladatának kódja mainen, verzióPR201 és javítóPR202/203
+integrálva. Végső alkalmazásforrás és tag(v1.0-beta-2755):
+**3dde06f8c471c91cea34ee3d6b0c49ffee660b86**.
+Signed run **42177999670 SUCCESS:585 =404 telefon +181 Wear**,0 failure/error/skipped,
+shared NO-SOURCE. A hibázó régi dátum- és restore/stale-selection teszt is zöld,
+így az új malformed-time és detached katalógusolvasási regresszió is.
+A letöltött artifactZIP digest, nyers XML/commit/count, tényleges bináris APK-
+manifest/package/verzió, hash és tartós APK v2 signer ellenőrizve. Mindkettő
+**1.0-beta /2755 /com.TrainPilot.com**, signer változatlan. Phone release20,564,984bájt,
+R8/shrunk Wear release4,636,863bájt. [Bizonyíték](RELEASE_2755_3DDE06F_VERIFIED_ARTIFACTS.json).
+
+- [Telefon APK](https://drive.google.com/file/d/1Mdj5luyE-dWlsvsvS8rvVtYGMPoKM7ge/view?usp=drivesdk)
+- [Wear optimalizált APK](https://drive.google.com/file/d/1G9oBxuxaT0taUfElX9sJKGS5UFT9cQ8G/view?usp=drivesdk)
+- Mindkettő a TrainPilot Native mappában, régi APK-k megőrizve. Név/MIME/bájt/parent
+  visszaolvasva. [Béta Release](https://github.com/fuloplevente1998/Native-AI-Studio/releases/tag/v1.0-beta-2755)
+  publikálva Drive-linkekkel, közvetlen GitHubasset nélkül, korábbi kiadás megőrizve.
+- 42174687802 és42176968429 hibás körökből nem történt APK-átadás. Teszt nem lett
+  kihagyva vagy gyengítve, guard/mutex változatlan, a kiváltó kódok javultak.
+- Fizikai Google/GPS/Samsung/Wear és vizuális elfogadás továbbra hátravan;
+  #117/#195–#200 nyitva maradnak. Root egyedül, új agent nélkül. A doc-commit
+  nem változtat az APK-k sourceSHA-ján.
+
 ## 2755 második kapu: katalógus no-op írási lease javítása
 
 42176968429 /3846f97: a dátumtesztek javultak, fordítás sikeres;584 tesztből583 siker,
