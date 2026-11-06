@@ -4,6 +4,21 @@ Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
 
+## #190 – Fix felső navigáció és 1.0-beta előkészítés, csak kód
+
+PR184 ugyanazon ágán: az öt fül fix egyenlő szélességű, nincs horizontalScroll
+vagy kiválasztáskor automatikus oldalra görgetés. Hosszú fordítás legfeljebb két
+sorba törhet, felirat nem lóghat át a szomszéd fülre. Felső quick gombok vizuálisan
+36dp-re csökkentek, érintési felület48dp maradt. Logó32dp, név18sp; kisebb külső
+és sorok közti térközökkel több hely marad a tartalomnak. Navigáció/callback,
+kijelölés és paletták változatlanok. Új 320dp minden nyelvű bounds/swipe/callback
+regresszió forrása, még nem futott. Diff-check tiszta, vizuális próba hátravan.
+
+Felhasználó kifejezetten kérte a verzió emelését: telefon és Wear egyaránt
+**versionName1.0-beta / versionCode2754**. Package és signer változatlan.
+Ez forrás-előkészítés, CI/fordítás/APK/merge továbbra sem indult; a korábbi
+átadott2753 APK-párt ez nem változtatja meg.
+
 ## #189 – Egészség oldal alja, csak kód
 
 PR184 ugyanazon ágán: a footer automata/háttérfrissítés magyarázatai, nyers

@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -89,6 +91,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.localization.LocalizedStrings
@@ -99,7 +102,6 @@ import com.example.ui.theme.PaletteCategory
 import com.example.ui.theme.TrainPilotPalette
 import com.example.ui.theme.TrainPilotPalettes
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.sizeIn
@@ -115,8 +117,6 @@ import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -177,8 +177,8 @@ fun TrainPilotGlobalTopHeaderAndNav(
             modifier = Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(top = 6.dp, bottom = 6.dp, start = 12.dp, end = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(top = 2.dp, bottom = 4.dp, start = 12.dp, end = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             // 1. Vékony sáv: App logó + TrainPilot név + Nyelvválasztó + Témaválasztó + Beállítások ikon
             Row(
@@ -190,6 +190,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier
+                        .weight(1f)
                         .heightIn(min = 48.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .clickable { onSelectTab(MainTab.HOME) }
@@ -197,12 +198,13 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         .testTag("top_bar_brand_home")
                 ) {
                     TrainPilotMountainLogo(
-                        modifier = Modifier.size(28.dp, 28.dp)
+                        modifier = Modifier.size(32.dp)
                     )
                     Text(
                         text = "TrainPilot",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
                             letterSpacing = (-0.2).sp
                         ),
                         color = palette.primary,
@@ -213,7 +215,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                 // Right icons: Naptár (Calendar), Coach, Settings Gear
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     val isCalendarActive = (currentTab == MainTab.CALENDAR || currentSubScreen == SubScreen.CALENDAR_PLANNER) && currentSubScreen != SubScreen.SETTINGS_MAIN
                     val isCoachActive = (currentTab == MainTab.COACH || currentSubScreen == SubScreen.COACH_DETAIL) && currentSubScreen != SubScreen.SETTINGS_MAIN
@@ -224,11 +226,12 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         shape = RoundedCornerShape(10.dp),
                         color = if (isCalendarActive) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
-                            .size(44.dp)
-                            .trainPilotBorder(1.dp, if (isCalendarActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
-                            .clip(RoundedCornerShape(10.dp))
+                            .size(48.dp)
                             .clickable { onSelectTab(MainTab.CALENDAR) }
                             .testTag("top_bar_calendar_button")
+                            .padding(6.dp)
+                            .trainPilotBorder(1.dp, if (isCalendarActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
+                            .clip(RoundedCornerShape(10.dp))
                     ) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
@@ -248,11 +251,12 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         shape = RoundedCornerShape(10.dp),
                         color = if (isCoachActive) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
-                            .size(44.dp)
-                            .trainPilotBorder(1.dp, if (isCoachActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
-                            .clip(RoundedCornerShape(10.dp))
+                            .size(48.dp)
                             .clickable { onSelectTab(MainTab.COACH) }
                             .testTag("top_bar_coach_button")
+                            .padding(6.dp)
+                            .trainPilotBorder(1.dp, if (isCoachActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
+                            .clip(RoundedCornerShape(10.dp))
                     ) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
@@ -272,11 +276,12 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         shape = RoundedCornerShape(10.dp),
                         color = if (isSettingsActive) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
-                            .size(44.dp)
-                            .trainPilotBorder(1.dp, if (isSettingsActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
-                            .clip(RoundedCornerShape(10.dp))
+                            .size(48.dp)
                             .clickable { onOpenSettings() }
                             .testTag("top_bar_settings_button")
+                            .padding(6.dp)
+                            .trainPilotBorder(1.dp, if (isSettingsActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
+                            .clip(RoundedCornerShape(10.dp))
                     ) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
@@ -294,84 +299,61 @@ fun TrainPilotGlobalTopHeaderAndNav(
             }
 
             // 2. Fő navigációs sor: Kezdőlap | Programok | Edzés | Fejlődés | Egészség (5 optimális fül)
-            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                val navScrollState = rememberScrollState()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min)
+                    .testTag("top_nav_row")
+                    .selectableGroup(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                val itemModifier = Modifier.weight(1f).fillMaxHeight()
 
-                LaunchedEffect(currentTab, navScrollState.maxValue) {
-                    if (navScrollState.maxValue > 0) {
-                        val tabIndex = when (currentTab) {
-                            MainTab.HOME -> 0
-                            MainTab.PROGRAMS -> 1
-                            MainTab.WORKOUT -> 2
-                            MainTab.PROGRESS, MainTab.LOG -> 3
-                            MainTab.HEALTH -> 4
-                            else -> 0
-                        }
-                        val targetScroll = (navScrollState.maxValue * tabIndex) / 4
-                        navScrollState.animateScrollTo(targetScroll)
-                    }
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(navScrollState)
-                        .selectableGroup(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    val itemModifier = Modifier.widthIn(min = 68.dp)
-
-                    TopNavPillItem(
-                        label = strings.navHome,
-                        icon = Icons.Default.Home,
-                        selected = currentTab == MainTab.HOME && currentSubScreen == SubScreen.NONE,
-                        onClick = { onSelectTab(MainTab.HOME) },
-                        modifier = itemModifier,
-                        allowUnclippedText = true,
-                        testTag = "top_nav_home"
-                    )
-                    TopNavPillItem(
-                        label = strings.navPrograms,
-                        icon = Icons.AutoMirrored.Filled.FormatListBulleted,
-                        selected = (currentTab == MainTab.PROGRAMS || currentSubScreen == SubScreen.PROGRAMS_LIST) && currentSubScreen != SubScreen.SETTINGS_MAIN,
-                        onClick = { onSelectTab(MainTab.PROGRAMS) },
-                        modifier = itemModifier,
-                        allowUnclippedText = true,
-                        testTag = "top_nav_programs"
-                    )
-                    TopNavPillItem(
-                        label = strings.navWorkout,
-                        icon = Icons.AutoMirrored.Filled.DirectionsRun,
-                        selected = currentTab == MainTab.WORKOUT && currentSubScreen == SubScreen.NONE,
-                        onClick = { onSelectTab(MainTab.WORKOUT) },
-                        modifier = itemModifier,
-                        allowUnclippedText = true,
-                        testTag = "top_nav_workout"
-                    )
-                    TopNavPillItem(
-                        label = strings.navProgress,
-                        icon = Icons.AutoMirrored.Filled.TrendingUp,
-                        selected = (currentTab == MainTab.PROGRESS || currentTab == MainTab.LOG) &&
-                            currentSubScreen in setOf(SubScreen.NONE, SubScreen.LOG_WORKOUT_DETAIL, SubScreen.LOG_ROUTE_MAP),
-                        onClick = { onSelectTab(MainTab.PROGRESS) },
-                        modifier = itemModifier,
-                        allowUnclippedText = true,
-                        testTag = "top_nav_progress"
-                    )
-                    TopNavPillItem(
-                        label = strings.navHealth,
-                        icon = if (currentTab == MainTab.HEALTH && currentSubScreen == SubScreen.NONE) {
-                            Icons.Default.Favorite
-                        } else {
-                            Icons.Default.FavoriteBorder
-                        },
-                        selected = currentTab == MainTab.HEALTH && currentSubScreen == SubScreen.NONE,
-                        onClick = { onSelectTab(MainTab.HEALTH) },
-                        modifier = itemModifier,
-                        allowUnclippedText = true,
-                        testTag = "top_nav_health"
-                    )
-                }
+                TopNavPillItem(
+                    label = strings.navHome,
+                    icon = Icons.Default.Home,
+                    selected = currentTab == MainTab.HOME && currentSubScreen == SubScreen.NONE,
+                    onClick = { onSelectTab(MainTab.HOME) },
+                    modifier = itemModifier,
+                    testTag = "top_nav_home"
+                )
+                TopNavPillItem(
+                    label = strings.navPrograms,
+                    icon = Icons.AutoMirrored.Filled.FormatListBulleted,
+                    selected = (currentTab == MainTab.PROGRAMS || currentSubScreen == SubScreen.PROGRAMS_LIST) && currentSubScreen != SubScreen.SETTINGS_MAIN,
+                    onClick = { onSelectTab(MainTab.PROGRAMS) },
+                    modifier = itemModifier,
+                    testTag = "top_nav_programs"
+                )
+                TopNavPillItem(
+                    label = strings.navWorkout,
+                    icon = Icons.AutoMirrored.Filled.DirectionsRun,
+                    selected = currentTab == MainTab.WORKOUT && currentSubScreen == SubScreen.NONE,
+                    onClick = { onSelectTab(MainTab.WORKOUT) },
+                    modifier = itemModifier,
+                    testTag = "top_nav_workout"
+                )
+                TopNavPillItem(
+                    label = strings.navProgress,
+                    icon = Icons.AutoMirrored.Filled.TrendingUp,
+                    selected = (currentTab == MainTab.PROGRESS || currentTab == MainTab.LOG) &&
+                        currentSubScreen in setOf(SubScreen.NONE, SubScreen.LOG_WORKOUT_DETAIL, SubScreen.LOG_ROUTE_MAP),
+                    onClick = { onSelectTab(MainTab.PROGRESS) },
+                    modifier = itemModifier,
+                    testTag = "top_nav_progress"
+                )
+                TopNavPillItem(
+                    label = strings.navHealth,
+                    icon = if (currentTab == MainTab.HEALTH && currentSubScreen == SubScreen.NONE) {
+                        Icons.Default.Favorite
+                    } else {
+                        Icons.Default.FavoriteBorder
+                    },
+                    selected = currentTab == MainTab.HEALTH && currentSubScreen == SubScreen.NONE,
+                    onClick = { onSelectTab(MainTab.HEALTH) },
+                    modifier = itemModifier,
+                    testTag = "top_nav_health"
+                )
             }
         }
     }
@@ -384,7 +366,6 @@ private fun TopNavPillItem(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    allowUnclippedText: Boolean = false,
     testTag: String = ""
 ) {
     val palette = LocalTrainPilotPalette.current
@@ -422,8 +403,8 @@ private fun TopNavPillItem(
     ) {
         Column(
             modifier = Modifier.padding(
-                vertical = 7.dp,
-                horizontal = if (allowUnclippedText) 10.dp else 2.dp
+                vertical = 5.dp,
+                horizontal = 2.dp
             ),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -442,9 +423,10 @@ private fun TopNavPillItem(
                     fontSize = 10.sp
                 ),
                 color = if (selected) palette.primary else palette.textPrimary,
-                maxLines = 1,
-                softWrap = false,
-                overflow = if (allowUnclippedText) TextOverflow.Visible else TextOverflow.Ellipsis
+                maxLines = 2,
+                textAlign = TextAlign.Center,
+                softWrap = true,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
