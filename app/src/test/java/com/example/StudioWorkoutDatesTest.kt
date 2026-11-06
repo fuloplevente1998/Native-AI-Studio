@@ -42,4 +42,13 @@ class StudioWorkoutDatesTest {
         assertEquals(today, workout("local", "2026-11-02T01:00:00").localWorkoutDate(zone))
         assertNull(workout("broken", "invalid").copy(dateLabelHu = "2026-11-02").localWorkoutDate(zone))
     }
+
+    @Test fun malformedCanonicalTimeCannotBeRescuedByItsDatePrefixOrDisplayLabel() {
+        val malformed = listOf("2026-11-02T25:00:00", "2026-11-02T01:00:00junk", "2026-11-02broken")
+            .mapIndexed { index, value -> workout("invalid-$index", value).copy(dateLabelHu = "2026. nov. 2.") }
+        malformed.forEach { assertNull(it.savedStartIso, it.localWorkoutDate(zone)) }
+        assertTrue(malformed.workoutsInWeekEnding(today, zone).isEmpty())
+        assertEquals(today, workout("space-time", "2026-11-02 01:00:00").localWorkoutDate(zone))
+    }
+
 }
