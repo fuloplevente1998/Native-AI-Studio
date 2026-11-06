@@ -16,6 +16,9 @@ import com.example.ui.components.StudioActiveWorkoutSessionInfo
 import com.example.ui.components.rememberStudioWorkoutCoachOwner
 import com.example.ui.components.StudioExerciseFeedbackReview
 import com.example.ui.components.StudioWorkoutOverallFeedback
+import com.example.ui.screens.ActiveStrengthWorkoutScreen
+import com.example.localization.TrainPilotStrings
+import com.example.model.AppLanguage
 import com.example.ui.theme.TrainPilotTheme
 import com.example.ui.viewmodel.TrainPilotUiState
 import com.repforge.app.ActiveWorkoutStore
@@ -37,7 +40,7 @@ class StudioActiveFeedbackRegressionTest {
         currentSubScreen = SubScreen.ACTIVE_STRENGTH,
         activeWorkoutExercises = listOf(ExerciseItem("press", "Nyomás"), ExerciseItem("row", "Evezés")))
 
-    @Test fun activeDayBadgeIsRenderedBelowProgramTitle() {
+    @Test fun activeDayBadgeHasNoDuplicateProgramLabel() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.getSharedPreferences("trainpilot_wear_sync", Context.MODE_PRIVATE).edit().clear().commit()
         ActiveWorkoutStore.saveOwned(context, JSONObject()
@@ -53,12 +56,41 @@ class StudioActiveFeedbackRegressionTest {
         }
         compose.waitForIdle()
 
-        compose.onNodeWithTag("active_workout_program_label").assertIsDisplayed()
+        compose.onNodeWithTag("active_workout_program_label").assertDoesNotExist()
         compose.onNodeWithTag("active_workout_day").assertIsDisplayed()
         compose.onNodeWithText("A nap").assertIsDisplayed()
-        val programBounds = compose.onNodeWithTag("active_workout_program_label").fetchSemanticsNode().boundsInRoot
-        val dayBounds = compose.onNodeWithTag("active_workout_day").fetchSemanticsNode().boundsInRoot
-        assertTrue("The highlighted day must be below the program title", dayBounds.top >= programBounds.bottom)
+    }
+
+    @Test fun activeDayBadgeIsBetweenLargeHeaderAndExerciseSequence() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("trainpilot_wear_sync", Context.MODE_PRIVATE).edit().clear().commit()
+        ActiveWorkoutStore.saveOwned(context, JSONObject()
+            .put("workoutId", "session")
+            .put("generation", 7L)
+            .put("programName", "Otthoni A/B – Alap")
+            .put("dayName", "A"))
+        val state = initial().copy(activeWorkoutTitleHu = "Otthoni A/B – Alap",
+            language = AppLanguage.HU)
+
+        compose.setContent { TrainPilotTheme {
+            ActiveStrengthWorkoutScreen(
+                uiState = state,
+                strings = TrainPilotStrings.forLanguage(AppLanguage.HU),
+                onBack = {}, onOpenSettings = {}, onSelectMeasurementMode = {},
+                onToggleSetCompleted = {}, onAdjustSetValues = { _, _, _, _ -> },
+                onUndoLastSet = {}, onAdjustRestTimer = {}, onToggleRestRunning = {},
+                onSkipRest = {}, onOpenExerciseDetail = {}
+            )
+        } }
+        compose.waitForIdle()
+
+        compose.onNodeWithTag("active_workout_day_between_header_and_exercises").assertIsDisplayed()
+        compose.onNodeWithTag("active_workout_exercise_sequence").assertIsDisplayed()
+        compose.onNodeWithText("A nap").assertIsDisplayed()
+        val day = compose.onNodeWithTag("active_workout_day_between_header_and_exercises").fetchSemanticsNode().boundsInRoot
+        val exercises = compose.onNodeWithTag("active_workout_exercise_sequence").fetchSemanticsNode().boundsInRoot
+        assertTrue("Day badge must be immediately above the horizontal exercise sequence", day.bottom <= exercises.top)
+        compose.onAllNodesWithText("Otthoni A/B – Alap", substring = true).assertCountEquals(1)
     }
 
     @Test fun summaryReviewsExistingExerciseAnswerAndOnlyExplicitEditOpensTheChoices() {
