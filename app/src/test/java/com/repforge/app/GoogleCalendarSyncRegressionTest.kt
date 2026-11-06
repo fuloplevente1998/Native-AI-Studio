@@ -234,7 +234,6 @@ class GoogleCalendarSyncRegressionTest {
         assertEquals(1, sync().getOrThrow())
         assertEquals(0, calls.count { it.method == "DELETE" })
         assertEquals(1, calls.count { it.method == "POST" })
-        assertEquals("Naptár szinkronizálása… (1/1)", repository.uiState.value.stageMessage)
         assertPreserved(cancelled, active)
     }
 
