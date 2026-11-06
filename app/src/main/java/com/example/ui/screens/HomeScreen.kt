@@ -127,8 +127,7 @@ fun HomeScreen(
                 .padding(top = 8.dp, bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
-        if (!state.profileComplete || state.programs.none { it.isActive && it.isCustom && it.days.isNotEmpty() }) {
-        // Mini nézetben a Profil és új terv (Kezdőlapról a köszönés eltűnt, maradt mini nézetben a Profil és új terv)
+        // A kompakt Profil és új terv belépő mindig elérhető a Kezdőlapon.
         Surface(
             shape = RoundedCornerShape(14.dp),
             color = palette.surface,
@@ -198,8 +197,6 @@ fun HomeScreen(
                     )
                 }
             }
-        }
-
         }
 
         // 3. HERO WORKOUT CARD (Mockup 1/4 #1: "Szüneteltetve • Teljes test A • 8 gyakorlat • kb. 60 perc • ▶ Folytatás")
