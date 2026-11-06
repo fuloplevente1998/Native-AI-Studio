@@ -45,6 +45,7 @@ class HomeCompactStatusRegressionTest {
             ))
         var coach = 0
         var health = 0
+        var planner = 0
         compose.setContent { TrainPilotTheme {
             Box(Modifier.size(393.dp, 680.dp).clipToBounds().testTag("home_viewport")) {
                 HomeScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU),
@@ -52,9 +53,11 @@ class HomeCompactStatusRegressionTest {
                     onStartOrContinueWorkout = {}, onOpenProgramDayDetails = {}, onOpenQuickWorkout = {},
                     onOpenWatchAndSync = {}, onOpenHealthSleep = {}, onOpenHealthHeart = {}, onOpenHealthSteps = {},
                     onOpenCoachReadiness = { coach++ }, onOpenProgramsList = {}, onOpenCalendarPlanner = {},
-                    onOpenGoalsDialog = {}, onOpenPersonalPlanner = {}, onOpenHealthToday = { health++ })
+                    onOpenGoalsDialog = {}, onOpenPersonalPlanner = { planner++ }, onOpenHealthToday = { health++ })
             }
         } }
+        compose.onNodeWithTag("home_personal_planner_mini_card").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals(1, planner) }
         for (key in listOf("sleep", "calories", "pulse", "steps", "workout", "recovery"))
             compose.onNodeWithTag("home_today_$key").assertIsDisplayed()
         compose.onNodeWithTag("home_today_pulse").assertTextContains("61 bpm")
