@@ -3,6 +3,21 @@
 Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
+## 2755 második kapu: katalógus no-op írási lease javítása
+
+42176968429 /3846f97: a dátumtesztek javultak, fordítás sikeres;584 tesztből583 siker,
+1 failure: staleLibrarySelectionAfterDiscardRestoreAndNewStartCannotEditTheNewSession,
+közvetlen restore foglaltság. Nyers XML/artifactdigest ellenőrizve. Nincs átadott APK.
+A korábbi célzott naplóolvasás megmarad; a Wear kezdőlap háttérfrissítése továbbra
+minden alkalommal ensureBuiltinCatalogSeeded-et hívott, ami teljes katalógusnál is
+metadata write lease-t kért. Most a teljes meglévő katalógus ellenőrzése read-only
+és dataset continuationnel védett; hiánynál az eredeti mutate+tranzakció+ID-újraolvasás
+marad. Restore alatt az örökölt replacement lease útvonal változatlan; nincs mutex/
+restore/admission lazítás. Új regresszió: detached katalógusolvasó befejeződik egy
+már foglalt write lease mellett, majd a seeding örökölt replacement lease-ben is
+működik. A régi restore/stale-selection teszt változatlan. Új közös main-kapu
+következik,1.0-beta2755 verzió változatlan, mert kiadás még nem történt.
+
 ## 2755 kapu: dátumregresszió javítása, kiadás még nincs
 
 42174687802 /6a3f0e5: fordítás sikeres, nyers XML583 teszt,582 sikeres,
