@@ -1,0 +1,144 @@
+{
+  "sourceSha": "3dde06f8c471c91cea34ee3d6b0c49ffee660b86",
+  "applicationId": "com.TrainPilot.com",
+  "versionCode": 2755,
+  "versionName": "1.0-beta",
+  "artifactZipSha256": "578e76f6ccf2b2ab18492b24c5bd02fb5b1dcfdc197bf9d0d0ed49f32558ce8f",
+  "testArtifactZipSha256": "ecfc721e17b4f41a0fda9d449169080b10eb144fd69715ac85232dbe7d7db577",
+  "apks": {
+    "phone": {
+      "bytes": 20564984,
+      "sha256": "e37173bd7a2c2d0ec0d5d4262de5e6b3b660b9dc51e8864d6446eec0b01db877",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "manifest": {
+        "versionCode": 2755,
+        "versionName": "1.0-beta",
+        "package": "com.TrainPilot.com"
+      }
+    },
+    "wear": {
+      "bytes": 4636863,
+      "sha256": "4de6b035cb15ed904c4f75cec4ab5afb36ea5c106096d188bbb3fd863a98e791",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "manifest": {
+        "versionCode": 2755,
+        "versionName": "1.0-beta",
+        "package": "com.TrainPilot.com"
+      }
+    }
+  },
+  "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+  "downloadedManifestAndV2CertificateVerified": true,
+  "rawJUnit": {
+    "commit": "3dde06f8c471c91cea34ee3d6b0c49ffee660b86",
+    "modules": {
+      "phone": {
+        "files": 74,
+        "tests": 404,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "wear": {
+        "files": 32,
+        "tests": 181,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "shared": {
+        "files": 0,
+        "tests": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": true
+      }
+    },
+    "total": {
+      "tests": 585,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "ciMetadata": {
+    "applicationId": "com.TrainPilot.com",
+    "versionCode": "2755",
+    "versionName": "1.0-beta",
+    "apkSha256": "e37173bd7a2c2d0ec0d5d4262de5e6b3b660b9dc51e8864d6446eec0b01db877",
+    "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+    "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+    "mapsApiKeyConfigured": true,
+    "ciCheckout": "3dde06f8c471c91cea34ee3d6b0c49ffee660b86",
+    "wear": {
+      "applicationId": "com.TrainPilot.com",
+      "versionCode": "2755",
+      "versionName": "1.0-beta",
+      "apkSha256": "4de6b035cb15ed904c4f75cec4ab5afb36ea5c106096d188bbb3fd863a98e791",
+      "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "variant": "release",
+      "bytes": 4636863
+    },
+    "wearCompanionCapabilityRetained": true,
+    "dataLayerPairIdentityVerified": true,
+    "wearHardwareRequired": true
+  },
+  "actionsRunId": 42177999670,
+  "conclusion": "success",
+  "actionsRunUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/42177999670",
+  "drive": {
+    "phone": {
+      "id": "1Mdj5luyE-dWlsvsvS8rvVtYGMPoKM7ge",
+      "title": "TrainPilot-1.0-beta-2755-3dde06f-phone-release.apk",
+      "mime_type": "application/vnd.android.package-archive",
+      "size": "20564984",
+      "url": "https://drive.google.com/file/d/1Mdj5luyE-dWlsvsvS8rvVtYGMPoKM7ge/view?usp=drivesdk",
+      "display_url": "https://drive.google.com/file/d/1Mdj5luyE-dWlsvsvS8rvVtYGMPoKM7ge/view?usp=drivesdk",
+      "file_or_folder": "file",
+      "created_time": null,
+      "modified_time": null,
+      "parent_ids": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "drive_id": null,
+      "current_user_can_share": null,
+      "has_augmented_permissions": null,
+      "shared": null,
+      "permissions": null,
+      "source_visibility_status": "access_not_verified"
+    },
+    "wear": {
+      "id": "1G9oBxuxaT0taUfElX9sJKGS5UFT9cQ8G",
+      "title": "TrainPilot-1.0-beta-2755-3dde06f-wear-release.apk",
+      "mime_type": "application/vnd.android.package-archive",
+      "size": "4636863",
+      "url": "https://drive.google.com/file/d/1G9oBxuxaT0taUfElX9sJKGS5UFT9cQ8G/view?usp=drivesdk",
+      "display_url": "https://drive.google.com/file/d/1G9oBxuxaT0taUfElX9sJKGS5UFT9cQ8G/view?usp=drivesdk",
+      "file_or_folder": "file",
+      "created_time": null,
+      "modified_time": null,
+      "parent_ids": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "drive_id": null,
+      "current_user_can_share": null,
+      "has_augmented_permissions": null,
+      "shared": null,
+      "permissions": null,
+      "source_visibility_status": "access_not_verified"
+    }
+  },
+  "githubRelease": {
+    "id": 436202963,
+    "tag": "v1.0-beta-2755",
+    "url": "https://github.com/fuloplevente1998/Native-AI-Studio/releases/tag/v1.0-beta-2755",
+    "prerelease": true,
+    "draft": false,
+    "targetCommit": "3dde06f8c471c91cea34ee3d6b0c49ffee660b86",
+    "downloadMode": "Drive links, no direct GitHub assets"
+  }
+}
