@@ -54,9 +54,9 @@ internal fun StudioWorkoutDeleteConfirmation(workoutId: String?, onDeleted: (Str
                 "Ștergerea nu s-a finalizat. Încearcă din nou; dacă antrenamentul s-a modificat între timp, redeschide-l."
             ), color = palette.danger)
         } },
-        confirmButton = { TextButton(enabled = !state.deleting,
+        confirmButton = { com.repforge.app.ui.theme.TrainPilotNegativeButton(enabled = !state.deleting,
             onClick = { model.confirmDeleteWorkout(onDeleted) }, modifier = Modifier.testTag("journal_confirm_delete")) {
-            Text(if (state.deleting) word("Törlés…", "Deleting…", "Löschen…", "Se șterge…") else word("Törlés", "Delete", "Löschen", "Șterge"), color = palette.danger)
+            Text(if (state.deleting) word("Törlés…", "Deleting…", "Löschen…", "Se șterge…") else word("Törlés", "Delete", "Löschen", "Șterge"), color = androidx.compose.material3.LocalContentColor.current)
         } },
         dismissButton = { TextButton(enabled = !state.deleting, onClick = model::cancelDeleteWorkout,
             modifier = Modifier.testTag("journal_cancel_delete")) { Text(word("Mégse", "Cancel", "Abbrechen", "Anulează")) } }

@@ -147,7 +147,7 @@ internal fun ProgramEditorDialog(
                     OutlinedTextField(active.name, { editDay(active.copy(name = it)) },
                         modifier = Modifier.fillMaxWidth().testTag("program_editor_day_name"), singleLine = true,
                         label = { Text(labels.day) })
-                    if (draft.days.size > 1) TextButton(onClick = {
+                    if (draft.days.size > 1) com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = {
                         replaceDays(draft.days.filterNot { it.id == active.id })
                         focusedDay = draft.days.firstOrNull()?.id
                     }, enabled = !saving, modifier = Modifier.testTag("program_editor_remove_day")) { Text(labels.remove) }
@@ -169,7 +169,7 @@ internal fun ProgramEditorDialog(
                             TextButton(onClick = {
                                 editDay(active.copy(entries = NativeProgramEditor.move(active.entries, ix, 1)))
                             }, enabled = ix < active.entries.lastIndex && !saving) { Text("↓") }
-                            TextButton(onClick = {
+                            com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = {
                                 editDay(active.copy(entries = active.entries.filterIndexed { j, _ -> j != ix }))
                             }, enabled = !saving, modifier = Modifier.testTag("program_editor_remove_exercise_$ix")) {
                                 Text("×")
@@ -196,19 +196,19 @@ internal fun ProgramEditorDialog(
                 }
                 if (opened != null && !opened.program.builtin && deletionPending) {
                     Text(labels.referencedWarning)
-                    Button(onClick = onDelete, enabled = !saving,
+                    com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = onDelete, enabled = !saving,
                         modifier = Modifier.testTag("program_editor_confirm_delete")) { Text(labels.confirmDelete) }
                 }
             }
         },
         confirmButton = {
-            Button(onClick = { onSave(draft) }, enabled = !saving,
+            com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = { onSave(draft) }, enabled = !saving,
                 modifier = Modifier.testTag("program_editor_save")) { Text(labels.save) }
         },
         dismissButton = {
             Row {
                 if (opened != null && !opened.program.builtin)
-                    TextButton(onClick = { deletionPending = true }, enabled = !saving,
+                    com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = { deletionPending = true }, enabled = !saving,
                         modifier = Modifier.testTag("program_editor_delete")) { Text(labels.delete) }
                 TextButton(onClick = onCancel, enabled = !saving, modifier = Modifier.testTag("program_editor_cancel")) { Text(labels.cancel) }
             }

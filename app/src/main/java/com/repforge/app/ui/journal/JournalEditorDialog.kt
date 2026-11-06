@@ -125,10 +125,9 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                                 JournalEditorPanel {
                                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                         Text(name, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                                        TextButton(onClick = { onChange(draft.copy(exercises = draft.exercises.filterIndexed { i, _ -> i != e })) },
+                                        com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = { onChange(draft.copy(exercises = draft.exercises.filterIndexed { i, _ -> i != e })) },
                                             enabled = !state.saving && draft.exercises.size > 1,
-                                            modifier = Modifier.heightIn(min = 48.dp).testTag("journal_editor_remove_exercise_$e"),
-                                            colors = ButtonDefaults.textButtonColors(contentColor = colors.dangerText)) { Text(text.getString(R.string.journal_edit_remove)) }
+                                            modifier = Modifier.heightIn(min = 48.dp).testTag("journal_editor_remove_exercise_$e")) { Text(text.getString(R.string.journal_edit_remove)) }
                                 }
                                 com.example.ui.components.ExerciseFeedbackControl(
                                     effort = exercise.effort, note = exercise.note, language = language,
@@ -158,9 +157,8 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                                                 Text(text.getString(R.string.journal_edit_done),
                                                     style = MaterialTheme.typography.labelMedium)
                                             }
-                                            TextButton(onClick = { replaceExercise(e, exercise.copy(sets = exercise.sets.filterIndexed { i, _ -> i != s })) },
+                                            com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = { replaceExercise(e, exercise.copy(sets = exercise.sets.filterIndexed { i, _ -> i != s })) },
                                                 enabled = !state.saving && exercise.sets.size > 1,
-                                                colors = ButtonDefaults.textButtonColors(contentColor = colors.dangerText),
                                                 modifier = Modifier.heightIn(min = 48.dp).testTag("journal_editor_remove_set_${e}_$s")) {
                                                 Text(text.getString(R.string.journal_edit_remove), style = MaterialTheme.typography.labelMedium)
                                             }
@@ -206,7 +204,7 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                     }
                     if (invalid || state.failed) Text(text.getString(if (invalid) R.string.journal_edit_invalid else R.string.journal_edit_failed),
                         color = colors.dangerText, modifier = Modifier.testTag("journal_editor_error"))
-                    Button(onClick = {
+                    com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = {
                         val dates = runCatching {
                             val oldStart = state.opened.detail.workout.started
                             val oldFinish = state.opened.detail.workout.finished

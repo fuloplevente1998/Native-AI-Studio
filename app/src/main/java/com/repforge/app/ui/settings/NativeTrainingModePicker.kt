@@ -173,9 +173,9 @@ internal fun NativeTrainingModePicker(
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("${tag}_preview")
                 ) { Text(strings.getString(R.string.native_modes_preview)) }
                 if (undoAllowed) {
-                    TextButton(onClick = onUndo, enabled = enabled,
+                    com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = onUndo, enabled = enabled,
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("${tag}_undo")) {
-                        Text(strings.getString(R.string.native_modes_undo), color = colors.accentText)
+                        Text(strings.getString(R.string.native_modes_undo), color = androidx.compose.material3.LocalContentColor.current)
                     }
                 }
             }

@@ -341,7 +341,7 @@ fun HealthTabScreen(
                 }
             },
             confirmButton = {
-                Button(
+                com.repforge.app.ui.theme.TrainPilotSaveButton(
                     onClick = {
                         val parsed = weightText.replace(',', '.').toFloatOrNull() ?: uiState.currentBodyWeightKg
                         if (parsed > 0f) {
@@ -375,9 +375,7 @@ fun HealthTabScreen(
                             editingMeasurement = null
                             onToggleAddWeightDialog(false)
                         }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary)
-                ) {
+                    }) {
                     Text(strings.saveAction, fontWeight = FontWeight.Bold)
                 }
             },
@@ -3566,7 +3564,7 @@ fun BackupRestoreScreen(
             }
         }
         item {
-            Button(
+            com.repforge.app.ui.theme.TrainPilotSaveButton(
                 onClick = {
                     if (uiState.selectedBackupFormat == "DRIVE") {
                         if (gs.connectedEmail.isEmpty()) {
@@ -3582,7 +3580,6 @@ fun BackupRestoreScreen(
                     !gs.isBusy && !settingsState.replacementBusy && !settingsState.maintenanceBusy && activity != null
                 } else true,
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)

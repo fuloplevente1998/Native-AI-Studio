@@ -52,7 +52,7 @@ internal fun ExerciseFeedbackControl(effort: String?, note: String, language: St
                         StudioWorkoutFeedback.efforts[index] to text.getString(label) },
                     prompt = text.getString(R.string.journal_feedback), enabled = enabled && !effortLocked,
                     onSelect = { onEffort(it) }, tag = "${tag}_selector", optionTagPrefix = tag)
-                TextButton(onClick = { onEffort(null) }, enabled = enabled && !effortLocked && effort != null,
+                com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = { onEffort(null) }, enabled = enabled && !effortLocked && effort != null,
                     modifier = Modifier.testTag("${tag}_clear")) {
                     Text(when (language) { "en" -> "Clear answer"; "de" -> "Antwort löschen"; "ro" -> "Șterge răspunsul"; else -> "Válasz törlése" })
                 }

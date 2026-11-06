@@ -238,10 +238,10 @@ internal fun StudioWorkoutModesDialog(
                         }
                     }
                     val canUndo = if (isProgram) state.programTrainingModeUndo else state.globalTrainingModeUndo
-                    if (canUndo) TextButton(onClick = onUndo, enabled = !busy && !active) {
+                    if (canUndo) com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = onUndo, enabled = !busy && !active) {
                         Text(workoutModeText(lang, "Utolsó módváltás visszavonása", "Undo last mode change",
                             "Letzten Moduswechsel rückgängig machen", "Anulează ultima schimbare"),
-                            color = p.primary)
+                            color = androidx.compose.material3.LocalContentColor.current)
                     }
                     if (active) Text(
                         workoutModeText(lang, "Aktív edzés közben a módváltás nem menthető.",

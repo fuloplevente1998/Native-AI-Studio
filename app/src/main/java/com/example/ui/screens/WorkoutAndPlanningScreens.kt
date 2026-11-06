@@ -80,6 +80,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -1118,7 +1119,8 @@ fun ProgramEditorScreen(
     onAddDay: (String) -> Unit = {},
     onDeleteDay: () -> Unit = {},
     onRemoveExercise: (String) -> Unit = {},
-    onRenameProgram: (String) -> Unit = {}
+    onRenameProgram: (String) -> Unit = {},
+    onSaveProgram: (String, List<com.example.model.StudioProgramPrescriptionDraft>) -> Unit = { _, _ -> }
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
@@ -1129,6 +1131,9 @@ fun ProgramEditorScreen(
     val currentDay = program.days.getOrNull(dayIndex)
     val initialProgramName = program.localizedName(state.language)
     var programName by remember(program.id, initialProgramName) { mutableStateOf(initialProgramName) }
+    val pendingPrescriptions = remember(program.id) {
+        mutableStateMapOf<Pair<String, String>, com.example.model.StudioProgramPrescriptionDraft>()
+    }
 
     Column(
         modifier = Modifier
@@ -1150,12 +1155,12 @@ fun ProgramEditorScreen(
             OutlinedTextField(
                 value = programName,
                 onValueChange = { programName = it },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag("studio_program_name"),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true
             )
 
-            if (programName.trim() != initialProgramName) Button(
+            if (programName.trim() != initialProgramName) com.repforge.app.ui.theme.TrainPilotSaveButton(
                 onClick = { onRenameProgram(programName) }, enabled = !state.libraryMutationBusy && programName.isNotBlank(),
                 modifier = Modifier.fillMaxWidth().testTag("studio_program_save_name")) {
                 Text(trW(state.language, "Programnév mentése", "Save program name", "Programmname speichern", "Salvează numele programului"))
@@ -1199,10 +1204,16 @@ fun ProgramEditorScreen(
             val totalExercisesInDay = currentDay?.exercises?.size ?: 0
             currentDay?.exercises?.forEachIndexed { index, ex ->
                 val isExpanded = state.expandedEditorExerciseId == ex.id
-                var sets by remember(ex.id, ex.defaultSets) { mutableIntStateOf(ex.defaultSets) }
-                var reps by remember(ex.id, ex.defaultReps) { mutableIntStateOf(ex.defaultReps) }
-                var weight by remember(ex.id, ex.defaultWeightKg) { mutableFloatStateOf(ex.defaultWeightKg) }
-                var restSec by remember(ex.id, ex.defaultRestSec) { mutableIntStateOf(ex.defaultRestSec) }
+                val draftKey = currentDay.id to ex.id
+                val fields = pendingPrescriptions[draftKey] ?: com.example.model.StudioProgramPrescriptionDraft(
+                    currentDay.id, ex.id, ex.defaultSets, ex.defaultReps, ex.defaultWeightKg, ex.defaultRestSec)
+                val sets = fields.sets
+                val reps = fields.reps
+                val weight = fields.weightKg
+                val restSec = fields.restSec
+                fun editPrescription(change: (com.example.model.StudioProgramPrescriptionDraft) -> com.example.model.StudioProgramPrescriptionDraft) {
+                    pendingPrescriptions[draftKey] = change(pendingPrescriptions[draftKey] ?: fields)
+                }
                 var dragAccumY by remember(ex.id, index) { mutableFloatStateOf(0f) }
 
                 Surface(
@@ -1321,18 +1332,18 @@ fun ProgramEditorScreen(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     EditorStepperBox(
-                                        modifier = Modifier.weight(1f),
+                                        modifier = Modifier.weight(1f).testTag("editor_sets_${ex.id}"),
                                         label = strings.setsLabel,
                                         valueText = "$sets",
-                                        onMinus = { sets = (sets - 1).coerceAtLeast(1) },
-                                        onPlus = { sets = (sets + 1).coerceAtMost(10) }
+                                        onMinus = { editPrescription { it.copy(sets = (it.sets - 1).coerceAtLeast(1)) } },
+                                        onPlus = { editPrescription { it.copy(sets = (it.sets + 1).coerceAtMost(10)) } }
                                     )
                                     EditorStepperBox(
                                         modifier = Modifier.weight(1f),
                                         label = strings.repsLabel,
                                         valueText = "$reps",
-                                        onMinus = { reps = (reps - 1).coerceAtLeast(1) },
-                                        onPlus = { reps = (reps + 1).coerceAtMost(50) }
+                                        onMinus = { editPrescription { it.copy(reps = (it.reps - 1).coerceAtLeast(1)) } },
+                                        onPlus = { editPrescription { it.copy(reps = (it.reps + 1).coerceAtMost(50)) } }
                                     )
                                 }
                                 Row(
@@ -1343,15 +1354,15 @@ fun ProgramEditorScreen(
                                         modifier = Modifier.weight(1f),
                                         label = "${strings.weightLabel} (kg)",
                                         valueText = "${weight.toInt()}",
-                                        onMinus = { weight = (weight - 2f).coerceAtLeast(0f) },
-                                        onPlus = { weight += 2f }
+                                        onMinus = { editPrescription { it.copy(weightKg = (it.weightKg - 2f).coerceAtLeast(0f)) } },
+                                        onPlus = { editPrescription { it.copy(weightKg = it.weightKg + 2f) } }
                                     )
                                     EditorStepperBox(
                                         modifier = Modifier.weight(1f),
                                         label = "${strings.restLabel} (s)",
                                         valueText = "$restSec",
-                                        onMinus = { restSec = (restSec - 15).coerceAtLeast(15) },
-                                        onPlus = { restSec = (restSec + 15).coerceAtMost(300) }
+                                        onMinus = { editPrescription { it.copy(restSec = (it.restSec - 15).coerceAtLeast(15)) } },
+                                        onPlus = { editPrescription { it.copy(restSec = (it.restSec + 15).coerceAtMost(300)) } }
                                     )
                                 }
 
@@ -1376,7 +1387,7 @@ fun ProgramEditorScreen(
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
                                     TrainPilotOutlinedButton(
-                                        onClick = { onToggleExpandExercise(ex.id) },
+                                        onClick = { pendingPrescriptions.remove(draftKey); onToggleExpandExercise(ex.id) },
                                         modifier = Modifier
                                             .weight(1f)
                                             .heightIn(min = 48.dp),
@@ -1384,19 +1395,15 @@ fun ProgramEditorScreen(
                                     ) {
                                         Text(strings.cancelBtn, color = palette.textPrimary)
                                     }
-                                    Button(
+                                    com.repforge.app.ui.theme.TrainPilotSaveButton(
                                         onClick = {
                                             onSaveExercisePrescription(ex.id, sets, reps, weight, restSec)
+                                            pendingPrescriptions.remove(draftKey)
                                         },
                                         modifier = Modifier
                                             .weight(1f)
                                             .heightIn(min = 48.dp),
-                                        shape = RoundedCornerShape(10.dp),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = palette.primary,
-                                            contentColor = palette.onPrimary
-                                        )
-                                    ) {
+                                        shape = RoundedCornerShape(10.dp)) {
                                         Text(strings.saveBtn, fontWeight = FontWeight.Bold)
                                     }
                                 }
@@ -1419,22 +1426,10 @@ fun ProgramEditorScreen(
                 Text(strings.addExerciseAction, color = palette.textPrimary)
             }
 
-            TrainPilotOutlinedButton(
-                onClick = onOpenAddCustomExercise,
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp)
-                    .testTag("editor_add_custom_exercise_button")
-            ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = palette.primary)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(trW(state.language, "Új egyedi gyakorlat létrehozása (pl. Kör futás)", "Create new custom exercise", "Neue eigene Übung erstellen", "Creează exercițiu personalizat nou"), color = palette.primary, fontWeight = FontWeight.Bold)
-            }
-
             com.example.ui.components.StudioProgramManagementControls(
                 program, state.libraryMutationBusy, currentDay != null,
-                onCopyProgram, onDeleteProgram, onAddDay, onDeleteDay
+                onCopyProgram, onDeleteProgram, onAddDay, onDeleteDay,
+                onSave = { onSaveProgram(programName, pendingPrescriptions.values.toList()) }
             )
         }
     }
@@ -1479,7 +1474,7 @@ private fun EditorStepperBox(
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                     color = palette.textPrimary
                 )
-                IconButton(onClick = onPlus, modifier = Modifier.size(48.dp)) {
+                IconButton(onClick = onPlus, modifier = Modifier.size(48.dp).testTag("editor_stepper_plus")) {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = strings.increaseValueDesc,
@@ -1628,13 +1623,11 @@ fun CalendarPlannerScreen(
                 }
             },
             confirmButton = {
-                Button(
+                com.repforge.app.ui.theme.TrainPilotSaveButton(
                     onClick = {
                         onModifyCalendarEvent(ev.id, "$activeProgramTitle • Alap $splitSel", splitSel, timeSel, durSel)
                         editingEvent = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary)
-                ) {
+                    }) {
                     Text(strings.saveBtn, fontWeight = FontWeight.Bold)
                 }
             },
@@ -2025,9 +2018,9 @@ fun CalendarPlannerScreen(
                                 color = palette.textSecondary, style = MaterialTheme.typography.labelSmall,
                                 maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-                        if (state.calendarUndoStack.isNotEmpty()) IconButton(onClick = onUndoCalendarAction,
+                        if (state.calendarUndoStack.isNotEmpty()) com.repforge.app.ui.theme.TrainPilotNegativeIconButton(onClick = onUndoCalendarAction,
                             modifier = Modifier.size(48.dp).testTag("calendar_undo_action")) {
-                            Text("↶", color = palette.primary, style = MaterialTheme.typography.headlineSmall,
+                            Text("↶", color = androidx.compose.material3.LocalContentColor.current, style = MaterialTheme.typography.headlineSmall,
                                 modifier = Modifier.semantics { contentDescription = trW(state.language, "Visszavonás (${state.calendarUndoStack.size})", "Undo (${state.calendarUndoStack.size})", "Rückgängig (${state.calendarUndoStack.size})", "Anulează (${state.calendarUndoStack.size})") })
                         }
                         Button(
@@ -2241,13 +2234,13 @@ fun CalendarPlannerScreen(
                                         label = trW(state.language, "Törlés", "Delete", "Löschen", "Șterge"),
                                         color = palette.danger,
                                         modifier = Modifier.weight(1f),
-                                        onClick = { onDeleteCalendarEvent(ev.id) }
+                                        onClick = { onDeleteCalendarEvent(ev.id) }, negative = true
                                     )
                                     CalendarActionChip(
                                         label = trW(state.language, "Visszavonás", "Undo", "Rückgängig", "Anulează"),
                                         color = if (state.calendarUndoStack.isNotEmpty()) palette.secondary else palette.textSecondary,
                                         modifier = Modifier.weight(1f),
-                                        onClick = { onUndoCalendarAction() }
+                                        onClick = { onUndoCalendarAction() }, negative = true
                                     )
                                 }
                             }
@@ -2438,13 +2431,15 @@ private fun CalendarActionChip(
     label: String,
     color: Color,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    negative: Boolean = false
 ) {
     Surface(
         shape = RoundedCornerShape(10.dp),
-        color = color.copy(alpha = 0.14f),
+        color = if (negative) com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeBackground else color.copy(alpha = 0.14f),
         modifier = modifier
-            .border(1.dp, color.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
+            .heightIn(min = 48.dp)
+            .border(1.dp, if (negative) com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.7f) else color.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
             .clip(RoundedCornerShape(10.dp))
             .clickable { onClick() }
     ) {
@@ -2455,7 +2450,7 @@ private fun CalendarActionChip(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = color,
+                color = if (negative) com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeForeground else color,
                 maxLines = 1
             )
         }
@@ -2644,9 +2639,20 @@ fun ExerciseLibraryScreen(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             CompactJournalSearchField(state.exerciseSearchQuery, onSearchQueryChange, strings.logSearchHint)
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)) {
             FilterChip(selected = state.favoriteExercisesOnly, onClick = onToggleFavoritesOnly,
                 label = { Text(trW(state.language, "Kedvencek (${state.favoriteExerciseIds.size})", "Favorites (${state.favoriteExerciseIds.size})", "Favoriten (${state.favoriteExerciseIds.size})", "Favorite (${state.favoriteExerciseIds.size})")) },
                 modifier = Modifier.testTag("studio_library_favorites_only"))
+                Button(onClick = onOpenAddCustomExercise,
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("exercise_library_add_custom_button"),
+                    shape = RoundedCornerShape(12.dp)) {
+                    Icon(Icons.Default.Add, null, Modifier.size(20.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(trW(state.language, "Új egyedi gyakorlat", "New custom exercise", "Neue eigene Übung", "Exercițiu personalizat nou"),
+                        fontWeight = FontWeight.Bold)
+                }
+            }
 
             // Compact Horizontal Category Chips with exact counts: Összes (106) | Láb | Mell | Hát | Váll | Kar | Core
             Row(
@@ -2701,34 +2707,7 @@ fun ExerciseLibraryScreen(
                     fontWeight = FontWeight.SemiBold,
                     color = palette.textSecondary
                 )
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = palette.primary.copy(alpha = 0.15f),
-                    modifier = Modifier
-                        .trainPilotBorder(1.dp, palette.primary, RoundedCornerShape(10.dp))
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable { onOpenAddCustomExercise() }
-                        .testTag("exercise_library_add_custom_button")
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null,
-                            tint = palette.primary,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Text(
-                            text = trW(state.language, "Új egyedi gyakorlat", "New custom exercise", "Neue eigene Übung", "Exercițiu personalizat nou"),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = palette.primary
-                        )
-                    }
-                }
+
             }
 
             if (state.quickWorkoutQueue.isNotEmpty()) {
@@ -3467,7 +3446,7 @@ fun AddCustomExerciseModalDialog(
             }
         },
         confirmButton = {
-            Button(
+            com.repforge.app.ui.theme.TrainPilotSaveButton(
                 onClick = {
                     onSaveCustomExercise(
                         nameHu,
@@ -3479,10 +3458,6 @@ fun AddCustomExerciseModalDialog(
                         addToCurrentProgramDay
                     )
                 },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = palette.primary,
-                    contentColor = palette.onPrimary
-                ),
                 modifier = Modifier.testTag("custom_exercise_save_button")
             ) {
                 Text(strings.saveBtn, fontWeight = FontWeight.Bold)

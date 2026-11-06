@@ -13,6 +13,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -71,8 +72,10 @@ private val White = Color(0xFFF6F8FB)
 private val Muted = Color(0xFF9AA5B6)
 private val Gold: Color
     @Composable get() = LocalWearHomeTheme.current.accentColor
-private val Danger = Color(0xFF3B232A)
-private val DangerText = Color(0xFFEFBCC3)
+private val Danger = Color(0xFF3E2024)
+private val SaveTone = Color(0xFF19382C)
+private val SaveText = Color(0xFF88E5B3)
+private val DangerText = Color(0xFFFFB4B4)
 private val LocalAutomaticToggle = compositionLocalOf<(() -> Unit)?> { null }
 private val LocalAutomaticCommand = compositionLocalOf<((String) -> Unit)?> { null }
 internal val LocalSaveSync = compositionLocalOf<WearSaveSyncState?> { null }
@@ -591,10 +594,11 @@ private fun Pill(text: String, modifier: Modifier = Modifier, tone: Color = Gold
     val shape = if (lines == Int.MAX_VALUE) RoundedCornerShape(18.dp) else CircleShape
     Box(modifier.fillMaxWidth().heightIn(min = height.dp)
         .background(if (enabled) tone else Secondary, shape)
+        .then(if (tone == Danger || tone == SaveTone) Modifier.border(1.dp, if (tone == Danger) Color(0xFFEF6670) else Color(0xFF3ECF87), shape) else Modifier)
         .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
         .semantics { contentDescription = text }.padding(horizontal = 9.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center) {
-        Text(text, color = if (!enabled) Muted else if (tone == Gold) Black else if (tone == Danger) DangerText else White,
+        Text(text, color = if (!enabled) Muted else if (tone == Gold) Black else if (tone == Danger) DangerText else if (tone == SaveTone) SaveText else White,
             fontSize = (size * captionScale).sp, lineHeight = ((size + 2) * captionScale).sp,
             fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
             maxLines = lines, overflow = TextOverflow.Ellipsis)
@@ -1870,19 +1874,19 @@ private fun WorkoutControls(workout: WearWorkout, restRemaining: Int, recordingE
         }
         Box(Modifier.offset(x = layout.sideOffset.dp, y = (layout.centerTop).dp)) {
             when {
-                quickUndo&&undo!=null&&WearUndo188.available(workout) -> RoundControl("↶",Gold,caption="Visszavonás",description="Utolsó sorozat visszavonása",onClick={WearUndo188.record(workout)?.optString("recordId")?.let(undo)})
+                quickUndo&&undo!=null&&WearUndo188.available(workout) -> RoundControl("↶",Danger,caption="Visszavonás",description="Utolsó sorozat visszavonása",onClick={WearUndo188.record(workout)?.optString("recordId")?.let(undo)})
                 WearUndo188.blocked(workout) -> RoundControl("…",enabled=false,caption="Egyeztetés",description="Visszavonás egyeztetése",onClick={})
                 automatic?.awaitingPhone==true -> RoundControl("…",enabled=false,caption="Telefon",description="Várakozás a telefonra",onClick={})
                 automatic?.enabled==true&&automatic.paused&&command!=null -> RoundControl("▶",caption="Folytatás",description="Automata folytatása",onClick={command("resume")})
                 restRemaining > 0 -> RoundControl("»", caption = "Kihagyás", description = "Pihenő kihagyása", onClick = onSkipRest)
                 workout.exerciseComplete -> RoundControl("✓", enabled = false, caption = "Rögzítve", onClick = {})
-                else -> RoundControl("✓", Gold, enabled = recordingEnabled, caption = recordLabel,
+                else -> RoundControl("✓", SaveTone, enabled = recordingEnabled, caption = recordLabel,
                     description = if (recordLabel == "Mentés") "Idő rögzítése" else "Sorozat rögzítése", onClick = onRecord)
             }
         }
         Box(Modifier.offset(x = (2 * layout.sideOffset).dp)) {
             if (workout.currentExercise == workout.exercises.lastIndex)
-                RoundControl("✓", if (workout.exerciseComplete) Gold else Secondary,
+                RoundControl("✓", SaveTone,
                     enabled = workout.completedSets > 0 && !WearUndo188.blocked(workout), caption = "Befejezés", description = "Edzés befejezése", onClick = onFinish)
             else RoundControl("›", if (workout.exerciseComplete) Gold else Secondary,
                 caption = "Következő", description = "Következő gyakorlat", onClick = onNext)
@@ -2016,10 +2020,11 @@ private fun RoundControl(text: String, tone: Color = Secondary, enabled: Boolean
         requested * if (measured > available) available / measured else 1f
     }
     Column(Modifier.size(LocalActionSize.current.dp).background(if (enabled) tone else Card, CircleShape)
+        .then(if (tone == Danger || tone == SaveTone) Modifier.border(1.dp, if (tone == Danger) Color(0xFFEF6670) else Color(0xFF3ECF87), CircleShape) else Modifier)
         .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
         .semantics { contentDescription = description },
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        val color = if (!enabled) Muted else if (tone == Gold) Black else if (tone == Danger) DangerText else White
+        val color = if (!enabled) Muted else if (tone == Gold) Black else if (tone == Danger) DangerText else if (tone == SaveTone) SaveText else White
         Text(text, color = color, fontSize = (glyph / fontScale).sp,
             lineHeight = ((glyph + 2) / fontScale).sp, fontWeight = FontWeight.Medium, maxLines = 1)
         if (caption != null) Text(caption, modifier = Modifier.widthIn(max = (actionSize - 4f).dp), style = captionStyle,
@@ -2086,7 +2091,7 @@ internal fun ValueEditor(
             CompositionLocalProvider(LocalActionSize provides layout.buttonSize) {
                 Row(horizontalArrangement = Arrangement.spacedBy(layout.gap.dp)) {
                     RoundControl("×", caption = "Mégse", description = "Mégse", onClick = onBack)
-                    RoundControl("✓", Gold, enabled=editable && foreground,caption = "Mentés", description = "✓ Mentés") {
+                    RoundControl("✓", SaveTone, enabled=editable && foreground,caption = "Mentés", description = "✓ Mentés") {
                         if(save!=null&&!save(field,edited,target))return@RoundControl
                         if (
                             field.endsWith("Seconds") ||
@@ -2542,7 +2547,7 @@ private fun ConfirmationScreen(discard: Boolean, completed: Int, onAnswer: (Bool
                     }
                     RoundControl(
                         if (discard) "✕" else "✓",
-                        if (discard) Danger else Gold,
+                        if (discard) Danger else SaveTone,
                         caption = if (discard) "Törlés" else "Befejezés",
                         description =
                             if (discard) "Edzés törlése" else "Edzés befejezése és mentése",

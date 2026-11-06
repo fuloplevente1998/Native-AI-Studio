@@ -170,7 +170,7 @@ private fun CalendarEditor(state: CalendarUiState, row: CalendarScheduleEntity?,
             if (invalid) Text(words[23])
         }
     }, confirmButton = {
-        TextButton(onClick = {
+        com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = {
             val edit = runCatching {
                 val duration = minutes.toInt(); require(duration in 10..240 && day != null)
                 val parsedDate = LocalDate.parse(date); require(parsedDate.year in 1900..2200)
@@ -265,7 +265,7 @@ private fun CalendarPlannerDialog(state: CalendarUiState, busy: Boolean, strings
                 }
             }
         }, confirmButton = {
-            if (preview != null) TextButton(onClick = onApply, enabled = !busy && preview.plan.slots.isNotEmpty(),
+            if (preview != null) com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = onApply, enabled = !busy && preview.plan.slots.isNotEmpty(),
                 modifier = Modifier.heightIn(min = 48.dp).testTag("calendar_planner_save")) { Text(strings.getString(R.string.calendar_planner_save)) }
             else TextButton(onClick = {
                 val value = runCatching { input().also {

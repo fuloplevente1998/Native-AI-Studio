@@ -453,6 +453,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onDeleteDay = viewModel::deleteEditorDay,
                             onRemoveExercise = viewModel::removeEditorExercise,
                             onRenameProgram = viewModel::renameEditorProgram,
+                            onSaveProgram = viewModel::saveEditorProgram,
                             onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true) }
                         )
                     }

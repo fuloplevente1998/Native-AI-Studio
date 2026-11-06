@@ -268,7 +268,7 @@ fun LogTabScreen(
                 }
             },
             dismissButton = {
-                TrainPilotOutlinedButton(
+                com.repforge.app.ui.theme.TrainPilotNegativeButton(
                     onClick = {
                         intervalStartDay = null
                         intervalEndDay = null
@@ -276,7 +276,7 @@ fun LogTabScreen(
                         showDatePickerDialog = false
                     }
                 ) {
-                    Text(trL(uiState.language, "Szűrő törlése", "Clear filter", "Filter löschen", "Șterge filtrul"), color = palette.textPrimary)
+                    Text(trL(uiState.language, "Szűrő törlése", "Clear filter", "Filter löschen", "Șterge filtrul"), color = androidx.compose.material3.LocalContentColor.current)
                 }
             }
         )
@@ -660,14 +660,12 @@ fun LogTabScreen(
                             color = palette.textSecondary
                         )
                         if (!filterAllMonths || intervalStartDay != null) {
-                            Button(
+                            com.repforge.app.ui.theme.TrainPilotNegativeButton(
                                 onClick = {
                                     intervalStartDay = null
                                     intervalEndDay = null
                                     filterAllMonths = true
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary)
-                            ) {
+                                }) {
                                 Text(trL(uiState.language, "Szűrő törlése", "Clear filter", "Filter löschen", "Șterge filtrul"), fontWeight = FontWeight.Bold)
                             }
                         }
