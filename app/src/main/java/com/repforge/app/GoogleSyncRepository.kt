@@ -561,6 +561,8 @@ class GoogleSyncRepository internal constructor(
         val entries = database.calendarScheduleDao().getAllEntries()
         val base = "https://www.googleapis.com/calendar/v3/calendars/${enc(calendarId)}/events"
         var count = 0
+        val total = entries.size
+        _uiState.update { it.copy(stageMessage = "Naptár szinkronizálása… (0/$total)") }
         for (operation in NativeCalendarSyncPlan.operations(entries)) {
             kotlinx.coroutines.currentCoroutineContext().ensureActive()
             dataTicket.requireCurrent(appContext)
@@ -592,6 +594,8 @@ class GoogleSyncRepository internal constructor(
                 }
             }
             count++
+            // Progress is reported only after the remote operation completed.
+            _uiState.update { it.copy(stageMessage = "Naptár szinkronizálása… ($count/$total)") }
         }
         val nowIso = Instant.now().toString()
         dataTicket.requireCurrent(appContext)
