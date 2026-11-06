@@ -22,5 +22,9 @@ internal object NativeCalendarSyncPlan {
                 .put("description", "Státusz: ${entry.status}")
                 .put("start", JSONObject().put("dateTime", start)).put("end", JSONObject().put("dateTime", end)))
         }
+    }.groupBy { it.id }.values.asSequence().map { sameId ->
+        // A live entry must not be deleted because a stale duplicate was skipped.
+        sameId.filterNot { it.delete }.maxByOrNull { it.payload?.optJSONObject("start")?.optString("dateTime").orEmpty() }
+            ?: sameId.first()
     }
 }

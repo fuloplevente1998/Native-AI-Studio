@@ -117,8 +117,7 @@ class GoogleCalendarSyncRegressionTest {
         assertEquals(1, sync().getOrThrow())
         expect("GET", "/oauth2/v3/userinfo", json = "{\"sub\":\"account-sub\",\"email\":\"owner@example.test\"}")
         expect("GET", "$root/new", json = calendar())
-        expect("POST", "$root/new/events?sendUpdates=none", 409)
-        expect("PUT", "$root/new/events/$eventId?sendUpdates=none")
+        // The confirmed payload is unchanged: no second remote write is necessary.
         assertEquals(1, sync().getOrThrow())
         assertEquals(1, calls.count { it.method == "POST" && it.path == root })
         assertEquals(setOf(eventId), calls.filter { it.path.contains("/events") }.map { JSONObject(it.body).getString("id") }.toSet())
@@ -214,6 +213,39 @@ class GoogleCalendarSyncRegressionTest {
         expect("DELETE", "$root/live/events/${ids[1]}", 410)
         assertEquals(2, sync().getOrThrow())
         assertPreserved(first, second)
+    }
+
+    @Test fun duplicateLocalRowsWithSameGoogleEventIdProduceOneRemoteWrite() {
+        val first = entry(id = "first")
+        val second = entry(id = "second")
+        save(first, second); live()
+        expect("POST", "$root/live/events?sendUpdates=none", 201)
+        assertEquals(1, sync().getOrThrow())
+        assertEquals(1, calls.count { it.path.contains("/events") })
+        assertEquals(1, repository.uiState.value.lastCalendarSyncCount)
+        assertPreserved(first, second)
+    }
+
+    @Test fun skippedDuplicateCannotDeleteAnActiveEventWithSameGoogleId() {
+        val cancelled = entry("skipped", "old")
+        val active = entry("planned", "current")
+        save(cancelled, active); live()
+        expect("POST", "$root/live/events?sendUpdates=none", 201)
+        assertEquals(1, sync().getOrThrow())
+        assertEquals(0, calls.count { it.method == "DELETE" })
+        assertEquals(1, calls.count { it.method == "POST" })
+        assertPreserved(cancelled, active)
+    }
+
+    @Test fun unchangedSecondSyncDoesNotSendEventAgain() {
+        val row = entry(); save(row); live()
+        expect("POST", "$root/live/events?sendUpdates=none", 201)
+        assertEquals(1, sync().getOrThrow())
+        expect("GET", "/oauth2/v3/userinfo", json = JSONObject().put("sub", "account-sub").put("email", "owner@example.test").toString())
+        expect("GET", "$root/live", json = calendar())
+        assertEquals(1, sync().getOrThrow())
+        assertEquals(1, calls.count { it.path.contains("/events") })
+        assertPreserved(row)
     }
 
     @Test fun diagnosticLabelsContainNoRemoteIdentifiersAndRetryPolicyRemainsIdempotent() {

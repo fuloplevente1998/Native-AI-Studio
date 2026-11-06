@@ -561,7 +561,28 @@ class GoogleSyncRepository internal constructor(
         val entries = database.calendarScheduleDao().getAllEntries()
         val base = "https://www.googleapis.com/calendar/v3/calendars/${enc(calendarId)}/events"
         var count = 0
-        for (operation in NativeCalendarSyncPlan.operations(entries)) {
+        val operations = NativeCalendarSyncPlan.operations(entries).toList()
+        val total = operations.size
+        // Only skip writes confirmed by this app on this exact account and calendar.
+        // A failed or interrupted run never records an unconfirmed operation.
+        val syncScope = "${prefs().getString("sub", "").orEmpty()}|$calendarId"
+        val fingerprintKey = "calendarConfirmedFingerprints"
+        val previous = runCatching { JSONObject(prefs().getString(fingerprintKey, "{}").orEmpty()) }
+            .getOrDefault(JSONObject())
+        // Periodically reconcile with Google in case events were edited or removed elsewhere.
+        val cacheFresh = System.currentTimeMillis() - previous.optLong("checkedAt", 0L) in 0L..86_400_000L
+        val confirmed = if (previous.optString("scope") == syncScope && cacheFresh)
+            previous.optJSONObject("events") ?: JSONObject() else JSONObject()
+        _uiState.update { it.copy(stageMessage = "Naptár szinkronizálása… (0/$total)") }
+        for (operation in operations) {
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
+            dataTicket.requireCurrent(appContext)
+            val fingerprint = operation.payload?.toString() ?: "<deleted>"
+            if (confirmed.optString(operation.id) == fingerprint) {
+                count++
+                _uiState.update { it.copy(stageMessage = "Naptár szinkronizálása… ($count/$total)") }
+                continue
+            }
             kotlinx.coroutines.currentCoroutineContext().ensureActive()
             dataTicket.requireCurrent(appContext)
             val id = operation.id
@@ -591,7 +612,17 @@ class GoogleSyncRepository internal constructor(
                     }
                 }
             }
+            // Commit after each confirmed response, so cancellation cannot mark pending work done.
+            confirmed.put(operation.id, fingerprint)
+            dataTicket.requireCurrent(appContext)
+            check(prefs().edit().putString(fingerprintKey, JSONObject()
+                .put("scope", syncScope).put("checkedAt", System.currentTimeMillis())
+                .put("events", confirmed).toString()).commit()) {
+                "A naptár szinkronállapota nem menthető."
+            }
             count++
+            // Progress is reported only after the remote operation completed.
+            _uiState.update { it.copy(stageMessage = "Naptár szinkronizálása… ($count/$total)") }
         }
         val nowIso = Instant.now().toString()
         dataTicket.requireCurrent(appContext)
