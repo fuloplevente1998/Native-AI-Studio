@@ -85,6 +85,37 @@ class StudioSessionMeasurementRegressionTest {
             .put("sequence", sequence).put("exerciseIndex", index).put("exerciseId", exercise.getString("id")))
     }
 
+    @Test fun explicitProgramSaveCommitsVisibleFieldsAndNameWithoutChangingOtherDaysOrLosingExtensions() {
+        val model = model()
+        val exerciseId = strength(model).id
+        val entry = JSONObject().put("id", exerciseId).put("sets", 3).put("reps", "10")
+            .put("weight", 12).put("rest", 90).put("futureExtension", "retain").toString()
+        val id = native { NativeProgramEditor.save(context, db, null,
+            NativeProgramEditor.Draft("Eredeti terv", "Leírás", listOf(
+                NativeProgramEditor.DayDraft("a", "Alap A", listOf(entry)),
+                NativeProgramEditor.DayDraft("b", "Alap B", listOf(entry)))), "hu") }
+        await { model.uiState.value.programs.any { it.id == id } }
+        model.openProgramEditor(id, 0)
+        val before = native { db.programDao().getProgramWithDaysById(id)!! }
+        val untouched = before.days.single { it.dayId == "b" }.exercisesJson
+        val edit = com.example.model.StudioProgramPrescriptionDraft("$id:a", exerciseId, 5, 12, 17.5f, 120)
+        model.saveEditorProgram("Mentett terv", listOf(edit))
+        await { !model.uiState.value.libraryMutationBusy && model.uiState.value.statusBannerMessage == "Program elmentve." }
+        val stored = native { db.programDao().getProgramWithDaysById(id)!! }
+        assertEquals("Mentett terv", stored.program.nameHu)
+        val row = org.json.JSONArray(stored.days.single { it.dayId == "a" }.exercisesJson).getJSONObject(0)
+        assertEquals(5, row.getInt("sets")); assertEquals("12", row.getString("reps"))
+        assertEquals(17.5, row.getDouble("weight"), 0.0); assertEquals(120, row.getInt("rest"))
+        assertEquals("retain", row.getString("futureExtension"))
+        assertEquals(untouched, stored.days.single { it.dayId == "b" }.exercisesJson)
+        // Reopening reads Room truth. Invalid edits must neither overwrite it nor report success.
+        model.openProgramEditor(id, 0)
+        model.saveEditorProgram("Hibás terv", listOf(edit.copy(weightKg = Float.NaN)))
+        await { !model.uiState.value.libraryMutationBusy && model.uiState.value.statusBannerMessage != "Program elmentve." }
+        val rejected = native { db.programDao().getProgramWithDaysById(id)!! }
+        assertEquals(stored, rejected)
+    }
+
     @Test fun watchOwnedStartAppearsWithoutRebindingAndItsSelectionFollowsWithoutNavigation() {
         val model = model()
         val first = strength(model)

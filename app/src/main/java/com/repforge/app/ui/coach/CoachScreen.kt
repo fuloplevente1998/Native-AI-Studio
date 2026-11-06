@@ -41,7 +41,7 @@ internal fun CoachScreen(starting: Boolean, onStart: (String, String, String?) -
                 Text("${recipe.getInt("sets")} × ${recipe.getString("reps")}")
                 if (state.variationFailed) Text(text.getString(com.repforge.app.R.string.coach_variation_failed), color = colors.danger)
             } },
-            confirmButton = { TextButton(onClick = model::saveVariation, enabled = !state.variationBusy,
+            confirmButton = { com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = model::saveVariation, enabled = !state.variationBusy,
                 modifier = Modifier.testTag("coach_variation_save")) { Text(text.getString(com.repforge.app.R.string.coach_variation_save)) } },
             dismissButton = { TextButton(onClick = model::closeVariation, enabled = !state.variationBusy) {
                 Text(text.getString(com.repforge.app.R.string.weight_cancel))

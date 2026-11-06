@@ -415,7 +415,7 @@ fun ActiveStrengthWorkoutScreen(
                 }
             },
             confirmButton = {
-                Button(
+                com.repforge.app.ui.theme.TrainPilotSaveButton(
                     onClick = {
                         val kg = editWeightText.toFloatOrNull() ?: targetSet.weightKg
                         val reps = editRepsText.toIntOrNull() ?: targetSet.reps
@@ -423,10 +423,6 @@ fun ActiveStrengthWorkoutScreen(
                         onUpdateSetValuesExact(targetSet.setNumber, kg, reps, rir)
                         editingSet = null
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = palette.primary,
-                        contentColor = palette.onPrimary
-                    ),
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(strings.saveBtn, fontWeight = FontWeight.Bold)
@@ -868,11 +864,11 @@ fun ActiveStrengthWorkoutScreen(
                         // 7. Destructive delete action button
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = palette.danger.copy(alpha = 0.10f),
+                            color = com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeBackground,
                             modifier = Modifier
                                 .width(setControlSize)
                                 .height(setControlSize)
-                                .trainPilotBorder(0.5.dp, palette.danger.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                .trainPilotBorder(0.5.dp, com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable { onDeleteSet(setItem.setNumber) }
                                 .testTag("delete_set_${setItem.setNumber}")
@@ -880,7 +876,7 @@ fun ActiveStrengthWorkoutScreen(
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     text = "−",
-                                    color = palette.danger,
+                                    color = com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeForeground,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 15.sp
                                 )
@@ -1656,16 +1652,12 @@ fun ActiveTimedWorkoutScreen(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     // Set complete button
-                    Button(
+                    com.repforge.app.ui.theme.TrainPilotSaveButton(
                         onClick = {
                             target?.let { nativeModel.recordSetStopwatch(it, "single") }
                         },
                         enabled = target != null && currentSec > 0,
                         shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = palette.surfaceElevated,
-                            contentColor = palette.primary
-                        ),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(44.dp)
@@ -1982,33 +1974,28 @@ fun ActiveBilateralWorkoutScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                     if (uiState.activeSets.size > 1) {
-                        androidx.compose.material3.TextButton(
+                        com.repforge.app.ui.theme.TrainPilotNegativeButton(
                             onClick = {
                                 onDeleteSet(setToEdit.setNumber)
                                 editingBilateralSet = null
                             }
                         ) {
-                            Icon(Icons.Default.DeleteOutline, contentDescription = null, tint = palette.danger, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.DeleteOutline, contentDescription = null, tint = androidx.compose.material3.LocalContentColor.current, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(tr(lang, "Sorozat törlése", "Delete set", "Satz löschen", "Șterge seria"), color = palette.danger, fontWeight = FontWeight.Bold)
+                            Text(tr(lang, "Sorozat törlése", "Delete set", "Satz löschen", "Șterge seria"), color = androidx.compose.material3.LocalContentColor.current, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             },
             confirmButton = {
-                Button(
+                com.repforge.app.ui.theme.TrainPilotSaveButton(
                     onClick = {
                         val lSec = editLeftText.toIntOrNull() ?: setToEdit.leftSec
                         val rSec = editRightText.toIntOrNull() ?: setToEdit.rightSec
                         val rirVal = editRirText.toIntOrNull()
                         onUpdateBilateralSetExact(setToEdit.setNumber, lSec, rSec, rirVal)
                         editingBilateralSet = null
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = palette.primary,
-                        contentColor = palette.onPrimary
-                    )
-                ) {
+                    }) {
                     Text(tr(lang, "Mentés és rögzítés", "Save and record", "Speichern und erfassen", "Salvează și înregistrează"), fontWeight = FontWeight.Bold)
                 }
             },
@@ -2305,16 +2292,12 @@ fun ActiveBilateralWorkoutScreen(
                             }
 
                             // Leállítás és rögzítés button -> writes directly into selectedTargetSetNumber's Left slot!
-                            Button(
+                            com.repforge.app.ui.theme.TrainPilotSaveButton(
                                 onClick = {
                                     target?.let { nativeModel.recordSetStopwatch(it, "left") }
                                 },
                                 enabled = target != null && native.stopwatchSetId == nativeSet?.setId && native.stopwatchSide == "left" && native.stopwatchSeconds > 0 && nativeSet?.isCompleted == false,
                                 shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = palette.primary,
-                                    contentColor = palette.onPrimary
-                                ),
                                 modifier = Modifier
                                     .weight(1.45f)
                                     .height(44.dp)
@@ -2474,16 +2457,12 @@ fun ActiveBilateralWorkoutScreen(
                             }
 
                             // Leállítás és rögzítés button -> writes directly into selectedTargetSetNumber's Right slot!
-                            Button(
+                            com.repforge.app.ui.theme.TrainPilotSaveButton(
                                 onClick = {
                                     target?.let { nativeModel.recordSetStopwatch(it, "right") }
                                 },
                                 enabled = target != null && native.stopwatchSetId == nativeSet?.setId && native.stopwatchSide == "right" && native.stopwatchSeconds > 0 && nativeSet?.isCompleted == false,
                                 shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = palette.primary,
-                                    contentColor = palette.onPrimary
-                                ),
                                 modifier = Modifier
                                     .weight(1.45f)
                                     .height(44.dp)
@@ -3440,16 +3419,12 @@ fun IntervalSettingsScreen(
             }
         }
         item {
-            Button(
+            com.repforge.app.ui.theme.TrainPilotSaveButton(
                 onClick = {
                     onSaveAndStartIntervals(workSec, restSec, rounds, sound, vibration, autoStep)
                     onSelectMeasurementMode(SubScreen.ACTIVE_TIMED)
                 },
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = palette.primary,
-                    contentColor = palette.onPrimary
-                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
@@ -3988,11 +3963,12 @@ fun WorkoutSummaryScreen(
                                         // Delete button top right
                                         Surface(
                                             shape = CircleShape,
-                                            color = palette.danger.copy(alpha = 0.9f),
+                                            color = com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeBackground,
                                             modifier = Modifier
                                                 .align(Alignment.TopEnd)
                                                 .padding(4.dp)
-                                                .size(24.dp)
+                                                .size(32.dp)
+                                                .border(1.dp, com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline, CircleShape)
                                                 .clip(CircleShape)
                                                 .clickable(enabled = !uiState.isSavingWorkout && !photoBusy) {
                                                     scope.launch {
@@ -4045,14 +4021,10 @@ fun WorkoutSummaryScreen(
 
         // Action buttons: Mentés, Szüneteltetés és kilépés, Edzés elvetése
         item {
-            Button(
+            com.repforge.app.ui.theme.TrainPilotSaveButton(
                 onClick = onSaveWorkout,
                 enabled = !uiState.isSavingWorkout && !photoBusy,
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = palette.primary,
-                    contentColor = palette.onPrimary
-                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
@@ -4075,10 +4047,8 @@ fun WorkoutSummaryScreen(
                 Text(strings.pauseAndExitAction, color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
             }
             Spacer(modifier = Modifier.height(8.dp))
-            TrainPilotOutlinedButton(
+            com.repforge.app.ui.theme.TrainPilotNegativeButton(
                 onClick = onDiscardWorkout,
-                colors = WorkoutControlAppearance.discardColors(),
-                border = WorkoutControlAppearance.discardBorder(),
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
                     .fillMaxWidth()

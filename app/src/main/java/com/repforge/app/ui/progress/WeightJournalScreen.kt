@@ -80,9 +80,9 @@ fun WeightJournalScreen(viewModel: WeightJournalViewModel = viewModel()) {
                             onClick = { viewModel.clearWriteError(); editing = entry }) {
                             Text(resources.getString(R.string.weight_edit))
                         }
-                        TextButton(enabled = !state.writing, modifier = Modifier.testTag("weight_delete_${entry.id}"),
+                        com.repforge.app.ui.theme.TrainPilotNegativeButton(enabled = !state.writing, modifier = Modifier.testTag("weight_delete_${entry.id}"),
                             onClick = { viewModel.clearWriteError(); deleting = entry }) {
-                            Text(resources.getString(R.string.weight_delete), color = colors.danger)
+                            Text(resources.getString(R.string.weight_delete), color = androidx.compose.material3.LocalContentColor.current)
                         }
                     }
                 }
@@ -121,9 +121,9 @@ fun WeightJournalScreen(viewModel: WeightJournalViewModel = viewModel()) {
                 }
             },
             confirmButton = {
-                TextButton(enabled = !state.writing && !state.staleEntry, modifier = Modifier.testTag("weight_confirm_delete"),
+                com.repforge.app.ui.theme.TrainPilotNegativeButton(enabled = !state.writing && !state.staleEntry, modifier = Modifier.testTag("weight_confirm_delete"),
                     onClick = { viewModel.delete(entry) { deleting = null } }) {
-                    Text(resources.getString(R.string.weight_delete), color = colors.danger)
+                    Text(resources.getString(R.string.weight_delete), color = androidx.compose.material3.LocalContentColor.current)
                 }
             },
             dismissButton = { TextButton(enabled = !state.writing, onClick = { deleting = null; viewModel.clearWriteError() }) {
@@ -214,7 +214,7 @@ private fun WeightEntryDialog(state: WeightJournalUiState, entry: BodyWeightEntr
                 WeightWriteError(state)
             }
         },
-        confirmButton = { Button(enabled = validWeight && validDate && !state.writing && !state.staleEntry,
+        confirmButton = { com.repforge.app.ui.theme.TrainPilotSaveButton(enabled = validWeight && validDate && !state.writing && !state.staleEntry,
             modifier = Modifier.testTag("weight_save"), onClick = { kg?.let { onSave(it, date) } }) {
             Text(resources.getString(R.string.weight_save))
         } },

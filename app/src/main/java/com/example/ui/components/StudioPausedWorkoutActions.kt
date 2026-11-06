@@ -27,10 +27,8 @@ internal fun StudioPausedWorkoutActions(workoutId: String, phoneControls: Boolea
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(onClick = onContinue, enabled = !busy, shape = RoundedCornerShape(14.dp), modifier = Modifier.weight(1f).heightIn(min = 50.dp)
             .testTag("home_continue_workout_button")) { Text(continueLabel) }
-        TrainPilotOutlinedButton(onClick = { pendingId = workoutId },
+        com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = { pendingId = workoutId },
             enabled = !busy && phoneControls && workoutId.isNotBlank(), shape = RoundedCornerShape(14.dp),
-            colors = WorkoutControlAppearance.discardColors(),
-            border = WorkoutControlAppearance.discardBorder(!busy && phoneControls && workoutId.isNotBlank()),
             modifier = Modifier.heightIn(min = 50.dp).testTag("home_discard_workout_button")) {
             Text(word("Elvetés", "Discard", "Verwerfen", "Renunță"))
         }
@@ -45,13 +43,11 @@ internal fun StudioPausedWorkoutActions(workoutId: String, phoneControls: Boolea
                 "Antrenamentul neterminat nu va fi salvat în jurnal. Antrenamentele salvate anterior rămân intacte."
             )) },
             confirmButton = {
-                TrainPilotOutlinedButton(onClick = {
+                com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = {
                     val id = pendingId
                     pendingId = null
                     if (id == workoutId && phoneControls && !busy && !id.isNullOrBlank()) onDiscard(id)
                 }, enabled = phoneControls && !busy,
-                    colors = WorkoutControlAppearance.discardColors(),
-                    border = WorkoutControlAppearance.discardBorder(phoneControls && !busy),
                     modifier = Modifier.heightIn(min = 48.dp).testTag("home_confirm_discard")) {
                     Text(word("Elvetés", "Discard", "Verwerfen", "Renunță"))
                 }

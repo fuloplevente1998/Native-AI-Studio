@@ -252,9 +252,9 @@ private fun JournalDetailDialog(state: JournalUiState, text: Resources, language
                                 TrainPilotOutlinedButton(onClick = { runCatching { context.startActivity(model.createCalendarIntent(detail)) } }, modifier = Modifier.fillMaxWidth()) {
                                     Text(text.getString(R.string.journal_calendar))
                                 }
-                                TextButton(onClick = model::requestDeleteWorkout, enabled = !state.deleting,
+                                com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = model::requestDeleteWorkout, enabled = !state.deleting,
                                     modifier = Modifier.fillMaxWidth().testTag("journal_delete")) {
-                                    Text(text.getString(R.string.journal_delete), color = colors.dangerText)
+                                    Text(text.getString(R.string.journal_delete), color = androidx.compose.material3.LocalContentColor.current)
                                 }
                             }
                         }
@@ -267,7 +267,7 @@ private fun JournalDetailDialog(state: JournalUiState, text: Resources, language
     if (state.workoutToDelete != null) AlertDialog(onDismissRequest = model::cancelDeleteWorkout,
         title = { Text(text.getString(R.string.journal_delete_title)) },
         text = { Text(text.getString(R.string.journal_delete_message, state.workoutToDelete.workout.dayName)) },
-        confirmButton = { TextButton(onClick = model::confirmDeleteWorkout, enabled = !state.deleting,
+        confirmButton = { com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = model::confirmDeleteWorkout, enabled = !state.deleting,
             modifier = Modifier.testTag("journal_delete_confirm")) { Text(text.getString(R.string.journal_delete)) } },
         dismissButton = { TextButton(onClick = model::cancelDeleteWorkout, enabled = !state.deleting) { Text(text.getString(R.string.journal_cancel)) } })
     photo?.let { entry ->

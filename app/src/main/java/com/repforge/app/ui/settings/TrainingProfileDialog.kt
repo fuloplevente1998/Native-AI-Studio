@@ -82,7 +82,7 @@ internal fun TrainingProfileDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(values) }, enabled = !saving,
+            com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = { onSave(values) }, enabled = !saving,
                 modifier = Modifier.testTag("profile_save")) {
                 Text(resources.getString(R.string.native_profile_17))
             }

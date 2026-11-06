@@ -48,7 +48,7 @@ internal fun ExerciseFeedbackChips(effort: String?, note: String, language: Stri
             horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             StudioWorkoutFeedback.efforts.forEach { key ->
                 val chosen = selected == key
-                val accent = if (key == "pain") palette.danger else palette.primary
+                val accent = if (key == "pain") com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline else palette.primary
                 Surface(shape = RoundedCornerShape(12.dp),
                     color = if (chosen) accent.copy(alpha = 0.2f) else if (key == "pain") accent.copy(alpha = 0.04f) else palette.surfaceElevated,
                     modifier = Modifier.heightIn(min = 48.dp)
@@ -67,7 +67,7 @@ internal fun ExerciseFeedbackChips(effort: String?, note: String, language: Stri
                 modifier = Modifier.testTag("${tag}_toggle_note")) {
                 Text(feedbackText(language, "Megjegyzés", "Note", "Notiz", "Notiță"))
             }
-            if (effort != null) TextButton(onClick = { onEffort(null) }, enabled = enabled,
+            if (effort != null) com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = { onEffort(null) }, enabled = enabled,
                 modifier = Modifier.testTag("${tag}_clear")) {
                 Text(feedbackText(language, "Válasz törlése", "Clear answer", "Antwort löschen", "Șterge răspunsul"))
             }
@@ -88,7 +88,7 @@ internal fun StudioExerciseFeedbackReview(effort: String?, note: String, languag
     val palette = LocalTrainPilotPalette.current
     Surface(Modifier.fillMaxWidth().testTag(tag), color = palette.surfaceCard,
         shape = RoundedCornerShape(14.dp), border = com.repforge.app.ui.theme.TrainPilotFrames.control(
-            if (effort == "pain") palette.danger.copy(alpha = 0.45f) else palette.cardBorder)) {
+            if (effort == "pain") com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.45f) else palette.cardBorder)) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(title, color = palette.textPrimary, style = MaterialTheme.typography.labelLarge)
             Text(feedbackChoiceLabel(effort, language), color = if (effort == "pain") palette.danger else palette.primary,
@@ -113,7 +113,7 @@ internal fun StudioWorkoutOverallFeedback(effort: String?, note: String, languag
     val palette = LocalTrainPilotPalette.current
     Surface(Modifier.fillMaxWidth().testTag(tag), color = palette.surfaceCard, shape = RoundedCornerShape(16.dp),
         border = com.repforge.app.ui.theme.TrainPilotFrames.control(
-            if (effort == "pain") palette.danger.copy(alpha = 0.45f) else palette.cardBorder)) {
+            if (effort == "pain") com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.45f) else palette.cardBorder)) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().testTag("${tag}_toggle")) {
                 Column(Modifier.weight(1f)) {

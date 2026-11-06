@@ -68,9 +68,9 @@ internal fun NativeTimerDefaultsDialog(opened: String, language: String, saving:
             }
         },
         confirmButton = {
-            TextButton(onClick = { config?.let(onSave) }, enabled = !saving && config != null && !writeFailed,
+            com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = { config?.let(onSave) }, enabled = !saving && config != null && !writeFailed,
                 modifier = Modifier.testTag("settings_timer_save")) {
-                Text(strings.getString(R.string.native_timer_defaults_save), color = colors.accentText)
+                Text(strings.getString(R.string.native_timer_defaults_save), color = androidx.compose.material3.LocalContentColor.current)
             }
         },
         dismissButton = {

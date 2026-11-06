@@ -18,12 +18,8 @@ internal object WorkoutControlAppearance {
     }
 
     @Composable
-    fun discardColors() = ButtonDefaults.outlinedButtonColors(
-        containerColor = LocalTrainPilotColors.current.card2,
-        contentColor = LocalTrainPilotColors.current.dangerText)
+    fun discardColors() = com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeColors()
 
     @Composable
-    fun discardBorder(enabled: Boolean = true) = LocalTrainPilotColors.current.let {
-        TrainPilotFrames.control(if (enabled) it.dangerText else it.muted.copy(alpha = 0.38f), selected = true)
-    }
+    fun discardBorder(enabled: Boolean = true) = com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeBorder(enabled)
 }

@@ -4,7 +4,32 @@ Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
 
-## Folyamatban – #175 ikonos gyakorlat-visszajelzés és összesítő
+## Folyamatban – #177 programmentés és témától független akciógombok
+
+Root egyedül, design/program-save-actions ág. Új globális Mentés a programszerkesztő
+alján, a Törlés bal oldalán; név és még nem külön mentett gyakorlatmezők a meglévő
+NativeProgramEditor tranzakciójával íródnak. Nap/exercise ID célzás, ismeretlen
+mezők megőrzése, aktív session/restore/ticket védelem és korábbi írások bevárása
+megmarad. Siker csak tartós írás + Room-újraolvasás után. A napváltásokhoz tartozó
+lokális mezők stabil kulcsot kapnak; gyors stepper-kattintás nem veszít változást.
+Szerkesztőből egyedi gyakorlat gomb eltávolítva; könyvtárban a Kedvencek mellé,
+48dp-s hangsúlyos gombként került. Közös fix zöld/piros hátteres+keretes akció-
+komponensek telefonon (Studio és native), mentés/törlés/elvetés/visszavonás;
+óra mentés/visszavonás/lezárás vezérlői is fix zöld/pirosak. Futás közbeni
+felirat-felismerés nincs; callback, engedély és megerősítés változatlan.
+Két új regresszió: nyitott UI-mezők globális mentése és tényleges Room-írás/
+ismeretlen mező/másik nap/hibás adat elutasítása. Meglévő gombteszt save/delete
+függetlenséggel kiegészítve. Diff-check tiszta, közös signed kapu még következik.
+
+## #175 ikonos gyakorlat-visszajelzés – ellenőrzött forrás, új csomagra vár
+
+PR176 mainen, signed42131928587 SUCCESS, forrás9784d91b62251c4feb5df474e4cc2226ff15bbda.
+Nyers XML + artifact digest + verification commit függetlenül visszaellenőrizve:
+566 teszt, 0 failure/error/skipped (385 telefon +181 Wear). A futás közben érkező
+#177 új kérés miatt külön köztes APK-t nem adtunk át; a következő teljes közös
+csomag tartalmazza mindkét feladatot. Verzió/signer változatlan.
+
+## #175 ikonos gyakorlat-visszajelzés és összesítő – implementáció
 
 Root egyedül, design/exercise-feedback-chips ág. A képen szereplő öt nehézségi
 válasz + külön Fájdalom közvetlen, kompakt, tördelődő ikonos gombként jelenik meg

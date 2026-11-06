@@ -49,7 +49,7 @@ internal fun StudioCoachRecommendations(
         AlertDialog(onDismissRequest = onCloseVariation,
             title = { Text(coachTr(lang, "Gyakorlatváltozat előnézete", "Exercise Variation Preview", "Vorschau der Übungsvariante", "Previzualizare variantă exercițiu")) },
             text = { Text(NativeCoachAdviceText.variation(text, preview.next)) },
-            confirmButton = { TextButton(onClick = onSaveVariation, enabled = !state.variationBusy,
+            confirmButton = { com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = onSaveVariation, enabled = !state.variationBusy,
                 modifier = Modifier.testTag("studio_coach_variation_confirm")) { Text(coachTr(lang, "Változat mentése", "Save Variation", "Variante speichern", "Salvează varianta")) } },
             dismissButton = { TextButton(onClick = onCloseVariation, enabled = !state.variationBusy) { Text(coachTr(lang, "Mégse", "Cancel", "Abbrechen", "Anulează")) } })
     }

@@ -312,8 +312,8 @@ fun ActiveWorkoutScreen(
                             fontSize = 12.sp
                         )
                     }
-                    TextButton(onClick = { viewModel.undoLastSet() }) {
-                        Text(strings.getString(R.string.native_workout_undo), color = colors.accentText, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = { viewModel.undoLastSet() }) {
+                        Text(strings.getString(R.string.native_workout_undo), color = androidx.compose.material3.LocalContentColor.current, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     }
                 }
             }
@@ -464,11 +464,11 @@ fun ActiveWorkoutScreen(
                                         .background(colors.card)
                                         .trainPilotBorder(1.dp, colors.line, RoundedCornerShape(8.dp))
                                 ) {
-                                    IconButton(
+                                    com.repforge.app.ui.theme.TrainPilotNegativeIconButton(
                                         onClick = { viewModel.deletePhoto(photo.id) },
                                         modifier = Modifier.size(24.dp).align(Alignment.TopEnd)
                                     ) {
-                                        Icon(Icons.Default.Close, contentDescription = strings.getString(R.string.native_workout_delete), tint = colors.dangerText, modifier = Modifier.size(14.dp))
+                                        Icon(Icons.Default.Close, contentDescription = strings.getString(R.string.native_workout_delete), tint = androidx.compose.material3.LocalContentColor.current, modifier = Modifier.size(14.dp))
                                     }
                                 }
                             }
@@ -525,24 +525,20 @@ fun ActiveWorkoutScreen(
                     Icon(Icons.Default.Image, contentDescription = strings.getString(R.string.native_workout_gallery), tint = colors.text)
                 }
                 // Befejezés gomb
-                Button(
+                com.repforge.app.ui.theme.TrainPilotSaveButton(
                     onClick = { viewModel.openFinishModal() },
                     modifier = Modifier.weight(1f).height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.accent)
-                ) {
-                    Icon(Icons.Default.Check, contentDescription = null, tint = colors.onAccent)
+                    shape = RoundedCornerShape(12.dp)) {
+                    Icon(Icons.Default.Check, contentDescription = null, tint = androidx.compose.material3.LocalContentColor.current)
                     Spacer(Modifier.width(6.dp))
-                    Text(strings.getString(R.string.native_workout_finish), color = colors.onAccent, fontWeight = FontWeight.Bold)
+                    Text(strings.getString(R.string.native_workout_finish), color = androidx.compose.material3.LocalContentColor.current, fontWeight = FontWeight.Bold)
                 }
                 // Elvetés gomb
-                Button(
+                com.repforge.app.ui.theme.TrainPilotNegativeButton(
                     onClick = { viewModel.openDiscardModal() },
                     modifier = Modifier.height(48.dp).testTag("workout_discard"),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.danger)
-                ) {
-                    Text("✕", color = colors.dangerText, fontWeight = FontWeight.Bold)
+                    shape = RoundedCornerShape(12.dp)) {
+                    Text("✕", color = androidx.compose.material3.LocalContentColor.current, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -604,15 +600,13 @@ fun ActiveWorkoutScreen(
             title = { Text(strings.getString(R.string.native_workout_discard_title), color = colors.text, fontWeight = FontWeight.Bold) },
             text = { Text(strings.getString(R.string.native_workout_discard_message), color = colors.muted) },
             confirmButton = {
-                Button(
+                com.repforge.app.ui.theme.TrainPilotNegativeButton(
                     onClick = {
                         viewModel.closeDiscardModal()
                         viewModel.discardWorkout { navController.popBackStack() }
                     },
-                    modifier = Modifier.testTag("workout_confirm_discard"),
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.danger)
-                ) {
-                    Text(strings.getString(R.string.native_workout_delete), color = colors.dangerText, fontWeight = FontWeight.Bold)
+                    modifier = Modifier.testTag("workout_confirm_discard")) {
+                    Text(strings.getString(R.string.native_workout_delete), color = androidx.compose.material3.LocalContentColor.current, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -932,9 +926,9 @@ private fun IntervalOptions(
                     modifier = Modifier.testTag("interval_global"))
                 Text(text.getString(com.repforge.app.R.string.interval_global), color = colors.text)
             }
-            TextButton(onClick = { onSave(work, rest, rounds, sound, vibration, advance, global) },
+            com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = { onSave(work, rest, rounds, sound, vibration, advance, global) },
                 enabled = editable && (!saved || global), modifier = Modifier.testTag("interval_save")) {
-                Text(text.getString(com.repforge.app.R.string.interval_save), color = colors.accentText)
+                Text(text.getString(com.repforge.app.R.string.interval_save), color = androidx.compose.material3.LocalContentColor.current)
             }
             if (active) {
                 Text(text.getString(com.repforge.app.R.string.interval_round_status, state.timerRound, state.timerRounds), color = colors.muted, fontSize = 12.sp)
@@ -1182,28 +1176,26 @@ fun FinishWorkoutDialog(
                 Text(strings.getString(R.string.native_workout_feedback_hint), color = colors.muted, fontSize = 12.sp)
                 Spacer(Modifier.height(4.dp))
                 choices.forEach { (key, label) ->
-                    Button(
+                    com.repforge.app.ui.theme.TrainPilotSaveButton(
                         onClick = { onConfirm(key) },
                         modifier = Modifier.fillMaxWidth().height(42.dp),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = colors.card2)
+                        shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text(label, color = colors.text, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Text(label, color = androidx.compose.material3.LocalContentColor.current, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
                 }
-                Button(
+                com.repforge.app.ui.theme.TrainPilotNegativeButton(
                     onClick = { onConfirm("pain") },
                     modifier = Modifier.fillMaxWidth().height(42.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.danger)
+                    shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text(strings.getString(R.string.native_workout_feedback_pain), color = colors.dangerText, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text(strings.getString(R.string.native_workout_feedback_pain), color = androidx.compose.material3.LocalContentColor.current, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(null) }) {
-                Text(strings.getString(R.string.native_workout_feedback_skip), color = colors.accentText, fontWeight = FontWeight.Bold)
+            com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = { onConfirm(null) }) {
+                Text(strings.getString(R.string.native_workout_feedback_skip), color = androidx.compose.material3.LocalContentColor.current, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {

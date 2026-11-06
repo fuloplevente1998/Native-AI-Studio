@@ -154,13 +154,13 @@ internal fun CustomExerciseDialog(
                 }
                 if (exercise != null && deleteConfirm) {
                     Text(words[16]); Text(words[17])
-                    TextButton(onClick = onDelete, enabled = !saving,
+                    com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = onDelete, enabled = !saving,
                         modifier = Modifier.testTag("custom_exercise_confirm_delete")) { Text(words[15]) }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = {
                 onSave(draft.copy(sets = setsText.toIntOrNull() ?: -1,
                     weight = weightText.replace(',', '.').toDoubleOrNull() ?: Double.NaN,
                     restSeconds = restText.toIntOrNull() ?: -1))
@@ -168,7 +168,7 @@ internal fun CustomExerciseDialog(
         },
         dismissButton = {
             Row {
-                if (exercise != null) TextButton(onClick = { deleteConfirm = true }, enabled = !saving,
+                if (exercise != null) com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = { deleteConfirm = true }, enabled = !saving,
                     modifier = Modifier.testTag("custom_exercise_delete")) { Text(words[15]) }
                 TextButton(onClick = onCancel, enabled = !saving) { Text(words[14]) }
             }

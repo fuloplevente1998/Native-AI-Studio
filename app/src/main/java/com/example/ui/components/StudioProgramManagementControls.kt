@@ -15,7 +15,8 @@ import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 @Composable
 internal fun StudioProgramManagementControls(
     program: TrainingProgramModel, busy: Boolean, hasDay: Boolean,
-    onCopy: () -> Unit, onDelete: () -> Unit, onAddDay: (String) -> Unit, onDeleteDay: () -> Unit
+    onCopy: () -> Unit, onDelete: () -> Unit, onAddDay: (String) -> Unit, onDeleteDay: () -> Unit,
+    onSave: () -> Unit = {}
 ) {
     val lang = com.example.localization.LocalTrainPilotStrings.current.language
     fun word(hu: String, en: String, de: String, ro: String) = when (lang) {
@@ -40,10 +41,16 @@ internal fun StudioProgramManagementControls(
                 enabled = !busy && program.days.size > 1, modifier = Modifier.weight(1f).testTag("studio_program_delete_day"),
                 label = word("Nap törlése", "Delete day", "Tag löschen", "Șterge ziua"))
         }
-        if (program.isCustom) TrainPilotDeleteButton(onClick = { pending = "delete-program" }, enabled = !busy,
-            modifier = Modifier.fillMaxWidth().testTag("studio_program_delete"),
-            label = word("Program törlése", "Delete program", "Programm löschen", "Șterge programul"))
-        else Text(word(
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = onSave, enabled = !busy,
+                modifier = Modifier.weight(1f).testTag("studio_program_save")) {
+                Text(word("Mentés", "Save", "Speichern", "Salvează"))
+            }
+            if (program.isCustom) TrainPilotDeleteButton(onClick = { pending = "delete-program" }, enabled = !busy,
+                modifier = Modifier.weight(1f).testTag("studio_program_delete"),
+                label = word("Program törlése", "Delete program", "Programm löschen", "Șterge programul"))
+        }
+        if (!program.isCustom) Text(word(
             "A beépített sablon változtatása saját másolatot hoz létre.",
             "Editing a built-in template creates a custom copy.",
             "Das Ändern einer Vorlage erstellt eine eigene Kopie.",
@@ -72,7 +79,8 @@ internal fun StudioProgramManagementControls(
                     "Das eigene Programm wird dauerhaft gelöscht. Aktive oder im Protokoll/Kalender verwendete Programme können nicht gelöscht werden.",
                     "Programul personalizat va fi șters definitiv. Programele active sau utilizate în jurnal/calendar nu pot fi șterse."
                 ))
-        }, confirmButton = { TextButton(enabled = !busy && (operation != "add-day" || dayName.isNotBlank()),
+        }, confirmButton = { com.repforge.app.ui.theme.TrainPilotActionButton(positive = operation == "add-day",
+            enabled = !busy && (operation != "add-day" || dayName.isNotBlank()),
             modifier = Modifier.testTag("studio_program_confirm"), onClick = {
                 pending = null
                 when (operation) { "add-day" -> { onAddDay(dayName); dayName = "" }; "delete-day" -> onDeleteDay(); else -> onDelete() }
@@ -102,7 +110,7 @@ internal fun StudioRemoveProgramExerciseButton(id: String, name: String, busy: B
             "$name wird aus diesem Trainingstag entfernt. Übungsbibliothek und bisherige Protokolle bleiben unverändert.",
             "$name va fi eliminat din această zi de antrenament. Biblioteca de exerciții și jurnalul anterior rămân neschimbate."
         )) },
-        confirmButton = { TextButton(onClick = { confirm = false; onRemove(id) },
+        confirmButton = { com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = { confirm = false; onRemove(id) },
             modifier = Modifier.testTag("studio_program_confirm_remove_exercise")) { Text(word("Eltávolítás", "Remove", "Entfernen", "Elimină")) } },
         dismissButton = { TextButton(onClick = { confirm = false }) { Text(word("Mégse", "Cancel", "Abbrechen", "Anulează")) } })
 }

@@ -2087,6 +2087,18 @@ class TrainPilotViewModel : ViewModel() {
         draft.copy(name = name.trim())
     }
 
+    fun saveEditorProgram(name: String, changes: List<com.example.model.StudioProgramPrescriptionDraft>) {
+        val state = _uiState.value
+        val programId = state.editingProgramId
+        val language = state.language.name.lowercase(java.util.Locale.ROOT)
+        mutateStudioLibrary(tr("Program elmentve.", "Program saved.", "Programm gespeichert.", "Program salvat."),
+            editor = true) { context, db, _ ->
+            val opened = requireNotNull(db.programDao().getProgramWithDaysById(programId))
+            com.repforge.app.NativeProgramEditor.save(context, db, opened,
+                com.repforge.app.StudioProgramSave.draft(opened, language, name, changes), language)
+        }
+    }
+
     fun copyEditorProgram() {
         val state = _uiState.value
         val copySuffix = tr(" – másolat", " – copy", " – Kopie", " – copie", state.language)

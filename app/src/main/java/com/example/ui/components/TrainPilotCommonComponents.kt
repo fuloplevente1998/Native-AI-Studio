@@ -459,14 +459,14 @@ fun TrainPilotRedCloseButton(
 ) {
     val strings = LocalTrainPilotStrings.current
     val palette = LocalTrainPilotPalette.current
-    val iconColor = if (palette.isDark) Color(0xFFFCA5A5) else Color(0xFFB91C1C)
+    val iconColor = com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeForeground
     // The painted control shrinks ~10%; its independent hit target remains 48 dp.
     Box(modifier = modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp)
         .clickable(role = Role.Button, onClick = onClick)
         .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier), contentAlignment = Alignment.Center) {
-        Surface(shape = RoundedCornerShape(11.dp), color = Color(0xFFEF4444).copy(alpha = 0.16f),
+        Surface(shape = RoundedCornerShape(11.dp), color = com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeBackground,
             modifier = Modifier.size(size)
-                .border(1.dp, Color(0xFFEF4444).copy(alpha = 0.55f), RoundedCornerShape(11.dp))
+                .border(1.dp, com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.7f), RoundedCornerShape(11.dp))
                 .then(if (testTag.isNotEmpty()) Modifier.testTag("${testTag}_visual") else Modifier)) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                 Icon(Icons.Default.Close, contentDescription = strings.closeAction,
@@ -999,14 +999,9 @@ fun GoalsEditDialog(
             }
         },
         confirmButton = {
-            Button(
+            com.repforge.app.ui.theme.TrainPilotSaveButton(
                 onClick = { onSave(workouts, steps) },
-                modifier = Modifier.heightIn(min = 48.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = palette.primary,
-                    contentColor = palette.onPrimary
-                )
-            ) {
+                modifier = Modifier.heightIn(min = 48.dp)) {
                 Text(strings.saveBtn, fontWeight = FontWeight.Bold)
             }
         },
@@ -1895,7 +1890,7 @@ fun PersonalPlannerModalDialog(
             }
         },
         confirmButton = {
-            Button(
+            com.repforge.app.ui.theme.TrainPilotSaveButton(
                 onClick = {
                     onSaveAndOpenPlan(
                         heightCm,
@@ -1913,10 +1908,6 @@ fun PersonalPlannerModalDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 48.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = palette.primary,
-                    contentColor = palette.onPrimary
-                ),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
