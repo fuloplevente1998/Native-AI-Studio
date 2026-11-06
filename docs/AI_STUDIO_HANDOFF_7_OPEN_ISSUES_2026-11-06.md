@@ -3,7 +3,9 @@
 Dátum: 2026-11-06  
 Repo: `fuloplevente1998/Native-AI-Studio`  
 Kiinduló branch: `main`  
-A handoff készítésekor ismert main SHA: `58f4b4782a1121a37047fa5be400daa37f4246e6`
+A handoff előtti alkalmazás-main SHA: `58f4b4782a1121a37047fa5be400daa37f4246e6`  
+A handoffot rögzítő docs-only commit: `7723f8f067ef34bf81cd18783f9060cea2947515`  
+**Mindig a legfrissebb `main` HEAD-ről dolgozz; a fenti SHA-k tájékoztató kiindulási pontok.**
 
 ## Cél
 
