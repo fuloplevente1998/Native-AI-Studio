@@ -247,7 +247,7 @@ fun LogTabScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = trL(uiState.language, "1. koppintás = Innentől, 2. koppintás = Idáig.", "1st tap = From, 2nd tap = To.", "1. Tippen = Von, 2. Tippen = Bis.", "1. atingere = De la, 2. atingere = Până la."),
+                        text = trL(uiState.language, "Jelölj ki két napot az időszak megtekintéséhez.", "Select two days to view a date range.", "Wähle zwei Tage, um den Zeitraum anzuzeigen.", "Selectează două zile pentru a vedea intervalul."),
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.textSecondary
                     )
@@ -404,10 +404,9 @@ fun LogTabScreen(
                         modifier = Modifier.padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                        Column(
+                            modifier = Modifier.fillMaxWidth().testTag("log_interval_calendar_header"),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Column {
                                 Text(
@@ -418,15 +417,17 @@ fun LogTabScreen(
                                 )
                                 Text(
                                     text = when {
-                                        intervalStartDay == null -> trL(uiState.language, "1. nyomás: Innentől • 2. nyomás: Idáig", "1st tap: From • 2nd tap: To", "1. Tippen: Von • 2. Tippen: Bis", "1. atingere: De la • 2. atingere: Până la")
-                                        intervalEndDay == null -> trL(uiState.language, "Innentől: $monthPrefixDisplay ${intervalStartDay}. → válassz 2. napot (Idáig)", "From: $monthPrefixDisplay ${intervalStartDay}. → select 2nd day (To)", "Ab: $monthPrefixDisplay ${intervalStartDay}. → 2. Tag wählen (Bis)", "De la: $monthPrefixDisplay ${intervalStartDay}. → alege a 2-a zi (Până la)")
+                                        intervalStartDay == null -> trL(uiState.language, "Jelölj ki két napot az időszak megtekintéséhez.", "Select two days to view a date range.", "Wähle zwei Tage, um den Zeitraum anzuzeigen.", "Selectează două zile pentru a vedea intervalul.")
+                                        intervalEndDay == null -> trL(uiState.language, "Kezdőnap: $monthPrefixDisplay ${intervalStartDay}. • Jelöld ki a zárónapot.", "From: $monthPrefixDisplay ${intervalStartDay}. • Select the end day.", "Ab: $monthPrefixDisplay ${intervalStartDay}. • Wähle den Endtag.", "De la: $monthPrefixDisplay ${intervalStartDay}. • Selectează ziua finală.")
                                         else -> "${trL(uiState.language, "Intervallum", "Interval", "Intervall", "Interval")}: $monthPrefixDisplay ${rangeMinDay}. – $monthPrefixDisplay ${rangeMaxDay}."
                                     },
                                     style = MaterialTheme.typography.labelSmall,
                                     color = palette.primary
                                 )
                             }
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            FlowRow(modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Surface(
                                     shape = RoundedCornerShape(10.dp),
                                     color = palette.surfaceElevated,

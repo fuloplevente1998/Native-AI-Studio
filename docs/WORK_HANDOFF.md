@@ -4,6 +4,20 @@ Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
 
+## Napló naptár utolsó kiadási javítása – 2026-11-06
+
+A felhasználó engedélyezte1.0-beta2754 buildjét és release-ét; PR184 mainre került
+543c3ed forrással. Az első signed futást42151346542 leállítottuk a felhasználó új
+4467.jpg kérése miatt; cancelled, ebből nincs átadott APK vagy teszteredmény.
+Új rövid ág: design/compact-journal-calendar, root egyedül. A naplós inline
+naptár fejlécében a cím+súgó és a két művelet nem verseng többé egy vízszintes
+sor helyéért. Column + FlowRow, nincs kényszerű extrém szövegtörés/magas üres tér;
+a műveletek keskeny kijelzőn törhetnek sorba. Súgó: „Jelölj ki két napot az időszak
+megtekintéséhez.” Mind a négy nyelven, a régi intervallumdialogban is. Szűrés,
+napkijelölés és dátumállapot változatlan. Új320dp header-bounds/nyelvek/actions
+regresszióforrás. Diff-check tiszta; a közös új signed main-kapu következik,
+ugyanaz a1.0-beta2754 verzió, előzőből nem adtunk ki csomagot.
+
 ## #190 – Fix felső navigáció és 1.0-beta előkészítés, csak kód
 
 PR184 ugyanazon ágán: az öt fül fix egyenlő szélességű, nincs horizontalScroll
