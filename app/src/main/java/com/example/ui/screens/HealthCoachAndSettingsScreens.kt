@@ -213,6 +213,7 @@ fun HealthTabScreen(
     val todayDotLabel = remember(today) {
         today.format(java.time.format.DateTimeFormatter.ofPattern("yyyy. MM. dd."))
     }
+    var syncDetailsExpanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val dotFormatter = remember {
         java.time.format.DateTimeFormatter.ofPattern("yyyy. MM. dd.")
     }
@@ -1484,18 +1485,6 @@ fun HealthTabScreen(
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = tr(
-                        uiState.language,
-                        "Az elérhető adatok a választott szolgáltatótól és a tényleges engedélyektől függenek.",
-                        "Available data depends on the selected provider and granted permissions.",
-                        "Verfügbare Daten hängen vom gewählten Anbieter und den Berechtigungen ab.",
-                        "Datele disponibile depind de furnizorul selectat și de permisiunile acordate."
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = palette.textSecondary
-                )
             }
         }
 
@@ -1529,7 +1518,7 @@ fun HealthTabScreen(
                         )
                         Text(
                             text = when {
-                                uiState.watchAppAvailable -> tr(uiState.language, "● Wear OS adatkapcsolat • átadás külön ACK-val", "● Wear OS data link • handover with explicit ACK", "● Wear OS-Datenverbindung • Übergabe mit ACK", "● Conexiune date Wear OS • predare cu ACK")
+                                uiState.watchAppAvailable -> tr(uiState.language, "● Óra csatlakoztatva", "● Watch connected", "● Uhr verbunden", "● Ceas conectat")
                                 uiState.watchConnected -> tr(uiState.language, "Wear OS rendszerkapcsolat • TrainPilot óraapp nincs telepítve", "Wear OS system connection • TrainPilot watch app not installed", "Wear OS-Systemverbindung • TrainPilot-Uhren-App nicht installiert", "Conexiune sistem Wear OS • Aplicația de ceas TrainPilot nu este instalată")
                                 else -> tr(uiState.language, "Nincs csatlakoztatott óra", "No watch connected", "Keine Uhr verbunden", "Niciun ceas conectat")
                             },
@@ -1605,35 +1594,43 @@ fun HealthTabScreen(
                         style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
                         modifier = Modifier.testTag("health_last_sync_$provider"))
                 }
-                Text(
-                    if (uiState.healthAutoOnOpen) tr(uiState.language,
-                        "Automatikus frissítés appnyitáskor és előtérben 5 percenként.",
-                        "Automatic refresh on app opening and every 5 minutes in the foreground.",
-                        "Automatische Aktualisierung beim App-Start und im Vordergrund alle 5 Minuten.",
-                        "Actualizare automată la deschiderea aplicației și la fiecare 5 minute în prim-plan.")
-                    else tr(uiState.language, "Automatikus frissítés kikapcsolva.", "Automatic refresh is off.", "Automatische Aktualisierung deaktiviert.", "Actualizarea automată este oprită."),
-                    style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
-                    modifier = Modifier.testTag("health_auto_refresh_status"))
-                Text(
-                    when {
-                        uiState.healthBackgroundOptedIn && uiState.healthBackgroundScheduled -> tr(uiState.language,
-                            "Health Connect háttérfrissítés: kb. 15 percenként; az Android késleltetheti.",
-                            "Health Connect background refresh: about every 15 minutes; Android may delay it.",
-                            "Health Connect im Hintergrund: etwa alle 15 Minuten; Android kann dies verzögern.",
-                            "Health Connect în fundal: aproximativ la fiecare 15 minute; Android poate întârzia actualizarea.")
-                        uiState.healthBackgroundOptedIn -> tr(uiState.language, "Health Connect háttérfrissítés nincs ütemezve; ellenőrizd az engedélyeket.", "Health Connect background refresh is not scheduled; check permissions.", "Health Connect-Hintergrundaktualisierung nicht geplant; Berechtigungen prüfen.", "Actualizarea Health Connect în fundal nu este programată; verifică permisiunile.")
-                        else -> tr(uiState.language, "Health Connect háttérfrissítés kikapcsolva.", "Health Connect background refresh is off.", "Health Connect-Hintergrundaktualisierung deaktiviert.", "Actualizarea Health Connect în fundal este oprită.")
-                    }, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
-                    modifier = Modifier.testTag("health_background_refresh_status"))
                 if (uiState.healthSyncMessage.isNotBlank()) Text(uiState.healthSyncMessage,
                     color = if (uiState.healthSyncFailed) palette.danger else if (uiState.healthSyncPartial) palette.warning else palette.textPrimary,
                     modifier = Modifier.testTag("health_sync_result"))
-                Text("${tr(uiState.language, "Utolsó adatolvasás", "Last data read", "Letzter Datenabruf", "Ultima citire date")}: ${uiState.lastHealthReadLabel}", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
-                Text(
-                    text = uiState.healthProviderStatus,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = palette.textSecondary
-                )
+                TrainPilotOutlinedButton(onClick = { syncDetailsExpanded = !syncDetailsExpanded },
+                    modifier = Modifier.fillMaxWidth().testTag("health_sync_details_toggle")) {
+                    Text(tr(uiState.language, "Szinkron részletei", "Sync details", "Sync-Details", "Detalii sincronizare"),
+                        modifier = Modifier.weight(1f))
+                    Icon(if (syncDetailsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null)
+                }
+                if (syncDetailsExpanded) {
+                    Text(
+                        if (uiState.healthAutoOnOpen) tr(uiState.language,
+                            "Automatikus frissítés appnyitáskor és előtérben 5 percenként.",
+                            "Automatic refresh on app opening and every 5 minutes in the foreground.",
+                            "Automatische Aktualisierung beim App-Start und im Vordergrund alle 5 Minuten.",
+                            "Actualizare automată la deschiderea aplicației și la fiecare 5 minute în prim-plan.")
+                        else tr(uiState.language, "Automatikus frissítés kikapcsolva.", "Automatic refresh is off.", "Automatische Aktualisierung deaktiviert.", "Actualizarea automată este oprită."),
+                        style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
+                        modifier = Modifier.testTag("health_auto_refresh_status"))
+                    Text(
+                        when {
+                            uiState.healthBackgroundOptedIn && uiState.healthBackgroundScheduled -> tr(uiState.language,
+                                "Health Connect háttérfrissítés: kb. 15 percenként; az Android késleltetheti.",
+                                "Health Connect background refresh: about every 15 minutes; Android may delay it.",
+                                "Health Connect im Hintergrund: etwa alle 15 Minuten; Android kann dies verzögern.",
+                                "Health Connect în fundal: aproximativ la fiecare 15 minute; Android poate întârzia actualizarea.")
+                            uiState.healthBackgroundOptedIn -> tr(uiState.language, "Health Connect háttérfrissítés nincs ütemezve; ellenőrizd az engedélyeket.", "Health Connect background refresh is not scheduled; check permissions.", "Health Connect-Hintergrundaktualisierung nicht geplant; Berechtigungen prüfen.", "Actualizarea Health Connect în fundal nu este programată; verifică permisiunile.")
+                            else -> tr(uiState.language, "Health Connect háttérfrissítés kikapcsolva.", "Health Connect background refresh is off.", "Health Connect-Hintergrundaktualisierung deaktiviert.", "Actualizarea Health Connect în fundal este oprită.")
+                        }, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
+                        modifier = Modifier.testTag("health_background_refresh_status"))
+                    Text("${tr(uiState.language, "Utolsó adatolvasás", "Last data read", "Letzter Datenabruf", "Ultima citire date")}: ${uiState.lastHealthReadLabel}", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                    Text(
+                        text = uiState.healthProviderStatus,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = palette.textSecondary
+                    )
+                }
             }
         }
     }

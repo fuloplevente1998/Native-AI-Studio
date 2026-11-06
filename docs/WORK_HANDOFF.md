@@ -4,6 +4,16 @@ Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
 
+## #189 – Egészség oldal alja, csak kód
+
+PR184 ugyanazon ágán: a footer automata/háttérfrissítés magyarázatai, nyers
+providerállapot és utolsó adatolvasás egy alapból csukott „Szinkron részletei”
+sor alatt. A szolgáltatónkénti sikeres szinkronidő és aktuális eredmény/hiba
+látható marad. Általános engedélymagyarázat törölve, Wear kapcsolat ACK-szövege
+rövidítve. Szinkron/engedély/ütemezés és adatlogika változatlan.
+Diff-check tiszta, meglévő footer result/idő teszttagok megmaradtak. Kis layout-
+változás, új teszt nincs; fordítás/CI/APK és vizuális próba továbbra sem futott.
+
 ## Csak kód – #183, #185–#188 / draft PR184
 
 Ág/worktree: `design/journal-health-summary-compact` /
