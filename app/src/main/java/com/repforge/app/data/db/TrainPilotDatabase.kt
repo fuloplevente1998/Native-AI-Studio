@@ -72,6 +72,21 @@ abstract class TrainPilotDatabase : RoomDatabase() {
         }
 
         suspend fun ensureBuiltinCatalogSeeded(db: TrainPilotDatabase, context: Context) {
+            // Routine snapshot publication is a read when the complete catalog already exists.
+            // Do not acquire a metadata write lease merely to run no-op INSERT checks: that
+            // would make a following restore spuriously busy. Actual missing-row writes still
+            // use the original admission fence and recheck their IDs inside the transaction.
+            val ticket = runCatching {
+                com.repforge.app.NativeDataReplacement.continuationForCurrentData(context)
+            }.getOrNull()
+            if (ticket != null) {
+                val exercises = db.exerciseLibraryDao().getExerciseIds().toSet()
+                val programs = db.programDao().getProgramIds().toSet()
+                if (defaultExercises().all { it.id in exercises } && defaultPrograms().first.all { it.id in programs }) {
+                    ticket.requireCurrent(context)
+                    return
+                }
+            }
             // Missing-only seeding preserves imported/customized rows, including old native IDs.
             com.repforge.app.NativeDataReplacement.mutate(context) {
                 db.withTransaction {

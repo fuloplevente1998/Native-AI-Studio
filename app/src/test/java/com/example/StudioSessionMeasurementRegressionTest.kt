@@ -499,6 +499,32 @@ class StudioSessionMeasurementRegressionTest {
         } finally { service.destroy() }
     }
 
+    @Test fun completeCatalogReadDoesNotAcquireWriteLeaseAndStillWorksInsideReplacement() {
+        val readerJob = SupervisorJob()
+        val readers = CoroutineScope(readerJob + Dispatchers.IO)
+        try {
+            native {
+                TrainPilotDatabase.ensureBuiltinCatalogSeeded(db, context)
+                NativeDataReplacement.mutate(context) {
+                    // This detached reader must finish while the write lease is held;
+                    // queuing another no-op writer would time out and block restore admission.
+                    withTimeout(10_000) {
+                        readers.async { TrainPilotDatabase.ensureBuiltinCatalogSeeded(db, context) }.await()
+                    }
+                }
+                // Real replacement access still follows the existing inherited lease path.
+                NativeDataReplacement.exclusively(context) {
+                    TrainPilotDatabase.ensureBuiltinCatalogSeeded(db, context)
+                }
+                assertTrue(db.exerciseLibraryDao().getExerciseIds().containsAll(TrainPilotDatabase.defaultExercises().map { it.id }))
+                assertTrue(db.programDao().getProgramIds().containsAll(TrainPilotDatabase.defaultPrograms().first.map { it.id }))
+            }
+        } finally {
+            readerJob.cancel()
+            native { readerJob.join() }
+        }
+    }
+
     @Test fun staleLibrarySelectionAfterDiscardRestoreAndNewStartCannotEditTheNewSession() {
         val model = model()
         model.startQuickTimedWithExercise(timed(model)); awaitStarted(model)
