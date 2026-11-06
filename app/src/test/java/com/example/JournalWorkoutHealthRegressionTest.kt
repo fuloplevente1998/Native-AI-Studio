@@ -6,6 +6,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.*
@@ -380,6 +381,30 @@ class JournalWorkoutHealthRegressionTest {
         compose.onNodeWithTag("journal_confirm_delete").assertDoesNotExist()
         assertNotNull(awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById(first.workout.id) })
         assertNotNull(awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById(second.workout.id) })
+    }
+
+    @Test fun narrowJournalCalendarHeaderFitsHintAndBothActionsWithoutTallEmptySpace() {
+        var language by androidx.compose.runtime.mutableStateOf(AppLanguage.HU)
+        compose.setContent { TrainPilotTheme {
+            androidx.compose.foundation.layout.Box(Modifier.width(320.dp)) {
+                com.example.ui.screens.LogTabScreen(TrainPilotUiState(language = language),
+                    TrainPilotStrings.forLanguage(language), {}, {}, {}, {}, {})
+            }
+        } }
+        compose.onNodeWithTag("log_month_picker_button").performClick()
+        for (lang in AppLanguage.entries) {
+            compose.runOnIdle { language = lang }
+            compose.onNodeWithTag("log_tab_screen").performScrollToNode(hasTestTag("log_interval_calendar_header"))
+            val header = compose.onNodeWithTag("log_interval_calendar_header").fetchSemanticsNode().boundsInRoot
+            assertTrue("Calendar header too tall: $lang / $header", header.height <= 160 * compose.activity.resources.displayMetrics.density)
+            listOf("log_jump_today_button", "log_clear_filter_button").forEach { tag ->
+                val action = compose.onNodeWithTag(tag).assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+                assertTrue(action.left >= header.left && action.right <= header.right)
+            }
+        }
+        compose.onNodeWithTag("log_jump_today_button").performClick()
+        compose.onNodeWithTag("log_clear_filter_button").performClick()
+        compose.onNodeWithText("Selectează două zile pentru a vedea intervalul.").assertExists()
     }
 
     @Test fun listDeletionConfirmsTheClickedRowWithoutOpeningTheDetailPage() {
