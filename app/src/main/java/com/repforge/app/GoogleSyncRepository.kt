@@ -573,6 +573,8 @@ class GoogleSyncRepository internal constructor(
             previous.optJSONObject("events") ?: JSONObject() else JSONObject()
         _uiState.update { it.copy(stageMessage = "Naptár szinkronizálása… (0/$total)") }
         for (operation in operations) {
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
+            dataTicket.requireCurrent(appContext)
             val fingerprint = operation.payload?.toString() ?: "<deleted>"
             if (confirmed.optString(operation.id) == fingerprint) {
                 count++
