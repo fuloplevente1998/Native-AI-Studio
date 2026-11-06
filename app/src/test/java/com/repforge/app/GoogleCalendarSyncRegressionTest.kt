@@ -117,8 +117,7 @@ class GoogleCalendarSyncRegressionTest {
         assertEquals(1, sync().getOrThrow())
         expect("GET", "/oauth2/v3/userinfo", json = "{\"sub\":\"account-sub\",\"email\":\"owner@example.test\"}")
         expect("GET", "$root/new", json = calendar())
-        expect("POST", "$root/new/events?sendUpdates=none", 409)
-        expect("PUT", "$root/new/events/$eventId?sendUpdates=none")
+        // The confirmed payload is unchanged: no second remote write is necessary.
         assertEquals(1, sync().getOrThrow())
         assertEquals(1, calls.count { it.method == "POST" && it.path == root })
         assertEquals(setOf(eventId), calls.filter { it.path.contains("/events") }.map { JSONObject(it.body).getString("id") }.toSet())
