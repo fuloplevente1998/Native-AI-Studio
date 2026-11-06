@@ -3,6 +3,16 @@
 Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
+## Új APK-kérés – bf61e1a csomag, 1.0-beta2755
+
+A felhasználó kéri az új APK-párt a mainre pusholt bf61e1a változásaiból.
+Telefon és Wear versionCode2755, név1.0-beta, hogy a korábbi2754-re frissíthető
+legyen. Egy közös, meglévő persistent-signing main-kapu fut teljes JVM regresszióval
+és phone release +R8/shrunk Wear release párral. Nincs külön ágankénti build,
+workflow-gyengítés, helyi SDK vagy új agent. A bf61e1a helyi6/6 tesztjelentése még
+nem teljes AndroidCI-bizonyíték; ellenőrzött telepítő csak zöld kapu/digest/signer/
+verzióellenőrzés után, az ismert Drive-mappába kerül. Jelenleg még nem új kiadás.
+
 ## 7 nyitott GitHub-feladat (#199, #196, #117, #195, #197, #200, #198) natív implementációja és verifikációja
 
 A `docs/AI_STUDIO_HANDOFF_7_OPEN_ISSUES_2026-11-06.md` specifikációja alapján mind a 7 feladat elkészült és tesztekkel ellenőrzött:
