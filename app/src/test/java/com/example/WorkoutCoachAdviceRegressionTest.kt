@@ -89,6 +89,51 @@ class WorkoutCoachAdviceRegressionTest {
     private suspend fun read(frame: JSONObject = frame(), settings: TrainPilotUserSettings = prefs) =
         NativeCoachAdviceRepository(db).loadActiveExercise(frame, "coach-press", settings, readiness, now)
 
+    @Test fun repeatedCoachReloadsKeepPriorSnapshotAndCoalesceWithoutCancellingReads() {
+        val reads = java.util.concurrent.atomic.AtomicInteger()
+        val cancellations = java.util.concurrent.atomic.AtomicInteger()
+        val gates = List(3) { kotlinx.coroutines.CompletableDeferred<Unit>() }
+        val owner = ViewModelStore()
+        val provider = com.repforge.app.HealthJournalStore.get(context).preferences()
+            .optString("provider", com.repforge.app.HealthJournalStore.HC)
+        val model = CoachViewModel(context as Application, db) {
+            val index = reads.getAndIncrement()
+            try { gates[index].await() }
+            catch (cancelled: kotlinx.coroutines.CancellationException) { cancellations.incrementAndGet(); throw cancelled }
+            CoachUiState(loading = false, provider = provider,
+                target = CoachTarget("coach-program", "b", "Read $index"))
+        }
+        owner.put("reload-coach", model)
+        fun await(condition: () -> Boolean) {
+            val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30)
+            while (true) {
+                shadowOf(Looper.getMainLooper()).idle()
+                if (condition()) return
+                check(System.nanoTime() < deadline) { "Coach reload timed out" }
+                Thread.sleep(5)
+            }
+        }
+        try {
+            await { reads.get() == 1 }
+            repeat(5) { model.reload() }
+            assertEquals(1, reads.get())
+            gates[0].complete(Unit)
+            await { reads.get() == 2 && model.state.value.target?.title == "Read 0" }
+            assertTrue(model.state.value.loading)
+            assertFalse(model.state.value.initialLoading)
+            gates[1].complete(Unit)
+            await { !model.state.value.loading && model.state.value.target?.title == "Read 1" }
+            assertEquals(0, cancellations.get())
+            assertEquals(2, reads.get())
+            model.reload()
+            await { reads.get() == 3 }
+            assertEquals("Read 1", model.state.value.target?.title)
+            assertFalse(model.state.value.initialLoading)
+            gates[2].complete(Unit)
+            await { !model.state.value.loading && model.state.value.target?.title == "Read 2" }
+        } finally { gates.forEach { it.complete(Unit) }; owner.clear() }
+    }
+
     @Test fun unselectedModeStillReturnsCanonicalAdviceForActualSubstitutedExerciseAndTarget() = native {
         for (day in 2..4) migrator.saveWorkoutJsonToRoom(history("valid-$day", day))
         val frame = frame(); val before = frame.toString()

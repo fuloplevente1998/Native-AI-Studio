@@ -54,7 +54,7 @@ internal fun StudioCoachRecommendations(
             dismissButton = { TextButton(onClick = onCloseVariation, enabled = !state.variationBusy) { Text(coachTr(lang, "Mégse", "Cancel", "Abbrechen", "Anulează")) } })
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        if (state.loading) CircularProgressIndicator(Modifier.size(24.dp))
+        if (state.initialLoading) CircularProgressIndicator(Modifier.size(24.dp).testTag("studio_coach_initial_loading"))
         if (state.error) Text(coachTr(lang, "A Coach adatai nem frissíthetők. A korábbi kijelzés nem friss mérés.", "Coach data could not be refreshed. Previous values are not a fresh measurement.", "Coach-Daten konnten nicht aktualisiert werden.", "Datele Coach nu pot fi actualizate."), color = palette.danger)
         if (showTarget) StudioCoachNextTrainingCard(state, onStart, onWorkout)
         state.exercises.forEach { row ->

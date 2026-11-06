@@ -1,8 +1,89 @@
-# Rövid munkátadás – 2026-11-05
+# Rövid munkátadás – 2026-11-06
 
 Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
+
+## #190 – Fix felső navigáció és 1.0-beta előkészítés, csak kód
+
+PR184 ugyanazon ágán: az öt fül fix egyenlő szélességű, nincs horizontalScroll
+vagy kiválasztáskor automatikus oldalra görgetés. Hosszú fordítás legfeljebb két
+sorba törhet, felirat nem lóghat át a szomszéd fülre. Felső quick gombok vizuálisan
+36dp-re csökkentek, érintési felület48dp maradt. Logó32dp, név18sp; kisebb külső
+és sorok közti térközökkel több hely marad a tartalomnak. Navigáció/callback,
+kijelölés és paletták változatlanok. Új 320dp minden nyelvű bounds/swipe/callback
+regresszió forrása, még nem futott. Diff-check tiszta, vizuális próba hátravan.
+
+Felhasználó kifejezetten kérte a verzió emelését: telefon és Wear egyaránt
+**versionName1.0-beta / versionCode2754**. Package és signer változatlan.
+Ez forrás-előkészítés, CI/fordítás/APK/merge továbbra sem indult; a korábbi
+átadott2753 APK-párt ez nem változtatja meg.
+
+## #189 – Egészség oldal alja, csak kód
+
+PR184 ugyanazon ágán: a footer automata/háttérfrissítés magyarázatai, nyers
+providerállapot és utolsó adatolvasás egy alapból csukott „Szinkron részletei”
+sor alatt. A szolgáltatónkénti sikeres szinkronidő és aktuális eredmény/hiba
+látható marad. Általános engedélymagyarázat törölve, Wear kapcsolat ACK-szövege
+rövidítve. Szinkron/engedély/ütemezés és adatlogika változatlan.
+Diff-check tiszta, meglévő footer result/idő teszttagok megmaradtak. Kis layout-
+változás, új teszt nincs; fordítás/CI/APK és vizuális próba továbbra sem futott.
+
+## Csak kód – #183, #185–#188 / draft PR184
+
+Ág/worktree: `design/journal-health-summary-compact` /
+`/workspace/TrainPilot-journal-summary-compact`, root egyedül, új agent nélkül.
+[Draft PR184](https://github.com/fuloplevente1998/Native-AI-Studio/pull/184),
+main alap: `aed2e1f3d5edb135a72f0391757c6e15e213dd31`.
+Felhasználói utasítás: **először csak kód**, nincs CI/build/APK, Drive vagy merge.
+A commitok `[skip ci]` jelöléssel kerülnek fel; az issue-k nyitva maradnak.
+
+- #183: naplós pulzus/energia összesítő rövidítve (részletek alább).
+- #185: Egészségnapló Samsung/HC kijelölése paletta-primary háttérrel/kerettel,
+  kontrasztos onPrimary szöveggel; provider-/dedup-/adatlogika változatlan.
+- #188: összesítő teljes gyakorlat-visszajelzés listája egy, alapból csukott
+  lenyitható sorban. Sessionhez kötött rememberSaveable; lenyitva a meglévő
+  review/módosítás/pótlás működik, csukás nem töröl választ. Kevesebb görgetés Mentésig.
+- #186: Coach reload nem szakítja meg újra meg újra az IO-olvasást; legfeljebb
+  egy követő olvasást sorol be. Azonos provider korábbi adatai megmaradnak,
+  a kezdeti spinner nem szúródik vissza a már feltöltött lapba. Az első Compose
+  bekötés nem ismétli meg az init olvasást; valós későbbi módosítás továbbra frissít.
+- #187: felhasználói pontosítás: **telefon vezérelte, nem adta át az órának**.
+  Az órás Befejezés eddig mindig fromWatch ágra ment, amely az aktív phone ownert
+  elutasítja. Az azonos ID/start/epoch/generation, confirmed protocol1 mirror
+  kérés most a telefon canonical natív adatait zárja le; a tükrözött setértékek
+  nem írhatják felül őket. A végső zárolt ellenőrzés is újra igazolja a kérést.
+  Watch health summary megmarad, phone GPS a saját lezárását használja.
+  A korábbi finalizationPending draftból a mentés újrapróbálható.
+  Külön talált hiba: valóban órának átadott sessionnél a suspendCommands edit
+  fence megakadályozhatta a lezárást; kivétel kizárólag a pontosan egyező,
+  érvényes watch-owner finishre van, edit/restore/discard/handoff-védelmek maradnak.
+  Roommal igazolt teljesen lezárt retry saved ACK-t kaphat újraimport nélkül;
+  aktív execution vagy tombstone ezt tiltja. A telefon már bekötött naplója
+  távoli lezárás után újraolvassa Roomot. Receipt csak tartós mentés/lezárás után.
+
+Ellenőrzés: `git diff --check` tiszta; statikus API/callsite/ownership/retry áttekintés.
+**7 új regresszió forrása**: mirror/epoch/handoff admission, lost ACK és aktív
+execution kizárás, két valódi native finalizer + Room + bekötött Studio napló eset,
+Coach olvasások összevonása és megmaradó UI-pozíció. A mirror fixture szándékosan
+eltérő watch setértéket küld; a Room eredménynek a telefonon rögzített értéket kell
+őriznie. A tesztek/fordítás **nem futottak**, CI és fizikai Wear/Samsung próba még
+nem igazolja a javítást. Nincs új APK; az átadott pár továbbra is 159aaee.
+Következő lépés: jóváhagyott közös ellenőrzési kör, majd készüléken telefon-owner
+és watch-owner Befejezés, szinkronretry, napló/frissítés és összesítő-görgetés próba.
+
+## Kód kész – #183 naplós pulzus/energia összesítő rövidítése
+
+Ág: design/journal-health-summary-compact, root egyedül. A közös Studio/native
+összesítőben eltűnnek az ismétlődő legacy-időbélyeg, becslés, átfedés és energia-
+értelmezés magyarázatok. Egy összevont forrássor + szükség esetén rövid mérésállapot
+marad. A technikai pulzusmintaszám a fő összesítőből kikerül, a Forrás fül és az
+eredeti adatok megmaradnak. Minden más mérési érték/tag megmarad; aggregáció,
+forrásprioritás, deduplikáció, hiány/valós nulla és tárolás változatlan.
+Diff-check tiszta; ez kis UI-rövidítés, új teszt nincs. A meglévő UI-tesztek
+használt metrikatagjai megmaradtak. Build/JVM/vizuális próba még nem futott.
+Felhasználói kérés: **először csak kód**. Draft PR, [skip ci]; nincs CI/build/APK,
+Drive-feltöltés vagy main-merge ebben a körben. A legutóbbi kiadott APK továbbra159aaee.
 
 ## Legújabb átadott APK-pár – #175 + #177, 2753 / 159aaee
 

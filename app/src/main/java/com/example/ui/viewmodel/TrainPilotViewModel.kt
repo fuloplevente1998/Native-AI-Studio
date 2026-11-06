@@ -1251,6 +1251,9 @@ class TrainPilotViewModel : ViewModel() {
             val warnedUnknownSelections = mutableSetOf<Pair<String, String?>>()
             ActiveWorkoutStore.snapshotFlow.collect { frame ->
                 if (frame?.optBoolean("active") != true) {
+                    val before = _uiState.value
+                    val remoteClose = frame != null && before.isWorkoutSessionActive && !before.isSavingWorkout &&
+                        before.activeWorkoutId == frame.optString("workoutId")
                     if (frame != null) _uiState.update { state ->
                         if (state.activeWorkoutId != frame.optString("workoutId")) state
                         else state.copy(isWorkoutSessionActive = false, activeWorkoutId = "", activeWorkoutGeneration = 0L, workoutStartedEpochMs = 0L,
@@ -1259,6 +1262,10 @@ class TrainPilotViewModel : ViewModel() {
                             currentSubScreen = if (state.currentSubScreen in activeMeasurementScreens) SubScreen.NONE else state.currentSubScreen,
                             backStack = state.backStack.filterNot { it.subScreen in activeMeasurementScreens })
                     }
+                    // A remote native finalizer has committed history before publishing closure.
+                    // Refresh the same Room projection once; local save already updates its UI.
+                    if (remoteClose && !NativeDataReplacement.blocked(context))
+                        reloadNativeEnvironment(context, settingsStore, database, scope)
                 } else {
                     val canonicalId = frame.optJSONArray("exercises")
                         ?.optJSONObject(frame.optInt("currentExercise", -1))?.optString("id")?.takeIf { it.isNotBlank() }

@@ -121,9 +121,9 @@ class WearCommandListenerService : WearableListenerService() {
 
                 // 2. Ownership Epoch Fencing (#193)
                 if (!PhoneOwnership193.commandAllowed(this, command)) {
-                    if (command.optString("action") == "discardWorkout") {
+                    if (command.optString("action") in setOf("discardWorkout", "finishWorkout")) {
                         // A closed workout may already have a durable deletion marker.
-                        // Reconcile that proof on IO; never relax the ownership fence for edits.
+                        // Reconcile terminal Room proof on IO; never relax the fence for edits.
                         WearSyncRepository.processIncomingWatchCommandAsync(this, command, uri)
                     } else WearCommandReceipts.complete(this, command, "superseded", uri)
                     continue

@@ -21,15 +21,21 @@ internal data class CoachUiState(val loading: Boolean = true, val error: Boolean
     val refreshing: Boolean = false, val refreshFailed: Boolean = false,
     val variationPreview: NativeCoachVariation.Preview? = null, val variationBusy: Boolean = false,
     val variationFailed: Boolean = false, val variationSaved: Boolean = false,
-    val exercises: List<CoachExerciseAdvice> = emptyList(), val provider: String = "")
+    val exercises: List<CoachExerciseAdvice> = emptyList(), val provider: String = "") {
+    /** Only the initial load needs an expanding placeholder; re-reads keep the existing layout. */
+    val initialLoading: Boolean get() = loading && provider.isBlank()
+}
 
 /** Reads canonical provider projections and a bounded history slice; never fabricates Health samples. */
-internal class CoachViewModel(application: Application) : AndroidViewModel(application) {
+internal class CoachViewModel internal constructor(application: Application,
+    private val db: TrainPilotDatabase,
+    private val snapshotReader: (suspend () -> CoachUiState)? = null) : AndroidViewModel(application) {
+    constructor(application: Application) : this(application, TrainPilotDatabase.getInstance(application.applicationContext))
     private val app = application.applicationContext
-    private val db = TrainPilotDatabase.getInstance(app)
     private val _state = MutableStateFlow(CoachUiState())
     val state = _state.asStateFlow()
     private var loading: Job? = null
+    private var reloadAgain = false
     init { reload() }
     fun previewVariation(exerciseId: String) {
         val target = _state.value.target ?: return
@@ -82,34 +88,43 @@ internal class CoachViewModel(application: Application) : AndroidViewModel(appli
     }
     fun reload() {
         if (_state.value.variationBusy || _state.value.variationPreview != null) return
-        loading?.cancel()
+        // Multiple native/health/UI notifications must not repeatedly cancel the same read.
+        // Keep one follow-up so a real change during IO is never lost.
+        if (loading?.isActive == true) { reloadAgain = true; return }
+        loading = viewModelScope.launch {
+            do {
+                reloadAgain = false
+                readCoach()
+            } while (reloadAgain)
+        }
+    }
+
+    private suspend fun readCoach() {
         val provider = HealthJournalStore.get(app).preferences().optString("provider", HealthJournalStore.HC)
         if (_state.value.provider != provider) _state.value = _state.value.copy(readiness = null, exercises = emptyList())
-        loading = viewModelScope.launch {
-            _state.value = _state.value.copy(loading = true, error = false)
-            try {
-                _state.value = withContext(Dispatchers.IO) {
-                    com.repforge.app.NativeDataReplacement.mutate(app) {
-                    val settings = TrainPilotSettingsStore(app).current()
-                    val now = Instant.now(); val zone = ZoneId.systemDefault(); val today = now.atZone(zone).toLocalDate()
-                    val selected = NativeSelectedCoachReadings.load(app, db, now, zone)
-                    val target = NativeCoachTargets(db).select(settings.activeProgramId, settings.language, now, zone)
-                    val readiness = selected.readiness
-                    val advice = NativeCoachAdviceRepository(db).load(target, settings, readiness, now)
-                    check(HealthJournalStore.get(app).preferences().optString("provider", HealthJournalStore.HC) == selected.provider) {
-                        "Az egészségadat-forrás megváltozott. Frissítsd a Coach adatait."
-                    }
-                    CoachUiState(false, false, settings.language, readiness, target,
-                        refreshing = _state.value.refreshing, refreshFailed = _state.value.refreshFailed, exercises = advice, provider = selected.provider,
-                        variationSaved = _state.value.variationSaved)
-                    }
-                }
-            } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) {
-                // Failed re-read must not erase a previously displayed, persisted readiness
-                // snapshot; the visible error flag explicitly marks its uncertain freshness.
-                _state.value = _state.value.copy(loading = false, error = true)
-            }
+        _state.value = _state.value.copy(loading = true, error = false)
+        try {
+            val loaded = withContext(Dispatchers.IO) { snapshotReader?.invoke() ?: readCanonical() }
+            _state.value = loaded.copy(loading = reloadAgain)
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) {
+            // Failed re-read retains the prior snapshot and explicitly marks its freshness.
+            _state.value = _state.value.copy(loading = reloadAgain, error = true)
         }
+    }
+
+    private suspend fun readCanonical(): CoachUiState = com.repforge.app.NativeDataReplacement.mutate(app) {
+        val settings = TrainPilotSettingsStore(app).current()
+        val now = Instant.now()
+        val zone = ZoneId.systemDefault()
+        val selected = NativeSelectedCoachReadings.load(app, db, now, zone)
+        val target = NativeCoachTargets(db).select(settings.activeProgramId, settings.language, now, zone)
+        val advice = NativeCoachAdviceRepository(db).load(target, settings, selected.readiness, now)
+        check(HealthJournalStore.get(app).preferences().optString("provider", HealthJournalStore.HC) == selected.provider) {
+            "Az egészségadat-forrás megváltozott. Frissítsd a Coach adatait."
+        }
+        CoachUiState(false, false, settings.language, selected.readiness, target,
+            refreshing = _state.value.refreshing, refreshFailed = _state.value.refreshFailed,
+            exercises = advice, provider = selected.provider, variationSaved = _state.value.variationSaved)
     }
 }
