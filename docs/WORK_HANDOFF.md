@@ -4,6 +4,23 @@ Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
 
+## 1.0-beta signed kapu követő javítása – távoli lezárás utáni olvasás
+
+42151766999 / e7c25ee: fordítás sikeres, **577 tesztből576 sikeres,1 failure**.
+Új esetek sikeresek, de staleLibrarySelectionAfterDiscardRestoreAndNewStartCannotEditTheNewSession
+az azonnali restore-nál „Már folyamatban van egy adat-visszaállítás vagy törlés”
+hibát kapott. Nyers XML és artifactdigest ellenőrizve. APK-átadás/release nem történt.
+A PR184 új távoli close megfigyelője teljes környezetreloadot indított; ez a
+katalógusseed miatt write lease-t foglalhatott a következő restore elől.
+
+fix/remote-close-history-read: a lezárás kizárólag a közös Room->napló mappert
+hívja. Nincs katalógusseed, healthreload vagy egyéb író mellékhatás. A mapper
+változatlan logikával közös függvénybe került az induláskori reload és a close
+olvasás számára. A continuation epoch és observer-scope ellenőrzi az adatcsere/
+rebind határt; közben bekövetkezett lokális save/edit megjelenítését nem írja felül.
+A hibázó teszt és ownership/restore/mutex-védelem változatlan, nincs tesztgyengítés.
+A végleges signed main-kapu következik, ugyanaz az1.0-beta2754 verzió.
+
 ## Napló naptár utolsó kiadási javítása – 2026-11-06
 
 A felhasználó engedélyezte1.0-beta2754 buildjét és release-ét; PR184 mainre került
