@@ -22,5 +22,5 @@ internal object NativeCalendarSyncPlan {
                 .put("description", "Státusz: ${entry.status}")
                 .put("start", JSONObject().put("dateTime", start)).put("end", JSONObject().put("dateTime", end)))
         }
-    }
+    }.distinctBy { it.id }
 }
