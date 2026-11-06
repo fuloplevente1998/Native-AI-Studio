@@ -4,6 +4,32 @@ Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
 
+## Átadott1.0-beta /2754 –82acdfa, sikeres release
+
+PR184/192/193 mainen, a legutóbbi kért naplónaptár-javítással együtt.
+Végső forrás és v1.0-beta tag: **82acdfa5dc370856295ad31fa2e8c0f0ebc42a04**.
+Signed run **42153516021 SUCCESS:577 =396 telefon +181 Wear**,0 failure/error/skipped,
+shared NO-SOURCE. A korábban hibázó restore/stale library teszt változatlanul zöld.
+ArtifactZIP digest, nyers XML/forrás/count, valódi APK-manifest/package/verzió és
+APK v2 signerfingerprint ellenőrizve; tartós signer változatlan. Mindkét APK
+**1.0-beta /2754 /com.TrainPilot.com**, telefonrelease +R8/shrunk Wearrelease.
+[Bizonyíték](RELEASE_2754_82ACDFA_VERIFIED_ARTIFACTS.json).
+
+- [Telefon APK](https://drive.google.com/file/d/1ZJlQtEHivUrITNbTpKSLSCguO0jn4ANF/view?usp=drivesdk)
+- [Wear optimalizált APK](https://drive.google.com/file/d/1zx4zn2IX4qkd0aSXy5UKIaPmJRS1LPX6/view?usp=drivesdk)
+- TrainPilot Native mappa; régi fájlok megőrizve, név/MIME/bájt/parent visszaolvasva.
+- [GitHub béta Release](https://github.com/fuloplevente1998/Native-AI-Studio/releases/tag/v1.0-beta)
+  közzétéve, tag pontosan82acdfa. Közvetlen GitHubasset feltöltése HTTP401-et kapott;
+  a kiadás a meglévő Drive-hozzáféréssel használható APK-linkeket tartalmazza,
+  közvetlen GitHubasset nincs. Nincs újraauth/titokkezelés vagy megosztásbővítés.
+
+Fizikai elfogadás hátravan: phone-owner mellett órás Befejezés és visszaigazolás,
+watch-owner handoff/finish, újraolvasott napló, Coach háttérfrissítés, fix ötfüles
+navigáció, kompakt naplónaptár, témák és összecsukott visszajelzések. A jegyek ezért
+nyitva maradnak. Root egyedül; új agent nem indult. A dokumentációs commit nem
+változtatja meg az APK-k forrását. Előző42151346542 cancelled,42151766999 failure;
+ezekből nem történt APK-átadás.
+
 ## 1.0-beta signed kapu követő javítása – távoli lezárás utáni olvasás
 
 42151766999 / e7c25ee: fordítás sikeres, **577 tesztből576 sikeres,1 failure**.

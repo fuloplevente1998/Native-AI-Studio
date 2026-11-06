@@ -1,0 +1,146 @@
+{
+  "sourceSha": "82acdfa5dc370856295ad31fa2e8c0f0ebc42a04",
+  "applicationId": "com.TrainPilot.com",
+  "versionCode": 2754,
+  "versionName": "1.0-beta",
+  "artifactZipSha256": "374b132692a0a842266efbd33a61eefce99ca382c52a7beb723f0765f4a7b46a",
+  "testArtifactZipSha256": "c7cae9939ae11a215afa8338f003b5ca12c2284d02bc7d9886808874de7b2645",
+  "apks": {
+    "phone": {
+      "bytes": 20548604,
+      "sha256": "e835cb702272e083158f4f44d017e3b139c39178ed4840a1bcfe5d3eec79a131",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "manifest": {
+        "versionCode": 2754,
+        "versionName": "1.0-beta",
+        "package": "com.TrainPilot.com"
+      }
+    },
+    "wear": {
+      "bytes": 4636863,
+      "sha256": "4e29805ad12b9f39cea58e8660f89da950da2518dc14e18d07ff64fbc09162b2",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "manifest": {
+        "versionCode": 2754,
+        "versionName": "1.0-beta",
+        "package": "com.TrainPilot.com"
+      }
+    }
+  },
+  "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+  "downloadedManifestAndV2CertificateVerified": true,
+  "rawJUnit": {
+    "commit": "82acdfa5dc370856295ad31fa2e8c0f0ebc42a04",
+    "modules": {
+      "phone": {
+        "files": 73,
+        "tests": 396,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "wear": {
+        "files": 32,
+        "tests": 181,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "shared": {
+        "files": 0,
+        "tests": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": true
+      }
+    },
+    "total": {
+      "tests": 577,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "ciMetadata": {
+    "applicationId": "com.TrainPilot.com",
+    "versionCode": "2754",
+    "versionName": "1.0-beta",
+    "apkSha256": "e835cb702272e083158f4f44d017e3b139c39178ed4840a1bcfe5d3eec79a131",
+    "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+    "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+    "mapsApiKeyConfigured": true,
+    "ciCheckout": "82acdfa5dc370856295ad31fa2e8c0f0ebc42a04",
+    "wear": {
+      "applicationId": "com.TrainPilot.com",
+      "versionCode": "2754",
+      "versionName": "1.0-beta",
+      "apkSha256": "4e29805ad12b9f39cea58e8660f89da950da2518dc14e18d07ff64fbc09162b2",
+      "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "variant": "release",
+      "bytes": 4636863
+    },
+    "wearCompanionCapabilityRetained": true,
+    "dataLayerPairIdentityVerified": true,
+    "wearHardwareRequired": true
+  },
+  "actionsRunId": 42153516021,
+  "actionsRunUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/42153516021",
+  "conclusion": "success",
+  "drive": {
+    "phone": {
+      "id": "1ZJlQtEHivUrITNbTpKSLSCguO0jn4ANF",
+      "title": "TrainPilot-1.0-beta-2754-82acdfa-phone-release.apk",
+      "mime_type": "application/vnd.android.package-archive",
+      "size": "20548604",
+      "url": "https://drive.google.com/file/d/1ZJlQtEHivUrITNbTpKSLSCguO0jn4ANF/view?usp=drivesdk",
+      "display_url": "https://drive.google.com/file/d/1ZJlQtEHivUrITNbTpKSLSCguO0jn4ANF/view?usp=drivesdk",
+      "file_or_folder": "file",
+      "created_time": null,
+      "modified_time": null,
+      "parent_ids": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "drive_id": null,
+      "current_user_can_share": null,
+      "has_augmented_permissions": null,
+      "shared": null,
+      "permissions": null,
+      "source_visibility_status": "access_not_verified"
+    },
+    "wear": {
+      "id": "1zx4zn2IX4qkd0aSXy5UKIaPmJRS1LPX6",
+      "title": "TrainPilot-1.0-beta-2754-82acdfa-wear-release.apk",
+      "mime_type": "application/vnd.android.package-archive",
+      "size": "4636863",
+      "url": "https://drive.google.com/file/d/1zx4zn2IX4qkd0aSXy5UKIaPmJRS1LPX6/view?usp=drivesdk",
+      "display_url": "https://drive.google.com/file/d/1zx4zn2IX4qkd0aSXy5UKIaPmJRS1LPX6/view?usp=drivesdk",
+      "file_or_folder": "file",
+      "created_time": null,
+      "modified_time": null,
+      "parent_ids": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "drive_id": null,
+      "current_user_can_share": null,
+      "has_augmented_permissions": null,
+      "shared": null,
+      "permissions": null,
+      "source_visibility_status": "access_not_verified"
+    }
+  },
+  "githubRelease": {
+    "id": 436055908,
+    "tag": "v1.0-beta",
+    "url": "https://github.com/fuloplevente1998/Native-AI-Studio/releases/tag/v1.0-beta",
+    "prerelease": true,
+    "draft": false,
+    "targetCommit": "82acdfa5dc370856295ad31fa2e8c0f0ebc42a04",
+    "assets": [],
+    "downloadMode": "Drive links in release notes",
+    "directAssetUploadFailure": "HTTP401 Bad credentials on uploads.github.com; no credential reset attempted"
+  }
+}
