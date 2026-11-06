@@ -239,6 +239,17 @@ class GoogleCalendarSyncRegressionTest {
         assertPreserved(cancelled, active)
     }
 
+    @Test fun unchangedSecondSyncDoesNotSendEventAgain() {
+        val row = entry(); save(row); live()
+        expect("POST", "$root/live/events?sendUpdates=none", 201)
+        assertEquals(1, sync().getOrThrow())
+        expect("GET", "/oauth2/v3/userinfo", json = "{\\"sub\\":\\"account-sub\\",\\"email\\":\\"owner@example.test\\"}")
+        expect("GET", "$root/live", json = calendar())
+        assertEquals(1, sync().getOrThrow())
+        assertEquals(1, calls.count { it.path.contains("/events") })
+        assertPreserved(row)
+    }
+
     @Test fun diagnosticLabelsContainNoRemoteIdentifiersAndRetryPolicyRemainsIdempotent() {
         assertEquals("PUT calendar event", GoogleRequestPolicy.calendarOperation("PUT",
             "https://www.googleapis.com$root/private%40example.test/events/$eventId?access_token=secret"))
