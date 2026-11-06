@@ -138,14 +138,20 @@ fun WorkoutTabScreen(
     val strings = LocalTrainPilotStrings.current
     val activeProgram = state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
-            .padding(top = 8.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+    val scrollState = rememberScrollState()
+
+    com.example.ui.components.TrainPilotScrollableBox(
+        scrollState = scrollState,
+        modifier = Modifier.fillMaxSize()
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
+                .padding(top = 8.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+        ) {
         // 1. Gyors edzés Card (Mockup 1/4 #2)
         Surface(
             shape = RoundedCornerShape(18.dp),
@@ -585,6 +591,7 @@ fun WorkoutTabScreen(
         }
 
     }
+}
 }
 
 @Composable

@@ -7,11 +7,12 @@ import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Watch
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.localization.LocalizedStrings
@@ -19,8 +20,12 @@ import com.example.model.AppLanguage
 import com.example.model.SubScreen
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.viewmodel.TrainPilotUiState
+import com.repforge.app.ActiveWorkoutStore
+import com.repforge.app.StudioWorkoutSessionPresentation
 import com.repforge.app.ui.theme.TrainPilotFrames
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+import kotlinx.coroutines.delay
+import java.time.Instant
 
 internal fun isActiveMeasurementScreen(screen: SubScreen): Boolean = screen in setOf(
     SubScreen.ACTIVE_STRENGTH, SubScreen.ACTIVE_TIMED, SubScreen.ACTIVE_BILATERAL, SubScreen.ACTIVE_OUTDOOR_GPS)
@@ -34,6 +39,26 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
     fun word(hu: String, en: String, de: String, ro: String) = when (state.language) {
         AppLanguage.HU -> hu; AppLanguage.EN -> en; AppLanguage.DE -> de; AppLanguage.RO -> ro
     }
+    val frame by ActiveWorkoutStore.snapshotFlow.collectAsState()
+    val currentSnapshot = frame?.takeIf {
+        it.optBoolean("active") &&
+            (state.activeWorkoutId.isBlank() || it.optString("workoutId") == state.activeWorkoutId) &&
+            (state.activeWorkoutGeneration <= 0L || it.optLong("generation") == state.activeWorkoutGeneration)
+    }
+    var now by remember(state.activeWorkoutId) { mutableStateOf(Instant.now()) }
+    val paused = currentSnapshot?.optBoolean("workoutPaused") == true
+    LaunchedEffect(state.activeWorkoutId, paused, state.isWorkoutSessionActive) {
+        now = Instant.now()
+        while (state.isWorkoutSessionActive && !paused) {
+            delay(1000)
+            now = Instant.now()
+        }
+    }
+    val elapsedSeconds = currentSnapshot?.let { StudioWorkoutSessionPresentation.elapsedSeconds(it, now) }
+        ?: state.workoutStartedEpochMs.takeIf { it > 0L }?.let { ((now.toEpochMilli() - it) / 1000L).coerceAtLeast(0L) }
+    val elapsedText = (elapsedSeconds?.let(StudioWorkoutSessionPresentation::durationLabel) ?: "00:00") +
+        if (paused) " · " + word("Szünet", "Paused", "Pause", "Pauză") else ""
+
     val enabled = state.isWorkoutSessionActive && !state.watchControlPending && !state.isSavingWorkout &&
         (!state.phoneControlsWorkout || state.watchAppAvailable)
     val status = when {
@@ -47,16 +72,33 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
         Column(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (state.isWorkoutSessionActive) {
                 val statusContent: @Composable () -> Unit = {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Icon(when { state.watchControlPending -> Icons.Default.Sync
                             state.phoneControlsWorkout -> Icons.Default.PhoneAndroid; else -> Icons.Default.Watch },
-                            contentDescription = null, tint = palette.primary, modifier = Modifier.size(20.dp))
+                            contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
                         Column {
-                            Text(status, style = MaterialTheme.typography.labelMedium, color = palette.textPrimary)
+                            Text(status, style = MaterialTheme.typography.labelMedium, color = palette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             if (!state.watchAppAvailable && state.phoneControlsWorkout && !state.watchControlPending)
                                 Text(word("Óravezérlés nem elérhető", "Watch control unavailable", "Uhrsteuerung nicht verfügbar", "Control ceas indisponibil"),
-                                    color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
+                                    color = palette.textSecondary, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
+                    }
+                }
+                val elapsedContent: @Composable () -> Unit = {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = palette.tintedSurface(0.18f),
+                        border = TrainPilotFrames.stroke(1.dp, palette.primary.copy(alpha = 0.55f)),
+                        modifier = Modifier.testTag("active_workout_elapsed")
+                    ) {
+                        Text(
+                            text = elapsedText,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = palette.primary,
+                            maxLines = 1,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
                     }
                 }
                 val action: @Composable () -> Unit = {
@@ -76,12 +118,19 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                 }
                 val fontScale = LocalDensity.current.fontScale
                 BoxWithConstraints(Modifier.fillMaxWidth()) {
-                    val actionMaxWidth = maxWidth * 0.52f
+                    val actionMaxWidth = maxWidth * 0.44f
                     if (maxWidth < 300.dp || fontScale > 1.3f) {
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) { statusContent(); action() }
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Box(Modifier.weight(1f)) { statusContent() }
+                                elapsedContent()
+                            }
+                            action()
+                        }
                     } else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Box(Modifier.weight(1f)) { statusContent() }
+                        elapsedContent()
                         Box(Modifier.widthIn(max = actionMaxWidth)) { action() }
                     }
                 }

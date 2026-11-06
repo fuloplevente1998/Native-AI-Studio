@@ -1068,4 +1068,106 @@ internal class PhoneWorkoutExecutionStore(context: Context) :
             db.endTransaction()
         }
     }
+
+    @Synchronized
+    @Throws(JSONException::class)
+    fun setOutdoorManualDistance(
+        workoutId: String,
+        generation: Long,
+        manualMeters: Double?,
+        markDoneIfPositive: Boolean = false
+    ): JSONObject? {
+        if (manualMeters != null && (!manualMeters.isFinite() || manualMeters <= 0.0 || manualMeters > 2_000_000.0)) {
+            return null
+        }
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            if (blocked(db) || commandsSuspended()) return null
+            val frame = current(db) ?: return null
+            if (!frame.optBoolean("active") ||
+                frame.optString("timerOwner", "phone") != "phone" ||
+                frame.optString("workoutId") != workoutId ||
+                frame.optLong("generation") != generation
+            ) {
+                return null
+            }
+            val exercise = frame.optJSONArray("exercises")?.optJSONObject(0) ?: return null
+            val set = exercise.optJSONArray("sets")?.optJSONObject(0) ?: return null
+            val setId = set.optString("setId")
+            if (manualMeters != null) {
+                if (set.has("distanceMeters") && set.optString("distanceSource") == "gps" && !set.has("gpsMeasuredMeters")) {
+                    val prevGps = set.optDouble("distanceMeters", 0.0)
+                    if (prevGps.isFinite() && prevGps >= 0.0) set.put("gpsMeasuredMeters", prevGps)
+                }
+                set.put("manualDistanceMeters", manualMeters)
+                set.put("distanceMeters", manualMeters)
+                set.put("distanceSource", "manual")
+                if (markDoneIfPositive && !set.optBoolean("done")) {
+                    set.put("done", true)
+                }
+            } else {
+                set.remove("manualDistanceMeters")
+                val gpsMeters = set.optDouble("gpsMeasuredMeters", Double.NaN).takeIf { it.isFinite() && it >= 0.0 }
+                    ?: frame.optJSONObject(NativeGpsMeasurement.FIELD)?.optDouble("distanceMeters", Double.NaN)?.takeIf { it.isFinite() && it >= 0.0 }
+                if (gpsMeters != null && gpsMeters > 0.0) {
+                    set.put("distanceMeters", gpsMeters)
+                    set.put("distanceSource", "gps")
+                } else {
+                    set.remove("distanceMeters")
+                    set.remove("distanceSource")
+                }
+            }
+            frame.optJSONObject(NativeGpsMeasurement.FIELD)?.let { binding ->
+                if (!binding.optBoolean("applied") && binding.optString("setId") == setId) {
+                    binding.put("before", recordedBase(set))
+                }
+            }
+            fun syncEventValues(targetEvent: JSONObject): Boolean {
+                if (targetEvent.optString("setId") != setId) return false
+                val values = targetEvent.optJSONObject("values") ?: return false
+                if (set.has("distanceMeters")) {
+                    values.put("distanceMeters", set.getDouble("distanceMeters"))
+                    values.put("distanceSource", set.optString("distanceSource", "manual"))
+                    if (set.has("manualDistanceMeters")) {
+                        values.put("manualDistanceMeters", set.getDouble("manualDistanceMeters"))
+                    } else {
+                        values.remove("manualDistanceMeters")
+                    }
+                } else {
+                    values.remove("distanceMeters")
+                    values.remove("distanceSource")
+                    values.remove("manualDistanceMeters")
+                }
+                if (set.optBoolean("done")) values.put("done", true)
+                return true
+            }
+            db.rawQuery(
+                "SELECT seq, event FROM recordings WHERE workout_id=? AND generation=? AND imported=0",
+                arrayOf(workoutId, generation.toString())
+            ).use { cursor ->
+                while (cursor.moveToNext()) {
+                    val seq = cursor.getLong(0)
+                    val ev = JSONObject(cursor.getString(1))
+                    var updated = syncEventValues(ev)
+                    val changes = ev.optJSONArray("changes")
+                    if (changes != null) {
+                        for (i in 0 until changes.length()) {
+                            val ch = changes.optJSONObject(i) ?: continue
+                            if (syncEventValues(ch)) updated = true
+                        }
+                    }
+                    if (updated) {
+                        val cv = ContentValues().apply { put("event", ev.toString()) }
+                        db.update("recordings", cv, "seq=?", arrayOf(seq.toString()))
+                    }
+                }
+            }
+            save(db, frame)
+            db.setTransactionSuccessful()
+            return frame
+        } finally {
+            db.endTransaction()
+        }
+    }
 }

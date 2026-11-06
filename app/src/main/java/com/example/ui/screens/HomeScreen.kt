@@ -113,14 +113,20 @@ fun HomeScreen(
         com.example.model.AppLanguage.RO -> ro
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
-            .padding(top = 8.dp, bottom = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+    val scrollState = rememberScrollState()
+
+    com.example.ui.components.TrainPilotScrollableBox(
+        scrollState = scrollState,
+        modifier = Modifier.fillMaxSize()
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
+                .padding(top = 8.dp, bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+        ) {
         if (!state.profileComplete || state.programs.none { it.isActive && it.isCustom && it.days.isNotEmpty() }) {
         // Mini nézetben a Profil és új terv (Kezdőlapról a köszönés eltűnt, maradt mini nézetben a Profil és új terv)
         Surface(
@@ -458,6 +464,7 @@ fun HomeScreen(
             }
         }
     }
+}
 }
 
 @Composable

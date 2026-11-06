@@ -59,7 +59,10 @@ internal fun StudioStatisticsScreen(state: TrainPilotUiState, onSelectTab: (Int)
         while (true) { delay(60_000); model.onCardioCalendarTick() }
     }
     StudioStatisticsContent(state, native, { index ->
-        if (index == 1) model.selectCardioActivity(NativeCardioModel.ALL_ACTIVITIES)
+        if (index == 1) {
+            model.selectCardioActivity(NativeCardioModel.ALL_ACTIVITIES)
+            onStepsMode(true)
+        }
         onSelectTab(index)
     }, onStepsMode,
         onExercise = { id -> model.selectExercise(id); model.selectCardioActivity(id) },
@@ -91,8 +94,13 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
             dangerText = palette.danger, success = palette.success, emphasisBorder = palette.sectionBorder)
     }
     CompositionLocalProvider(LocalTrainPilotColors provides colors) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 4.dp)
-            .testTag("studio_statistics_screen"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        val scrollState = rememberScrollState()
+        com.example.ui.components.TrainPilotScrollableBox(
+            scrollState = scrollState,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Column(Modifier.fillMaxSize().verticalScroll(scrollState).padding(horizontal = 12.dp, vertical = 4.dp)
+                .testTag("studio_statistics_screen"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(strings.personalRecordsSubTab, strings.cardioStatsSubTab).forEachIndexed { index, label ->
                     FilterChip(selected = state.statsSubTab == index, onClick = { onSelectTab(index) },
@@ -152,7 +160,10 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                     }
                 }
             } else {
-                TrainPilotOutlinedButton(onClick = { onStepsMode(!state.cardioFilterStepsMode) }, modifier = Modifier.fillMaxWidth()) {
+                TrainPilotOutlinedButton(
+                    onClick = { onStepsMode(!state.cardioFilterStepsMode) },
+                    modifier = Modifier.fillMaxWidth().testTag("statistics_cardio_mode_button")
+                ) {
                     Text(if (state.cardioFilterStepsMode) statsTr(lang, "Napi aktivitás / lépések", "Daily Activity / Steps", "Tägliche Aktivität / Schritte", "Activitate zilnică / pași") else statsTr(lang, "Minden mozgás", "All Activities", "Alle Aktivitäten", "Toate activitățile"))
                 }
                 if (!state.cardioFilterStepsMode) NativeCardioProgressPanel(native, onActivity, onRetry)
@@ -162,6 +173,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
             }
         }
     }
+}
 }
 
 internal fun savedRecordLabel(

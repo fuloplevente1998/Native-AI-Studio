@@ -22,25 +22,48 @@ internal fun StudioActiveWorkoutSessionInfo(state: TrainPilotUiState) {
     val frame by ActiveWorkoutStore.snapshotFlow.collectAsState()
     val current = frame?.takeIf { it.optBoolean("active") && it.optString("workoutId") == state.activeWorkoutId &&
         it.optLong("generation") == state.activeWorkoutGeneration }
-    var now by remember(state.activeWorkoutId) { mutableStateOf(Instant.now()) }
-    val paused = current?.optBoolean("workoutPaused") != false
-    LaunchedEffect(state.activeWorkoutId, paused) {
-        now = Instant.now()
-        while (!paused) { delay(1000); now = Instant.now() }
-    }
     val snapshot = current ?: return
-    val seconds = StudioWorkoutSessionPresentation.elapsedSeconds(snapshot, now)
-    val day = StudioWorkoutSessionPresentation.dayLabel(snapshot)
+    val rawDay = StudioWorkoutSessionPresentation.dayLabel(snapshot)
+        ?: state.activeWorkoutTitleHu.substringAfter("•", "").trim().takeIf { it.isNotBlank() }
+        ?: return
+    val formattedDay = if (rawDay.length == 1 && rawDay[0].isLetter()) {
+        feedbackWord(state, "${rawDay.uppercase()} nap", "Day ${rawDay.uppercase()}", "Tag ${rawDay.uppercase()}", "Ziua ${rawDay.uppercase()}")
+    } else rawDay
+    val programName = snapshot.optString("programName").takeIf { it.isNotBlank() }
+        ?: state.activeWorkoutTitleHu.substringBefore("•").trim()
     val palette = LocalTrainPilotPalette.current
-    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (day != null) Text(day, Modifier.weight(1f).testTag("active_workout_day"),
-            style = MaterialTheme.typography.labelMedium, color = palette.primary)
-        else Spacer(Modifier.weight(1f))
-        Text((seconds?.let(StudioWorkoutSessionPresentation::durationLabel) ?: "—") +
-            if (paused) " · " + feedbackWord(state, "Szünet", "Paused", "Pause", "Pauză") else "",
-            Modifier.testTag("active_workout_elapsed"), style = MaterialTheme.typography.labelMedium,
-            color = palette.textSecondary)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 2.dp)
+            .testTag("active_workout_program_day_bar"),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+    ) {
+        if (programName.isNotBlank()) {
+            Text(
+                text = programName,
+                style = MaterialTheme.typography.labelMedium,
+                color = palette.textSecondary,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false).testTag("active_workout_program_label")
+            )
+        }
+        Surface(
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+            color = palette.tintedSurface(0.22f),
+            border = com.repforge.app.ui.theme.TrainPilotFrames.stroke(1.5.dp, palette.primary),
+            modifier = Modifier.testTag("active_workout_day")
+        ) {
+            Text(
+                text = formattedDay,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                color = palette.primary,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+            )
+        }
     }
 }
 

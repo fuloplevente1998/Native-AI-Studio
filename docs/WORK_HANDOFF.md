@@ -1,7 +1,42 @@
-# Rövid munkátadás – 2026-11-06
+# Rövid munkátadás – 2026-11-06 (7 nyitott feladat lezárása: #199, #196, #117, #195, #197, #200, #198)
 
 Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
+
+## 7 nyitott GitHub-feladat (#199, #196, #117, #195, #197, #200, #198) natív implementációja és verifikációja
+
+A `docs/AI_STUDIO_HANDOFF_7_OPEN_ISSUES_2026-11-06.md` specifikációja alapján mind a 7 feladat elkészült és tesztekkel ellenőrzött:
+
+1. **#199 – Kültéri edzés (GPS nélküli működés és manuális távolság)**:
+   - GPS nélküli indítás és befejezés támogatása: a `PhoneWorkoutEngine` feloldja a `controllerNotArmed` zárat `studioIndoor` és telefonos futás esetén, a stopper és távolságmérés GPS nélkül is biztonságosan befejezhető.
+   - Az `OutdoorGpsDashboard` felső kártyájából eltávolításra került a nagyméretű felesleges Vissza nyíl gomb.
+   - Megjelent a „Távolság manuális megadása” kártya (`outdoor_manual_distance_card`, `outdoor_manual_distance_input`, `outdoor_manual_distance_save`, `outdoor_manual_distance_clear`, `outdoor_manual_distance_error`).
+   - Szigorú validáció (`StudioWorkoutBridge.validateManualDistanceKm`): kizárólag pozitív (> 0.0 km) és reális (<= 2000.0 km) érték engedélyezett, vesszős és pontos tizedesvessző kezeléssel.
+   - Tartós adatkezelés: a manuális távolság elsőbbséget élvez a GPS adatokkal szemben (`distanceSource = "manual"`), miközben a mért GPS értékek (`gpsMeasuredMeters`) és útvonal (`gpsRouteKey163`) megmaradnak auditálhatóan.
+2. **#196 – Napló dátumszűrő**:
+   - Dátumszűrés mindkét határnapot magában foglaló (`LocalDate` inclusive) intervallumkezeléssel (pl. 2026. nov. 1. – nov. 8.).
+   - `parseFlexibleWorkoutDate`: felkészítve ISO formátumra (`2026-11-04T...`), pontozott dátumokra (`2026. 11. 08.`) és szöveges magyar hónapnevekre (`2026. november 8.`, `nov. 1.`).
+   - Tiszta, kompakt üres állapot szöveg („Nincs rögzített edzés a kiválasztott időszakban.”) a zavaró duplikált alsó gomb és kártya helyett, megtartva a felső `log_clear_filter_button` vezérlőt.
+3. **#117 – Naptár szinkron**:
+   - Determinisztikus betöltési és állapotjelző dobozok (`loading → success/error`) a Beállítások oldalon.
+   - Megbízható dátumfeloldás és naptári ütemezés szinkronizáció (`persistCalendarStateToRoomAsync`).
+4. **#195 – Edzésfelület & Összegzés kompakt dizájn**:
+   - Programazonosító fejléc kiemelt aktív nap jelvénnyel (`active_workout_day`, finom keret és színezés).
+   - Központosított eltelt edzésidő számláló az átadó sávban (`active_workout_elapsed`, magas kontraszt).
+   - Szív ikon az edzés összegző fejléc sorába integrálva (`workout_summary_header_row`), felesleges függőleges elválasztó nélkül.
+   - Egységesített edzésösszegző visszajelzés szekció („Edzés összesített visszajelzése”), megegyező magasság a gyakorlati visszajelzéssel.
+5. **#197 – Kardió statisztikák**:
+   - Alapértelmezett „Napi aktivitás / lépések” nézet (`cardioFilterStepsMode = true`) a Kardió statisztikák megnyitásakor, megtartva a váltási lehetőséget a „Minden mozgás” módra.
+6. **#200 – Duplikált pihenőidő**:
+   - Eltávolítva a Beállítások főoldaláról a duplikált különálló pihenőidő kártya; a pihenőidő kizárólag az „Edzés beállításai” párbeszédpanelen konfigurálható.
+7. **#198 – Globális görgetési jelzés (`TrainPilotScrollMoreIndicator`)**:
+   - Újrafelhasználható, témát követő lefelé mutató diszkrét úszó jelzés, amely jelzi, ha a tartalom túllóg a képernyőn, és a lap aljára görgetéskor automatikusan eltűnik.
+   - Integrálva: `HomeScreen`, `WorkoutTabScreen`, `WorkoutSummaryScreen`, `LogTabScreen`, `StudioStatisticsScreen`, `HealthTabScreen`, `SettingsMainScreen`.
+
+**Verifikáció**:
+- `compile_applet` sikeres: tiszta Kotlin fordítás, 0 hiba.
+- `app/src/test/java/com/example/Issues199Through198RegressionTest.kt`: 6/6 Robolectric JVM teszt zöld.
+- `OutdoorGpsLayoutRegressionTest.kt`: zöld.
 
 
 ## Átadott1.0-beta /2754 –82acdfa, sikeres release

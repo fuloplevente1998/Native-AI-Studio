@@ -75,17 +75,26 @@ internal object NativeGpsMeasurement {
             "A GPS-mérés sorozatát időközben módosították."
         }
         val capture = binding.optJSONObject("capture")
+        val manualMeters = target.set.optDouble("manualDistanceMeters", Double.NaN).takeIf { it.isFinite() && it > 0.0 }
         if (complete) {
             check(capture != null && capture.opt("active") == false && capture.optString("stopReason") == "explicit" &&
-                capture.optString("error").isEmpty() && capture.optDouble("distanceMeters") > 0.0 && capture.optLong("elapsedSeconds") > 0L) {
+                capture.optString("error").isEmpty() && (capture.optDouble("distanceMeters") > 0.0 || manualMeters != null) && capture.optLong("elapsedSeconds") > 0L) {
                 "Csak sikeres, pozitív GPS-mérés fejezhető be automatikusan."
             }
         }
         if (capture != null) {
             val meters = (binding.getDouble("baseMeters") + capture.getDouble("distanceMeters")).coerceAtMost(2_000_000.0)
             val seconds = (binding.getDouble("baseSeconds") + capture.getLong("elapsedSeconds")).coerceAtMost(86_400.0)
-            if (meters > 0.0 || seconds > 0.0) target.set.put("distanceMeters", round(meters * 10.0) / 10.0)
-                .put("reps", seconds.toLong().toString()).put("distanceSource", "gps")
+            if (meters > 0.0) {
+                target.set.put("gpsMeasuredMeters", round(meters * 10.0) / 10.0)
+            }
+            if (manualMeters != null && target.set.optString("distanceSource") == "manual") {
+                target.set.put("distanceMeters", manualMeters).put("distanceSource", "manual")
+                if (seconds > 0.0) target.set.put("reps", seconds.toLong().toString())
+            } else if (meters > 0.0 || seconds > 0.0) {
+                target.set.put("distanceMeters", round(meters * 10.0) / 10.0)
+                    .put("reps", seconds.toLong().toString()).put("distanceSource", "gps")
+            }
             if (capture.optInt("routeSavedPoints") > 0) target.set.put("gpsRouteKey163", binding.getString("key"))
         }
         binding.put("state", if (complete) "recorded" else "interrupted").put("applied", true)

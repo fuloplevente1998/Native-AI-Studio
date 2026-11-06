@@ -317,7 +317,7 @@ data class TrainPilotUiState(
     val selectedVolumeBarIndex: Int = -1,
     val expandedStatsCardIndex: Int = -1,
     val statsSubTab: Int = 0, // 0 = Személyes rekordok, 1 = Kardióstatisztika
-    val cardioFilterStepsMode: Boolean = false, // false = Minden mozgás, true = Napi aktivitás / lépések
+    val cardioFilterStepsMode: Boolean = true, // false = Minden mozgás, true = Napi aktivitás / lépések
     val prRecords: List<PrRecordEntry> = emptyList(),
     val savedExerciseBests: List<com.repforge.app.SavedExerciseBest> = emptyList(),
     val savedRecordsLoading: Boolean = true,
@@ -754,18 +754,31 @@ class TrainPilotViewModel : ViewModel() {
                 db.withTransaction {
                 val oldDocument = db.keyValueDocumentDao().getDocument("native:calendarState")
                 val previous = oldDocument?.json?.let { JSONObject(it).optJSONArray("events") } ?: JSONArray()
+                val fallbackMonth = runCatching { YearMonth.parse(state.calendarYearMonth) }.getOrDefault(YearMonth.now())
                 val retainedIds = events.map { it.id }.toSet()
                 for (i in 0 until previous.length()) {
                     val id = previous.getJSONObject(i).getString("id")
-                    if (id !in retainedIds && db.calendarScheduleDao().getEntry(id)?.googleEventId.isNullOrBlank())
-                        db.calendarScheduleDao().deleteEntry(id)
+                    if (id !in retainedIds) {
+                        val existing = db.calendarScheduleDao().getEntry(id)
+                        if (existing != null) {
+                            if (existing.googleEventId.isBlank()) {
+                                db.calendarScheduleDao().deleteEntry(id)
+                            } else {
+                                db.calendarScheduleDao().upsertEntry(existing.copy(status = "skipped", updatedAt = nowMs))
+                            }
+                        }
+                    }
                 }
-                val scheduleEntities = events.filter { ev ->
-                    db.calendarScheduleDao().getEntry(ev.id)?.googleEventId.isNullOrBlank()
-                }.map { ev ->
-                    val date = LocalDate.parse(ev.dateIso)
+                val scheduleEntities = events.map { ev ->
+                    val existing = db.calendarScheduleDao().getEntry(ev.id)
+                    val resolvedIso = ev.dateIso.takeIf { it.isNotBlank() }
+                        ?: existing?.date?.takeIf { it.isNotBlank() }
+                        ?: fallbackMonth.atDay(ev.dayOfMonth.coerceIn(1, fallbackMonth.lengthOfMonth())).toString()
+                    val date = runCatching { LocalDate.parse(resolvedIso) }
+                        .getOrDefault(fallbackMonth.atDay(ev.dayOfMonth.coerceIn(1, fallbackMonth.lengthOfMonth())))
                     val dateStr = date.toString()
-                    val (start, end) = com.example.model.StudioCalendarDates.window(ev, ZoneId.systemDefault())
+                    val normalizedEv = if (ev.dateIso.isNotBlank()) ev else ev.copy(dateIso = dateStr)
+                    val (start, end) = com.example.model.StudioCalendarDates.window(normalizedEv, ZoneId.systemDefault())
                     val statusStr = when (ev.status) {
                         CalendarEventStatus.COMPLETED -> "completed"
                         CalendarEventStatus.MISSED -> "skipped"
@@ -774,7 +787,7 @@ class TrainPilotViewModel : ViewModel() {
                     val rawEv = JSONObject().apply {
                         put("id", ev.id)
                         put("dayOfMonth", ev.dayOfMonth)
-                        put("dateIso", ev.dateIso)
+                        put("dateIso", dateStr)
                         put("timeLabel", ev.timeLabel)
                         put("titleHu", ev.titleHu)
                         put("exerciseCount", ev.exerciseCount)
@@ -784,12 +797,12 @@ class TrainPilotViewModel : ViewModel() {
                     }
                     CalendarScheduleEntity(
                         id = ev.id,
-                        googleEventId = "",
+                        googleEventId = existing?.googleEventId.orEmpty(),
                         date = dateStr,
                         startIso = start.toString(),
                         endIso = end.toString(),
-                        programId = activeProg?.id ?: "program_default",
-                        programName = activeProg?.nameHu ?: ev.titleHu,
+                        programId = activeProg?.id ?: existing?.programId ?: "program_default",
+                        programName = activeProg?.nameHu ?: existing?.programName ?: ev.titleHu,
                         dayId = ev.splitBadge,
                         dayName = ev.titleHu,
                         status = statusStr,

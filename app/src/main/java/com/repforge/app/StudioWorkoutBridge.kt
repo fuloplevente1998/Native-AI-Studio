@@ -73,6 +73,9 @@ internal object StudioWorkoutBridge {
                     val displayedWeight = update.optDouble("weight", Double.NaN)
                     if (originalWeight.isFinite() && displayedWeight.isFinite() &&
                         originalWeight.toFloat() == displayedWeight.toFloat()) merged.put("weight", old.get("weight"))
+                    for (key in listOf("distanceMeters", "distanceSource", "manualDistanceMeters", "gpsMeasuredMeters", "gpsRouteKey163")) {
+                        if (old.has(key) && !update.has(key)) merged.put(key, old.get(key))
+                    }
                     if (!update.has("actualRir")) merged.remove("actualRir")
                     sets.put(j, merged)
                 }
@@ -86,12 +89,95 @@ internal object StudioWorkoutBridge {
     fun startIndoor(context: android.content.Context): JSONObject {
         var frame = NativeWorkoutEditing.project(context)
         if (frame.optBoolean("workoutPaused")) { pause(context, false); frame = NativeWorkoutEditing.project(context) }
+        frame.remove("studioGpsKey")
+        frame.put("studioIndoor", true)
         val exercise = frame.getJSONArray("exercises").getJSONObject(frame.optInt("currentExercise"))
         val sets = exercise.getJSONArray("sets")
         val set = (0 until sets.length()).map { sets.getJSONObject(it) }.first { !it.optBoolean("done") }
         val target = NativeWorkoutTarget(frame.getString("workoutId"), frame.getLong("generation"), exercise.getString("id"), set.getString("setId"))
-        NativeSetStopwatch.start(frame, target, "single")
-        return NativeWorkoutEditing.commitEdit(context, frame, clockEdit = true)
+        if (frame.optJSONObject(NativeSetStopwatch.FIELD)?.let { NativeSetStopwatch.running(it) } != true) {
+            NativeSetStopwatch.start(frame, target, "single")
+        }
+        val committed = NativeWorkoutEditing.commitEdit(context, frame, clockEdit = true)
+        runCatching {
+            if (!IntervalTimerService.armed(committed.optString("workoutId"), committed.optLong("generation"))) {
+                androidx.core.content.ContextCompat.startForegroundService(
+                    context,
+                    android.content.Intent(context, IntervalTimerService::class.java).apply {
+                        action = IntervalTimerService.ARM
+                        putExtra("workoutId", committed.getString("workoutId"))
+                        putExtra("generation", committed.getLong("generation"))
+                        putExtra("language", committed.optString("language", "hu"))
+                    }
+                )
+            }
+            IntervalTimerService.trackSetStopwatch(target.workoutId, target.generation)
+        }
+        return committed
+    }
+
+    /**
+     * Validates a user-entered manual distance in kilometers (accepts '.' or ',' decimal separator).
+     * Valid range: > 0.0 km and <= 2000.0 km (2,000,000 meters).
+     * Returns positive distance in meters, or null if invalid.
+     */
+    fun validateManualDistanceKm(rawInput: String): Double? {
+        val normalized = rawInput.trim().replace(',', '.')
+        if (normalized.isEmpty()) return null
+        val km = normalized.toDoubleOrNull() ?: return null
+        if (!km.isFinite() || km <= 0.0 || km > 2000.0) return null
+        val meters = kotlin.math.round(km * 10000.0) / 10.0
+        return if (meters > 0.0 && meters <= 2_000_000.0) meters else null
+    }
+
+    fun readOutdoorManualDistanceMeters(frame: JSONObject?): Double? {
+        val set = frame?.optJSONArray("exercises")?.optJSONObject(0)?.optJSONArray("sets")?.optJSONObject(0) ?: return null
+        val manual = set.optDouble("manualDistanceMeters", Double.NaN)
+        if (manual.isFinite() && manual > 0.0) return manual
+        if (set.optString("distanceSource") == "manual") {
+            val d = set.optDouble("distanceMeters", Double.NaN)
+            if (d.isFinite() && d > 0.0) return d
+        }
+        return null
+    }
+
+    fun readOutdoorEffectiveDistanceMeters(frame: JSONObject?, liveGpsMeters: Double = 0.0): Double {
+        val manual = readOutdoorManualDistanceMeters(frame)
+        if (manual != null && manual > 0.0) return manual
+        val set = frame?.optJSONArray("exercises")?.optJSONObject(0)?.optJSONArray("sets")?.optJSONObject(0)
+        val setDist = set?.optDouble("distanceMeters", Double.NaN)?.takeIf { it.isFinite() && it > 0.0 } ?: 0.0
+        return maxOf(setDist, if (liveGpsMeters.isFinite() && liveGpsMeters > 0.0) liveGpsMeters else 0.0)
+    }
+
+    /**
+     * Persists or clears the manual outdoor distance in both the native execution store and ActiveWorkoutStore.
+     */
+    fun setOutdoorManualDistance(
+        context: android.content.Context,
+        manualMeters: Double?,
+        markDoneIfPositive: Boolean = false
+    ): JSONObject? {
+        val current = ActiveWorkoutStore.current(context) ?: return null
+        if (!current.optBoolean("active") || current.optString("timerOwner", "phone") != "phone") return null
+        val workoutId = current.optString("workoutId")
+        val generation = current.optLong("generation")
+        if (workoutId.isBlank()) return null
+        val updatedExec = PhoneWorkoutExecution.store(context)
+            .setOutdoorManualDistance(workoutId, generation, manualMeters, markDoneIfPositive)
+            ?: return null
+        val nextDraft = JSONObject(current.toString())
+        val draftEx = nextDraft.optJSONArray("exercises")?.optJSONObject(0)
+        val draftSet = draftEx?.optJSONArray("sets")?.optJSONObject(0)
+        val execSet = updatedExec.optJSONArray("exercises")?.optJSONObject(0)?.optJSONArray("sets")?.optJSONObject(0)
+        if (draftSet != null && execSet != null) {
+            for (key in listOf("distanceMeters", "distanceSource", "manualDistanceMeters", "gpsMeasuredMeters", "done")) {
+                if (execSet.has(key)) draftSet.put(key, execSet.get(key)) else draftSet.remove(key)
+            }
+        }
+        updatedExec.optJSONObject(NativeGpsMeasurement.FIELD)?.let { nextDraft.put(NativeGpsMeasurement.FIELD, JSONObject(it.toString())) }
+        ActiveWorkoutStore.saveOwned(context, nextDraft)
+        PhoneWorkoutExecution.publish(context)
+        return ActiveWorkoutStore.current(context)
     }
 
     /** A sticky handover does not navigate away first; close the real active interval before an offer. */

@@ -2987,7 +2987,18 @@ fun ActiveOutdoorGpsScreen(
     var isStarted by remember { mutableStateOf(activeSnap.optBoolean("active", false)) }
     var isPaused by remember { mutableStateOf(activeSnap.optBoolean("paused", false)) }
     var elapsedSec by remember { mutableIntStateOf(activeSnap.optLong("elapsedSeconds", 0L).toInt()) }
+    val initialFrame = remember(uiState.activeWorkoutId) { com.repforge.app.ActiveWorkoutStore.current(context) }
+    val initialManualMeters = remember(uiState.activeWorkoutId) {
+        com.repforge.app.StudioWorkoutBridge.readOutdoorManualDistanceMeters(initialFrame)?.toFloat()
+    }
     var distanceMeters by remember { mutableFloatStateOf(activeSnap.optDouble("distanceMeters", 0.0).toFloat()) }
+    var manualDistanceMetersState by remember(uiState.activeWorkoutId) { mutableStateOf<Float?>(initialManualMeters) }
+    var manualDistanceInput by androidx.compose.runtime.saveable.rememberSaveable(uiState.activeWorkoutId) {
+        mutableStateOf(
+            initialManualMeters?.let { String.format(java.util.Locale.US, "%.2f", it / 1000f).trimEnd('0').trimEnd('.') } ?: ""
+        )
+    }
+    var manualDistanceError by androidx.compose.runtime.saveable.rememberSaveable(uiState.activeWorkoutId) { mutableStateOf("") }
     var realGpsFixesCount by remember { mutableIntStateOf(activeSnap.optInt("routePointCount", 0)) }
     var hasServiceFix by remember { mutableStateOf(activeSnap.optBoolean("hasFix", false)) }
     var gpsAccuracyMeters by remember { mutableFloatStateOf(activeSnap.optDouble("accuracyMeters", 0.0).toFloat()) }
@@ -3007,6 +3018,18 @@ fun ActiveOutdoorGpsScreen(
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
         )
+    }
+
+    LaunchedEffect(uiState.activeWorkoutId) {
+        nativeMeasurement.onEditorVisible()
+        val currentFrame = com.repforge.app.ActiveWorkoutStore.current(context)
+        val persistedManual = com.repforge.app.StudioWorkoutBridge.readOutdoorManualDistanceMeters(currentFrame)?.toFloat()
+        if (persistedManual != null && persistedManual > 0f) {
+            manualDistanceMetersState = persistedManual
+            if (manualDistanceInput.isBlank()) {
+                manualDistanceInput = String.format(java.util.Locale.US, "%.2f", persistedManual / 1000f).trimEnd('0').trimEnd('.')
+            }
+        }
     }
 
     // Sync from DistanceTrackingService whenever its state updates
@@ -3115,10 +3138,16 @@ fun ActiveOutdoorGpsScreen(
 
     val startIndoorMeasurement = {
         try {
-            check(onStartGpsTracking(uiState.activeWorkoutTitleHu, "")) {
+            check(onStartGpsTracking(uiState.activeWorkoutTitleHu.ifBlank { "Kültéri futás" }, "")) {
                 tr(lang, "A beltéri munkamenet nem menthető.", "Indoor session could not be saved.", "Indoor-Sitzung konnte nicht gespeichert werden.", "Sesiunea indoor nu a putut fi salvată.")
             }
+            nativeMeasurement.onEditorVisible()
             val frame = com.repforge.app.StudioWorkoutBridge.startIndoor(context)
+            manualDistanceMetersState?.let { manualM ->
+                if (manualM > 0f) {
+                    com.repforge.app.StudioWorkoutBridge.setOutdoorManualDistance(context, manualM.toDouble(), markDoneIfPositive = false)
+                }
+            }
             isStarted = frame.optJSONObject(com.repforge.app.NativeSetStopwatch.FIELD)?.let {
                 com.repforge.app.NativeSetStopwatch.running(it)
             } == true
@@ -3140,38 +3169,131 @@ fun ActiveOutdoorGpsScreen(
         }
     }
 
-    val finishMeasurement = {
+    val applyManualDistanceInput = { markDone: Boolean ->
+        val validMeters = com.repforge.app.StudioWorkoutBridge.validateManualDistanceKm(manualDistanceInput)
+        if (validMeters == null) {
+            manualDistanceError = tr(
+                lang,
+                "Adj meg érvényes, pozitív távolságot (0,01 – 2000 km).",
+                "Enter a valid positive distance (0.01 – 2000 km).",
+                "Gib eine gültige positive Distanz ein (0,01 – 2000 km).",
+                "Introdu o distanță pozitivă validă (0,01 – 2000 km)."
+            )
+            false
+        } else {
+            val activityName = uiState.activeWorkoutTitleHu.ifBlank { "Kültéri futás" }
+            if (com.repforge.app.ActiveWorkoutStore.current(context) == null) {
+                onStartGpsTracking(activityName, if (gpsActive) routeOwnerKey else "")
+            }
+            val updated = com.repforge.app.StudioWorkoutBridge.setOutdoorManualDistance(
+                context,
+                validMeters,
+                markDoneIfPositive = markDone
+            )
+            if (updated == null) {
+                manualDistanceError = tr(
+                    lang,
+                    "A távolság nem menthető ebben az edzésállapotban.",
+                    "Distance could not be saved in this workout state.",
+                    "Distanz konnte in diesem Trainingszustand nicht gespeichert werden.",
+                    "Distanța nu a putut fi salvată în această stare."
+                )
+                false
+            } else {
+                manualDistanceMetersState = validMeters.toFloat()
+                manualDistanceError = ""
+                val min = elapsedSec / 60
+                val sec = elapsedSec % 60
+                val formattedTime = String.format("%02d:%02d", min, sec)
+                val distKm = (validMeters / 1000.0).toFloat()
+                val formattedPace = if (distKm >= 0.01f && elapsedSec > 0) {
+                    val paceSecPerKm = (elapsedSec / distKm).toInt()
+                    String.format("%d:%02d", (paceSecPerKm / 60).coerceIn(1, 59), (paceSecPerKm % 60).coerceIn(0, 59))
+                } else {
+                    "—"
+                }
+                onUpdateOutdoorMetrics(formattedTime, distKm, formattedPace)
+                true
+            }
+        }
+    }
+
+    val clearManualDistance = {
+        com.repforge.app.StudioWorkoutBridge.setOutdoorManualDistance(context, null, markDoneIfPositive = false)
+        manualDistanceMetersState = null
+        manualDistanceInput = ""
+        manualDistanceError = ""
+        val min = elapsedSec / 60
+        val sec = elapsedSec % 60
+        val formattedTime = String.format("%02d:%02d", min, sec)
+        val distKm = distanceMeters / 1000f
+        val formattedPace = if (distKm >= 0.01f && elapsedSec > 0) {
+            val paceSecPerKm = (elapsedSec / distKm).toInt()
+            String.format("%d:%02d", (paceSecPerKm / 60).coerceIn(1, 59), (paceSecPerKm % 60).coerceIn(0, 59))
+        } else {
+            "—"
+        }
+        onUpdateOutdoorMetrics(formattedTime, distKm, formattedPace)
+    }
+
+    val finishMeasurement = finish@{
         finishErrorMsg = ""
+        if (manualDistanceInput.isNotBlank() && manualDistanceMetersState == null) {
+            if (!applyManualDistanceInput(false)) return@finish false
+        }
         var recorded = false
         try {
+            nativeMeasurement.onEditorVisible()
+            if (com.repforge.app.ActiveWorkoutStore.current(context) == null) {
+                check(onStartGpsTracking(uiState.activeWorkoutTitleHu.ifBlank { "Kültéri futás" }, if (gpsActive) routeOwnerKey else ""))
+            }
             var frame = com.repforge.app.NativeWorkoutEditing.project(context)
             if (!gpsActive && frame.optBoolean("workoutPaused")) {
                 check(onPauseMeasurement(false))
                 frame = com.repforge.app.NativeWorkoutEditing.project(context)
             }
-            val saved = if (gpsActive) {
+            val saved = if (gpsActive && frame.optJSONObject(com.repforge.app.NativeGpsMeasurement.FIELD) != null) {
                 val binding = frame.getJSONObject(com.repforge.app.NativeGpsMeasurement.FIELD)
                 if (binding.optBoolean("applied")) frame
                 else com.repforge.app.NativeWorkoutEditing.finishGps(context,
                     com.repforge.app.NativeGpsMeasurement.target(frame), binding.getString("id"))
-            } else {
-                val clock = frame.getJSONObject(com.repforge.app.NativeSetStopwatch.FIELD)
-                if (!com.repforge.app.NativeSetStopwatch.running(clock)) frame = com.repforge.app.StudioWorkoutBridge.startIndoor(context)
+            } else if (!gpsActive && (isStarted || frame.optJSONObject(com.repforge.app.NativeSetStopwatch.FIELD) != null)) {
+                val clock = frame.optJSONObject(com.repforge.app.NativeSetStopwatch.FIELD)
+                if (clock == null || !com.repforge.app.NativeSetStopwatch.running(clock)) {
+                    frame = com.repforge.app.StudioWorkoutBridge.startIndoor(context)
+                }
                 val current = frame.getJSONObject(com.repforge.app.NativeSetStopwatch.FIELD)
                 com.repforge.app.NativeWorkoutEditing.stopStopwatch(context, com.repforge.app.NativeWorkoutTarget(
                     frame.getString("workoutId"), frame.getLong("generation"), current.getString("exerciseId"), current.getString("setId")))
+            } else {
+                frame
             }
-            val exercises = saved.getJSONArray("exercises")
+            val manualToCommit = manualDistanceMetersState?.takeIf { it > 0f }?.toDouble()
+                ?: com.repforge.app.StudioWorkoutBridge.readOutdoorManualDistanceMeters(saved)
+            val afterManual = if (manualToCommit != null && manualToCommit > 0.0) {
+                com.repforge.app.StudioWorkoutBridge.setOutdoorManualDistance(context, manualToCommit, markDoneIfPositive = true) ?: saved
+            } else {
+                saved
+            }
+            val exercises = afterManual.getJSONArray("exercises")
             recorded = (0 until exercises.length()).any { i ->
                 val sets = exercises.getJSONObject(i).getJSONArray("sets")
                 (0 until sets.length()).any { sets.getJSONObject(it).optBoolean("done") }
             }
             if (gpsActive && !recorded) {
-                com.repforge.app.StudioOutdoorFinish.receipt(saved)?.let { receipt ->
-                    saved.put(com.repforge.app.StudioOutdoorFinish.FIELD, receipt)
-                    com.repforge.app.NativeWorkoutEditing.commitEdit(context, saved, gpsEdit = true)
+                com.repforge.app.StudioOutdoorFinish.receipt(afterManual)?.let { receipt ->
+                    afterManual.put(com.repforge.app.StudioOutdoorFinish.FIELD, receipt)
+                    com.repforge.app.NativeWorkoutEditing.commitEdit(context, afterManual, gpsEdit = true)
                 }
             }
+            val finalDistMeters = (manualToCommit ?: distanceMeters.toDouble()).toFloat()
+            val finalDistKm = finalDistMeters / 1000f
+            val finalTimeLabel = String.format("%02d:%02d", elapsedSec / 60, elapsedSec % 60)
+            val finalPaceLabel = if (finalDistKm >= 0.01f && elapsedSec > 0) {
+                val paceSecPerKm = (elapsedSec / finalDistKm).toInt()
+                String.format("%d:%02d", (paceSecPerKm / 60).coerceIn(1, 59), (paceSecPerKm % 60).coerceIn(0, 59))
+            } else "—"
+            onUpdateOutdoorMetrics(finalTimeLabel, finalDistKm, finalPaceLabel)
             // Stopping and opening Summary never requires inventing a completed set.
             // Save still requires a completed native set or a verified positive-time receipt.
             recorded = true
@@ -3227,7 +3349,8 @@ fun ActiveOutdoorGpsScreen(
             val min = elapsedSec / 60
             val sec = elapsedSec % 60
             val formattedTime = String.format("%02d:%02d", min, sec)
-            val distKm = distanceMeters / 1000f
+            val effectiveMeters = manualDistanceMetersState ?: distanceMeters
+            val distKm = effectiveMeters / 1000f
             val formattedPace = if (distKm >= 0.01f && elapsedSec > 0) {
                 val paceSecPerKm = (elapsedSec / distKm).toInt()
                 String.format("%d:%02d", (paceSecPerKm / 60).coerceIn(1, 59), (paceSecPerKm % 60).coerceIn(0, 59))
@@ -3239,7 +3362,8 @@ fun ActiveOutdoorGpsScreen(
     }
 
     val formattedElapsed = String.format("%02d:%02d", elapsedSec / 60, elapsedSec % 60)
-    val distanceKm = distanceMeters / 1000f
+    val effectiveDistanceMeters = manualDistanceMetersState ?: distanceMeters
+    val distanceKm = effectiveDistanceMeters / 1000f
     val formattedDistance = String.format(java.util.Locale("hu", "HU"), "%.2f km", distanceKm)
     val formattedPace = if (distanceKm >= 0.01f && elapsedSec > 0) {
         val paceSecPerKm = (elapsedSec / distanceKm).toInt()
@@ -3277,7 +3401,10 @@ fun ActiveOutdoorGpsScreen(
         calories = "— kcal", heartRate = if (realHrBpm > 0) "♥ $realHrBpm bpm" else "♥ — bpm", pointCount = realGpsFixesCount,
         lapCount = lapCount, latestLap = lapSplits.lastOrNull().orEmpty(),
         error = listOf(finishErrorMsg, serviceErrorMsg).filter(String::isNotBlank).distinct().joinToString("\n"),
-        language = uiState.language
+        language = uiState.language,
+        manualDistanceInput = manualDistanceInput,
+        manualDistanceError = manualDistanceError,
+        hasManualDistance = manualDistanceMetersState != null && manualDistanceMetersState!! > 0f
     )
     val actions = OutdoorGpsActions(
         back = onBack, settings = onOpenSettings, selectActivity = onSelectOutdoorActivity,
@@ -3307,7 +3434,13 @@ fun ActiveOutdoorGpsScreen(
                 onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY)
             }
         },
-        expandMap = { isFullscreenMapOpen = true }
+        expandMap = { isFullscreenMapOpen = true },
+        onManualDistanceInputChange = { next ->
+            manualDistanceInput = next
+            if (manualDistanceError.isNotBlank()) manualDistanceError = ""
+        },
+        onSaveManualDistance = { applyManualDistanceInput(false) },
+        onClearManualDistance = { clearManualDistance() }
     )
     val routeMap: @Composable (Modifier) -> Unit = { modifier ->
         val mapPadding = LocalOutdoorMapContentPadding.current
@@ -3587,19 +3720,34 @@ fun WorkoutSummaryScreen(
     } }
 
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(palette.background)
-            .testTag("workout_summary_screen"),
-        contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+    val summaryListState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val activeSnapshotForSummary = com.repforge.app.ActiveWorkoutStore.current(context)
+    val persistedOutdoorDistKm = remember(uiState.activeWorkoutId, uiState.outdoorDistanceKm) {
+        (com.repforge.app.StudioWorkoutBridge.readOutdoorEffectiveDistanceMeters(
+            activeSnapshotForSummary,
+            (uiState.outdoorDistanceKm * 1000f).toDouble()
+        ) / 1000.0).toFloat()
+    }
+    val isOutdoor = uiState.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS || persistedOutdoorDistKm > 0f || uiState.outdoorDistanceKm > 0f
+    val effectiveOutdoorDistanceKm = maxOf(uiState.outdoorDistanceKm, persistedOutdoorDistKm)
+
+    com.example.ui.components.TrainPilotScrollableListBox(
+        lazyListState = summaryListState,
+        modifier = Modifier.fillMaxSize()
     ) {
-        val isOutdoor = uiState.activeWorkoutSubScreen == SubScreen.ACTIVE_OUTDOOR_GPS || uiState.outdoorDistanceKm > 0f
+        LazyColumn(
+            state = summaryListState,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(palette.background)
+                .testTag("workout_summary_screen"),
+            contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+        ) {
 
         val summarySubtitle = if (isOutdoor) {
-            val distLabel = if (uiState.outdoorDistanceKm > 0f) {
-                String.format(java.util.Locale("hu", "HU"), "%.2f km", uiState.outdoorDistanceKm)
+            val distLabel = if (effectiveOutdoorDistanceKm > 0f) {
+                String.format(java.util.Locale("hu", "HU"), "%.2f km", effectiveOutdoorDistanceKm)
             } else {
                 uiState.outdoorElapsedLabel.ifBlank { "00:00" }
             }
@@ -3644,7 +3792,7 @@ fun WorkoutSummaryScreen(
         val volumeOrDistHeader: String
         if (isOutdoor) {
             volumeOrDistHeader = strings.distanceLabel
-            volumeOrDistLabel = String.format(java.util.Locale("hu", "HU"), "%.2f km", uiState.outdoorDistanceKm)
+            volumeOrDistLabel = String.format(java.util.Locale("hu", "HU"), "%.2f km", effectiveOutdoorDistanceKm)
         } else {
             val totalVolKg = uiState.activeSetsByExerciseId.values.flatten().filter { it.completed }.sumOf { (it.weightKg * it.reps).toDouble() }
             val totalReps = uiState.activeSetsByExerciseId.values.flatten().filter { it.completed }.sumOf { it.reps }
@@ -3668,19 +3816,27 @@ fun WorkoutSummaryScreen(
         )
 
         item {
-            Text(
-                text = strings.workoutSummaryTitle,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = palette.textPrimary
-            )
-            Text(
-                text = summarySubtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = palette.textSecondary
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().testTag("workout_summary_header_row"),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = strings.workoutSummaryTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = palette.textPrimary
+                    )
+                    Text(
+                        text = summarySubtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = palette.textSecondary
+                    )
+                }
+                com.example.ui.components.StudioWorkoutHealthAction()
+            }
         }
-        item { com.example.ui.components.StudioWorkoutHealthAction() }
 
 
         item {
@@ -4066,6 +4222,7 @@ fun WorkoutSummaryScreen(
             }
         }
     }
+}
 }
 
 @Composable

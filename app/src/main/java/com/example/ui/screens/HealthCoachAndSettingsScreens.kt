@@ -393,14 +393,21 @@ fun HealthTabScreen(
         )
     }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(palette.background)
-            .testTag("health_tab_screen"),
-        contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+    val healthListState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    com.example.ui.components.TrainPilotScrollableListBox(
+        lazyListState = healthListState,
+        modifier = Modifier.fillMaxSize()
     ) {
+        LazyColumn(
+            state = healthListState,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(palette.background)
+                .testTag("health_tab_screen"),
+            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+        ) {
         // 1. OUTER GOLD-BORDERED CONTAINER: "Mai állapot" (6 daily tiles + dynamic today date)
         item {
             Surface(
@@ -1635,6 +1642,7 @@ fun HealthTabScreen(
         }
     }
 }
+}
 
 @Composable
 internal fun MainTodayStatusTile(
@@ -2216,14 +2224,21 @@ fun SettingsMainScreen(
         )
     }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(palette.background)
-            .testTag("settings_main_screen"),
-        contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp),
-        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+    val settingsListState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    com.example.ui.components.TrainPilotScrollableListBox(
+        lazyListState = settingsListState,
+        modifier = Modifier.fillMaxSize()
     ) {
+        LazyColumn(
+            state = settingsListState,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(palette.background)
+                .testTag("settings_main_screen"),
+            contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+        ) {
         item {
             SubScreenTopBar(
                 title = strings.settingsTitle,
@@ -2469,13 +2484,6 @@ fun SettingsMainScreen(
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(tr(uiState.language, "Edzés és értesítések", "Workout & Notifications", "Training & Benachrichtigungen", "Antrenament și notificări"), style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                    SettingsActionRowCard(
-                        title = strings.restTimerTitle,
-                        subtitle = tr(uiState.language, "Alapértelmezett pihenőidő (koppints a váltáshoz)", "Default rest timer (tap to cycle)", "Standard-Pausenzeit (tippen zum Wechseln)", "Timp de pauză implicit (atinge pentru schimbare)"),
-                        badgeText = "${uiState.defaultRestSec} $secUnit",
-                        subtleBorder = true,
-                        onClick = onCycleRestTimer
-                    )
                     Surface(
                         shape = RoundedCornerShape(18.dp),
                         color = palette.surfaceCard,
@@ -2588,6 +2596,7 @@ fun SettingsMainScreen(
             )
         }
     }
+}
 }
 
 @Composable
@@ -3052,8 +3061,8 @@ fun StudioGoogleCloudSyncCard(
         }
     }
 
-    LaunchedEffect(gs.lastDriveSyncIso, settingsState.maintenanceCompleted) {
-        if (gs.lastDriveSyncIso.isNotBlank() || settingsState.maintenanceCompleted > 0) {
+    LaunchedEffect(gs.lastDriveSyncIso, gs.lastCalendarSyncIso, settingsState.maintenanceCompleted) {
+        if (gs.lastDriveSyncIso.isNotBlank() || gs.lastCalendarSyncIso.isNotBlank() || settingsState.maintenanceCompleted > 0) {
             onCloudSyncCompleted()
         }
     }
@@ -3153,10 +3162,14 @@ fun StudioGoogleCloudSyncCard(
                     )
                 }
                 if (gs.lastCalendarSyncIso.isNotEmpty()) {
+                    val countSuffix = gs.lastCalendarSyncCount?.let { cnt ->
+                        " • " + tr(lang, "Szinkronizált események: $cnt", "Synced events: $cnt", "Synchronisierte Termine: $cnt", "Evenimente sincronizate: $cnt")
+                    }.orEmpty()
                     Text(
-                        text = "${tr(lang, "Utolsó Naptár szinkron", "Last Calendar sync", "Letzter Kalender-Sync", "Ultima sincronizare Calendar")}: ${gs.lastCalendarSyncIso.take(19).replace('T', ' ')}",
+                        text = "${tr(lang, "Utolsó Naptár szinkron", "Last Calendar sync", "Letzter Kalender-Sync", "Ultima sincronizare Calendar")}: ${gs.lastCalendarSyncIso.take(19).replace('T', ' ')}$countSuffix",
                         style = MaterialTheme.typography.labelSmall,
-                        color = palette.textSecondary
+                        color = palette.textSecondary,
+                        modifier = Modifier.testTag("settings_google_last_calendar_sync")
                     )
                 }
 
@@ -3324,7 +3337,7 @@ fun StudioGoogleCloudSyncCard(
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = palette.primary.copy(alpha = 0.14f),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().testTag("settings_google_sync_loading")
                 ) {
                     Text(
                         text = gs.stageMessage,
@@ -3336,11 +3349,39 @@ fun StudioGoogleCloudSyncCard(
                 }
             }
 
+            if (!gs.isBusy && gs.errorMessage.isNullOrBlank() && gs.lastCalendarSyncIso.isNotBlank()) {
+                val syncedCountLabel = gs.lastCalendarSyncCount?.let { cnt ->
+                    " • " + tr(lang, "$cnt esemény szinkronizálva", "$cnt events synced", "$cnt Termine synchronisiert", "$cnt evenimente sincronizate")
+                }.orEmpty()
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = palette.success.copy(alpha = 0.14f),
+                    modifier = Modifier.fillMaxWidth().testTag("settings_google_calendar_sync_success")
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            text = tr(lang, "Naptár szinkron sikeres", "Calendar sync successful", "Kalender-Sync erfolgreich", "Sincronizare calendar reușită") + syncedCountLabel,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = palette.success
+                        )
+                        Text(
+                            text = "${tr(lang, "Utolsó sikeres szinkron", "Last successful sync", "Letzter erfolgreicher Sync", "Ultima sincronizare reușită")}: ${gs.lastCalendarSyncIso.take(19).replace('T', ' ')}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = palette.textSecondary
+                        )
+                    }
+                }
+            }
+
             if (!gs.errorMessage.isNullOrBlank()) {
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = Color(0xFFEF4444).copy(alpha = 0.14f),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().testTag("settings_google_sync_error")
                 ) {
                     Text(
                         text = gs.errorMessage,

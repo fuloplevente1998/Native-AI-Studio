@@ -15,6 +15,7 @@ import com.repforge.app.ui.theme.trainPilotBorder
 import com.example.model.workoutsInWeekEnding
 import com.example.model.StudioProgressWindow
 import com.example.model.progressPeriodDays
+import com.example.model.localWorkoutDate
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.text.BasicTextField
@@ -205,17 +206,20 @@ fun LogTabScreen(
             entry.summaryExercisesHu.contains(uiState.logSearchQuery, ignoreCase = true) ||
             entry.localizedSummaryExercises(uiState.language, uiState.exercises).contains(uiState.logSearchQuery, ignoreCase = true)
 
+        val workoutDate = entry.localWorkoutDate()
         val matchesIntervalOrMonth = when {
             rangeMinDay != null && rangeMaxDay != null -> {
-                val monthMatches = entry.dateLabelHu.contains(monthPrefixHu, ignoreCase = true) ||
-                    entry.dateLabelHu.contains(". ${"%02d".format(currentYearMonth.monthValue)}.")
-                val dayNum = Regex("(\\d{1,2})\\.\\s*$").find(entry.dateLabelHu.trim())?.groupValues?.getOrNull(1)?.toIntOrNull()
-                    ?: Regex("\\.\\s*(\\d{1,2})\\.").findAll(entry.dateLabelHu).lastOrNull()?.groupValues?.getOrNull(1)?.toIntOrNull()
-                monthMatches && dayNum != null && dayNum in rangeMinDay..rangeMaxDay
+                val startDate = currentYearMonth.atDay(rangeMinDay.coerceIn(1, currentYearMonth.lengthOfMonth()))
+                val endDate = currentYearMonth.atDay(rangeMaxDay.coerceIn(1, currentYearMonth.lengthOfMonth()))
+                workoutDate != null && !workoutDate.isBefore(startDate) && !workoutDate.isAfter(endDate)
             }
             filterAllMonths -> true
-            else -> entry.dateLabelHu.contains(monthPrefixHu, ignoreCase = true) ||
-                entry.dateLabelHu.contains("${currentYearMonth.year}. ${"%02d".format(currentYearMonth.monthValue)}")
+            else -> if (workoutDate != null) {
+                workoutDate.year == currentYearMonth.year && workoutDate.monthValue == currentYearMonth.monthValue
+            } else {
+                entry.dateLabelHu.contains(monthPrefixHu, ignoreCase = true) ||
+                    entry.dateLabelHu.contains("${currentYearMonth.year}. ${"%02d".format(currentYearMonth.monthValue)}")
+            }
         }
         matchesSearch && matchesIntervalOrMonth
     }
@@ -282,14 +286,21 @@ fun LogTabScreen(
         )
     }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(palette.background)
-            .testTag("log_tab_screen"),
-        contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+    val logListState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    com.example.ui.components.TrainPilotScrollableListBox(
+        lazyListState = logListState,
+        modifier = Modifier.fillMaxSize()
     ) {
+        LazyColumn(
+            state = logListState,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(palette.background)
+                .testTag("log_tab_screen"),
+            contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+        ) {
         item {
             CompactJournalSearchField(uiState.logSearchQuery, onSearchChange, strings.logSearchHint)
         }
@@ -516,9 +527,9 @@ fun LogTabScreen(
                                             val isStartOrEnd = dayNum == intervalStartDay || dayNum == intervalEndDay
                                             val isInInterval = rangeMinDay != null && rangeMaxDay != null && dayNum in rangeMinDay..rangeMaxDay
                                             val isToday = isCurrentMonthToday && dayNum == today.dayOfMonth
+                                            val targetDayDate = currentYearMonth.atDay(dayNum)
                                             val hasLoggedWorkout = uiState.loggedWorkouts.any {
-                                                it.dateLabelHu.contains(monthPrefixHu, ignoreCase = true) &&
-                                                    it.dateLabelHu.contains(" $dayNum.")
+                                                it.localWorkoutDate() == targetDayDate
                                             }
                                             Surface(
                                                 shape = RoundedCornerShape(10.dp),
@@ -630,48 +641,21 @@ fun LogTabScreen(
 
         if (filteredLogs.isEmpty()) {
             item {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = palette.surfaceElevated,
+                Text(
+                    text = trL(
+                        uiState.language,
+                        "Nincs rögzített edzés a kiválasztott időszakban.",
+                        "No logged workouts in the selected period.",
+                        "Keine protokollierten Trainings im ausgewählten Zeitraum.",
+                        "Niciun antrenament înregistrat în perioada selectată."
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = palette.textSecondary,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp)
-                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Text(
-                            text = trL(uiState.language, "Nincs rögzített edzés erre a szűrésre", "No logged workouts for this filter", "Keine protokollierten Trainings für diesen Filter", "Niciun antrenament înregistrat pentru acest filtru"),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = palette.textPrimary
-                        )
-                        Text(
-                            text = trL(
-                                uiState.language,
-                                "A kiválasztott időszakra ($currentFilterLabel) még nem található naplózott edzés.",
-                                "No logged workouts found for the selected period ($currentFilterLabel).",
-                                "Für den ausgewählten Zeitraum ($currentFilterLabel) wurden noch keine Trainings gefunden.",
-                                "Nu s-au găsit antrenamente înregistrate pentru perioada selectată ($currentFilterLabel)."
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = palette.textSecondary
-                        )
-                        if (!filterAllMonths || intervalStartDay != null) {
-                            com.repforge.app.ui.theme.TrainPilotNegativeButton(
-                                onClick = {
-                                    intervalStartDay = null
-                                    intervalEndDay = null
-                                    filterAllMonths = true
-                                }) {
-                                Text(trL(uiState.language, "Szűrő törlése", "Clear filter", "Filter löschen", "Șterge filtrul"), fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                }
+                        .padding(vertical = 12.dp, horizontal = 4.dp)
+                        .testTag("log_empty_period_message")
+                )
             }
         }
 
@@ -693,6 +677,7 @@ fun LogTabScreen(
             )
         }
     }
+}
 }
 
 /** Compact, independently testable search that keeps the keyboard text-input semantics. */

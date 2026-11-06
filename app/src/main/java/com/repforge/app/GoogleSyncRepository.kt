@@ -56,6 +56,7 @@ data class GoogleSyncUiState(
     val stageMessage: String = "",
     val lastDriveSyncIso: String = "",
     val lastCalendarSyncIso: String = "",
+    val lastCalendarSyncCount: Int? = null,
     val errorMessage: String? = null
 )
 
@@ -99,12 +100,16 @@ class GoogleSyncRepository internal constructor(
         appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     private fun loadInitialUiState(): GoogleSyncUiState {
-        val rawProfile = prefs().getString("profile", "") ?: ""
+        val p = prefs()
+        val rawProfile = p.getString("profile", "") ?: ""
         val profile = runCatching { if (rawProfile.isNotEmpty()) JSONObject(rawProfile) else null }.getOrNull()
         return GoogleSyncUiState(
             connectedEmail = profile?.optString("email").orEmpty(),
             connectedName = profile?.optString("name").orEmpty(),
-            connectedSub = profile?.optString("sub").orEmpty()
+            connectedSub = profile?.optString("sub").orEmpty(),
+            lastDriveSyncIso = p.getString("lastDriveSyncIso", "").orEmpty(),
+            lastCalendarSyncIso = p.getString("lastCalendarSyncIso", "").orEmpty(),
+            lastCalendarSyncCount = if (p.contains("lastCalendarSyncCount")) p.getInt("lastCalendarSyncCount", 0) else null
         )
     }
 
@@ -115,7 +120,10 @@ class GoogleSyncRepository internal constructor(
                 isBusy = current.isBusy, activeOperation = current.activeOperation,
                 stageMessage = current.stageMessage, errorMessage = current.errorMessage)
             else current.copy(connectedEmail = loaded.connectedEmail,
-                connectedName = loaded.connectedName, connectedSub = loaded.connectedSub)
+                connectedName = loaded.connectedName, connectedSub = loaded.connectedSub,
+                lastDriveSyncIso = current.lastDriveSyncIso.ifBlank { loaded.lastDriveSyncIso },
+                lastCalendarSyncIso = current.lastCalendarSyncIso.ifBlank { loaded.lastCalendarSyncIso },
+                lastCalendarSyncCount = current.lastCalendarSyncCount ?: loaded.lastCalendarSyncCount)
         }
     }
 
@@ -218,9 +226,15 @@ class GoogleSyncRepository internal constructor(
                         connectWithTokenInternal(token, dataTicket)
                         GoogleSyncCompletion(action)
                     }
-                    GoogleSyncAction.DRIVE -> GoogleSyncCompletion(action,
-                        syncedAt = syncDriveCloudInternal(token, false, recoverEarlier, true))
-                    GoogleSyncAction.CALENDAR -> GoogleSyncCompletion(action, count = syncCalendarCloudInternal(token, dataTicket))
+                    GoogleSyncAction.DRIVE -> {
+                        _uiState.update { it.copy(stageMessage = "Google Drive szinkronizálása…") }
+                        GoogleSyncCompletion(action,
+                            syncedAt = syncDriveCloudInternal(token, false, recoverEarlier, true))
+                    }
+                    GoogleSyncAction.CALENDAR -> {
+                        _uiState.update { it.copy(stageMessage = "Naptár szinkronizálása…") }
+                        GoogleSyncCompletion(action, count = syncCalendarCloudInternal(token, dataTicket))
+                    }
                 }
             }
         }
@@ -470,6 +484,7 @@ class GoogleSyncRepository internal constructor(
             }
 
             WearSyncRepository.publishWatchHomeSnapshot(appContext)
+            prefs().edit().putString("lastDriveSyncIso", nowIso).apply()
             _uiState.value = _uiState.value.copy(
                 lastDriveSyncIso = nowIso,
                 errorMessage = null
@@ -485,11 +500,63 @@ class GoogleSyncRepository internal constructor(
         }
     }
 
+    private suspend fun ensureCalendarScheduleMaterializedFromStateDoc() {
+        if (database.calendarScheduleDao().getAllEntries().isNotEmpty()) return
+        val doc = database.keyValueDocumentDao().getDocument("native:calendarState") ?: return
+        val events = runCatching { JSONObject(doc.json).optJSONArray("events") }.getOrNull() ?: return
+        if (events.length() == 0) return
+        val defaultMonth = java.time.YearMonth.from(Instant.ofEpochMilli(doc.updatedAt).atZone(java.time.ZoneId.systemDefault()))
+        val rows = mutableListOf<com.repforge.app.data.db.CalendarScheduleEntity>()
+        for (i in 0 until events.length()) {
+            val o = events.optJSONObject(i) ?: continue
+            val id = o.optString("id").takeIf { it.isNotBlank() } ?: continue
+            val dayOfMonth = o.optInt("dayOfMonth", 1).coerceIn(1, defaultMonth.lengthOfMonth())
+            val dateStr = o.optString("dateIso").takeIf { it.isNotBlank() }
+                ?: defaultMonth.atDay(dayOfMonth).toString()
+            val timeLabel = o.optString("timeLabel", "10:00")
+            val durationMin = o.optInt("durationMinutes", 60).coerceAtLeast(15)
+            val parsedDate = runCatching { java.time.LocalDate.parse(dateStr) }.getOrNull() ?: continue
+            val parts = timeLabel.split(":")
+            val hour = parts.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 10
+            val minute = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
+            val startInstant = parsedDate.atTime(hour, minute).atZone(java.time.ZoneId.systemDefault()).toInstant()
+            val endInstant = startInstant.plusSeconds(durationMin * 60L)
+            val rawStatus = o.optString("status", "PLANNED").uppercase(Locale.ROOT)
+            val statusStr = when (rawStatus) {
+                "COMPLETED" -> "completed"
+                "MISSED", "SKIPPED" -> "skipped"
+                else -> "planned"
+            }
+            val titleHu = o.optString("titleHu", "Edzés")
+            val splitBadge = o.optString("splitBadge", "A")
+            rows.add(
+                com.repforge.app.data.db.CalendarScheduleEntity(
+                    id = id,
+                    googleEventId = "",
+                    date = parsedDate.toString(),
+                    startIso = startInstant.toString(),
+                    endIso = endInstant.toString(),
+                    programId = "program_default",
+                    programName = titleHu,
+                    dayId = splitBadge,
+                    dayName = titleHu,
+                    status = statusStr,
+                    updatedAt = doc.updatedAt,
+                    rawJson = o.toString()
+                )
+            )
+        }
+        if (rows.isNotEmpty()) {
+            database.calendarScheduleDao().upsertEntries(rows)
+        }
+    }
+
     private suspend fun syncCalendarCloudInternal(accessToken: String,
         dataTicket: NativeDataReplacement.Continuation = NativeDataReplacement.continuationForCurrentData(appContext)): Int {
         verifyAndFetchProfile(accessToken)
         currentCoroutineContext().ensureActive()
         dataTicket.requireCurrent(appContext)
+        ensureCalendarScheduleMaterializedFromStateDoc()
         val calendarId = ensureManagedCalendar(accessToken, dataTicket)
         val entries = database.calendarScheduleDao().getAllEntries()
         val base = "https://www.googleapis.com/calendar/v3/calendars/${enc(calendarId)}/events"
@@ -528,8 +595,13 @@ class GoogleSyncRepository internal constructor(
         }
         val nowIso = Instant.now().toString()
         dataTicket.requireCurrent(appContext)
+        prefs().edit()
+            .putString("lastCalendarSyncIso", nowIso)
+            .putInt("lastCalendarSyncCount", count)
+            .apply()
         _uiState.value = _uiState.value.copy(
             lastCalendarSyncIso = nowIso,
+            lastCalendarSyncCount = count,
             errorMessage = null
         )
         return count

@@ -204,8 +204,8 @@ internal object PhoneWorkoutRecording {
                 if (command.optString("action") in setOf("completeTimedSet", "completeMeasuredSet")) {
                     for (field in listOf("leftSeconds", "rightSeconds")) if (set.has(field)) values.put(field, set.get(field))
                 }
-                if (command.optString("action") in setOf("completeGpsSet", "completeMeasuredSet")) {
-                    for (field in listOf("distanceMeters", "distanceSource", "gpsRouteKey163")) if (set.has(field)) values.put(field, set.get(field))
+                if (command.optString("action") in setOf("completeGpsSet", "completeMeasuredSet", "completeTimedSet")) {
+                    for (field in listOf("distanceMeters", "distanceSource", "manualDistanceMeters", "gpsRouteKey163")) if (set.has(field)) values.put(field, set.get(field))
                 }
                 return values
             }
@@ -577,7 +577,8 @@ internal object PhoneWorkoutExecution {
             publish(context)
             return undone
         }
-        if (!IntervalTimerService.armed(frame.getString("workoutId"), frame.getLong("generation"))) {
+        val indoorStopwatchCommand = frame.optBoolean("studioIndoor") && command.optString("action") == "completeTimedSet"
+        if (!indoorStopwatchCommand && !IntervalTimerService.armed(frame.getString("workoutId"), frame.getLong("generation"))) {
             return JSONObject().put("status", "rejected").put("reason", "controllerNotArmed")
         }
         val timer = IntervalTimerService.snapshot(context)

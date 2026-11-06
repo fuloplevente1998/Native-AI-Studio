@@ -215,6 +215,11 @@ fun SettingsScreen(
                         if (gs.lastDriveSyncIso.isNotEmpty()) {
                             Text(strings.getString(R.string.native_settings_last_drive, gs.lastDriveSyncIso.take(19).replace('T', ' ')), color = colors.muted, fontSize = 11.sp)
                         }
+                        if (gs.lastCalendarSyncIso.isNotEmpty()) {
+                            val cntSuffix = gs.lastCalendarSyncCount?.let { " • $it" }.orEmpty()
+                            Text("Utolsó Naptár szinkron: ${gs.lastCalendarSyncIso.take(19).replace('T', ' ')}$cntSuffix",
+                                color = colors.muted, fontSize = 11.sp, modifier = Modifier.testTag("native_google_last_calendar"))
+                        }
                         Spacer(Modifier.height(10.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(
@@ -237,7 +242,7 @@ fun SettingsScreen(
                             Button(
                                 onClick = { activity?.let { viewModel.syncCalendarCloud(it) } },
                             enabled = !gs.isBusy && !state.replacementBusy,
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.weight(1f).testTag("native_google_calendar_sync_btn"),
                                 colors = ButtonDefaults.buttonColors(containerColor = colors.card2)
                             ) {
                                 Text(strings.getString(R.string.native_settings_calendar_sync), color = colors.text, fontSize = 11.sp)
@@ -265,7 +270,17 @@ fun SettingsScreen(
                     NativeGoogleMaintenanceFeedback(state.settings.language, state.maintenanceOutcome, state.maintenanceCompleted)
                     if (gs.isBusy) {
                         Spacer(Modifier.height(6.dp))
-                        Text(gs.stageMessage, color = colors.accent2, fontSize = 11.sp)
+                        Text(gs.stageMessage, color = colors.accent2, fontSize = 11.sp, modifier = Modifier.testTag("native_google_busy"))
+                    }
+                    if (!gs.isBusy && gs.errorMessage.isNullOrBlank() && gs.lastCalendarSyncIso.isNotBlank()) {
+                        Spacer(Modifier.height(6.dp))
+                        val cntText = gs.lastCalendarSyncCount?.let { " ($it)" }.orEmpty()
+                        Text("Naptár szinkron sikeres$cntText", color = colors.success, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                            modifier = Modifier.testTag("native_google_calendar_success"))
+                    }
+                    if (!gs.errorMessage.isNullOrBlank()) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(gs.errorMessage, color = colors.dangerText, fontSize = 11.sp, modifier = Modifier.testTag("native_google_error"))
                     }
                 }
             }

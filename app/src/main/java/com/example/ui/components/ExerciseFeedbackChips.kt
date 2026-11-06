@@ -111,18 +111,42 @@ internal fun StudioWorkoutOverallFeedback(effort: String?, note: String, languag
     enabled: Boolean, onEffort: (String?) -> Unit, onNote: (String) -> Unit, tag: String = "workout_overall_feedback") {
     var expanded by rememberSaveable(tag) { mutableStateOf(false) }
     val palette = LocalTrainPilotPalette.current
-    Surface(Modifier.fillMaxWidth().testTag(tag), color = palette.surfaceCard, shape = RoundedCornerShape(16.dp),
+    val optionalWord = feedbackText(language, "Opcionális", "Optional", "Optional", "Opțional")
+    val secondaryText = if (effort != null) "$optionalWord • ${feedbackChoiceLabel(effort, language)}" else optionalWord
+    Surface(Modifier.fillMaxWidth().testTag(tag), color = palette.surfaceCard, shape = RoundedCornerShape(14.dp),
         border = com.repforge.app.ui.theme.TrainPilotFrames.control(
             if (effort == "pain") com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.45f) else palette.cardBorder)) {
-        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().testTag("${tag}_toggle")) {
-                Column(Modifier.weight(1f)) {
-                    Text(feedbackText(language, "Edzés összbenyomása (opcionális)", "Overall workout feeling (optional)",
-                        "Gesamteindruck (optional)", "Impresia antrenamentului (opțional)"))
-                    if (effort != null) Text(feedbackChoiceLabel(effort, language), style = MaterialTheme.typography.labelSmall)
+        Column(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton(
+                onClick = { expanded = !expanded },
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 42.dp).testTag("${tag}_toggle")
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = feedbackText(
+                            language,
+                            "Edzés összesített visszajelzése",
+                            "Overall workout feedback",
+                            "Gesamtfeedback zum Training",
+                            "Feedback general antrenament"
+                        ),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                        color = palette.textPrimary
+                    )
+                    Text(
+                        text = secondaryText,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = palette.textSecondary
+                    )
                 }
                 Icon(if (expanded) androidx.compose.material.icons.Icons.Default.ExpandLess else androidx.compose.material.icons.Icons.Default.ExpandMore,
-                    contentDescription = null)
+                    contentDescription = null, tint = palette.primary)
             }
             if (expanded) {
                 Text(feedbackText(language, "Az egész edzésről szól; a gyakorlatok válaszait nem módosítja.",

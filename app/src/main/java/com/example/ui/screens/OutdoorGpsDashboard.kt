@@ -144,7 +144,10 @@ internal data class OutdoorGpsDisplay(
     val lapCount: Int,
     val latestLap: String,
     val error: String,
-    val language: AppLanguage = AppLanguage.HU
+    val language: AppLanguage = AppLanguage.HU,
+    val manualDistanceInput: String = "",
+    val manualDistanceError: String = "",
+    val hasManualDistance: Boolean = false
 )
 
 internal data class OutdoorGpsActions(
@@ -156,7 +159,10 @@ internal data class OutdoorGpsActions(
     val pause: () -> Unit,
     val lap: () -> Unit,
     val finish: () -> Unit,
-    val expandMap: () -> Unit
+    val expandMap: () -> Unit,
+    val onManualDistanceInputChange: (String) -> Unit = {},
+    val onSaveManualDistance: () -> Unit = {},
+    val onClearManualDistance: () -> Unit = {}
 )
 
 /** The map yields height first; primary controls never belong to a scrolling list. */
@@ -202,10 +208,11 @@ internal fun OutdoorGpsDashboard(
             return@BoxWithConstraints
         }
         // The compact map has a bounded height; metrics and pinned actions get the remaining space.
-        val scrollSecondary = maxHeight < 560.dp || LocalDensity.current.fontScale > 1.35f || state.error.isNotBlank()
+        val scrollSecondary = maxHeight < 560.dp || LocalDensity.current.fontScale > 1.35f ||
+            state.error.isNotBlank() || state.manualDistanceError.isNotBlank()
         // This card also contains the activity/GPS row (~56 dp). Reserve enough
         // height for the *map itself*, instead of counting that row as map area.
-        val compactMapHeight = (maxHeight * 0.40f).coerceIn(210.dp, 300.dp)
+        val compactMapHeight = (maxHeight * 0.36f).coerceIn(245.dp, 290.dp)
         Column(Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             DashboardHeader(state, actions, fullscreen)
             Column(
@@ -235,10 +242,120 @@ internal fun OutdoorGpsDashboard(
                         }
                     }
                     MetricsPanel(state, strings, showTimer = !fullscreen)
+                    OutdoorManualDistanceCard(state, actions)
                     if (state.error.isNotBlank()) Text(state.error, color = palette.danger,
                         style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("outdoor_finish_error"))
             }
             DashboardControls(state, strings, actions)
+        }
+    }
+}
+
+@Composable
+private fun OutdoorManualDistanceCard(state: OutdoorGpsDisplay, actions: OutdoorGpsActions) {
+    val palette = LocalTrainPilotPalette.current
+    val titleText = when (state.language) {
+        AppLanguage.EN -> "Enter distance manually"
+        AppLanguage.DE -> "Distanz manuell eingeben"
+        AppLanguage.RO -> "Introdu distanța manual"
+        AppLanguage.HU -> "Távolság manuális megadása"
+    }
+    val placeholderText = when (state.language) {
+        AppLanguage.EN -> "e.g. 5.2"
+        AppLanguage.DE -> "z.B. 5,2"
+        AppLanguage.RO -> "ex. 5,2"
+        AppLanguage.HU -> "pl. 5,2"
+    }
+    val saveLabel = when (state.language) {
+        AppLanguage.EN -> "Apply"
+        AppLanguage.DE -> "Speichern"
+        AppLanguage.RO -> "Aplică"
+        AppLanguage.HU -> "Rögzítés"
+    }
+    val clearLabel = when (state.language) {
+        AppLanguage.EN -> "Clear"
+        AppLanguage.DE -> "Löschen"
+        AppLanguage.RO -> "Șterge"
+        AppLanguage.HU -> "Törlés"
+    }
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = palette.surfaceCard,
+        modifier = Modifier
+            .fillMaxWidth()
+            .trainPilotBorder(
+                1.dp,
+                if (state.hasManualDistance) palette.primary.copy(alpha = 0.55f) else palette.cardBorder,
+                RoundedCornerShape(16.dp)
+            )
+            .testTag("outdoor_manual_distance_card")
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = titleText,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (state.hasManualDistance) palette.primary else palette.textPrimary
+                )
+                Text(
+                    text = "km",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = palette.textSecondary
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                OutlinedTextField(
+                    value = state.manualDistanceInput,
+                    onValueChange = actions.onManualDistanceInputChange,
+                    placeholder = { Text(placeholderText, style = MaterialTheme.typography.bodySmall) },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = palette.textPrimary),
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp)
+                        .testTag("outdoor_manual_distance_input")
+                )
+                TrainPilotOutlinedButton(
+                    onClick = actions.onSaveManualDistance,
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .testTag("outdoor_manual_distance_save"),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text(saveLabel, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                }
+                if (state.hasManualDistance || state.manualDistanceInput.isNotBlank()) {
+                    TrainPilotOutlinedButton(
+                        onClick = actions.onClearManualDistance,
+                        modifier = Modifier
+                            .heightIn(min = 48.dp)
+                            .testTag("outdoor_manual_distance_clear"),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(clearLabel, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+            if (state.manualDistanceError.isNotBlank()) {
+                Text(
+                    text = state.manualDistanceError,
+                    color = palette.danger,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.testTag("outdoor_manual_distance_error")
+                )
+            }
         }
     }
 }
@@ -291,15 +408,12 @@ private fun DashboardHeader(state: OutdoorGpsDisplay, actions: OutdoorGpsActions
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             if (fullscreen) {
                 com.example.ui.components.TrainPilotRedCloseButton(actions.back, testTag = "gps_close_fullscreen")
-            } else {
-                TrainPilotOutlinedButton(actions.back, modifier = Modifier.size(48.dp),
-                    shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(0.dp),
-                    colors = WorkoutControlAppearance.secondaryColors(),
-                    border = WorkoutControlAppearance.secondaryBorder()) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = copy.back, tint = palette.textPrimary)
-                }
             }
-            Column(Modifier.weight(1f).padding(vertical = 4.dp)) {
+            Column(
+                Modifier
+                    .weight(1f)
+                    .padding(start = if (fullscreen) 0.dp else 12.dp, top = 4.dp, bottom = 4.dp)
+            ) {
                 Text(localizedTitle, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold,
                     color = palette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(state.status, style = MaterialTheme.typography.labelSmall,
