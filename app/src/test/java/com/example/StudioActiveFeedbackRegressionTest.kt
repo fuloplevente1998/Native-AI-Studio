@@ -1,5 +1,6 @@
 package com.example
 
+import android.content.Context
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -7,14 +8,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.test.core.app.ApplicationProvider
 import com.example.model.ExerciseItem
 import com.example.model.SubScreen
 import com.example.ui.components.rememberExerciseFeedbackNext
+import com.example.ui.components.StudioActiveWorkoutSessionInfo
 import com.example.ui.components.rememberStudioWorkoutCoachOwner
 import com.example.ui.components.StudioExerciseFeedbackReview
 import com.example.ui.components.StudioWorkoutOverallFeedback
 import com.example.ui.theme.TrainPilotTheme
 import com.example.ui.viewmodel.TrainPilotUiState
+import com.repforge.app.ActiveWorkoutStore
+import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -31,6 +36,30 @@ class StudioActiveFeedbackRegressionTest {
         activeWorkoutId = "session", activeWorkoutGeneration = 7,
         currentSubScreen = SubScreen.ACTIVE_STRENGTH,
         activeWorkoutExercises = listOf(ExerciseItem("press", "Nyomás"), ExerciseItem("row", "Evezés")))
+
+    @Test fun activeDayBadgeIsRenderedBelowProgramTitle() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("trainpilot_wear_sync", Context.MODE_PRIVATE).edit().clear().commit()
+        ActiveWorkoutStore.saveOwned(context, JSONObject()
+            .put("workoutId", "session")
+            .put("generation", 7L)
+            .put("programName", "Otthoni A/B – Alap")
+            .put("dayName", "A"))
+
+        compose.setContent {
+            TrainPilotTheme {
+                StudioActiveWorkoutSessionInfo(initial().copy(activeWorkoutTitleHu = "Otthoni A/B – Alap • A"))
+            }
+        }
+        compose.waitForIdle()
+
+        compose.onNodeWithTag("active_workout_program_label").assertIsDisplayed()
+        compose.onNodeWithTag("active_workout_day").assertIsDisplayed()
+        compose.onNodeWithText("A nap").assertIsDisplayed()
+        val programBounds = compose.onNodeWithTag("active_workout_program_label").fetchSemanticsNode().boundsInRoot
+        val dayBounds = compose.onNodeWithTag("active_workout_day").fetchSemanticsNode().boundsInRoot
+        assertTrue("The highlighted day must be below the program title", dayBounds.top >= programBounds.bottom)
+    }
 
     @Test fun summaryReviewsExistingExerciseAnswerAndOnlyExplicitEditOpensTheChoices() {
         val effort = mutableStateOf<String?>("hard")
@@ -58,6 +87,7 @@ class StudioActiveFeedbackRegressionTest {
             StudioExerciseFeedbackReview("hard", "", "hu", "Nyomás", true,
                 { exerciseEdits++ }, {}, "review_press")
         } } }
+        compose.onNodeWithText("Edzés összesített visszajelzése").assertIsDisplayed()
         compose.onNodeWithTag("overall_choices_pain").assertDoesNotExist()
         compose.onNodeWithTag("overall_toggle").performClick()
         compose.onNodeWithTag("overall_choices_pain").performClick()
