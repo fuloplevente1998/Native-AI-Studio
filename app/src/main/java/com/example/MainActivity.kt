@@ -389,7 +389,6 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         com.example.ui.components.StudioWorkoutHandoverBar(uiState, strings) {
                             viewModel.toggleWatchControlMode(context as? android.app.Activity)
                         }
-                        com.example.ui.components.StudioActiveWorkoutSessionInfo(uiState)
                     }
                 }
             }
