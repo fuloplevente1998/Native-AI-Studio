@@ -89,7 +89,12 @@ class WatchInfoCardRegressionTest {
         // at a controlled frame instead of asking Espresso to finish that animation.
         compose.mainClock.autoAdvance = false
         compose.runOnIdle { data = data.copy(loading = true, status = "Óraadatok lekérése…") }
-        compose.mainClock.advanceTimeByFrame()
+        compose.waitUntil(30_000) {
+            compose.mainClock.advanceTimeByFrame()
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+            compose.onNodeWithTag("watch_refresh_device_info", useUnmergedTree = true)
+                .fetchSemanticsNode().config.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled)
+        }
         compose.onNodeWithTag("watch_refresh_device_info", useUnmergedTree = true).assertIsNotEnabled()
         compose.onNodeWithTag("watch_device_info_card", useUnmergedTree = true).assertIsNotEnabled()
         compose.onNodeWithTag("watch_device_info_status", useUnmergedTree = true).assertExists()
