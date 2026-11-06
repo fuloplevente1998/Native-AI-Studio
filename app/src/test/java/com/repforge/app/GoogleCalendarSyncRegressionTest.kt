@@ -227,6 +227,18 @@ class GoogleCalendarSyncRegressionTest {
         assertPreserved(first, second)
     }
 
+    @Test fun skippedDuplicateCannotDeleteAnActiveEventWithSameGoogleId() {
+        val cancelled = entry("skipped", "old")
+        val active = entry("planned", "current")
+        save(cancelled, active); live()
+        expect("POST", "$root/live/events?sendUpdates=none", 201)
+        assertEquals(1, sync().getOrThrow())
+        assertEquals(0, calls.count { it.method == "DELETE" })
+        assertEquals(1, calls.count { it.method == "POST" })
+        assertEquals("Naptár szinkronizálása… (1/1)", repository.uiState.value.stageMessage)
+        assertPreserved(cancelled, active)
+    }
+
     @Test fun diagnosticLabelsContainNoRemoteIdentifiersAndRetryPolicyRemainsIdempotent() {
         assertEquals("PUT calendar event", GoogleRequestPolicy.calendarOperation("PUT",
             "https://www.googleapis.com$root/private%40example.test/events/$eventId?access_token=secret"))
