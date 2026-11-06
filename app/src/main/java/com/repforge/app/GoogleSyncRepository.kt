@@ -563,8 +563,22 @@ class GoogleSyncRepository internal constructor(
         var count = 0
         val operations = NativeCalendarSyncPlan.operations(entries).toList()
         val total = operations.size
+        // Only skip writes confirmed by this app on this exact account and calendar.
+        // A failed or interrupted run never records an unconfirmed operation.
+        val syncScope = "${prefs().getString("sub", "").orEmpty()}|$calendarId"
+        val fingerprintKey = "calendarConfirmedFingerprints"
+        val previous = runCatching { JSONObject(prefs().getString(fingerprintKey, "{}").orEmpty()) }
+            .getOrDefault(JSONObject())
+        val confirmed = if (previous.optString("scope") == syncScope)
+            previous.optJSONObject("events") ?: JSONObject() else JSONObject()
         _uiState.update { it.copy(stageMessage = "Naptár szinkronizálása… (0/$total)") }
         for (operation in operations) {
+            val fingerprint = operation.payload?.toString() ?: "<deleted>"
+            if (confirmed.optString(operation.id) == fingerprint) {
+                count++
+                _uiState.update { it.copy(stageMessage = "Naptár szinkronizálása… ($count/$total)") }
+                continue
+            }
             kotlinx.coroutines.currentCoroutineContext().ensureActive()
             dataTicket.requireCurrent(appContext)
             val id = operation.id
@@ -593,6 +607,13 @@ class GoogleSyncRepository internal constructor(
                         }
                     }
                 }
+            }
+            // Commit after each confirmed response, so cancellation cannot mark pending work done.
+            confirmed.put(operation.id, fingerprint)
+            dataTicket.requireCurrent(appContext)
+            check(prefs().edit().putString(fingerprintKey, JSONObject()
+                .put("scope", syncScope).put("events", confirmed).toString()).commit()) {
+                "A naptár szinkronállapota nem menthető."
             }
             count++
             // Progress is reported only after the remote operation completed.
