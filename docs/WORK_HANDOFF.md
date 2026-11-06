@@ -1,3 +1,28 @@
+# Rövid munkátadás – 2026-11-06 (#117 és #195 lezárva; PR #205/#206 mainen; signed build kész)
+
+Belépési pont: [AGENTS.md](../AGENTS.md). Az élő GitHub-állapot elsőbbséget élvez.
+
+## #117 + #195 integráció és ellenőrzött signed build
+
+- PR #205 mainen: natív Google-naptárszinkron progress, stabil ID szerinti deduplikáció,
+  aktív esemény elsőbbsége stale skipped rekorddal szemben, változatlan események
+  megerősített no-op gyorsítótára és célzott naptár-regressziók. #117 completed.
+- PR #206 mainen: #195 végső készülékes finomítása; az aktív A/B nap kiemelése a
+  program neve alá került, a korábbi központi edzésidő és kompakt összegző megmaradt.
+  Új layout/label regresszió. #195 completed.
+- PR #206 első teljes körében 589 tesztből 1, a módosítástól független
+  WatchInfoCardRegressionTest Compose-timeout volt; változtatás nélküli ismétlés
+  SUCCESS. A végső signed main-kapu is SUCCESS.
+- Signed forrás: `a2b23e857c8dcf8a42778875e1ad8dcce75f74f1`, run 42275982356.
+  Nyers XML: **589 = 408 telefon + 181 Wear**, 0 failure/error/skipped, shared NO-SOURCE.
+  Telefon/Wear: **1.0-beta / 2755 / com.TrainPilot.com**, tartós signer és páros identity
+  ellenőrizve. Telefon SHA256 `fca0bfbe7fd8cf404339b2409462f720e03915459a8e6a3cdb76bb94fc3ef373`,
+  Wear SHA256 `9a8c8adcf5488a2ade871da2470aa56a0818564c36d2402cbe684d905cfd9139`.
+  Letöltött artifact ZIP SHA256:
+  `a993d4a56b40d9a088ce806c3721e228cc48dedc5527aafaf4aea72ad2b9171e`.
+- Ez a dokumentációs commit nem változtatja a fenti APK-k alkalmazásforrását.
+
+
 # Rövid munkátadás – 2026-11-06 (7 nyitott feladat lezárása: #199, #196, #117, #195, #197, #200, #198)
 
 Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
