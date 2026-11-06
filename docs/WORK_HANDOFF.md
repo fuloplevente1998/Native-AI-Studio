@@ -3,6 +3,20 @@
 Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
+## 2755 kapu: dátumregresszió javítása, kiadás még nincs
+
+42174687802 /6a3f0e5: fordítás sikeres, nyers XML583 teszt,582 sikeres,
+1 failure (StudioWorkoutDatesTest.datedLegacyRowsRemainVisibleButInvalidTimestampCannotBecomeCurrentWeek),
+0 error/skipped. Artifactdigest és report forrás ellenőrizve. Ebből nincs átadott APK.
+Az AI Studio parser hibás savedStartIso mellett display-dátumra esett vissza,
+így érvénytelen kanonikus adat jelenhetett meg a heti statisztikában. A javítás:
+a nem üres kanonikus időbélyeg kizárólag teljes, sikeres parse esetén ad napot;
+hibánál null, nincs megjelenítési fallback vagy időrészt levágó date-prefix.
+ISO/offset és érvényes helyi, szóközös dátumidő támogatott; legacy magyar/pontozott
+feliratfeldolgozás csak hiányzó savedStartIso esetén marad. A korábbi teszt változatlan,
+új malformed-time/date-prefix regresszió hozzáadva. Egy új közös signed main-kapu
+következik; 1.0-beta2755 változatlan, mert ebből még nem történt kiadás.
+
 ## Új APK-kérés – bf61e1a csomag, 1.0-beta2755
 
 A felhasználó kéri az új APK-párt a mainre pusholt bf61e1a változásaiból.

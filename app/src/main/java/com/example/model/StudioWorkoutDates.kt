@@ -8,11 +8,11 @@ import java.time.ZoneId
 /** Assign timestamped workouts to the user's local day, never to a display-string UTC day. */
 internal fun LoggedWorkoutEntry.localWorkoutDate(zone: ZoneId = ZoneId.systemDefault()): LocalDate? {
     if (savedStartIso.isNotBlank()) {
-        val fromIso = runCatching { Instant.parse(savedStartIso).atZone(zone).toLocalDate() }.getOrNull()
+        // A present canonical timestamp is authoritative, including a parse failure.
+        return runCatching { Instant.parse(savedStartIso).atZone(zone).toLocalDate() }.getOrNull()
             ?: runCatching { java.time.OffsetDateTime.parse(savedStartIso).atZoneSameInstant(zone).toLocalDate() }.getOrNull()
-            ?: runCatching { LocalDateTime.parse(savedStartIso.replace(' ', 'T').take(19)).toLocalDate() }.getOrNull()
-            ?: runCatching { LocalDate.parse(savedStartIso.take(10)) }.getOrNull()
-        if (fromIso != null) return fromIso
+            ?: runCatching { LocalDateTime.parse(savedStartIso.replace(' ', 'T')).toLocalDate() }.getOrNull()
+            ?: runCatching { LocalDate.parse(savedStartIso) }.getOrNull()
     }
     return parseFlexibleWorkoutDate(dateLabelHu)
 }
