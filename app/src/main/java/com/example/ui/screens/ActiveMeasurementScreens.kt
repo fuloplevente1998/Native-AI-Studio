@@ -491,12 +491,17 @@ fun ActiveStrengthWorkoutScreen(
                     rightExtraContent = { com.example.ui.components.StudioWorkoutHealthAction() }
                 )
 
+                // Keep the A/B day marker inside the workout card: below the large program header,
+                // above the horizontal exercise sequence. The program title itself is rendered only once.
+                com.example.ui.components.StudioActiveWorkoutSessionInfo(uiState)
+
                 // Horizontal Exercise Sequence Pills (shows all exercises in the planned/queued workout)
                 if (workoutExercises.size > 1) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
+                            .horizontalScroll(rememberScrollState())
+                            .testTag("active_workout_exercise_sequence"),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         workoutExercises.forEachIndexed { idx, exItem ->
