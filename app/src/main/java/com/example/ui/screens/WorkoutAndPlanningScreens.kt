@@ -2590,6 +2590,7 @@ private fun PlannerFieldTile(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ExerciseLibraryScreen(
     state: TrainPilotUiState,
