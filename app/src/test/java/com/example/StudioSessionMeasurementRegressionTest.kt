@@ -654,6 +654,69 @@ class StudioSessionMeasurementRegressionTest {
         } finally { service.destroy() }
     }
 
+    @Test fun watchFinishWhilePhoneOwnsSessionSavesCanonicalSetsAndRefreshesBoundJournal() {
+        finishFromWatchRequest(watchOwns = false)
+    }
+
+    @Test fun watchOwnedFinishClosesSuspendedPhoneExecutionAndRefreshesBoundJournal() {
+        finishFromWatchRequest(watchOwns = true)
+    }
+
+    private fun finishFromWatchRequest(watchOwns: Boolean) {
+        val model = model()
+        model.startQuickStrengthWithExercise(strength(model))
+        awaitStarted(model)
+        var frame = PhoneWorkoutExecution.store(context).snapshot()!!
+        val target = target(frame)
+        target.resolve(frame).set.put("reps", "12").put("weight", 10)
+        PhoneWorkoutExecution.store(context).prepare(frame, frame.getLong("executionRevision"))
+        val service = Robolectric.buildService(IntervalTimerService::class.java).create()
+        try {
+            arm(service.get(), PhoneWorkoutExecution.store(context).snapshot()!!)
+            NativeWorkoutEditing.completeStrengthSet(context, target.exerciseId, target.setId)
+            frame = NativeWorkoutEditing.project(context)
+            if (watchOwns) {
+                // Committed handoff leaves the phone's edit fence suspended.
+                frame = JSONObject(frame.toString()).put("timerOwner", "watch").put("ownerEpoch193", 1)
+                    .put("handoff193", JSONObject().put("state", "committed"))
+                ActiveWorkoutStore.saveOwned(context, frame)
+                PhoneWorkoutExecution.store(context).suspendCommands(true)
+            }
+            val watchSnapshot = JSONObject(frame.toString())
+            if (!watchOwns) target.resolve(watchSnapshot).set.put("weight", 999).put("reps", "999")
+            val request = JSONObject().put("schema", 1).put("action", "finishWorkout").put("confirmed", true)
+                .put("workoutId", target.workoutId).put("ownerEpoch193", frame.optLong("ownerEpoch193"))
+                .put("sequence", 1).put("finalSnapshot", watchSnapshot)
+                .put("healthSummary", JSONObject().put("source", "wear-test").put("workoutId", target.workoutId))
+            if (!watchOwns) assertTrue(NativeWatchFinishAdmission.isPhoneOwnedRequest(request, frame))
+            val input = if (watchOwns) watchSnapshot else NativeWorkoutEditing.project(context)
+            input.put("finished", java.time.Instant.now().toString())
+            // A late owner epoch must fail before freezing or writing this active session.
+            val staleInput = JSONObject(input.toString()).put("ownerEpoch193", frame.optLong("ownerEpoch193") - 1)
+            val staleRequest = JSONObject(request.toString()).put("ownerEpoch193", frame.optLong("ownerEpoch193") - 1)
+            assertTrue(runCatching { native { TrainPilotWorkoutFinalization(context, db).finishWorkout(
+                staleInput, fromWatch = watchOwns, phoneOwnedWatchRequest = staleRequest.takeUnless { watchOwns }) } }.isFailure)
+            assertTrue(ActiveWorkoutStore.current(context)!!.optBoolean("active"))
+            assertNull(native { db.workoutHistoryDao().getWorkoutWithDetails(target.workoutId) })
+            val saved = native { TrainPilotWorkoutFinalization(context, db).finishWorkout(input,
+                fromWatch = watchOwns, phoneOwnedWatchRequest = request.takeUnless { watchOwns }) }
+            assertFalse(ActiveWorkoutStore.current(context)!!.optBoolean("active"))
+            assertFalse(PhoneWorkoutExecution.store(context).snapshot()!!.optBoolean("active"))
+            assertFalse(PhoneWorkoutExecution.store(context).commandsSuspended())
+            val persisted = native { db.workoutHistoryDao().getWorkoutWithDetails(target.workoutId)!! }
+            val raw = JSONObject(persisted.workout.rawJson)
+            val set = raw.getJSONArray("exercises").getJSONObject(0).getJSONArray("sets").getJSONObject(0)
+            assertTrue(set.getBoolean("done"))
+            assertEquals(10.0, set.getDouble("weight"), 0.0)
+            assertEquals("12", set.getString("reps"))
+            if (!watchOwns) assertEquals("wear-test", raw.getJSONObject("wear").getString("source"))
+            assertTrue(NativeWatchFinishAdmission.isSavedRetry(request, saved.history,
+                ActiveWorkoutStore.current(context), PhoneWorkoutExecution.store(context).snapshot()))
+            await { !model.uiState.value.isWorkoutSessionActive && model.uiState.value.loggedWorkouts.isNotEmpty() }
+            assertEquals(1, model.uiState.value.loggedWorkouts.size)
+        } finally { service.destroy() }
+    }
+
     private fun awaitStarted(model: TrainPilotViewModel) {
         await { ActiveWorkoutStore.current(context)?.let { it.optBoolean("active") &&
             model.uiState.value.activeWorkoutId == it.optString("workoutId") && model.uiState.value.isWorkoutSessionActive } == true }

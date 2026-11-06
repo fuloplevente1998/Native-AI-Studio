@@ -3519,6 +3519,7 @@ fun WorkoutSummaryScreen(
     val scope = rememberCoroutineScope()
     val photoRepo = remember(context) { WorkoutPhotoRepository(context) }
     var selectedPhotoCategory by remember { mutableStateOf("after") }
+    var exerciseFeedbackExpanded by androidx.compose.runtime.saveable.rememberSaveable(uiState.activeWorkoutId) { mutableStateOf(false) }
 
     val attachedPhotos = remember(uiState.activeWorkoutId) {
         val list = mutableStateListOf<SummaryAttachedPhoto>()
@@ -3694,10 +3695,15 @@ fun WorkoutSummaryScreen(
         }
 
         if (uiState.activeWorkoutExercises.isNotEmpty()) item(key = "exercise_feedback_heading") {
-            Text(tr(lang, "Gyakorlatok visszajelzései", "Exercise feedback", "Übungsfeedback", "Feedback exerciții"),
-                color = palette.textPrimary, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            TrainPilotOutlinedButton(onClick = { exerciseFeedbackExpanded = !exerciseFeedbackExpanded },
+                modifier = Modifier.fillMaxWidth().testTag("summary_exercise_feedback_toggle")) {
+                Text(tr(lang, "Gyakorlatok visszajelzései", "Exercise feedback", "Übungsfeedback", "Feedback exerciții") +
+                    " (${uiState.activeWorkoutExercises.size})", modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+                Icon(if (exerciseFeedbackExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null)
+            }
         }
-        uiState.activeWorkoutExercises.forEach { exercise ->
+        if (exerciseFeedbackExpanded) uiState.activeWorkoutExercises.forEach { exercise ->
             item(key = "exercise_feedback_${exercise.id}") {
                 val same = uiState.exerciseFeedbackWorkoutId == uiState.activeWorkoutId
                 com.example.ui.components.StudioExerciseFeedbackReview(

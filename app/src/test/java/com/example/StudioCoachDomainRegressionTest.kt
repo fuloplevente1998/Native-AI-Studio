@@ -27,6 +27,19 @@ import java.time.ZoneOffset
 class StudioCoachDomainRegressionTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun backgroundCoachReloadKeepsVisibleTargetPositionWithoutInitialLoadingPlaceholder() {
+        val state = mutableStateOf(CoachUiState(loading = false, provider = "health_connect",
+            target = CoachTarget("p", "a", "Alap A", programTitle = "Otthoni A/B")))
+        compose.setContent { TrainPilotTheme {
+            StudioCoachRecommendations(state.value, { _, _, _ -> }, {}, {}, {}, {}, {})
+        } }
+        val before = compose.onNodeWithTag("studio_coach_target").fetchSemanticsNode().boundsInRoot
+        compose.runOnIdle { state.value = state.value.copy(loading = true) }
+        compose.onNodeWithTag("studio_coach_initial_loading").assertDoesNotExist()
+        compose.onNodeWithTag("studio_coach_program_name").assertTextEquals("Otthoni A/B")
+        assertEquals(before, compose.onNodeWithTag("studio_coach_target").fetchSemanticsNode().boundsInRoot)
+    }
+
     @Test fun currentCoachDayOpensWorkoutWithoutAutomaticallyStarting() {
         var started = ""
         var workoutPage = 0

@@ -108,12 +108,13 @@ internal class TrainPilotWorkoutFinalization(
         }
     }
 
-    suspend fun finishWorkout(input: JSONObject, fromWatch: Boolean = false): Saved =
+    suspend fun finishWorkout(input: JSONObject, fromWatch: Boolean = false,
+        phoneOwnedWatchRequest: JSONObject? = null): Saved =
         withContext(NonCancellable) {
             NativeDataReplacement.mutate(context) {
             mutex.withLock {
                 val id = input.getString("workoutId").also { require(it.isNotBlank()) }
-                val history = withContext(Dispatchers.Main.immediate) { freezeAndReconcile(input, fromWatch) }
+                val history = withContext(Dispatchers.Main.immediate) { freezeAndReconcile(input, fromWatch, phoneOwnedWatchRequest) }
                 // History and calendar are one Room transaction. A calendar/storage failure
                 // leaves the durable pending draft available, and emits no saved receipt.
                 withContext(Dispatchers.IO) {
@@ -159,12 +160,17 @@ internal class TrainPilotWorkoutFinalization(
             }
         }
 
-    private fun freezeAndReconcile(input: JSONObject, fromWatch: Boolean): JSONObject {
+    private fun freezeAndReconcile(input: JSONObject, fromWatch: Boolean, phoneOwnedWatchRequest: JSONObject?): JSONObject {
         val id = input.getString("workoutId")
         var current = ActiveWorkoutStore.current(context)
         check(!input.optBoolean("discardPending") && current?.takeIf { it.optString("workoutId") == id }
             ?.optBoolean("discardPending") != true) { "Az elvetést kell befejezni; az edzés már nem menthető. Próbáld újra az elvetést." }
         val ownsDraft = current?.optBoolean("active") == true && current.optString("workoutId") == id
+        if (phoneOwnedWatchRequest != null) check(!fromWatch &&
+            NativeWatchFinishAdmission.isPhoneOwnedRequest(phoneOwnedWatchRequest, current) &&
+            PhoneOwnership193.commandAllowed(context, phoneOwnedWatchRequest)) {
+            "Az órás befejezési kérés már nem ehhez a telefonos edzéshez tartozik."
+        }
         check(!WorkoutOwnership193.pending(input) && (!ownsDraft || !WorkoutOwnership193.pending(current))) {
             "Előbb fejezd be az edzés átadását vagy visszavételét."
         }
@@ -172,6 +178,9 @@ internal class TrainPilotWorkoutFinalization(
             check(ownsDraft && current!!.optString("timerOwner", "phone") == "phone") { "A telefonos edzés tulajdonosa megváltozott." }
         } else if (ownsDraft) {
             check(current!!.optString("timerOwner") == "watch") { "Az órás edzés tulajdonosa megváltozott." }
+            if (current.optInt("ownershipProtocol193") == 1) check(NativeWatchFinishAdmission.isCurrentWatchSnapshot(input, current)) {
+                "Az órás edzés tulajdonosi korszaka vagy generációja megváltozott."
+            }
         }
         if (ownsDraft && !fromWatch && current?.optBoolean("finalizationPending") != true &&
             PhoneWorkoutExecution.store(context).snapshot()?.optInt("nativeEditorProjection") == 1) {
@@ -182,6 +191,7 @@ internal class TrainPilotWorkoutFinalization(
         // Apply only explicit per-exercise annotations before persisting the retryable canonical draft.
         if (!fromWatch) StudioWorkoutFeedback.mergePendingExerciseEdits(input, draft, System.currentTimeMillis())
         if (!fromWatch && input.has("feedback")) draft.put("feedback", input.get("feedback"))
+        phoneOwnedWatchRequest?.optJSONObject("healthSummary")?.let { draft.put("wear", JSONObject(it.toString())) }
         // Retain the first finish timestamp across failed retries.
         val finished = current?.takeIf { ownsDraft && it.optBoolean("finalizationPending") }?.optString("finished")
             ?.takeIf { it.isNotBlank() } ?: draft.optString("finished").takeIf { it.isNotBlank() } ?: Instant.now().toString()
@@ -195,7 +205,13 @@ internal class TrainPilotWorkoutFinalization(
         check(!execution.restoreBlocked()) { "Adat-visszaállítás van folyamatban." }
         var frame = execution.snapshot()?.takeIf { it.optString("workoutId") == id }
         if (frame != null) {
-            check(!execution.commandsSuspended() || current?.optBoolean("finalizationPending") == true) { "Az edzésvezérlés foglalt." }
+            // Handoff deliberately suspends phone edits for the acknowledged watch owner.
+            // That edit fence must remain closed while this exact session is finalized.
+            val ownedWatchFinish = fromWatch &&
+                NativeWatchFinishAdmission.canFinalizeSuspendedPhoneFrame(draft, current, frame)
+            check(!execution.commandsSuspended() || current?.optBoolean("finalizationPending") == true || ownedWatchFinish) {
+                "Az edzésvezérlés foglalt."
+            }
             if (draft.has("generation")) check(draft.getLong("generation") == frame.getLong("generation")) { "Az edzés generációja megváltozott." }
         }
         if (ownsDraft) ActiveWorkoutStore.saveFinalizing(context, draft)

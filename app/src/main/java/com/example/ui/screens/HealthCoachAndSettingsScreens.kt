@@ -1842,7 +1842,12 @@ internal fun CoachDetailScreen(
     val displayScore = readiness?.score?.toInt()?.coerceIn(0, 100) ?: 0
     val samsungScore = readiness?.samsungScore?.toInt()?.coerceIn(0, 100) ?: 0
     val ownReadinessScore = readiness?.trainpilotScore ?: 0
-    LaunchedEffect(uiState.loggedWorkouts, uiState.programs, uiState.dailyHealthLastSyncIso, uiState.primaryHealthSourceSamsung) {
+    var coachInputsObserved by remember(model) { mutableStateOf(false) }
+    LaunchedEffect(uiState.loggedWorkouts, uiState.programs, uiState.dailyHealthLastSyncIso, uiState.primaryHealthSourceSamsung, uiState.language) {
+        val firstAttachment = !coachInputsObserved
+        coachInputsObserved = true
+        // The model already starts its first read. Do not restart it on initial composition.
+        if (firstAttachment && nativeState.initialLoading) return@LaunchedEffect
         model.reload()
     }
 

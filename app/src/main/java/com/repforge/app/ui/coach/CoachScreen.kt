@@ -57,10 +57,10 @@ internal fun CoachScreen(starting: Boolean, onStart: (String, String, String?) -
         onDispose { owner.lifecycle.removeObserver(observer) }
     }
     val readiness = state.readiness
-    LazyColumn(Modifier.fillMaxSize().testTag(if (state.loading) "coach_loading" else if (state.error && state.readiness == null) "coach_error" else "coach_ready").padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(Modifier.fillMaxSize().testTag(if (state.initialLoading) "coach_loading" else if (state.error && state.readiness == null) "coach_error" else "coach_ready").padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Text("TrainPilot Coach", color = colors.text, style = MaterialTheme.typography.headlineSmall) }
         item {
-            if (state.loading) CircularProgressIndicator()
+            if (state.initialLoading) CircularProgressIndicator()
             if (state.error) Text(words[0], color = colors.dangerText)
             Card(colors = CardDefaults.cardColors(containerColor = colors.card)) {
                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

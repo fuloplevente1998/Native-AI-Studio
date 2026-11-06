@@ -74,6 +74,10 @@ internal fun StudioHealthMetricsBrowser(
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC).forEach { selected ->
             FilterChip(selected = provider == selected, onClick = { if (provider != selected) provider = selected },
+                colors = FilterChipDefaults.filterChipColors(containerColor = palette.surfaceCard,
+                    labelColor = palette.textPrimary, selectedContainerColor = palette.primary,
+                    selectedLabelColor = palette.onPrimary),
+                border = TrainPilotFrames.stroke(1.dp, if (provider == selected) palette.primary else palette.cardBorder),
                 label = { Text(NativeWorkoutHealthSource.label(selected)) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                     .testTag("journal_provider_$selected"))
         }
