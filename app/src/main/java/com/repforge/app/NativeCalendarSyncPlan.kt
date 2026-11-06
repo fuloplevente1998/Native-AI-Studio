@@ -24,6 +24,7 @@ internal object NativeCalendarSyncPlan {
         }
     }.groupBy { it.id }.values.asSequence().map { sameId ->
         // A live entry must not be deleted because a stale duplicate was skipped.
-        sameId.firstOrNull { !it.delete } ?: sameId.first()
+        sameId.filterNot { it.delete }.maxByOrNull { it.payload?.optJSONObject("start")?.optString("dateTime").orEmpty() }
+            ?: sameId.first()
     }
 }
