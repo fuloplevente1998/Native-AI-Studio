@@ -32,22 +32,22 @@ internal fun StudioActiveWorkoutSessionInfo(state: TrainPilotUiState) {
     val programName = snapshot.optString("programName").takeIf { it.isNotBlank() }
         ?: state.activeWorkoutTitleHu.substringBefore("•").trim()
     val palette = LocalTrainPilotPalette.current
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 14.dp, vertical = 2.dp)
             .testTag("active_workout_program_day_bar"),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+        verticalArrangement = Arrangement.spacedBy(5.dp),
+        horizontalAlignment = androidx.compose.ui.Alignment.Start
     ) {
         if (programName.isNotBlank()) {
             Text(
                 text = programName,
                 style = MaterialTheme.typography.labelMedium,
                 color = palette.textSecondary,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false).testTag("active_workout_program_label")
+                modifier = Modifier.testTag("active_workout_program_label")
             )
         }
         Surface(
