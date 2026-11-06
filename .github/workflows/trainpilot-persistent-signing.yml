@@ -6,6 +6,7 @@ name: TrainPilot persistent signed APK pair
 # 2753: signed phone/Wear pair after AI Studio integration passes PR #112 CI; workflow steps unchanged.
 # 2753: release verification now derives both phone and Wear version values from Gradle; syntax checked before build.
 
+# Signed pair trigger: PR #205 calendar dedup/sync + PR #206 issue #195 final layout, workflow steps unchanged.
 on:
   workflow_dispatch:
   push:
