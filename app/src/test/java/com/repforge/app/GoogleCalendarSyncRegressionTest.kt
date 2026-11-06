@@ -216,6 +216,17 @@ class GoogleCalendarSyncRegressionTest {
         assertPreserved(first, second)
     }
 
+    @Test fun duplicateLocalRowsWithSameGoogleEventIdProduceOneRemoteWrite() {
+        val first = entry(id = "first")
+        val second = entry(id = "second")
+        save(first, second); live()
+        expect("POST", "$root/live/events?sendUpdates=none", 201)
+        assertEquals(1, sync().getOrThrow())
+        assertEquals(1, calls.count { it.path.contains("/events") })
+        assertEquals(1, repository.uiState.value.lastCalendarSyncCount)
+        assertPreserved(first, second)
+    }
+
     @Test fun diagnosticLabelsContainNoRemoteIdentifiersAndRetryPolicyRemainsIdempotent() {
         assertEquals("PUT calendar event", GoogleRequestPolicy.calendarOperation("PUT",
             "https://www.googleapis.com$root/private%40example.test/events/$eventId?access_token=secret"))
