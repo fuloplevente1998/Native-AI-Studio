@@ -76,10 +76,10 @@ class StudioActiveFeedbackRegressionTest {
             ActiveStrengthWorkoutScreen(
                 uiState = state,
                 strings = TrainPilotStrings.forLanguage(AppLanguage.HU),
-                onBack = {}, onOpenSettings = {}, onSelectMeasurementMode = {},
-                onToggleSetCompleted = {}, onAdjustSetValues = { _, _, _, _ -> },
-                onUndoLastSet = {}, onAdjustRestTimer = {}, onToggleRestRunning = {},
-                onSkipRest = {}, onOpenExerciseDetail = {}
+                onBack = {}, onOpenSettings = {}, onSelectMeasurementMode = { _ -> },
+                onToggleSetCompleted = { _ -> }, onAdjustSetValues = { _, _, _, _ -> },
+                onUndoLastSet = {}, onAdjustRestTimer = { _ -> }, onToggleRestRunning = {},
+                onSkipRest = {}, onOpenExerciseDetail = { _ -> }
             )
         } }
         compose.waitForIdle()
