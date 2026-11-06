@@ -57,10 +57,15 @@ class UnifiedHealthJournalUiRegressionTest {
             .put("data", JSONObject().put("value", 0).put("unit", "steps"))
     }
     private fun awaitTag(tag: String) {
-        compose.waitUntil(30_000) {
-            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
-            compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
-        }
+        val previous = compose.mainClock.autoAdvance
+        compose.mainClock.autoAdvance = false
+        try {
+            compose.waitUntil(30_000) {
+                org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+                compose.mainClock.advanceTimeByFrame()
+                compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+            }
+        } finally { compose.mainClock.autoAdvance = previous }
     }
     private fun journal() {
         compose.setContent { TrainPilotTheme {
@@ -134,7 +139,10 @@ class UnifiedHealthJournalUiRegressionTest {
         } }
         val summary = "journal_summary_${day}_steps"
         awaitTag(summary)
-        compose.onNodeWithTag("journal_reload").performScrollTo().performClick()
+        compose.onNodeWithTag("journal_reload").performScrollTo()
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithTag("journal_reload").performClick()
+        compose.mainClock.advanceTimeByFrame()
         assertEquals(listOf(hc), requests)
         compose.onNodeWithTag("journal_reload").assertIsNotEnabled()
         compose.runOnIdle {
@@ -144,14 +152,20 @@ class UnifiedHealthJournalUiRegressionTest {
         }
         compose.waitUntil(30_000) {
             org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+            compose.mainClock.advanceTimeByFrame()
             compose.onAllNodesWithText("7").fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithTag(summary).assertTextEquals("7")
+        compose.mainClock.autoAdvance = true
         compose.onNodeWithTag("journal_provider_$samsung").performScrollTo().performClick()
         awaitTag(summary)
-        compose.onNodeWithTag("journal_reload").performScrollTo().performClick()
+        compose.onNodeWithTag("journal_reload").performScrollTo()
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithTag("journal_reload").performClick()
+        compose.mainClock.advanceTimeByFrame()
         assertEquals(listOf(hc, samsung), requests)
         compose.runOnIdle { busy = false; error = "Samsung Health: PERMISSION_DENIED"; revision++ }
+        compose.mainClock.advanceTimeByFrame()
         compose.onNodeWithTag("journal_refresh_error").assertTextEquals("Samsung Health: PERMISSION_DENIED")
     }
 

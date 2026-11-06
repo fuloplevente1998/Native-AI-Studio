@@ -25,6 +25,15 @@ Az első közös #177 signed42143215569 fordításkor megállt: a könyvtári ú
 hiányzó ExperimentalLayoutApi opt-in jelölése miatt. Célzott annotációpótlás;
 teszt és műveleti kód nem változott. Ebből a futásból nincs átadott APK.
 
+A következő signed42143927750 fordítása sikeres, 568 tesztből 4 hibával állt meg.
+Az új mentési fixture a modell betöltése után közvetlenül írt programot, miközben
+a Studio csak belépéskor/mutációs callbacknél olvas programlistát. A fixture most
+modellkötés előtt készül; a valódi save/Room/hibás adat elutasítás elvárás marad.
+Három régi Compose busy/loading teszt végtelen progress-animáció végét várta
+Espresso-idle-lal. Csak a teszt animációs óráját vezéreljük explicit frame-ekkel,
+azonos 30s adatvárakozás és az összes eredeti szemantikai/adatellenőrzés mellett.
+Termék-/workflow-kód, tesztszám, elvárás és időhatár nem változott; nincs kihagyás.
+
 ## #175 ikonos gyakorlat-visszajelzés – ellenőrzött forrás, új csomagra vár
 
 PR176 mainen, signed42131928587 SUCCESS, forrás9784d91b62251c4feb5df474e4cc2226ff15bbda.

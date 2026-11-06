@@ -85,7 +85,11 @@ class WatchInfoCardRegressionTest {
         } }
         compose.onNodeWithTag("watch_refresh_device_info", useUnmergedTree = true).performClick()
         assertEquals(1, callbacks)
+        // Busy deliberately contains an infinite progress animation. Assert semantics
+        // at a controlled frame instead of asking Espresso to finish that animation.
+        compose.mainClock.autoAdvance = false
         compose.runOnIdle { data = data.copy(loading = true, status = "Óraadatok lekérése…") }
+        compose.mainClock.advanceTimeByFrame()
         compose.onNodeWithTag("watch_refresh_device_info", useUnmergedTree = true).assertIsNotEnabled()
         compose.onNodeWithTag("watch_device_info_card", useUnmergedTree = true).assertIsNotEnabled()
         compose.onNodeWithTag("watch_device_info_status", useUnmergedTree = true).assertExists()
