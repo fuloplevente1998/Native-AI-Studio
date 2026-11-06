@@ -30,21 +30,21 @@ internal fun StudioActiveWorkoutSessionInfo(state: TrainPilotUiState) {
         feedbackWord(state, "${rawDay.uppercase()} nap", "Day ${rawDay.uppercase()}", "Tag ${rawDay.uppercase()}", "Ziua ${rawDay.uppercase()}")
     } else rawDay
     val palette = LocalTrainPilotPalette.current
-    Surface(
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
-        color = palette.tintedSurface(0.22f),
-        border = com.repforge.app.ui.theme.TrainPilotFrames.stroke(1.5.dp, palette.primary),
-        modifier = Modifier
-            .testTag("active_workout_day")
-            .testTag("active_workout_day_between_header_and_exercises")
-    ) {
-        Text(
-            text = formattedDay,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-            color = palette.primary,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-        )
+    Box(modifier = Modifier.testTag("active_workout_day_between_header_and_exercises")) {
+        Surface(
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+            color = palette.tintedSurface(0.22f),
+            border = com.repforge.app.ui.theme.TrainPilotFrames.stroke(1.5.dp, palette.primary),
+            modifier = Modifier.testTag("active_workout_day")
+        ) {
+            Text(
+                text = formattedDay,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                color = palette.primary,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+            )
+        }
     }
 }
 
