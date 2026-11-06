@@ -29,41 +29,22 @@ internal fun StudioActiveWorkoutSessionInfo(state: TrainPilotUiState) {
     val formattedDay = if (rawDay.length == 1 && rawDay[0].isLetter()) {
         feedbackWord(state, "${rawDay.uppercase()} nap", "Day ${rawDay.uppercase()}", "Tag ${rawDay.uppercase()}", "Ziua ${rawDay.uppercase()}")
     } else rawDay
-    val programName = snapshot.optString("programName").takeIf { it.isNotBlank() }
-        ?: state.activeWorkoutTitleHu.substringBefore("•").trim()
     val palette = LocalTrainPilotPalette.current
-    Column(
+    Surface(
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+        color = palette.tintedSurface(0.22f),
+        border = com.repforge.app.ui.theme.TrainPilotFrames.stroke(1.5.dp, palette.primary),
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 2.dp)
-            .testTag("active_workout_program_day_bar"),
-        verticalArrangement = Arrangement.spacedBy(5.dp),
-        horizontalAlignment = androidx.compose.ui.Alignment.Start
+            .testTag("active_workout_day")
+            .testTag("active_workout_day_between_header_and_exercises")
     ) {
-        if (programName.isNotBlank()) {
-            Text(
-                text = programName,
-                style = MaterialTheme.typography.labelMedium,
-                color = palette.textSecondary,
-                maxLines = 2,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                modifier = Modifier.testTag("active_workout_program_label")
-            )
-        }
-        Surface(
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
-            color = palette.tintedSurface(0.22f),
-            border = com.repforge.app.ui.theme.TrainPilotFrames.stroke(1.5.dp, palette.primary),
-            modifier = Modifier.testTag("active_workout_day")
-        ) {
-            Text(
-                text = formattedDay,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                color = palette.primary,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-            )
-        }
+        Text(
+            text = formattedDay,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            color = palette.primary,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+        )
     }
 }
 
