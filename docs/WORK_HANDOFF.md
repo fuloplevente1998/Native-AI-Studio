@@ -34,6 +34,12 @@ Espresso-idle-lal. Csak a teszt animációs óráját vezéreljük explicit fram
 azonos 30s adatvárakozás és az összes eredeti szemantikai/adatellenőrzés mellett.
 Termék-/workflow-kód, tesztszám, elvárás és időhatár nem változott; nincs kihagyás.
 
+Signed42145393943: 567/568 sikeres, az új tartós programmentés és UI-mezőmentés is
+zöld, a health-record clockjavítások zöldek. Egy watch-busy assertion az első
+kézi frame-en még a korábbi enabled szemantikát látta. A teszt most kontrollált
+frame-ekkel bevárja a tényleges Disabled tulajdonságot, majd az eredeti busy/card/
+callback assertionöket futtatja. 30s felső határ, változatlan alkalmazáskód.
+
 ## #175 ikonos gyakorlat-visszajelzés – ellenőrzött forrás, új csomagra vár
 
 PR176 mainen, signed42131928587 SUCCESS, forrás9784d91b62251c4feb5df474e4cc2226ff15bbda.
