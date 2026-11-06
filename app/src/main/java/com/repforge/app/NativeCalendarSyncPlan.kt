@@ -22,5 +22,8 @@ internal object NativeCalendarSyncPlan {
                 .put("description", "Státusz: ${entry.status}")
                 .put("start", JSONObject().put("dateTime", start)).put("end", JSONObject().put("dateTime", end)))
         }
-    }.distinctBy { it.id }
+    }.groupBy { it.id }.values.asSequence().map { sameId ->
+        // A live entry must not be deleted because a stale duplicate was skipped.
+        sameId.firstOrNull { !it.delete } ?: sameId.first()
+    }
 }
