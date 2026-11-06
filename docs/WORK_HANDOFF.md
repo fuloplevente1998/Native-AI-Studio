@@ -21,6 +21,10 @@ Két új regresszió: nyitott UI-mezők globális mentése és tényleges Room-�
 ismeretlen mező/másik nap/hibás adat elutasítása. Meglévő gombteszt save/delete
 függetlenséggel kiegészítve. Diff-check tiszta, közös signed kapu még következik.
 
+Az első közös #177 signed42143215569 fordításkor megállt: a könyvtári új FlowRow
+hiányzó ExperimentalLayoutApi opt-in jelölése miatt. Célzott annotációpótlás;
+teszt és műveleti kód nem változott. Ebből a futásból nincs átadott APK.
+
 ## #175 ikonos gyakorlat-visszajelzés – ellenőrzött forrás, új csomagra vár
 
 PR176 mainen, signed42131928587 SUCCESS, forrás9784d91b62251c4feb5df474e4cc2226ff15bbda.
