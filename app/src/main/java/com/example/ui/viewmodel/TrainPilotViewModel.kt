@@ -1265,7 +1265,7 @@ class TrainPilotViewModel : ViewModel() {
                     // A remote native finalizer has committed history before publishing closure.
                     // Refresh the same Room projection once; local save already updates its UI.
                     if (remoteClose && !NativeDataReplacement.blocked(context))
-                        reloadNativeEnvironment(context, settingsStore, database, scope)
+                        refreshClosedWorkoutHistory(context, database, observersScope)
                 } else {
                     val canonicalId = frame.optJSONArray("exercises")
                         ?.optJSONObject(frame.optInt("currentExercise", -1))?.optString("id")?.takeIf { it.isNotBlank() }
@@ -1352,6 +1352,98 @@ class TrainPilotViewModel : ViewModel() {
         }
 
         reloadNativeEnvironment(context, settingsStore, database, scope)
+    }
+
+    /** Closure only needs a Room read; catalog seeding here would contend with restore admission. */
+    private fun refreshClosedWorkoutHistory(context: Context, database: TrainPilotDatabase, scope: CoroutineScope) {
+        val ticket = runCatching { NativeDataReplacement.continuationForCurrentData(context) }.getOrNull() ?: return
+        val previous = _uiState.value.loggedWorkouts
+        val exercises = _uiState.value.exercises.associateBy { it.id }
+        scope.launch(Dispatchers.IO) {
+            try {
+                val workouts = readNativeWorkoutHistory(database, exercises)
+                withContext(Dispatchers.Main.immediate) {
+                    ticket.requireCurrent(context)
+                    // A newer local save/edit or explicit rebind owns its own projection.
+                    if (nativeDatabase !== database || _uiState.value.loggedWorkouts != previous) return@withContext
+                    _uiState.update { it.copy(loggedWorkouts = workouts,
+                        privatePhotoCount = workouts.sumOf { entry -> entry.photoCount },
+                        prRecords = computePrRecordsFromWorkouts(workouts),
+                        weeklyGoalCompleted = workouts.workoutsInCalendarWeekToDate(LocalDate.now()).size) }
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { /* Keep the prior projection on read failure or replacement. */ }
+        }
+    }
+
+    private suspend fun readNativeWorkoutHistory(database: TrainPilotDatabase,
+        exercisesMap: Map<String, ExerciseItem>): List<LoggedWorkoutEntry> {
+        val dbWorkouts = database.workoutHistoryDao().getAllWorkoutsWithDetails()
+        return dbWorkouts.map { detail ->
+            val w = detail.workout
+            val exerciseNames = detail.exercises.joinToString(", ") { exWithSets ->
+                val ex = exWithSets.exercise
+                ex.nameHu.ifBlank { exercisesMap[ex.exerciseId]?.nameHu.orEmpty() }.ifBlank { "Gyakorlat" }
+            }
+            val allSets = detail.exercises.flatMap { it.sets }
+            val completedDbSets = allSets.filter { it.done }
+            val isOutdoor = detail.exercises.any {
+                val ex = it.exercise
+                ex.measurementType == "distance" || ex.repUnit == "km"
+            } || runCatching { JSONObject(w.rawJson).has(com.repforge.app.NativeGpsMeasurement.FIELD) }.getOrDefault(false)
+            // Long pauses are already excluded from the canonical Room duration.
+            val elapsedSec = w.durationSeconds.coerceAtLeast(0)
+            val realDurationMin = if (elapsedSec > 0) (elapsedSec + 59) / 60 else 0
+            val realWorkLabel = if (elapsedSec > 0) String.format("%02d:%02d", elapsedSec / 60, elapsedSec % 60) else "—"
+            val mappedDetails = detail.exercises.map { exWithSets ->
+                val ex = exWithSets.exercise
+                val exName = ex.nameHu.ifBlank { exercisesMap[ex.exerciseId]?.nameHu.orEmpty() }.ifBlank { "Gyakorlat" }
+                val mappedSets = exWithSets.sets.mapIndexed { sIdx, sEntity ->
+                    ExerciseSetItem(
+                        setNumber = if (sEntity.setNumber > 0) sEntity.setNumber else (sIdx + 1),
+                        weightKg = (sEntity.weight ?: 0.0).toFloat(),
+                        reps = sEntity.reps.toIntOrNull() ?: 0,
+                        rir = sEntity.actualRir ?: 2, actualRirProvided = sEntity.actualRir != null,
+                        completed = sEntity.done,
+                        distanceMeters = sEntity.distanceMeters
+                    )
+                }
+                com.example.model.LoggedExerciseDetail(
+                    nameHu = exName,
+                    summaryPrescription = if (isOutdoor || ex.measurementType == "distance") "Kültéri aktivitás" else "${mappedSets.count { it.completed }}/${mappedSets.size} sorozat",
+                    sets = mappedSets,
+                    measurementType = ex.measurementType,
+                    repUnit = ex.repUnit
+                )
+            }
+            LoggedWorkoutEntry(
+                id = w.id,
+                dateLabelHu = w.started.take(16).replace('T', ' '),
+                titleHu = w.programName.ifBlank { w.dayName }.ifBlank { "Edzés" },
+                durationMinutes = realDurationMin,
+                workTimeLabel = realWorkLabel,
+                restTimeLabel = "—",
+                totalSets = if (w.completedSetsCount > 0) w.completedSetsCount else completedDbSets.size,
+                totalVolumeKg = if (w.totalVolumeKg > 0.0) w.totalVolumeKg.roundToInt() else completedDbSets.sumOf { (it.weight ?: 0.0) * (it.reps.toDoubleOrNull() ?: 0.0) }.roundToInt(),
+                summaryExercisesHu = if (isOutdoor) w.programName.ifBlank { "Kültéri aktivitás" } else exerciseNames.ifBlank { "Rögzített gyakorlatok" },
+                hasPr = w.hasPr226,
+                isOutdoorRun = isOutdoor,
+                routeKeys = detail.exercises.flatMap { it.sets }.flatMap {
+                    listOfNotNull(it.gpsRouteKey163, it.gpsRouteKey193)
+                }.filter(String::isNotBlank).distinct(),
+                sourceWatch = com.repforge.app.NativeSavedWearHealth.read(w) != null, sourceHealthConnect = !w.health240Json.isNullOrBlank(),
+                distanceKm = (completedDbSets.sumOf { it.distanceMeters ?: 0.0 } / 1000.0).toFloat(),
+                paceLabel = completedDbSets.sumOf { it.distanceMeters ?: 0.0 }.takeIf { it > 0 && elapsedSec > 0 }?.let { meters ->
+                    val secondsPerKm = (elapsedSec / (meters / 1000.0)).toInt()
+                    "%d:%02d /km".format(secondsPerKm / 60, secondsPerKm % 60)
+                } ?: "—",
+                originDevice = w.originDevice,
+                savedStartIso = w.started,
+                savedFinishIso = w.finished,
+                photoCount = detail.photos.size,
+                exerciseDetails = mappedDetails
+            )
+        }
     }
 
     private fun reloadNativeEnvironment(
@@ -1490,72 +1582,7 @@ class TrainPilotViewModel : ViewModel() {
 
             // 5. Read persisted workouts from Room (with real durations and exerciseDetails)
             val mappedWorkouts = try {
-                val dbWorkouts = database.workoutHistoryDao().getAllWorkoutsWithDetails()
-                dbWorkouts.map { detail ->
-                    val w = detail.workout
-                    val exerciseNames = detail.exercises.joinToString(", ") { exWithSets ->
-                        val ex = exWithSets.exercise
-                        ex.nameHu.ifBlank { exercisesMap[ex.exerciseId]?.nameHu.orEmpty() }.ifBlank { "Gyakorlat" }
-                    }
-                    val allSets = detail.exercises.flatMap { it.sets }
-                    val completedDbSets = allSets.filter { it.done }
-                    val isOutdoor = detail.exercises.any {
-                        val ex = it.exercise
-                        ex.measurementType == "distance" || ex.repUnit == "km"
-                    } || runCatching { JSONObject(w.rawJson).has(com.repforge.app.NativeGpsMeasurement.FIELD) }.getOrDefault(false)
-                    // Long pauses are already excluded from the canonical Room duration.
-                    val elapsedSec = w.durationSeconds.coerceAtLeast(0)
-                    val realDurationMin = if (elapsedSec > 0) (elapsedSec + 59) / 60 else 0
-                    val realWorkLabel = if (elapsedSec > 0) String.format("%02d:%02d", elapsedSec / 60, elapsedSec % 60) else "—"
-                    val mappedDetails = detail.exercises.map { exWithSets ->
-                        val ex = exWithSets.exercise
-                        val exName = ex.nameHu.ifBlank { exercisesMap[ex.exerciseId]?.nameHu.orEmpty() }.ifBlank { "Gyakorlat" }
-                        val mappedSets = exWithSets.sets.mapIndexed { sIdx, sEntity ->
-                            ExerciseSetItem(
-                                setNumber = if (sEntity.setNumber > 0) sEntity.setNumber else (sIdx + 1),
-                                weightKg = (sEntity.weight ?: 0.0).toFloat(),
-                                reps = sEntity.reps.toIntOrNull() ?: 0,
-                                rir = sEntity.actualRir ?: 2, actualRirProvided = sEntity.actualRir != null,
-                                completed = sEntity.done,
-                                distanceMeters = sEntity.distanceMeters
-                            )
-                        }
-                        com.example.model.LoggedExerciseDetail(
-                            nameHu = exName,
-                            summaryPrescription = if (isOutdoor || ex.measurementType == "distance") "Kültéri aktivitás" else "${mappedSets.count { it.completed }}/${mappedSets.size} sorozat",
-                            sets = mappedSets,
-                            measurementType = ex.measurementType,
-                            repUnit = ex.repUnit
-                        )
-                    }
-                    LoggedWorkoutEntry(
-                        id = w.id,
-                        dateLabelHu = w.started.take(16).replace('T', ' '),
-                        titleHu = w.programName.ifBlank { w.dayName }.ifBlank { "Edzés" },
-                        durationMinutes = realDurationMin,
-                        workTimeLabel = realWorkLabel,
-                        restTimeLabel = "—",
-                        totalSets = if (w.completedSetsCount > 0) w.completedSetsCount else completedDbSets.size,
-                        totalVolumeKg = if (w.totalVolumeKg > 0.0) w.totalVolumeKg.roundToInt() else completedDbSets.sumOf { (it.weight ?: 0.0) * (it.reps.toDoubleOrNull() ?: 0.0) }.roundToInt(),
-                        summaryExercisesHu = if (isOutdoor) w.programName.ifBlank { "Kültéri aktivitás" } else exerciseNames.ifBlank { "Rögzített gyakorlatok" },
-                        hasPr = w.hasPr226,
-                        isOutdoorRun = isOutdoor,
-                        routeKeys = detail.exercises.flatMap { it.sets }.flatMap {
-                            listOfNotNull(it.gpsRouteKey163, it.gpsRouteKey193)
-                        }.filter(String::isNotBlank).distinct(),
-                        sourceWatch = com.repforge.app.NativeSavedWearHealth.read(w) != null, sourceHealthConnect = !w.health240Json.isNullOrBlank(),
-                        distanceKm = (completedDbSets.sumOf { it.distanceMeters ?: 0.0 } / 1000.0).toFloat(),
-                        paceLabel = completedDbSets.sumOf { it.distanceMeters ?: 0.0 }.takeIf { it > 0 && elapsedSec > 0 }?.let { meters ->
-                            val secondsPerKm = (elapsedSec / (meters / 1000.0)).toInt()
-                            "%d:%02d /km".format(secondsPerKm / 60, secondsPerKm % 60)
-                        } ?: "—",
-                        originDevice = w.originDevice,
-                        savedStartIso = w.started,
-                        savedFinishIso = w.finished,
-                        photoCount = detail.photos.size,
-                        exerciseDetails = mappedDetails
-                    )
-                }
+                readNativeWorkoutHistory(database, exercisesMap)
             } catch (_: Throwable) { emptyList() }
 
             // 6. Read real daily health projections from HealthJournalStore using sleepMinutes
