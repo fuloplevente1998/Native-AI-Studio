@@ -86,14 +86,16 @@ class StudioSessionMeasurementRegressionTest {
     }
 
     @Test fun explicitProgramSaveCommitsVisibleFieldsAndNameWithoutChangingOtherDaysOrLosingExtensions() {
-        val model = model()
-        val exerciseId = strength(model).id
+        val exerciseId = TrainPilotDatabase.defaultExercises().first { it.loadType == "total" }.id
         val entry = JSONObject().put("id", exerciseId).put("sets", 3).put("reps", "10")
             .put("weight", 12).put("rest", 90).put("futureExtension", "retain").toString()
         val id = native { NativeProgramEditor.save(context, db, null,
             NativeProgramEditor.Draft("Eredeti terv", "Leírás", listOf(
                 NativeProgramEditor.DayDraft("a", "Alap A", listOf(entry)),
                 NativeProgramEditor.DayDraft("b", "Alap B", listOf(entry)))), "hu") }
+        // Native edits reload through their mutation callback; an external fixture write
+        // must exist before the Studio model reads its initial program snapshot.
+        val model = model()
         await { model.uiState.value.programs.any { it.id == id } }
         model.openProgramEditor(id, 0)
         val before = native { db.programDao().getProgramWithDaysById(id)!! }
