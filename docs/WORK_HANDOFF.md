@@ -4,6 +4,19 @@ Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
 
+## Kód kész – #183 naplós pulzus/energia összesítő rövidítése
+
+Ág: design/journal-health-summary-compact, root egyedül. A közös Studio/native
+összesítőben eltűnnek az ismétlődő legacy-időbélyeg, becslés, átfedés és energia-
+értelmezés magyarázatok. Egy összevont forrássor + szükség esetén rövid mérésállapot
+marad. A technikai pulzusmintaszám a fő összesítőből kikerül, a Forrás fül és az
+eredeti adatok megmaradnak. Minden más mérési érték/tag megmarad; aggregáció,
+forrásprioritás, deduplikáció, hiány/valós nulla és tárolás változatlan.
+Diff-check tiszta; ez kis UI-rövidítés, új teszt nincs. A meglévő UI-tesztek
+használt metrikatagjai megmaradtak. Build/JVM/vizuális próba még nem futott.
+Felhasználói kérés: **először csak kód**. Draft PR, [skip ci]; nincs CI/build/APK,
+Drive-feltöltés vagy main-merge ebben a körben. A legutóbbi kiadott APK továbbra159aaee.
+
 ## Legújabb átadott APK-pár – #175 + #177, 2753 / 159aaee
 
 PR176/178/179/180/181 mainen. Ikonos gyakorlat-visszajelzés, finom piros Fájdalom-
