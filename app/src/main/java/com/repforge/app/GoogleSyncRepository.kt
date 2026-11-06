@@ -569,7 +569,9 @@ class GoogleSyncRepository internal constructor(
         val fingerprintKey = "calendarConfirmedFingerprints"
         val previous = runCatching { JSONObject(prefs().getString(fingerprintKey, "{}").orEmpty()) }
             .getOrDefault(JSONObject())
-        val confirmed = if (previous.optString("scope") == syncScope)
+        // Periodically reconcile with Google in case events were edited or removed elsewhere.
+        val cacheFresh = System.currentTimeMillis() - previous.optLong("checkedAt", 0L) in 0L..86_400_000L
+        val confirmed = if (previous.optString("scope") == syncScope && cacheFresh)
             previous.optJSONObject("events") ?: JSONObject() else JSONObject()
         _uiState.update { it.copy(stageMessage = "Naptár szinkronizálása… (0/$total)") }
         for (operation in operations) {
@@ -614,7 +616,8 @@ class GoogleSyncRepository internal constructor(
             confirmed.put(operation.id, fingerprint)
             dataTicket.requireCurrent(appContext)
             check(prefs().edit().putString(fingerprintKey, JSONObject()
-                .put("scope", syncScope).put("events", confirmed).toString()).commit()) {
+                .put("scope", syncScope).put("checkedAt", System.currentTimeMillis())
+                .put("events", confirmed).toString()).commit()) {
                 "A naptár szinkronállapota nem menthető."
             }
             count++
