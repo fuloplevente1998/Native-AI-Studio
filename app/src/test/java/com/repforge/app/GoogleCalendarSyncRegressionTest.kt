@@ -243,7 +243,7 @@ class GoogleCalendarSyncRegressionTest {
         val row = entry(); save(row); live()
         expect("POST", "$root/live/events?sendUpdates=none", 201)
         assertEquals(1, sync().getOrThrow())
-        expect("GET", "/oauth2/v3/userinfo", json = "{\\"sub\\":\\"account-sub\\",\\"email\\":\\"owner@example.test\\"}")
+        expect("GET", "/oauth2/v3/userinfo", json = JSONObject().put("sub", "account-sub").put("email", "owner@example.test").toString())
         expect("GET", "$root/live", json = calendar())
         assertEquals(1, sync().getOrThrow())
         assertEquals(1, calls.count { it.path.contains("/events") })
