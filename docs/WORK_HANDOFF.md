@@ -4,7 +4,39 @@ Belépési pont: [AGENTS.md](../AGENTS.md). A részletes múlt a
 [CURRENT_STATUS.md](CURRENT_STATUS.md)-ben található; az élő GitHub-állapot elsőbbséget élvez.
 
 
-## Folyamatban – #177 programmentés és témától független akciógombok
+## Legújabb átadott APK-pár – #175 + #177, 2753 / 159aaee
+
+PR176/178/179/180/181 mainen. Ikonos gyakorlat-visszajelzés, finom piros Fájdalom-
+keret, már megadott válasz ismételt kérdezése nélkül; összesítőn áttekintés és
+külön Módosítás/Pótlás, opcionális összbenyomás összecsukva. Az összértékelés nem
+írja felül az explicit gyakorlatválaszt; a meglévő Coach fallback/pain logika marad.
+Új egyedi gyakorlat a könyvtári Kedvencek mellett, a programszerkesztőből eltávolítva.
+A program Mentés a Törlés bal oldalán a nevet és nyitott mezőket tartósan írja,
+Room-visszaolvasás után jelez sikert. Telefonos Studio/native és órás save/negative
+akciók fix zöld/piros háttérrel és kerettel; művelet, guard és megerősítés változatlan.
+Root egyedül, új agent nélkül.
+
+Végső signed forrás **159aaeea593601800097b5f5bd00f5dbc50b422f**,
+run **42145861343 SUCCESS**: **568 =387 telefon +181 Wear**,
+0 failure/error/skipped, shared NO-SOURCE. ZIP digest, nyers XML/commit/count,
+tényleges APK-hash/bináris manifest/APK v2 tanúsítvány és CI tartós signer/
+páros/capability kapu ellenőrizve. Változatlan2753 / 0.1.0-beta /
+com.TrainPilot.com, korábbi tartós signer. Telefon release +R8/shrunk Wear release.
+
+- [Telefon release](https://drive.google.com/file/d/1KO-QaVarOehIyh_egVZovyEY6y94vy2f/view?usp=drivesdk)
+- [Wear optimalizált release](https://drive.google.com/file/d/1PS-dn9sQVExWROIe8Y598X-KcZO-UqnU/view?usp=drivesdk)
+- TrainPilot Native mappa, régi APK-k megőrizve; név/MIME/bájt/parent visszaolvasva.
+  [Gépi bizonyíték](RELEASE_2753_159AAEE_VERIFIED_ARTIFACTS.json).
+- Az új mentési UI és valódi Room-írás/hibás adat elutasítása regressziója zöld.
+  A korábbi sikertelen körökből nem adtunk át APK-t, tesztet nem hagytunk ki és nem
+  gyengítettünk. Az annotáció, fixture-sorrend és animációs tesztóra javításai alább.
+- Fizikai/vizuális elfogadás még hátravan, #175/#177 nyitva: fájdalomkeret több
+  témában, feedback módosítás/kihagyás, Kedvencek melletti új gyakorlat, programnév
+  és nyitott steppermező Mentés utáni visszaolvasása újranyitáskor, mentés/törlés
+  zöld/piros szerepek. A későbbi doc-commit nem változtat az appforráson.
+
+## #177 programmentés és témától független akciógombok – implementáció
+
 
 Root egyedül, design/program-save-actions ág. Új globális Mentés a programszerkesztő
 alján, a Törlés bal oldalán; név és még nem külön mentett gyakorlatmezők a meglévő
@@ -19,7 +51,7 @@ komponensek telefonon (Studio és native), mentés/törlés/elvetés/visszavoná
 felirat-felismerés nincs; callback, engedély és megerősítés változatlan.
 Két új regresszió: nyitott UI-mezők globális mentése és tényleges Room-írás/
 ismeretlen mező/másik nap/hibás adat elutasítása. Meglévő gombteszt save/delete
-függetlenséggel kiegészítve. Diff-check tiszta, közös signed kapu még következik.
+függetlenséggel kiegészítve. Diff-check és a fenti végső signed kapu rendben.
 
 Az első közös #177 signed42143215569 fordításkor megállt: a könyvtári új FlowRow
 hiányzó ExperimentalLayoutApi opt-in jelölése miatt. Célzott annotációpótlás;
@@ -40,13 +72,13 @@ kézi frame-en még a korábbi enabled szemantikát látta. A teszt most kontrol
 frame-ekkel bevárja a tényleges Disabled tulajdonságot, majd az eredeti busy/card/
 callback assertionöket futtatja. 30s felső határ, változatlan alkalmazáskód.
 
-## #175 ikonos gyakorlat-visszajelzés – ellenőrzött forrás, új csomagra vár
+## Korábbi #175 ikonos gyakorlat-visszajelzés – ellenőrzött köztes forrás
 
 PR176 mainen, signed42131928587 SUCCESS, forrás9784d91b62251c4feb5df474e4cc2226ff15bbda.
 Nyers XML + artifact digest + verification commit függetlenül visszaellenőrizve:
 566 teszt, 0 failure/error/skipped (385 telefon +181 Wear). A futás közben érkező
 #177 új kérés miatt külön köztes APK-t nem adtunk át; a következő teljes közös
-csomag tartalmazza mindkét feladatot. Verzió/signer változatlan.
+159aaee csomag már tartalmazza mindkét feladatot. Verzió/signer változatlan.
 
 ## #175 ikonos gyakorlat-visszajelzés és összesítő – implementáció
 

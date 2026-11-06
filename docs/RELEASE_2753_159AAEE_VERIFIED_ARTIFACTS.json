@@ -1,0 +1,175 @@
+{
+  "sourceSha": "159aaeea593601800097b5f5bd00f5dbc50b422f",
+  "applicationId": "com.TrainPilot.com",
+  "versionCode": 2753,
+  "versionName": "0.1.0-beta",
+  "artifactZipSha256": "44b37bf4fe183e96c7b556604dd4c71c8b667b78406755b8a7908f926f86baf4",
+  "testArtifactZipSha256": "54e59fb8bf018960e484bd717ad6e530868a74b2b824985cbffbced476924d40",
+  "apks": {
+    "phone": {
+      "bytes": 20548600,
+      "sha256": "727d88fe568b87e5bf3693bbd21e1424f156934e09706f31174b7771af2cde1c",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "manifest": {
+        "versionCode": 2753,
+        "versionName": "0.1.0-beta",
+        "package": "com.TrainPilot.com"
+      }
+    },
+    "wear": {
+      "bytes": 4636863,
+      "sha256": "85b5cf63b51a6dca9aab12609be2a77081399059996d12682d31ea31b5e9862f",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "manifest": {
+        "versionCode": 2753,
+        "versionName": "0.1.0-beta",
+        "package": "com.TrainPilot.com"
+      }
+    }
+  },
+  "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+  "downloadedManifestAndV2CertificateVerified": true,
+  "rawJUnit": {
+    "commit": "159aaeea593601800097b5f5bd00f5dbc50b422f",
+    "modules": {
+      "phone": {
+        "files": 71,
+        "tests": 387,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "wear": {
+        "files": 32,
+        "tests": 181,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "shared": {
+        "files": 0,
+        "tests": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": true
+      }
+    },
+    "total": {
+      "tests": 568,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "ciMetadata": {
+    "applicationId": "com.TrainPilot.com",
+    "versionCode": "2753",
+    "versionName": "0.1.0-beta",
+    "apkSha256": "727d88fe568b87e5bf3693bbd21e1424f156934e09706f31174b7771af2cde1c",
+    "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+    "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+    "mapsApiKeyConfigured": true,
+    "ciCheckout": "159aaeea593601800097b5f5bd00f5dbc50b422f",
+    "wear": {
+      "applicationId": "com.TrainPilot.com",
+      "versionCode": "2753",
+      "versionName": "0.1.0-beta",
+      "apkSha256": "85b5cf63b51a6dca9aab12609be2a77081399059996d12682d31ea31b5e9862f",
+      "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "variant": "release",
+      "bytes": 4636863
+    },
+    "wearCompanionCapabilityRetained": true,
+    "dataLayerPairIdentityVerified": true,
+    "wearHardwareRequired": true
+  },
+  "signedRun": 42145861343,
+  "signedRunUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/42145861343",
+  "signedRunConclusion": "success",
+  "signedArtifactId": 13470142197,
+  "testArtifactId": 13470087357,
+  "issues": [
+    175,
+    177
+  ],
+  "implementationPullRequests": [
+    176,
+    178,
+    179,
+    180,
+    181
+  ],
+  "driveFolderId": "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9",
+  "drive": {
+    "phone": {
+      "id": "1KO-QaVarOehIyh_egVZovyEY6y94vy2f",
+      "title": "TrainPilot-2753-159aaee-phone-release.apk",
+      "mime_type": "application/vnd.android.package-archive",
+      "size": "20548600",
+      "url": "https://drive.google.com/file/d/1KO-QaVarOehIyh_egVZovyEY6y94vy2f/view?usp=drivesdk",
+      "display_url": "https://drive.google.com/file/d/1KO-QaVarOehIyh_egVZovyEY6y94vy2f/view?usp=drivesdk",
+      "file_or_folder": "file",
+      "created_time": null,
+      "modified_time": null,
+      "parent_ids": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "drive_id": null,
+      "current_user_can_share": null,
+      "has_augmented_permissions": null,
+      "shared": null,
+      "permissions": null,
+      "source_visibility_status": "access_not_verified"
+    },
+    "wear": {
+      "id": "1PS-dn9sQVExWROIe8Y598X-KcZO-UqnU",
+      "title": "TrainPilot-2753-159aaee-wear-release.apk",
+      "mime_type": "application/vnd.android.package-archive",
+      "size": "4636863",
+      "url": "https://drive.google.com/file/d/1PS-dn9sQVExWROIe8Y598X-KcZO-UqnU/view?usp=drivesdk",
+      "display_url": "https://drive.google.com/file/d/1PS-dn9sQVExWROIe8Y598X-KcZO-UqnU/view?usp=drivesdk",
+      "file_or_folder": "file",
+      "created_time": null,
+      "modified_time": null,
+      "parent_ids": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "drive_id": null,
+      "current_user_can_share": null,
+      "has_augmented_permissions": null,
+      "shared": null,
+      "permissions": null,
+      "source_visibility_status": "access_not_verified"
+    }
+  },
+  "driveMetadataReadbackVerified": true,
+  "physicalDeviceAcceptance": "pending",
+  "previousFailedRuns": [
+    {
+      "runId": 42143215569,
+      "sourceSha": "410331c8690fd4692c136857fe7ae5afad42140b",
+      "reason": "Missing ExperimentalLayoutApi opt-in on library FlowRow; PR179 added annotation.",
+      "apkDelivered": false
+    },
+    {
+      "runId": 42143927750,
+      "sourceSha": "566bd7ed594db14d7ca3e1c81c9b3629558bcf80",
+      "tests": 568,
+      "failures": 4,
+      "reason": "Program fixture was created after initial Studio loading; three existing UI tests waited for infinite loading animation idle. PR180 corrected fixture ordering and manual test clock frames; no assertion weakening.",
+      "apkDelivered": false
+    },
+    {
+      "runId": 42145393943,
+      "sourceSha": "e702c0a1780e77492ff199c668c95747925f6146",
+      "tests": 568,
+      "failures": 1,
+      "reason": "Watch busy test checked prior-frame enabled semantics; PR181 awaits the rendered Disabled state with explicit frames then original assertions.",
+      "apkDelivered": false
+    }
+  ]
+}
