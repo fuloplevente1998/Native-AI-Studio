@@ -48,6 +48,24 @@ internal fun StudioActiveWorkoutSessionInfo(state: TrainPilotUiState) {
     }
 }
 
+
+@Composable
+internal fun StudioActiveWorkoutHeaderSequence(
+    state: TrainPilotUiState,
+    header: @Composable () -> Unit,
+    exerciseSequence: @Composable () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth().testTag("active_workout_header_sequence"),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Box(Modifier.testTag("active_workout_large_header")) { header() }
+        StudioActiveWorkoutSessionInfo(state)
+        Box(Modifier.testTag("active_workout_exercise_sequence_slot")) { exerciseSequence() }
+    }
+}
+
+
 @Composable
 internal fun StudioActiveExerciseFeedback(state: TrainPilotUiState,
     onEffort: (String, Int) -> Unit, onNote: (String, String) -> Unit) {
