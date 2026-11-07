@@ -3283,7 +3283,8 @@ fun StudioGoogleCloudSyncCard(
                     NativeGoogleMaintenanceControls(
                         language = settingsState.settings.language,
                         busy = settingsState.maintenanceBusy || gs.isBusy || settingsState.replacementBusy,
-                        open = settingsViewModel::openGoogleMaintenance
+                        open = settingsViewModel::openGoogleMaintenance,
+                        repairCalendar = settingsViewModel::repairCalendarDuplicates
                     )
                 }
             } else {

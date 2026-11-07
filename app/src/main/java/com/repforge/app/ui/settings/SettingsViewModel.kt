@@ -16,6 +16,7 @@ import com.repforge.app.ui.text.nativeResources
 import com.repforge.app.GoogleSyncRepository
 import com.repforge.app.GoogleSyncUiState
 import com.repforge.app.NativeDataReplacement
+import com.repforge.app.NativeCalendarCleanupV1
 import com.repforge.app.NativeTrainingProfile
 import org.json.JSONObject
 import com.repforge.app.data.store.ThemePaletteOption
@@ -74,6 +75,32 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
     internal fun cancelGoogleMaintenance() { _maintenancePreview.value = null }
+    internal fun repairCalendarDuplicates() {
+        if (googleRequestRunning || _uiState.value.replacementBusy || _uiState.value.maintenanceBusy) return
+        _uiState.value = _uiState.value.copy(maintenanceBusy = true, maintenanceOutcome = "", statusMessage = null)
+        viewModelScope.launch {
+            try {
+                val report = withContext(Dispatchers.IO) { NativeCalendarCleanupV1.applyLocal(context) }
+                val strings = nativeResources(context, _uiState.value.settings.language)
+                _uiState.value = _uiState.value.copy(
+                    maintenanceCompleted = report.removed,
+                    maintenanceOutcome = "done",
+                    statusMessage = strings.getString(R.string.calendar_cleanup_done, report.removed, report.after)
+                )
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    maintenanceOutcome = "failed",
+                    statusMessage = nativeResources(context, _uiState.value.settings.language)
+                        .getString(R.string.calendar_cleanup_failed)
+                )
+            } finally {
+                _uiState.value = _uiState.value.copy(maintenanceBusy = false)
+            }
+        }
+    }
+
     internal fun confirmGoogleMaintenance(activity: Activity) {
         val request = _maintenancePreview.value ?: return
         if (googleRequestRunning || _uiState.value.replacementBusy || _uiState.value.maintenanceBusy) return

@@ -249,8 +249,12 @@ fun SettingsScreen(
                             }
                         }
                         Spacer(Modifier.height(8.dp))
-                        NativeGoogleMaintenanceControls(state.settings.language, state.maintenanceBusy || gs.isBusy || state.replacementBusy,
-                            viewModel::openGoogleMaintenance)
+                        NativeGoogleMaintenanceControls(
+                            state.settings.language,
+                            state.maintenanceBusy || gs.isBusy || state.replacementBusy,
+                            viewModel::openGoogleMaintenance,
+                            viewModel::repairCalendarDuplicates
+                        )
                         TextButton(onClick = { viewModel.disconnectGoogle() }, enabled = !gs.isBusy && !state.replacementBusy) {
                             Text(strings.getString(R.string.native_settings_disconnect), color = colors.dangerText, fontSize = 11.sp)
                         }

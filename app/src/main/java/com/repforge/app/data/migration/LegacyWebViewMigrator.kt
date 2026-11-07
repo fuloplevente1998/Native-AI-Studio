@@ -485,7 +485,18 @@ class LegacyWebViewMigrator(
             }
 
             // 7. Scheduled Calendar Entries
-            val scheduledArr = data.optJSONArray("scheduled")
+            val cleanupMarker = data.optJSONObject(com.repforge.app.NativeCalendarCleanupV1.JSON_KEY)
+            if (cleanupMarker != null && cleanupMarker.optInt("version") == 1) {
+                database.keyValueDocumentDao().putDocument(
+                    KeyValueDocumentEntity(
+                        key = com.repforge.app.NativeCalendarCleanupV1.DOC_KEY,
+                        json = cleanupMarker.toString(),
+                        updatedAt = cleanupMarker.optLong("updatedAt", System.currentTimeMillis())
+                    )
+                )
+            }
+            val scheduledArr = com.repforge.app.NativeCalendarCleanupV1.filterScheduled(
+                data.optJSONArray("scheduled"), cleanupMarker)
             if (scheduledArr != null) {
                 if (replaceAll) database.calendarScheduleDao().deleteAllEntries()
                 val schedEntities = ArrayList<CalendarScheduleEntity>()
@@ -739,6 +750,11 @@ class LegacyWebViewMigrator(
             // Canonical v144 export and Drive snapshots must include favorites, even when empty.
             out.put(NativeExerciseFavorites.KEY, NativeExerciseFavorites.encode(NativeExerciseFavorites.load(database)))
             out.put(NativeWeightTombstones18.KEY, NativeWeightTombstones18.encode(NativeWeightTombstones18.load(database)))
+            database.keyValueDocumentDao().getDocument(com.repforge.app.NativeCalendarCleanupV1.DOC_KEY)?.let { doc ->
+                runCatching { JSONObject(doc.json) }.getOrNull()?.let {
+                    out.put(com.repforge.app.NativeCalendarCleanupV1.JSON_KEY, it)
+                }
+            }
 
             // History
             val historyArray = JSONArray()
