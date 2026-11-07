@@ -747,6 +747,9 @@ class GoogleSyncRepository internal constructor(
         preferLocalOnConflict: Boolean
     ): JSONObject {
         val out = JSONObject(local.toString())
+        val cleanupMarker = NativeCalendarCleanupV1.newestMarker(
+            local, base, *remotes.toTypedArray(), *archives.toTypedArray())
+        if (cleanupMarker != null) out.put(NativeCalendarCleanupV1.JSON_KEY, cleanupMarker)
         fun readWeightMarkers(data: JSONObject?): List<NativeWeightTombstones18.Marker> =
             if (data == null || !data.has(NativeWeightTombstones18.KEY)) emptyList()
             else NativeWeightTombstones18.decode(data.get(NativeWeightTombstones18.KEY))
@@ -777,10 +780,13 @@ class GoogleSyncRepository internal constructor(
         )
         out.put(
             "scheduled",
-            mergeScheduledRows18(
-                local.optJSONArray("scheduled"),
-                remotes.map { it.optJSONArray("scheduled") },
-                preferLocalOnConflict
+            NativeCalendarCleanupV1.filterScheduled(
+                mergeScheduledRows18(
+                    local.optJSONArray("scheduled"),
+                    remotes.map { it.optJSONArray("scheduled") },
+                    preferLocalOnConflict
+                ),
+                cleanupMarker
             )
         )
         for (key in arrayOf("settings", "exercises", "plan", "programs", "activeProgramId", "plannerSettings", "exerciseFavorites")) {
