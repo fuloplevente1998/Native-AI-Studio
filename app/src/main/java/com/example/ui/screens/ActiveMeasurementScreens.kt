@@ -478,71 +478,72 @@ fun ActiveStrengthWorkoutScreen(
                 ).localizedTitle(lang, uiState.programs, uiState.exercises)
             }
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                SubScreenTopBar(
-                    title = tr(
+                com.example.ui.components.StudioActiveWorkoutHeaderSequence(
+                    state = uiState,
+                    header = {
+                        SubScreenTopBar(
+                        title = tr(
                         lang,
                         "$localizedWorkoutTitle • ${currentExerciseIdx + 1} / $totalExercisesCount gyakorlat",
                         "$localizedWorkoutTitle • ${currentExerciseIdx + 1} / $totalExercisesCount exercises",
                         "$localizedWorkoutTitle • ${currentExerciseIdx + 1} / $totalExercisesCount Übungen",
                         "$localizedWorkoutTitle • ${currentExerciseIdx + 1} / $totalExercisesCount exerciții"
-                    ),
-                    onBack = onBack,
-                    onOpenSettings = onOpenSettings,
-                    rightExtraContent = { com.example.ui.components.StudioWorkoutHealthAction() }
-                )
-
-                // Keep the A/B day marker inside the workout card: below the large program header,
-                // above the horizontal exercise sequence. The program title itself is rendered only once.
-                com.example.ui.components.StudioActiveWorkoutSessionInfo(uiState)
-
-                // Horizontal Exercise Sequence Pills (shows all exercises in the planned/queued workout)
-                if (workoutExercises.size > 1) {
-                    Row(
+                        ),
+                        onBack = onBack,
+                        onOpenSettings = onOpenSettings,
+                        rightExtraContent = { com.example.ui.components.StudioWorkoutHealthAction() }
+                        )
+                    },
+                    exerciseSequence = {
+                        if (workoutExercises.size > 1) {
+                        Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
-                            .testTag("active_workout_exercise_sequence"),
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .testTag("active_workout_exercise_sequence"),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                        ) {
                         workoutExercises.forEachIndexed { idx, exItem ->
-                            val isCurrent = idx == currentExerciseIdx
-                            val isDone = com.example.ui.components.exerciseFullyCompleted(
-                                if (isCurrent) uiState.activeSets else uiState.activeSetsByExerciseId[exItem.id])
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = when {
-                                    isCurrent -> palette.primary
-                                    isDone -> palette.success.copy(alpha = 0.18f)
-                                    else -> palette.surfaceElevated
-                                },
-                                modifier = Modifier
-                                    .trainPilotBorder(
-                                        width = 1.dp,
-                                        color = when {
-                                            isCurrent -> palette.primary
-                                            isDone -> palette.success
-                                            else -> palette.cardBorder
-                                        },
-                                        shape = RoundedCornerShape(12.dp)
-                                    )
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable { onSwitchExercise(exItem) }
-                            ) {
-                                Text(
-                                    text = "${idx + 1}. ${exItem.localizedName(lang)}" + if (isDone && !isCurrent) " ✓" else "",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = when {
-                                        isCurrent -> palette.onPrimary
-                                        isDone -> palette.success
-                                        else -> palette.textSecondary
-                                    },
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                )
-                            }
+                        val isCurrent = idx == currentExerciseIdx
+                        val isDone = com.example.ui.components.exerciseFullyCompleted(
+                        if (isCurrent) uiState.activeSets else uiState.activeSetsByExerciseId[exItem.id])
+                        Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = when {
+                        isCurrent -> palette.primary
+                        isDone -> palette.success.copy(alpha = 0.18f)
+                        else -> palette.surfaceElevated
+                        },
+                        modifier = Modifier
+                        .trainPilotBorder(
+                        width = 1.dp,
+                        color = when {
+                        isCurrent -> palette.primary
+                        isDone -> palette.success
+                        else -> palette.cardBorder
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                        )
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onSwitchExercise(exItem) }
+                        ) {
+                        Text(
+                        text = "${idx + 1}. ${exItem.localizedName(lang)}" + if (isDone && !isCurrent) " ✓" else "",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = when {
+                        isCurrent -> palette.onPrimary
+                        isDone -> palette.success
+                        else -> palette.textSecondary
+                        },
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                        }
+                        }
+                        }
                         }
                     }
-                }
+                )
 
                 // Current Exercise Header + Floating Exercise Switcher Dropdown + Library Button
                 Row(
