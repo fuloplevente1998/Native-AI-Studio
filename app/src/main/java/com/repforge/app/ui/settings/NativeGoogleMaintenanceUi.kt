@@ -26,10 +26,20 @@ private fun scope(kind: NativeGoogleMaintenance.Kind) = when (kind) {
 
 @Composable
 internal fun NativeGoogleMaintenanceControls(language: String, busy: Boolean,
-    open: (NativeGoogleMaintenance.Kind) -> Unit) {
+    open: (NativeGoogleMaintenance.Kind) -> Unit,
+    repairCalendar: (() -> Unit)? = null) {
     val strings = nativeResources(LocalContext.current, language)
     val colors = LocalTrainPilotColors.current
     Column {
+        if (repairCalendar != null) {
+            TextButton(
+                onClick = repairCalendar,
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("calendar_emergency_cleanup")
+            ) {
+                Text(strings.getString(R.string.calendar_cleanup_action), color = colors.dangerText)
+            }
+        }
         for (kind in NativeGoogleMaintenance.Kind.values()) {
             TextButton(onClick = { open(kind) }, enabled = !busy,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("google_maintenance_${kind.key}")) {
