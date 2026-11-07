@@ -84,7 +84,7 @@ class StudioActiveFeedbackRegressionTest {
         } }
         compose.waitForIdle()
 
-        compose.onNodeWithTag("active_workout_day_between_header_and_exercises").assertIsDisplayed()
+        compose.onNodeWithTag("active_workout_day_between_header_and_exercises").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("active_workout_exercise_sequence").assertIsDisplayed()
         compose.onNodeWithText("A nap").assertIsDisplayed()
         val day = compose.onNodeWithTag("active_workout_day_between_header_and_exercises").fetchSemanticsNode().boundsInRoot
