@@ -16,9 +16,7 @@ import com.example.ui.components.StudioActiveWorkoutSessionInfo
 import com.example.ui.components.rememberStudioWorkoutCoachOwner
 import com.example.ui.components.StudioExerciseFeedbackReview
 import com.example.ui.components.StudioWorkoutOverallFeedback
-import com.example.ui.screens.ActiveStrengthWorkoutScreen
-import com.example.localization.TrainPilotStrings
-import com.example.model.AppLanguage
+import com.example.ui.components.StudioActiveWorkoutHeaderSequence
 import com.example.ui.theme.TrainPilotTheme
 import com.example.ui.viewmodel.TrainPilotUiState
 import com.repforge.app.ActiveWorkoutStore
@@ -69,27 +67,23 @@ class StudioActiveFeedbackRegressionTest {
             .put("generation", 7L)
             .put("programName", "Otthoni A/B – Alap")
             .put("dayName", "A"))
-        val state = initial().copy(activeWorkoutTitleHu = "Otthoni A/B – Alap",
-            language = AppLanguage.HU)
+        val state = initial().copy(activeWorkoutTitleHu = "Otthoni A/B – Alap")
 
         compose.setContent { TrainPilotTheme {
-            ActiveStrengthWorkoutScreen(
-                uiState = state,
-                strings = TrainPilotStrings.forLanguage(AppLanguage.HU),
-                onBack = {}, onOpenSettings = {}, onSelectMeasurementMode = { _ -> },
-                onToggleSetCompleted = { _ -> }, onAdjustSetValues = { _, _, _, _ -> },
-                onUndoLastSet = {}, onAdjustRestTimer = { _ -> }, onToggleRestRunning = {},
-                onSkipRest = {}, onOpenExerciseDetail = { _ -> }
+            StudioActiveWorkoutHeaderSequence(
+                state = state,
+                header = { Text("Otthoni A/B – Alap • 1 / 2 gyakorlat") },
+                exerciseSequence = { Text("1. Nyomás    2. Evezés") }
             )
         } }
         compose.waitForIdle()
 
-        compose.onNodeWithTag("active_workout_day_between_header_and_exercises").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithTag("active_workout_exercise_sequence").assertIsDisplayed()
+        val header = compose.onNodeWithTag("active_workout_large_header").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val day = compose.onNodeWithTag("active_workout_day_between_header_and_exercises").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val exercises = compose.onNodeWithTag("active_workout_exercise_sequence_slot").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
         compose.onNodeWithText("A nap").assertIsDisplayed()
-        val day = compose.onNodeWithTag("active_workout_day_between_header_and_exercises").fetchSemanticsNode().boundsInRoot
-        val exercises = compose.onNodeWithTag("active_workout_exercise_sequence").fetchSemanticsNode().boundsInRoot
-        assertTrue("Day badge must be immediately above the horizontal exercise sequence", day.bottom <= exercises.top)
+        assertTrue("Day badge must be below the large workout header", day.top >= header.bottom)
+        assertTrue("Day badge must be above the horizontal exercise sequence", day.bottom <= exercises.top)
         compose.onAllNodesWithText("Otthoni A/B – Alap", substring = true).assertCountEquals(1)
     }
 
