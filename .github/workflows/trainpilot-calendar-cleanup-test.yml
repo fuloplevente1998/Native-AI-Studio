@@ -1,0 +1,132 @@
+name: TrainPilot calendar cleanup signed test APK
+
+on:
+  push:
+    branches: [maintenance/calendar-emergency-cleanup]
+    paths:
+      - '.github/workflows/trainpilot-calendar-cleanup-test.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trainpilot-calendar-cleanup-test
+  cancel-in-progress: true
+
+jobs:
+  signed-test-pair:
+    if: github.ref == 'refs/heads/maintenance/calendar-emergency-cleanup'
+    environment: android-signing
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TRAINPILOT_MAPS_API_KEY: ${{ secrets.TRAINPILOT_MAPS_API_KEY || secrets.MAPS_API_KEY }}
+      TRAINPILOT_REQUIRE_WEAR_PAIR: 'true'
+      TRAINPILOT_VERIFY_RELEASE: 'true'
+      TRAINPILOT_RELEASE_CERT_SHA256: ${{ secrets.TRAINPILOT_RELEASE_CERT_SHA256 }}
+    steps:
+      - name: Checkout cleanup test branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Validate release APK verification script syntax
+        run: python3 -m py_compile scripts/verify_android_apk_metadata.py
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android API 36 SDK from hosted runner
+        shell: bash
+        run: |
+          SDKMANAGER=$(find "${ANDROID_HOME}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
+          test -n "${SDKMANAGER}"
+          yes | "${SDKMANAGER}" --licenses > /dev/null || true
+          "${SDKMANAGER}" --install 'platforms;android-36' 'build-tools;36.0.0'
+          "${SDKMANAGER}" --install 'platforms;android-36.1' || true
+
+      - name: Set up Gradle 9.3.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+          cache-read-only: true
+
+      - name: Cache Robolectric Android SDK dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-api34-i7-v1-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+
+      - name: Fetch checksum-verified Robolectric SDK with retries
+        shell: bash
+        run: python3 scripts/prefetch_robolectric_sdk.py
+
+      - name: Restore private signing file
+        env:
+          KEYSTORE_BASE64: ${{ secrets.TRAINPILOT_RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64, os, pathlib
+          required = ['KEYSTORE_BASE64', 'STORE_PASSWORD', 'KEY_PASSWORD', 'TRAINPILOT_RELEASE_CERT_SHA256', 'TRAINPILOT_MAPS_API_KEY']
+          missing = [key for key in required if not os.environ.get(key, '').strip()]
+          if missing:
+              raise SystemExit('Missing configuration names: ' + ', '.join(missing))
+          target = pathlib.Path(os.environ['RUNNER_TEMP']) / 'trainpilot-release.jks'
+          with target.open('xb') as output:
+              target.chmod(0o600)
+              output.write(base64.b64decode(os.environ['KEYSTORE_BASE64'], validate=True))
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write('KEYSTORE_PATH=' + str(target) + '\n')
+          PY
+
+      - name: Build signed cleanup test pair and run all JVM tests
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: gradle --no-daemon --stacktrace --profile --continue :app:assembleRelease :wear:assembleRelease :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest
+
+      - name: Verify raw JVM results
+        if: always()
+        env:
+          TRAINPILOT_SOURCE_SHA: ${{ github.sha }}
+        run: python3 scripts/verify_junit_xml.py
+
+      - name: Verify package, Maps configuration and pinned signer
+        run: python3 scripts/verify_android_apk_metadata.py
+
+      - name: Remove temporary signing file
+        if: always()
+        shell: bash
+        run: rm -f -- "${RUNNER_TEMP}/trainpilot-release.jks"
+
+      - name: Upload signed cleanup test APKs
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trainpilot-calendar-cleanup-test-apk-pair
+          path: |
+            app/build/outputs/apk/release/app-release.apk
+            wear/build/outputs/apk/release/wear-release.apk
+            app/build/outputs/apk-verification.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trainpilot-calendar-cleanup-test-reports
+          path: |
+            app/build/test-results/
+            wear/build/test-results/
+            shared/build/test-results/
+            app/build/outputs/junit-verification.json
+          if-no-files-found: ignore
+          retention-days: 7
