@@ -29,27 +29,8 @@ internal fun StudioActiveWorkoutSessionInfo(state: TrainPilotUiState) {
     val formattedDay = if (rawDay.length == 1 && rawDay[0].isLetter()) {
         feedbackWord(state, "${rawDay.uppercase()} nap", "Day ${rawDay.uppercase()}", "Tag ${rawDay.uppercase()}", "Ziua ${rawDay.uppercase()}")
     } else rawDay
-    val programName = snapshot.optString("programName").takeIf { it.isNotBlank() }
-        ?: state.activeWorkoutTitleHu.substringBefore("•").trim()
     val palette = LocalTrainPilotPalette.current
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 2.dp)
-            .testTag("active_workout_program_day_bar"),
-        verticalArrangement = Arrangement.spacedBy(5.dp),
-        horizontalAlignment = androidx.compose.ui.Alignment.Start
-    ) {
-        if (programName.isNotBlank()) {
-            Text(
-                text = programName,
-                style = MaterialTheme.typography.labelMedium,
-                color = palette.textSecondary,
-                maxLines = 2,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                modifier = Modifier.testTag("active_workout_program_label")
-            )
-        }
+    Box(modifier = Modifier.testTag("active_workout_day_between_header_and_exercises")) {
         Surface(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
             color = palette.tintedSurface(0.22f),
@@ -66,6 +47,24 @@ internal fun StudioActiveWorkoutSessionInfo(state: TrainPilotUiState) {
         }
     }
 }
+
+
+@Composable
+internal fun StudioActiveWorkoutHeaderSequence(
+    state: TrainPilotUiState,
+    header: @Composable () -> Unit,
+    exerciseSequence: @Composable () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth().testTag("active_workout_header_sequence"),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Box(Modifier.testTag("active_workout_large_header")) { header() }
+        StudioActiveWorkoutSessionInfo(state)
+        Box(Modifier.testTag("active_workout_exercise_sequence_slot")) { exerciseSequence() }
+    }
+}
+
 
 @Composable
 internal fun StudioActiveExerciseFeedback(state: TrainPilotUiState,
