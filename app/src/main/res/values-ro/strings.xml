@@ -665,4 +665,7 @@
     <string name="native_timer_defaults_save">Salvează</string>
     <string name="studio_progress_latest_1rm">Ultima estimare 1RM</string>
     <string name="studio_progress_best_1rm">Cea mai bună estimare 1RM</string>
+    <string name="calendar_cleanup_action">Curățare unică a duplicatelor din calendar (test)</string>
+    <string name="calendar_cleanup_done">Sursa calendarului a fost curățată: %1$d rânduri șterse, %2$d păstrate. Repornește aplicația, apoi rulează sincronizarea Drive și calendar.</string>
+    <string name="calendar_cleanup_failed">Curățarea sursei calendarului a eșuat.</string>
 </resources>
