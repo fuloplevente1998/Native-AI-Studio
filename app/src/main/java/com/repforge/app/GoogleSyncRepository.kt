@@ -1029,7 +1029,8 @@ class GoogleSyncRepository internal constructor(
         val sorted = map.values.sortedByDescending { it.optString("start", "") }
         val out = JSONArray()
         sorted.forEach { out.put(it) }
-        return out
+        // Never let an older Drive snapshot resurrect the fixed 2026-11 calendar incident.
+        return NativeCalendarCleanup202611.cleanScheduledJson(out)
     }
 
     // =========================================================================

@@ -1,6 +1,19 @@
-# Rövid munkátadás – 2026-11-06 (#117 és #195 lezárva; PR #205/#206 mainen; signed build kész)
+# Rövid munkátadás – 2026-11-08 (PR #211: Naptárszinkron same-start-slot dedupe és migrációs takarítás javítása)
 
 Belépési pont: [AGENTS.md](../AGENTS.md). Az élő GitHub-állapot elsőbbséget élvez.
+
+## PR #211 – Naptárszinkron (same-start-slot dedupe, 2026-11-01 resurrection guard és CI-hibák javítása)
+
+- **Végleges szabály és működés (`NativeCalendarCleanup202611`)**:
+  - Egy napon több edzés is szerepelhet (pl. 10:00 és 18:00 külön érvényes eseményként megmarad).
+  - Kizárólag az azonos dátumra és azonos kezdési időpontra (`start slot`) eső tételek minősülnek duplikátumnak; a nyertes kiválasztási sorrendje: `completed` > `planned` > `skipped`/`cancelled`, részletes natív sor > üres legacy sor, végül frissebb `updatedAt`.
+  - `cleanRowsForMigration` / `cleanRows` és `cleanScheduledJson`: a `2026-11-01` és korábbi `scheduled` sorokat kiszűri az egyszeri helyi adatbázis-takarítás (`LegacyWebViewMigrator.migrateIfNeeded`), a biztonsági mentés visszaállítása (`importBackupJson`) és a Drive felhő-összefésülés (`GoogleSyncRepository.mergeScheduledRows18`) során, megakadályozva a törölt régi események feltámadását.
+  - A `workout_history` / Napló / mentett edzések teljesen érintetlenek.
+- **CI-hibák javítása**:
+  - `NativeCalendarSyncPlan.operations`: a teljes migrációs cutoff helyett a `NativeCalendarCleanup202611.dedupeSameStartSlot` függvényt hívja, amely nem alkalmaz történeti dátum-cutoffot és megőrzi a `skipped` sorok `DELETE` műveleteit, miközben az élő (`planned`/`completed`) sorokból továbbra is legfeljebb egyet engedélyez start slotonként.
+  - `NativeCalendarCleanup202611RegressionTest`: `@RunWith(RobolectricTestRunner::class)` és `@Config(sdk = [34])` annotációval ellátva, kiegészítve a történeti `skipped` DELETE és a `workout_history` érintetlenségét ellenőrző tesztekkel.
+- **Ellenőrzés**:
+  - `NativeCalendarCleanup202611RegressionTest` (5/5 teszt PASS) és `GoogleCalendarSyncRegressionTest` (15/15 teszt PASS, beleértve a `missingSkippedEventsAreAlreadyDeletedAndDoNotCreateEvents` tesztet), 0 failure / 0 error / 0 skipped.
 
 ## #117 + #195 integráció és ellenőrzött signed build
 
