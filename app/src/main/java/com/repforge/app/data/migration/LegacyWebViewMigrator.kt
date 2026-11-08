@@ -182,6 +182,7 @@ class LegacyWebViewMigrator(
         val currentSettings = settingsStore.current()
         if (currentSettings.migrationV1371Complete) {
             TrainPilotDatabase.ensureBuiltinCatalogSeeded(database, context)
+            com.repforge.app.NativeCalendarCleanup202611.apply(database)
             return@withContext
         }
 
@@ -206,6 +207,7 @@ class LegacyWebViewMigrator(
         }
 
         TrainPilotDatabase.ensureBuiltinCatalogSeeded(database, context)
+        com.repforge.app.NativeCalendarCleanup202611.apply(database)
         settingsStore.ensureCloudDeviceId()
         // After import, never gate a legacy/native profile as a fresh user.
         // On failure before this point migration remains unfinished and no welcome is shown.
@@ -485,8 +487,8 @@ class LegacyWebViewMigrator(
             }
 
             // 7. Scheduled Calendar Entries
-            val scheduledArr = data.optJSONArray("scheduled")
-            if (scheduledArr != null) {
+            val scheduledArr = com.repforge.app.NativeCalendarCleanup202611.cleanScheduledJson(data.optJSONArray("scheduled"))
+            if (scheduledArr.length() > 0 || data.has("scheduled")) {
                 if (replaceAll) database.calendarScheduleDao().deleteAllEntries()
                 val schedEntities = ArrayList<CalendarScheduleEntity>()
                 for (i in 0 until scheduledArr.length()) {
