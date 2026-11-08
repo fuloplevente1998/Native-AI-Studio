@@ -8,7 +8,8 @@ import java.time.Instant
 /** One plan per persisted calendar row, including old cancellation records. No tail/window cutoff. */
 internal object NativeCalendarSyncPlan {
     data class Operation(val id: String, val delete: Boolean, val payload: JSONObject?)
-    fun operations(entries: List<CalendarScheduleEntity>): Sequence<Operation> = entries.asSequence().map { entry ->
+    fun operations(entries: List<CalendarScheduleEntity>): Sequence<Operation> =
+        NativeCalendarCleanup202611.cleanRows(entries).asSequence().map { entry ->
         val id = entry.googleEventId.takeIf { Regex("rf[0-9a-f]{64}").matches(it) }
             ?: LegacySyncIdentity18.calendarEventId(entry.id, entry.date, entry.programId, entry.dayId)
         if (entry.status == "skipped") Operation(id, true, null)
