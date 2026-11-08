@@ -12,64 +12,62 @@ import java.time.LocalDate
 import java.time.OffsetDateTime
 
 /**
- * One-time repair for the calendar duplication incident that affected the user's
- * September-November 2026 TrainPilot/RepForge schedule.
+ * Repair and resurrection guard for the 2026 calendar duplication incident.
  *
- * Scope is intentionally frozen:
- * - remove every scheduled row through 2026-11-01 inclusive;
- * - from 2026-11-02 through 2026-11-30 keep at most one row per day;
- * - never impose an "one workout per day" rule on December 2026 or later.
+ * Rules:
+ * - scheduled rows through 2026-11-01 inclusive are treated as retired and must not
+ *   be restored from old local/Drive snapshots;
+ * - from 2026-11-02 onward, multiple workouts on the same day are valid;
+ * - only rows that target the same start slot are duplicates. The best/current row
+ *   wins and different start times on the same day remain separate workouts.
  *
- * The same pure filter is reused for backup/Drive merges so an old cloud snapshot
- * cannot resurrect rows removed by this repair.
+ * The historical cutoff is intentionally a migration guard, not the permanent
+ * calendar behavior. It can be removed after old Drive snapshots are no longer useful.
  */
 internal object NativeCalendarCleanup202611 {
     private const val MARKER = "native:calendarCleanup202611"
     private val deleteThrough = LocalDate.parse("2026-11-01")
-    private val dedupeThrough = LocalDate.parse("2026-11-30")
 
     data class Report(val before: Int, val after: Int, val removed: Int)
 
     fun cleanRows(rows: List<CalendarScheduleEntity>): List<CalendarScheduleEntity> {
         val outside = ArrayList<CalendarScheduleEntity>()
-        val byDay = LinkedHashMap<LocalDate, MutableList<CalendarScheduleEntity>>()
+        val bySlot = LinkedHashMap<String, MutableList<CalendarScheduleEntity>>()
         for (row in rows) {
             val date = runCatching { LocalDate.parse(row.date) }.getOrNull()
-            when {
-                date == null -> outside.add(row)
-                !date.isAfter(deleteThrough) -> Unit
-                date.isAfter(dedupeThrough) -> outside.add(row)
-                else -> byDay.getOrPut(date) { ArrayList() }.add(row)
-            }
+            if (date != null && !date.isAfter(deleteThrough)) continue
+            val key = slotKey(row.date, row.startIso)
+            if (key == null) outside.add(row) else bySlot.getOrPut(key) { ArrayList() }.add(row)
         }
-        val kept = byDay.values.map { group ->
-            group.maxWithOrNull(compareBy<CalendarScheduleEntity>({ rowScore(it) }, { it.updatedAt }, { it.id }))
-                ?: group.first()
+        val kept = bySlot.values.map { group ->
+            group.maxWithOrNull(compareBy<CalendarScheduleEntity>(
+                { rowScore(it) }, { it.updatedAt }, { it.id }
+            )) ?: group.first()
         }
         return (outside + kept).sortedWith(compareBy({ it.date }, { it.startIso }, { it.id }))
     }
 
     fun cleanScheduledJson(rows: JSONArray?): JSONArray {
         if (rows == null) return JSONArray()
-        data class Item(val raw: JSONObject, val date: LocalDate?)
+        data class Item(val raw: JSONObject, val date: LocalDate?, val slot: String?)
         val outside = ArrayList<Item>()
-        val byDay = LinkedHashMap<LocalDate, MutableList<Item>>()
+        val bySlot = LinkedHashMap<String, MutableList<Item>>()
+
         for (i in 0 until rows.length()) {
             val src = rows.optJSONObject(i) ?: continue
             val copy = JSONObject(src.toString())
             val start = copy.optString("start", copy.optString("plannedStart", "")).trim()
             val dateText = copy.optString("date", if (start.length >= 10) start.substring(0, 10) else "").trim()
             val date = runCatching { LocalDate.parse(dateText) }.getOrNull()
-            when {
-                date == null -> outside.add(Item(copy, null))
-                !date.isAfter(deleteThrough) -> Unit
-                date.isAfter(dedupeThrough) -> outside.add(Item(copy, date))
-                else -> byDay.getOrPut(date) { ArrayList() }.add(Item(copy, date))
-            }
+            if (date != null && !date.isAfter(deleteThrough)) continue
+            val slot = slotKey(dateText, start)
+            val item = Item(copy, date, slot)
+            if (slot == null) outside.add(item) else bySlot.getOrPut(slot) { ArrayList() }.add(item)
         }
+
         val selected = ArrayList<Item>()
         selected.addAll(outside)
-        for (group in byDay.values) {
+        for (group in bySlot.values) {
             selected.add(group.maxWithOrNull(compareBy<Item>(
                 { jsonScore(it.raw) },
                 { it.raw.optLong("updatedAt", 0L) },
@@ -97,8 +95,6 @@ internal object NativeCalendarCleanup202611 {
             if (row.id !in keepIds) database.calendarScheduleDao().deleteEntry(row.id)
         }
 
-        // The Compose calendar reads native:calendarState directly. Keep it aligned
-        // with Room and clear undo snapshots that could re-add a removed duplicate.
         val stateDoc = markerDao.getDocument("native:calendarState")
         if (stateDoc != null) {
             val root = runCatching { JSONObject(stateDoc.json) }.getOrNull()
@@ -128,9 +124,9 @@ internal object NativeCalendarCleanup202611 {
             KeyValueDocumentEntity(
                 MARKER,
                 JSONObject()
-                    .put("version", 1)
+                    .put("version", 2)
                     .put("deleteThrough", deleteThrough.toString())
-                    .put("dedupeThrough", dedupeThrough.toString())
+                    .put("dedupeKey", "date+start-slot")
                     .put("before", beforeRows.size)
                     .put("after", keptRows.size)
                     .put("removed", beforeRows.size - keptRows.size)
@@ -139,6 +135,14 @@ internal object NativeCalendarCleanup202611 {
             )
         )
         Report(beforeRows.size, keptRows.size, beforeRows.size - keptRows.size)
+    }
+
+    private fun slotKey(date: String, start: String): String? {
+        val instant = parseInstant(start)
+        if (instant != null) return "i:" + (instant.epochSecond / 60L)
+        if (date.isBlank() || start.isBlank()) return null
+        val time = start.substringAfter('T', "").take(5)
+        return if (time.matches(Regex("\\d{2}:\\d{2}"))) "l:$date:$time" else null
     }
 
     private fun rowScore(row: CalendarScheduleEntity): Int {
