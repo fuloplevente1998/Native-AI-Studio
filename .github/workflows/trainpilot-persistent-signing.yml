@@ -7,6 +7,7 @@ name: TrainPilot persistent signed APK pair
 # 2753: release verification now derives both phone and Wear version values from Gradle; syntax checked before build.
 
 # Signed pair trigger: PR #207 Home profile/planner + PR #209 active workout A/B badge placement, workflow steps unchanged.
+# Signed test pair trigger: calendar cleanup main app source 31f48578f3dc73123d14f0d8e43df610576aba26, verified 595/595 JVM tests.
 on:
   workflow_dispatch:
   push:
