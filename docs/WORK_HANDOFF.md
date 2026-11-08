@@ -1,6 +1,28 @@
-# Rövid munkátadás – 2026-11-08 (PR #211: Naptárszinkron same-start-slot dedupe és migrációs takarítás javítása)
+# Rövid munkátadás – 2026-11-08 (Teljes program-, gyakorlat-, Gyors edzés- és GPS-audit és javítás + PR #211)
 
 Belépési pont: [AGENTS.md](../AGENTS.md). Az élő GitHub-állapot elsőbbséget élvez.
+
+## Teljes program-, gyakorlat-, Gyors edzés- és GPS-audit (`PROGRAM_EXERCISE_QUICK_GPS_AUDIT_HANDOFF_2026-11-08.md`)
+
+- **`home-basic` átnevezése és történeti kompatibilitás**:
+  - A `home-basic` beépített program megjelenített neve `Otthoni A/B` (EN: `Home A/B`, DE: `Zuhause A/B`, RO: `Acasă A/B`) mind a `native-catalog-main-7473.json`, mind a `native-planner-main-7473.json` erőforrásokban és a `TrainPilotViewModel` alapértelmezésekben, a stabil `home-basic` azonosító megőrzésével.
+  - A `workout_history` / Napló történeti adatai érintetlenek (nincs destruktív migráció); a `translateProgramTitle`, `LoggedWorkoutEntry.localizedTitle`, `programEquipmentCategoryLabel` és `TrainPilotViewModel.mapProgramRows` kompatibilitási aliasként kezeli a régi `Otthoni A/B – Alap` / `Home A/B – Basic` / `Zuhause A/B – Basis` / `Acasă A/B – Bază` megnevezéseket.
+- **Adatvezérelt program-eszközcímkézés (`programEquipmentSummary`)**:
+  - Megszűnt a névalapú, beégetett `"Otthoni • Kézi súlyzós & gumiszalag"` címkézés az `AnatomicalBodyAndMapComponents.kt`-ban.
+  - Az új `programEquipmentSummary(program, lang)` és `programEquipmentSummary(exercises, locationHu, lang)` ténylegesen a programban szereplő gyakorlatok `equipmentHu` és `loadType` metaadataiból építi fel és lokalizálja (HU/EN/DE/RO) az eszközlistát, megtartva a biztonsági/rögzítési elemeket (`stabil rögzítés`, `biztonságos állvány`, `pad/támasz`, `húzódzkodórúd`, `tolódzkodó korlát`, `fellépő`).
+  - Az `Otthoni A/B` (`home-basic`) így nem állít gumiszalagot (`Otthoni • Kézisúlyzó, kétkezes rúd, pad/támasz, saját testsúly`), míg a `bands-ab` pontosan jelzi a gumiszalagot és a stabil rögzítést (`Otthoni • Gumiszalag, stabil rögzítés, saját testsúly`). Ugyanez a logika működik minden egyéni és generált programra is.
+- **13 beépített program és `home-level2` progresszió javítása + dinamikus edzésnap-számláló**:
+  - Mind a 13 beépített program auditálva (érvényes gyakorlat-ID-k, duplikációmentes napok, 4 nyelvű lokalizáció).
+  - A `home-level2` (`Otthoni A/B – 2. szint`) valódi középhaladó otthoni progressziót kapott (A nap: `db-front-squat`, `single-arm-db-press`, `one-arm-row`, `pike-pushup`, `db-rdl`, `hammer-curl`, `hollow-hold`; B nap: `bulgarian-split-squat`, `decline-pushup`, `barbell-row`, `lateral-raise`, `diamond-pushup`, `db-step-up`, `side-plank`), megszüntetve a `home-basic` duplikációját.
+  - A `WorkoutAndPlanningScreens.kt` aktív programkártyájáról eltávolítva a fix `(A/B)` utótag (`${activeProgram.days.size} edzésnap`).
+- **106 beépített gyakorlat, egyéni gyakorlatok, Gyors edzés és GPS eligibility**:
+  - A `WorkoutAndPlanningScreens.kt`, `TrainPilotCommonComponents.kt` és `ActiveMeasurementScreens.kt` felületeken a beégetett `106` / `106+` helyett dinamikus `${exercises.size}` jelenik meg.
+  - `QuickWorkoutSheet`: eltávolítva a Room `exercise_library` táblában nem létező, hibát okozó `timed_*` helyőrző elemek; az időalapú gyorsindító lista kizárólag valódi (beépített vagy egyéni) időalapú/kétoldali gyakorlatokat kínál fel, és a kiválasztott sor lokalizált neveket jelenít meg.
+  - `TrainPilotViewModel.addCustomExercise`: egyedi UUID-utótagos azonosító, pontos `loadType` / `repUnit` / `measurementType` / `targetRepsText` kitöltés memóriában és Roomban egyaránt, `0f` alapértelmezett súly saját testsúlyos/gumiszalagos/időalapú gyakorlatoknál.
+  - `TrainPilotViewModel.saveInitialProfileAndPlan`: kizárja a kültéri `distance` gyakorlatokat a beltéri generált tervekből, és szigorúan tiszteletben tartja a választott eszközöket.
+  - `TrainPilotViewModel.startWorkoutWithExercises`: deduplikálja a kiválasztott gyakorlatokat indítás előtt.
+- **Automatizált audit- és regressziós tesztek**:
+  - `ProgramExerciseQuickGpsAuditRegressionTest` (6/6 teszt PASS): ellenőrzi a `home-basic` átnevezést és legacy aliasokat, mind a 13 beépített programot, a `home-level2 != home-basic` progressziót, az adatvezérelt eszközösszegzést beépített és egyéni programokra, mind a 106 gyakorlat strukturális/szemantikus épségét, a GPS eligibility-t (pontosan a 6 kültéri `distance` gyakorlat), valamint az egyéni gyakorlatok és a Gyors edzés Room-integrációját.
 
 ## PR #211 – Naptárszinkron (same-start-slot dedupe, 2026-11-01 resurrection guard és CI-hibák javítása)
 

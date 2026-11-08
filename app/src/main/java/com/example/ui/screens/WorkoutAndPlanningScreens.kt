@@ -108,6 +108,7 @@ import com.example.ui.components.LocalOpenExerciseVideo
 import com.example.ui.components.ProgramTypeEmblemIcon
 import com.example.ui.components.SmallExerciseVideoButton
 import com.example.ui.components.SubScreenTopBar
+import com.example.ui.components.programEquipmentSummary
 import com.example.ui.components.programEquipmentCategoryLabel
 import com.example.localization.LocalTrainPilotStrings
 import com.example.ui.theme.LocalTrainPilotPalette
@@ -228,7 +229,7 @@ fun WorkoutTabScreen(
                             color = palette.primary.copy(alpha = 0.16f)
                         ) {
                             Text(
-                                text = trW(state.language, "106 gyak.", "106 ex.", "106 Üb.", "106 ex."),
+                                text = trW(state.language, "${state.exercises.size} gyak.", "${state.exercises.size} ex.", "${state.exercises.size} Üb.", "${state.exercises.size} ex."),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.primary,
                                 fontWeight = FontWeight.Bold,
@@ -453,7 +454,7 @@ fun WorkoutTabScreen(
                                 color = palette.surfaceElevated
                             ) {
                                 Text(
-                                    text = programEquipmentCategoryLabel(activeProgram.nameHu, state.language),
+                                    text = programEquipmentSummary(day.exercises.ifEmpty { activeProgram.days.flatMap { it.exercises } }, activeProgram.tagsHu.firstOrNull().orEmpty(), state.language),
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                     color = palette.primary,
                                     maxLines = 1,
@@ -838,7 +839,7 @@ fun ProgramsListScreen(
                                 color = palette.primary.copy(alpha = 0.14f)
                             ) {
                                 Text(
-                                    text = programEquipmentCategoryLabel(activeProgram.nameHu, state.language),
+                                    text = programEquipmentSummary(activeProgram, state.language),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = palette.primary,
                                     fontWeight = FontWeight.SemiBold,
@@ -852,7 +853,7 @@ fun ProgramsListScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = trW(state.language, "${activeProgram.days.size} edzésnap (A/B)", "${activeProgram.days.size} workout days (A/B)", "${activeProgram.days.size} Trainingstage (A/B)", "${activeProgram.days.size} zile de antrenament (A/B)"),
+                                    text = trW(state.language, "${activeProgram.days.size} edzésnap", "${activeProgram.days.size} workout days", "${activeProgram.days.size} Trainingstage", "${activeProgram.days.size} zile de antrenament"),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = palette.textSecondary
                                 )
@@ -1012,7 +1013,7 @@ fun ProgramsListScreen(
                                 color = palette.surfaceElevated
                             ) {
                                 Text(
-                                    text = programEquipmentCategoryLabel(program.nameHu, state.language),
+                                    text = programEquipmentSummary(program, state.language),
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                     color = palette.primary,
                                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
@@ -1529,7 +1530,7 @@ fun CalendarPlannerScreen(
     val selectedDay = openedDay ?: state.selectedCalendarDay
     val dayEvents = state.calendarEvents.filter { it.dayOfMonth == selectedDay && it.dateIso.startsWith(displayedYearMonth.toString()) }
     val activeProgram = state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
-    val activeProgramTitle = activeProgram?.localizedName(state.language) ?: trW(state.language, "Otthoni A/B – Alap (személyre szabott)", "Home A/B – Core (personalized)", "Heim A/B – Basis (personalisiert)", "Acasă A/B – Bază (personalizat)")
+    val activeProgramTitle = activeProgram?.localizedName(state.language) ?: trW(state.language, "Otthoni A/B (személyre szabott)", "Home A/B (personalized)", "Zuhause A/B (personalisiert)", "Acasă A/B (personalizat)")
 
     var editingEvent by remember { mutableStateOf<com.example.model.CalendarDayEvent?>(null) }
     var movingEvent by remember { mutableStateOf<com.example.model.CalendarDayEvent?>(null) }

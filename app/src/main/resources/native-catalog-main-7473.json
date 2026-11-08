@@ -5654,7 +5654,7 @@
     {
       "raw": {
         "id": "home-basic",
-        "name": "Otthoni A/B – Alap",
+        "name": "Otthoni A/B",
         "location": "Otthon",
         "level": "Kezdő",
         "builtin": true,
@@ -5688,10 +5688,10 @@
         ]
       },
       "names": {
-        "hu": "Otthoni A/B – Alap",
-        "en": "Home A/B – Basic",
-        "de": "Zuhause A/B – Basis",
-        "ro": "Acasă A/B – Bază"
+        "hu": "Otthoni A/B",
+        "en": "Home A/B",
+        "de": "Zuhause A/B",
+        "ro": "Acasă A/B"
       },
       "locations": {
         "hu": "Otthon",
@@ -5762,13 +5762,13 @@
             "id": "A",
             "name": "A",
             "exercises": [
-              "goblet-squat",
-              "db-floor-press",
+              "db-front-squat",
+              "single-arm-db-press",
               "one-arm-row",
-              "db-ohp",
+              "pike-pushup",
               "db-rdl",
-              "db-curl",
-              "side-plank"
+              "hammer-curl",
+              "hollow-hold"
             ]
           },
           {
@@ -5776,12 +5776,12 @@
             "name": "B",
             "exercises": [
               "bulgarian-split-squat",
-              "db-pullover",
-              "lateral-raise",
-              "oh-triceps",
+              "decline-pushup",
               "barbell-row",
-              "pushup",
-              "dead-bug"
+              "lateral-raise",
+              "diamond-pushup",
+              "db-step-up",
+              "side-plank"
             ]
           }
         ]
@@ -5810,13 +5810,13 @@
             "id": "A",
             "name": "A",
             "exercises": [
-              "goblet-squat",
-              "db-floor-press",
+              "db-front-squat",
+              "single-arm-db-press",
               "one-arm-row",
-              "db-ohp",
+              "pike-pushup",
               "db-rdl",
-              "db-curl",
-              "side-plank"
+              "hammer-curl",
+              "hollow-hold"
             ]
           },
           "names": {
@@ -5832,12 +5832,12 @@
             "name": "B",
             "exercises": [
               "bulgarian-split-squat",
-              "db-pullover",
-              "lateral-raise",
-              "oh-triceps",
+              "decline-pushup",
               "barbell-row",
-              "pushup",
-              "dead-bug"
+              "lateral-raise",
+              "diamond-pushup",
+              "db-step-up",
+              "side-plank"
             ]
           },
           "names": {

@@ -390,7 +390,7 @@
   "templates": [
     {
       "id": "home-basic",
-      "name": "Otthoni A/B – Alap",
+      "name": "Otthoni A/B",
       "location": "Otthon",
       "level": "Kezdő",
       "builtin": true,

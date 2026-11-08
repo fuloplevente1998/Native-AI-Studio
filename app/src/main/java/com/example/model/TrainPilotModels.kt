@@ -476,13 +476,26 @@ fun translateProgramTitle(rawTitle: String, lang: AppLanguage): String {
     fun normDash(s: String): String = s.replace('–', '-').replace('—', '-').trim()
     val normBase = normDash(baseTitle)
 
+    val homeBasicLegacyAliases = setOf(
+        "otthoni a/b - alap",
+        "otthoni alap a/b",
+        "home a/b - basic",
+        "home a/b - core",
+        "home basic a/b",
+        "zuhause a/b - basis",
+        "heim a/b - basis",
+        "acasă a/b - bază",
+        "acasa a/b - baza"
+    )
+
     val catalogProgs = runCatching { com.repforge.app.data.db.NativeBuiltinCatalog.programs.first }.getOrDefault(emptyList())
     catalogProgs.firstOrNull { p ->
         normDash(p.nameHu).equals(normBase, ignoreCase = true) ||
             normDash(p.nameEn).equals(normBase, ignoreCase = true) ||
             normDash(p.nameDe).equals(normBase, ignoreCase = true) ||
             normDash(p.nameRo).equals(normBase, ignoreCase = true) ||
-            p.id.equals(normBase, ignoreCase = true)
+            p.id.equals(normBase, ignoreCase = true) ||
+            (p.id == "home-basic" && normBase.lowercase() in homeBasicLegacyAliases)
     }?.let { matched ->
         val translatedBase = when (lang) {
             AppLanguage.HU -> matched.nameHu

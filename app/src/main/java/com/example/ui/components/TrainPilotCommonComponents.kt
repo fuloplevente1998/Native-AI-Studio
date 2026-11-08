@@ -1926,19 +1926,10 @@ fun QuickWorkoutSheet(
     val strings = LocalTrainPilotStrings.current
 
     val strengthList = remember(exercises) {
-        exercises.filter { !it.isTimed }.ifEmpty { exercises }
+        exercises.filter { !it.isTimed && !it.isBilateral && it.measurementType != "distance" }.ifEmpty { exercises }
     }
     val timedList = remember(exercises) {
-        val fromCat = exercises.filter { it.isTimed }
-        val extraTimed = listOf(
-            ExerciseItem(id = "timed_plank", nameHu = "Plank (Alkartámasz)", nameEn = "Plank", category = com.example.model.ExerciseCategory.CORE, equipmentHu = "Saját testsúly", primaryMusclesHu = "Törzs / Has", secondaryMusclesHu = "Váll", defaultSets = 3, defaultReps = 1, defaultWeightKg = 0f, defaultRestSec = 60, isTimed = true, targetSeconds = 45),
-            ExerciseItem(id = "timed_side_plank", nameHu = "Oldalsó plank", nameEn = "Side Plank", category = com.example.model.ExerciseCategory.CORE, equipmentHu = "Saját testsúly", primaryMusclesHu = "Oldalsó hasizom", secondaryMusclesHu = "Törzs", defaultSets = 3, defaultReps = 1, defaultWeightKg = 0f, defaultRestSec = 60, isTimed = true, targetSeconds = 40, isBilateral = true),
-            ExerciseItem(id = "timed_wall_sit", nameHu = "Falnál ülés (Wall Sit)", nameEn = "Wall Sit", category = com.example.model.ExerciseCategory.LEGS, equipmentHu = "Saját testsúly", primaryMusclesHu = "Combfeszítő", secondaryMusclesHu = "Farizom", defaultSets = 3, defaultReps = 1, defaultWeightKg = 0f, defaultRestSec = 60, isTimed = true, targetSeconds = 60),
-            ExerciseItem(id = "timed_dead_hang", nameHu = "Függeszkedés rúdon (Dead Hang)", nameEn = "Dead Hang", category = com.example.model.ExerciseCategory.BACK, equipmentHu = "Húzódzkodó rúd", primaryMusclesHu = "Alkar & Hát", secondaryMusclesHu = "Váll", defaultSets = 3, defaultReps = 1, defaultWeightKg = 0f, defaultRestSec = 60, isTimed = true, targetSeconds = 45),
-            ExerciseItem(id = "timed_hollow_hold", nameHu = "Hollow Body tartás", nameEn = "Hollow Hold", category = com.example.model.ExerciseCategory.CORE, equipmentHu = "Saját testsúly", primaryMusclesHu = "Mély hasizom", secondaryMusclesHu = "Csípőhajlító", defaultSets = 3, defaultReps = 1, defaultWeightKg = 0f, defaultRestSec = 60, isTimed = true, targetSeconds = 40),
-            ExerciseItem(id = "timed_lap_run", nameHu = "Kör futás / Intervallum futás", nameEn = "Lap Run", category = com.example.model.ExerciseCategory.LEGS, equipmentHu = "Szabadtér / Futópálya", primaryMusclesHu = "Láb & Kardió", secondaryMusclesHu = "Törzs", defaultSets = 4, defaultReps = 1, defaultWeightKg = 0f, defaultRestSec = 60, isTimed = true, targetSeconds = 90)
-        )
-        (fromCat + extraTimed).distinctBy { it.nameHu }
+        exercises.filter { it.isTimed || it.isBilateral || it.measurementType == "time" }.distinctBy { it.id }
     }
 
     var selectedStrengthEx by remember(strengthList) {
@@ -2020,7 +2011,7 @@ fun QuickWorkoutSheet(
                             color = palette.primary
                         )
                         Text(
-                            text = queuedExercises.joinToString(" → ") { it.nameHu },
+                            text = queuedExercises.joinToString(" → ") { it.localizedName(strings.language) },
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.textPrimary
                         )
@@ -2053,10 +2044,10 @@ fun QuickWorkoutSheet(
                 icon = Icons.AutoMirrored.Filled.DirectionsRun,
                 title = tr(
                     strings.language,
-                    "${strings.exercisePickerTitle} (${exercises.size.coerceAtLeast(106)} gyakorlat)",
-                    "${strings.exercisePickerTitle} (${exercises.size.coerceAtLeast(106)} exercises)",
-                    "${strings.exercisePickerTitle} (${exercises.size.coerceAtLeast(106)} Übungen)",
-                    "${strings.exercisePickerTitle} (${exercises.size.coerceAtLeast(106)} exerciții)"
+                    "${strings.exercisePickerTitle} (${exercises.size} gyakorlat)",
+                    "${strings.exercisePickerTitle} (${exercises.size} exercises)",
+                    "${strings.exercisePickerTitle} (${exercises.size} Übungen)",
+                    "${strings.exercisePickerTitle} (${exercises.size} exerciții)"
                 ),
                 subtitle = tr(
                     strings.language,

@@ -606,10 +606,10 @@ fun ActiveStrengthWorkoutScreen(
                                         Text(
                                             text = tr(
                                                 lang,
-                                                "📚 Választás a 106+ gyakorlatkönyvtárból...",
-                                                "📚 Choose from the 106+ exercise library...",
-                                                "📚 Aus der 106+ Übungsbibliothek wählen...",
-                                                "📚 Alege din biblioteca de 106+ exerciții..."
+                                                "📚 Választás a ${uiState.exercises.size} gyakorlatkönyvtárból...",
+                                                "📚 Choose from the ${uiState.exercises.size} exercise library...",
+                                                "📚 Aus der ${uiState.exercises.size} Übungsbibliothek wählen...",
+                                                "📚 Alege din biblioteca de ${uiState.exercises.size} exerciții..."
                                             ),
                                             color = palette.primary,
                                             fontWeight = FontWeight.Bold

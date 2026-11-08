@@ -256,7 +256,7 @@ data class TrainPilotUiState(
     val activeWorkoutGeneration: Long = 0L,
     val workoutStartedEpochMs: Long = 0L,
     val activeWorkoutSubScreen: SubScreen = SubScreen.ACTIVE_STRENGTH,
-    val activeWorkoutTitleHu: String = "Otthoni A/B – Alap • A nap",
+    val activeWorkoutTitleHu: String = "Otthoni A/B • A nap",
     val activeWorkoutExercises: List<ExerciseItem> = emptyList(),
     val activeExerciseIndex: Int = 0,
     val activeSets: List<ExerciseSetItem> = listOf(
@@ -889,13 +889,20 @@ class TrainPilotViewModel : ViewModel() {
                     .removeSuffix(" - másolat")
                     .removeSuffix(" (másolat)")
                     .trim()
+                val homeBasicAliases = setOf(
+                    "otthoni a/b – alap", "otthoni a/b - alap", "otthoni alap a/b",
+                    "home a/b – basic", "home a/b - basic", "home a/b – core",
+                    "zuhause a/b – basis", "zuhause a/b - basis",
+                    "acasă a/b – bază", "acasă a/b - bază"
+                )
                 val copiedTemplate = if (!prog.builtin) {
                     prog.sourceTemplateId?.let { builtinProgById[it] }
                         ?: builtinProgs.firstOrNull {
                             it.nameHu.equals(strippedNameHu, ignoreCase = true) ||
                                 it.nameEn.equals(strippedNameHu, ignoreCase = true) ||
                                 it.nameDe.equals(strippedNameHu, ignoreCase = true) ||
-                                it.nameRo.equals(strippedNameHu, ignoreCase = true)
+                                it.nameRo.equals(strippedNameHu, ignoreCase = true) ||
+                                (it.id == "home-basic" && strippedNameHu.lowercase() in homeBasicAliases)
                         }
                 } else null
                 val localizedTemplate = catalogProg ?: copiedTemplate
@@ -976,17 +983,22 @@ class TrainPilotViewModel : ViewModel() {
                 val builtSubtitleRo = customUserDesc?.let { com.example.model.translateProgramSubtitle(it, AppLanguage.RO) }
                     ?: "$locRo • $lvlRo • ${progDays.size} zile de antrenament"
 
-                val resolvedNameHu = prog.nameHu.ifBlank { catalogProg?.nameHu.orEmpty() }.ifBlank { prog.nameEn }.ifBlank { "Edzésterv ${pIdx + 1}" }
-                val rawNameEn = (localizedTemplate?.nameEn?.takeIf { prog.nameHu == localizedTemplate.nameHu && (prog.nameEn.isBlank() || prog.nameEn == prog.nameHu) }
-                    ?: prog.nameEn.takeIf { it.isNotBlank() && it != prog.nameHu })
+                val effectiveProgNameHu = if (prog.builtin && prog.id == "home-basic" && prog.nameHu.trim().lowercase() in homeBasicAliases) {
+                    catalogProg?.nameHu ?: "Otthoni A/B"
+                } else {
+                    prog.nameHu
+                }
+                val resolvedNameHu = effectiveProgNameHu.ifBlank { catalogProg?.nameHu.orEmpty() }.ifBlank { prog.nameEn }.ifBlank { "Edzésterv ${pIdx + 1}" }
+                val rawNameEn = (localizedTemplate?.nameEn?.takeIf { effectiveProgNameHu == localizedTemplate.nameHu && (prog.nameEn.isBlank() || prog.nameEn == prog.nameHu || prog.nameEn.trim().lowercase() in homeBasicAliases) }
+                    ?: prog.nameEn.takeIf { it.isNotBlank() && it != prog.nameHu && !(prog.builtin && prog.id == "home-basic" && it.trim().lowercase() in homeBasicAliases) })
                     .orEmpty()
                 val resolvedNameEn = rawNameEn.ifBlank { com.example.model.translateProgramTitle(resolvedNameHu, AppLanguage.EN) }
-                val rawNameDe = (localizedTemplate?.nameDe?.takeIf { prog.nameHu == localizedTemplate.nameHu && (prog.nameDe.isBlank() || prog.nameDe == prog.nameHu || prog.nameDe == prog.nameEn) }
-                    ?: prog.nameDe.takeIf { it.isNotBlank() && it != prog.nameHu && it != prog.nameEn })
+                val rawNameDe = (localizedTemplate?.nameDe?.takeIf { effectiveProgNameHu == localizedTemplate.nameHu && (prog.nameDe.isBlank() || prog.nameDe == prog.nameHu || prog.nameDe == prog.nameEn || prog.nameDe.trim().lowercase() in homeBasicAliases) }
+                    ?: prog.nameDe.takeIf { it.isNotBlank() && it != prog.nameHu && it != prog.nameEn && !(prog.builtin && prog.id == "home-basic" && it.trim().lowercase() in homeBasicAliases) })
                     .orEmpty()
                 val resolvedNameDe = rawNameDe.ifBlank { com.example.model.translateProgramTitle(resolvedNameHu, AppLanguage.DE) }
-                val rawNameRo = (localizedTemplate?.nameRo?.takeIf { prog.nameHu == localizedTemplate.nameHu && (prog.nameRo.isBlank() || prog.nameRo == prog.nameHu || prog.nameRo == prog.nameEn) }
-                    ?: prog.nameRo.takeIf { it.isNotBlank() && it != prog.nameHu && it != prog.nameEn })
+                val rawNameRo = (localizedTemplate?.nameRo?.takeIf { effectiveProgNameHu == localizedTemplate.nameHu && (prog.nameRo.isBlank() || prog.nameRo == prog.nameHu || prog.nameRo == prog.nameEn || prog.nameRo.trim().lowercase() in homeBasicAliases) }
+                    ?: prog.nameRo.takeIf { it.isNotBlank() && it != prog.nameHu && it != prog.nameEn && !(prog.builtin && prog.id == "home-basic" && it.trim().lowercase() in homeBasicAliases) })
                     .orEmpty()
                 val resolvedNameRo = rawNameRo.ifBlank { com.example.model.translateProgramTitle(resolvedNameHu, AppLanguage.RO) }
 
@@ -2502,8 +2514,30 @@ class TrainPilotViewModel : ViewModel() {
             .ifEmpty { listOf(cleanDesc) }
 
         val resolvedCategory = if (category == ExerciseCategory.ALL) ExerciseCategory.CORE else category
+        val uniqueSuffix = java.util.UUID.randomUUID().toString().replace("-", "").take(6)
+        val lowEquip = cleanEquip.lowercase()
+        val isBodyweightOrBand = lowEquip.contains("testsúly") || lowEquip.contains("bodyweight") ||
+            lowEquip.contains("gumiszalag") || lowEquip.contains("band") ||
+            lowEquip.contains("kültér") || lowEquip.contains("szabadtér") ||
+            lowEquip.contains("futócipő") || cleanName.contains("futás", ignoreCase = true)
+        val defaultWeight = if (isTimed || isBodyweightOrBand) 0f else 20f
+        val resolvedLoadType = when {
+            lowEquip.contains("gumiszalag") || lowEquip.contains("band") -> "band"
+            isTimed || isBodyweightOrBand -> "bodyweight"
+            lowEquip.contains("1 kézisúlyzó") || lowEquip.contains("egykezes") -> "single_dumbbell"
+            lowEquip.contains("kézisúlyzó") || lowEquip.contains("kézi súlyzó") || lowEquip.contains("dumbbell") -> "per_hand"
+            lowEquip.contains("kétkezes rúd") || lowEquip.contains("barbell") -> "barbell"
+            lowEquip.contains("kettlebell") -> "kettlebell"
+            lowEquip.contains("csiga") || lowEquip.contains("cable") -> "cable"
+            lowEquip.contains("gép") || lowEquip.contains("machine") -> "machine"
+            else -> "weight"
+        }
+        val resolvedRepUnit = if (isTimed) "mp" else "ism."
+        val resolvedMeasurementType = if (isTimed) "time" else "reps"
+        val defaultRepsCount = if (isTimed) 60 else 12
+        val resolvedTargetRepsText = if (isTimed) "${defaultRepsCount} mp" else defaultRepsCount.toString()
         val newExercise = ExerciseItem(
-            id = "custom_ex_${System.currentTimeMillis()}",
+            id = "custom_ex_${System.currentTimeMillis()}_$uniqueSuffix",
             nameHu = cleanName,
             nameEn = cleanName,
             nameDe = cleanName,
@@ -2513,8 +2547,8 @@ class TrainPilotViewModel : ViewModel() {
             primaryMusclesHu = resolvedCategory.labelHu,
             secondaryMusclesHu = if (cleanVideoUrl.isNotBlank()) "Videó: $cleanVideoUrl" else "Stabilizáló izmok",
             defaultSets = 3,
-            defaultReps = if (isTimed) 60 else 12,
-            defaultWeightKg = if (cleanEquip.contains("testsúly", ignoreCase = true) || cleanName.contains("futás", ignoreCase = true)) 0f else 20f,
+            defaultReps = defaultRepsCount,
+            defaultWeightKg = defaultWeight,
             defaultRestSec = 90,
             isTimed = isTimed,
             targetSeconds = 60,
@@ -2525,7 +2559,11 @@ class TrainPilotViewModel : ViewModel() {
             coachStatusHu = "Egyedi gyakorlat",
             coachHintHu = cleanDesc,
             videoUrl = cleanVideoUrl,
-            isCustom = true
+            isCustom = true,
+            loadType = resolvedLoadType,
+            repUnit = resolvedRepUnit,
+            measurementType = resolvedMeasurementType,
+            targetRepsText = resolvedTargetRepsText
         )
 
         _uiState.update { state ->
@@ -2595,11 +2633,11 @@ class TrainPilotViewModel : ViewModel() {
                 nameEn = cleanName,
                 nameDe = cleanName,
                 nameRo = cleanName,
-                loadType = if (newExercise.defaultWeightKg <= 0f) "bodyweight" else "weight",
-                repUnit = if (isTimed) "mp" else "ism.",
-                measurementType = if (isTimed) "time" else "reps",
+                loadType = resolvedLoadType,
+                repUnit = resolvedRepUnit,
+                measurementType = resolvedMeasurementType,
                 defaultSets = newExercise.defaultSets,
-                defaultReps = newExercise.defaultReps.toString(),
+                defaultReps = resolvedTargetRepsText,
                 defaultWeight = newExercise.defaultWeightKg.toDouble(),
                 defaultRestSeconds = newExercise.defaultRestSec,
                 primaryMuscle = primaryKey,
@@ -2679,7 +2717,7 @@ class TrainPilotViewModel : ViewModel() {
                 !it.dateIso.startsWith(state.calendarYearMonth) || it.status == CalendarEventStatus.COMPLETED || it.dayOfMonth < startDayNum
             }
             val activeProgName = state.programs.firstOrNull { it.isActive }?.nameHu
-                ?: "Otthoni A/B – Alap (személyre szabott)"
+                ?: "Otthoni A/B (személyre szabott)"
 
             var currentSplit = if (state.planningFirstDayHu.contains("B", ignoreCase = true)) "B" else "A"
             val newPlanned = mutableListOf<CalendarDayEvent>()
@@ -2726,7 +2764,7 @@ class TrainPilotViewModel : ViewModel() {
                 !it.dateIso.startsWith(state.calendarYearMonth) || it.status == CalendarEventStatus.COMPLETED
             }
             val activeProgName = state.programs.firstOrNull { it.isActive }?.nameHu
-                ?: "Otthoni A/B – Alap (személyre szabott)"
+                ?: "Otthoni A/B (személyre szabott)"
 
             var split = when {
                 firstDayHu.contains("B", ignoreCase = true) -> "B"
@@ -2837,7 +2875,7 @@ class TrainPilotViewModel : ViewModel() {
     fun addPlannedWorkoutOnDay(day: Int, splitBadge: String, timeLabel: String, durationMin: Int) {
         _uiState.update { state ->
             val activeProgName = state.programs.firstOrNull { it.isActive }?.nameHu
-                ?: "Otthoni A/B – Alap (személyre szabott)"
+                ?: "Otthoni A/B (személyre szabott)"
             val newEv = CalendarDayEvent(
                 id = "ev_manual_${day}_${System.currentTimeMillis()}",
                 dayOfMonth = day.coerceIn(1, YearMonth.parse(state.calendarYearMonth).lengthOfMonth()),
@@ -3142,12 +3180,14 @@ class TrainPilotViewModel : ViewModel() {
             if (t.contains("saját testsúly") || t == "bodyweight") {
                 includeBodyweight = true
             }
-            if (t.contains("egykezes") || t.contains("1 db") || t == "dumbbell") {
+            if (t.contains("egykezes") || t.contains("1 db") || t.contains("1 kézisúlyzó") || t == "dumbbell") {
                 gear.add("dumbbell")
             }
-            if (t.contains("kézisúlyzó pár") || t.contains("2 db") || t.contains("kézisúlyzó és pad") || t == "dumbbells") {
+            if (t.contains("kézisúlyzó") || t.contains("kézi súlyzó") || t.contains("2 db") || t == "dumbbells") {
                 gear.add("dumbbell")
-                gear.add("dumbbells")
+                if (!t.contains("egykezes") && !t.contains("1 db") && !t.contains("1 kézisúlyzó")) {
+                    gear.add("dumbbells")
+                }
             }
             if (t.contains("kétkezes rúd") || t.contains("súlyzórúd") || t == "barbell") {
                 gear.add("barbell")
@@ -3191,6 +3231,11 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     private fun exerciseMatchesSelectedGear(ex: ExerciseItem, gear: Set<String>, includeBodyweight: Boolean): Boolean {
+        if (ex.measurementType.equals("distance", ignoreCase = true) ||
+            com.repforge.app.NativeOutdoorStart.eligible(ex.id, ex.measurementType, ex.repUnit)
+        ) {
+            return false
+        }
         val canonicalNeeds = plannerNeedsByExerciseId[ex.id]
         if (canonicalNeeds != null) {
             if (canonicalNeeds.isEmpty()) {
@@ -3201,12 +3246,12 @@ class TrainPilotViewModel : ViewModel() {
             }
         }
         val eqHu = ex.equipmentHu.lowercase()
-        if (eqHu.contains("saját testsúly")) return includeBodyweight || gear.isEmpty()
+        if (eqHu.contains("testsúly") || ex.loadType.equals("bodyweight", ignoreCase = true)) return includeBodyweight || gear.isEmpty()
         if (eqHu.contains("rúd")) return "barbell" in gear
-        if (eqHu.contains("kézisúlyzó")) return "dumbbell" in gear || "dumbbells" in gear
+        if (eqHu.contains("kézisúlyzó") || eqHu.contains("kézi súlyzó")) return "dumbbell" in gear || "dumbbells" in gear
         if (eqHu.contains("kettlebell")) return "kettlebell" in gear
         if (eqHu.contains("gumiszalag")) return "bands" in gear
-        if (eqHu.contains("csigás") || eqHu.contains("gép")) return "machines" in gear
+        if (eqHu.contains("csigás") || eqHu.contains("csiga") || eqHu.contains("gép")) return "machines" in gear
         return true
     }
 
@@ -3249,7 +3294,12 @@ class TrainPilotViewModel : ViewModel() {
                 exerciseMatchesSelectedGear(ex, selectedGear, includeBodyweight)
             }.sortedByDescending { ex ->
                 exerciseEquipmentPriorityScore(ex, selectedGear, includeBodyweight)
-            }.ifEmpty { baseFiltered }
+            }.ifEmpty {
+                baseFiltered.filter {
+                    it.loadType.equals("bodyweight", ignoreCase = true) ||
+                        it.equipmentHu.contains("testsúly", ignoreCase = true)
+                }.ifEmpty { baseFiltered }
+            }
 
             val dayAExercises = mutableListOf<ExerciseItem>()
             val preferredCategoriesA = listOf(
@@ -3534,10 +3584,14 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun startWorkoutWithExercises(exercisesToRun: List<ExerciseItem>, titleHu: String = "Gyors edzés") {
-        if (exercisesToRun.isEmpty()) return
+        val uniqueExercises = exercisesToRun.distinctBy { it.id }
+        if (uniqueExercises.isEmpty()) {
+            _uiState.update { it.copy(statusBannerMessage = tr("Nincs kiválasztott gyakorlat.", "No exercises selected.", "Keine Übungen ausgewählt.", "Niciun exercițiu selectat.")) }
+            return
+        }
         startCanonicalWorkout {
             com.repforge.app.NativeWorkoutSession.startQuickExercises(requireNotNull(nativeContext),
-                exercisesToRun.map { it.id }, titleHu, _uiState.value.autoModeEnabled,
+                uniqueExercises.map { it.id }, titleHu, _uiState.value.autoModeEnabled,
                 requireNotNull(nativeDatabase))
         }
     }
