@@ -8,6 +8,7 @@ name: TrainPilot persistent signed APK pair
 
 # Signed pair trigger: PR #207 Home profile/planner + PR #209 active workout A/B badge placement, workflow steps unchanged.
 # Signed test pair trigger: calendar cleanup main app source 31f48578f3dc73123d14f0d8e43df610576aba26, verified 595/595 JVM tests.
+# Signed test pair trigger: program/exercise/quick/GPS audit source 197ed0745b9b62f480bcafa5645ed4b0a1c40260, verified 601/601 JVM tests.
 on:
   workflow_dispatch:
   push:
