@@ -12,6 +12,7 @@ name: TrainPilot persistent signed APK pair
 # Requested signed phone/Wear APK build after verified audit, 2026-11-09.
 # Signed verification build for AI Studio implementation #215/#214/#216, main d261728a3d653db1d048976b9e3971a07876a008.
 # Retry after fixing barbell loadType regression assertion (606 tests, one failed in #52).
+# Retry #54 after correcting home-basic day ID case in catalog regression test (#53).
 on:
   workflow_dispatch:
   push:
