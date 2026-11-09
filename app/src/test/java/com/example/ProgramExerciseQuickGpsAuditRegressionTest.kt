@@ -283,7 +283,7 @@ class ProgramExerciseQuickGpsAuditRegressionTest {
 
         // #215: Only home-basic Day A uses barbell-floor-press in built-in program templates
         val (_, days) = NativeBuiltinCatalog.programs
-        val homeBasicDayA = days.single { it.programId == "home-basic" && it.dayId == "a" }
+        val homeBasicDayA = days.single { it.programId == "home-basic" && it.dayId == "A" }
         val homeBasicDayAIds = JSONArray(homeBasicDayA.exercisesJson).let { arr ->
             (0 until arr.length()).map { idx ->
                 val item = arr.get(idx)
