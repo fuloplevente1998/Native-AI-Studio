@@ -5648,6 +5648,1983 @@
         "sourceKind": "unverified-search"
       },
       "measurementType": "distance"
+    },
+    {
+      "raw": {
+        "id": "barbell-floor-press",
+        "hu": "Földön fekvenyomás – kétkezes rúddal",
+        "en": "Barbell Floor Press",
+        "equipment": "kétkezes rúd + biztonságos tartó/segítő",
+        "target": "Mell",
+        "notes": "Stabil tartóról vagy segítővel vedd ki a rudat hanyatt fekve. Engedd le kontrolláltan, amíg a felkar hátulja finoman érinti a talajt, majd nyomd vissza. Ne húzd magadra a rudat állvány vagy segítő nélkül.",
+        "sets": 3,
+        "reps": "6–10",
+        "weight": 40,
+        "rest": 120,
+        "restSeconds": 120,
+        "unit": "kg (rúd összesen)",
+        "loadType": "barbell",
+        "repUnit": "ism.",
+        "movementPattern": "horizontal-push",
+        "difficulty": "intermediate",
+        "complexity": "medium",
+        "beginnerSafe": true,
+        "compound": true,
+        "goalTags": [
+          "fitness",
+          "muscle",
+          "strength",
+          "fatloss"
+        ],
+        "alternatives": [
+          "db-floor-press",
+          "bench-press",
+          "pushup"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Földön fekvenyomás – kétkezes rúddal",
+        "en": "Barbell Floor Press",
+        "de": "Langhantel-Floor-Press",
+        "ro": "Împins cu haltera la sol"
+      },
+      "notes": {
+        "hu": "Stabil tartóról vagy segítővel vedd ki a rudat hanyatt fekve. Engedd le kontrolláltan, amíg a felkar hátulja finoman érinti a talajt, majd nyomd vissza. Ne húzd magadra a rudat állvány vagy segítő nélkül.",
+        "en": "Unrack the barbell from a safe low rack or with a spotter while lying on the floor. Lower under control until your upper arms gently touch the floor, then press back up. Do not pull a heavy bar over your chest without a rack or spotter.",
+        "de": "Hebe die Langhantel in Rückenlage aus einer sicheren Ablage oder mit Hilfe heraus. Senke sie kontrolliert ab, bis die Oberarme sanft den Boden berühren, und drücke sie wieder hoch. Ziehe keine schwere Stange ohne Ablage über die Brust.",
+        "ro": "Scoate haltera dintr-un suport sigur sau cu ajutor, întins pe spate pe podea. Coboară controlat până când brațele superioare ating ușor podeaua, apoi împinge în sus. Nu trage bara peste piept fără suport sau partener."
+      },
+      "muscles": [
+        "chest",
+        "triceps",
+        "shoulders"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "RW61VZ34300",
+        "credit": "Rogue Fitness",
+        "source": "https://www.youtube.com/watch?v=RW61VZ34300"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "barbell-curl",
+        "hu": "Bicepszhajlítás – kétkezes rúddal",
+        "en": "Barbell Curl",
+        "equipment": "kétkezes rúd",
+        "target": "Bicepsz",
+        "notes": "Állj vállszéles terpeszben, könyököd maradjon a törzsed mellett. Lendület nélkül hajlítsd a kart a felső holtpontig, majd kontrolláltan engedd vissza.",
+        "sets": 3,
+        "reps": "8–12",
+        "weight": 25,
+        "rest": 75,
+        "restSeconds": 75,
+        "unit": "kg (rúd összesen)",
+        "loadType": "barbell",
+        "repUnit": "ism.",
+        "movementPattern": "elbow-flexion",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": false,
+        "goalTags": [
+          "muscle",
+          "fitness",
+          "strength"
+        ],
+        "alternatives": [
+          "db-curl",
+          "hammer-curl",
+          "cable-curl"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Bicepszhajlítás – kétkezes rúddal",
+        "en": "Barbell Curl",
+        "de": "Langhantel-Bizepscurl",
+        "ro": "Flexii pentru biceps cu bara"
+      },
+      "notes": {
+        "hu": "Állj vállszéles terpeszben, könyököd maradjon a törzsed mellett. Lendület nélkül hajlítsd a kart a felső holtpontig, majd kontrolláltan engedd vissza.",
+        "en": "Stand shoulder-width apart with elbows tucked by your sides. Curl the bar up without swinging your torso, then lower under control.",
+        "de": "Stehe schulterbreit und halte die Ellenbogen eng am Körper. Beuge die Arme ohne Schwung nach oben und senke die Stange kontrolliert ab.",
+        "ro": "Stai cu picioarele la lățimea umerilor și coatele lipite de trunchi. Ridică bara fără balans și coboar-o controlat."
+      },
+      "muscles": [
+        "biceps",
+        "forearms"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "kwG2ipFRgfo",
+        "credit": "ScottHermanFitness",
+        "source": "https://www.youtube.com/watch?v=kwG2ipFRgfo"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "barbell-front-squat",
+        "hu": "Elölguggolás – kétkezes rúddal",
+        "en": "Barbell Front Squat",
+        "equipment": "kétkezes rúd + biztonságos állvány",
+        "target": "Láb",
+        "notes": "Vedd ki a rudat állványból az elülső vállakra támasztva, magas könyökkel. Egyenes törzzsel guggolj le kontrolláltan, majd nyomd fel magad.",
+        "sets": 3,
+        "reps": "6–10",
+        "weight": 45,
+        "rest": 120,
+        "restSeconds": 120,
+        "unit": "kg (rúd összesen)",
+        "loadType": "barbell",
+        "repUnit": "ism.",
+        "movementPattern": "squat",
+        "difficulty": "intermediate",
+        "complexity": "high",
+        "beginnerSafe": false,
+        "compound": true,
+        "goalTags": [
+          "muscle",
+          "strength",
+          "fitness"
+        ],
+        "alternatives": [
+          "db-front-squat",
+          "barbell-back-squat",
+          "goblet-squat"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Elölguggolás – kétkezes rúddal",
+        "en": "Barbell Front Squat",
+        "de": "Langhantel-Frontkniebeuge",
+        "ro": "Genuflexiune frontală cu bara"
+      },
+      "notes": {
+        "hu": "Vedd ki a rudat állványból az elülső vállakra támasztva, magas könyökkel. Egyenes törzzsel guggolj le kontrolláltan, majd nyomd fel magad.",
+        "en": "Unrack the bar resting across the front deltoids with elbows high. Squat down keeping an upright torso, then drive back up.",
+        "de": "Hebe die Stange aus dem Ständer auf die vorderen Schultern mit hohen Ellenbogen. Gehe mit aufrechtem Oberkörper tief in die Beuge und drücke dich wieder hoch.",
+        "ro": "Scoate bara de pe suport pe umerii anteriori, cu coatele sus. Coboară în genuflexiune cu trunchiul drept, apoi împinge în sus."
+      },
+      "muscles": [
+        "legs",
+        "core"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "uYumuL_G_V0",
+        "credit": "Buff Dudes",
+        "source": "https://www.youtube.com/watch?v=uYumuL_G_V0"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "barbell-hip-thrust",
+        "hu": "Csípőemelés – kétkezes rúddal",
+        "en": "Barbell Hip Thrust",
+        "equipment": "kétkezes rúd + stabil pad",
+        "target": "Farizom",
+        "notes": "Lapockád támaszkodjon stabil padra, a rúd párnázva a csípőhajlaton. Feszítsd meg a farizmot és told fel a csípőt vízszintesig a derék túlfeszítése nélkül.",
+        "sets": 3,
+        "reps": "8–12",
+        "weight": 50,
+        "rest": 120,
+        "restSeconds": 120,
+        "unit": "kg (rúd összesen)",
+        "loadType": "barbell",
+        "repUnit": "ism.",
+        "movementPattern": "hinge",
+        "difficulty": "intermediate",
+        "complexity": "medium",
+        "beginnerSafe": false,
+        "compound": true,
+        "goalTags": [
+          "muscle",
+          "strength",
+          "fitness"
+        ],
+        "alternatives": [
+          "glute-bridge",
+          "rdl",
+          "db-rdl"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Csípőemelés – kétkezes rúddal",
+        "en": "Barbell Hip Thrust",
+        "de": "Langhantel-Hip-Thrust",
+        "ro": "Ridicări de șold cu bara (Hip Thrust)"
+      },
+      "notes": {
+        "hu": "Lapockád támaszkodjon stabil padra, a rúd párnázva a csípőhajlaton. Feszítsd meg a farizmot és told fel a csípőt vízszintesig a derék túlfeszítése nélkül.",
+        "en": "Rest your upper back against a stable bench with the padded bar across your hips. Drive through your heels to full hip extension without hyperextending your lower back.",
+        "de": "Stütze den oberen Rücken an einer stabilen Bank ab, die gepolsterte Stange liegt auf der Hüfte. Drücke die Hüfte über die Fersen bis zur Streckung hoch, ohne ins Hohlkreuz zu fallen.",
+        "ro": "Sprijină partea superioară a spatelui pe o bancă stabilă, cu bara protejată pe șolduri. Împinge prin călcâie până la extensia completă a șoldului, fără a arcui excesiv spatele."
+      },
+      "muscles": [
+        "legs",
+        "core"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "SEdqd1n0cvg",
+        "credit": "Bret Contreras",
+        "source": "https://www.youtube.com/watch?v=SEdqd1n0cvg"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "lying-barbell-triceps-extension",
+        "hu": "Fekvő tricepsznyújtás rúddal",
+        "en": "Lying Barbell Triceps Extension",
+        "equipment": "rúd/EZ-rúd + pad",
+        "target": "Tricepsz",
+        "notes": "Padon hanyatt fekve tartsd stabilan a felkart, engedd a rudat kontrolláltan a homlok vagy a fej mögé, majd nyújtsd ki a könyököt.",
+        "sets": 3,
+        "reps": "8–12",
+        "weight": 20,
+        "rest": 75,
+        "restSeconds": 75,
+        "unit": "kg (rúd összesen)",
+        "loadType": "barbell",
+        "repUnit": "ism.",
+        "movementPattern": "elbow-extension",
+        "difficulty": "intermediate",
+        "complexity": "medium",
+        "beginnerSafe": false,
+        "compound": false,
+        "goalTags": [
+          "muscle",
+          "strength",
+          "fitness"
+        ],
+        "alternatives": [
+          "oh-triceps",
+          "cable-triceps",
+          "close-grip-bench"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Fekvő tricepsznyújtás rúddal",
+        "en": "Lying Barbell Triceps Extension",
+        "de": "Liegendes Trizepsdrücken mit Stange",
+        "ro": "Extensii pentru triceps culcat cu bara"
+      },
+      "notes": {
+        "hu": "Padon hanyatt fekve tartsd stabilan a felkart, engedd a rudat kontrolláltan a homlok vagy a fej mögé, majd nyújtsd ki a könyököt.",
+        "en": "Lie on a bench keeping your upper arms stable, lower the bar under control toward your forehead or slightly behind the head, then extend the elbows.",
+        "de": "Liege auf einer Bank, halte die Oberarme stabil, senke die Stange kontrolliert zur Stirn oder leicht hinter den Kopf und strecke die Ellenbogen.",
+        "ro": "Întins pe bancă, menține brațele superioare fixe, coboară bara controlat spre frunte sau ușor în spatele capului, apoi întinde coatele."
+      },
+      "muscles": [
+        "triceps"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "d_KZxkY_0cM",
+        "credit": "ScottHermanFitness",
+        "source": "https://www.youtube.com/watch?v=d_KZxkY_0cM"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "sumo-deadlift",
+        "hu": "Szumó felhúzás – kétkezes rúddal",
+        "en": "Sumo Deadlift",
+        "equipment": "kétkezes rúd",
+        "target": "Láb",
+        "notes": "Széles terpeszben, kifelé néző lábfejjel fogd meg a rudat a lábszárak között. Feszes törzzsel, a rudat a sípcsont mentén vezetve állj fel.",
+        "sets": 3,
+        "reps": "5–8",
+        "weight": 60,
+        "rest": 150,
+        "restSeconds": 150,
+        "unit": "kg (rúd összesen)",
+        "loadType": "barbell",
+        "repUnit": "ism.",
+        "movementPattern": "hinge",
+        "difficulty": "intermediate",
+        "complexity": "high",
+        "beginnerSafe": false,
+        "compound": true,
+        "goalTags": [
+          "strength",
+          "muscle",
+          "fitness"
+        ],
+        "alternatives": [
+          "conventional-deadlift",
+          "rdl",
+          "kb-deadlift"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Szumó felhúzás – kétkezes rúddal",
+        "en": "Sumo Deadlift",
+        "de": "Sumo-Kreuzheben",
+        "ro": "Îndreptări sumo cu bara"
+      },
+      "notes": {
+        "hu": "Széles terpeszben, kifelé néző lábfejjel fogd meg a rudat a lábszárak között. Feszes törzzsel, a rudat a sípcsont mentén vezetve állj fel.",
+        "en": "Take a wide stance with toes pointed out and grip the bar inside your legs. Brace your core and drive the floor away while keeping the bar close to your shins.",
+        "de": "Wähle einen breiten Stand mit nach außen gedrehten Fußspitzen und greife die Stange innerhalb der Beine. Spanne den Rumpf an und ziehe die Stange eng an den Schienbeinen hoch.",
+        "ro": "Adoptă o poziție largă cu vârfurile orientate spre exterior și prinde bara în interiorul picioarelor. Încordează trunchiul și ridică bara aproape de tibii."
+      },
+      "muscles": [
+        "legs",
+        "back",
+        "core"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "pfSMst14EFk",
+        "credit": "Calgary Barbell",
+        "source": "https://www.youtube.com/watch?v=pfSMst14EFk"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "barbell-good-morning",
+        "hu": "Jó reggelt gyakorlat – rúddal",
+        "en": "Barbell Good Morning",
+        "equipment": "kétkezes rúd + biztonságos állvány",
+        "target": "Combhajlító",
+        "notes": "Vedd ki a rudat állványból a felső hátra. Enyhén hajlított térddel told hátra a csípőt semleges gerinccel, amíg a combhajlító feszül, majd térj vissza állásba.",
+        "sets": 3,
+        "reps": "8–10",
+        "weight": 30,
+        "rest": 120,
+        "restSeconds": 120,
+        "unit": "kg (rúd összesen)",
+        "loadType": "barbell",
+        "repUnit": "ism.",
+        "movementPattern": "hinge",
+        "difficulty": "intermediate",
+        "complexity": "medium",
+        "beginnerSafe": false,
+        "compound": true,
+        "goalTags": [
+          "strength",
+          "muscle",
+          "fitness"
+        ],
+        "alternatives": [
+          "rdl",
+          "db-rdl",
+          "glute-bridge"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Jó reggelt gyakorlat – rúddal",
+        "en": "Barbell Good Morning",
+        "de": "Good Mornings mit Langhantel",
+        "ro": "Aplecări „Good Morning” cu bara"
+      },
+      "notes": {
+        "hu": "Vedd ki a rudat állványból a felső hátra. Enyhén hajlított térddel told hátra a csípőt semleges gerinccel, amíg a combhajlító feszül, majd térj vissza állásba.",
+        "en": "Unrack the bar onto your upper back. With soft knees and a neutral spine, hinge your hips back until you feel a hamstring stretch, then drive your hips forward to stand.",
+        "de": "Nimm die Stange aus dem Ständer auf den oberen Rücken. Schiebe mit leicht gebeugten Knien und geradem Rücken die Hüfte zurück, bis die Beinbeuger dehnen, und richte dich wieder auf.",
+        "ro": "Scoate bara pe partea superioară a spatelui. Cu genunchii ușor flexați și coloana neutră, împinge șoldurile înapoi până simți întinderea femuralilor, apoi revino în picioare."
+      },
+      "muscles": [
+        "legs",
+        "back",
+        "core"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "YA-h3n9L4YU",
+        "credit": "Renaissance Periodization",
+        "source": "https://www.youtube.com/watch?v=YA-h3n9L4YU"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "single-arm-db-ohp",
+        "hu": "Egykezes vállból nyomás",
+        "en": "Single Arm Dumbbell Shoulder Press",
+        "equipment": "1 kézisúlyzó",
+        "target": "Váll",
+        "notes": "Állva vagy ülve tartsd feszesen a törzsed, ne dőlj oldalra. Nyomd a súlyzót vállmagasságból a fej fölé, majd kontrolláltan engedd vissza oldalanként.",
+        "sets": 3,
+        "reps": "8–12 / kar",
+        "weight": 8,
+        "rest": 75,
+        "restSeconds": 75,
+        "unit": "kg (1 súlyzó)",
+        "loadType": "single_dumbbell",
+        "repUnit": "/kar",
+        "movementPattern": "vertical-push",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": true,
+        "goalTags": [
+          "fitness",
+          "muscle",
+          "strength",
+          "fatloss"
+        ],
+        "alternatives": [
+          "db-ohp",
+          "kb-press",
+          "pike-pushup"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Egykezes vállból nyomás",
+        "en": "Single Arm Dumbbell Shoulder Press",
+        "de": "Einarmiges Kurzhantel-Schulterdrücken",
+        "ro": "Împins deasupra capului cu o ganteră"
+      },
+      "notes": {
+        "hu": "Állva vagy ülve tartsd feszesen a törzsed, ne dőlj oldalra. Nyomd a súlyzót vállmagasságból a fej fölé, majd kontrolláltan engedd vissza oldalanként.",
+        "en": "Standing or seated, brace your core to avoid leaning sideways. Press the dumbbell from shoulder height overhead, then lower under control on each side.",
+        "de": "Stehend oder sitzend den Rumpf fest anspannen, ohne seitlich abzuknicken. Drücke die Kurzhantel von Schulterhöhe über Kopf und senke sie kontrolliert pro Seite ab.",
+        "ro": "Din picioare sau așezat, încordează trunchiul fără a te înclina lateral. Împinge gantera de la nivelul umărului deasupra capului, apoi coboară controlat pe fiecare parte."
+      },
+      "muscles": [
+        "shoulders",
+        "triceps",
+        "core"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "PnBREG31c4Q",
+        "credit": "Testosterone Nation",
+        "source": "https://www.youtube.com/watch?v=PnBREG31c4Q"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "db-chest-fly",
+        "hu": "Kézisúlyzós tárogatás padon",
+        "en": "Dumbbell Chest Fly",
+        "equipment": "2 kézisúlyzó + pad",
+        "target": "Mell",
+        "notes": "Padon hanyatt fekve, enyhén hajlított könyökkel engedd szét a karokat kontrollált ívben mellmagasságig, majd zárd vissza őket a mellkas fölött.",
+        "sets": 3,
+        "reps": "10–15",
+        "weight": 8,
+        "rest": 75,
+        "restSeconds": 75,
+        "unit": "kg/kar",
+        "loadType": "per_hand",
+        "repUnit": "ism.",
+        "movementPattern": "chest-isolation",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": false,
+        "goalTags": [
+          "muscle",
+          "fitness",
+          "fatloss"
+        ],
+        "alternatives": [
+          "cable-fly",
+          "pec-deck",
+          "db-bench-press"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Kézisúlyzós tárogatás padon",
+        "en": "Dumbbell Chest Fly",
+        "de": "Kurzhantel-Fliegende auf der Bank",
+        "ro": "Fluturări cu gantere pe bancă"
+      },
+      "notes": {
+        "hu": "Padon hanyatt fekve, enyhén hajlított könyökkel engedd szét a karokat kontrollált ívben mellmagasságig, majd zárd vissza őket a mellkas fölött.",
+        "en": "Lie on a flat bench with a slight bend in your elbows. Lower the dumbbells in a controlled arc until chest level, then bring them back together over your chest.",
+        "de": "Liege auf einer Flachbank mit leicht gebeugten Ellenbogen. Senke die Kurzhanteln in einem kontrollierten Bogen bis auf Brusthöhe und führe sie über der Brust zusammen.",
+        "ro": "Întins pe o bancă orizontală, cu coatele ușor flexate, coboară ganterele într-un arc controlat până la nivelul pieptului, apoi apropie-le deasupra pieptului."
+      },
+      "muscles": [
+        "chest",
+        "shoulders"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "eozdVDA78K0",
+        "credit": "ScottHermanFitness",
+        "source": "https://www.youtube.com/watch?v=eozdVDA78K0"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "chest-supported-db-row",
+        "hu": "Mellkason támasztott evezés",
+        "en": "Chest Supported Dumbbell Row",
+        "equipment": "2 kézisúlyzó + ferde pad",
+        "target": "Hát",
+        "notes": "Feküdj hasra ferde padon, a mellkasod támaszkodjon stabilan. Húzd a súlyzókat a csípőd/bordáid felé, zárd a lapockát, majd engedd vissza.",
+        "sets": 3,
+        "reps": "8–12",
+        "weight": 10,
+        "rest": 90,
+        "restSeconds": 90,
+        "unit": "kg/kar",
+        "loadType": "per_hand",
+        "repUnit": "ism.",
+        "movementPattern": "horizontal-pull",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": true,
+        "goalTags": [
+          "muscle",
+          "fitness",
+          "strength",
+          "fatloss"
+        ],
+        "alternatives": [
+          "one-arm-row",
+          "seated-cable-row",
+          "barbell-row"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Mellkason támasztott evezés",
+        "en": "Chest Supported Dumbbell Row",
+        "de": "Brustgestütztes Kurzhantelrudern",
+        "ro": "Ramat cu gantere cu sprijin pe piept"
+      },
+      "notes": {
+        "hu": "Feküdj hasra ferde padon, a mellkasod támaszkodjon stabilan. Húzd a súlyzókat a csípőd/bordáid felé, zárd a lapockát, majd engedd vissza.",
+        "en": "Lie chest-down on an incline bench for stability. Row the dumbbells toward your hips/ribs while squeezing your shoulder blades, then lower under control.",
+        "de": "Lege dich mit der Brust auf eine Schrägbank. Ziehe die Kurzhanteln Richtung Hüfte/Rippen, führe die Schulterblätter zusammen und senke kontrolliert ab.",
+        "ro": "Sprijină pieptul pe o bancă înclinată. Trage ganterele spre șolduri/coaste strângând omoplații, apoi coboară controlat."
+      },
+      "muscles": [
+        "back",
+        "biceps"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "H75im9fAUMc",
+        "credit": "Renaissance Periodization",
+        "source": "https://www.youtube.com/watch?v=H75im9fAUMc"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "concentration-curl",
+        "hu": "Koncentrált bicepszhajlítás",
+        "en": "Concentration Curl",
+        "equipment": "1 kézisúlyzó",
+        "target": "Bicepsz",
+        "notes": "Ülve támaszd a felkar hátulját a belső combodhoz. Lendület nélkül hajlítsd a könyököt, majd lassan engedd vissza a súlyt oldalanként.",
+        "sets": 3,
+        "reps": "10–15 / kar",
+        "weight": 8,
+        "rest": 60,
+        "restSeconds": 60,
+        "unit": "kg (1 súlyzó)",
+        "loadType": "single_dumbbell",
+        "repUnit": "/kar",
+        "movementPattern": "elbow-flexion",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": false,
+        "goalTags": [
+          "muscle",
+          "fitness",
+          "fatloss"
+        ],
+        "alternatives": [
+          "db-curl",
+          "hammer-curl",
+          "cable-curl"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Koncentrált bicepszhajlítás",
+        "en": "Concentration Curl",
+        "de": "Konzentrationscurl",
+        "ro": "Flexii concentrate pentru biceps"
+      },
+      "notes": {
+        "hu": "Ülve támaszd a felkar hátulját a belső combodhoz. Lendület nélkül hajlítsd a könyököt, majd lassan engedd vissza a súlyt oldalanként.",
+        "en": "Seated, brace the back of your upper arm against your inner thigh. Curl the dumbbell without momentum, then lower slowly on each side.",
+        "de": "Stütze im Sitzen die Rückseite des Oberarms an der Oberschenkelinnenseite ab. Beuge den Arm ohne Schwung und senke das Gewicht langsam pro Seite.",
+        "ro": "Din șezut, sprijină partea posterioară a brațului pe interiorul coapsei. Flexează cotul fără balans, apoi coboară lent pe fiecare parte."
+      },
+      "muscles": [
+        "biceps"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "Jvj2wV0vOYU",
+        "credit": "ScottHermanFitness",
+        "source": "https://www.youtube.com/watch?v=Jvj2wV0vOYU"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "db-triceps-kickback",
+        "hu": "Tricepsznyújtás hátrafelé",
+        "en": "Dumbbell Triceps Kickback",
+        "equipment": "1 kézisúlyzó + támasz",
+        "target": "Tricepsz",
+        "notes": "Előredöntött törzzsel tartsd a felkart a törzseddel párhuzamosan. Nyújtsd hátra az alkart teljes könyöknyújtásig, majd kontrolláltan engedd vissza oldalanként.",
+        "sets": 3,
+        "reps": "10–15 / kar",
+        "weight": 6,
+        "rest": 60,
+        "restSeconds": 60,
+        "unit": "kg (1 súlyzó)",
+        "loadType": "single_dumbbell",
+        "repUnit": "/kar",
+        "movementPattern": "elbow-extension",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": false,
+        "goalTags": [
+          "muscle",
+          "fitness",
+          "fatloss"
+        ],
+        "alternatives": [
+          "oh-triceps",
+          "cable-triceps",
+          "band-triceps-pushdown"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Tricepsznyújtás hátrafelé",
+        "en": "Dumbbell Triceps Kickback",
+        "de": "Kurzhantel-Trizeps-Kickback",
+        "ro": "Extensii pentru triceps din aplecat (Kickback)"
+      },
+      "notes": {
+        "hu": "Előredöntött törzzsel tartsd a felkart a törzseddel párhuzamosan. Nyújtsd hátra az alkart teljes könyöknyújtásig, majd kontrolláltan engedd vissza oldalanként.",
+        "en": "Hinge forward with your upper arm parallel to your torso. Extend your forearm back until the elbow is straight, then lower under control on each side.",
+        "de": "Beuge den Oberkörper vor und halte den Oberarm parallel zum Rumpf. Strecke den Unterarm nach hinten bis zur vollen Streckung und senke kontrolliert pro Seite ab.",
+        "ro": "Apleacă trunchiul înainte și menține brațul paralel cu trunchiul. Întinde antebrațul înapoi până la extensia completă a cotului, apoi coboară controlat pe fiecare parte."
+      },
+      "muscles": [
+        "triceps"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "6SS6K3lAwZ8",
+        "credit": "ScottHermanFitness",
+        "source": "https://www.youtube.com/watch?v=6SS6K3lAwZ8"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "walking-lunge",
+        "hu": "Sétáló kitörés",
+        "en": "Walking Lunge",
+        "equipment": "2 kézisúlyzó",
+        "target": "Láb",
+        "notes": "Lépj előre kontrolláltan, engedd le a hátsó térdet a talaj közelébe, majd az elülső lábbal tolva lépj tovább a következő ismétlésbe.",
+        "sets": 3,
+        "reps": "10–12 / láb",
+        "weight": 6,
+        "rest": 90,
+        "restSeconds": 90,
+        "unit": "kg/kar",
+        "loadType": "per_hand",
+        "repUnit": "/láb",
+        "movementPattern": "lunge",
+        "difficulty": "beginner",
+        "complexity": "medium",
+        "beginnerSafe": true,
+        "compound": true,
+        "goalTags": [
+          "fitness",
+          "muscle",
+          "strength",
+          "fatloss"
+        ],
+        "alternatives": [
+          "reverse-lunge",
+          "bulgarian-split-squat",
+          "db-step-up"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Sétáló kitörés",
+        "en": "Walking Lunge",
+        "de": "Gehende Ausfallschritte",
+        "ro": "Fandări din mers"
+      },
+      "notes": {
+        "hu": "Lépj előre kontrolláltan, engedd le a hátsó térdet a talaj közelébe, majd az elülső lábbal tolva lépj tovább a következő ismétlésbe.",
+        "en": "Step forward under control, lower your back knee close to the floor, then drive through your front foot into the next step.",
+        "de": "Mache kontrolliert einen Schritt nach vorn, senke das hintere Knie Richtung Boden und drücke dich über das vordere Bein in den nächsten Schritt.",
+        "ro": "Pășește controlat înainte, coboară genunchiul din spate aproape de sol, apoi împinge în piciorul din față pentru pasul următor."
+      },
+      "muscles": [
+        "legs",
+        "core"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "L8fvypPrzzs",
+        "credit": "ScottHermanFitness",
+        "source": "https://www.youtube.com/watch?v=L8fvypPrzzs"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "single-leg-db-rdl",
+        "hu": "Egylábas román felhúzás",
+        "en": "Single Leg Dumbbell RDL",
+        "equipment": "1 kézisúlyzó",
+        "target": "Combhajlító",
+        "notes": "Állj egy lábon enyhén hajlított térddel, a másik lábat nyújtsd hátra a törzs meghosszabbításaként. Semleges gerinccel döntsd a csípőt, majd állj fel oldalanként.",
+        "sets": 3,
+        "reps": "8–12 / láb",
+        "weight": 10,
+        "rest": 90,
+        "restSeconds": 90,
+        "unit": "kg (1 súlyzó)",
+        "loadType": "single_dumbbell",
+        "repUnit": "/láb",
+        "movementPattern": "hinge",
+        "difficulty": "intermediate",
+        "complexity": "medium",
+        "beginnerSafe": false,
+        "compound": true,
+        "goalTags": [
+          "fitness",
+          "muscle",
+          "strength"
+        ],
+        "alternatives": [
+          "db-rdl",
+          "rdl",
+          "single-leg-glute-bridge"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Egylábas román felhúzás",
+        "en": "Single Leg Dumbbell RDL",
+        "de": "Einbeiniges rumänisches Kreuzheben mit Kurzhantel",
+        "ro": "Îndreptări românești pe un picior cu gantera"
+      },
+      "notes": {
+        "hu": "Állj egy lábon enyhén hajlított térddel, a másik lábat nyújtsd hátra a törzs meghosszabbításaként. Semleges gerinccel döntsd a csípőt, majd állj fel oldalanként.",
+        "en": "Balance on one leg with a soft knee while extending the other leg back in line with your torso. Hinge at the hip with a neutral spine, then stand tall on each side.",
+        "de": "Stehe auf einem Bein mit leicht gebeugtem Knie und führe das andere Bein in Verlängerung des Rumpfes nach hinten. Beuge aus der Hüfte mit geradem Rücken und richte dich pro Seite auf.",
+        "ro": "Stai pe un picior cu genunchiul ușor flexat și întinde celălalt picior înapoi în prelungirea trunchiului. Apleacă-te din șold cu spatele drept, apoi ridică-te pe fiecare parte."
+      },
+      "muscles": [
+        "legs",
+        "core"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "l42b47kP9kU",
+        "credit": "StrengthCoachTutorials",
+        "source": "https://www.youtube.com/watch?v=l42b47kP9kU"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "single-leg-glute-bridge",
+        "hu": "Egylábas csípőemelés",
+        "en": "Single Leg Glute Bridge",
+        "equipment": "testsúly",
+        "target": "Farizom",
+        "notes": "Hanyatt fekve az egyik lábad talpon, a másikat emeld el. Told fel a csípőd a támaszkodó sarokból a medence billenése nélkül oldalanként.",
+        "sets": 3,
+        "reps": "10–15 / láb",
+        "weight": 0,
+        "rest": 60,
+        "restSeconds": 60,
+        "unit": "testsúly",
+        "loadType": "bodyweight",
+        "repUnit": "/láb",
+        "movementPattern": "hinge",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": true,
+        "goalTags": [
+          "fitness",
+          "muscle",
+          "strength",
+          "fatloss"
+        ],
+        "alternatives": [
+          "glute-bridge",
+          "db-rdl",
+          "single-leg-db-rdl"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Egylábas csípőemelés",
+        "en": "Single Leg Glute Bridge",
+        "de": "Einbeinige Gesäßbrücke",
+        "ro": "Podul fesier pe un picior"
+      },
+      "notes": {
+        "hu": "Hanyatt fekve az egyik lábad talpon, a másikat emeld el. Told fel a csípőd a támaszkodó sarokból a medence billenése nélkül oldalanként.",
+        "en": "Lie on your back with one foot planted and the other leg raised. Drive through the planted heel to lift your hips while keeping your pelvis level on each side.",
+        "de": "Liege auf dem Rücken, ein Fuß steht fest am Boden, das andere Bein ist angehoben. Drücke die Hüfte über die Ferse hoch, ohne dass das Becken kippt.",
+        "ro": "Întins pe spate, ține o talpă pe sol și celălalt picior ridicat. Împinge în călcâi pentru a ridica șoldurile, păstrând bazinul drept pe fiecare parte."
+      },
+      "muscles": [
+        "legs",
+        "core"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "AVAXhy6pl7o",
+        "credit": "Redefining Strength",
+        "source": "https://www.youtube.com/watch?v=AVAXhy6pl7o"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "reverse-crunch",
+        "hu": "Fordított hasprés",
+        "en": "Reverse Crunch",
+        "equipment": "testsúly",
+        "target": "Has",
+        "notes": "Hanyatt fekve emeld a hajlított térdeket a mellkas felé a medence kontrollált felgördítésével, majd lassan engedd vissza anélkül, hogy a derekad homorítana.",
+        "sets": 3,
+        "reps": "10–15",
+        "weight": 0,
+        "rest": 60,
+        "restSeconds": 60,
+        "unit": "testsúly",
+        "loadType": "bodyweight",
+        "repUnit": "ism.",
+        "movementPattern": "core-flexion",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": false,
+        "goalTags": [
+          "fitness",
+          "muscle",
+          "fatloss"
+        ],
+        "alternatives": [
+          "crunch",
+          "dead-bug",
+          "hanging-knee-raise"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Fordított hasprés",
+        "en": "Reverse Crunch",
+        "de": "Reverse Crunch",
+        "ro": "Abdomene inverse"
+      },
+      "notes": {
+        "hu": "Hanyatt fekve emeld a hajlított térdeket a mellkas felé a medence kontrollált felgördítésével, majd lassan engedd vissza anélkül, hogy a derekad homorítana.",
+        "en": "Lie on your back and curl your bent knees toward your chest by tilting your pelvis up, then lower slowly without arching your lower back.",
+        "de": "Liege auf dem Rücken, ziehe die gebeugten Knie durch Aufrollen des Beckens Richtung Brust und senke sie langsam ab, ohne ins Hohlkreuz zu gehen.",
+        "ro": "Întins pe spate, adu genunchii îndoiți spre piept prin rularea bazinului în sus, apoi coboară lent fără a arcui zona lombară."
+      },
+      "muscles": [
+        "core"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "hyv14e2QDq0",
+        "credit": "Jeremy Ethier",
+        "source": "https://www.youtube.com/watch?v=hyv14e2QDq0"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "cable-pallof-press",
+        "hu": "Pallof-nyomás csigán",
+        "en": "Cable Pallof Press",
+        "equipment": "csigás gép",
+        "target": "Törzs",
+        "notes": "Állj oldalt a mellmagasságú csigának. Tartsd a fogantyút a mellkasod előtt, majd nyomd előre a karokat anélkül, hogy a törzsed elfordulna oldalanként.",
+        "sets": 3,
+        "reps": "10–12 / oldal",
+        "weight": 12.5,
+        "rest": 60,
+        "restSeconds": 60,
+        "unit": "kg",
+        "loadType": "cable",
+        "repUnit": "/oldal",
+        "movementPattern": "core-stability",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": false,
+        "goalTags": [
+          "fitness",
+          "strength",
+          "muscle"
+        ],
+        "alternatives": [
+          "band-pallof-press",
+          "side-plank",
+          "dead-bug"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Pallof-nyomás csigán",
+        "en": "Cable Pallof Press",
+        "de": "Pallof-Press am Kabelzug",
+        "ro": "Presă Pallof la cablu"
+      },
+      "notes": {
+        "hu": "Állj oldalt a mellmagasságú csigának. Tartsd a fogantyút a mellkasod előtt, majd nyomd előre a karokat anélkül, hogy a törzsed elfordulna oldalanként.",
+        "en": "Stand perpendicular to a chest-height cable pulley. Hold the handle at your chest, then press straight out while resisting torso rotation on each side.",
+        "de": "Stehe seitlich zum brusthohen Kabelzug. Halte den Griff vor der Brust und drücke die Arme gerade nach vorn, ohne dass sich der Rumpf dreht.",
+        "ro": "Stai perpendicular față de scripetele reglat la nivelul pieptului. Ține mânerul la piept și împinge brațele înainte, opunându-te rotației trunchiului pe fiecare parte."
+      },
+      "muscles": [
+        "core"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "AH_QZLm_0-s",
+        "credit": "Testosterone Nation",
+        "source": "https://www.youtube.com/watch?v=AH_QZLm_0-s"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "seated-calf-raise",
+        "hu": "Ülő vádliemelés",
+        "en": "Seated Calf Raise",
+        "equipment": "ülő vádligép",
+        "target": "Vádli",
+        "notes": "Ülj be a vádligépbe a combpárna alá. Engedd le a sarkad teljes nyújtásig, majd nyomd fel magad lábujjhegyre és tartsd meg röviden a felső ponton.",
+        "sets": 3,
+        "reps": "12–20",
+        "weight": 30,
+        "rest": 60,
+        "restSeconds": 60,
+        "unit": "kg",
+        "loadType": "machine",
+        "repUnit": "ism.",
+        "movementPattern": "calf",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": false,
+        "goalTags": [
+          "muscle",
+          "fitness"
+        ],
+        "alternatives": [
+          "standing-calf-raise",
+          "leg-press-calf",
+          "calf-raise"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Ülő vádliemelés",
+        "en": "Seated Calf Raise",
+        "de": "Sitzendes Wadenheben",
+        "ro": "Ridicări pe vârfuri din șezut"
+      },
+      "notes": {
+        "hu": "Ülj be a vádligépbe a combpárna alá. Engedd le a sarkad teljes nyújtásig, majd nyomd fel magad lábujjhegyre és tartsd meg röviden a felső ponton.",
+        "en": "Sit in the calf raise machine with pads secured over your thighs. Lower your heels for a full stretch, then press up onto the balls of your feet and pause briefly.",
+        "de": "Setze dich in das Wadenheben-Gerät mit dem Polster über den Oberschenkeln. Senke die Fersen in die volle Dehnung und drücke dich kontrolliert auf die Zehenballen hoch.",
+        "ro": "Așază-te la aparatul pentru gambe cu suportul fixat pe coapse. Coboară călcâiele pentru o întindere completă, apoi ridică-te pe vârfuri și menține scurt sus."
+      },
+      "muscles": [
+        "legs"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "JbyjNymZOt0",
+        "credit": "Renaissance Periodization",
+        "source": "https://www.youtube.com/watch?v=JbyjNymZOt0"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "arnold-press",
+        "hu": "Arnold-nyomás",
+        "en": "Arnold Press",
+        "equipment": "2 kézisúlyzó",
+        "target": "Váll",
+        "notes": "Indíts az állad előtt magad felé néző tenyérrel, majd a kinyomás közben forgasd kifelé a csuklót, és ugyanezen az íven engedd vissza.",
+        "sets": 3,
+        "reps": "8–12",
+        "weight": 10,
+        "rest": 90,
+        "restSeconds": 90,
+        "unit": "kg/kar",
+        "loadType": "per_hand",
+        "repUnit": "ism.",
+        "movementPattern": "vertical-push",
+        "difficulty": "intermediate",
+        "complexity": "medium",
+        "beginnerSafe": false,
+        "compound": true,
+        "goalTags": [
+          "muscle",
+          "strength",
+          "fitness"
+        ],
+        "alternatives": [
+          "db-ohp",
+          "single-arm-db-ohp",
+          "machine-shoulder-press"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Arnold-nyomás",
+        "en": "Arnold Press",
+        "de": "Arnold-Press",
+        "ro": "Presă Arnold cu gantere"
+      },
+      "notes": {
+        "hu": "Indíts az állad előtt magad felé néző tenyérrel, majd a kinyomás közben forgasd kifelé a csuklót, és ugyanezen az íven engedd vissza.",
+        "en": "Start with dumbbells in front of your chin with palms facing you, rotate your wrists outward as you press overhead, and reverse the motion under control.",
+        "de": "Starte mit den Hanteln vor dem Kinn und Handflächen zum Körper, drehe die Handgelenke beim Überkopfdrücken nach außen und kehre die Bewegung kontrolliert um.",
+        "ro": "Pornește cu ganterele în fața bărbiei și palmele spre tine, rotește încheieturile spre exterior pe măsură ce împingi deasupra capului, apoi revino controlat."
+      },
+      "muscles": [
+        "shoulders",
+        "triceps"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "6Z15_WdXmVw",
+        "credit": "ScottHermanFitness",
+        "source": "https://www.youtube.com/watch?v=6Z15_WdXmVw"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "db-front-raise",
+        "hu": "Előreemelés kézisúlyzóval",
+        "en": "Dumbbell Front Raise",
+        "equipment": "2 kézisúlyzó",
+        "target": "Váll",
+        "notes": "Állj feszes törzzsel, enyhén hajlított könyökkel emeld a súlyzókat vállmagasságig lendület nélkül, majd kontrolláltan engedd vissza.",
+        "sets": 3,
+        "reps": "10–15",
+        "weight": 6,
+        "rest": 60,
+        "restSeconds": 60,
+        "unit": "kg/kar",
+        "loadType": "per_hand",
+        "repUnit": "ism.",
+        "movementPattern": "shoulder-isolation",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": false,
+        "goalTags": [
+          "muscle",
+          "fitness",
+          "fatloss"
+        ],
+        "alternatives": [
+          "lateral-raise",
+          "cable-lateral-raise",
+          "db-ohp"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Előreemelés kézisúlyzóval",
+        "en": "Dumbbell Front Raise",
+        "de": "Kurzhantel-Frontheben",
+        "ro": "Ridicări frontale cu gantere"
+      },
+      "notes": {
+        "hu": "Állj feszes törzzsel, enyhén hajlított könyökkel emeld a súlyzókat vállmagasságig lendület nélkül, majd kontrolláltan engedd vissza.",
+        "en": "Stand with a braced core and slight elbow bend, raise the dumbbells to shoulder height without swinging, then lower under control.",
+        "de": "Stehe mit festem Rumpf und leicht gebeugten Ellenbogen, hebe die Kurzhanteln ohne Schwung auf Schulterhöhe und senke sie kontrolliert ab.",
+        "ro": "Stai cu trunchiul încordat și coatele ușor flexate, ridică ganterele până la nivelul umerilor fără balans, apoi coboară controlat."
+      },
+      "muscles": [
+        "shoulders"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "-t7fuZ0KhDA",
+        "credit": "ScottHermanFitness",
+        "source": "https://www.youtube.com/watch?v=-t7fuZ0KhDA"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "db-shrug",
+        "hu": "Vállvonogatás kézisúlyzóval",
+        "en": "Dumbbell Shrug",
+        "equipment": "2 kézisúlyzó",
+        "target": "Hát",
+        "notes": "Tartsd a súlyzókat a combod mellett nyújtott karral. Húzd fel a vállövet egyenesen a füled irányába, tartsd meg röviden, majd engedd vissza.",
+        "sets": 3,
+        "reps": "10–15",
+        "weight": 14,
+        "rest": 60,
+        "restSeconds": 60,
+        "unit": "kg/kar",
+        "loadType": "per_hand",
+        "repUnit": "ism.",
+        "movementPattern": "horizontal-pull",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": false,
+        "goalTags": [
+          "muscle",
+          "strength",
+          "fitness"
+        ],
+        "alternatives": [
+          "farmer-carry",
+          "db-reverse-fly",
+          "face-pull"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Vállvonogatás kézisúlyzóval",
+        "en": "Dumbbell Shrug",
+        "de": "Kurzhantel-Schulterheben (Shrugs)",
+        "ro": "Ridicări de umeri cu gantere (Shrugs)"
+      },
+      "notes": {
+        "hu": "Tartsd a súlyzókat a combod mellett nyújtott karral. Húzd fel a vállövet egyenesen a füled irányába, tartsd meg röviden, majd engedd vissza.",
+        "en": "Hold dumbbells at your sides with straight arms. Elevate your shoulders straight up toward your ears, pause briefly at the top, then lower under control.",
+        "de": "Halte die Kurzhanteln mit gestreckten Armen seitlich am Körper. Ziehe die Schultern gerade nach oben Richtung Ohren, halte kurz und senke kontrolliert ab.",
+        "ro": "Ține ganterele pe lângă corp cu brațele întinse. Ridică umerii drept în sus spre urechi, menține scurt sus, apoi coboară controlat."
+      },
+      "muscles": [
+        "back",
+        "shoulders",
+        "forearms"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "cJRVVxmytaM",
+        "credit": "ScottHermanFitness",
+        "source": "https://www.youtube.com/watch?v=cJRVVxmytaM"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "preacher-curl",
+        "hu": "Scott-pados bicepszhajlítás",
+        "en": "Preacher Curl",
+        "equipment": "Scott-pad + EZ-rúd",
+        "target": "Bicepsz",
+        "notes": "Támaszd a felkart teljes hosszában a Scott-padra. Engedd le kontrolláltan a rudat a könyök túlfeszítése nélkül, majd hajlítsd vissza.",
+        "sets": 3,
+        "reps": "8–12",
+        "weight": 20,
+        "rest": 75,
+        "restSeconds": 75,
+        "unit": "kg (rúd összesen)",
+        "loadType": "barbell",
+        "repUnit": "ism.",
+        "movementPattern": "elbow-flexion",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": false,
+        "goalTags": [
+          "muscle",
+          "fitness"
+        ],
+        "alternatives": [
+          "barbell-curl",
+          "concentration-curl",
+          "cable-curl"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Scott-pados bicepszhajlítás",
+        "en": "Preacher Curl",
+        "de": "Scott-Bank-Bizepscurl",
+        "ro": "Flexii pentru biceps la banca Scott"
+      },
+      "notes": {
+        "hu": "Támaszd a felkart teljes hosszában a Scott-padra. Engedd le kontrolláltan a rudat a könyök túlfeszítése nélkül, majd hajlítsd vissza.",
+        "en": "Rest your upper arms flat against the preacher pad. Lower the bar under control without hyperextending the elbows at the bottom, then curl back up.",
+        "de": "Lege die Oberarme flach auf das Polster der Scott-Bank. Senke die Stange kontrolliert ab, ohne die Ellenbogen unten zu überstrecken, und beuge wieder nach oben.",
+        "ro": "Sprijină brațele superioare complet pe perna băncii Scott. Coboară bara controlat fără a hiperextinde coatele jos, apoi ridică înapoi."
+      },
+      "muscles": [
+        "biceps",
+        "forearms"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "fIWP-FRFNU0",
+        "credit": "Renaissance Periodization",
+        "source": "https://www.youtube.com/watch?v=fIWP-FRFNU0"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "cross-body-hammer-curl",
+        "hu": "Keresztfogású kalapács bicepszhajlítás",
+        "en": "Cross-Body Hammer Curl",
+        "equipment": "2 kézisúlyzó",
+        "target": "Bicepsz",
+        "notes": "Semleges (kalapács) fogással hajlítsd a súlyzót a törzs előtt az ellentétes váll irányába, majd kontrolláltan engedd vissza.",
+        "sets": 3,
+        "reps": "10–12",
+        "weight": 8,
+        "rest": 60,
+        "restSeconds": 60,
+        "unit": "kg/kar",
+        "loadType": "per_hand",
+        "repUnit": "ism.",
+        "movementPattern": "elbow-flexion",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": false,
+        "goalTags": [
+          "muscle",
+          "fitness",
+          "fatloss"
+        ],
+        "alternatives": [
+          "hammer-curl",
+          "db-curl",
+          "concentration-curl"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Keresztfogású kalapács bicepszhajlítás",
+        "en": "Cross-Body Hammer Curl",
+        "de": "Quer-Körper-Hammercurl",
+        "ro": "Flexii ciocan încrucișate la piept"
+      },
+      "notes": {
+        "hu": "Semleges (kalapács) fogással hajlítsd a súlyzót a törzs előtt az ellentétes váll irányába, majd kontrolláltan engedd vissza.",
+        "en": "Using a neutral grip, curl the dumbbell across your torso toward the opposite shoulder, then lower under control.",
+        "de": "Beuge die Kurzhantel im neutralen Hammergriff quer vor dem Körper zur gegenüberliegenden Schulter und senke sie kontrolliert ab.",
+        "ro": "Cu priză neutră, ridică gantera în diagonală prin fața trunchiului spre umărul opus, apoi coboară controlat."
+      },
+      "muscles": [
+        "biceps",
+        "forearms"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "zC3nLlEvin4",
+        "credit": "ScottHermanFitness",
+        "source": "https://www.youtube.com/watch?v=zC3nLlEvin4"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "t-bar-row",
+        "hu": "T-rudas evezés",
+        "en": "T-Bar Row",
+        "equipment": "T-rúd / landmine",
+        "target": "Hát",
+        "notes": "Stabil csípőhajlításban, egyenes háttal húzd a T-rúd fogantyúját a mellkas alsó része felé, zárd a lapockákat, majd engedd vissza.",
+        "sets": 3,
+        "reps": "8–12",
+        "weight": 40,
+        "rest": 120,
+        "restSeconds": 120,
+        "unit": "kg (összesen)",
+        "loadType": "barbell",
+        "repUnit": "ism.",
+        "movementPattern": "horizontal-pull",
+        "difficulty": "intermediate",
+        "complexity": "medium",
+        "beginnerSafe": false,
+        "compound": true,
+        "goalTags": [
+          "muscle",
+          "strength",
+          "fitness"
+        ],
+        "alternatives": [
+          "barbell-row",
+          "seated-cable-row",
+          "chest-supported-db-row"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "T-rudas evezés",
+        "en": "T-Bar Row",
+        "de": "T-Hantel-Rudern",
+        "ro": "Ramat cu bara T"
+      },
+      "notes": {
+        "hu": "Stabil csípőhajlításban, egyenes háttal húzd a T-rúd fogantyúját a mellkas alsó része felé, zárd a lapockákat, majd engedd vissza.",
+        "en": "Hinge at the hips with a flat back, pull the T-bar handle toward your lower chest while squeezing your shoulder blades, then lower under control.",
+        "de": "Beuge dich mit geradem Rücken aus der Hüfte vor, ziehe den T-Hantel-Griff zur unteren Brust, ziehe die Schulterblätter zusammen und senke kontrolliert ab.",
+        "ro": "Din aplecat din șolduri cu spatele drept, trage mânerul barei T spre partea inferioară a pieptului strângând omoplații, apoi coboară controlat."
+      },
+      "muscles": [
+        "back",
+        "biceps",
+        "core"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "j3Igk5nyZE4",
+        "credit": "ScottHermanFitness",
+        "source": "https://www.youtube.com/watch?v=j3Igk5nyZE4"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "pendlay-row",
+        "hu": "Pendlay-evezés",
+        "en": "Pendlay Row",
+        "equipment": "kétkezes rúd",
+        "target": "Hát",
+        "notes": "Minden ismétlés a talajról, nyugvó helyzetből indul a talajjal párhuzamos törzzsel. Húzd robbanékonyan a rudat az alsó mellkashoz, majd engedd vissza a földre.",
+        "sets": 3,
+        "reps": "6–10",
+        "weight": 45,
+        "rest": 120,
+        "restSeconds": 120,
+        "unit": "kg (rúd összesen)",
+        "loadType": "barbell",
+        "repUnit": "ism.",
+        "movementPattern": "horizontal-pull",
+        "difficulty": "intermediate",
+        "complexity": "high",
+        "beginnerSafe": false,
+        "compound": true,
+        "goalTags": [
+          "strength",
+          "muscle",
+          "fitness"
+        ],
+        "alternatives": [
+          "barbell-row",
+          "t-bar-row",
+          "one-arm-row"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Pendlay-evezés",
+        "en": "Pendlay Row",
+        "de": "Pendlay-Rudern",
+        "ro": "Ramat Pendlay cu bara"
+      },
+      "notes": {
+        "hu": "Minden ismétlés a talajról, nyugvó helyzetből indul a talajjal párhuzamos törzzsel. Húzd robbanékonyan a rudat az alsó mellkashoz, majd engedd vissza a földre.",
+        "en": "Start each rep from a dead stop on the floor with your torso parallel to the ground. Row the bar explosively to your lower chest, then return it to the floor.",
+        "de": "Jede Wiederholung startet ruhend vom Boden bei fast waagerechtem Oberkörper. Ziehe die Stange explosiv zur unteren Brust und lege sie kontrolliert wieder ab.",
+        "ro": "Fiecare repetare pleacă de pe sol, din oprire completă, cu trunchiul paralel cu podeaua. Trage bara exploziv spre baza pieptului, apoi așaz-o înapoi pe sol."
+      },
+      "muscles": [
+        "back",
+        "biceps",
+        "core"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "ZlRrIsoDpKg",
+        "credit": "Alan Thrall",
+        "source": "https://www.youtube.com/watch?v=ZlRrIsoDpKg"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "stiff-leg-deadlift",
+        "hu": "Merevlábas felhúzás",
+        "en": "Stiff-Leg Deadlift",
+        "equipment": "kétkezes rúd",
+        "target": "Combhajlító",
+        "notes": "A román felhúzásnál nyújtottabb (de nem hátrafeszített) térddel és nagyobb mozgástartománnyal engedd le a rudat semleges gerinccel, majd csípőből állj fel.",
+        "sets": 3,
+        "reps": "6–10",
+        "weight": 50,
+        "rest": 120,
+        "restSeconds": 120,
+        "unit": "kg (rúd összesen)",
+        "loadType": "barbell",
+        "repUnit": "ism.",
+        "movementPattern": "hinge",
+        "difficulty": "intermediate",
+        "complexity": "medium",
+        "beginnerSafe": false,
+        "compound": true,
+        "goalTags": [
+          "muscle",
+          "strength",
+          "fitness"
+        ],
+        "alternatives": [
+          "rdl",
+          "db-rdl",
+          "barbell-good-morning"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Merevlábas felhúzás",
+        "en": "Stiff-Leg Deadlift",
+        "de": "Gestrecktes Kreuzheben",
+        "ro": "Îndreptări cu picioarele întinse"
+      },
+      "notes": {
+        "hu": "A román felhúzásnál nyújtottabb (de nem hátrafeszített) térddel és nagyobb mozgástartománnyal engedd le a rudat semleges gerinccel, majd csípőből állj fel.",
+        "en": "With knees kept straighter than an RDL (without locking out), hinge deep with a neutral spine for maximum hamstring stretch, then drive the hips through.",
+        "de": "Mit gestreckteren Knien als beim RDL (ohne Überstrecken) und geradem Rücken tief aus der Hüfte absenken und kraftvoll wieder aufrichten.",
+        "ro": "Cu genunchii mai întinși decât la RDL (fără blocare), coboară bara cu spatele drept pentru o întindere maximă a femuralilor, apoi ridică-te din șolduri."
+      },
+      "muscles": [
+        "legs",
+        "back",
+        "core"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "CN_7cz3P-1U",
+        "credit": "Renaissance Periodization",
+        "source": "https://www.youtube.com/watch?v=CN_7cz3P-1U"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "hip-abduction-machine",
+        "hu": "Csípőtávolítás gépen",
+        "en": "Hip Abduction Machine",
+        "equipment": "csípőtávolító gép",
+        "target": "Farizom",
+        "notes": "Ülj stabilan a gépben, támaszd meg a medencét, majd told szét a combpárnákat kontrolláltan, tartsd meg röviden a szélső ponton, és engedd vissza.",
+        "sets": 3,
+        "reps": "12–20",
+        "weight": 35,
+        "rest": 60,
+        "restSeconds": 60,
+        "unit": "kg",
+        "loadType": "machine",
+        "repUnit": "ism.",
+        "movementPattern": "squat",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": false,
+        "goalTags": [
+          "muscle",
+          "fitness",
+          "fatloss"
+        ],
+        "alternatives": [
+          "glute-bridge",
+          "single-leg-glute-bridge",
+          "lateral-lunge"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Csípőtávolítás gépen",
+        "en": "Hip Abduction Machine",
+        "de": "Abduktionsmaschine",
+        "ro": "Abducția șoldului la aparat"
+      },
+      "notes": {
+        "hu": "Ülj stabilan a gépben, támaszd meg a medencét, majd told szét a combpárnákat kontrolláltan, tartsd meg röviden a szélső ponton, és engedd vissza.",
+        "en": "Sit securely in the machine, brace your pelvis, press the thigh pads outward under control, pause briefly, and return smoothly.",
+        "de": "Sitze stabil im Gerät, fixiere das Becken, drücke die Beinpolster kontrolliert nach außen, halte kurz und führe sie langsam zurück.",
+        "ro": "Stai stabil în aparat, fixează bazinul, împinge pernele în exterior controlat, menține scurt și revino lent."
+      },
+      "muscles": [
+        "legs"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "G_8LItOiZ0Q",
+        "credit": "PureGym",
+        "source": "https://www.youtube.com/watch?v=G_8LItOiZ0Q"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "hip-adduction-machine",
+        "hu": "Csípőközelítés gépen",
+        "en": "Hip Adduction Machine",
+        "equipment": "csípőközelítő gép",
+        "target": "Láb",
+        "notes": "Ülj be a gépbe kényelmes nyitási szöggel, zárd össze a combpárnákat kontrolláltan rángatás nélkül, majd lassan engedd vissza.",
+        "sets": 3,
+        "reps": "12–20",
+        "weight": 35,
+        "rest": 60,
+        "restSeconds": 60,
+        "unit": "kg",
+        "loadType": "machine",
+        "repUnit": "ism.",
+        "movementPattern": "squat",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": false,
+        "goalTags": [
+          "muscle",
+          "fitness",
+          "fatloss"
+        ],
+        "alternatives": [
+          "lateral-lunge",
+          "leg-press",
+          "goblet-squat"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Csípőközelítés gépen",
+        "en": "Hip Adduction Machine",
+        "de": "Adduktionsmaschine",
+        "ro": "Adducția șoldului la aparat"
+      },
+      "notes": {
+        "hu": "Ülj be a gépbe kényelmes nyitási szöggel, zárd össze a combpárnákat kontrolláltan rángatás nélkül, majd lassan engedd vissza.",
+        "en": "Sit in the machine at a comfortable starting width, squeeze the thigh pads together smoothly without jerking, then return slowly.",
+        "de": "Setze dich mit angenehmer Startweite in das Gerät, führe die Polster kontrolliert ohne Ruck zusammen und lasse sie langsam zurück.",
+        "ro": "Așază-te în aparat la o deschidere confortabilă, apropie pernele controlat fără smucituri, apoi revino lent."
+      },
+      "muscles": [
+        "legs"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "CjAVezAggkI",
+        "credit": "PureGym",
+        "source": "https://www.youtube.com/watch?v=CjAVezAggkI"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "back-extension-45",
+        "hu": "Hátnyújtás 45 fokos padon",
+        "en": "45-Degree Back Extension",
+        "equipment": "45 fokos hátpad",
+        "target": "Hát",
+        "notes": "Állítsd a párnát a csípőcsont alá. Semleges gerinccel ereszkedj le csípőből, majd a farizom és a combhajlító megfeszítésével emelkedj vissza egyenes vonalig.",
+        "sets": 3,
+        "reps": "10–15",
+        "weight": 0,
+        "rest": 75,
+        "restSeconds": 75,
+        "unit": "testsúly",
+        "loadType": "bodyweight",
+        "repUnit": "ism.",
+        "movementPattern": "hinge",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": true,
+        "goalTags": [
+          "fitness",
+          "muscle",
+          "strength"
+        ],
+        "alternatives": [
+          "superman-hold",
+          "rdl",
+          "glute-bridge"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Hátnyújtás 45 fokos padon",
+        "en": "45-Degree Back Extension",
+        "de": "Rückenstrecken an der 45-Grad-Bank",
+        "ro": "Extensii pentru spate la banca de 45°"
+      },
+      "notes": {
+        "hu": "Állítsd a párnát a csípőcsont alá. Semleges gerinccel ereszkedj le csípőből, majd a farizom és a combhajlító megfeszítésével emelkedj vissza egyenes vonalig.",
+        "en": "Set the pad just below your hip crease. Hinge down with a neutral spine, then squeeze your glutes and hamstrings to return to a straight line without hyperextending.",
+        "de": "Stelle das Polster knapp unter die Hüftbeuge. Beuge dich mit geradem Rücken aus der Hüfte ab und richte dich über Gesäß und Beinbeuger bis zur geraden Linie auf.",
+        "ro": "Reglează suportul imediat sub pliul șoldului. Coboară cu coloana neutră, apoi contractă fesierii și femuralii pentru a reveni în linie dreaptă."
+      },
+      "muscles": [
+        "back",
+        "legs",
+        "core"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "ph3pddpKzzw",
+        "credit": "Bret Contreras",
+        "source": "https://www.youtube.com/watch?v=ph3pddpKzzw"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "russian-twist",
+        "hu": "Ülő törzsfordítás",
+        "en": "Russian Twist",
+        "equipment": "testsúly",
+        "target": "Oldalsó hasizom",
+        "notes": "Ülj hajlított térddel, enyhén hátradöntött de egyenes törzzsel. Forgasd a vállövet kontrolláltan egyik oldalról a másikra pusztán a karok csapkodása helyett.",
+        "sets": 3,
+        "reps": "12–20",
+        "weight": 0,
+        "rest": 60,
+        "restSeconds": 60,
+        "unit": "testsúly",
+        "loadType": "bodyweight",
+        "repUnit": "ism.",
+        "movementPattern": "core-flexion",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": false,
+        "goalTags": [
+          "fitness",
+          "muscle",
+          "fatloss"
+        ],
+        "alternatives": [
+          "side-plank",
+          "crunch",
+          "cable-pallof-press"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Ülő törzsfordítás",
+        "en": "Russian Twist",
+        "de": "Russian Twist",
+        "ro": "Răsuciri rusești ale trunchiului (Russian Twist)"
+      },
+      "notes": {
+        "hu": "Ülj hajlított térddel, enyhén hátradöntött de egyenes törzzsel. Forgasd a vállövet kontrolláltan egyik oldalról a másikra pusztán a karok csapkodása helyett.",
+        "en": "Sit with bent knees and a slightly reclined, braced torso. Rotate your ribcage under control from side to side rather than just swinging your arms.",
+        "de": "Sitze mit gebeugten Knien und leicht zurückgelehntem, festem Oberkörper. Drehe den Brustkorb kontrolliert von Seite zu Seite, statt nur die Arme zu schwingen.",
+        "ro": "Stai în șezut cu genunchii îndoiți și trunchiul ușor înclinat pe spate. Rotește cutia toracică controlat dintr-o parte în alta, nu doar brațele."
+      },
+      "muscles": [
+        "core"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "wkD8rjkodUI",
+        "credit": "Howcast",
+        "source": "https://www.youtube.com/watch?v=wkD8rjkodUI"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "cable-crunch",
+        "hu": "Hasprés csigán",
+        "en": "Cable Crunch",
+        "equipment": "csigás gép + kötél",
+        "target": "Has",
+        "notes": "Térdelj a felső csiga elé a kötelet a fej mellett tartva. Rögzített csípővel gördülj le a bordák és a medence közelítésével, majd kontrolláltan engedd vissza.",
+        "sets": 3,
+        "reps": "10–15",
+        "weight": 25,
+        "rest": 60,
+        "restSeconds": 60,
+        "unit": "kg",
+        "loadType": "cable",
+        "repUnit": "ism.",
+        "movementPattern": "core-flexion",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": false,
+        "goalTags": [
+          "muscle",
+          "fitness",
+          "strength"
+        ],
+        "alternatives": [
+          "crunch",
+          "reverse-crunch",
+          "hanging-knee-raise"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Hasprés csigán",
+        "en": "Cable Crunch",
+        "de": "Kabelzug-Crunch",
+        "ro": "Abdomene la cablu în genunchi"
+      },
+      "notes": {
+        "hu": "Térdelj a felső csiga elé a kötelet a fej mellett tartva. Rögzített csípővel gördülj le a bordák és a medence közelítésével, majd kontrolláltan engedd vissza.",
+        "en": "Kneel below a high pulley holding the rope beside your head. Keep your hips stationary and curl your ribcage toward your pelvis, then return under control.",
+        "de": "Knie vor dem oberen Kabelzug und halte das Seil neben dem Kopf. Lasse die Hüfte fest und rolle den Brustkorb Richtung Becken ein, dann kontrolliert lösen.",
+        "ro": "Stai în genunchi în fața scripetelui superior, ținând frânghia lângă cap. Menține șoldurile fixe și apropie coastele de bazin, apoi revino controlat."
+      },
+      "muscles": [
+        "core"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "AV5PmZJIrrw",
+        "credit": "Testosterone Nation",
+        "source": "https://www.youtube.com/watch?v=AV5PmZJIrrw"
+      },
+      "measurementType": "reps"
+    },
+    {
+      "raw": {
+        "id": "farmer-carry",
+        "hu": "Farmer séta",
+        "en": "Farmer Carry",
+        "equipment": "2 kézisúlyzó",
+        "target": "Törzs",
+        "notes": "Fogj két nehéz kézisúlyzót a tested mellett, húzd hátra és le a vállakat, és sétálj egyenes, feszes törzzsel a kijelölt időtartamig.",
+        "sets": 3,
+        "reps": "30–45 mp",
+        "weight": 16,
+        "rest": 90,
+        "restSeconds": 90,
+        "unit": "kg/kar",
+        "loadType": "per_hand",
+        "repUnit": "mp",
+        "movementPattern": "core-bracing",
+        "difficulty": "beginner",
+        "complexity": "low",
+        "beginnerSafe": true,
+        "compound": true,
+        "goalTags": [
+          "strength",
+          "fitness",
+          "fatloss"
+        ],
+        "alternatives": [
+          "plank",
+          "side-plank",
+          "db-shrug"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Farmer séta",
+        "en": "Farmer Carry",
+        "de": "Farmer’s Walk",
+        "ro": "Mersul fermierului (Farmer Carry)"
+      },
+      "notes": {
+        "hu": "Fogj két nehéz kézisúlyzót a tested mellett, húzd hátra és le a vállakat, és sétálj egyenes, feszes törzzsel a kijelölt időtartamig.",
+        "en": "Hold a pair of heavy dumbbells at your sides, pack your shoulders down and back, and walk with an upright, braced core for the prescribed duration.",
+        "de": "Halte zwei schwere Kurzhanteln seitlich am Körper, ziehe die Schultern aktiv nach unten-hinten und gehe mit aufrechtem, festem Rumpf für die Zielzeit.",
+        "ro": "Ține două gantere grele pe lângă corp, fixează umerii jos și înapoi și mergi cu trunchiul drept și încordat pe durata stabilită."
+      },
+      "muscles": [
+        "core",
+        "forearms",
+        "shoulders",
+        "legs"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "Fkzk_RqlYig",
+        "credit": "Buff Dudes",
+        "source": "https://www.youtube.com/watch?v=Fkzk_RqlYig"
+      },
+      "measurementType": "time"
+    },
+    {
+      "raw": {
+        "id": "bear-crawl",
+        "hu": "Medvejárás",
+        "en": "Bear Crawl",
+        "equipment": "testsúly",
+        "target": "Törzs",
+        "notes": "Négykézláb helyzetben emeld el a térdeket 2–3 cm-re a talajtól. Ellentétes kézzel és lábbal lépkedj kontrolláltan, vízszintes és stabil háttal.",
+        "sets": 3,
+        "reps": "30–45 mp",
+        "weight": 0,
+        "rest": 60,
+        "restSeconds": 60,
+        "unit": "testsúly",
+        "loadType": "bodyweight",
+        "repUnit": "mp",
+        "movementPattern": "conditioning",
+        "difficulty": "beginner",
+        "complexity": "medium",
+        "beginnerSafe": true,
+        "compound": true,
+        "goalTags": [
+          "fitness",
+          "fatloss",
+          "strength"
+        ],
+        "alternatives": [
+          "mountain-climber",
+          "plank",
+          "dead-bug"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Medvejárás",
+        "en": "Bear Crawl",
+        "de": "Bärengang (Bear Crawl)",
+        "ro": "Mersul ursului (Bear Crawl)"
+      },
+      "notes": {
+        "hu": "Négykézláb helyzetben emeld el a térdeket 2–3 cm-re a talajtól. Ellentétes kézzel és lábbal lépkedj kontrolláltan, vízszintes és stabil háttal.",
+        "en": "Start on all fours with knees hovering just off the floor. Move opposite hand and foot together in small, controlled steps while keeping your back flat.",
+        "de": "Starte im Vierfüßlerstand mit knapp über dem Boden schwebenden Knien. Bewege diagonal Hand und Fuß in kleinen kontrollierten Schritten bei geradem Rücken.",
+        "ro": "Pornește în sprijin pe palme și vârfuri cu genunchii ridicați puțin de la sol. Pășește controlat cu mâna și piciorul opus, păstrând spatele plat."
+      },
+      "muscles": [
+        "core",
+        "shoulders",
+        "legs"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "t8d427T6nQU",
+        "credit": "Well+Good",
+        "source": "https://www.youtube.com/watch?v=t8d427T6nQU"
+      },
+      "measurementType": "time"
+    },
+    {
+      "raw": {
+        "id": "lateral-lunge",
+        "hu": "Oldalirányú kitörés",
+        "en": "Lateral Lunge",
+        "equipment": "2 kézisúlyzó",
+        "target": "Láb",
+        "notes": "Lépj szélesen oldalra, told hátra a csípőt és hajlítsd a kilépő lábat, míg a másik láb nyújtva marad, majd térj vissza kiinduló helyzetbe oldalanként.",
+        "sets": 3,
+        "reps": "8–12 / láb",
+        "weight": 6,
+        "rest": 75,
+        "restSeconds": 75,
+        "unit": "kg/kar",
+        "loadType": "per_hand",
+        "repUnit": "/láb",
+        "movementPattern": "lunge",
+        "difficulty": "beginner",
+        "complexity": "medium",
+        "beginnerSafe": true,
+        "compound": true,
+        "goalTags": [
+          "fitness",
+          "muscle",
+          "strength",
+          "fatloss"
+        ],
+        "alternatives": [
+          "reverse-lunge",
+          "walking-lunge",
+          "goblet-squat"
+        ],
+        "custom": false,
+        "media": null
+      },
+      "names": {
+        "hu": "Oldalirányú kitörés",
+        "en": "Lateral Lunge",
+        "de": "Seitlicher Ausfallschritt",
+        "ro": "Fandare laterală"
+      },
+      "notes": {
+        "hu": "Lépj szélesen oldalra, told hátra a csípőt és hajlítsd a kilépő lábat, míg a másik láb nyújtva marad, majd térj vissza kiinduló helyzetbe oldalanként.",
+        "en": "Step wide to the side, push your hips back and bend the stepping knee while keeping the trailing leg straight, then push back to the start on each side.",
+        "de": "Mache einen weiten Schritt zur Seite, schiebe die Hüfte nach hinten und beuge das Standbein bei gestrecktem Gegenbein, dann drücke dich pro Seite zurück.",
+        "ro": "Fă un pas larg în lateral, împinge șoldurile înapoi și îndoaie genunchiul piciorului de sprijin păstrând celălalt picior întins, apoi revino pe fiecare parte."
+      },
+      "muscles": [
+        "legs",
+        "core"
+      ],
+      "demo": {
+        "provider": "youtube",
+        "videoId": "gwWv7aPcD88",
+        "credit": "Well+Good",
+        "source": "https://www.youtube.com/watch?v=gwWv7aPcD88"
+      },
+      "measurementType": "reps"
     }
   ],
   "programs": [
@@ -5664,7 +7641,7 @@
             "name": "A",
             "exercises": [
               "goblet-squat",
-              "db-floor-press",
+              "barbell-floor-press",
               "one-arm-row",
               "db-ohp",
               "db-rdl",
@@ -5712,7 +7689,7 @@
             "name": "A",
             "exercises": [
               "goblet-squat",
-              "db-floor-press",
+              "barbell-floor-press",
               "one-arm-row",
               "db-ohp",
               "db-rdl",

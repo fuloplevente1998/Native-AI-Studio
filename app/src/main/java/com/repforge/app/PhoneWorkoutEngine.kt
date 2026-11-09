@@ -578,14 +578,17 @@ internal object PhoneWorkoutExecution {
             return undone
         }
         val indoorStopwatchCommand = frame.optBoolean("studioIndoor") && command.optString("action") == "completeTimedSet"
-        if (!indoorStopwatchCommand && !IntervalTimerService.armed(frame.getString("workoutId"), frame.getLong("generation"))) {
+        val directSetCompletion = frame.optInt("nativeEditorProjection") == 1 &&
+            command.optString("action") in setOf("completeSet", "completeMeasuredSet")
+        if (!indoorStopwatchCommand && !directSetCompletion && !IntervalTimerService.armed(frame.getString("workoutId"), frame.getLong("generation"))) {
             return JSONObject().put("status", "rejected").put("reason", "controllerNotArmed")
         }
         val timer = IntervalTimerService.snapshot(context)
         if (timer.optString("key").isNotEmpty() &&
             !timer.optBoolean("stopped") &&
             !timer.optBoolean("interrupted") &&
-            "complete" != timer.optString("phase")
+            "complete" != timer.optString("phase") &&
+            !(timer.optBoolean("restOnly") && directSetCompletion)
         ) {
             return JSONObject().put("status", "rejected").put("reason", "timerStillActive")
         }
@@ -701,6 +704,9 @@ internal object PhoneWorkoutExecution {
                 val restComplete = plan.optBoolean("restOnly") && "complete" == timer.optString("phase")
                 if (restComplete && !interrupted) {
                     value.put("currentExercise", transition.getInt("currentExercise"))
+                    value.put("restEndAt", 0L)
+                } else if (plan.optBoolean("restOnly") && "rest" == timer.optString("phase")) {
+                    value.put("restEndAt", if (running && remaining > 0L) System.currentTimeMillis() + remaining else 0L)
                 }
                 val phaseStep = plan.getJSONArray("steps").getJSONObject(timer.optInt("stepIndex"))
                 value.put(
@@ -729,6 +735,24 @@ internal object PhoneWorkoutExecution {
                         .put("targetExercise", transition.getInt("currentExercise"))
                         .put("vibration", false)
                         .put("interrupted", interrupted)
+                )
+            } else if (!(plan.optBoolean("restOnly") && value.optLong("restEndAt") > System.currentTimeMillis())) {
+                value.put(
+                    "automation",
+                    JSONObject()
+                        .put("enabled", true)
+                        .put("owner", "phone")
+                        .put("phase", if ("paused" == transition.optString("phase")) "ready" else transition.optString("phase", "ready"))
+                        .put("remainingMs", 0)
+                        .put(
+                            "key",
+                            if ("paused" == transition.optString("state")) {
+                                "undo188:" + (frame.optJSONObject("undo188")?.optString("commandId") ?: "")
+                            } else {
+                                ""
+                            }
+                        )
+                        .put("paused", "paused" == transition.optString("state"))
                 )
             }
         } else if (transition != null) {

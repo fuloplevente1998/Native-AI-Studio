@@ -42,4 +42,19 @@ class WearPhoneAutomaticProjectionTest {
             assertTrue(next.automation!!.paused);assertEquals(w.exercises,next.exercises)
         }
     }
+    @Test fun restOnlyPhoneTimerDoesNotPullWatchCurrentExerciseOneExerciseBehind() {
+        val w=workout().copy(currentExercise=2,restEndAt=123456L)
+        val wire=JSONObject().put("steps",JSONArray().put(JSONObject().put("exerciseId","run").put("setId","s1")))
+            .put("restOnly",true).put("autoAdvance",false).put("completed",0).put("stepIndex",0)
+        val next=projectPhoneAutomatic(w,wire,w.automation!!.copy(phase="ready",remainingMs=0))
+        assertEquals(2,next.currentExercise)
+        assertEquals(123456L,next.restEndAt)
+    }
+    @Test fun phoneExerciseAdvancementUpdatesWatchEvenAfterPriorWatchSequence() {
+        val current=workout().copy(currentExercise=0,localSequence=5,executionRevision=2,timerOwner="phone")
+        val incoming=workout().copy(currentExercise=1,localSequence=0,executionRevision=3,timerOwner="phone",restEndAt=99000L)
+        val merged=preservePendingWearEdits(current,incoming)
+        assertEquals(1,merged.currentExercise)
+        assertEquals(99000L,merged.restEndAt)
+    }
 }

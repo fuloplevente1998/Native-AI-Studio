@@ -196,6 +196,18 @@ private val equipmentDisplayLabels = mapOf(
     "tolódzkodó korlát" to listOf("dip bars", "Dip-Barren", "bare paralele"),
     "vállnyomó gép" to listOf("shoulder press machine", "Schulterpresse", "aparat pentru împins deasupra capului"),
     "álló vádligép" to listOf("standing calf raise machine", "stehendes Wadenheben", "aparat pentru gambe din picioare"),
+    "ülő vádligép" to listOf("seated calf raise machine", "sitzendes Wadenheben-Gerät", "aparat pentru gambe din șezut"),
+    "csípőtávolító gép" to listOf("hip abduction machine", "Abduktionsmaschine", "aparat de abducție a șoldului"),
+    "csípőközelítő gép" to listOf("hip adduction machine", "Adduktionsmaschine", "aparat de adducție a șoldului"),
+    "45 fokos hátpad" to listOf("45-degree back extension bench", "45-Grad-Rückenstreckerbank", "bancă de extensii lombare la 45°"),
+    "scott-pad" to listOf("preacher bench", "Scott-Bank", "bancă Scott"),
+    "ez-rúd" to listOf("EZ bar", "SZ-Stange", "bară EZ"),
+    "rúd/ez-rúd" to listOf("barbell/EZ bar", "Langhantel/SZ-Stange", "bară/bară EZ"),
+    "kézisúlyzó/ez-rúd" to listOf("dumbbell/EZ bar", "Kurzhantel/SZ-Stange", "ganteră/bară EZ"),
+    "t-rúd / landmine" to listOf("T-bar / landmine", "T-Hantel / Landmine", "bară T / landmine"),
+    "testsúly / kézisúlyzó" to listOf("bodyweight / dumbbells", "Körpergewicht / Kurzhanteln", "greutatea corpului / gantere"),
+    "testsúly / súly" to listOf("bodyweight / weight", "Körpergewicht / Gewicht", "greutatea corpului / greutate"),
+    "biztonságos tartó/segítő" to listOf("safety rack/spotter", "Sicherheitsablage/Helfer", "suport de siguranță/partener"),
 )
 
 fun translateEquipmentLabel(rawHu: String, loadType: String = "", lang: AppLanguage): String {

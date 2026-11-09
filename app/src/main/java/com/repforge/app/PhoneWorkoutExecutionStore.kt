@@ -299,11 +299,20 @@ internal class PhoneWorkoutExecutionStore(context: Context) :
                 for (key in arrayOf("timeLogs162", "latestTimer162", "retiredTimers188", "manualAnchor162", "resumeTimerOnContinue201")) {
                     if (old.has(key)) incoming.put(key, old.get(key))
                 }
+                val mergedLocalSeq = max(
+                    max(old.optLong("localSequence"), incoming.optLong("localSequence")),
+                    max(old.optLong("watchSequence"), incoming.optLong("watchSequence"))
+                )
+                val mergedWatchSeq = max(old.optLong("watchSequence"), incoming.optLong("watchSequence"))
+                if (mergedLocalSeq > 0L) incoming.put("localSequence", mergedLocalSeq)
+                if (mergedWatchSeq > 0L) incoming.put("watchSequence", mergedWatchSeq)
                 if (incoming.optInt("nativeEditorProjection") == 1) NativeMeasuredTime.stopwatch(incoming, SystemClock.elapsedRealtime())
                 if (old.has("transition")) {
                     val transition = JSONObject(old.getJSONObject("transition").toString())
                     if (incoming.optInt("nativeEditorProjection") == 1 && transition.optJSONObject("plan")?.optBoolean("restOnly") == true &&
-                        incoming.optLong("selectionRevision") > old.optLong("selectionRevision")) {
+                        (incoming.optLong("selectionRevision") > old.optLong("selectionRevision") ||
+                            incoming.optInt("currentExercise") != old.optInt("currentExercise"))
+                    ) {
                         transition.put("currentExercise", incoming.getInt("currentExercise"))
                     }
                     val plan = transition.optJSONObject("plan")
@@ -369,6 +378,10 @@ internal class PhoneWorkoutExecutionStore(context: Context) :
                 finishManual(next, command, SystemClock.elapsedRealtime())
                 val transition = PhoneWorkoutPlans.afterRecord(next, next.getInt("currentExercise"))
                 if (transition != null) next.put("transition", transition)
+                if (command.optString("action") in setOf("completeSet", "completeTimedSet", "completeMeasuredSet")) {
+                    val restSec = next.optInt("restSeconds", 90)
+                    if (restSec > 0) next.put("restEndAt", System.currentTimeMillis() + restSec * 1000L)
+                }
             } catch (invalid: Exception) {
                 return rejected(if (invalid is JSONException) "invalidCommand" else invalid.message ?: "invalidCommand")
             }
@@ -720,6 +733,13 @@ internal class PhoneWorkoutExecutionStore(context: Context) :
             for (key in arrayOf("timeLogs162", "latestTimer162", "retiredTimers188")) {
                 if (old.has(key)) incoming.put(key, old.get(key))
             }
+            val mergedLocalSeq = max(
+                max(old.optLong("localSequence"), incoming.optLong("localSequence")),
+                max(old.optLong("watchSequence"), incoming.optLong("watchSequence"))
+            )
+            val mergedWatchSeq = max(old.optLong("watchSequence"), incoming.optLong("watchSequence"))
+            if (mergedLocalSeq > 0L) incoming.put("localSequence", mergedLocalSeq)
+            if (mergedWatchSeq > 0L) incoming.put("watchSequence", mergedWatchSeq)
             incoming.remove("manualAnchor162")
             val anchor = old.optJSONObject("manualAnchor162")
             if (anchor != null && old.optInt("currentExercise") == incoming.optInt("currentExercise")) {
@@ -728,12 +748,19 @@ internal class PhoneWorkoutExecutionStore(context: Context) :
                     incoming.put("manualAnchor162", anchor)
                 }
             }
-            val previousTransition = old.optJSONObject("transition")
+            val previousTransition = old.optJSONObject("transition")?.let { JSONObject(it.toString()) }
+            if (previousTransition != null &&
+                previousTransition.optJSONObject("plan")?.optBoolean("restOnly") == true &&
+                (incoming.optLong("selectionRevision") > old.optLong("selectionRevision") ||
+                    incoming.optInt("currentExercise") != old.optInt("currentExercise"))
+            ) {
+                previousTransition.put("currentExercise", incoming.getInt("currentExercise"))
+            }
             val automation = incoming.optJSONObject("automation")
             if (previousTransition != null &&
                 previousTransition.optJSONObject("plan") != null &&
-                automation != null &&
-                previousTransition.getJSONObject("plan").optString("key") == automation.optString("key")
+                ((old.optInt("nativeEditorProjection") == 1 && incoming.optInt("nativeEditorProjection") == 1) ||
+                    (automation != null && previousTransition.getJSONObject("plan").optString("key") == automation.optString("key")))
             ) {
                 incoming.put("transition", previousTransition)
             } else {

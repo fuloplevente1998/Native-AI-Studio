@@ -24,6 +24,21 @@ internal object NativeWorkoutEditing {
         val frame = projection.optJSONObject("snapshot") ?: error("Nincs előkészített natív edzés.")
         val current = ActiveWorkoutStore.current(context)
         requireEditable(frame, current)
+        frame.put("nativeExecutionProtocol", 2)
+        if (current != null && current.optBoolean("active") && current.optString("workoutId") == frame.optString("workoutId")) {
+            val mergedLocalSeq = maxOf(
+                current.optLong("localSequence"),
+                frame.optLong("localSequence"),
+                current.optLong("watchSequence"),
+                frame.optLong("watchSequence")
+            )
+            val mergedWatchSeq = maxOf(
+                current.optLong("watchSequence"),
+                frame.optLong("watchSequence")
+            )
+            if (mergedLocalSeq > 0L) frame.put("localSequence", mergedLocalSeq)
+            if (mergedWatchSeq > 0L) frame.put("watchSequence", mergedWatchSeq)
+        }
         if (display != null && display.optString("workoutId") == frame.optString("workoutId") &&
             display.optLong("generation") == frame.optLong("generation") &&
             display.optLong("executionRevision") == frame.optLong("executionRevision")) {

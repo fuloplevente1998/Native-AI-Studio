@@ -73,6 +73,15 @@ internal object StudioWorkoutBridge {
                     val displayedWeight = update.optDouble("weight", Double.NaN)
                     if (originalWeight.isFinite() && displayedWeight.isFinite() &&
                         originalWeight.toFloat() == displayedWeight.toFloat()) merged.put("weight", old.get("weight"))
+                    if (!update.optBoolean("done") && update.optString("reps") == "0" && old.optString("reps").isEmpty()) {
+                        merged.put("reps", "")
+                    }
+                    if (update.optBoolean("leftRecorded") && update.optInt("leftSec") > 0 && !update.has("leftSeconds")) {
+                        merged.put("leftSeconds", update.optInt("leftSec"))
+                    }
+                    if (update.optBoolean("rightRecorded") && update.optInt("rightSec") > 0 && !update.has("rightSeconds")) {
+                        merged.put("rightSeconds", update.optInt("rightSec"))
+                    }
                     for (key in listOf("distanceMeters", "distanceSource", "manualDistanceMeters", "gpsMeasuredMeters", "gpsRouteKey163")) {
                         if (old.has(key) && !update.has(key)) merged.put(key, old.get(key))
                     }
@@ -81,9 +90,16 @@ internal object StudioWorkoutBridge {
                 }
             }
         }
-        for (key in listOf("studioGpsKey", "studioIndoor")) if (candidate.has(key)) edit.put(key, candidate.get(key))
-        edit.put("exercises", exercises).put("currentExercise", candidate.getInt("currentExercise"))
-        return NativeWorkoutEditing.commitEdit(context, edit)
+        for (key in listOf("studioGpsKey", "studioIndoor", "restEndAt")) if (candidate.has(key)) edit.put(key, candidate.get(key))
+        val nextExerciseIndex = candidate.getInt("currentExercise")
+        val exerciseChanged = nextExerciseIndex != frame.optInt("currentExercise")
+        if (exerciseChanged) {
+            NativeSetStopwatch.sealPause(edit)
+            NativeSetStopwatch.pause(edit, trackPause = false)
+            edit.put("selectionRevision", frame.optLong("selectionRevision") + 1L)
+        }
+        edit.put("exercises", exercises).put("currentExercise", nextExerciseIndex)
+        return NativeWorkoutEditing.commitEdit(context, edit, clockEdit = exerciseChanged)
     }
 
     fun startIndoor(context: android.content.Context): JSONObject {

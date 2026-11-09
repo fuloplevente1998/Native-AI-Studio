@@ -76,13 +76,22 @@ abstract class TrainPilotDatabase : RoomDatabase() {
             // Do not acquire a metadata write lease merely to run no-op INSERT checks: that
             // would make a following restore spuriously busy. Actual missing-row writes still
             // use the original admission fence and recheck their IDs inside the transaction.
+            val legacyHomeBasicDayA = """["goblet-squat","db-floor-press","one-arm-row","db-ohp","db-rdl","db-curl","side-plank"]"""
             val ticket = runCatching {
                 com.repforge.app.NativeDataReplacement.continuationForCurrentData(context)
             }.getOrNull()
             if (ticket != null) {
                 val exercises = db.exerciseLibraryDao().getExerciseIds().toSet()
                 val programs = db.programDao().getProgramIds().toSet()
-                if (defaultExercises().all { it.id in exercises } && defaultPrograms().first.all { it.id in programs }) {
+                val homeBasicWithDays = db.programDao().getProgramWithDaysById("home-basic")
+                val needsHomeBasicDayAMigration = homeBasicWithDays != null &&
+                    homeBasicWithDays.program.builtin &&
+                    !homeBasicWithDays.program.generated &&
+                    homeBasicWithDays.days.any { it.dayId == "A" && it.exercisesJson == legacyHomeBasicDayA }
+                if (!needsHomeBasicDayAMigration &&
+                    defaultExercises().all { it.id in exercises } &&
+                    defaultPrograms().first.all { it.id in programs }
+                ) {
                     ticket.requireCurrent(context)
                     return
                 }
@@ -97,6 +106,19 @@ abstract class TrainPilotDatabase : RoomDatabase() {
                     for (program in programs.filter { it.id !in knownPrograms }) {
                         if (db.programDao().insertMissingProgram(program) != -1L)
                             db.programDao().upsertProgramDays(days.filter { it.programId == program.id })
+                    }
+                    val existingHomeBasic = db.programDao().getProgramWithDaysById("home-basic")
+                    if (existingHomeBasic != null &&
+                        existingHomeBasic.program.builtin &&
+                        !existingHomeBasic.program.generated &&
+                        existingHomeBasic.days.any { it.dayId == "A" && it.exercisesJson == legacyHomeBasicDayA }
+                    ) {
+                        val defaultHomeBasicProg = programs.firstOrNull { it.id == "home-basic" }
+                        val defaultHomeBasicDayA = days.firstOrNull { it.programId == "home-basic" && it.dayId == "A" }
+                        if (defaultHomeBasicProg != null && defaultHomeBasicDayA != null) {
+                            db.programDao().upsertProgram(defaultHomeBasicProg.copy(updatedAt = existingHomeBasic.program.updatedAt))
+                            db.programDao().upsertProgramDays(listOf(defaultHomeBasicDayA))
+                        }
                     }
                 }
             }

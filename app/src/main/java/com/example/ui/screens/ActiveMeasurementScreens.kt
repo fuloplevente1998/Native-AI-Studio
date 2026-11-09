@@ -219,10 +219,37 @@ fun MeasurementModeSwitcherRow(
 @Composable
 private fun StudioRestCountdown(state: TrainPilotUiState, onAdjust: (Int) -> Unit) {
     val frame by ActiveWorkoutStore.snapshotFlow.collectAsState()
-    val allowed = com.repforge.app.StudioRestTimer.allowed(state, frame)
-    LaunchedEffect(state.activeWorkoutId, state.activeWorkoutGeneration, allowed,
-        state.restTimerRunning, state.restTimerRemainingSec) {
+    val allowed = com.repforge.app.StudioRestTimer.allowed(state, frame) ||
+        com.repforge.app.StudioRestTimer.mirrorAllowed(state, frame)
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, allowed, state.restTimerRunning, state.restTimerRemainingSec) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME &&
+                allowed && state.restTimerRunning && state.restTimerRemainingSec > 0
+            ) {
+                onAdjust(-1)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(
+        state.activeWorkoutId,
+        state.activeWorkoutGeneration,
+        allowed,
+        state.restTimerRunning,
+        state.restTimerRemainingSec,
+        state.restTimerEndRealtimeMs
+    ) {
         if (allowed && state.restTimerRunning && state.restTimerRemainingSec > 0) {
+            val nowRealtime = android.os.SystemClock.elapsedRealtime()
+            if (state.restTimerEndRealtimeMs > 0L &&
+                state.restTimerLastTickRealtimeMs > 0L &&
+                nowRealtime - state.restTimerLastTickRealtimeMs >= 1500L
+            ) {
+                onAdjust(-1)
+                return@LaunchedEffect
+            }
             delay(1000L)
             onAdjust(-1)
         }
@@ -980,36 +1007,15 @@ fun ActiveStrengthWorkoutScreen(
                             .clickable { restTimerManualOverride = true }
                             .testTag("sticky_rest_timer_compact")
                     ) {
-                        Row(
+                        androidx.compose.foundation.layout.BoxWithConstraints(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 10.dp, vertical = 7.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                                .padding(horizontal = 8.dp, vertical = 6.dp)
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Timer,
-                                    contentDescription = null,
-                                    tint = palette.primary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    text = "$restWord: $formattedRest",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = palette.textPrimary
-                                )
-                            }
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                SmallAdjustChip("-15") { onAdjustRestTimer(-15) }
+                            val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
+                            val effectiveWidthDp = maxWidth.value / fontScale
+                            val compactTwoRow = effectiveWidthDp < 285f
+                            val toggleButton: @Composable () -> Unit = {
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
                                     color = if (uiState.restTimerRunning) palette.primary else palette.success,
@@ -1019,33 +1025,120 @@ fun ActiveStrengthWorkoutScreen(
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
                                     ) {
                                         Icon(
                                             imageVector = if (uiState.restTimerRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
                                             contentDescription = null,
                                             tint = palette.onPrimary,
-                                            modifier = Modifier.size(14.dp)
+                                            modifier = Modifier.size(13.dp)
                                         )
                                         Spacer(modifier = Modifier.width(2.dp))
                                         Text(
                                             text = if (uiState.restTimerRunning) tr(lang, "Szünet", "Pause", "Pause", "Pauză") else tr(lang, "Indít", "Start", "Start", "Start"),
                                             style = MaterialTheme.typography.labelSmall,
                                             fontWeight = FontWeight.Bold,
-                                            color = palette.onPrimary
+                                            color = palette.onPrimary,
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                 }
-                                SmallAdjustChip("+15") { onAdjustRestTimer(15) }
-                                SmallAdjustChip(tr(lang, "Kihagy", "Skip", "Überspr.", "Omite")) { onSkipRest() }
-                                Icon(
-                                    imageVector = Icons.Default.ExpandLess,
-                                    contentDescription = tr(lang, "Nagy pihenő mód", "Expanded rest timer", "Großer Pausenmodus", "Mod pauză extins"),
-                                    tint = palette.primary,
-                                    modifier = Modifier
-                                        .size(20.dp)
-                                        .clickable { restTimerManualOverride = true }
-                                )
+                            }
+                            if (compactTwoRow) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Timer,
+                                                contentDescription = null,
+                                                tint = palette.primary,
+                                                modifier = Modifier.size(15.dp)
+                                            )
+                                            Text(
+                                                text = "$restWord: $formattedRest",
+                                                style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"),
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = palette.textPrimary,
+                                                maxLines = 1,
+                                                softWrap = false
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = Icons.Default.ExpandLess,
+                                            contentDescription = tr(lang, "Nagy pihenő mód", "Expanded rest timer", "Großer Pausenmodus", "Mod pauză extins"),
+                                            tint = palette.primary,
+                                            modifier = Modifier
+                                                .size(18.dp)
+                                                .clickable { restTimerManualOverride = true }
+                                        )
+                                    }
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End)
+                                    ) {
+                                        SmallAdjustChip("-15") { onAdjustRestTimer(-15) }
+                                        toggleButton()
+                                        SmallAdjustChip("+15") { onAdjustRestTimer(15) }
+                                        SmallAdjustChip(tr(lang, "Kihagy", "Skip", "Überspr.", "Omite")) { onSkipRest() }
+                                    }
+                                }
+                            } else {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Timer,
+                                            contentDescription = null,
+                                            tint = palette.primary,
+                                            modifier = Modifier.size(15.dp)
+                                        )
+                                        Text(
+                                            text = "$restWord: $formattedRest",
+                                            style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"),
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = palette.textPrimary,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
+                                    }
+
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                                    ) {
+                                        SmallAdjustChip("-15") { onAdjustRestTimer(-15) }
+                                        toggleButton()
+                                        SmallAdjustChip("+15") { onAdjustRestTimer(15) }
+                                        SmallAdjustChip(tr(lang, "Kihagy", "Skip", "Überspr.", "Omite")) { onSkipRest() }
+                                        Icon(
+                                            imageVector = Icons.Default.ExpandLess,
+                                            contentDescription = tr(lang, "Nagy pihenő mód", "Expanded rest timer", "Großer Pausenmodus", "Mod pauză extins"),
+                                            tint = palette.primary,
+                                            modifier = Modifier
+                                                .size(18.dp)
+                                                .clickable { restTimerManualOverride = true }
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -1110,9 +1203,11 @@ fun ActiveStrengthWorkoutScreen(
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
                                         text = formattedRest,
-                                        style = MaterialTheme.typography.headlineLarge,
+                                        style = MaterialTheme.typography.headlineLarge.copy(fontFeatureSettings = "tnum"),
                                         fontWeight = FontWeight.ExtraBold,
-                                        color = palette.textPrimary
+                                        color = palette.textPrimary,
+                                        maxLines = 1,
+                                        softWrap = false
                                     )
                                     Text(
                                         text = if (uiState.restTimerRunning) {
@@ -1299,10 +1394,13 @@ private fun SmallAdjustChip(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
             color = Color(0xFFF4F5F7),
             fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
         )
     }
 }
@@ -2852,7 +2950,7 @@ fun ActiveBilateralWorkoutScreen(
                         }
                         .clickable { restTimerLargeMode = !restTimerLargeMode }
                 ) {
-                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -2860,24 +2958,26 @@ fun ActiveBilateralWorkoutScreen(
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Timer,
                                     contentDescription = null,
                                     tint = if (uiState.restTimerRunning) palette.primary else palette.textSecondary,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(15.dp)
                                 )
                                 Text(
                                     text = "${tr(lang, "Pihenő", "Rest", "Pause", "Pauză")}: " + String.format("%02d:%02d", uiState.restTimerRemainingSec / 60, uiState.restTimerRemainingSec % 60),
-                                    style = MaterialTheme.typography.labelLarge,
+                                    style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"),
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = if (uiState.restTimerRunning) palette.primary else palette.textPrimary
+                                    color = if (uiState.restTimerRunning) palette.primary else palette.textPrimary,
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                             }
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 SmallAdjustChip("-15") { onAdjustRestTimer(-15) }
                                 SmallAdjustChip("+15") { onAdjustRestTimer(15) }

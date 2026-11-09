@@ -743,6 +743,52 @@ class StudioSessionMeasurementRegressionTest {
         } finally { service.destroy() }
     }
 
+    @Test fun watchCompleteSetStartsPhoneRestTimerAndPhoneNextExerciseAdvancesCanonicalExerciseWithoutLag() {
+        val model = model()
+        val first = strength(model)
+        val second = timed(model)
+        model.startWorkoutWithExercises(listOf(first, second))
+        awaitStarted(model)
+        assertFalse(model.uiState.value.restTimerRunning)
+
+        // 1. Watch completes set 1 of exercise 0 while phone owns the workout -> phone rest timer starts immediately!
+        val frame = ActiveWorkoutStore.current(context)!!
+        val target = target(frame)
+        val completeCmd = JSONObject()
+            .put("action", "completeSet")
+            .put("commandId", "watch-complete-1")
+            .put("workoutId", target.workoutId)
+            .put("ownerEpoch193", frame.optLong("ownerEpoch193"))
+            .put("pauseRevision", frame.optLong("pauseRevision"))
+            .put("sequence", 10L)
+            .put("exerciseIndex", 0)
+            .put("exerciseId", target.exerciseId)
+            .put("setIndex", 0)
+            .put("setId", target.setId)
+            .put("reps", "12")
+            .put("weight", "20")
+        WearSyncRepository.commitWatchEditorMutation(context, frame, completeCmd)
+        await { model.uiState.value.restTimerRunning && model.uiState.value.activeSets.first().completed }
+        assertTrue(model.uiState.value.restTimerRemainingSec in 1..model.uiState.value.defaultRestSec)
+        assertTrue(model.uiState.value.restTimerEndEpochMs > System.currentTimeMillis())
+        assertTrue(ActiveWorkoutStore.current(context)!!.optLong("restEndAt") > System.currentTimeMillis())
+        assertEquals(10L, ActiveWorkoutStore.current(context)!!.optLong("localSequence"))
+
+        // 2. Phone advances to next exercise via nextActiveExercise() -> canonical currentExercise and selectionRevision advance immediately, and localSequence is preserved!
+        val revBefore = PhoneWorkoutExecution.store(context).snapshot()!!.optLong("selectionRevision")
+        model.nextActiveExercise()
+        await {
+            model.uiState.value.activeExerciseIndex == 1 &&
+                ActiveWorkoutStore.current(context)!!.optInt("currentExercise") == 1
+        }
+        val afterNext = ActiveWorkoutStore.current(context)!!
+        val durableAfterNext = PhoneWorkoutExecution.store(context).snapshot()!!
+        assertEquals(1, afterNext.getInt("currentExercise"))
+        assertEquals(1, durableAfterNext.getInt("currentExercise"))
+        assertTrue(durableAfterNext.optLong("selectionRevision") > revBefore)
+        assertEquals(10L, afterNext.optLong("localSequence"))
+    }
+
     private fun awaitStarted(model: TrainPilotViewModel) {
         await { ActiveWorkoutStore.current(context)?.let { it.optBoolean("active") &&
             model.uiState.value.activeWorkoutId == it.optString("workoutId") && model.uiState.value.isWorkoutSessionActive } == true }

@@ -48,7 +48,7 @@ internal object NativeBuiltinCatalog {
                 notes.getString("hu"), notes.getString("en"), notes.getString("de"), notes.getString("ro"),
                 if (youtube) "https://www.youtube.com/watch?v=$video" else null, if (youtube) "youtube" else null,
                 false, raw.optBoolean("setRir229"), raw.toString())
-        }.also { rows -> check(rows.size == 106 && rows.map { it.id }.distinct().size == rows.size) }
+        }.also { rows -> check(rows.size == 140 && rows.map { it.id }.distinct().size == rows.size) }
     }
     val programs: Pair<List<ProgramEntity>, List<ProgramDayEntity>> by lazy {
         val rows = catalog.getJSONArray("programs")

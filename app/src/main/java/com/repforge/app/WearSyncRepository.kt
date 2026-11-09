@@ -474,7 +474,7 @@ object WearSyncRepository {
         check(PhoneOwnership193.commandAllowed(context, command)) { "Workout ownership changed" }
         val action = command.optString("action")
         val phoneEditor = current.optInt("nativeEditorProjection") == 1 && current.optString("timerOwner") == "phone"
-        if (!phoneEditor || action !in setOf("updateSet", "selectExercise", "nextExercise", "prevExercise")) {
+        if (!phoneEditor || action !in setOf("updateSet", "selectExercise", "nextExercise", "prevExercise", "completeSet", "skipRest")) {
             return ActiveWorkoutStore.saveOwned(context, applyWatchMutationToSnapshot(current, command))
         }
         val frame = NativeWorkoutEditing.project(context)
@@ -483,16 +483,21 @@ object WearSyncRepository {
             "Workout pause or identity changed"
         }
         val exercises = frame.getJSONArray("exercises")
-        if (action in setOf("updateSet", "selectExercise")) {
+        if (action in setOf("updateSet", "selectExercise", "completeSet")) {
             val exercise = exercises.getJSONObject(command.getInt("exerciseIndex"))
             check(exercise.getString("id") == command.getString("exerciseId")) { "Exercise identity changed" }
-            if (action == "updateSet") {
+            if (action in setOf("updateSet", "completeSet")) {
                 val set = exercise.getJSONArray("sets").getJSONObject(command.getInt("setIndex"))
-                check(set.getString("setId") == command.getString("setId") && !set.optBoolean("done")) {
+                check(set.getString("setId") == command.getString("setId")) {
                     "Set identity changed"
                 }
-                check(command.optString("field") in setOf("weight", "reps", "leftSeconds", "rightSeconds")) {
-                    "Unsupported set field"
+                if (action == "updateSet") {
+                    check(!set.optBoolean("done")) { "Set identity changed" }
+                    check(command.optString("field") in setOf("weight", "reps", "leftSeconds", "rightSeconds")) {
+                        "Unsupported set field"
+                    }
+                } else if (set.optBoolean("done")) {
+                    return frame
                 }
             }
         }

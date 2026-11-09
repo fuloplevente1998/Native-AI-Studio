@@ -280,6 +280,9 @@ data class TrainPilotUiState(
     val userExcludedExercisesHu: Set<String> = emptySet(),
     val restTimerRemainingSec: Int = 90,
     val restTimerRunning: Boolean = false,
+    val restTimerEndRealtimeMs: Long = 0L,
+    val restTimerEndEpochMs: Long = 0L,
+    val restTimerLastTickRealtimeMs: Long = 0L,
     val defaultRestSec: Int = 90,
     val soundAlertEnabled: Boolean = true,
     val vibrationEnabled: Boolean = true,
@@ -1134,6 +1137,7 @@ class TrainPilotViewModel : ViewModel() {
                 put("studioIndoor", !state.outdoorGpsEnabled)
             }
             put("restSeconds", state.defaultRestSec)
+            put("restEndAt", if (state.restTimerRunning && state.restTimerEndEpochMs > 0L) state.restTimerEndEpochMs else 0L)
             put("exercises", exercisesArray)
         }
     }
@@ -1274,8 +1278,12 @@ class TrainPilotViewModel : ViewModel() {
 
         observersScope.launch(Dispatchers.Main.immediate) {
             val warnedUnknownSelections = mutableSetOf<Pair<String, String?>>()
+            var lastAppliedRemoteRestEndAt = 0L
+            var lastAppliedWorkoutId = ""
             ActiveWorkoutStore.snapshotFlow.collect { frame ->
                 if (frame?.optBoolean("active") != true) {
+                    lastAppliedRemoteRestEndAt = 0L
+                    lastAppliedWorkoutId = ""
                     val before = _uiState.value
                     val remoteClose = frame != null && before.isWorkoutSessionActive && !before.isSavingWorkout &&
                         before.activeWorkoutId == frame.optString("workoutId")
@@ -1283,7 +1291,8 @@ class TrainPilotViewModel : ViewModel() {
                         if (state.activeWorkoutId != frame.optString("workoutId")) state
                         else state.copy(isWorkoutSessionActive = false, activeWorkoutId = "", activeWorkoutGeneration = 0L, workoutStartedEpochMs = 0L,
                             activeWorkoutExercises = emptyList(), activeSets = emptyList(), activeSetsByExerciseId = emptyMap(),
-                            timedCurrentSec = 0, homeDemoMode = HomeDemoMode.PLANNED_NEXT,
+                            timedCurrentSec = 0, restTimerRunning = false, restTimerEndRealtimeMs = 0L, restTimerEndEpochMs = 0L, restTimerLastTickRealtimeMs = 0L,
+                            homeDemoMode = HomeDemoMode.PLANNED_NEXT,
                             currentSubScreen = if (state.currentSubScreen in activeMeasurementScreens) SubScreen.NONE else state.currentSubScreen,
                             backStack = state.backStack.filterNot { it.subScreen in activeMeasurementScreens })
                     }
@@ -1346,7 +1355,7 @@ class TrainPilotViewModel : ViewModel() {
                         // chosen for the same exercise. Outdoor keeps its dedicated GPS/indoor screen.
                         val targetScreen = if ((adopting || exerciseChanged) && (adopting || state.activeWorkoutSubScreen != SubScreen.ACTIVE_OUTDOOR_GPS))
                             targetSubScreenForExercise(selected) else state.activeWorkoutSubScreen
-                        state.copy(isWorkoutSessionActive = true,
+                        var nextState = state.copy(isWorkoutSessionActive = true,
                             activeWorkoutId = incomingId,
                             activeWorkoutGeneration = frame.optLong("generation"),
                             activeWorkoutExercises = projectedExercises,
@@ -1365,6 +1374,37 @@ class TrainPilotViewModel : ViewModel() {
                                 state.currentSubScreen != SubScreen.ACTIVE_OUTDOOR_GPS) targetScreen else state.currentSubScreen,
                             activeSetsByExerciseId = (if (adopting) emptyMap() else state.activeSetsByExerciseId) + nativeSets,
                             activeSets = nativeSets[selected?.id] ?: state.activeSets)
+                        if (lastAppliedWorkoutId != incomingId) {
+                            lastAppliedWorkoutId = incomingId
+                            lastAppliedRemoteRestEndAt = 0L
+                        }
+                        val nowEpochMs = System.currentTimeMillis()
+                        val nowRealtimeMs = runCatching { android.os.SystemClock.elapsedRealtime() }.getOrDefault(0L)
+                        val autoObj = frame.optJSONObject("automation")
+                        val autoRestEndAt = if (autoObj != null && autoObj.optString("phase") == "rest" && !autoObj.optBoolean("paused")) {
+                            val deadline = autoObj.optLong("deadlineAt", 0L)
+                            val remMs = autoObj.optLong("remainingMs", 0L)
+                            when {
+                                deadline > nowEpochMs -> deadline
+                                remMs > 0L -> nowEpochMs + remMs
+                                else -> 0L
+                            }
+                        } else 0L
+                        val frameRestEndAt = if (frame.optBoolean("workoutPaused")) 0L else maxOf(frame.optLong("restEndAt", 0L), autoRestEndAt)
+                        if (frameRestEndAt > nowEpochMs) {
+                            if (kotlin.math.abs(frameRestEndAt - lastAppliedRemoteRestEndAt) > 1000L || !nextState.restTimerRunning) {
+                                lastAppliedRemoteRestEndAt = frameRestEndAt
+                                if (!nextState.restTimerRunning || kotlin.math.abs(frameRestEndAt - nextState.restTimerEndEpochMs) > 1500L) {
+                                    nextState = com.repforge.app.StudioRestTimer.fromRemoteRestEndAt(nextState, frameRestEndAt, nowRealtimeMs, nowEpochMs)
+                                }
+                            }
+                        } else if (lastAppliedRemoteRestEndAt > 0L && (frame.optLong("restEndAt", -1L) == 0L || watchProjection || frame.optBoolean("workoutPaused"))) {
+                            lastAppliedRemoteRestEndAt = 0L
+                            if (nextState.restTimerRunning) {
+                                nextState = com.repforge.app.StudioRestTimer.skipped(nextState)
+                            }
+                        }
+                        nextState
                     }
                     val displayed = _uiState.value
                     if (displayed.activeWorkoutId == frame.optString("workoutId") &&
@@ -2933,19 +2973,30 @@ class TrainPilotViewModel : ViewModel() {
     // Active Workout Actions (persisted canonically to ActiveWorkoutStore)
     fun toggleSetCompleted(setNumber: Int) {
         _uiState.update { state ->
+            var newlyCompleted = false
             val updated = state.activeSets.map { s ->
-                if (s.setNumber == setNumber) s.copy(completed = !s.completed) else s
+                if (s.setNumber == setNumber) {
+                    val nextCompleted = !s.completed
+                    if (nextCompleted && !s.completed) newlyCompleted = true
+                    s.copy(completed = nextCompleted)
+                } else s
             }
             val currentExId = state.selectedExerciseId
             val updatedMap = if (currentExId.isNotBlank()) {
                 state.activeSetsByExerciseId + (currentExId to updated)
             } else state.activeSetsByExerciseId
-            state.copy(
+            val base = state.copy(
                 activeSets = updated,
-                activeSetsByExerciseId = updatedMap,
-                restTimerRemainingSec = state.defaultRestSec,
-                restTimerRunning = true
+                activeSetsByExerciseId = updatedMap
             )
+            if (newlyCompleted) {
+                com.repforge.app.StudioRestTimer.start(base, state.defaultRestSec)
+            } else {
+                base.copy(
+                    restTimerRemainingSec = state.defaultRestSec,
+                    restTimerRunning = true
+                )
+            }
         }
         persistCanonicalActiveSessionAsync()
     }
@@ -3077,15 +3128,18 @@ class TrainPilotViewModel : ViewModel() {
                 state.activeSetsByExerciseId + (currentExId to updatedSets)
             } else state.activeSetsByExerciseId
 
-            state.copy(
+            val base = state.copy(
                 activeSets = updatedSets,
                 activeSetsByExerciseId = updatedMap,
                 bilateralLeftSec = if (isLeftSide) recordedSec else state.bilateralLeftSec,
                 bilateralRightSec = if (!isLeftSide) recordedSec else state.bilateralRightSec,
-                restTimerRemainingSec = if (bothSidesNowDone) state.defaultRestSec else state.restTimerRemainingSec,
-                restTimerRunning = if (bothSidesNowDone) true else state.restTimerRunning,
                 statusBannerMessage = null
             )
+            if (bothSidesNowDone) {
+                com.repforge.app.StudioRestTimer.start(base, state.defaultRestSec)
+            } else {
+                base
+            }
         }
         persistCanonicalActiveSessionAsync()
     }
@@ -3460,15 +3514,22 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun adjustRestTimer(deltaSec: Int) {
+        val wasRunning = _uiState.value.restTimerRunning
         _uiState.update { com.repforge.app.StudioRestTimer.adjust(nativeContext, it, deltaSec) }
+        val nowState = _uiState.value
+        if (deltaSec != -1 || (wasRunning && !nowState.restTimerRunning)) {
+            persistCanonicalActiveSessionAsync()
+        }
     }
 
     fun toggleRestTimerRunning() {
         _uiState.update { com.repforge.app.StudioRestTimer.toggle(nativeContext, it) }
+        persistCanonicalActiveSessionAsync()
     }
 
     fun skipRestTimer() {
         _uiState.update { com.repforge.app.StudioRestTimer.skip(nativeContext, it) }
+        persistCanonicalActiveSessionAsync()
     }
 
     fun updateIntervalSettings(workSec: Int, restSec: Int, rounds: Int, sound: Boolean, vibration: Boolean, autoStep: Boolean) {

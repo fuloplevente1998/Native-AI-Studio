@@ -3,7 +3,7 @@ package com.repforge.app.wear
 import org.json.JSONObject
 
 internal fun projectPhoneAutomatic(current: WearWorkout,value: JSONObject,a: WearAutomatic): WearWorkout {
-    var workout=current.copy(automation=a,restEndAt=0)
+    var workout=current.copy(automation=a,restEndAt=if(a.remainingMs>0L||a.phase=="complete")0 else current.restEndAt)
     if(value.optBoolean("stopped"))return workout
     // A finished phone clock is idle, not paused. Older phone builds publish
     // paused=!running even for completion; never offer Resume for that clock.
@@ -12,12 +12,13 @@ internal fun projectPhoneAutomatic(current: WearWorkout,value: JSONObject,a: Wea
     val rows=value.optJSONArray("steps") ?: return workout
     val currentStep=value.optInt("stepIndex")
     var selected=current.currentExercise
+    val followStepExercise=value.optBoolean("autoAdvance") && !value.optBoolean("restOnly")
     for(i in 0 until rows.length()) {
         val row=rows.optJSONObject(i) ?: continue
         val id=row.optString("setId");if(id.isBlank())continue
         val e=workout.exercises.indexOfFirst { it.id==row.optString("exerciseId")&&it.sets.any { set->set.setId==id } };if(e<0)continue
         val s=workout.exercises[e].sets.indexOfFirst { it.setId==id }
-        if(i==currentStep)selected=e
+        if(followStepExercise && i==currentStep)selected=e
         if(!value.optBoolean("autoAdvance")||value.optBoolean("restOnly")||i>currentStep)continue
         val completed=i<value.optInt("completed")
         val full=(row.optLong("work")*row.optLong("rounds")+row.optLong("rest")*(row.optLong("rounds")-1)+if(i<rows.length()-1)row.optLong("rest")else 0)*1000

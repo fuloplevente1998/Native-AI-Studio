@@ -1435,7 +1435,7 @@ internal fun buildEquipmentSummaryFromPairs(
             val low = part.lowercase()
             when {
                 low.contains("kézisúlyzó") || low.contains("kézi súlyzó") || low == "dumbbell" || low == "per_hand" || low == "single_dumbbell" -> hasDumbbell = true
-                low.contains("kétkezes rúd") || low == "rúd" || low == "barbell" -> hasBarbell = true
+                low.contains("kétkezes rúd") || low.contains("ez-rúd") || low.contains("t-rúd") || low.contains("landmine") || low == "rúd" || low == "barbell" -> hasBarbell = true
                 low.contains("kettlebell") -> hasKettlebell = true
                 low.contains("gumiszalag") || low == "band" -> hasBand = true
                 low.contains("rögzítés") || low.contains("anchor") -> hasAnchor = true
@@ -1448,7 +1448,7 @@ internal fun buildEquipmentSummaryFromPairs(
                 low.contains("tolódzkodó") || low.contains("korlát") -> hasDipBars = true
                 low.contains("állvány") -> hasSafetyRack = true
                 low.contains("fellépő") || low.contains("doboz") -> hasStep = true
-                low.contains("pad") || low.contains("támasz") -> hasBenchSupport = true
+                low.contains("pad") || low.contains("támasz") || low.contains("tartó/segítő") -> hasBenchSupport = true
                 low.contains("testsúly") || low == "bodyweight" -> hasBodyweight = true
                 low.contains("futócipő") || low.contains("gyaloglócipő") || low.contains("túracipő") ||
                     low.contains("görkorcsolya") || low.contains("kerékpár") -> hasOutdoor = true

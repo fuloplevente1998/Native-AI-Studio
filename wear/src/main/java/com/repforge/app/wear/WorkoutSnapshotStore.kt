@@ -337,9 +337,20 @@ object WorkoutSnapshotStore {
 }
 
 internal fun preservePendingWearEdits(current: WearWorkout, incoming: WearWorkout): WearWorkout =
-    if(current.workoutId==incoming.workoutId && incoming.localSequence<current.localSequence)
-        preserveWorkoutPause(current.copy(revision=maxOf(current.revision,incoming.revision),nativeExecutionProtocol=incoming.nativeExecutionProtocol,generation=incoming.generation,executionRevision=incoming.executionRevision),incoming)
-    else incoming
+    if(current.workoutId==incoming.workoutId && incoming.localSequence<current.localSequence) {
+        val followPhoneSelection = incoming.timerOwner == "phone" && incoming.executionRevision > current.executionRevision
+        preserveWorkoutPause(
+            current.copy(
+                revision = maxOf(current.revision, incoming.revision),
+                nativeExecutionProtocol = incoming.nativeExecutionProtocol,
+                generation = incoming.generation,
+                executionRevision = incoming.executionRevision,
+                currentExercise = if (followPhoneSelection) incoming.currentExercise else current.currentExercise,
+                restEndAt = if (followPhoneSelection && incoming.restEndAt > 0L) incoming.restEndAt else current.restEndAt
+            ),
+            incoming
+        )
+    } else incoming
 
 /** Unsupported measurements keep their existing recorder; no phone-owned clock is created by the watch. */
 internal fun nativePhoneExecution(workout: WearWorkout, action: String, exercise: WearExercise?, value: Any?): Boolean =

@@ -48,4 +48,79 @@ class StudioRestTimerRegressionTest {
         assertFalse(StudioRestTimer.allowed(state.copy(watchControlPending = true), frame()))
         assertFalse(StudioRestTimer.allowed(state.copy(isSavingWorkout = true), frame()))
     }
+
+    @Test fun backgroundElapsedTimeReconcilesAccuratelyAfterShortAndLongBackgroundIntervals() {
+        val t0Realtime = 10_000L
+        val t0Epoch = 1_700_000_000_000L
+        val started = StudioRestTimer.start(
+            state = TrainPilotUiState(defaultRestSec = 90),
+            durationSec = 90,
+            nowRealtimeMs = t0Realtime,
+            nowEpochMs = t0Epoch
+        )
+        assertTrue(started.restTimerRunning)
+        assertEquals(90, started.restTimerRemainingSec)
+        assertEquals(t0Realtime + 90_000L, started.restTimerEndRealtimeMs)
+        assertEquals(t0Epoch + 90_000L, started.restTimerEndEpochMs)
+
+        // 1. Short ~2-second background period must advance the countdown by 2s (not freeze!)
+        val after2s = StudioRestTimer.adjusted(
+            state = started,
+            deltaSec = -1,
+            nowRealtimeMs = t0Realtime + 2_100L,
+            nowEpochMs = t0Epoch + 2_100L
+        )
+        assertTrue(after2s.restTimerRunning)
+        assertEquals(88, after2s.restTimerRemainingSec)
+
+        // 2. Longer 45-second background period must reconcile to 43s remaining
+        val after47s = StudioRestTimer.adjusted(
+            state = after2s,
+            deltaSec = -1,
+            nowRealtimeMs = t0Realtime + 47_100L,
+            nowEpochMs = t0Epoch + 47_100L
+        )
+        assertTrue(after47s.restTimerRunning)
+        assertEquals(43, after47s.restTimerRemainingSec)
+
+        // 3. Background period past the deadline finishes the countdown cleanly without negative numbers
+        val expiredInBg = StudioRestTimer.adjusted(
+            state = after47s,
+            deltaSec = -1,
+            nowRealtimeMs = t0Realtime + 95_000L,
+            nowEpochMs = t0Epoch + 95_000L
+        )
+        assertEquals(0, expiredInBg.restTimerRemainingSec)
+        assertFalse(expiredInBg.restTimerRunning)
+        assertEquals(0L, expiredInBg.restTimerEndRealtimeMs)
+        assertEquals(0L, expiredInBg.restTimerEndEpochMs)
+    }
+
+    @Test fun remoteWatchRestEndAtStartsAndUpdatesPhoneRestTimerInBothPhoneAndWatchOwnedModes() {
+        val nowRealtime = 50_000L
+        val nowEpoch = 1_700_000_050_000L
+        val mirrored = StudioRestTimer.fromRemoteRestEndAt(
+            state = TrainPilotUiState(restTimerRemainingSec = 90, restTimerRunning = false),
+            restEndAtEpochMs = nowEpoch + 75_000L,
+            nowRealtimeMs = nowRealtime,
+            nowEpochMs = nowEpoch
+        )
+        assertTrue(mirrored.restTimerRunning)
+        assertEquals(75, mirrored.restTimerRemainingSec)
+        assertEquals(nowRealtime + 75_000L, mirrored.restTimerEndRealtimeMs)
+        assertEquals(nowEpoch + 75_000L, mirrored.restTimerEndEpochMs)
+
+        val watchState = TrainPilotUiState(
+            isWorkoutSessionActive = true,
+            activeWorkoutId = "watch-rest",
+            activeWorkoutGeneration = 1,
+            phoneControlsWorkout = false
+        )
+        val watchFrame = JSONObject()
+            .put("active", true)
+            .put("workoutId", "watch-rest")
+            .put("generation", 1)
+            .put("timerOwner", "watch")
+        assertTrue(StudioRestTimer.mirrorAllowed(watchState, watchFrame))
+    }
 }

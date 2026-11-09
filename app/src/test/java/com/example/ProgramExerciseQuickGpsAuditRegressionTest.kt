@@ -227,10 +227,10 @@ class ProgramExerciseQuickGpsAuditRegressionTest {
     }
 
     @Test
-    fun all106BuiltinExercisesPassStructuralAndSemanticAudit() {
+    fun all140BuiltinExercisesPassStructuralAndSemanticAuditAndHomeBasicUsesBarbellFloorPress() {
         val exercises = NativeBuiltinCatalog.exercises
-        assertEquals(106, exercises.size)
-        assertEquals(106, exercises.map { it.id }.distinct().size)
+        assertEquals(140, exercises.size)
+        assertEquals(140, exercises.map { it.id }.distinct().size)
 
         val validLoadTypes = setOf(
             "bodyweight", "single_dumbbell", "per_hand", "total", "weight",
@@ -269,6 +269,29 @@ class ProgramExerciseQuickGpsAuditRegressionTest {
                 assertTrue(translateMuscleListLabel(targetRaw, lang).isNotBlank())
             }
         }
+
+        // #215: Both barbell-floor-press and db-floor-press exist as distinct catalog exercises
+        val exercisesById = exercises.associateBy { it.id }
+        val barbellFloorPress = exercisesById["barbell-floor-press"]
+        val dbFloorPress = exercisesById["db-floor-press"]
+        assertNotNull("barbell-floor-press must exist", barbellFloorPress)
+        assertNotNull("db-floor-press must still exist", dbFloorPress)
+        assertEquals("Földön fekvenyomás – kétkezes rúddal", barbellFloorPress!!.nameHu)
+        assertEquals("Barbell Floor Press", barbellFloorPress.nameEn)
+        assertEquals("total", barbellFloorPress.loadType)
+        assertEquals("per_hand", dbFloorPress!!.loadType)
+
+        // #215: Only home-basic Day A uses barbell-floor-press in built-in program templates
+        val (_, days) = NativeBuiltinCatalog.programs
+        val homeBasicDayA = days.single { it.programId == "home-basic" && it.dayId == "a" }
+        val homeBasicDayAIds = JSONArray(homeBasicDayA.exercisesJson).let { arr ->
+            (0 until arr.length()).map { idx ->
+                val item = arr.get(idx)
+                if (item is JSONObject) item.optString("id") else item.toString()
+            }
+        }
+        assertTrue("home-basic Day A must contain barbell-floor-press", "barbell-floor-press" in homeBasicDayAIds)
+        assertFalse("home-basic Day A must not contain db-floor-press", "db-floor-press" in homeBasicDayAIds)
     }
 
     @Test

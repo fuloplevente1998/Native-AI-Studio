@@ -339,6 +339,104 @@
     ],
     "standing-calf-raise": [
       "machines"
+    ],
+    "barbell-floor-press": [
+      "barbell"
+    ],
+    "barbell-curl": [
+      "barbell"
+    ],
+    "barbell-front-squat": [
+      "barbell"
+    ],
+    "barbell-hip-thrust": [
+      "barbell",
+      "bench"
+    ],
+    "lying-barbell-triceps-extension": [
+      "barbell",
+      "bench"
+    ],
+    "sumo-deadlift": [
+      "barbell"
+    ],
+    "barbell-good-morning": [
+      "barbell"
+    ],
+    "single-arm-db-ohp": [
+      "dumbbell"
+    ],
+    "db-chest-fly": [
+      "dumbbells",
+      "bench"
+    ],
+    "chest-supported-db-row": [
+      "dumbbells",
+      "bench"
+    ],
+    "concentration-curl": [
+      "dumbbell"
+    ],
+    "db-triceps-kickback": [
+      "dumbbell"
+    ],
+    "walking-lunge": [
+      "dumbbells"
+    ],
+    "single-leg-db-rdl": [
+      "dumbbell"
+    ],
+    "single-leg-glute-bridge": [],
+    "reverse-crunch": [],
+    "cable-pallof-press": [
+      "machines"
+    ],
+    "seated-calf-raise": [
+      "machines"
+    ],
+    "arnold-press": [
+      "dumbbells"
+    ],
+    "db-front-raise": [
+      "dumbbells"
+    ],
+    "db-shrug": [
+      "dumbbells"
+    ],
+    "preacher-curl": [
+      "machines"
+    ],
+    "cross-body-hammer-curl": [
+      "dumbbells"
+    ],
+    "t-bar-row": [
+      "barbell"
+    ],
+    "pendlay-row": [
+      "barbell"
+    ],
+    "stiff-leg-deadlift": [
+      "barbell"
+    ],
+    "hip-abduction-machine": [
+      "machines"
+    ],
+    "hip-adduction-machine": [
+      "machines"
+    ],
+    "back-extension-45": [
+      "machines"
+    ],
+    "russian-twist": [],
+    "cable-crunch": [
+      "machines"
+    ],
+    "farmer-carry": [
+      "dumbbells"
+    ],
+    "bear-crawl": [],
+    "lateral-lunge": [
+      "dumbbells"
     ]
   },
   "beginnerFavorites": [
@@ -385,7 +483,28 @@
     "pec-deck",
     "cable-lateral-raise",
     "hack-squat",
-    "standing-calf-raise"
+    "standing-calf-raise",
+    "barbell-curl",
+    "single-arm-db-ohp",
+    "db-chest-fly",
+    "chest-supported-db-row",
+    "concentration-curl",
+    "db-triceps-kickback",
+    "single-leg-glute-bridge",
+    "reverse-crunch",
+    "cable-pallof-press",
+    "seated-calf-raise",
+    "db-front-raise",
+    "db-shrug",
+    "cross-body-hammer-curl",
+    "hip-abduction-machine",
+    "hip-adduction-machine",
+    "back-extension-45",
+    "russian-twist",
+    "cable-crunch",
+    "farmer-carry",
+    "bear-crawl",
+    "lateral-lunge"
   ],
   "templates": [
     {
@@ -400,7 +519,7 @@
           "name": "A",
           "exercises": [
             "goblet-squat",
-            "db-floor-press",
+            "barbell-floor-press",
             "one-arm-row",
             "db-rdl",
             "db-ohp",
@@ -571,6 +690,17 @@
           "reps": "10–20",
           "weight": 0,
           "rest": 75,
+          "trial": true,
+          "rir": 2,
+          "rirMin": 1,
+          "rirMax": 2,
+          "progressionLevel": 0
+        },
+        "barbell-floor-press": {
+          "sets": 2,
+          "reps": "6–10",
+          "weight": 0,
+          "rest": 120,
           "trial": true,
           "rir": 2,
           "rirMin": 1,
@@ -2028,6 +2158,418 @@
       "compound": false,
       "goalTags": [
         "fitness"
+      ]
+    },
+    "barbell-floor-press": {
+      "movementPattern": "horizontal-push",
+      "difficulty": "intermediate",
+      "complexity": "medium",
+      "beginnerSafe": true,
+      "compound": true,
+      "goalTags": [
+        "fitness",
+        "muscle",
+        "strength",
+        "fatloss"
+      ]
+    },
+    "barbell-curl": {
+      "movementPattern": "elbow-flexion",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": false,
+      "goalTags": [
+        "muscle",
+        "fitness",
+        "strength"
+      ]
+    },
+    "barbell-front-squat": {
+      "movementPattern": "squat",
+      "difficulty": "intermediate",
+      "complexity": "high",
+      "beginnerSafe": false,
+      "compound": true,
+      "goalTags": [
+        "muscle",
+        "strength",
+        "fitness"
+      ]
+    },
+    "barbell-hip-thrust": {
+      "movementPattern": "hinge",
+      "difficulty": "intermediate",
+      "complexity": "medium",
+      "beginnerSafe": false,
+      "compound": true,
+      "goalTags": [
+        "muscle",
+        "strength",
+        "fitness"
+      ]
+    },
+    "lying-barbell-triceps-extension": {
+      "movementPattern": "elbow-extension",
+      "difficulty": "intermediate",
+      "complexity": "medium",
+      "beginnerSafe": false,
+      "compound": false,
+      "goalTags": [
+        "muscle",
+        "strength",
+        "fitness"
+      ]
+    },
+    "sumo-deadlift": {
+      "movementPattern": "hinge",
+      "difficulty": "intermediate",
+      "complexity": "high",
+      "beginnerSafe": false,
+      "compound": true,
+      "goalTags": [
+        "strength",
+        "muscle",
+        "fitness"
+      ]
+    },
+    "barbell-good-morning": {
+      "movementPattern": "hinge",
+      "difficulty": "intermediate",
+      "complexity": "medium",
+      "beginnerSafe": false,
+      "compound": true,
+      "goalTags": [
+        "strength",
+        "muscle",
+        "fitness"
+      ]
+    },
+    "single-arm-db-ohp": {
+      "movementPattern": "vertical-push",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": true,
+      "goalTags": [
+        "fitness",
+        "muscle",
+        "strength",
+        "fatloss"
+      ]
+    },
+    "db-chest-fly": {
+      "movementPattern": "chest-isolation",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": false,
+      "goalTags": [
+        "muscle",
+        "fitness",
+        "fatloss"
+      ]
+    },
+    "chest-supported-db-row": {
+      "movementPattern": "horizontal-pull",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": true,
+      "goalTags": [
+        "muscle",
+        "fitness",
+        "strength",
+        "fatloss"
+      ]
+    },
+    "concentration-curl": {
+      "movementPattern": "elbow-flexion",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": false,
+      "goalTags": [
+        "muscle",
+        "fitness",
+        "fatloss"
+      ]
+    },
+    "db-triceps-kickback": {
+      "movementPattern": "elbow-extension",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": false,
+      "goalTags": [
+        "muscle",
+        "fitness",
+        "fatloss"
+      ]
+    },
+    "walking-lunge": {
+      "movementPattern": "lunge",
+      "difficulty": "beginner",
+      "complexity": "medium",
+      "beginnerSafe": true,
+      "compound": true,
+      "goalTags": [
+        "fitness",
+        "muscle",
+        "strength",
+        "fatloss"
+      ]
+    },
+    "single-leg-db-rdl": {
+      "movementPattern": "hinge",
+      "difficulty": "intermediate",
+      "complexity": "medium",
+      "beginnerSafe": false,
+      "compound": true,
+      "goalTags": [
+        "fitness",
+        "muscle",
+        "strength"
+      ]
+    },
+    "single-leg-glute-bridge": {
+      "movementPattern": "hinge",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": true,
+      "goalTags": [
+        "fitness",
+        "muscle",
+        "strength",
+        "fatloss"
+      ]
+    },
+    "reverse-crunch": {
+      "movementPattern": "core-flexion",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": false,
+      "goalTags": [
+        "fitness",
+        "muscle",
+        "fatloss"
+      ]
+    },
+    "cable-pallof-press": {
+      "movementPattern": "core-stability",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": false,
+      "goalTags": [
+        "fitness",
+        "strength",
+        "muscle"
+      ]
+    },
+    "seated-calf-raise": {
+      "movementPattern": "calf",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": false,
+      "goalTags": [
+        "muscle",
+        "fitness"
+      ]
+    },
+    "arnold-press": {
+      "movementPattern": "vertical-push",
+      "difficulty": "intermediate",
+      "complexity": "medium",
+      "beginnerSafe": false,
+      "compound": true,
+      "goalTags": [
+        "muscle",
+        "strength",
+        "fitness"
+      ]
+    },
+    "db-front-raise": {
+      "movementPattern": "shoulder-isolation",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": false,
+      "goalTags": [
+        "muscle",
+        "fitness",
+        "fatloss"
+      ]
+    },
+    "db-shrug": {
+      "movementPattern": "horizontal-pull",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": false,
+      "goalTags": [
+        "muscle",
+        "strength",
+        "fitness"
+      ]
+    },
+    "preacher-curl": {
+      "movementPattern": "elbow-flexion",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": false,
+      "goalTags": [
+        "muscle",
+        "fitness"
+      ]
+    },
+    "cross-body-hammer-curl": {
+      "movementPattern": "elbow-flexion",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": false,
+      "goalTags": [
+        "muscle",
+        "fitness",
+        "fatloss"
+      ]
+    },
+    "t-bar-row": {
+      "movementPattern": "horizontal-pull",
+      "difficulty": "intermediate",
+      "complexity": "medium",
+      "beginnerSafe": false,
+      "compound": true,
+      "goalTags": [
+        "muscle",
+        "strength",
+        "fitness"
+      ]
+    },
+    "pendlay-row": {
+      "movementPattern": "horizontal-pull",
+      "difficulty": "intermediate",
+      "complexity": "high",
+      "beginnerSafe": false,
+      "compound": true,
+      "goalTags": [
+        "strength",
+        "muscle",
+        "fitness"
+      ]
+    },
+    "stiff-leg-deadlift": {
+      "movementPattern": "hinge",
+      "difficulty": "intermediate",
+      "complexity": "medium",
+      "beginnerSafe": false,
+      "compound": true,
+      "goalTags": [
+        "muscle",
+        "strength",
+        "fitness"
+      ]
+    },
+    "hip-abduction-machine": {
+      "movementPattern": "squat",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": false,
+      "goalTags": [
+        "muscle",
+        "fitness",
+        "fatloss"
+      ]
+    },
+    "hip-adduction-machine": {
+      "movementPattern": "squat",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": false,
+      "goalTags": [
+        "muscle",
+        "fitness",
+        "fatloss"
+      ]
+    },
+    "back-extension-45": {
+      "movementPattern": "hinge",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": true,
+      "goalTags": [
+        "fitness",
+        "muscle",
+        "strength"
+      ]
+    },
+    "russian-twist": {
+      "movementPattern": "core-flexion",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": false,
+      "goalTags": [
+        "fitness",
+        "muscle",
+        "fatloss"
+      ]
+    },
+    "cable-crunch": {
+      "movementPattern": "core-flexion",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": false,
+      "goalTags": [
+        "muscle",
+        "fitness",
+        "strength"
+      ]
+    },
+    "farmer-carry": {
+      "movementPattern": "core-bracing",
+      "difficulty": "beginner",
+      "complexity": "low",
+      "beginnerSafe": true,
+      "compound": true,
+      "goalTags": [
+        "strength",
+        "fitness",
+        "fatloss"
+      ]
+    },
+    "bear-crawl": {
+      "movementPattern": "conditioning",
+      "difficulty": "beginner",
+      "complexity": "medium",
+      "beginnerSafe": true,
+      "compound": true,
+      "goalTags": [
+        "fitness",
+        "fatloss",
+        "strength"
+      ]
+    },
+    "lateral-lunge": {
+      "movementPattern": "lunge",
+      "difficulty": "beginner",
+      "complexity": "medium",
+      "beginnerSafe": true,
+      "compound": true,
+      "goalTags": [
+        "fitness",
+        "muscle",
+        "strength",
+        "fatloss"
       ]
     }
   }

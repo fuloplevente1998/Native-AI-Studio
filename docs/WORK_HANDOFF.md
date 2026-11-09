@@ -1,8 +1,47 @@
-# Rövid munkátadás – 2026-11-08 (Teljes program-, gyakorlat-, Gyors edzés- és GPS-audit és javítás + PR #211)
+# Rövid munkátadás – 2026-11-09 (#215 Gyakorlatlista bővítés 106->140, #214 Kétirányú óra/telefon szinkron, #216 Háttérben megálló pihenőidőzítő és nem tördelődő sáv)
 
 Belépési pont: [AGENTS.md](../AGENTS.md). Az élő GitHub-állapot elsőbbséget élvez.
 
+## Három feladat teljes megvalósítása (`AI_STUDIO_COMPLETE_3_TASK_IMPLEMENTATION_PROMPT_2026-11-09.md`)
+
+- **#215 – Gyakorlatlista bővítése 106-ról 140-re és teljes integrációja**:
+  - `native-catalog-main-7473.json`: A katalógus 106-ról **140** elemre bővítve a jóváhagyott 34 új gyakorlattal (18 első körös + 16 második körös), teljes 4 nyelvű lokalizációval (HU, EN, DE, RO), leírásokkal, terheléstípusokkal, ismétlés/mértékegységekkel, célizmokkal és ellenőrzött YouTube videóhivatkozásokkal.
+  - `barbell-floor-press` (`Földön fekvenyomás – kétkezes rúddal` / `Barbell Floor Press`) önálló gyakorlatként hozzáadva a katalógushoz (`total` loadType-pal), míg a `db-floor-press` (`Földön fekvenyomás – kézisúlyzóval`) változatlanul megmaradt.
+  - **Kizárólag az `Otthoni A/B` (`home-basic`) A nap sablonjában** cserélve a `db-floor-press` -> `barbell-floor-press`-re (mind a katalógusban, mind a `native-planner-main-7473.json` beépített napi tervében). A többi 12 programban és a felhasználói egyéni programokban a korábbi gyakorlatok változatlanok maradtak.
+  - `native-planner-main-7473.json`: Mind a 34 új gyakorlat bevezetve az eszközszükséglet (`needs`), leírás/ismétlés (`meta`) és kezdő kedvencek (`beginnerFavorites`) blokkokba.
+  - `TrainPilotModels.kt`: Új eszközcímkék lokalizált megjelenítése (HU/EN/DE/RO) minden új felszerelés-típushoz (`ülő vádligép`, `csípőtávolító gép`, `csípőközelítő gép`, `45 fokos hátpad`, `scott-pad`, `ez-rúd`, `rúd/ez-rúd`, `kézisúlyzó/ez-rúd`, `t-rúd / landmine`, `testsúly / kézisúlyzó`, `testsúly / súly`, `biztonságos tartó/segítő`).
+  - `AnatomicalBodyAndMapComponents.kt`: Az adatvezérelt `buildEquipmentSummaryFromPairs` összefoglaló kiegészítve az új eszközökkel (`ez-rúd`, `t-rúd`, `landmine`, `tartó/segítő`).
+  - `NativeBuiltinCatalog.kt` és `TrainPilotDatabase.kt`: A katalógusméret-ellenőrzés 140-re frissítve; a meglévő adatbázisok induláskor pótolják a hiányzó 34 gyakorlatot, és az érintetlen `home-basic` A napot zökkenőmentesen átállítják `barbell-floor-press`-re anélkül, hogy a felhasználói szerkesztett programokat felülírnák.
+
+- **#214 – Telefon és Wear OS óra kétirányú edzésállapot-szinkronizációja**:
+  - **1. hiba (Órás sorozatbefejezés pihenőidőzítője nem indult a telefonon)**:
+    - `WearSyncRepository.commitWatchEditorMutation`: A `phoneEditor` útvonal mostantól a `completeSet` és `skipRest` műveleteket is a `NativeWorkoutEditing.commitEdit` motoron keresztül dolgozza fel, rögzíti a `restEndAt` időbélyeget és megőrzi a sorozatokat.
+    - `PhoneWorkoutExecutionStore.record`: A telefonos rögzítés set completion eseményeknél (`completeSet`, `completeTimedSet`, `completeMeasuredSet`) beállítja a `next.put("restEndAt", System.currentTimeMillis() + restSec * 1000L)` értéket.
+    - `PhoneWorkoutEngine.execute` és `display`: A közvetlen szerkesztői sorozatbefejezés nem akad el, ha az `IntervalTimerService` még nincs felvértezve (`controllerNotArmed`), és a `display()` folyamatosan kivetíti a `restEndAt` értéket a megosztott adatrétegbe.
+    - `TrainPilotViewModel`: A `snapshotFlow` megfigyelő szinkronizálja a távoli `restEndAt` és automation pihenő-időbélyegeket; amikor az órán sorozatot fejeznek be, a telefon azonnal átveszi és elindítja a határidő-alapú pihenőidőzítőt (`StudioRestTimer.fromRemoteRestEndAt`), órás és telefonos vezérlés alatt egyaránt.
+  - **2. hiba (Telefonos edzésvezérlésnél az óra egy teljes gyakorlattal lemaradt)**:
+    - `WearPhoneAutomaticProjection.kt` (Wear OS): A gyorsítótárazott telefonos időzítő kivetítése (`projectPhoneAutomatic`) a `restOnly` és a nem `autoAdvance` jellegű pihenőknél nem írja felül a `workout.currentExercise` mutatót az időzítő első lépésének gyakorlatára.
+    - `StudioWorkoutBridge.persist`: Amikor a telefonon gyakorlatot váltanak (`nextActiveExercise`, `previousActiveExercise`, `switchExercise`), azonnal lezárja a korábbi sorozatstoppert, inkrementálja a `selectionRevision`-t, és `clockEdit = true` jelzéssel commitolja a módosítást.
+    - `PhoneWorkoutExecutionStore.prepare` és `amend`: Mind a felkészítés, mind az átmenet frissíti a `transition.put("currentExercise", incoming.getInt("currentExercise"))` mutatót gyakorlatváltáskor.
+    - `ActiveWorkoutStore.kt`, `NativeWorkoutEditing.kt` és `WorkoutSnapshotStore.kt`: Megőrzik és monoton módon növelik a `localSequence` és `watchSequence` számlálókat, így a telefonos pillanatkép nem tűnik régebbinek az óra számára, és az órai `preservePendingWearEdits` átveszi a frissebb telefonos `currentExercise` mutatót.
+
+- **#216 – Háttérben megálló pihenőidőzítő és a tördelődő időzítőfelület javítása**:
+  - **Háttérben megálló visszaszámláló**:
+    - `StudioRestTimer.kt`: Monoton (`restTimerEndRealtimeMs`) és falióra (`restTimerEndEpochMs`) határidő-számítás. A `reconcile()` és az `adjusted(state, -1)` detektálja a háttérben eltelt valós időt (`nowRealtime - lastTickRealtime >= 1500L`), és a képernyő-felébredéskor azonnal a valós eltelt idővel korrigálja a hátralévő másodperceket.
+    - `ActiveMeasurementScreens.kt`: A `StudioRestCountdown` feliratkozik az `ON_RESUME` életciklus-eseményre, és a telefonos háttérből való visszatéréskor (legyen az 2 másodperc vagy több perc) azonnal lefut az időzítő rekonsziliációja, megszüntetve a fagyást.
+  - **Tördelődő kompakt időzítősáv javítása**:
+    - `ActiveMeasurementScreens.kt` (`sticky_rest_timer_compact` és `SmallAdjustChip`): `BoxWithConstraints` alapú dinamikus mérés; a gombok és chipek megkapták a `maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis` védelmet és a `fontFeatureSettings = "tnum"` tabulált számjegyeket.
+    - Keskeny kijelzőkön (360dp alatti hatékony szélesség vagy nagy rendszerbetűméret esetén) a sáv automatikusan tiszta, nem összenyomott kétirányú elrendezést használ, így a `"Kihagy"` szó és a számlálók sosem törnek két sorba.
+
+- **Ellenőrzések és regressziós tesztek**:
+  - `gradle :wear:testDebugUnitTest`: **183 teszt MIND SIKERES** (0 failure, 0 error, 0 skipped), beleértve a `#214` órai gyakorlatváltási és pihenő-kivetítési regressziókat.
+  - `gradle :app:testDebugUnitTest --tests "com.example.GlowLightPaletteContrastTest"`: SIKERES.
+  - `gradle compileDebugUnitTestSources`: A teljes Android és Wear tesztkód hibátlanul fordul.
+  - `gradle :app:assembleDebug :wear:assembleDebug :shared:assembleDebug`: A telefonos és órás hibakeresési csomagok (APK-k) hibátlanul elkészülnek (BUILD SUCCESSFUL).
+  - `python3 scripts/verify_junit_xml.py`: 184/184 teszt 0 hibával megerősítve.
+
 ## Teljes program-, gyakorlat-, Gyors edzés- és GPS-audit (`PROGRAM_EXERCISE_QUICK_GPS_AUDIT_HANDOFF_2026-11-08.md`)
+
 
 - **`home-basic` átnevezése és történeti kompatibilitás**:
   - A `home-basic` beépített program megjelenített neve `Otthoni A/B` (EN: `Home A/B`, DE: `Zuhause A/B`, RO: `Acasă A/B`) mind a `native-catalog-main-7473.json`, mind a `native-planner-main-7473.json` erőforrásokban és a `TrainPilotViewModel` alapértelmezésekben, a stabil `home-basic` azonosító megőrzésével.

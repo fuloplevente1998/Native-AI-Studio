@@ -55,6 +55,20 @@ internal object ActiveWorkoutStore {
         }
         val revision = prefs(context).getLong(REVISION, 0L) + 1L
         val snapshot = JSONObject(input.toString())
+        if (previous != null && previous.optBoolean("active") && previous.optString("workoutId") == snapshot.optString("workoutId")) {
+            val mergedLocalSeq = maxOf(
+                previous.optLong("localSequence"),
+                snapshot.optLong("localSequence"),
+                previous.optLong("watchSequence"),
+                snapshot.optLong("watchSequence")
+            )
+            val mergedWatchSeq = maxOf(
+                previous.optLong("watchSequence"),
+                snapshot.optLong("watchSequence")
+            )
+            if (mergedLocalSeq > 0L) snapshot.put("localSequence", mergedLocalSeq)
+            if (mergedWatchSeq > 0L) snapshot.put("watchSequence", mergedWatchSeq)
+        }
         PhoneGpsRoute193.captureOrigin(context, snapshot)
         snapshot.put("schema", snapshot.optInt("schema", 1))
         snapshot.put("revision", revision)
