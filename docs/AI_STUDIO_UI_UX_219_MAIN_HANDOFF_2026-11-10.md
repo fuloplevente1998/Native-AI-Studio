@@ -55,7 +55,7 @@ Polish the established dark/gold TrainPilot UI from five real-device screenshots
 Provide: SHA(s), list of changed files, concise before/after per item, test commands/results, any limitations, and a checklist of manual device tests. State clearly what was actually tested on-device vs simulated/compiled.
 
 ## Screenshot reference set — five user-supplied real-device images
-The original screenshots are attached to the user conversation, but **are not yet uploaded into this GitHub repository**. Do not claim to have viewed them through GitHub until the actual JPG files have been uploaded. Intended destination: `docs/design-reference/issue-219/` with the following filenames (use the original screenshots, not generated substitutes):
+The original real-device screenshots are now committed to this GitHub repository under `docs/design-reference/issue-219/` at full 709×1536 resolution. AI Studio must inspect these actual JPG references, not generated substitutes:
 
 | Filename | Screen | Visual observations |
 | --- | --- | --- |
@@ -65,4 +65,11 @@ The original screenshots are attached to the user conversation, but **are not ye
 | `445.jpg` | Home default state | Profile, active workout, suggestion, quick workout/watch, six metrics, and goals cards; lower goals section is cut by viewport. Make collapsed default state more compact while keeping scroll safety. |
 | `443.jpg` | Progress default state | Top volume chart, metric cards, muscle-load illustration and suggestion; lower content extends beyond viewport. Compact default layout, retain scrolling for expansion and small screens. |
 
-After the original JPGs are uploaded, AI Studio should inspect the image URLs `https://raw.githubusercontent.com/fuloplevente1998/Native-AI-Studio/main/docs/design-reference/issue-219/<filename>` for each of the five filenames above. **Until then, these are planned URLs, not verified live assets.**
+AI Studio should inspect these live RAW image URLs before editing the UI:
+- https://raw.githubusercontent.com/fuloplevente1998/Native-AI-Studio/main/docs/design-reference/issue-219/451.jpg
+- https://raw.githubusercontent.com/fuloplevente1998/Native-AI-Studio/main/docs/design-reference/issue-219/449.jpg
+- https://raw.githubusercontent.com/fuloplevente1998/Native-AI-Studio/main/docs/design-reference/issue-219/447.jpg
+- https://raw.githubusercontent.com/fuloplevente1998/Native-AI-Studio/main/docs/design-reference/issue-219/445.jpg
+- https://raw.githubusercontent.com/fuloplevente1998/Native-AI-Studio/main/docs/design-reference/issue-219/443.jpg
+
+Treat these screenshots as authoritative visual references for #219.
