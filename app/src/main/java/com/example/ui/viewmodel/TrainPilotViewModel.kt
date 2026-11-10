@@ -18,6 +18,8 @@ import com.example.model.ExerciseSetItem
 import com.example.model.HomeDemoMode
 import com.example.model.LoggedWorkoutEntry
 import com.example.model.workoutsInCalendarWeekToDate
+import com.example.model.workoutsInCalendarMonthToDate
+import com.example.model.workoutsInPeriodToDate
 import com.example.model.localWorkoutDate
 import com.example.model.StudioProgressWindow
 import com.example.model.progressPeriodDays
@@ -142,6 +144,9 @@ data class TrainPilotUiState(
 
     // Home Screen State (Mockup 1/4 #1 + main Home)
     val homeDemoMode: HomeDemoMode = HomeDemoMode.PLANNED_NEXT,
+    val workoutGoalPeriod: com.example.model.WorkoutGoalPeriod = com.example.model.WorkoutGoalPeriod.WEEKLY,
+    val workoutGoalTarget: Int = 15,
+    val workoutGoalCompleted: Int = 0,
     val weeklyGoalCompleted: Int = 0,
     val weeklyGoalTarget: Int = 15,
     val showGoalsDialog: Boolean = false,
@@ -149,6 +154,8 @@ data class TrainPilotUiState(
     val showQuickWorkoutSheet: Boolean = false,
     val sleepDurationLabel: String = "—",
     val sleepHoursDecimal: String = "—",
+    val sleepHasStages: Boolean = false,
+    val sleepStagesSummaryHu: String = "",
     val restingHrBpm: Int = 0,
     val currentHrBpm: Int = 0,
     val maxHrBpm: Int = 0,
@@ -1433,7 +1440,7 @@ class TrainPilotViewModel : ViewModel() {
                     if (nativeDatabase !== database || _uiState.value.loggedWorkouts != previous) return@withContext
                     _uiState.update { it.copy(loggedWorkouts = workouts,
                         privatePhotoCount = workouts.sumOf { entry -> entry.photoCount },
-                        prRecords = computePrRecordsFromWorkouts(workouts),
+                        workoutGoalCompleted = workouts.workoutsInPeriodToDate(it.workoutGoalPeriod, LocalDate.now()).size,
                         weeklyGoalCompleted = workouts.workoutsInCalendarWeekToDate(LocalDate.now()).size) }
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
@@ -1581,12 +1588,20 @@ class TrainPilotViewModel : ViewModel() {
 
             var loadedWeeklyGoal = 0
             var loadedStepsGoal = 0
+            var loadedGoalPeriod = com.example.model.WorkoutGoalPeriod.WEEKLY
             try {
                 val goalsDoc = database.keyValueDocumentDao().getDocument("native:userGoals")
                 if (goalsDoc != null && goalsDoc.json.isNotBlank()) {
                     val gObj = JSONObject(goalsDoc.json)
-                    loadedWeeklyGoal = gObj.optInt("weeklyGoalTarget", 0)
+                    loadedWeeklyGoal = if (gObj.has("workoutGoalTarget")) gObj.optInt("workoutGoalTarget", 0)
+                        else gObj.optInt("weeklyGoalTarget", 0)
                     loadedStepsGoal = gObj.optInt("stepsGoal", 0)
+                    val periodStr = gObj.optString("workoutGoalPeriod", "")
+                    if (periodStr.isNotBlank()) {
+                        loadedGoalPeriod = runCatching {
+                            com.example.model.WorkoutGoalPeriod.valueOf(periodStr.uppercase())
+                        }.getOrDefault(com.example.model.WorkoutGoalPeriod.WEEKLY)
+                    }
                 }
             } catch (_: Throwable) {}
 
@@ -1803,7 +1818,9 @@ class TrainPilotViewModel : ViewModel() {
                         activeSetsByExerciseId = if (restoredSetsMap.isNotEmpty()) restoredSetsMap else st.activeSetsByExerciseId,
                         loggedWorkouts = mappedWorkouts,
                         privatePhotoCount = mappedWorkouts.sumOf { it.photoCount },
-                        prRecords = computedPrs,
+                        workoutGoalPeriod = loadedGoalPeriod,
+                        workoutGoalTarget = if (loadedWeeklyGoal > 0) loadedWeeklyGoal else st.workoutGoalTarget,
+                        workoutGoalCompleted = mappedWorkouts.workoutsInPeriodToDate(loadedGoalPeriod, LocalDate.now()).size,
                         weeklyGoalCompleted = mappedWorkouts.workoutsInCalendarWeekToDate(LocalDate.now()).size,
                         weeklyGoalTarget = if (loadedWeeklyGoal > 0) loadedWeeklyGoal else st.weeklyGoalTarget,
                         stepsGoal = if (loadedStepsGoal > 0) loadedStepsGoal else st.stepsGoal,
@@ -2044,21 +2061,33 @@ class TrainPilotViewModel : ViewModel() {
         _uiState.update { it.copy(showGoalsDialog = show) }
     }
 
-    fun updateGoals(weeklyTarget: Int, stepsTarget: Int) {
-        val cleanWeekly = weeklyTarget.coerceIn(1, 30)
+    fun updateGoals(
+        workoutsTarget: Int,
+        period: com.example.model.WorkoutGoalPeriod,
+        stepsTarget: Int
+    ) {
+        val maxWorkouts = if (period == com.example.model.WorkoutGoalPeriod.WEEKLY) 14 else 60
+        val cleanWorkouts = workoutsTarget.coerceIn(1, maxWorkouts)
         val cleanSteps = stepsTarget.coerceIn(2000, 30000)
         val db = nativeDatabase
         val scope = nativeScope
+        val completedInPeriod = _uiState.value.loggedWorkouts.workoutsInPeriodToDate(period, LocalDate.now()).size
+        val periodLabelHu = if (period == com.example.model.WorkoutGoalPeriod.MONTHLY) "havi" else "heti"
         _uiState.update {
             it.copy(
-                weeklyGoalTarget = cleanWeekly,
+                workoutGoalPeriod = period,
+                workoutGoalTarget = cleanWorkouts,
+                workoutGoalCompleted = completedInPeriod,
+                weeklyGoalTarget = cleanWorkouts,
+                weeklyGoalCompleted = if (period == com.example.model.WorkoutGoalPeriod.WEEKLY) completedInPeriod
+                    else it.loggedWorkouts.workoutsInCalendarWeekToDate(LocalDate.now()).size,
                 stepsGoal = cleanSteps,
                 showGoalsDialog = false,
                 statusBannerMessage = tr(
-                    "Célok elmentve: $cleanWeekly edzés, $cleanSteps lépés",
-                    "Goals saved: $cleanWeekly workouts, $cleanSteps steps",
-                    "Ziele gespeichert: $cleanWeekly Trainings, $cleanSteps Schritte",
-                    "Obiective salvate: $cleanWeekly antrenamente, $cleanSteps pași",
+                    "Célok elmentve: $cleanWorkouts $periodLabelHu edzés, $cleanSteps lépés",
+                    "Goals saved: $cleanWorkouts ${if (period == com.example.model.WorkoutGoalPeriod.MONTHLY) "monthly" else "weekly"} workouts, $cleanSteps steps",
+                    "Ziele gespeichert: $cleanWorkouts ${if (period == com.example.model.WorkoutGoalPeriod.MONTHLY) "monatliche" else "wöchentliche"} Trainings, $cleanSteps Schritte",
+                    "Obiective salvate: $cleanWorkouts antrenamente ${if (period == com.example.model.WorkoutGoalPeriod.MONTHLY) "lunare" else "săptămânale"}, $cleanSteps pași",
                     it.language
                 )
             )
@@ -2067,7 +2096,9 @@ class TrainPilotViewModel : ViewModel() {
         scope.launch(Dispatchers.IO) {
             try {
                 val json = JSONObject().apply {
-                    put("weeklyGoalTarget", cleanWeekly)
+                    put("weeklyGoalTarget", cleanWorkouts)
+                    put("workoutGoalTarget", cleanWorkouts)
+                    put("workoutGoalPeriod", period.name.lowercase())
                     put("stepsGoal", cleanSteps)
                 }.toString()
                 db.keyValueDocumentDao().putDocument(
@@ -2078,6 +2109,11 @@ class TrainPilotViewModel : ViewModel() {
             }
         }
     }
+
+    fun updateGoals(weeklyTarget: Int, stepsTarget: Int) {
+        updateGoals(weeklyTarget, _uiState.value.workoutGoalPeriod, stepsTarget)
+    }
+
 
     fun togglePersonalPlannerModal(show: Boolean) {
         _uiState.update { it.copy(showPersonalPlannerModal = show) }
@@ -4192,7 +4228,7 @@ class TrainPilotViewModel : ViewModel() {
                                 activeWorkoutId = "",
                                 workoutStartedEpochMs = 0L,
                                 loggedWorkouts = updatedLogs,
-                                prRecords = computePrRecordsFromWorkouts(updatedLogs),
+                                workoutGoalCompleted = updatedLogs.workoutsInPeriodToDate(st.workoutGoalPeriod, LocalDate.now()).size,
                                 weeklyGoalCompleted = updatedLogs.workoutsInCalendarWeekToDate(LocalDate.now()).size,
                                 quickWorkoutQueue = emptyList(),
                                 currentTab = MainTab.PROGRESS,
@@ -4634,6 +4670,21 @@ class TrainPilotViewModel : ViewModel() {
                 val todaySleepMin = com.repforge.app.NativeDailyHealthDetails.sleepMinutes(
                     todayData, today, java.time.ZoneId.systemDefault(), Instant.now()) ?: Double.NaN
                 val todayPulseHistory = com.repforge.app.NativeDailyHealthDetails.pulseSeries(todayData)
+                val hasSleepStages = runCatching {
+                    val sessions = todayData?.optJSONArray("sleepSessions")
+                    if (sessions != null && sessions.length() > 0) {
+                        (0 until sessions.length()).any { idx ->
+                            val s = sessions.optJSONObject(idx)
+                            val stg = s?.optJSONArray("stages")
+                            stg != null && stg.length() > 0
+                        }
+                    } else false
+                }.getOrDefault(false)
+                val sleepStagesSummary = if (hasSleepStages) {
+                    "Részletes alvásfázisok rögzítve (mély, REM, könnyű alvás)"
+                } else {
+                    "A szolgáltató nem adott át alvásfázisbontást (csak teljes időtartam)"
+                }
                 val availableFields = (setOf("steps", "activeCalories", "totalCalories", "averageHeartRate",
                     "restingHeartRate", "minHeartRate", "maxHeartRate", "heartRateSamples")
                     .filter { key -> todayData?.optDouble(key, Double.NaN)?.let { it.isFinite() && it >= 0 } == true } +
@@ -4793,6 +4844,8 @@ class TrainPilotViewModel : ViewModel() {
                             activeCaloriesKcal = if (caloriesDbl.isFinite() && caloriesDbl > 0) caloriesDbl.toInt() else 0,
                             sleepDurationLabel = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) String.format("%d ó %d p", (sleepMinDbl / 60).toInt(), (sleepMinDbl % 60).toInt()) else "—",
                             sleepHoursDecimal = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) "${((sleepMinDbl / 60.0) * 10.0).roundToInt() / 10.0} h" else "—",
+                            sleepHasStages = hasSleepStages,
+                            sleepStagesSummaryHu = sleepStagesSummary,
                             samsungEnergyScore = todayRecovery?.samsungEnergy?.roundToInt() ?: 0,
                             spo2Percent = todayData?.optDouble("oxygenSaturationPercent", Double.NaN)?.takeIf { it.isFinite() && it > 0 }?.toFloat() ?: 0f,
                             vo2Max = todayData?.optDouble("vo2Max", Double.NaN)?.takeIf { it.isFinite() && it > 0 }?.toFloat() ?: 0f,

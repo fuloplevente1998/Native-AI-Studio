@@ -253,9 +253,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
         // 2. Goals Edit Dialog (Célok beállítása)
         if (uiState.showGoalsDialog) {
             GoalsEditDialog(
-                currentWeeklyWorkouts = uiState.weeklyGoalTarget,
+                currentWorkouts = uiState.workoutGoalTarget,
+                currentPeriod = uiState.workoutGoalPeriod,
                 currentStepsGoal = uiState.stepsGoal,
-                onSave = { weekly, steps -> viewModel.updateGoals(weekly, steps) },
+                onSave = { workouts, period, steps -> viewModel.updateGoals(workouts, period, steps) },
                 onDismiss = { viewModel.toggleGoalsDialog(false) }
             )
         }

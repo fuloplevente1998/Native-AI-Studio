@@ -7,6 +7,12 @@ enum class AppLanguage(val code: String, val label: String, val flag: String) {
     RO("RO", "Română", "🇷🇴")
 }
 
+enum class WorkoutGoalPeriod {
+    WEEKLY,
+    MONTHLY
+}
+
+
 enum class MainTab {
     HOME,
     PROGRAMS,

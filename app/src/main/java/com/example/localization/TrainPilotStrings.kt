@@ -219,12 +219,15 @@ data class LocalizedStrings(
         AppLanguage.RO -> "$nextWorkoutLabel: $dayLabel"
     }
 
-    fun weeklyStepsFormat(workouts: Int, steps: Int): String = when (language) {
-        AppLanguage.HU -> "Heti $workouts edzés • Napi $steps lépés"
-        AppLanguage.EN -> "$workouts workouts/wk • $steps steps/day"
-        AppLanguage.DE -> "$workouts Trainings/Wo. • $steps Schritte/Tag"
-        AppLanguage.RO -> "$workouts antr./săpt. • $steps pași/zi"
+    fun periodStepsFormat(workouts: Int, isMonthly: Boolean, steps: Int): String = when (language) {
+        AppLanguage.HU -> "${if (isMonthly) "Havi" else "Heti"} $workouts edzés • Napi $steps lépés"
+        AppLanguage.EN -> "$workouts ${if (isMonthly) "workouts/mo" else "workouts/wk"} • $steps steps/day"
+        AppLanguage.DE -> "$workouts ${if (isMonthly) "Trainings/Monat" else "Trainings/Wo."} • $steps Schritte/Tag"
+        AppLanguage.RO -> "$workouts ${if (isMonthly) "antr./lună" else "antr./săpt."} • $steps pași/zi"
     }
+
+    fun weeklyStepsFormat(workouts: Int, steps: Int): String = periodStepsFormat(workouts, false, steps)
+
 
     val navPrograms: String get() = programsShortcutTitle
     val navCalendar: String get() = calendarShortcutTitle

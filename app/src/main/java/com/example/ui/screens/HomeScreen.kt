@@ -432,18 +432,28 @@ fun HomeScreen(
                                 style = MaterialTheme.typography.titleMedium,
                                 color = palette.textPrimary
                             )
+                            val periodSub = if (state.workoutGoalPeriod == com.example.model.WorkoutGoalPeriod.MONTHLY) {
+                                tr("Havi cél: ${state.workoutGoalTarget} edzés", "Monthly goal: ${state.workoutGoalTarget} workouts", "Monatsziel: ${state.workoutGoalTarget} Trainings", "Obiectiv lunar: ${state.workoutGoalTarget} antrenamente")
+                            } else {
+                                tr("Heti cél: ${state.workoutGoalTarget} edzés", "Weekly goal: ${state.workoutGoalTarget} workouts", "Wochenziel: ${state.workoutGoalTarget} Trainings", "Obiectiv săpt.: ${state.workoutGoalTarget} antrenamente")
+                            }
                             Text(
                                 text = if ("activeCalories" in state.dailyHealthAvailableFields)
-                                    strings.activeCaloriesAndWorkoutsToday(state.activeCaloriesKcal,
-                                        state.loggedWorkouts.count { it.localWorkoutDate() == java.time.LocalDate.now() })
-                                    else tr("Mai aktív kalória: nincs lekért adat", "Today's active calories: no data fetched", "Heutige aktive Kalorien: keine Daten geladen", "Calorii active azi: fără date preluate"),
+                                    "$periodSub • ${strings.activeCaloriesAndWorkoutsToday(state.activeCaloriesKcal,
+                                        state.loggedWorkouts.count { it.localWorkoutDate() == java.time.LocalDate.now() })}"
+                                    else "$periodSub • ${state.stepsGoal} lépés/nap",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = palette.textSecondary
                             )
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            val periodBadge = if (state.workoutGoalPeriod == com.example.model.WorkoutGoalPeriod.MONTHLY) {
+                                tr("hó", "mo", "Mt.", "lună")
+                            } else {
+                                tr("hét", "wk", "Wo.", "săpt.")
+                            }
                             Text(
-                                text = "${state.weeklyGoalCompleted}/${state.weeklyGoalTarget}",
+                                text = "${state.workoutGoalCompleted}/${state.workoutGoalTarget} ($periodBadge)",
                                 style = MaterialTheme.typography.labelLarge,
                                 color = palette.primary
                             )

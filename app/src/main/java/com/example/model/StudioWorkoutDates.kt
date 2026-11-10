@@ -78,10 +78,28 @@ internal fun List<LoggedWorkoutEntry>.workoutsOn(
     date: LocalDate, zone: ZoneId = ZoneId.systemDefault()
 ): List<LoggedWorkoutEntry> = filter { it.localWorkoutDate(zone) == date }
 
-/** Completed history in the current local calendar week, Monday through today; never lifetime totals. */
+/** Completed history in the current local calendar week, Monday through today; never lifetime totals. Deduplicates by ID. */
 internal fun List<LoggedWorkoutEntry>.workoutsInCalendarWeekToDate(
     today: LocalDate, zone: ZoneId = ZoneId.systemDefault()
 ): List<LoggedWorkoutEntry> {
     val monday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
-    return filter { row -> row.localWorkoutDate(zone)?.let { !it.isBefore(monday) && !it.isAfter(today) } == true }
+    return filter { row -> row.localWorkoutDate(zone)?.let { !it.isBefore(monday) && !it.isAfter(today) } == true }.distinctBy { it.id }
 }
+
+/** Completed history in the current local calendar month, 1st through today; never lifetime totals. Deduplicates by ID. */
+internal fun List<LoggedWorkoutEntry>.workoutsInCalendarMonthToDate(
+    today: LocalDate, zone: ZoneId = ZoneId.systemDefault()
+): List<LoggedWorkoutEntry> {
+    val firstDay = today.withDayOfMonth(1)
+    return filter { row -> row.localWorkoutDate(zone)?.let { !it.isBefore(firstDay) && !it.isAfter(today) } == true }.distinctBy { it.id }
+}
+
+internal fun List<LoggedWorkoutEntry>.workoutsInPeriodToDate(
+    period: WorkoutGoalPeriod,
+    today: LocalDate = LocalDate.now(),
+    zone: ZoneId = ZoneId.systemDefault()
+): List<LoggedWorkoutEntry> = when (period) {
+    WorkoutGoalPeriod.WEEKLY -> workoutsInCalendarWeekToDate(today, zone)
+    WorkoutGoalPeriod.MONTHLY -> workoutsInCalendarMonthToDate(today, zone)
+}
+

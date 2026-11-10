@@ -1,8 +1,61 @@
+# Rövid munkátadás – 2026-11-09 (#217 Egészség oldal audit & #218 Célok időszakosítás)
+
+Belépési pont: [AGENTS.md](../AGENTS.md). Az élő GitHub-állapot és a main ág az irányadó.
+
+## Két feladat teljes megvalósítása (`AI_STUDIO_HEALTH_217_218_MAIN_IMPLEMENTATION_2026-11-09.md`)
+
+- **#217 – Egészség oldal: „Mai állapot” 6 kártyájának auditja, naplógörgetés és hiányzó adatok helyes kezelése**:
+  - **Navigáció javítása („Egészségnapló megnyitása lent”)**:
+    - A pulzus-, kalória- és alváskártyák kibontott részleteiben található „Egészségnapló megnyitása lent” akció megbízhatóan működik: ha a napló össze volt csukva, automatikusan kinyitja (`expandedHealthJournal = true`), és coroutine segítségével simán odagörget a `LazyColumn` 2. eleméhez (`healthListState.animateScrollToItem(2)`).
+    - Hasonlóan a pulzus-kártyáról a „Részletes pulzusgörbe megnyitása lent” akció kinyitja a trendet (`expandedPulseTrend = true`), és odagörget az 1. elemhez.
+  - **Adatforrás- és hitelességi audit (6 metrika)**:
+    1. **Alvás (`sleepMinutes`)**: Egyértelműen szétválasztva az alvástartam és az alvásfázis-bontás (`sleepHasStages`). Ha a szolgáltató (Samsung Health vagy Health Connect) nem adott át fázisokat, nem generál kamu adatot, hanem tisztességesen kiírja: *„A szolgáltató nem adott át alvásfázisbontást”*.
+    2. **Aktív kalória (`activeCalories`)**: Nem keveredik a nyugalmi (BMR) és a teljes napi elégetett kalóriával (`totalCalories`).
+    3. **Pulzus (`todayPulseReading`)**: Egyértelműen felcímkézve a napi átlag (`averageBpm`), a legfrissebb mérés (`lastBpm`) és a nyugalmi pulzus (`restingBpm`).
+    4. **Lépésszám (`dailySteps`)**: Egyetlen deduplikált forrás (`HealthJournalStore` / `dailyHealthSourceLabel`), sosem adódik össze redundánsan több szolgáltatóból.
+    5. **Mai edzések (`loggedWorkouts`)**: Valós, a helyi Room adatbázisban a mai napra mentett edzések száma és összegzése (`workoutsOn(today, zone)`).
+    6. **Készültség / Regeneráció (`recoveryScore`)**: Megkülönbözteti a Samsung Health hivatalos Energy Score-ját (`SAMSUNG_ENERGY`) a TrainPilot becslésétől (`TRAINPILOT_ESTIMATE`), forrásmegjelöléssel.
+  - **Hiányzó adatok**: A nem elérhető vagy még nem szinkronizált értékeknél megtévesztő 0 helyett „—” (em dash) jelenik meg.
+  - **Érinthetőség**: Minden kinyitott kártya alján lévő navigációs gomb megfelel a 48dp minimális érintési célméretnek (`Modifier.testTag("health_expanded_action_button")`).
+
+- **#218 – Célok: Heti / havi edzésszámcél-választó, napi lépéscél és megőrzött beállítások**:
+  - **Heti / havi választó (`WorkoutGoalPeriod`)**:
+    - `enum class WorkoutGoalPeriod { WEEKLY, MONTHLY }` modell bevezetve.
+    - A célbeállító párbeszédablakban (`GoalsEditDialog`) reszponzív szegmentált kapcsolóval választható a Heti (1–14) vagy Havi (1–60) cél.
+    - Teljes támogatás a „25 edzés/hónap” célhoz: nem jeleníti meg a 25-öt heti célként, a főképernyőn és az Egészség oldalon pedig tiszta `25/25 (hó)` formátumban jelenik meg.
+  - **Napi lépéscél**:
+    - A lépéscél szigorúan napi maradt (1 000 – 40 000 lépés/nap), a párbeszédablakban zárójelben feltüntetve a hozzá tartozó heti ekvivalenst.
+  - **Reszponzív felület**:
+    - A csúszkák mellett közvetlen numerikus beviteli mező (`OutlinedTextField`) található, keskeny kijelzőkön gördíthető konténerrel és 48dp érintési felülettel.
+  - **Konzervatív migráció és perzisztencia**:
+    - A korábbi `"native:userGoals"` beállítások (`weeklyGoalTarget`, `stepsGoal`) zökkenőmentesen betöltődnek; hiányzó `workoutGoalPeriod` mező esetén biztonságosan `WEEKLY` értékre áll be, nem írja felül a felhasználó meglévő céljait.
+    - Visszafelé kompatibilis túltöltések a `TrainPilotViewModel` és `GoalsEditDialog` osztályokban.
+  - **Időszaki számítások (`StudioWorkoutDates`)**:
+    - `workoutsInCalendarMonthToDate`: Az adott hónap 1. napjától a mai napig rögzített edzések száma a felhasználó helyi időzónájában (`ZoneId`), ID szerinti deduplikációval.
+
+- **Módosított és létrehozott fájlok**:
+  - `app/src/main/java/com/example/model/TrainPilotModels.kt` (WorkoutGoalPeriod enum)
+  - `app/src/main/java/com/example/model/StudioWorkoutDates.kt` (havi és heti edzésszámlálás)
+  - `app/src/main/java/com/example/localization/TrainPilotStrings.kt` (periodStepsFormat 4 nyelven)
+  - `app/src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt` (célok kezelése, migráció, alvásfázis-detektálás)
+  - `app/src/main/java/com/example/ui/components/TrainPilotCommonComponents.kt` (GoalsEditDialog időszakos választóval és numerikus bevitellel)
+  - `app/src/main/java/com/example/MainActivity.kt` (GoalsEditDialog bekötése)
+  - `app/src/main/java/com/example/ui/screens/HomeScreen.kt` (időszaktudatos célkártya)
+  - `app/src/main/java/com/example/ui/screens/HealthCoachAndSettingsScreens.kt` (egészségnapló odagörgetés, 6 kártya auditja és forrásai)
+  - `app/src/test/java/com/example/HealthAndGoals217218RegressionTest.kt` (8 automatizált regressziós teszt)
+
+- **Ellenőrzések és teszteredmények**:
+  - `gradle :app:testDebugUnitTest --tests com.example.HealthAndGoals217218RegressionTest`: **8 teszt MIND SIKERES** (0 failure, 0 error, 0 skipped).
+  - `gradle :app:testDebugUnitTest --tests com.example.WorkoutPeriodCountsRegressionTest`: **SIKERES**.
+  - `gradle :wear:testDebugUnitTest`: **183 teszt MIND SIKERES** (0 failure, 0 error, 0 skipped).
+  - `gradle compileDebugUnitTestSources`: A teljes Android és Wear tesztkód hibátlanul lefordul.
+  - `gradle :app:assembleDebug :wear:assembleDebug :shared:assembleDebug`: BUILD SUCCESSFUL.
+
+---
+
 # Rövid munkátadás – 2026-11-09 (#215 Gyakorlatlista bővítés 106->140, #214 Kétirányú óra/telefon szinkron, #216 Háttérben megálló pihenőidőzítő és nem tördelődő sáv)
 
 Belépési pont: [AGENTS.md](../AGENTS.md). Az élő GitHub-állapot elsőbbséget élvez.
-
-## Három feladat teljes megvalósítása (`AI_STUDIO_COMPLETE_3_TASK_IMPLEMENTATION_PROMPT_2026-11-09.md`)
 
 - **#215 – Gyakorlatlista bővítése 106-ról 140-re és teljes integrációja**:
   - `native-catalog-main-7473.json`: A katalógus 106-ról **140** elemre bővítve a jóváhagyott 34 új gyakorlattal (18 első körös + 16 második körös), teljes 4 nyelvű lokalizációval (HU, EN, DE, RO), leírásokkal, terheléstípusokkal, ismétlés/mértékegységekkel, célizmokkal és ellenőrzött YouTube videóhivatkozásokkal.

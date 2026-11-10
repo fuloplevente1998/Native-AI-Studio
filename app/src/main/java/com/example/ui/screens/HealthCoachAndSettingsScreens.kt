@@ -97,7 +97,9 @@ import com.example.ui.components.healthreadings.HealthPulseWeekRows
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -220,6 +222,7 @@ fun HealthTabScreen(
     val shortChartDateFormatter = remember {
         java.time.format.DateTimeFormatter.ofPattern("MM.dd.")
     }
+    val coroutineScope = rememberCoroutineScope()
 
     var recentMeasurements by remember(uiState.bodyWeightLogs) {
         if (uiState.bodyWeightLogs.isNotEmpty()) {
@@ -509,41 +512,129 @@ fun HealthTabScreen(
                                 modifier = Modifier.padding(12.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
+                                val openHealthJournalAndScroll: () -> Unit = {
+                                    if (!uiState.expandedHealthJournal) {
+                                        onToggleHealthSection("journal")
+                                    }
+                                    coroutineScope.launch {
+                                        healthListState.animateScrollToItem(2)
+                                    }
+                                }
+                                val openPulseTrendAndScroll: () -> Unit = {
+                                    if (!uiState.expandedHealthPulseTrend) {
+                                        onToggleHealthSection("pulse")
+                                    }
+                                    coroutineScope.launch {
+                                        healthListState.animateScrollToItem(1)
+                                    }
+                                }
                                 val (titleStr, onActionClick) = when (activeKey) {
                                     "calories" -> listOf(
                                         tr(uiState.language, "Aktív kalória részletek • $activeEnergy", "Active Calories Details • $activeEnergy", "Aktive Kalorien Details • $activeEnergy", "Detalii calorii active • $activeEnergy"),
-                                        tr(uiState.language, "Aktív energia: $activeEnergy • Teljes napi energia (nyugalmival): $totalEnergy", "Active energy: $activeEnergy • Total daily energy (with resting): $totalEnergy", "Aktive Energie: $activeEnergy • Tagesgesamtenergie (inkl. Ruhe): $totalEnergy", "Energie activă: $activeEnergy • Energie zilnică totală: $totalEnergy"),
+                                        if (currentDaily && "activeCalories" in uiState.dailyHealthAvailableFields) {
+                                            tr(uiState.language, "Aktív energia (edzés & mozgás): $activeEnergy • Teljes napi energia (nyugalmival): $totalEnergy • Forrás: ${uiState.dailyHealthSourceLabel}",
+                                                "Active energy (workout & activity): $activeEnergy • Total daily energy (with resting): $totalEnergy • Source: ${uiState.dailyHealthSourceLabel}",
+                                                "Aktive Energie: $activeEnergy • Tagesgesamtenergie: $totalEnergy • Quelle: ${uiState.dailyHealthSourceLabel}",
+                                                "Energie activă: $activeEnergy • Energie zilnică totală: $totalEnergy • Sursă: ${uiState.dailyHealthSourceLabel}")
+                                        } else {
+                                            tr(uiState.language, "A kiválasztott szolgáltatótól (${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"}) ma még nem érkezett aktív kalória adat. A nyugalmi energia külön kerül elszámolásra.",
+                                                "No active calories fetched yet today from ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"}. Resting energy is accounted separately.",
+                                                "Noch keine aktiven Kalorien von ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} geladen. Ruheenergie wird separat berechnet.",
+                                                "Fără calorii active de la ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} azi. Energia de repaus este calculată separat.")
+                                        },
                                         tr(uiState.language, "Egészségnapló megnyitása lent", "Open Health Journal below", "Gesundheitstagebuch unten öffnen", "Deschide jurnalul de sănătate mai jos")
-                                    ) to { onToggleHealthSection("journal") }
-                                    "pulse" -> listOf(
-                                        tr(uiState.language, "Mai pulzus", "Today's Heart Rate", "Heutiger Puls", "Pulsul de azi"),
-                                        tr(uiState.language, "Nyugalmi: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Tartomány: $heartRange", "Resting: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Range: $heartRange", "Ruhepuls: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Bereich: $heartRange", "Repaus: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Interval: $heartRange"),
-                                        tr(uiState.language, "Korábbi mai pulzusmérések megtekintése lent", "View earlier pulse readings below", "Frühere Pulsmessungen unten ansehen", "Vezi măsurătorile anterioare de puls mai jos")
-                                    ) to { onToggleHealthSection("pulse") }
+                                    ) to openHealthJournalAndScroll
+                                    "pulse" -> {
+                                        val pulseReading = uiState.todayPulseReading
+                                        val pulseMain = pulseReading?.mainLabelHu ?: if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"
+                                        listOf(
+                                            tr(uiState.language, "Mai pulzus • $pulseMain", "Today's Heart Rate • $pulseMain", "Heutiger Puls • $pulseMain", "Pulsul de azi • $pulseMain"),
+                                            if (pulseReading != null && pulseReading.state == com.repforge.app.healthreadings.ReadingState.AVAILABLE) {
+                                                tr(uiState.language, "Pontos típus: ${pulseReading.averageDescriptionHu ?: "Időbélyeges mérés"} • Nyugalmi pulzus: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Tartomány: $heartRange",
+                                                    "Reading type: ${pulseReading.averageDescriptionHu ?: "Timestamped reading"} • Resting HR: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Range: $heartRange",
+                                                    "Messart: ${pulseReading.averageDescriptionHu ?: "Zeitstempel-Messung"} • Ruhepuls: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Bereich: $heartRange",
+                                                    "Tip măsurătoare: ${pulseReading.averageDescriptionHu ?: "Măsurătoare"} • Puls repaus: ${if (uiState.restingHrBpm > 0) "${uiState.restingHrBpm} bpm" else "—"} • Interval: $heartRange")
+                                            } else {
+                                                pulseReading?.explanationHu ?: tr(uiState.language, "Nincs lekért pulzusmérés a kiválasztott szolgáltatótól.", "No heart rate reading fetched from the selected provider.", "Keine Pulsmessung vom ausgewählten Dienst geladen.", "Nicio măsurătoare de puls preluată de la furnizorul selectat.")
+                                            },
+                                            tr(uiState.language, "Korábbi mai pulzusmérések megtekintése lent", "View earlier pulse readings below", "Frühere Pulsmessungen unten ansehen", "Vezi măsurătorile anterioare de puls mai jos")
+                                        ) to openPulseTrendAndScroll
+                                    }
                                     "steps" -> listOf(
-                                        tr(uiState.language, "Lépések részletek • ${uiState.dailySteps} / ${uiState.stepsGoal}", "Steps Details • ${uiState.dailySteps} / ${uiState.stepsGoal}", "Schritte Details • ${uiState.dailySteps} / ${uiState.stepsGoal}", "Detalii pași • ${uiState.dailySteps} / ${uiState.stepsGoal}"),
-                                        tr(uiState.language, "Teljesítés: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Becsült táv: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km", "Completion: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Est. distance: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km", "Erfüllung: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Gesch. Distanz: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km", "Progres: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Dist. est.: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km"),
+                                        tr(uiState.language, "Lépések részletek • ${if ("steps" in uiState.dailyHealthAvailableFields) "${uiState.dailySteps}" else "—"} / ${uiState.stepsGoal}", "Steps Details • ${if ("steps" in uiState.dailyHealthAvailableFields) "${uiState.dailySteps}" else "—"} / ${uiState.stepsGoal}", "Schritte Details • ${if ("steps" in uiState.dailyHealthAvailableFields) "${uiState.dailySteps}" else "—"} / ${uiState.stepsGoal}", "Detalii pași • ${if ("steps" in uiState.dailyHealthAvailableFields) "${uiState.dailySteps}" else "—"} / ${uiState.stepsGoal}"),
+                                        if ("steps" in uiState.dailyHealthAvailableFields) {
+                                            tr(uiState.language, "Egyetlen deduplikált forrásból (${uiState.dailyHealthSourceLabel}). Teljesítés: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Becsült táv: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km",
+                                                "Single deduplicated source (${uiState.dailyHealthSourceLabel}). Completion: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Est. distance: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km",
+                                                "Aus einer deduplizierten Quelle (${uiState.dailyHealthSourceLabel}). Erfüllung: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Gesch. Distanz: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km",
+                                                "Sursă deduplicată unică (${uiState.dailyHealthSourceLabel}). Progres: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Dist. est.: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km")
+                                        } else {
+                                            tr(uiState.language, "Ma még nem érkezett lépésadat a kiválasztott szolgáltatótól (${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"}). Napi cél: ${uiState.stepsGoal} lépés.",
+                                                "No steps data fetched yet today from ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"}. Daily target: ${uiState.stepsGoal} steps.",
+                                                "Noch keine Schrittdaten von ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} geladen. Tagesziel: ${uiState.stepsGoal} Schritte.",
+                                                "Fără date despre pași de la ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} azi. Obiectiv zilnic: ${uiState.stepsGoal} pași.")
+                                        },
                                         tr(uiState.language, "Célok módosítása >", "Edit Goals >", "Ziele ändern >", "Modifică obiectivele >")
                                     ) to { onOpenGoalsDialog() }
                                     "workout" -> {
-                                        val latestTodayTitle = uiState.loggedWorkouts.workoutsOn(today).firstOrNull()
-                                            ?.localizedTitle(uiState.language, uiState.programs, uiState.exercises)
+                                        val todaysWorkouts = uiState.loggedWorkouts.workoutsOn(today)
+                                        val latestTodayTitle = todaysWorkouts.firstOrNull()?.localizedTitle(uiState.language, uiState.programs, uiState.exercises)
                                         listOf(
-                                            tr(uiState.language, "Mai edzések • ${uiState.loggedWorkouts.workoutsOn(today).size} rögzített edzés", "Today's Workouts • ${uiState.loggedWorkouts.workoutsOn(today).size} logged", "Heutige Trainings • ${uiState.loggedWorkouts.workoutsOn(today).size} erfasst", "Antrenamente azi • ${uiState.loggedWorkouts.workoutsOn(today).size} înregistrate"),
-                                            tr(uiState.language, "Utolsó mai edzés: ${latestTodayTitle ?: "Ma még nincs rögzített edzés"}", "Latest workout today: ${latestTodayTitle ?: "No workout logged today"}", "Letztes Training heute: ${latestTodayTitle ?: "Heute noch kein Training erfasst"}", "Ultimul antrenament azi: ${latestTodayTitle ?: "Niciun antrenament înregistrat azi"}"),
-                                            tr(uiState.language, "Edzésnapló részletek megnyitása >", "Open Workout Log details >", "Trainingsprotokoll-Details öffnen >", "Deschide detaliile jurnalului >")
-                                        ) to { uiState.loggedWorkouts.workoutsOn(today).firstOrNull()?.id?.let(onOpenLoggedWorkout) }
+                                            tr(uiState.language, "Mai edzések • ${todaysWorkouts.size} rögzített edzés", "Today's Workouts • ${todaysWorkouts.size} logged", "Heutige Trainings • ${todaysWorkouts.size} erfasst", "Antrenamente azi • ${todaysWorkouts.size} înregistrate"),
+                                            if (todaysWorkouts.isNotEmpty()) {
+                                                tr(uiState.language, "Helyi Room edzésnapló • Utolsó mai edzés: ${latestTodayTitle ?: "Edzés"}",
+                                                    "Local Room workout log • Latest workout today: ${latestTodayTitle ?: "Workout"}",
+                                                    "Lokales Room-Protokoll • Letztes Training heute: ${latestTodayTitle ?: "Training"}",
+                                                    "Jurnal local Room • Ultimul antrenament azi: ${latestTodayTitle ?: "Antrenament"}")
+                                            } else {
+                                                tr(uiState.language, "Ma még nincs befejezett és elmentett edzés a helyi Room naplóban a mai naptári napra.",
+                                                    "No completed workout logged yet today in local Room database for today's calendar date.",
+                                                    "Heute noch kein abgeschlossenes Training im lokalen Room-Protokoll für das heutige Kalenderdatum.",
+                                                    "Niciun antrenament finalizat înregistrat azi în baza de date locală Room.")
+                                            },
+                                            if (todaysWorkouts.isNotEmpty()) {
+                                                tr(uiState.language, "Edzésnapló részletek megnyitása >", "Open Workout Log details >", "Trainingsprotokoll-Details öffnen >", "Deschide detaliile jurnalului >")
+                                            } else {
+                                                tr(uiState.language, "Edzésprogramok megnyitása >", "Open Workout Programs >", "Trainingsprogramme öffnen >", "Deschide programele de antrenament >")
+                                            }
+                                        ) to {
+                                            val firstId = todaysWorkouts.firstOrNull()?.id
+                                            if (firstId != null) onOpenLoggedWorkout(firstId) else onNavigateToSubScreen(SubScreen.PROGRAMS_LIST)
+                                        }
                                     }
-                                    "recovery" -> listOf(
-                                        tr(uiState.language, "Regeneráció & Készenlét • ${uiState.todayRecoveryReading?.displayScoreHu ?: "—"}", "Recovery & Readiness • ${uiState.todayRecoveryReading?.displayScoreHu ?: "—"}", "Erholung & Bereitschaft • ${uiState.todayRecoveryReading?.displayScoreHu ?: "—"}", "Recuperare și pregătire • ${uiState.todayRecoveryReading?.displayScoreHu ?: "—"}"),
-                                        uiState.todayRecoveryReading?.explanationHu ?: tr(uiState.language, "Nincs igazolt regenerációs mérés.", "No verified recovery reading.", "Keine bestätigte Erholungsmessung.", "Nicio măsurătoare de recuperare verificată."),
-                                        tr(uiState.language, "TrainPilot Coach megnyitása >", "Open TrainPilot Coach >", "TrainPilot Coach öffnen >", "Deschide TrainPilot Coach >")
-                                    ) to { onNavigateToSubScreen(SubScreen.COACH_DETAIL) }
-                                    else -> listOf(
-                                        tr(uiState.language, "Alvás részletek • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})", "Sleep Details • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})", "Schlaf Details • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})", "Detalii somn • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})"),
-                                        tr(uiState.language, "Alvásfázisok: nincs lekért adat", "Sleep stages: no data fetched", "Schlafphasen: keine Daten geladen", "Faze somn: fără date preluate"),
-                                        tr(uiState.language, "Egészségnapló megnyitása lent", "Open Health Journal below", "Gesundheitstagebuch unten öffnen", "Deschide jurnalul de sănătate mai jos")
-                                    ) to { onToggleHealthSection("journal") }
+                                    "recovery" -> {
+                                        val rec = uiState.todayRecoveryReading
+                                        val scoreProvHu = when (rec?.source) {
+                                            com.repforge.app.healthreadings.RecoverySource.SAMSUNG_ENERGY -> "Közvetlen Samsung Health Energy Score (${rec.displayScoreHu})"
+                                            com.repforge.app.healthreadings.RecoverySource.TRAINPILOT_ESTIMATE -> "TrainPilot-becslés (${rec.displayScoreHu})"
+                                            else -> "Nincs igazolt regenerációs adat"
+                                        }
+                                        listOf(
+                                            tr(uiState.language, "Regeneráció & Készenlét • $scoreProvHu", "Recovery & Readiness • $scoreProvHu", "Erholung & Bereitschaft • $scoreProvHu", "Recuperare și pregătire • $scoreProvHu"),
+                                            rec?.explanationHu ?: tr(uiState.language, "Nincs ellenőrizhető friss regenerációs jel a kiválasztott szolgáltatótól.", "No verified recovery signal from the selected provider.", "Kein bestätigtes Erholungssignal vom ausgewählten Dienst.", "Niciun semnal de recuperare verificat de la furnizorul selectat."),
+                                            tr(uiState.language, "TrainPilot Coach megnyitása >", "Open TrainPilot Coach >", "TrainPilot Coach öffnen >", "Deschide TrainPilot Coach >")
+                                        ) to { onNavigateToSubScreen(SubScreen.COACH_DETAIL) }
+                                    }
+                                    else -> {
+                                        val hasSleep = currentDaily && "sleepMinutes" in uiState.dailyHealthAvailableFields && uiState.sleepDurationLabel != "—"
+                                        val stageInfo = if (!hasSleep) {
+                                            tr(uiState.language, "Ma még nem érkezett alvásadat a kiválasztott szolgáltatótól (${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"}).",
+                                                "No sleep data fetched yet today from ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"}.",
+                                                "Noch keine Schlafdaten von ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} geladen.",
+                                                "Fără date despre somn de la ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} azi.")
+                                        } else if (uiState.sleepHasStages) {
+                                            uiState.sleepStagesSummaryHu
+                                        } else {
+                                            tr(uiState.language, "Alvásfázisok: a szolgáltató nem adott át fázisbontást (csak teljes időtartam: ${uiState.sleepDurationLabel}). Nem generálunk fiktív fázisokat.",
+                                                "Sleep stages: the provider did not supply stage breakdown (total duration only: ${uiState.sleepDurationLabel}). Fabricated stages are not generated.",
+                                                "Schlafphasen: der Dienst hat keine Phasenaufteilung geliefert (nur Gesamtdauer: ${uiState.sleepDurationLabel}). Keine fiktiven Phasen.",
+                                                "Faze somn: furnizorul nu a transmis detalii de fază (doar durata totală: ${uiState.sleepDurationLabel}).")
+                                        }
+                                        listOf(
+                                            tr(uiState.language, "Alvás részletek • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})", "Sleep Details • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})", "Schlaf Details • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})", "Detalii somn • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})"),
+                                            stageInfo,
+                                            tr(uiState.language, "Egészségnapló megnyitása lent", "Open Health Journal below", "Gesundheitstagebuch unten öffnen", "Deschide jurnalul de sănătate mai jos")
+                                        ) to openHealthJournalAndScroll
+                                    }
                                 }
 
                                 Row(
@@ -796,17 +887,31 @@ fun HealthTabScreen(
                                     color = palette.primary.copy(alpha = 0.16f),
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .heightIn(min = 48.dp)
                                         .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
                                         .clip(RoundedCornerShape(10.dp))
                                         .clickable { onActionClick() }
+                                        .testTag("health_expanded_action_button")
                                 ) {
-                                    Text(
-                                        text = titleStr[2],
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = palette.primary,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
-                                    )
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = titleStr[2],
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = palette.primary,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                            contentDescription = null,
+                                            tint = palette.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -859,7 +964,11 @@ fun HealthTabScreen(
                                 .clickable { onToggleHealthSection("weekly") }
                         ) {
                             Text(
-                                text = tr(uiState.language, "Heti egészség & edzés célok", "Weekly Health & Workout Goals", "Wöchentliche Gesundheits- & Trainingsziele", "Obiective săptămânale sănătate și antrenament"),
+                                text = if (uiState.workoutGoalPeriod == com.example.model.WorkoutGoalPeriod.MONTHLY) {
+                                    tr(uiState.language, "Egészség & edzéscélok", "Health & Workout Goals", "Gesundheits- & Trainingsziele", "Obiective sănătate și antrenament")
+                                } else {
+                                    tr(uiState.language, "Heti egészség & edzés célok", "Weekly Health & Workout Goals", "Wöchentliche Gesundheits- & Trainingsziele", "Obiective săptămânale sănătate și antrenament")
+                                },
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = palette.textPrimary
