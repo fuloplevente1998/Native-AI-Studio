@@ -53,3 +53,16 @@ Polish the established dark/gold TrainPilot UI from five real-device screenshots
 
 ## Final response expected from AI Studio
 Provide: SHA(s), list of changed files, concise before/after per item, test commands/results, any limitations, and a checklist of manual device tests. State clearly what was actually tested on-device vs simulated/compiled.
+
+## Screenshot reference set — five user-supplied real-device images
+The original screenshots are attached to the user conversation, but **are not yet uploaded into this GitHub repository**. Do not claim to have viewed them through GitHub until the actual JPG files have been uploaded. Intended destination: `docs/design-reference/issue-219/` with the following filenames (use the original screenshots, not generated substitutes):
+
+| Filename | Screen | Visual observations |
+| --- | --- | --- |
+| `451.jpg` | Exercise picker, 140 exercises | Each row begins with a bulky stylized person icon; exercise name and equipment are truncated, while favorite, video, add, start controls consume width. Remove person icons and reclaim width. |
+| `449.jpg` | Arnold-nyomás exercise details | Large “Anatómiai kivitelezés” panel shows simplistic orange/grey stick-figure drawings; remove this entire panel, keep accurate textual anatomy, video and muscle-load details. |
+| `447.jpg` | Programs list | Large yellow “Aktiválás” buttons occupy too much width; long equipment labels wrap across several lines, making cards tall. |
+| `445.jpg` | Home default state | Profile, active workout, suggestion, quick workout/watch, six metrics, and goals cards; lower goals section is cut by viewport. Make collapsed default state more compact while keeping scroll safety. |
+| `443.jpg` | Progress default state | Top volume chart, metric cards, muscle-load illustration and suggestion; lower content extends beyond viewport. Compact default layout, retain scrolling for expansion and small screens. |
+
+After the original JPGs are uploaded, AI Studio should inspect the image URLs `https://raw.githubusercontent.com/fuloplevente1998/Native-AI-Studio/main/docs/design-reference/issue-219/<filename>` for each of the five filenames above. **Until then, these are planned URLs, not verified live assets.**
