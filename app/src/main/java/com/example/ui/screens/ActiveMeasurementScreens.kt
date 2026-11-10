@@ -1518,11 +1518,6 @@ fun ActiveTimedWorkoutScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            ExercisePostureMiniIllustration(
-                                exerciseName = exerciseNameHu,
-                                size = 54.dp
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
                             Box(modifier = Modifier.weight(1f)) {
                                 Column(
                                     modifier = Modifier
@@ -2152,11 +2147,6 @@ fun ActiveBilateralWorkoutScreen(
                         Row(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            ExercisePostureMiniIllustration(
-                                exerciseName = exerciseTitle,
-                                size = 50.dp
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = exerciseTitle,

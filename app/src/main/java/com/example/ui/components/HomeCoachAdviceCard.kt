@@ -70,26 +70,26 @@ internal fun HomeCoachAdviceCard(state: TrainPilotUiState, strings: LocalizedStr
             "Începe cu încălzirea și urmează recomandările Coach pe exerciții. Poți verifica ajustările de greutate în previzualizare."
         )
     }
-    val shape = RoundedCornerShape(20.dp)
+    val shape = RoundedCornerShape(18.dp)
     Surface(shape = shape, color = p.surface,
         modifier = Modifier.fillMaxWidth().trainPilotSoftGlow(p.primary, shape)
             .trainPilotBorder(1.dp, Brush.linearGradient(listOf(p.primary.copy(alpha = 0.7f), p.cardBorder)), shape)
             .clickable(onClick = onOpen).testTag("home_coach_advice_card")) {
         Column(Modifier.background(Brush.verticalGradient(listOf(p.surfaceElevated.copy(alpha = 0.65f), p.surface)))
-            .padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            .padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(strings.coachSuggestionHeader, color = p.primary, style = MaterialTheme.typography.labelMedium,
+                Text(strings.coachSuggestionHeader, color = p.primary, style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = p.primary)
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = p.primary, modifier = Modifier.size(18.dp))
             }
-            Text(heading, color = p.textPrimary, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(summary, color = p.textSecondary, style = MaterialTheme.typography.bodySmall,
-                maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("home_coach_summary"))
-            Surface(color = p.surfaceElevated, shape = RoundedCornerShape(10.dp), modifier = Modifier.fillMaxWidth()) {
-                Row(Modifier.padding(horizontal = 8.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(strings.readinessTodayLabel, color = p.textSecondary, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+            Text(heading, color = p.textPrimary, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text(summary, color = p.textSecondary, style = MaterialTheme.typography.labelSmall,
+                maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("home_coach_summary"))
+            Surface(color = p.surfaceElevated, shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
+                Row(Modifier.padding(horizontal = 8.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(strings.readinessTodayLabel, color = p.textSecondary, style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
                     Text(score?.let { "$it/100" } ?: "—", color = p.textPrimary,
-                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 }
             }
         }

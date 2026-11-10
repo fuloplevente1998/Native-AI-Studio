@@ -220,10 +220,20 @@ fun WorkoutTabScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        ExercisePostureMiniIllustration(
-                            exerciseName = "Goblet guggolás",
-                            size = 42.dp
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = palette.primary.copy(alpha = 0.16f),
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.FitnessCenter,
+                                    contentDescription = null,
+                                    tint = palette.primary,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
                         Surface(
                             shape = RoundedCornerShape(8.dp),
                             color = palette.primary.copy(alpha = 0.16f)
@@ -805,72 +815,69 @@ fun ProgramsListScreen(
                 )
 
                 Surface(
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(16.dp),
                     color = palette.surface,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(18.dp))
+                        .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
                         .clickable { onOpenProgramEditor(activeProgram.id) }
+                        .testTag("programs_active_program_card")
                 ) {
                     Row(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         ProgramTypeEmblemIcon(
                             programTitle = activeProgram.nameHu,
                             isHighlighted = true,
-                            size = 54.dp
+                            size = 44.dp
                         )
-                        Spacer(modifier = Modifier.width(14.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = activeProgram.localizedName(state.language),
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = palette.textPrimary
-                            )
-                            Text(
-                                text = activeProgram.localizedSubtitle(state.language),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = palette.textSecondary
-                            )
-                            Spacer(modifier = Modifier.height(5.dp))
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = palette.primary.copy(alpha = 0.14f)
-                            ) {
-                                Text(
-                                    text = programEquipmentSummary(activeProgram, state.language),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = palette.primary,
-                                    fontWeight = FontWeight.SemiBold,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(6.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = trW(state.language, "${activeProgram.days.size} edzésnap", "${activeProgram.days.size} workout days", "${activeProgram.days.size} Trainingstage", "${activeProgram.days.size} zile de antrenament"),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = palette.textSecondary
+                                    text = activeProgram.localizedName(state.language),
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = palette.textPrimary,
+                                    modifier = Modifier.weight(1f)
                                 )
+                                Spacer(modifier = Modifier.width(6.dp))
                                 Surface(
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = RoundedCornerShape(10.dp),
                                     color = palette.primary
                                 ) {
                                     Text(
                                         text = strings.activeBadgeLabel,
                                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                         color = palette.onPrimary,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                                     )
                                 }
                             }
+                            Text(
+                                text = "${activeProgram.localizedSubtitle(state.language)} • ${trW(state.language, "${activeProgram.days.size} edzésnap", "${activeProgram.days.size} workout days", "${activeProgram.days.size} Trainingstage", "${activeProgram.days.size} zile de antrenament")}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = palette.textSecondary
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = palette.primary.copy(alpha = 0.14f)
+                            ) {
+                                Text(
+                                    text = programEquipmentSummary(activeProgram, state.language),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp, lineHeight = 14.sp),
+                                    color = palette.primary,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                             contentDescription = null,
@@ -930,23 +937,24 @@ fun ProgramsListScreen(
             filteredPrograms.forEachIndexed { index, program ->
                 var dragAccumY by remember(program.id, index) { mutableFloatStateOf(0f) }
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(14.dp),
                     color = palette.surface,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                         .clickable { onOpenProgramEditor(program.id) }
+                        .testTag("program_card_${program.id}")
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Working Reorder Handle (= + ▲ / ▼)
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                            verticalArrangement = Arrangement.spacedBy(0.dp),
                             modifier = Modifier
-                                .padding(end = 6.dp)
+                                .padding(end = 4.dp)
                                 .pointerInput(index, filteredPrograms.size) {
                                     detectVerticalDragGestures(
                                         onDragStart = { dragAccumY = 0f },
@@ -971,13 +979,13 @@ fun ProgramsListScreen(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(4.dp))
                                     .clickable(enabled = index > 0) { onMoveProgramOrder(index, index - 1) }
-                                    .padding(horizontal = 4.dp, vertical = 1.dp)
+                                    .padding(horizontal = 3.dp, vertical = 0.dp)
                             )
                             Icon(
                                 imageVector = Icons.Default.DragHandle,
                                 contentDescription = "Sorrend módosítása",
                                 tint = palette.textSecondary,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(16.dp)
                             )
                             Text(
                                 text = "▼",
@@ -986,52 +994,64 @@ fun ProgramsListScreen(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(4.dp))
                                     .clickable(enabled = index < filteredPrograms.lastIndex) { onMoveProgramOrder(index, index + 1) }
-                                    .padding(horizontal = 4.dp, vertical = 1.dp)
+                                    .padding(horizontal = 3.dp, vertical = 0.dp)
                             )
                         }
 
                         ProgramTypeEmblemIcon(
                             programTitle = program.nameHu,
                             isHighlighted = program.isActive,
-                            size = 46.dp
+                            size = 38.dp
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = program.localizedName(state.language),
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, lineHeight = 18.sp),
                                 color = palette.textPrimary
                             )
                             Text(
                                 text = program.localizedSubtitle(state.language),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.labelSmall,
                                 color = palette.textSecondary
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(3.dp))
                             Surface(
-                                shape = RoundedCornerShape(8.dp),
+                                shape = RoundedCornerShape(6.dp),
                                 color = palette.surfaceElevated
                             ) {
                                 Text(
                                     text = programEquipmentSummary(program, state.language),
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, lineHeight = 13.sp),
                                     color = palette.primary,
-                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         if (!program.isActive) {
-                            Button(
-                                onClick = { onActivateProgram(program.id) },
-                                modifier = Modifier.heightIn(min = 44.dp),
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = palette.primary,
-                                    contentColor = palette.onPrimary
-                                )
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { onActivateProgram(program.id) }
+                                    .testTag("program_activate_button_${program.id}")
                             ) {
-                                Text(strings.activateAction, style = MaterialTheme.typography.labelMedium)
+                                Surface(
+                                    shape = RoundedCornerShape(9.dp),
+                                    color = palette.primary,
+                                    modifier = Modifier.testTag("program_activate_visual_${program.id}")
+                                ) {
+                                    Text(
+                                        text = strings.activateAction,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = palette.onPrimary,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -1292,11 +1312,6 @@ fun ProgramEditorScreen(
                                         .padding(horizontal = 4.dp, vertical = 1.dp)
                                 )
                             }
-                            ExercisePostureMiniIllustration(
-                                exerciseName = ex.nameHu,
-                                size = 42.dp
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = "${index + 1}.  ${ex.localizedName(state.language)}",
@@ -2783,18 +2798,14 @@ fun ExerciseLibraryScreen(
                         )
                         .clip(RoundedCornerShape(14.dp))
                         .clickable { onSelectExercise(ex.id) }
+                        .testTag("exercise_library_row_${ex.id}")
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                            .padding(horizontal = 10.dp, vertical = 7.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        ExercisePostureMiniIllustration(
-                            exerciseName = ex.nameHu,
-                            size = 38.dp
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -2802,12 +2813,14 @@ fun ExerciseLibraryScreen(
                             ) {
                                 Text(
                                     text = ex.localizedName(state.language),
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 18.sp),
                                     fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary,
-                                    maxLines = 1,
+                                    maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f, fill = false)
+                                    modifier = Modifier
+                                        .weight(1f, fill = false)
+                                        .testTag("exercise_library_name_${ex.id}")
                                 )
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
@@ -2818,6 +2831,7 @@ fun ExerciseLibraryScreen(
                                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                         fontWeight = FontWeight.SemiBold,
                                         color = palette.primary,
+                                        maxLines = 1,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
                                     )
                                 }
@@ -2825,22 +2839,23 @@ fun ExerciseLibraryScreen(
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "${ex.localizedPrimaryMuscles(state.language)} • ${ex.localizedEquipment(state.language)} • ${ex.defaultSets}×${ex.defaultReps}",
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
                                 color = palette.textSecondary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.testTag("exercise_library_meta_${ex.id}")
                             )
                         }
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         val favorite = ex.id in state.favoriteExerciseIds
                         IconToggleButton(checked = favorite, onCheckedChange = { onToggleFavorite(ex.id) },
                             enabled = !state.libraryMutationBusy,
-                            modifier = Modifier.size(48.dp).testTag("exercise_library_favorite_${ex.id}")) {
+                            modifier = Modifier.sizeIn(minWidth = 40.dp, minHeight = 48.dp).testTag("exercise_library_favorite_${ex.id}")) {
                             Icon(if (favorite) Icons.Default.Star else Icons.Default.StarBorder,
                                 contentDescription = if (favorite) trW(state.language, "Eltávolítás a kedvencekből", "Remove from favorites", "Aus Favoriten entfernen", "Elimină din favorite")
                                 else trW(state.language, "Hozzáadás a kedvencekhez", "Add to favorites", "Zu Favoriten hinzufügen", "Adaugă la favorite"),
                                 tint = if (favorite) palette.primary else palette.textSecondary,
-                                modifier = Modifier.size(22.dp))
+                                modifier = Modifier.size(20.dp))
                         }
                         // Video popup button (opens modal dialog ONLY when clicked)
                         SmallExerciseVideoButton(
@@ -2854,7 +2869,7 @@ fun ExerciseLibraryScreen(
                             shape = RoundedCornerShape(8.dp),
                             color = if (inQueue) palette.primary else palette.surfaceElevated,
                             modifier = Modifier
-                                .size(32.dp)
+                                .sizeIn(minWidth = 34.dp, minHeight = 36.dp)
                                 .trainPilotBorder(
                                     1.dp,
                                     if (inQueue) palette.primary else palette.cardBorder,
@@ -2864,7 +2879,7 @@ fun ExerciseLibraryScreen(
                                 .clickable { onAddExerciseToQueue(ex) }
                                 .testTag("exercise_library_add_to_queue_${ex.id}")
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
                                 Text(
                                     text = if (inQueue) "✓" else "+",
                                     style = MaterialTheme.typography.labelLarge,
@@ -2879,14 +2894,14 @@ fun ExerciseLibraryScreen(
                             shape = RoundedCornerShape(8.dp),
                             color = palette.primary,
                             modifier = Modifier
-                                .height(32.dp)
+                                .sizeIn(minWidth = 34.dp, minHeight = 36.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable { onStartExerciseNow(ex) }
                                 .testTag("exercise_library_start_now_${ex.id}")
                         ) {
                             Box(
                                 contentAlignment = Alignment.Center,
-                                modifier = Modifier.padding(horizontal = 8.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
                             ) {
                                 Text(
                                     text = "▶",
@@ -2991,119 +3006,6 @@ fun ExerciseDetailScreen(
             }
             customExerciseActions()
 
-            // Anatomical & Posture Illustration Card (Embedded video is NOT auto-opened inline; clicking the video button opens the popup dialog!)
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = palette.surface,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(190.dp)
-                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
-                    .clip(RoundedCornerShape(20.dp))
-            ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(top = 36.dp, start = 16.dp, end = 16.dp, bottom = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        ExercisePostureMiniIllustration(
-                            exerciseName = exercise.nameHu,
-                            size = 112.dp
-                        )
-                        Canvas(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(130.dp)
-                        ) {
-                            val cx1 = size.width * 0.35f
-                            val cx2 = size.width * 0.72f
-                            val cy = size.height * 0.5f
-                            drawCircle(color = Color(0xFF94A3B8), radius = 14f, center = Offset(cx1, cy - 45f))
-                            drawLine(
-                                color = Color(0xFFCBD5E1),
-                                start = Offset(cx1, cy - 28f),
-                                end = Offset(cx1, cy + 12f),
-                                strokeWidth = 15f,
-                                cap = StrokeCap.Round
-                            )
-                            drawLine(
-                                color = Color(0xFFF97316),
-                                start = Offset(cx1 - 7f, cy + 12f),
-                                end = Offset(cx1 - 14f, cy + 50f),
-                                strokeWidth = 12f,
-                                cap = StrokeCap.Round
-                            )
-                            drawLine(
-                                color = Color(0xFFF97316),
-                                start = Offset(cx1 + 7f, cy + 12f),
-                                end = Offset(cx1 + 14f, cy + 50f),
-                                strokeWidth = 12f,
-                                cap = StrokeCap.Round
-                            )
-                            drawCircle(color = Color(0xFF94A3B8), radius = 14f, center = Offset(cx2, cy - 20f))
-                            drawLine(
-                                color = Color(0xFFCBD5E1),
-                                start = Offset(cx2, cy - 4f),
-                                end = Offset(cx2 - 5f, cy + 26f),
-                                strokeWidth = 15f,
-                                cap = StrokeCap.Round
-                            )
-                            drawLine(
-                                color = Color(0xFFF97316),
-                                start = Offset(cx2 - 5f, cy + 26f),
-                                end = Offset(cx2 - 22f, cy + 22f),
-                                strokeWidth = 12f,
-                                cap = StrokeCap.Round
-                            )
-                            drawLine(
-                                color = Color(0xFFF97316),
-                                start = Offset(cx2 - 22f, cy + 22f),
-                                end = Offset(cx2 - 15f, cy + 52f),
-                                strokeWidth = 10f,
-                                cap = StrokeCap.Round
-                            )
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color.Black.copy(alpha = 0.45f))
-                            .padding(horizontal = 12.dp, vertical = 7.dp)
-                            .align(Alignment.TopCenter),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "${trW(state.language, "Anatómiai kivitelezés", "Anatomical execution", "Anatomische Ausführung", "Execuție anatomică")} • ${exercise.localizedPrimaryMuscles(state.language)}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = palette.primary.copy(alpha = 0.22f),
-                            modifier = Modifier
-                                .trainPilotBorder(1.dp, palette.primary, RoundedCornerShape(8.dp))
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { openVideoModal(exercise.localizedName(state.language), exercise.id) }
-                                .testTag("exercise_detail_popup_video_chip")
-                        ) {
-                            Text(
-                                text = trW(state.language, "▶ Videó megnyitása", "▶ Open video", "▶ Video öffnen", "▶ Deschide videoclipul"),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.primary,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                            )
-                        }
-                    }
-                }
-            }
-
             // Metadata table: Eszköz, Fő izmok, Másodlagos izmok
             Surface(
                 shape = RoundedCornerShape(16.dp),
@@ -3111,6 +3013,7 @@ fun ExerciseDetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                    .testTag("exercise_detail_metadata_card")
             ) {
                 Column(
                     modifier = Modifier.padding(14.dp),
@@ -3122,7 +3025,7 @@ fun ExerciseDetailScreen(
                 }
             }
 
-            // Dual Front & Back Anatomical Muscle Map highlighting the target muscle of this exercise
+            // Dual Front & Back Anatomical Muscle Map highlighting the target & secondary muscles of this exercise
             val mappedMuscleId = when (exercise.category) {
                 ExerciseCategory.LEGS -> "legs"
                 ExerciseCategory.CHEST -> "chest"
@@ -3132,10 +3035,70 @@ fun ExerciseDetailScreen(
                 ExerciseCategory.CORE -> "core"
                 ExerciseCategory.ALL -> "legs"
             }
+            val secondaryLower = exercise.secondaryMusclesHu.lowercase()
+            val secondaryMuscleIds = buildSet {
+                if (secondaryLower.contains("mell")) add("chest")
+                if (secondaryLower.contains("hát") || secondaryLower.contains("trapéz") || secondaryLower.contains("rombusz")) add("back")
+                if (secondaryLower.contains("váll") || secondaryLower.contains("delta")) add("shoulders")
+                if (secondaryLower.contains("láb") || secondaryLower.contains("comb") || secondaryLower.contains("far") || secondaryLower.contains("vádli") || secondaryLower.contains("hajlító")) add("legs")
+                if (secondaryLower.contains("tricepsz") || secondaryLower.contains("bicepsz") || secondaryLower.contains("alkar") || secondaryLower.contains("kar")) add("arms")
+                if (secondaryLower.contains("törzs") || secondaryLower.contains("has") || secondaryLower.contains("core") || secondaryLower.contains("gerinc")) add("core")
+                remove(mappedMuscleId)
+            }
+            val defaultSets = exercise.defaultSets.coerceAtLeast(1)
+            val secondarySets = (defaultSets / 2).coerceAtLeast(1)
+            val exerciseMuscleLoads = remember(exercise.id, mappedMuscleId, secondaryMuscleIds, defaultSets) {
+                listOf(
+                    "chest" to "Mell",
+                    "back" to "Hát",
+                    "shoulders" to "Váll",
+                    "legs" to "Láb",
+                    "arms" to "Kar",
+                    "core" to "Törzs"
+                ).map { (id, labelHu) ->
+                    when {
+                        id == mappedMuscleId -> com.example.ui.components.MuscleLoadItem(
+                            id = id,
+                            nameHu = labelHu,
+                            setsText = "$defaultSets sorozat",
+                            percentage = 100,
+                            ratio = 1f,
+                            levelLabelHu = "Fő célizom",
+                            topExercisesHu = listOf(exercise.nameHu to "$defaultSets sorozat"),
+                            exerciseIdToOpen = exercise.id,
+                            setsCount = defaultSets
+                        )
+                        id in secondaryMuscleIds -> com.example.ui.components.MuscleLoadItem(
+                            id = id,
+                            nameHu = labelHu,
+                            setsText = "$secondarySets sorozat",
+                            percentage = 50,
+                            ratio = 0.5f,
+                            levelLabelHu = "Másodlagos izom",
+                            topExercisesHu = listOf(exercise.nameHu to "$secondarySets sorozat"),
+                            exerciseIdToOpen = exercise.id,
+                            setsCount = secondarySets
+                        )
+                        else -> com.example.ui.components.MuscleLoadItem(
+                            id = id,
+                            nameHu = labelHu,
+                            setsText = "0 sorozat",
+                            percentage = 0,
+                            ratio = 0f,
+                            levelLabelHu = "Nincs terhelés",
+                            topExercisesHu = emptyList(),
+                            exerciseIdToOpen = "",
+                            setsCount = 0
+                        )
+                    }
+                }
+            }
             AnatomicalMuscleHeatmapCard(
                 title = "${strings.muscleLoadTitle} (${exercise.localizedName(state.language)})",
                 subtitle = "${exercise.localizedPrimaryMuscles(state.language)} • ${exercise.localizedSecondaryMuscles(state.language)}",
-                highlightedMuscleId = mappedMuscleId
+                highlightedMuscleId = mappedMuscleId,
+                realMuscleLoads = exerciseMuscleLoads,
+                periodDays = null
             )
 
             Text(

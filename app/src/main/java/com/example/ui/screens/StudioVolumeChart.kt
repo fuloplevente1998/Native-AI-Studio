@@ -33,7 +33,7 @@ internal fun StudioVolumeChart(bars: List<Pair<String, Int>>, period: StudioProg
     val scroll = rememberScrollState()
     val scrollable = period.days == 90
     val mode = if (expanded) "expanded" else "compact"
-    val height = if (expanded) 165.dp else 96.dp
+    val height = if (expanded) 156.dp else 76.dp
     val labelSize = if (expanded) 10.sp else 9.sp
     val labelHeight = with(LocalDensity.current) { labelSize.toDp() } * 1.4f + 6.dp
     val plotHeight = (height - labelHeight).coerceAtLeast(20.dp)

@@ -258,7 +258,7 @@ fun AnatomicalMuscleHeatmapCard(
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
             .testTag("anatomical_muscle_heatmap_card")
     ) {
-        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
             // Compact header: 41dp visual period pill, but a 48dp tap target.
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -268,7 +268,7 @@ fun AnatomicalMuscleHeatmapCard(
                 Text(
                     text = resolvedTitle,
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = palette.textPrimary
                 )
@@ -327,8 +327,8 @@ fun AnatomicalMuscleHeatmapCard(
                 Box(
                     modifier = Modifier
                         .weight(0.42f)
-                        .height(140.dp)
-                        .clip(RoundedCornerShape(12.dp)),
+                        .height(114.dp)
+                        .clip(RoundedCornerShape(10.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     val nativeLoads = remember(muscleLoads, lang) {
@@ -351,7 +351,7 @@ fun AnatomicalMuscleHeatmapCard(
                 // Right half: 6 Compact Muscle Progress Bars (Mell, Hát, Váll, Láb, Kar, Core)
                 Column(
                     modifier = Modifier.weight(0.58f),
-                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     muscleLoads.forEach { m ->
                         val isSel = selectedMuscleId == m.id
@@ -384,15 +384,15 @@ fun AnatomicalMuscleHeatmapCard(
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(10.dp)
-                                    .clip(RoundedCornerShape(5.dp))
+                                    .height(8.dp)
+                                    .clip(RoundedCornerShape(4.dp))
                                     .background(palette.surfaceElevated)
                             ) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth(m.ratio)
-                                        .height(10.dp)
-                                        .clip(RoundedCornerShape(5.dp))
+                                        .height(8.dp)
+                                        .clip(RoundedCornerShape(4.dp))
                                         .background(barColor)
                                 )
                             }
@@ -409,7 +409,7 @@ fun AnatomicalMuscleHeatmapCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
             val legendSmall = when (lang) {
                 AppLanguage.HU -> "Kisebb"
@@ -443,7 +443,7 @@ fun AnatomicalMuscleHeatmapCard(
                 LegendDot(color = highHeatColor, label = legendHigh)
             }
 
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
             val explanationToggleLabel = when (lang) {
                 AppLanguage.HU -> "Relatív sorozatterhelés, nem fáradtság · Részletek"

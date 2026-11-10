@@ -124,8 +124,8 @@ fun HomeScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
                 .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
-                .padding(top = 8.dp, bottom = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+                .padding(top = 4.dp, bottom = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
         // A kompakt Profil és új terv belépő mindig elérhető a Kezdőlapon.
         Surface(
@@ -141,26 +141,26 @@ fun HomeScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.weight(1f)
                 ) {
                     Surface(
                         shape = CircleShape,
                         color = palette.tintedSurface(0.16f),
-                        modifier = Modifier.size(38.dp)
+                        modifier = Modifier.size(34.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
                                 contentDescription = null,
                                 tint = palette.primary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
@@ -172,7 +172,7 @@ fun HomeScreen(
                         )
                         Text(
                             text = "${strings.personalPlannerTitle} • ${com.example.localization.StudioProfileOptionLabels.label(state.trainingStyleHu, state.language)} • ${com.example.localization.StudioProfileOptionLabels.label(state.progressionRuleHu, state.language)}",
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.labelSmall,
                             color = palette.textSecondary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -186,14 +186,14 @@ fun HomeScreen(
                         containerColor = palette.primary,
                         contentColor = palette.onPrimary
                     ),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                     modifier = Modifier
-                        .heightIn(min = 38.dp)
+                        .heightIn(min = 34.dp)
                         .testTag("home_profile_new_plan_button")
                 ) {
                     Text(
                         text = strings.profileAndNewPlanBtn,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
                     )
                 }
             }
@@ -230,8 +230,8 @@ fun HomeScreen(
                             )
                         )
                     )
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                    .padding(horizontal = 10.dp, vertical = 7.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -239,14 +239,14 @@ fun HomeScreen(
                 ) {
                     // Left Dumbbell Icon in warm dark gold container
                     Surface(
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(12.dp),
                         color = palette.tintedSurface(0.14f),
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(40.dp)
                             .trainPilotBorder(
                                 width = 1.dp,
                                 color = palette.tintedSurface(0.3f),
-                                shape = RoundedCornerShape(14.dp)
+                                shape = RoundedCornerShape(12.dp)
                             )
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -254,16 +254,16 @@ fun HomeScreen(
                                 imageVector = Icons.Default.FitnessCenter,
                                 contentDescription = null,
                                 tint = palette.primary,
-                                modifier = Modifier.size(28.dp)
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
 
                     Column(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(3.dp)
+                        verticalArrangement = Arrangement.spacedBy(1.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -278,7 +278,7 @@ fun HomeScreen(
                                 )
                                 Text(
                                     text = strings.pausedBadge,
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                     color = palette.primary
                                 )
                             } else {
@@ -288,7 +288,7 @@ fun HomeScreen(
                                     } else {
                                         strings.activeProgramBadge
                                     },
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                     color = palette.primary,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
@@ -301,7 +301,7 @@ fun HomeScreen(
                                 com.example.model.LoggedWorkoutEntry(id = "active", titleHu = state.activeWorkoutTitleHu)
                                     .localizedTitle(state.language, state.programs, state.exercises)
                             } else currentDay?.localizedTitle(state.language) ?: tr("Teljes test A", "Full Body A", "Ganzkörper A", "Full Body A"),
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             color = palette.textPrimary
                         )
 
@@ -321,7 +321,7 @@ fun HomeScreen(
                                     "${currentDay?.exercises?.size ?: 8} exerciții • aprox. ${currentDay?.durationMinutes ?: 60} min"
                                 )
                             },
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.labelSmall,
                             color = palette.textSecondary
                         )
                     }
@@ -337,31 +337,32 @@ fun HomeScreen(
                 if (state.isWorkoutSessionActive && state.activeWorkoutId.isNotBlank()) {
                     com.example.ui.components.StudioPausedWorkoutActions(state.activeWorkoutId, state.phoneControlsWorkout,
                         state.isSavingWorkout, strings.continueBtn, onStartOrContinueWorkout, onDiscardWorkout)
-                } else                 Button(
+                } else Button(
                     onClick = onStartOrContinueWorkout,
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = palette.primary,
                         contentColor = palette.onPrimary
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 50.dp)
+                        .heightIn(min = 42.dp)
                         .testTag("home_continue_workout_button")
                 ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
                         contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = if (state.homeDemoMode == HomeDemoMode.PAUSED_WORKOUT) {
                             strings.continueBtn
                         } else {
                             strings.startPlannedBtn
                         },
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
                     )
                 }
             }
@@ -422,14 +423,14 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                            .padding(horizontal = 12.dp, vertical = 7.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = strings.goalsSetupTitle,
-                                style = MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                 color = palette.textPrimary
                             )
                             val periodSub = if (state.workoutGoalPeriod == com.example.model.WorkoutGoalPeriod.MONTHLY) {
@@ -442,8 +443,10 @@ fun HomeScreen(
                                     "$periodSub • ${strings.activeCaloriesAndWorkoutsToday(state.activeCaloriesKcal,
                                         state.loggedWorkouts.count { it.localWorkoutDate() == java.time.LocalDate.now() })}"
                                     else "$periodSub • ${state.stepsGoal} lépés/nap",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = palette.textSecondary
+                                style = MaterialTheme.typography.labelSmall,
+                                color = palette.textSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -478,16 +481,16 @@ fun HomeScreen(
 private fun HomeCompactShortcut(modifier: Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String, subtitle: String, onClick: () -> Unit, enabled: Boolean = true, connected: Boolean? = null) {
     val p = LocalTrainPilotPalette.current
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(14.dp)
     Surface(color = p.surface, shape = shape,
         modifier = modifier.trainPilotSoftGlow(p.primary, shape, 3.dp)
             .trainPilotBorder(1.dp, Brush.linearGradient(listOf(p.sectionBorder, p.cardBorder)), shape)
             .clickable(enabled = enabled, onClick = onClick)) {
-        Column(Modifier.fillMaxWidth().heightIn(min = 88.dp).padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.fillMaxWidth().heightIn(min = 60.dp).padding(horizontal = 9.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Icon(icon, null, tint = p.primary, modifier = Modifier.size(20.dp))
-                Text(title, color = p.textPrimary, style = MaterialTheme.typography.titleSmall,
-                    maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                Icon(icon, null, tint = p.primary, modifier = Modifier.size(18.dp))
+                Text(title, color = p.textPrimary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 if (connected != null) Box(Modifier.size(7.dp).clip(CircleShape)
                     .background(if (connected) p.success else p.warning))
             }

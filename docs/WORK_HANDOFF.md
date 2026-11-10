@@ -1,8 +1,42 @@
-# Rövid munkátadás – 2026-11-09 (#217 Egészség oldal audit & #218 Célok időszakosítás)
+# Rövid munkátadás – 2026-11-10 (#219 UI/UX csiszolás: Programok, Gyakorlatválasztó, Részletek, Kezdőlap & Fejlődés)
 
 Belépési pont: [AGENTS.md](../AGENTS.md). Az élő GitHub-állapot és a main ág az irányadó.
 
-## Két feladat teljes megvalósítása (`AI_STUDIO_HEALTH_217_218_MAIN_IMPLEMENTATION_2026-11-09.md`)
+## #219 teljes megvalósítása (`AI_STUDIO_UI_UX_219_MAIN_HANDOFF_2026-11-10.md`)
+
+- **1. Programok (`447.jpg` referencia)**:
+  - **Kompakt `Aktiválás` gomb 48dp érintési zónával (`WorkoutAndPlanningScreens.kt`)**:
+    - Az `Aktiválás` gomb vizuális szélessége ~115dp-ről ~66dp-re csökkent (`program_activate_visual_<id>`), miközben a külső kattintható tartomány (`program_activate_button_<id>`) továbbra is garantálja a `>= 48dp × 48dp` akadálymentes érintési felületet.
+    - A programkártyák vertikális térköze és magassága csökkent; a felszabadult ~55dp vízszintes helyet a program címe (pl. `Otthoni A/B – 2. szint`), alcíme és eszközlistája kapta meg, elkerülve a többsoros tördelést.
+    - A `Jelenlegi program` kártyán az `Aktív` jelvény a címsorba került, megszüntetve a felesleges alsó duplikált sort.
+- **2. Gyakorlatválasztó (`451.jpg` referencia)**:
+  - **Kis pálcikaember-ikonok eltávolítása (`WorkoutAndPlanningScreens.kt`)**:
+    - Minden gyakorlatsorból eltávolításra került az `ExercisePostureMiniIllustration(size = 38.dp)` és a hozzá tartozó 10dp térköz, üres helyőrző hátrahagyása nélkül.
+    - A visszanyert +48dp szélességet a gyakorlatok neve (`maxLines = 2`, pl. `Arnold-nyomás`, `Bolgár guggolás`) és az izom/eszköz/sorozat metaadatsor kapta meg, megőrizve a kategória-jelvényt, a kedvenc csillagot, a videógombot, a `+` listához adást és a `▶` azonnali indítást.
+    - A `ProgramEditorScreen` gyakorlatsoraiból és a `WorkoutTabScreen` Gyakorlatválasztó kártyájáról is eltávolításra került a pálcikaember-grafika.
+- **3. Gyakorlat részletei (`449.jpg` referencia)**:
+  - **„Anatómiai kivitelezés” pálcikaember-panel eltávolítása és hiteles izomtérkép bekötése (`WorkoutAndPlanningScreens.kt`)**:
+    - A nyers narancs/szürke pálcikaember-rajzokat és a duplikált `▶ Videó megnyitása` gombot tartalmazó 190dp magas `Anatómiai kivitelezés` kártya teljes egészében eltávolításra került.
+    - Az eszköz/fő izmok/másodlagos izmok táblázat, a Fejlődés képernyővel azonos `AnatomicalMuscleHeatmapCard` (`Izomcsoport-terhelés`) és a kivitelezési lépések feljebb kerültek.
+    - Az `ExerciseDetailScreen` mostantól átadja a gyakorlat tényleges fő célizmát (`100%`, pl. `Váll`) és másodlagos izmait (`50%`, pl. `Kar`/`Tricepsz`) az `AnatomicalMuscleHeatmapCard` részére, így a hiteles elöl-hátul anatómiai izommodell pontosan megvilágítja az adott gyakorlat által terhelt izmokat a korábbi 0%-os szürke bábuk helyett.
+- **4. Kezdőlap (`445.jpg`) és Fejlődés (`443.jpg`): viewport-first, biztonságosan görgethető elrendezés**:
+  - **Kezdőlap (`HomeScreen.kt`, `HomeCoachAdviceCard.kt`, `StudioTodayStatusGrid.kt`, `HealthCoachAndSettingsScreens.kt`)**:
+    - Az alapértelmezett, összecsukott állapotban a kártyák belső térközei, a `MAI JAVASLAT` kártya, a `Gyors edzés` / `Óra` parancsikonok (`minHeight = 60.dp` a korábbi `88.dp` helyett), a 6 `Mai állapot` csempe (`minHeight = 52.dp`) és a `Célok beállítása` kártya úgy lettek hangolva, hogy a felhasználó telefonján az összes kártya — beleértve az alsó `Célok beállítása` sávot is — görgetés nélkül, levágásmentesen kiférjen egy képernyőre.
+  - **Fejlődés (`LogAndProgressScreens.kt`, `StudioVolumeChart.kt`, `AnatomicalBodyAndMapComponents.kt`)**:
+    - Az alapértelmezett Fejlődés nézetben a felső al-tab sáv, az `Összes volumen` kártya (kompakt grafikon `76.dp`), a 2×2 statisztikai kártya, az `Izomcsoport-terhelés` kártya (anatómiai modell `114.dp`, megőrizve a `48dp` érintési és `41dp` vizuális időszakválasztót) és az alsó `Fejlődési javaslat` kártya együttesen kiférnek a telefon viewportjában.
+  - **Görgetési biztonság**: A vertikális görgetés (`verticalScroll` / `LazyColumn`) sehol sincs letiltva; lenyitott kártyák, kisebb kijelzők vagy nagyobb betűméretek esetén minden tartalom biztonságosan végiggörgethető.
+- **Tesztek és ellenőrzés**:
+  - `UiUx219RegressionTest`: 4 új Robolectric Compose UI regressziós teszt (programkártyák/aktiválás, gyakorlatválasztó pálcikaember-mentesség, gyakorlatrészletek anatómiai panel eltávolítás + izomaktiváció, Kezdőlap/Fejlődés viewport és görgetési biztonság) — 4/4 PASS.
+  - `gradle :app:testDebugUnitTest`: **78 suite, 435 teszt, 0 failure, 0 error, 0 skipped** (nyers XML összesítés).
+  - `gradle :wear:testDebugUnitTest`: **32 suite, 183 teszt, 0 failure, 0 error, 0 skipped** (nyers XML összesítés).
+  - `gradle :shared:testDebugUnitTest`: `NO-SOURCE` (0 teszt).
+  - `gradle :app:assembleDebug :wear:assembleDebug` és `compile_applet`: **BUILD SUCCESSFUL**.
+
+---
+
+# Rövid munkátadás – 2026-11-09 (#217 Egészség oldal audit & #218 Célok időszakosítás)
+
+Belépési pont: [AGENTS.md](../AGENTS.md). Az élő GitHub-állapot és a main ág az irányadó.
 
 - **#217 – Egészség oldal: „Mai állapot” 6 kártyájának auditja, naplógörgetés és hiányzó adatok helyes kezelése**:
   - **Navigáció javítása („Egészségnapló megnyitása lent”)**:

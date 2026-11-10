@@ -2271,11 +2271,6 @@ fun QuickWorkoutSheet(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.weight(1f)
                         ) {
-                            ExercisePostureMiniIllustration(
-                                exerciseName = selectedStrengthEx?.nameHu ?: "Fekvenyomás",
-                                size = 42.dp
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
                                     text = strings.modeStrengthLabel,
@@ -2420,11 +2415,6 @@ fun QuickWorkoutSheet(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.weight(1f)
                         ) {
-                            ExercisePostureMiniIllustration(
-                                exerciseName = selectedTimedEx?.nameHu ?: "Plank",
-                                size = 42.dp
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
                                     text = "${strings.modeTimedLabel} / ${strings.modeIntervalsLabel}",
@@ -2578,25 +2568,18 @@ private fun QuickOptionRow(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (demoExerciseForVideo != null) {
-                ExercisePostureMiniIllustration(
-                    exerciseName = demoExerciseForVideo,
-                    size = 44.dp
-                )
-            } else {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = palette.primary.copy(alpha = 0.16f),
-                    modifier = Modifier.size(42.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = palette.primary,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = palette.primary.copy(alpha = 0.16f),
+                modifier = Modifier.size(42.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = palette.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
                 }
             }
             Spacer(modifier = Modifier.width(10.dp))

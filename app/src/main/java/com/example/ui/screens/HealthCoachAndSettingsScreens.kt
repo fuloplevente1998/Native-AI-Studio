@@ -1772,18 +1772,18 @@ internal fun MainTodayStatusTile(
             .clickable { onClick() }
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = if (compact) 8.dp else 10.dp, vertical = if (compact) 6.dp else 10.dp),
-            verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 8.dp)
+            modifier = Modifier.padding(horizontal = if (compact) 8.dp else 10.dp, vertical = if (compact) 5.dp else 10.dp),
+            verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 8.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = palette.primary,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(if (compact) 14.dp else 16.dp)
                 )
                 Text(
                     text = title,
@@ -1795,7 +1795,7 @@ internal fun MainTodayStatusTile(
             }
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleMedium,
+                style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
                 color = palette.textPrimary,
                 maxLines = 1

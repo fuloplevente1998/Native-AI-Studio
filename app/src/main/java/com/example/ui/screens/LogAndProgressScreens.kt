@@ -1020,11 +1020,6 @@ fun LogWorkoutDetailScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            ExercisePostureMiniIllustration(
-                                exerciseNameOrId = exDetail.nameHu,
-                                modifier = Modifier.size(46.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = exDetail.localizedName(uiState.language, uiState.exercises),
@@ -1416,13 +1411,13 @@ fun ProgressTabScreen(
             color = palette.surfaceCard,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .padding(horizontal = 12.dp, vertical = 4.dp)
                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(4.dp),
+                    .padding(3.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 sections.forEachIndexed { idx, label ->
@@ -1443,7 +1438,7 @@ fun ProgressTabScreen(
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
-                            modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp)
+                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp)
                         ) {
                             Text(
                                 text = label,
@@ -1464,8 +1459,8 @@ fun ProgressTabScreen(
             0 -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 2.dp, bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+                    contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 2.dp, bottom = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     item {
                         MainProgressVolumeAndMuscleSection(
@@ -1541,18 +1536,18 @@ internal fun MainProgressVolumeAndMuscleSection(
     val avgDurationValue = if (periodWorkouts.isEmpty()) "0 min" else
         "${periodWorkouts.sumOf { it.durationMinutes } / periodWorkouts.size} min"
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         // 1. ÖSSZES VOLUMEN CARD: transforms into full-width Screenshot 6 "Volumen trend" chart when expanded!
         Surface(
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(18.dp),
             color = palette.surfaceCard,
             modifier = Modifier
                 .fillMaxWidth()
-                .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(20.dp))
+                .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(18.dp))
                 .testTag("progress_total_volume_card")
-                .trainPilotSoftGlow(palette.primary, RoundedCornerShape(20.dp), 3.dp)
+                .trainPilotSoftGlow(palette.primary, RoundedCornerShape(18.dp), 3.dp)
         ) {
-            Column(modifier = Modifier.padding(14.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp)) {
                 // Header row (clickable to expand/collapse between compact & Screenshot 6 large Volumen trend)
                 Row(
                     modifier = Modifier
@@ -1563,25 +1558,28 @@ internal fun MainProgressVolumeAndMuscleSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Top
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = strings.totalVolumeTitle,
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.labelSmall,
                             color = palette.textSecondary
                         )
                         Text(
                             text = totalVolumeText,
                             modifier = Modifier.testTag("progress_volume_total"),
-                            style = MaterialTheme.typography.headlineMedium,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.ExtraBold,
                             color = palette.textPrimary
                         )
                         Text(
                             text = dateSubtitle,
                             style = MaterialTheme.typography.labelSmall,
-                            color = palette.textSecondary
+                            color = palette.textSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
+                    Spacer(modifier = Modifier.width(6.dp))
                     Column(horizontalAlignment = Alignment.End) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
@@ -1591,30 +1589,32 @@ internal fun MainProgressVolumeAndMuscleSection(
                                     volumeChange < 0 -> "▼ $volumeChange%"
                                     else -> "0%"
                                 },
-                                style = MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                 color = when { volumeChange == null || volumeChange == 0L -> palette.textSecondary
                                     volumeChange > 0 -> palette.success else -> palette.danger },
                                 modifier = Modifier.testTag("progress_volume_change")
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Icon(
                                 imageVector = if (expandedVolumeDetails) Icons.Default.ExpandMore else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                 contentDescription = "Volumen grafikon lenyitása",
                                 tint = palette.primary,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = strings.comparedToPrevPeriod,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = palette.textSecondary
+                            color = palette.textSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 val rangeLabels = listOf(
                     trL(uiState.language, "1 nap", "1 day", "1 Tag", "1 zi"),
@@ -1717,32 +1717,32 @@ internal fun MainProgressVolumeAndMuscleSection(
                     ) {
                         Column(
                             modifier = Modifier.weight(0.45f),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                            verticalArrangement = Arrangement.spacedBy(5.dp)
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
                             ) {
                                 listOf(0, 1).forEach { rIdx ->
                                     val isSel = uiState.selectedProgressRangeIndex == rIdx
                                     Surface(
-                                        shape = RoundedCornerShape(11.dp),
+                                        shape = RoundedCornerShape(10.dp),
                                         color = if (isSel) palette.primary else palette.surfaceElevated,
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(38.dp)
+                                            .height(34.dp)
                                             .trainPilotBorder(
                                                 width = 1.dp,
                                                 color = if (isSel) palette.primary else palette.cardBorder,
-                                                shape = RoundedCornerShape(11.dp)
+                                                shape = RoundedCornerShape(10.dp)
                                             )
-                                            .clip(RoundedCornerShape(11.dp))
+                                            .clip(RoundedCornerShape(10.dp))
                                             .testTag("progress_range_$rIdx").clickable { onSelectRange(rIdx) }
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Text(
                                                 text = rangeLabels[rIdx],
-                                                style = MaterialTheme.typography.labelMedium,
+                                                style = MaterialTheme.typography.labelSmall,
                                                 fontWeight = FontWeight.Bold,
                                                 color = if (isSel) palette.onPrimary else palette.textPrimary
                                             )
@@ -1752,28 +1752,28 @@ internal fun MainProgressVolumeAndMuscleSection(
                             }
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
                             ) {
                                 listOf(2, 3).forEach { rIdx ->
                                     val isSel = uiState.selectedProgressRangeIndex == rIdx
                                     Surface(
-                                        shape = RoundedCornerShape(11.dp),
+                                        shape = RoundedCornerShape(10.dp),
                                         color = if (isSel) palette.primary else palette.surfaceElevated,
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(38.dp)
+                                            .height(34.dp)
                                             .trainPilotBorder(
                                                 width = 1.dp,
                                                 color = if (isSel) palette.primary else palette.cardBorder,
-                                                shape = RoundedCornerShape(11.dp)
+                                                shape = RoundedCornerShape(10.dp)
                                             )
-                                            .clip(RoundedCornerShape(11.dp))
+                                            .clip(RoundedCornerShape(10.dp))
                                             .testTag("progress_range_$rIdx").clickable { onSelectRange(rIdx) }
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Text(
                                                 text = rangeLabels[rIdx],
-                                                style = MaterialTheme.typography.labelMedium,
+                                                style = MaterialTheme.typography.labelSmall,
                                                 fontWeight = FontWeight.Bold,
                                                 color = if (isSel) palette.onPrimary else palette.textPrimary
                                             )
@@ -1783,7 +1783,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                             }
                         }
 
-                        Box(Modifier.weight(0.55f).height(96.dp)) {
+                        Box(Modifier.weight(0.55f).height(76.dp)) {
                             StudioVolumeChart(volumeBars, period, uiState.selectedVolumeBarIndex, false) { index ->
                                 onSelectVolumeBar(index)
                                 expandedVolumeDetails = true
@@ -1797,7 +1797,7 @@ internal fun MainProgressVolumeAndMuscleSection(
         // 2. 2x2 COMPACT EXPANDABLE METRIC CARDS (Live data from uiState)
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             ExpandableStatSummaryTile(
                 icon = Icons.Default.EmojiEvents,
@@ -1822,7 +1822,7 @@ internal fun MainProgressVolumeAndMuscleSection(
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             ExpandableStatSummaryTile(
                 icon = Icons.AutoMirrored.Filled.TrendingUp,
@@ -2040,28 +2040,28 @@ internal fun MainProgressVolumeAndMuscleSection(
 
         // 4. COMPACT EXPANDABLE "Fejlődési javaslat" CARD AT BOTTOM (`Screenshot_2026-10-27-15-00-06-481_com.repforge.app.jpg`)
         Surface(
-            shape = RoundedCornerShape(18.dp),
+            shape = RoundedCornerShape(16.dp),
             color = palette.surfaceCard,
             modifier = Modifier
                 .fillMaxWidth()
                 .trainPilotBorder(
                     width = 1.dp,
                     color = if (expandedAdviceDetails) palette.primary else palette.cardBorder,
-                    shape = RoundedCornerShape(18.dp)
+                    shape = RoundedCornerShape(16.dp)
                 )
-                .clip(RoundedCornerShape(18.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .clickable { expandedAdviceDetails = !expandedAdviceDetails }
                 .testTag("progress_advice_card")
         ) {
-            Column(modifier = Modifier.padding(12.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(32.dp)
                             .clip(CircleShape)
                             .background(palette.primary.copy(alpha = 0.16f)),
                         contentAlignment = Alignment.Center
@@ -2070,7 +2070,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                             imageVector = Icons.Default.AutoAwesome,
                             contentDescription = null,
                             tint = palette.primary,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                     Column(modifier = Modifier.weight(1f)) {
@@ -2101,8 +2101,10 @@ internal fun MainProgressVolumeAndMuscleSection(
                                     "Înregistrează antrenamente pentru a calcula proporțiile grupelor musculare și recomandările."
                                 )
                             },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = palette.textSecondary
+                            style = MaterialTheme.typography.labelSmall,
+                            color = palette.textSecondary,
+                            maxLines = if (expandedAdviceDetails) 4 else 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                     Icon(
@@ -2190,25 +2192,25 @@ private fun ExpandableStatSummaryTile(
 ) {
     val palette = LocalTrainPilotPalette.current
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         color = palette.surfaceCard,
         modifier = modifier
             .trainPilotBorder(
                 width = if (selected) 1.5.dp else 1.dp,
                 color = if (selected) palette.primary else palette.cardBorder,
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(14.dp)
             )
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(14.dp))
             .clickable { onClick() }
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(30.dp)
+                    .size(28.dp)
                     .clip(CircleShape)
                     .background(palette.primary.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center
@@ -2217,7 +2219,7 @@ private fun ExpandableStatSummaryTile(
                     imageVector = icon,
                     contentDescription = null,
                     tint = palette.primary,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(15.dp)
                 )
             }
             Column(modifier = Modifier.weight(1f)) {
@@ -2234,7 +2236,7 @@ private fun ExpandableStatSummaryTile(
                 ) {
                     Text(
                         text = value,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = palette.textPrimary,
                         maxLines = 1
@@ -2242,7 +2244,7 @@ private fun ExpandableStatSummaryTile(
                     if (dashSuffix != null) {
                         Text(
                             text = dashSuffix,
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.labelSmall,
                             color = palette.textSecondary
                         )
                     }
@@ -2261,7 +2263,7 @@ private fun ExpandableStatSummaryTile(
                 imageVector = if (selected) Icons.Default.ExpandMore else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = palette.primary,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(16.dp)
             )
         }
     }

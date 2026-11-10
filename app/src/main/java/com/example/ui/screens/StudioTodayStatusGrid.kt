@@ -54,13 +54,13 @@ internal fun StudioTodayStatusGrid(state: TrainPilotUiState, compact: Boolean = 
     val icons = listOf(Icons.Default.Bedtime, Icons.Default.LocalFireDepartment, Icons.Default.Favorite,
         Icons.AutoMirrored.Filled.DirectionsWalk, Icons.Default.FitnessCenter, Icons.Default.Eco)
     Column(Modifier.fillMaxWidth().testTag(if (compact) "home_today_status_grid" else "health_today_status_grid"),
-        verticalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 8.dp)) {
-        for (row in 0..1) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 8.dp)) {
+        verticalArrangement = Arrangement.spacedBy(if (compact) 5.dp else 8.dp)) {
+        for (row in 0..1) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(if (compact) 5.dp else 8.dp)) {
             for (column in 0..2) {
                 val i = row * 3 + column
                 val (key, title, value) = values[i]
                 MainTodayStatusTile(icons[i], title, value, { onSelect(key) },
-                    modifier = Modifier.weight(1f).heightIn(min = if (compact) 64.dp else 76.dp)
+                    modifier = Modifier.weight(1f).heightIn(min = if (compact) 52.dp else 76.dp)
                         .testTag("${if (compact) "home" else "health"}_today_$key"), compact = compact)
             }
         }
