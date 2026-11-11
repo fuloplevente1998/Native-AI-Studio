@@ -96,10 +96,12 @@ if release:
     assert len(expected) == 64, "Pinned release certificate missing"
     assert result["signerSha256"].lower() == expected, "Release signer differs from configured persistent key"
     assert result["applicationId"] == "com.TrainPilot.com", "Application identity changed"
-    for field in ("versionCode", "versionName"):
-        phone_expected = declared_gradle_version("app", field)
-        wear_expected = declared_gradle_version("wear", field)
-        assert (
-            result[field] == result["wear"][field] == phone_expected == wear_expected
-        ), f"Package {field} differs from phone/Wear Gradle declarations"
+    phone_version_code = declared_gradle_version("app", "versionCode")
+    wear_version_code = declared_gradle_version("wear", "versionCode")
+    phone_version_name = declared_gradle_version("app", "versionName")
+    wear_version_name = declared_gradle_version("wear", "versionName")
+    assert result["versionCode"] == phone_version_code, "Phone versionCode differs from Gradle declaration"
+    assert result["wear"]["versionCode"] == wear_version_code, "Wear versionCode differs from Gradle declaration"
+    assert phone_version_code != wear_version_code, "Phone/Wear versionCode must be unique for Play form-factor releases"
+    assert result["versionName"] == result["wear"]["versionName"] == phone_version_name == wear_version_name, "Package versionName differs from phone/Wear Gradle declarations"
     assert result["mapsApiKeyConfigured"], "Maps key not embedded"
