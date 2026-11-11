@@ -64,6 +64,23 @@ data class WearHomeTheme(
     val button: Color
         get() = mix(elevatedColor, accentColor, if (family == "vivid") .24f else .16f)
 
+    /** Material controls use the same palette as our custom Wear cards, including light surfaces. */
+    fun materialColors(base: androidx.wear.compose.material3.ColorScheme = androidx.wear.compose.material3.ColorScheme()): androidx.wear.compose.material3.ColorScheme {
+        val onSecondary = if (secondaryColor.luminance() > 0.179f) Color.Black else Color.White
+        return base.copy(
+            primary = accentColor, primaryDim = accentColor, primaryContainer = button,
+            onPrimary = onAccentColor, onPrimaryContainer = textColor,
+            secondary = secondaryColor, secondaryDim = secondaryColor, secondaryContainer = elevatedColor,
+            onSecondary = onSecondary, onSecondaryContainer = textColor,
+            tertiary = secondaryColor, tertiaryDim = secondaryColor, tertiaryContainer = elevatedColor,
+            onTertiary = onSecondary, onTertiaryContainer = textColor,
+            surfaceContainerLow = surfaceColor, surfaceContainer = surfaceColor, surfaceContainerHigh = elevatedColor,
+            onSurface = textColor, onSurfaceVariant = mutedColor,
+            outline = outlineColor, outlineVariant = outlineColor.copy(alpha = .6f),
+            background = backgroundColor, onBackground = textColor
+        )
+    }
+
     // Same gamma-encoded sRGB interpolation as the phone's CSS color-mix(in srgb).
     private fun mix(a: Color, b: Color, amount: Float): Color =
         Color(

@@ -29,6 +29,12 @@ class WearThemePersistenceRegressionTest {
             assertEquals(Color.White, parsed.backgroundColor)
             assertEquals(Color(0xFF151B26), parsed.textColor)
             assertEquals(parsed, WearHomeTheme.parse(parsed.toJson()))
+            val material = parsed.materialColors()
+            assertEquals(parsed.surfaceColor, material.surfaceContainer)
+            assertEquals(parsed.elevatedColor, material.surfaceContainerHigh)
+            assertEquals(parsed.backgroundColor, material.background)
+            assertEquals(parsed.textColor, material.onSurface)
+            assertEquals(parsed.onAccentColor, material.onPrimary)
         }
         assertEquals(WearHomeTheme.DEFAULT, WearHomeTheme.parse(theme().put("accent", "transparent")))
     }

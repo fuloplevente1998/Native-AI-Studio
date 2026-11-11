@@ -12,9 +12,10 @@ Implementálva: read-only mirror rest controls, monoton deadline rest tick,
 eseményenként lejáró naptárcache, fenced/commit utáni célmentés; toArgb színküldés,
 32 teljes paletta canonical home JSON, commit utáni és reconnect témaküldés,
 Wear téma cache/újraindítás és composition-local háttér/kártya/szövegszínek.
-Új funkcionális regressziók forrása kész. A43095943169 első CI még runner nélkül
-queued volt, a végső deadline/kontraszt-pontosítás miatt lecserélve; végleges közös
-CI következik, még nincs tesztállítás.
+Új funkcionális regressziók forrása kész. A43095943169 és43096297606 dispatch CI runner nélküli queued állapotot jelzett;
+a cancel-kérés completed hibát adott, ezért nem állítjuk, hogy lefutottak vagy
+leálltak. A végleges Material-surface/kontraszt finomítás után a normál közös PR
+regressziós kapu indul. Még nincs tesztállítás.
 Nincs verzióemelés, main-merge, APK/AAB vagy Play-feltöltés ebben a körben.
 A megosztott ChatGPT-link TimeoutError miatt nem volt olvasható; PR220 elérhető.
 Valódi új Wear screenshot/device elfogadás hátravan; generált UI nem készül.

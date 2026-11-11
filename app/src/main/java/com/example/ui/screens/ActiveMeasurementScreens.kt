@@ -1399,7 +1399,7 @@ private fun SmallAdjustChip(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-            color = Color(0xFFF4F5F7),
+            color = Color(0xFFF4F5F7).copy(alpha = if (enabled) 1f else .38f),
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             softWrap = false,

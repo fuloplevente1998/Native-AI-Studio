@@ -236,11 +236,7 @@ internal fun TrainPilotWearApp(
         LocalOpenSaveSync provides { syncBackRoute=route;route="save-sync" }
     ) {
         val syncedTheme = LocalWearHomeTheme.current
-        MaterialTheme(colorScheme = MaterialTheme.colorScheme.copy(
-            primary = syncedTheme.accentColor, onPrimary = syncedTheme.onAccentColor,
-            background = syncedTheme.backgroundColor, onBackground = syncedTheme.textColor,
-            onSurface = syncedTheme.textColor, onSurfaceVariant = syncedTheme.mutedColor
-        )) {
+        MaterialTheme(colorScheme = syncedTheme.materialColors(MaterialTheme.colorScheme)) {
             Box(Modifier.fillMaxSize().background(Black)) {
                 val active = workout.value
                 when {
