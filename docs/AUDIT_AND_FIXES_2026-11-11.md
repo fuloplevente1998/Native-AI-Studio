@@ -8,7 +8,9 @@ következik. Main-merge/kiadás/Play-feltöltés nem része ennek a forrásátad
 - A1: a watch-owner pihenő olvasható/tükrözött marad; telefonos vezérlőgombok
   letiltva, nincs tiltott phone-write/hamis mentési hiba. Ownership guard megmarad.
 - A2: minden automatikus tick monoton határidőből számol; explicit +/- és Szünet
-  előbb elszámolja az eltelt időt. Új ismételt1400ms drift és háttérből pause teszt.
+  előbb elszámolja az eltelt időt. Lejárt abszolút automation deadline mellé érkező
+  régi remainingMs nem indíthat új pihenőt. Új ismételt1400ms drift, háttérből pause
+  és lejárt automation-deadline teszt.
 - A3: Google-naptár cache eseményenkénti eventCheckedAt időt használ; más esemény
   frissítése nem hosszabbítja meg a régiét. Korábbi aggregate-only cache egyszer
   újraellenőrződik. Új fake-HTTP regresszió lejárt esemény + friss aggregate esetre.

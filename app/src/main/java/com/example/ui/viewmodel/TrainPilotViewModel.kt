@@ -1393,7 +1393,7 @@ class TrainPilotViewModel : ViewModel() {
                             val deadline = autoObj.optLong("deadlineAt", 0L)
                             val remMs = autoObj.optLong("remainingMs", 0L)
                             when {
-                                deadline > nowEpochMs -> deadline
+                                deadline > 0L -> deadline
                                 remMs > 0L -> nowEpochMs + remMs
                                 else -> 0L
                             }

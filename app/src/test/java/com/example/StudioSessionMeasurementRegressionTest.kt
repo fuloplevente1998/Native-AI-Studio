@@ -789,6 +789,17 @@ class StudioSessionMeasurementRegressionTest {
         assertEquals(10L, afterNext.optLong("localSequence"))
     }
 
+    @Test fun staleAutomationRemainderCannotRestartAnExpiredAbsoluteRest() {
+        val model = model()
+        model.startQuickStrengthWithExercise(strength(model)); awaitStarted(model)
+        val frame = JSONObject(ActiveWorkoutStore.current(context)!!.toString())
+            .put("restEndAt", 0L).put("automation", JSONObject().put("phase", "rest")
+                .put("paused", false).put("deadlineAt", System.currentTimeMillis() - 5_000L).put("remainingMs", 30_000L))
+        ActiveWorkoutStore.saveOwned(context, frame)
+        shadowOf(Looper.getMainLooper()).idle()
+        assertFalse(model.uiState.value.restTimerRunning)
+    }
+
     @Test fun goalsReportSuccessOnlyAfterRoomCommitAndReloadTheSelectedPeriod() {
         val model = model()
         model.updateGoals(25, com.example.model.WorkoutGoalPeriod.MONTHLY, 9_000)

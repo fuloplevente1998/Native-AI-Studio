@@ -608,7 +608,7 @@ private fun Pill(text: String, modifier: Modifier = Modifier, tone: Color = Gold
         .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
         .semantics { contentDescription = text }.padding(horizontal = 9.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center) {
-        Text(text, color = if (!enabled) Muted else if (tone == Gold) Black else if (tone == Danger) DangerText else if (tone == SaveTone) SaveText else White,
+        Text(text, color = if (!enabled) Muted else if (tone == Gold) LocalWearHomeTheme.current.onAccentColor else if (tone == Danger) DangerText else if (tone == SaveTone) SaveText else White,
             fontSize = (size * captionScale).sp, lineHeight = ((size + 2) * captionScale).sp,
             fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
             maxLines = lines, overflow = TextOverflow.Ellipsis)
@@ -2034,7 +2034,7 @@ private fun RoundControl(text: String, tone: Color = Secondary, enabled: Boolean
         .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
         .semantics { contentDescription = description },
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        val color = if (!enabled) Muted else if (tone == Gold) Black else if (tone == Danger) DangerText else if (tone == SaveTone) SaveText else White
+        val color = if (!enabled) Muted else if (tone == Gold) LocalWearHomeTheme.current.onAccentColor else if (tone == Danger) DangerText else if (tone == SaveTone) SaveText else White
         Text(text, color = color, fontSize = (glyph / fontScale).sp,
             lineHeight = ((glyph + 2) / fontScale).sp, fontWeight = FontWeight.Medium, maxLines = 1)
         if (caption != null) Text(caption, modifier = Modifier.widthIn(max = (actionSize - 4f).dp), style = captionStyle,

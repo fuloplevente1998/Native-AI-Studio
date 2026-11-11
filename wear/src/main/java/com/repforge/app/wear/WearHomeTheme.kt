@@ -2,6 +2,7 @@ package com.repforge.app.wear
 
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import org.json.JSONObject
 
 /** Optional phone palette metadata; old phone snapshots remain readable. */
@@ -49,7 +50,7 @@ data class WearHomeTheme(
     val textColor: Color get() = color(text, if (family == "light") Color(0xFF151B26) else Color(0xFFF6F8FB))
     val mutedColor: Color get() = color(muted, if (family == "light") Color(0xFF48566C) else Color(0xFF9AA5B6))
     val outlineColor: Color get() = color(outline, frame)
-    val onAccentColor: Color get() = color(onAccent, textColor)
+    val onAccentColor: Color get() = color(onAccent, if (accentColor.luminance() > 0.179f) Color.Black else Color.White)
 
     val accentColor: Color
         get() = Color(0xFF000000L or accent.substring(1).toLong(16))
