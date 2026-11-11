@@ -69,7 +69,8 @@ internal fun WearTouchLockedScreen189(workout: WearWorkout,restRemaining: Int,he
     }
     val progress=gesture.progress(now)
     val hint=copy.hold
-    val color=LocalWearHomeTheme.current.accentColor
+    val theme = LocalWearHomeTheme.current
+    val color=theme.accentColor
     val slop=LocalViewConfiguration.current.touchSlop
     val fontScale=LocalDensity.current.fontScale
     val automatic=workout.automation
@@ -89,7 +90,7 @@ internal fun WearTouchLockedScreen189(workout: WearWorkout,restRemaining: Int,he
     val rows=wearLiveWorkoutRows(health,workout.workoutId,System.currentTimeMillis())
     Box(Modifier.fillMaxSize().testTag("wear-touch-locked")) {
         FixedRoundPanel(workout.exercise?.name.orEmpty(),count=1,footer={
-            Box(Modifier.size(48.dp).background(Color(0xFF232933),CircleShape).testTag("wear-touch-unlock")
+            Box(Modifier.size(48.dp).background(theme.elevatedColor,CircleShape).testTag("wear-touch-unlock")
                 .semantics { role=Role.Button;contentDescription=copy.locked+". "+copy.hold;stateDescription=hint
                     progressBarRangeInfo=ProgressBarRangeInfo(progress,0f..1f) }
                 .pointerInput(gesture) {
@@ -119,10 +120,10 @@ internal fun WearTouchLockedScreen189(workout: WearWorkout,restRemaining: Int,he
         }) {
             val scale=fontScale.coerceAtMost(if(it)1f else 1.2f)/fontScale
             Text(copy.locked+" · "+status,color=color,fontSize=(8*scale).sp,lineHeight=(10*scale).sp,maxLines=1,overflow=TextOverflow.Ellipsis)
-            Text(counter,color=Color(0xFFF6F8FB),fontSize=(18*scale).sp,lineHeight=(20*scale).sp,fontWeight=FontWeight.SemiBold,
+            Text(counter,color=theme.textColor,fontSize=(18*scale).sp,lineHeight=(20*scale).sp,fontWeight=FontWeight.SemiBold,
                 modifier=Modifier.testTag("wear-locked-clock"),maxLines=1)
             Text(rows.firstOrNull() ?: "—",color=color,fontSize=(8*scale).sp,lineHeight=(10*scale).sp,maxLines=1,overflow=TextOverflow.Ellipsis)
-            Text(hint,color=Color(0xFF9AA5B6),fontSize=(8*scale).sp,lineHeight=(10*scale).sp,textAlign=TextAlign.Center,maxLines=2,
+            Text(hint,color=theme.mutedColor,fontSize=(8*scale).sp,lineHeight=(10*scale).sp,textAlign=TextAlign.Center,maxLines=2,
                 modifier=Modifier.testTag("wear-touch-hint"))
         }
     }

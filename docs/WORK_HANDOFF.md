@@ -16,6 +16,11 @@ Wear téma cache/újraindítás és composition-local háttér/kártya/szövegsz
 a cancel-kérés completed hibát adott, ezért nem állítjuk, hogy lefutottak vagy
 leálltak. A végleges Material-surface/kontraszt finomítás után a normál közös PR
 regressziós kapu indul. Még nincs tesztállítás.
+A43095943169/43096297606 futások startup_failure állapottal, job nélkül zárultak.
+A GitHub oldalon „An unexpected error has occurred and we've been automatically
+notified” látható (request af794cb5-de0f-11f1-8f47-6062fdc4ad50); nem kódteszthiba.
+A workflow YAML helyben parse-olható, nem módosítottuk/gyengítettük. A normál PR
+kapu a végleges headen indul. A lock képernyő maradék fix színei is palettát követnek.
 Nincs verzióemelés, main-merge, APK/AAB vagy Play-feltöltés ebben a körben.
 A megosztott ChatGPT-link TimeoutError miatt nem volt olvasható; PR220 elérhető.
 Valódi új Wear screenshot/device elfogadás hátravan; generált UI nem készül.

@@ -35,7 +35,7 @@ nem állítjuk a teljes beszélgetés megismerését. A PR konkrét követelmén
   aktív edzés nélkül is publikál. Wear a home snapshotot commit-tal tárolja;
   hiányzó/hibás téma nem írhatja felül az utolsó érvényeset, régebbi packet nem nyer.
 - W3: Wear UI fix háttér/kártya/szövegszínei composition-local palettából jönnek,
-  a főoldalon is. A Wear MaterialTheme a kapott színeket használja. Matt/kontraszt/
+  a főoldalon és az érintészár képernyőjén is. A Wear MaterialTheme a kapott színeket használja. Matt/kontraszt/
   glow/világos kategóriák megőrződnek. A fix piros/zöld negatív/mentési műveletszínek
   szándékosan maradnak, a kör alakú elrendezés és érintési méretek változatlanok.
 - Új tesztek: mind a32 telefonpaletta szerializációja sérült régi accent mellett;
