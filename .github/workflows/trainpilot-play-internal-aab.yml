@@ -103,8 +103,23 @@ jobs:
           WEAR="wear/build/outputs/bundle/release/wear-release.aab"
           test -s "$PHONE"
           test -s "$WEAR"
-          jarsigner -verify -strict "$PHONE"
-          jarsigner -verify -strict "$WEAR"
+          jarsigner -verify "$PHONE"
+          jarsigner -verify "$WEAR"
+          python3 - <<'PY'
+          import os, re, subprocess
+          expected = os.environ.get('TRAINPILOT_RELEASE_CERT_SHA256', '').replace(':', '').lower().strip()
+          if len(expected) != 64:
+              raise SystemExit('Pinned release certificate SHA-256 missing')
+          for bundle in ('app/build/outputs/bundle/release/app-release.aab', 'wear/build/outputs/bundle/release/wear-release.aab'):
+              out = subprocess.check_output(['keytool', '-printcert', '-jarfile', bundle], text=True, stderr=subprocess.STDOUT)
+              match = re.search(r'SHA256:\s*([0-9A-Fa-f:]+)', out)
+              if not match:
+                  raise SystemExit(f'Unable to read signer SHA-256 from {bundle}')
+              actual = match.group(1).replace(':', '').lower()
+              if actual != expected:
+                  raise SystemExit(f'AAB signer differs from pinned TrainPilot release key: {bundle}')
+          print('AAB signatures verified against pinned TrainPilot upload certificate.')
+          PY
           python3 - <<'PY'
           import hashlib, json, pathlib, re
           def field(module, name):
