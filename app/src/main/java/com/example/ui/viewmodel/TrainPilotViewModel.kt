@@ -1,5 +1,6 @@
 package com.example.ui.viewmodel
 
+import androidx.compose.ui.graphics.toArgb
 import androidx.room.withTransaction
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -1990,8 +1991,8 @@ class TrainPilotViewModel : ViewModel() {
         val scope = nativeScope
         if (store != null && scope != null) {
             val pal = TrainPilotPalettes.getById(paletteId)
-            val hexAccent = "#" + (pal.primary.value.toLong() and 0xFFFFFFL).toString(16).padStart(6, '0')
-            val hexAccent2 = "#" + (pal.secondary.value.toLong() and 0xFFFFFFL).toString(16).padStart(6, '0')
+            val hexAccent = "#" + (pal.primary.toArgb().toLong() and 0xFFFFFFL).toString(16).padStart(6, '0')
+            val hexAccent2 = "#" + (pal.secondary.toArgb().toLong() and 0xFFFFFFL).toString(16).padStart(6, '0')
             val option = ThemePaletteOption(
                 key = pal.key,
                 nameHu = pal.nameHu,
@@ -2069,44 +2070,48 @@ class TrainPilotViewModel : ViewModel() {
         val maxWorkouts = if (period == com.example.model.WorkoutGoalPeriod.WEEKLY) 14 else 60
         val cleanWorkouts = workoutsTarget.coerceIn(1, maxWorkouts)
         val cleanSteps = stepsTarget.coerceIn(2000, 30000)
-        val db = nativeDatabase
-        val scope = nativeScope
-        val completedInPeriod = _uiState.value.loggedWorkouts.workoutsInPeriodToDate(period, LocalDate.now()).size
+        fun failed() { _uiState.update { it.copy(statusBannerMessage = tr(
+            "A célok mentése nem sikerült. Próbáld újra.", "Could not save goals. Try again.",
+            "Ziele konnten nicht gespeichert werden. Erneut versuchen.", "Obiectivele nu au fost salvate. Încearcă din nou.", it.language)) } }
+        val db = nativeDatabase ?: run { failed(); return }
+        val scope = nativeScope ?: run { failed(); return }
+        val context = nativeContext ?: run { failed(); return }
+        val ticket = runCatching { NativeDataReplacement.continuationForCurrentData(context) }.getOrElse { failed(); return }
         val periodLabelHu = if (period == com.example.model.WorkoutGoalPeriod.MONTHLY) "havi" else "heti"
-        _uiState.update {
-            it.copy(
-                workoutGoalPeriod = period,
-                workoutGoalTarget = cleanWorkouts,
-                workoutGoalCompleted = completedInPeriod,
-                weeklyGoalTarget = cleanWorkouts,
-                weeklyGoalCompleted = if (period == com.example.model.WorkoutGoalPeriod.WEEKLY) completedInPeriod
-                    else it.loggedWorkouts.workoutsInCalendarWeekToDate(LocalDate.now()).size,
-                stepsGoal = cleanSteps,
-                showGoalsDialog = false,
-                statusBannerMessage = tr(
-                    "Célok elmentve: $cleanWorkouts $periodLabelHu edzés, $cleanSteps lépés",
-                    "Goals saved: $cleanWorkouts ${if (period == com.example.model.WorkoutGoalPeriod.MONTHLY) "monthly" else "weekly"} workouts, $cleanSteps steps",
-                    "Ziele gespeichert: $cleanWorkouts ${if (period == com.example.model.WorkoutGoalPeriod.MONTHLY) "monatliche" else "wöchentliche"} Trainings, $cleanSteps Schritte",
-                    "Obiective salvate: $cleanWorkouts antrenamente ${if (period == com.example.model.WorkoutGoalPeriod.MONTHLY) "lunare" else "săptămânale"}, $cleanSteps pași",
-                    it.language
-                )
-            )
-        }
-        if (db == null || scope == null) return
         scope.launch(Dispatchers.IO) {
             try {
-                val json = JSONObject().apply {
-                    put("weeklyGoalTarget", cleanWorkouts)
-                    put("workoutGoalTarget", cleanWorkouts)
-                    put("workoutGoalPeriod", period.name.lowercase())
-                    put("stepsGoal", cleanSteps)
-                }.toString()
-                db.keyValueDocumentDao().putDocument(
-                    com.repforge.app.data.db.KeyValueDocumentEntity("native:userGoals", json, System.currentTimeMillis())
-                )
-            } catch (e: Throwable) {
-                android.util.Log.e("TrainPilotViewModel", "Failed to persist user goals to Room", e)
-            }
+                NativeDataReplacement.mutate(context) {
+                    ticket.requireCurrent(context)
+                    val json = JSONObject().put("weeklyGoalTarget", cleanWorkouts)
+                        .put("workoutGoalTarget", cleanWorkouts).put("workoutGoalPeriod", period.name.lowercase())
+                        .put("stepsGoal", cleanSteps).toString()
+                    db.keyValueDocumentDao().putDocument(
+                        com.repforge.app.data.db.KeyValueDocumentEntity("native:userGoals", json, System.currentTimeMillis()))
+                    withContext(Dispatchers.Main.immediate) {
+                        ticket.requireCurrent(context)
+                        _uiState.update {
+                            it.copy(
+                                workoutGoalPeriod = period,
+                                workoutGoalTarget = cleanWorkouts,
+                                workoutGoalCompleted = it.loggedWorkouts.workoutsInPeriodToDate(period, LocalDate.now()).size,
+                                weeklyGoalTarget = cleanWorkouts,
+                                weeklyGoalCompleted = if (period == com.example.model.WorkoutGoalPeriod.WEEKLY) it.loggedWorkouts.workoutsInCalendarWeekToDate(LocalDate.now()).size
+                                    else it.loggedWorkouts.workoutsInCalendarWeekToDate(LocalDate.now()).size,
+                                stepsGoal = cleanSteps,
+                                showGoalsDialog = false,
+                                statusBannerMessage = tr(
+                                    "Célok elmentve: $cleanWorkouts $periodLabelHu edzés, $cleanSteps lépés",
+                                    "Goals saved: $cleanWorkouts ${if (period == com.example.model.WorkoutGoalPeriod.MONTHLY) "monthly" else "weekly"} workouts, $cleanSteps steps",
+                                    "Ziele gespeichert: $cleanWorkouts ${if (period == com.example.model.WorkoutGoalPeriod.MONTHLY) "monatliche" else "wöchentliche"} Trainings, $cleanSteps Schritte",
+                                    "Obiective salvate: $cleanWorkouts antrenamente ${if (period == com.example.model.WorkoutGoalPeriod.MONTHLY) "lunare" else "săptămânale"}, $cleanSteps pași",
+                                    it.language
+                                )
+                            )
+                        }
+                    }
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { withContext(Dispatchers.Main.immediate) { failed() } }
         }
     }
 
@@ -3550,20 +3555,24 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun adjustRestTimer(deltaSec: Int) {
+        val canControl = com.repforge.app.StudioRestTimer.controlsAllowed(nativeContext, _uiState.value)
+        if (deltaSec != -1 && !canControl) return
         val wasRunning = _uiState.value.restTimerRunning
         _uiState.update { com.repforge.app.StudioRestTimer.adjust(nativeContext, it, deltaSec) }
         val nowState = _uiState.value
-        if (deltaSec != -1 || (wasRunning && !nowState.restTimerRunning)) {
+        if (canControl && (deltaSec != -1 || (wasRunning && !nowState.restTimerRunning))) {
             persistCanonicalActiveSessionAsync()
         }
     }
 
     fun toggleRestTimerRunning() {
+        if (!com.repforge.app.StudioRestTimer.controlsAllowed(nativeContext, _uiState.value)) return
         _uiState.update { com.repforge.app.StudioRestTimer.toggle(nativeContext, it) }
         persistCanonicalActiveSessionAsync()
     }
 
     fun skipRestTimer() {
+        if (!com.repforge.app.StudioRestTimer.controlsAllowed(nativeContext, _uiState.value)) return
         _uiState.update { com.repforge.app.StudioRestTimer.skip(nativeContext, it) }
         persistCanonicalActiveSessionAsync()
     }
@@ -5424,7 +5433,7 @@ class TrainPilotViewModel : ViewModel() {
         _uiState.update { current ->
             current.copy(
                 language = lang,
-                selectedPaletteId = palette?.id ?: current.selectedPaletteId,
+                selectedPaletteId = palette?.id ?: TrainPilotPalettes.getById(1).id,
                 defaultRestSec = if (restSec > 0) restSec else current.defaultRestSec,
                 soundAlertEnabled = sound,
                 vibrationEnabled = vibration

@@ -2,6 +2,23 @@
 
 Belépési pont: [AGENTS.md](../AGENTS.md). Az élő GitHub-állapot és a main ág az irányadó.
 
+## Folyamatban –2026-11-11 közös audit +Wear témaszinkron
+
+Root egyedül, fix/nov11-audit-and-wear-theme ág a6a55a0 mainről.
+Felhasználó kéri az audit négy hibájának és PR220 órás téma/dizájn feladatainak
+javítását. [Részletes audit és javítások](AUDIT_AND_FIXES_2026-11-11.md),
+[Wear követelmények](WEAR_THEME_SYNC_AND_STORE_MEDIA_2026-11-11.md).
+Implementálva: read-only mirror rest controls, monoton deadline rest tick,
+eseményenként lejáró naptárcache, fenced/commit utáni célmentés; toArgb színküldés,
+32 teljes paletta canonical home JSON, commit utáni és reconnect témaküldés,
+Wear téma cache/újraindítás és composition-local háttér/kártya/szövegszínek.
+Új funkcionális regressziók forrása kész; közös CI következik, még nincs tesztállítás.
+Nincs verzióemelés, main-merge, APK/AAB vagy Play-feltöltés ebben a körben.
+A megosztott ChatGPT-link TimeoutError miatt nem volt olvasható; PR220 elérhető.
+Valódi új Wear screenshot/device elfogadás hátravan; generált UI nem készül.
+A Reddit-poszt külön elkészült a megadott csoport/webes opt-in/androidos Store
+linkekkel:docs/REDDIT_CLOSED_TEST_INVITE_2026-11-11.md. Nem publikáltuk.
+
 ## #219 teljes megvalósítása (`AI_STUDIO_UI_UX_219_MAIN_HANDOFF_2026-11-10.md`)
 
 - **1. Programok (`447.jpg` referencia)**:

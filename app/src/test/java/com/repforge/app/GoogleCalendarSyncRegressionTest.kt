@@ -124,6 +124,24 @@ class GoogleCalendarSyncRegressionTest {
         assertPreserved(row)
     }
 
+    @Test fun unrelatedCacheWritesCannotExtendAnEventsOwnConfirmationAge() {
+        val row = entry(); save(row); live()
+        expect("POST", "$root/live/events?sendUpdates=none", 201)
+        assertEquals(1, sync().getOrThrow())
+        val cache = JSONObject(prefs.getString("calendarConfirmedFingerprints", "{}")!!)
+        val checked = cache.getJSONObject("eventCheckedAt")
+        checked.put(eventId, System.currentTimeMillis() - 2 * 86_400_000L)
+        cache.put("checkedAt", System.currentTimeMillis()) // A different recent operation updated the aggregate cache.
+        prefs.edit().putString("calendarConfirmedFingerprints", cache.toString()).commit()
+        expect("GET", "/oauth2/v3/userinfo", json = "{\"sub\":\"account-sub\",\"email\":\"owner@example.test\"}")
+        expect("GET", "$root/live", json = calendar())
+        expect("POST", "$root/live/events?sendUpdates=none", 409)
+        expect("PUT", "$root/live/events/$eventId?sendUpdates=none")
+        assertEquals(1, sync().getOrThrow())
+        assertEquals(2, calls.count { it.method == "POST" && it.path.contains("/events") })
+        assertPreserved(row)
+    }
+
     @Test fun failedReplacementKeepsOldReferenceIdentityAndLocalData() {
         val row = entry(); save(row); cache("gone")
         expect("GET", "$root/gone", 404)

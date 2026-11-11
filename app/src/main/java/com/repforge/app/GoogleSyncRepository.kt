@@ -570,15 +570,16 @@ class GoogleSyncRepository internal constructor(
         val previous = runCatching { JSONObject(prefs().getString(fingerprintKey, "{}").orEmpty()) }
             .getOrDefault(JSONObject())
         // Periodically reconcile with Google in case events were edited or removed elsewhere.
-        val cacheFresh = System.currentTimeMillis() - previous.optLong("checkedAt", 0L) in 0L..86_400_000L
-        val confirmed = if (previous.optString("scope") == syncScope && cacheFresh)
-            previous.optJSONObject("events") ?: JSONObject() else JSONObject()
+        val sameScope = previous.optString("scope") == syncScope
+        val confirmed = if (sameScope) previous.optJSONObject("events") ?: JSONObject() else JSONObject()
+        val checked = if (sameScope) previous.optJSONObject("eventCheckedAt") ?: JSONObject() else JSONObject()
         _uiState.update { it.copy(stageMessage = "Naptár szinkronizálása… (0/$total)") }
         for (operation in operations) {
             kotlinx.coroutines.currentCoroutineContext().ensureActive()
             dataTicket.requireCurrent(appContext)
             val fingerprint = operation.payload?.toString() ?: "<deleted>"
-            if (confirmed.optString(operation.id) == fingerprint) {
+            if (confirmed.optString(operation.id) == fingerprint &&
+                System.currentTimeMillis() - checked.optLong(operation.id, 0L) in 0L..86_400_000L) {
                 count++
                 _uiState.update { it.copy(stageMessage = "Naptár szinkronizálása… ($count/$total)") }
                 continue
@@ -614,10 +615,11 @@ class GoogleSyncRepository internal constructor(
             }
             // Commit after each confirmed response, so cancellation cannot mark pending work done.
             confirmed.put(operation.id, fingerprint)
+            checked.put(operation.id, System.currentTimeMillis())
             dataTicket.requireCurrent(appContext)
             check(prefs().edit().putString(fingerprintKey, JSONObject()
                 .put("scope", syncScope).put("checkedAt", System.currentTimeMillis())
-                .put("events", confirmed).toString()).commit()) {
+                .put("events", confirmed).put("eventCheckedAt", checked).toString()).commit()) {
                 "A naptár szinkronállapota nem menthető."
             }
             count++

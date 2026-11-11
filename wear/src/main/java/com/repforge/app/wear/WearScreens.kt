@@ -65,11 +65,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
-private val Black = Color(0xFF0E1015)
-private val Card = Color(0xFF1A1E25)
-private val Secondary = Color(0xFF232933)
-private val White = Color(0xFFF6F8FB)
-private val Muted = Color(0xFF9AA5B6)
+private val Black: Color
+    @Composable get() = LocalWearHomeTheme.current.backgroundColor
+private val Card: Color
+    @Composable get() = LocalWearHomeTheme.current.surfaceColor
+private val Secondary: Color
+    @Composable get() = LocalWearHomeTheme.current.elevatedColor
+private val White: Color
+    @Composable get() = LocalWearHomeTheme.current.textColor
+private val Muted: Color
+    @Composable get() = LocalWearHomeTheme.current.mutedColor
 private val Gold: Color
     @Composable get() = LocalWearHomeTheme.current.accentColor
 private val Danger = Color(0xFF3E2024)
@@ -230,7 +235,12 @@ internal fun TrainPilotWearApp(
         LocalOwnership193 provides workout.value?.takeIf { it.ownershipProtocol193==1 },
         LocalOpenSaveSync provides { syncBackRoute=route;route="save-sync" }
     ) {
-        MaterialTheme {
+        val syncedTheme = LocalWearHomeTheme.current
+        MaterialTheme(colorScheme = MaterialTheme.colorScheme.copy(
+            primary = syncedTheme.accentColor, onPrimary = syncedTheme.onAccentColor,
+            background = syncedTheme.backgroundColor, onBackground = syncedTheme.textColor,
+            onSurface = syncedTheme.textColor, onSurfaceVariant = syncedTheme.mutedColor
+        )) {
             Box(Modifier.fillMaxSize().background(Black)) {
                 val active = workout.value
                 when {

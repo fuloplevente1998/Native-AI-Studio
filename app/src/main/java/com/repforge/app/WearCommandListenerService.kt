@@ -21,6 +21,8 @@ class WearCommandListenerService : WearableListenerService() {
     }
 
     override fun onPeerConnected(peer: com.google.android.gms.wearable.Node) {
+        // Settings are independent of an active workout: reconnect also republishes the latest palette.
+        WearSyncRepository.refreshWatchHomeAsync(this)
         // Retry the durable terminal projection when a previous Data Layer write failed.
         val current = ActiveWorkoutStore.current(this) ?: return
         if (!current.optBoolean("active", true) && current.optString("workoutId").isNotBlank())

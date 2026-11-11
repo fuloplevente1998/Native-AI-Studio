@@ -789,6 +789,57 @@ class StudioSessionMeasurementRegressionTest {
         assertEquals(10L, afterNext.optLong("localSequence"))
     }
 
+    @Test fun goalsReportSuccessOnlyAfterRoomCommitAndReloadTheSelectedPeriod() {
+        val model = model()
+        model.updateGoals(25, com.example.model.WorkoutGoalPeriod.MONTHLY, 9_000)
+        await { model.uiState.value.workoutGoalTarget == 25 }
+        val persisted = JSONObject(native { db.keyValueDocumentDao().getDocument("native:userGoals")!! }.json)
+        assertEquals(25, persisted.getInt("workoutGoalTarget"))
+        assertEquals("monthly", persisted.getString("workoutGoalPeriod"))
+        val reopened = model()
+        await { reopened.uiState.value.workoutGoalTarget == 25 }
+        assertEquals(com.example.model.WorkoutGoalPeriod.MONTHLY, reopened.uiState.value.workoutGoalPeriod)
+    }
+
+    @Test fun failedGoalWriteKeepsPreviousGoalsAndReportsAnError() {
+        val model = model()
+        val previous = model.uiState.value.workoutGoalTarget
+        native { db.openHelper.writableDatabase.execSQL(
+            "CREATE TRIGGER reject_goals BEFORE INSERT ON kv_documents WHEN NEW.doc_key = 'native:userGoals' BEGIN SELECT RAISE(ABORT, 'fixture write failure'); END") }
+        model.updateGoals(7, com.example.model.WorkoutGoalPeriod.MONTHLY, 9_000)
+        await { model.uiState.value.statusBannerMessage?.contains("célok mentése nem sikerült") == true }
+        assertEquals(previous, model.uiState.value.workoutGoalTarget)
+        assertNull(native { db.keyValueDocumentDao().getDocument("native:userGoals") })
+    }
+
+    @Test fun goalEditDuringReplacementCannotWriteIntoRestoredDataset() {
+        val model = model()
+        native { NativeDataReplacement.exclusively(context) {
+            withContext(Dispatchers.Main.immediate) { model.updateGoals(7, com.example.model.WorkoutGoalPeriod.MONTHLY, 9_000) }
+        } }
+        assertNull(native { db.keyValueDocumentDao().getDocument("native:userGoals") })
+        assertTrue(model.uiState.value.statusBannerMessage!!.contains("célok mentése nem sikerült"))
+    }
+
+    @Test fun watchOwnedRestControlsCannotMutateThePhoneDraftOrReportSaveErrors() {
+        val model = model()
+        model.startQuickStrengthWithExercise(strength(model)); awaitStarted(model)
+        val frame = JSONObject(ActiveWorkoutStore.current(context)!!.toString())
+            .put("timerOwner", "watch").put("restEndAt", System.currentTimeMillis() + 90_000L)
+        ActiveWorkoutStore.saveOwned(context, frame)
+        PhoneWorkoutExecution.store(context).suspendCommands(true)
+        await { !model.uiState.value.phoneControlsWorkout && model.uiState.value.restTimerRunning }
+        val before = ActiveWorkoutStore.current(context)!!.toString()
+        val remaining = model.uiState.value.restTimerRemainingSec
+        model.clearBannerMessage()
+        model.adjustRestTimer(15); model.toggleRestTimerRunning(); model.skipRestTimer()
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(before, ActiveWorkoutStore.current(context)!!.toString())
+        assertEquals(remaining, model.uiState.value.restTimerRemainingSec)
+        assertTrue(model.uiState.value.restTimerRunning)
+        assertNull(model.uiState.value.statusBannerMessage)
+    }
+
     private fun awaitStarted(model: TrainPilotViewModel) {
         await { ActiveWorkoutStore.current(context)?.let { it.optBoolean("active") &&
             model.uiState.value.activeWorkoutId == it.optString("workoutId") && model.uiState.value.isWorkoutSessionActive } == true }

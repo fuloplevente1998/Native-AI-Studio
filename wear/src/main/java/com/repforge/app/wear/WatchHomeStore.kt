@@ -117,17 +117,23 @@ object WatchHomeStore {
 
     fun save(context: Context, raw: String?, publishedAt: Long = 0L,origin: String? = null): WatchHomeSnapshot? {
         if (raw.isNullOrBlank()) return null
-        val parsed = parse(raw)?.let { it.copy(publishedAt = maxOf(it.publishedAt, publishedAt)) } ?: return null
         val cached = load(context)
+        val root = runCatching { JSONObject(raw) }.getOrNull() ?: return null
+        val supplied = root.optJSONObject("theme")
+        val validColors = supplied != null && listOf("accent", "accent2").all {
+            Regex("#[0-9a-fA-F]{6}").matches(supplied.optString(it))
+        }
+        if (!validColors && cached != null) root.put("theme", cached.theme.toJson())
+        val parsed = parse(root.toString())?.let { it.copy(publishedAt = maxOf(it.publishedAt, publishedAt)) } ?: return null
         if (newest(cached, parsed) === cached) return cached
         WearClosureStore.acceptResult(context, try { JSONObject(raw).optJSONObject("workoutResult") } catch (_: Exception) { null })
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val saved = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
-            .putString(SNAPSHOT, JSONObject(raw).put("publishedAt", parsed.publishedAt).toString())
+            .putString(SNAPSHOT, root.put("publishedAt", parsed.publishedAt).toString())
             .putInt("automaticProtocol",parsed.automaticProtocol)
             .apply { if(com.repforge.shared.GpsRoutePacket193.id(origin))putString("phoneNode193",origin) }
-            .apply()
-        return parsed
+            .commit()
+        return if (saved) parsed else cached
     }
 
     fun newest(current: WatchHomeSnapshot?, incoming: WatchHomeSnapshot): WatchHomeSnapshot =
