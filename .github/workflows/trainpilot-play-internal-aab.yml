@@ -1,4 +1,5 @@
 name: TrainPilot Play Internal signed AAB pair
+# Wear Play retry: versionCode 275502 after 275501 was already consumed by Play Console.
 
 on:
   workflow_dispatch:
