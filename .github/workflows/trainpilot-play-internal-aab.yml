@@ -1,0 +1,172 @@
+name: TrainPilot Play Internal signed AAB pair
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/trainpilot-play-internal-aab.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trainpilot-play-internal-aab
+  cancel-in-progress: false
+
+jobs:
+  signed-aab-pair:
+    if: github.ref == 'refs/heads/main'
+    environment: android-signing
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TRAINPILOT_MAPS_API_KEY: ${{ secrets.TRAINPILOT_MAPS_API_KEY || secrets.MAPS_API_KEY }}
+      TRAINPILOT_RELEASE_CERT_SHA256: ${{ secrets.TRAINPILOT_RELEASE_CERT_SHA256 }}
+
+    steps:
+      - name: Checkout trusted main
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android API 36 SDK
+        shell: bash
+        run: |
+          SDKMANAGER=$(find "${ANDROID_HOME}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
+          test -n "${SDKMANAGER}"
+          yes | "${SDKMANAGER}" --licenses > /dev/null || true
+          "${SDKMANAGER}" --install 'platforms;android-36' 'build-tools;36.0.0'
+          "${SDKMANAGER}" --install 'platforms;android-36.1' || true
+
+      - name: Set up Gradle 9.3.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+          cache-read-only: false
+
+      - name: Cache Robolectric Android SDK dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-api34-i7-v1-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+
+      - name: Fetch checksum-verified Robolectric SDK
+        shell: bash
+        run: python3 scripts/prefetch_robolectric_sdk.py
+
+      - name: Restore private upload signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.TRAINPILOT_RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64, os, pathlib
+          required = ['KEYSTORE_BASE64', 'STORE_PASSWORD', 'KEY_PASSWORD', 'TRAINPILOT_MAPS_API_KEY']
+          missing = [key for key in required if not os.environ.get(key, '').strip()]
+          if missing:
+              raise SystemExit('Missing configuration names: ' + ', '.join(missing))
+          target = pathlib.Path(os.environ['RUNNER_TEMP']) / 'trainpilot-upload.jks'
+          with target.open('xb') as output:
+              target.chmod(0o600)
+              output.write(base64.b64decode(os.environ['KEYSTORE_BASE64'], validate=True))
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write('KEYSTORE_PATH=' + str(target) + '\n')
+          PY
+
+      - name: Build signed mobile and Wear AABs and run all JVM tests
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: gradle --no-daemon --stacktrace --profile --continue :app:bundleRelease :wear:bundleRelease :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest
+
+      - name: Verify raw phone, Wear and shared JUnit XML test results
+        if: always()
+        env:
+          TRAINPILOT_SOURCE_SHA: ${{ github.sha }}
+        run: python3 scripts/verify_junit_xml.py
+
+      - name: Verify signed AABs and write Play metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          PHONE="app/build/outputs/bundle/release/app-release.aab"
+          WEAR="wear/build/outputs/bundle/release/wear-release.aab"
+          test -s "$PHONE"
+          test -s "$WEAR"
+          jarsigner -verify -strict "$PHONE"
+          jarsigner -verify -strict "$WEAR"
+          python3 - <<'PY'
+          import hashlib, json, pathlib, re
+          def field(module, name):
+              src = pathlib.Path(module, 'build.gradle.kts').read_text()
+              m = re.search(rf'(?m)^\s*{name}\s*=\s*(\d+|"[^"\n]+")', src)
+              if not m:
+                  raise SystemExit(f'Missing {module} {name}')
+              return m.group(1).strip('"')
+          phone = pathlib.Path('app/build/outputs/bundle/release/app-release.aab')
+          wear = pathlib.Path('wear/build/outputs/bundle/release/wear-release.aab')
+          meta = {
+              'commit': __import__('os').environ.get('GITHUB_SHA'),
+              'applicationId': 'com.TrainPilot.com',
+              'versionName': field('app', 'versionName'),
+              'mobileVersionCode': int(field('app', 'versionCode')),
+              'wearVersionCode': int(field('wear', 'versionCode')),
+              'mobileAabSha256': hashlib.sha256(phone.read_bytes()).hexdigest(),
+              'wearAabSha256': hashlib.sha256(wear.read_bytes()).hexdigest(),
+              'mobileBytes': phone.stat().st_size,
+              'wearBytes': wear.stat().st_size,
+          }
+          if meta['mobileVersionCode'] == meta['wearVersionCode']:
+              raise SystemExit('Phone and Wear versionCode must be unique for Play form-factor releases')
+          pathlib.Path('app/build/outputs/play-aab-metadata.json').write_text(json.dumps(meta, indent=2) + '\n')
+          print(json.dumps(meta, indent=2))
+          PY
+
+      - name: Remove temporary private signing key
+        if: always()
+        shell: bash
+        run: rm -f -- "${RUNNER_TEMP}/trainpilot-upload.jks"
+
+      - name: Upload signed Play Console AAB pair
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trainpilot-play-internal-aab-pair
+          path: |
+            app/build/outputs/bundle/release/app-release.aab
+            wear/build/outputs/bundle/release/wear-release.aab
+            app/build/outputs/play-aab-metadata.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload JVM test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trainpilot-play-internal-test-reports
+          path: |
+            app/build/test-results/
+            wear/build/test-results/
+            shared/build/test-results/
+            app/build/outputs/junit-verification.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload Gradle task timing profile
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trainpilot-play-internal-build-profile
+          path: build/reports/profile/
+          if-no-files-found: ignore
+          retention-days: 7
