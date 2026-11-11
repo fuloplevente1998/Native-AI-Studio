@@ -39,7 +39,7 @@ android {
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     buildConfigField("String", "DEVELOPER_NAME", "\"\"")
     buildConfigField("String", "SUPPORT_EMAIL", "\"\"")
-    buildConfigField("String", "PRIVACY_POLICY_URL", "\"https://github.com/fuloplevente1998/TrainPilot/issues\"")
+    buildConfigField("String", "PRIVACY_POLICY_URL", "\"https://fuloplevente1998.github.io/TrainPilot.io/privacy.html\"")
   }
 
   // Do not remove or modify these signingConfigs. They are necessary for building, installing,
