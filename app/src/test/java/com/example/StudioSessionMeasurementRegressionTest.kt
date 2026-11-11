@@ -3,6 +3,7 @@ package com.example
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import androidx.compose.ui.graphics.toArgb
 import android.os.Looper
 import androidx.lifecycle.ViewModelStore
 import androidx.room.Room
@@ -787,6 +788,16 @@ class StudioSessionMeasurementRegressionTest {
         assertEquals(1, durableAfterNext.getInt("currentExercise"))
         assertTrue(durableAfterNext.optLong("selectionRevision") > revBefore)
         assertEquals(10L, afterNext.optLong("localSequence"))
+    }
+
+    @Test fun rapidPaletteSelectionsPersistTheLastPaletteWithCorrectArgbColors() {
+        val model = model()
+        for (id in listOf(1, 9, 17, 25, 32)) model.selectPalette(id)
+        val palette = com.example.ui.theme.TrainPilotPalettes.getById(32)
+        await { native { TrainPilotSettingsStore(context).current() }.themeKey == palette.key }
+        val saved = native { TrainPilotSettingsStore(context).current() }
+        assertEquals("#%06x".format(java.util.Locale.ROOT, palette.primary.toArgb() and 0xFFFFFF), saved.themeAccent)
+        assertEquals("#%06x".format(java.util.Locale.ROOT, palette.secondary.toArgb() and 0xFFFFFF), saved.themeAccent2)
     }
 
     @Test fun staleAutomationRemainderCannotRestartAnExpiredAbsoluteRest() {

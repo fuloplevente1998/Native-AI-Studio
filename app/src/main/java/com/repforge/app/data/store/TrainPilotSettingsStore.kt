@@ -261,8 +261,12 @@ class TrainPilotSettingsStore(private val context: Context,
         }
     }
 
-    suspend fun setTheme(option: ThemePaletteOption) {
+    suspend fun setTheme(option: ThemePaletteOption) =
+        setThemeForDataset(option, NativeDataReplacement.continuationForCurrentData(context))
+
+    internal suspend fun setThemeForDataset(option: ThemePaletteOption, ticket: NativeDataReplacement.Continuation) {
         NativeDataReplacement.mutate(context) {
+            ticket.requireCurrent(context)
             context.trainPilotDataStore.edit { prefs ->
             prefs[KEY_THEME_KEY] = option.key
             prefs[KEY_THEME_ACCENT] = option.accent

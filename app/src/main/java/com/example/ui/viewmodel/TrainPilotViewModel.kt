@@ -394,6 +394,7 @@ class TrainPilotViewModel : ViewModel() {
     private var nativeSettingsStore: TrainPilotSettingsStore? = null
     private var nativeDatabase: TrainPilotDatabase? = null
     private var nativeScope: CoroutineScope? = null
+    private var paletteWriteJob: Job? = null
     private var nativeReloadJob: Job? = null
     private var programEditorContinuation: com.repforge.app.NativeDataReplacement.Continuation? = null
     private var nativeObserversJob: Job? = null
@@ -2009,8 +2010,17 @@ class TrainPilotViewModel : ViewModel() {
                 nameDe = pal.nameDe,
                 nameRo = pal.nameRo
             )
-            scope.launch(Dispatchers.IO) {
-                try { store.setTheme(option) } catch (_: Throwable) {}
+            val ticket = runCatching { NativeDataReplacement.continuationForCurrentData(requireNotNull(nativeContext)) }
+                .getOrElse { showBannerMessage(it.message ?: "A téma nem menthető."); return }
+            val previous = paletteWriteJob
+            previous?.cancel()
+            paletteWriteJob = scope.launch(Dispatchers.IO) {
+                try {
+                    previous?.join()
+                    store.setThemeForDataset(option, ticket)
+                } catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { showBannerMessage(tr("A téma mentése nem sikerült.", "Could not save theme.",
+                    "Das Design konnte nicht gespeichert werden.", "Tema nu a putut fi salvată.", _uiState.value.language)) }
             }
         }
     }
