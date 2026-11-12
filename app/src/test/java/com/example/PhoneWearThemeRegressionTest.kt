@@ -26,6 +26,12 @@ class PhoneWearThemeRegressionTest {
         for (palette in TrainPilotPalettes.allPalettes) {
             val json = TrainPilotUserSettings(themeKey = palette.key, themeAccent = "#000000", themeAccent2 = "#000000").themeJson()
             assertEquals(palette.key, json.getString("key"))
+            assertEquals(when (palette.id) {
+                in 9..16 -> "contrast"
+                in 17..24 -> "glow"
+                in 25..32 -> "light"
+                else -> "matte"
+            }, json.getString("family"))
             assertEquals(hex(palette.primary), json.getString("accent"))
             assertEquals(hex(palette.secondary), json.getString("accent2"))
             assertEquals(hex(palette.background), json.getString("background"))

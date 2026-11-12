@@ -82,10 +82,10 @@ data class TrainPilotUserSettings(
         val result = JSONObject().put("key", palette.key)
             .put("accent", hex(palette.primary))
             .put("accent2", hex(palette.secondary))
-            .put("family", when (palette.category) {
-                com.example.ui.theme.PaletteCategory.CONTRAST -> "contrast"
-                com.example.ui.theme.PaletteCategory.GLOW, com.example.ui.theme.PaletteCategory.VIVID -> "glow"
-                com.example.ui.theme.PaletteCategory.LIGHT -> "light"
+            .put("family", when (palette.id) {
+                in 9..16 -> "contrast"
+                in 17..24 -> "glow"
+                in 25..32 -> "light"
                 else -> "matte"
             })
         palette.let {

@@ -61,6 +61,7 @@ class UnifiedHealthJournalUiRegressionTest {
         compose.mainClock.autoAdvance = false
         try {
             compose.waitUntil(30_000) {
+            androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
                 org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
                 compose.mainClock.advanceTimeByFrame()
                 compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
@@ -151,6 +152,7 @@ class UnifiedHealthJournalUiRegressionTest {
             revision++
         }
         compose.waitUntil(30_000) {
+            androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
             org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
             compose.mainClock.advanceTimeByFrame()
             compose.onAllNodesWithText("7").fetchSemanticsNodes().isNotEmpty()
