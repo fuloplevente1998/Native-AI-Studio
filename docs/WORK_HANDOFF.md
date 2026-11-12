@@ -1,3 +1,28 @@
+# 2026-11-12 – ellenőrzött auditjavítás és új Play-frissítés
+
+A #221 mainre került: 7397b9b2fd62b15dbe46de733c256a849fda4a40.
+A javítókód 01b6771717015e2a0f7a91e3d4fcf06f8ada1ee2 ellenőrzése:
+Actions 43256443391 SUCCESS; artifact digest
+sha256:dac038fa5d957e7168012e43bc4818f1958fb2106a3202af8e0f66312dce2285.
+Nyers JUnit XML: 79 telefonos fájl / 447 teszt, 33 Wear fájl / 185 teszt;
+összesen 632, 0 failure/error/skipped, shared NO-SOURCE. Verification SHA egyezik.
+A korábbi 43254959434 hibáit javítottuk: Wear Robolectric tesztfüggőségek,
+32 paletta id szerinti valódi családja, Compose snapshot értesítés az állapotváltó tesztekben.
+
+Felhasználó új APK-buildet és Play Console zárt tesztfrissítést kér mindkét eszközre.
+Ehhez telefon versionCode 275600, Wear 275602, versionName továbbra is 1.0-beta.
+Ez kizárólag verziómetaadat-változás az ellenőrzött kódhoz. A signed APK és AAB
+meglévő Actions-kapuk a main integráció után indulnak; új csomag még nem igazolt.
+A már futó 43257497295 a korábbi verziókódú 7397b9b main APK-párja.
+
+Play: az app fizetős marad. A promókódűrlap Fizetős alkalmazás típusa elérhető;
+IAP hiányára vonatkozó buborék nem tiltja a paid-app promót.
+Felhasználó jóváhagyott 25 egyszer használatos, 30 napig beváltható kódot.
+Létrehozás folyamatban, nincs még kész kódállítás. A kódok nem nyilvánosak.
+Ár, tesztelői csoport és országlista nem változik ebben a kiadásban.
+
+---
+
 # Rövid munkátadás – 2026-11-10 (#219 UI/UX csiszolás: Programok, Gyakorlatválasztó, Részletek, Kezdőlap & Fejlődés)
 
 Belépési pont: [AGENTS.md](../AGENTS.md). Az élő GitHub-állapot és a main ág az irányadó.
