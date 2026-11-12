@@ -90,6 +90,7 @@ class WatchInfoCardRegressionTest {
         compose.mainClock.autoAdvance = false
         compose.runOnIdle { data = data.copy(loading = true, status = "Óraadatok lekérése…") }
         compose.waitUntil(30_000) {
+            androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
             compose.mainClock.advanceTimeByFrame()
             org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
             compose.onNodeWithTag("watch_refresh_device_info", useUnmergedTree = true)

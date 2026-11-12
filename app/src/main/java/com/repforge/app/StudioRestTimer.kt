@@ -26,25 +26,29 @@ internal object StudioRestTimer {
             frame.optBoolean("active") && frame.optString("workoutId") == state.activeWorkoutId &&
             frame.optLong("generation") == state.activeWorkoutGeneration &&
             frame.optString("timerOwner") == "watch" && !frame.optBoolean("workoutPaused") &&
-            !frame.optBoolean("finalizationPending") && !frame.optBoolean("discardPending")
+            !frame.optBoolean("finalizationPending") && !frame.optBoolean("discardPending") &&
+            !state.watchControlPending && !WorkoutOwnership193.pending(frame)
 
     private fun allowed(context: Context?, state: TrainPilotUiState): Boolean = context != null && runCatching {
         val store = PhoneWorkoutExecution.store(context)
         val current = ActiveWorkoutStore.current(context)
-        (!store.restoreBlocked() && !store.commandsSuspended() &&
+        !store.restoreBlocked() && ((!store.commandsSuspended() &&
             allowed(state, store.snapshot()) && allowed(state, current) &&
-            PhoneOwnership193.phoneAllowed(context, state.activeWorkoutId)) ||
-            mirrorAllowed(state, current)
+            PhoneOwnership193.phoneAllowed(context, state.activeWorkoutId)) || mirrorAllowed(state, current))
+    }.getOrDefault(false)
+
+    fun controlsAllowed(context: Context?, state: TrainPilotUiState): Boolean = context != null && runCatching {
+        !mirrorAllowed(state, ActiveWorkoutStore.current(context)) && allowed(context, state)
     }.getOrDefault(false)
 
     fun adjust(context: Context?, state: TrainPilotUiState, deltaSec: Int): TrainPilotUiState =
-        if (allowed(context, state)) adjusted(state, deltaSec) else state
+        if (if (deltaSec == -1) allowed(context, state) else controlsAllowed(context, state)) adjusted(state, deltaSec) else state
 
     fun toggle(context: Context?, state: TrainPilotUiState): TrainPilotUiState =
-        if (allowed(context, state)) toggled(state) else state
+        if (controlsAllowed(context, state)) toggled(state) else state
 
     fun skip(context: Context?, state: TrainPilotUiState): TrainPilotUiState =
-        if (allowed(context, state)) skipped(state) else state
+        if (controlsAllowed(context, state)) skipped(state) else state
 
     internal fun start(
         state: TrainPilotUiState,
@@ -122,15 +126,14 @@ internal object StudioRestTimer {
         // -1 is the existing visible-screen tick. A late tick cannot consume a paused rest.
         if (deltaSec == -1 && !state.restTimerRunning) return state
         if (deltaSec == -1 && state.restTimerRunning &&
-            state.restTimerEndRealtimeMs > 0L && state.restTimerLastTickRealtimeMs > 0L &&
-            nowRealtimeMs - state.restTimerLastTickRealtimeMs >= 1500L
-        ) {
+            (state.restTimerEndRealtimeMs > 0L || state.restTimerEndEpochMs > 0L)) {
             return reconcile(state, nowRealtimeMs, nowEpochMs)
         }
-        val remaining = (state.restTimerRemainingSec.toLong() + deltaSec).coerceIn(0L, 600L).toInt()
-        val running = state.restTimerRunning && remaining > 0
+        val current = if (deltaSec != -1) reconcile(state, nowRealtimeMs, nowEpochMs) else state
+        val remaining = (current.restTimerRemainingSec.toLong() + deltaSec).coerceIn(0L, 600L).toInt()
+        val running = current.restTimerRunning && remaining > 0
         val hasDeadlines = state.restTimerEndRealtimeMs > 0L || state.restTimerEndEpochMs > 0L || deltaSec != -1
-        return state.copy(
+        return current.copy(
             restTimerRemainingSec = remaining,
             restTimerRunning = running,
             restTimerEndRealtimeMs = if (running && hasDeadlines && nowRealtimeMs > 0L) nowRealtimeMs + remaining * 1000L else 0L,
@@ -144,11 +147,12 @@ internal object StudioRestTimer {
         nowRealtimeMs: Long = safeElapsedRealtime(),
         nowEpochMs: Long = System.currentTimeMillis()
     ): TrainPilotUiState {
-        val nextRunning = visible(state) && !state.restTimerRunning
-        return state.copy(
+        val current = reconcile(state, nowRealtimeMs, nowEpochMs)
+        val nextRunning = visible(current) && !current.restTimerRunning
+        return current.copy(
             restTimerRunning = nextRunning,
-            restTimerEndRealtimeMs = if (nextRunning && nowRealtimeMs > 0L) nowRealtimeMs + state.restTimerRemainingSec * 1000L else 0L,
-            restTimerEndEpochMs = if (nextRunning && nowEpochMs > 0L) nowEpochMs + state.restTimerRemainingSec * 1000L else 0L,
+            restTimerEndRealtimeMs = if (nextRunning && nowRealtimeMs > 0L) nowRealtimeMs + current.restTimerRemainingSec * 1000L else 0L,
+            restTimerEndEpochMs = if (nextRunning && nowEpochMs > 0L) nowEpochMs + current.restTimerRemainingSec * 1000L else 0L,
             restTimerLastTickRealtimeMs = if (nextRunning && nowRealtimeMs > 0L) nowRealtimeMs else 0L
         )
     }

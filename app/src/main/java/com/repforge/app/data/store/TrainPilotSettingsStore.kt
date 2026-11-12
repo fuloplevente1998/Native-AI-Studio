@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.graphics.toArgb
 import org.json.JSONObject
 import java.util.UUID
 
@@ -28,7 +29,7 @@ data class ThemePaletteOption(
     val nameEn: String,
     val accent: String,
     val accent2: String,
-    val family: String, // "basic" | "vivid"
+    val family: String, // Native legacy basic/vivid plus Studio matte/contrast/glow/light
     val nameDe: String = nameEn,
     val nameRo: String = nameEn
 ) {
@@ -74,14 +75,32 @@ data class TrainPilotUserSettings(
         .put("work", workSeconds).put("rest", restSeconds).put("rounds", rounds)
         .put("sound", soundEnabled).put("vibration", vibrationEnabled).put("autoAdvance", intervalAutoAdvance))
 
-    fun themeJson(): JSONObject = JSONObject()
-        .put("key", themeKey)
-        .put("accent", themeAccent)
-        .put("accent2", themeAccent2)
-        .put("family", themeFamily)
+    fun themeJson(): JSONObject {
+        val palette = com.example.ui.theme.TrainPilotPalettes.getByKey(themeKey)
+            ?: com.example.ui.theme.TrainPilotPalettes.getById(1)
+        fun hex(color: androidx.compose.ui.graphics.Color) = "#%06x".format(java.util.Locale.ROOT, color.toArgb() and 0xFFFFFF)
+        val result = JSONObject().put("key", palette.key)
+            .put("accent", hex(palette.primary))
+            .put("accent2", hex(palette.secondary))
+            .put("family", when (palette.id) {
+                in 9..16 -> "contrast"
+                in 17..24 -> "glow"
+                in 25..32 -> "light"
+                else -> "matte"
+            })
+        palette.let {
+            result.put("background", hex(it.background)).put("surface", hex(it.surface))
+                .put("elevated", hex(it.surfaceElevated)).put("text", hex(it.textPrimary))
+                .put("muted", hex(it.textSecondary)).put("outline", hex(it.cardBorder))
+                .put("onAccent", hex(it.onPrimary))
+        }
+        return result
+    }
+
 }
 
-class TrainPilotSettingsStore(private val context: Context) {
+class TrainPilotSettingsStore(private val context: Context,
+    private val publishTheme: suspend (Context) -> Unit = { com.repforge.app.WearSyncRepository.publishWatchHomeSnapshot(it) }) {
     companion object {
         val KEY_LANGUAGE = stringPreferencesKey("language")
         val KEY_ACTIVE_PROGRAM_ID = stringPreferencesKey("activeProgramId")
@@ -242,8 +261,12 @@ class TrainPilotSettingsStore(private val context: Context) {
         }
     }
 
-    suspend fun setTheme(option: ThemePaletteOption) {
+    suspend fun setTheme(option: ThemePaletteOption) =
+        setThemeForDataset(option, NativeDataReplacement.continuationForCurrentData(context))
+
+    internal suspend fun setThemeForDataset(option: ThemePaletteOption, ticket: NativeDataReplacement.Continuation) {
         NativeDataReplacement.mutate(context) {
+            ticket.requireCurrent(context)
             context.trainPilotDataStore.edit { prefs ->
             prefs[KEY_THEME_KEY] = option.key
             prefs[KEY_THEME_ACCENT] = option.accent
@@ -251,6 +274,11 @@ class TrainPilotSettingsStore(private val context: Context) {
             prefs[KEY_THEME_FAMILY] = option.family
         }
         }
+        // Commit first; Data Layer keeps the last snapshot for reconnect/restart.
+        // A transport failure never rolls back the selected palette.
+        try { publishTheme(context) }
+        catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+        catch (_: Exception) { /* Normal reconnect/home refresh retries the persisted palette. */ }
     }
 
     suspend fun setTimerDefaults(workSeconds: Int, restSeconds: Int, rounds: Int, sound: Boolean, vibration: Boolean,

@@ -123,4 +123,26 @@ class StudioRestTimerRegressionTest {
             .put("timerOwner", "watch")
         assertTrue(StudioRestTimer.mirrorAllowed(watchState, watchFrame))
     }
+
+    @Test fun repeatedSmallSchedulerDelaysDoNotMoveTheRestDeadline() {
+        val start = 10_000L
+        var state = StudioRestTimer.start(TrainPilotUiState(), 90, start, 1_000_000L)
+        val deadline = state.restTimerEndRealtimeMs
+        repeat(65) { i ->
+            state = StudioRestTimer.adjusted(state, -1, start + (i + 1) * 1400L, 1_000_000L + (i + 1) * 1400L)
+            if (state.restTimerRunning) assertEquals(deadline, state.restTimerEndRealtimeMs)
+        }
+        assertEquals(0, state.restTimerRemainingSec)
+        assertFalse(state.restTimerRunning)
+    }
+
+    @Test fun pauseAndManualAdjustmentReconcileTimeBeforeChangingTheTimer() {
+        val started = StudioRestTimer.start(TrainPilotUiState(), 90, 10_000L, 1_000_000L)
+        val paused = StudioRestTimer.toggled(started, 40_000L, 1_030_000L)
+        assertEquals(60, paused.restTimerRemainingSec)
+        assertFalse(paused.restTimerRunning)
+        val adjusted = StudioRestTimer.adjusted(started, 15, 40_000L, 1_030_000L)
+        assertEquals(75, adjusted.restTimerRemainingSec)
+        assertEquals(115_000L, adjusted.restTimerEndRealtimeMs)
+    }
 }

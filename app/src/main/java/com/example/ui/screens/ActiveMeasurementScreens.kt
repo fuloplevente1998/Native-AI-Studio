@@ -1021,7 +1021,7 @@ fun ActiveStrengthWorkoutScreen(
                                     color = if (uiState.restTimerRunning) palette.primary else palette.success,
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(8.dp))
-                                        .clickable { onToggleRestRunning() }
+                                        .clickable(enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onToggleRestRunning() }
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
@@ -1089,10 +1089,10 @@ fun ActiveStrengthWorkoutScreen(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End)
                                     ) {
-                                        SmallAdjustChip("-15") { onAdjustRestTimer(-15) }
+                                        SmallAdjustChip("-15", enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onAdjustRestTimer(-15) }
                                         toggleButton()
-                                        SmallAdjustChip("+15") { onAdjustRestTimer(15) }
-                                        SmallAdjustChip(tr(lang, "Kihagy", "Skip", "Überspr.", "Omite")) { onSkipRest() }
+                                        SmallAdjustChip("+15", enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onAdjustRestTimer(15) }
+                                        SmallAdjustChip(tr(lang, "Kihagy", "Skip", "Überspr.", "Omite"), enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onSkipRest() }
                                     }
                                 }
                             } else {
@@ -1125,10 +1125,10 @@ fun ActiveStrengthWorkoutScreen(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(3.dp)
                                     ) {
-                                        SmallAdjustChip("-15") { onAdjustRestTimer(-15) }
+                                        SmallAdjustChip("-15", enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onAdjustRestTimer(-15) }
                                         toggleButton()
-                                        SmallAdjustChip("+15") { onAdjustRestTimer(15) }
-                                        SmallAdjustChip(tr(lang, "Kihagy", "Skip", "Überspr.", "Omite")) { onSkipRest() }
+                                        SmallAdjustChip("+15", enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onAdjustRestTimer(15) }
+                                        SmallAdjustChip(tr(lang, "Kihagy", "Skip", "Überspr.", "Omite"), enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onSkipRest() }
                                         Icon(
                                             imageVector = Icons.Default.ExpandLess,
                                             contentDescription = tr(lang, "Nagy pihenő mód", "Expanded rest timer", "Großer Pausenmodus", "Mod pauză extins"),
@@ -1224,7 +1224,7 @@ fun ActiveStrengthWorkoutScreen(
                                     modifier = Modifier
                                         .size(58.dp)
                                         .clip(CircleShape)
-                                        .clickable { onToggleRestRunning() },
+                                        .clickable(enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onToggleRestRunning() },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     val ringColor = palette.primary
@@ -1261,6 +1261,7 @@ fun ActiveStrengthWorkoutScreen(
                             ) {
                                 TrainPilotOutlinedButton(
                                     onClick = { onAdjustRestTimer(-15) },
+                                    enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending,
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.weight(1f).height(40.dp),
                                     contentPadding = PaddingValues(0.dp)
@@ -1269,6 +1270,7 @@ fun ActiveStrengthWorkoutScreen(
                                 }
                                 TrainPilotOutlinedButton(
                                     onClick = { onAdjustRestTimer(15) },
+                                    enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending,
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.weight(1f).height(40.dp),
                                     contentPadding = PaddingValues(0.dp)
@@ -1277,6 +1279,7 @@ fun ActiveStrengthWorkoutScreen(
                                 }
                                 Button(
                                     onClick = onSkipRest,
+                                    enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending,
                                     shape = RoundedCornerShape(12.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = palette.primary,
@@ -1382,6 +1385,7 @@ private fun SetValuePill(
 @Composable
 private fun SmallAdjustChip(
     label: String,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
@@ -1390,12 +1394,12 @@ private fun SmallAdjustChip(
         color = Color(0xFF232933),
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .clickable { onClick() }
+            .clickable(enabled = enabled) { onClick() }
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-            color = Color(0xFFF4F5F7),
+            color = Color(0xFFF4F5F7).copy(alpha = if (enabled) 1f else .38f),
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             softWrap = false,
@@ -2969,11 +2973,11 @@ fun ActiveBilateralWorkoutScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                SmallAdjustChip("-15") { onAdjustRestTimer(-15) }
-                                SmallAdjustChip("+15") { onAdjustRestTimer(15) }
-                                SmallAdjustChip(if (uiState.restTimerRunning) tr(lang, "Szünet", "Pause", "Pause", "Pauză") else tr(lang, "Indít", "Start", "Start", "Start")) { onToggleRestRunning() }
+                                SmallAdjustChip("-15", enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onAdjustRestTimer(-15) }
+                                SmallAdjustChip("+15", enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onAdjustRestTimer(15) }
+                                SmallAdjustChip(if (uiState.restTimerRunning) tr(lang, "Szünet", "Pause", "Pause", "Pauză") else tr(lang, "Indít", "Start", "Start", "Start"), enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onToggleRestRunning() }
                                 if (uiState.restTimerRunning || uiState.restTimerRemainingSec < uiState.defaultRestSec) {
-                                    SmallAdjustChip(strings.skipAction) { onSkipRest() }
+                                    SmallAdjustChip(strings.skipAction, enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onSkipRest() }
                                 }
                             }
                         }

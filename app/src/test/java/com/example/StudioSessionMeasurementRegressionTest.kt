@@ -3,6 +3,7 @@ package com.example
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import androidx.compose.ui.graphics.toArgb
 import android.os.Looper
 import androidx.lifecycle.ViewModelStore
 import androidx.room.Room
@@ -787,6 +788,78 @@ class StudioSessionMeasurementRegressionTest {
         assertEquals(1, durableAfterNext.getInt("currentExercise"))
         assertTrue(durableAfterNext.optLong("selectionRevision") > revBefore)
         assertEquals(10L, afterNext.optLong("localSequence"))
+    }
+
+    @Test fun rapidPaletteSelectionsPersistTheLastPaletteWithCorrectArgbColors() {
+        val model = model()
+        for (id in listOf(1, 9, 17, 25, 32)) model.selectPalette(id)
+        val palette = com.example.ui.theme.TrainPilotPalettes.getById(32)
+        await { native { TrainPilotSettingsStore(context).current() }.themeKey == palette.key }
+        val saved = native { TrainPilotSettingsStore(context).current() }
+        assertEquals("#%06x".format(java.util.Locale.ROOT, palette.primary.toArgb() and 0xFFFFFF), saved.themeAccent)
+        assertEquals("#%06x".format(java.util.Locale.ROOT, palette.secondary.toArgb() and 0xFFFFFF), saved.themeAccent2)
+    }
+
+    @Test fun staleAutomationRemainderCannotRestartAnExpiredAbsoluteRest() {
+        val model = model()
+        model.startQuickStrengthWithExercise(strength(model)); awaitStarted(model)
+        val frame = JSONObject(ActiveWorkoutStore.current(context)!!.toString())
+            .put("restEndAt", 0L).put("automation", JSONObject().put("phase", "rest")
+                .put("paused", false).put("deadlineAt", System.currentTimeMillis() - 5_000L).put("remainingMs", 30_000L))
+        ActiveWorkoutStore.saveOwned(context, frame)
+        shadowOf(Looper.getMainLooper()).idle()
+        assertFalse(model.uiState.value.restTimerRunning)
+    }
+
+    @Test fun goalsReportSuccessOnlyAfterRoomCommitAndReloadTheSelectedPeriod() {
+        val model = model()
+        model.updateGoals(25, com.example.model.WorkoutGoalPeriod.MONTHLY, 9_000)
+        await { model.uiState.value.workoutGoalTarget == 25 }
+        val persisted = JSONObject(native { db.keyValueDocumentDao().getDocument("native:userGoals")!! }.json)
+        assertEquals(25, persisted.getInt("workoutGoalTarget"))
+        assertEquals("monthly", persisted.getString("workoutGoalPeriod"))
+        val reopened = model()
+        await { reopened.uiState.value.workoutGoalTarget == 25 }
+        assertEquals(com.example.model.WorkoutGoalPeriod.MONTHLY, reopened.uiState.value.workoutGoalPeriod)
+    }
+
+    @Test fun failedGoalWriteKeepsPreviousGoalsAndReportsAnError() {
+        val model = model()
+        val previous = model.uiState.value.workoutGoalTarget
+        native { db.openHelper.writableDatabase.execSQL(
+            "CREATE TRIGGER reject_goals BEFORE INSERT ON kv_documents WHEN NEW.doc_key = 'native:userGoals' BEGIN SELECT RAISE(ABORT, 'fixture write failure'); END") }
+        model.updateGoals(7, com.example.model.WorkoutGoalPeriod.MONTHLY, 9_000)
+        await { model.uiState.value.statusBannerMessage?.contains("célok mentése nem sikerült") == true }
+        assertEquals(previous, model.uiState.value.workoutGoalTarget)
+        assertNull(native { db.keyValueDocumentDao().getDocument("native:userGoals") })
+    }
+
+    @Test fun goalEditDuringReplacementCannotWriteIntoRestoredDataset() {
+        val model = model()
+        native { NativeDataReplacement.exclusively(context) {
+            withContext(Dispatchers.Main.immediate) { model.updateGoals(7, com.example.model.WorkoutGoalPeriod.MONTHLY, 9_000) }
+        } }
+        assertNull(native { db.keyValueDocumentDao().getDocument("native:userGoals") })
+        assertTrue(model.uiState.value.statusBannerMessage!!.contains("célok mentése nem sikerült"))
+    }
+
+    @Test fun watchOwnedRestControlsCannotMutateThePhoneDraftOrReportSaveErrors() {
+        val model = model()
+        model.startQuickStrengthWithExercise(strength(model)); awaitStarted(model)
+        val frame = JSONObject(ActiveWorkoutStore.current(context)!!.toString())
+            .put("timerOwner", "watch").put("restEndAt", System.currentTimeMillis() + 90_000L)
+        ActiveWorkoutStore.saveOwned(context, frame)
+        PhoneWorkoutExecution.store(context).suspendCommands(true)
+        await { !model.uiState.value.phoneControlsWorkout && model.uiState.value.restTimerRunning }
+        val before = ActiveWorkoutStore.current(context)!!.toString()
+        val remaining = model.uiState.value.restTimerRemainingSec
+        model.clearBannerMessage()
+        model.adjustRestTimer(15); model.toggleRestTimerRunning(); model.skipRestTimer()
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(before, ActiveWorkoutStore.current(context)!!.toString())
+        assertEquals(remaining, model.uiState.value.restTimerRemainingSec)
+        assertTrue(model.uiState.value.restTimerRunning)
+        assertNull(model.uiState.value.statusBannerMessage)
     }
 
     private fun awaitStarted(model: TrainPilotViewModel) {

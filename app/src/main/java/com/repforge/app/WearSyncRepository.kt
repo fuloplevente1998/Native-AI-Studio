@@ -810,7 +810,7 @@ object WearSyncRepository {
                 .put("journalSchema", 1)
                 .put("phoneVersion", BuildConfig.VERSION_NAME)
                 .put("publishedAt", now)
-                .put("theme", settings.themeJson())
+                .put("theme", settingsStore.current().themeJson())
                 .put("automaticProtocol", 1)
                 .put("ownershipProtocol193", 1)
 

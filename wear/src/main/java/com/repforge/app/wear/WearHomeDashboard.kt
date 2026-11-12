@@ -40,9 +40,12 @@ import java.time.ZoneId
 import kotlinx.coroutines.delay
 import org.json.JSONObject
 
-private val HomeWhite = Color(0xFFF6F8FB)
-private val HomeMuted = Color(0xFF9AA5B6)
-private val HomeLine = Color(0xFF2C3440)
+private val HomeWhite: Color
+    @Composable get() = LocalWearHomeTheme.current.textColor
+private val HomeMuted: Color
+    @Composable get() = LocalWearHomeTheme.current.mutedColor
+private val HomeLine: Color
+    @Composable get() = LocalWearHomeTheme.current.outlineColor
 
 @Composable
 internal fun WearHomeDashboard(
@@ -72,7 +75,10 @@ internal fun WearHomeDashboard(
     }
     val saveStatus=LocalSaveSync.current
     val model = wearHomeDashboardState(home, active, closure, health, enabled, now)
-    val theme = home?.theme ?: WearHomeTheme.DEFAULT
+    val theme = home?.theme ?: LocalWearHomeTheme.current
+    val HomeWhite = theme.textColor
+    val HomeMuted = theme.mutedColor
+    val HomeLine = theme.outlineColor
     val onPrimary = {
         when (model.action) {
             HomeAction.START -> home?.recommended?.let { onStart(it.day, it.scheduleId) }
@@ -93,7 +99,7 @@ internal fun WearHomeDashboard(
         }
     BoxWithConstraints(
         Modifier.fillMaxSize()
-            .background(Color(0xFF0E1015))
+            .background(theme.backgroundColor)
             .testTag("wear-round-list")
             .pointerInput(onMenu) {
                 var distance = 0f
@@ -389,12 +395,12 @@ private fun HomeQuickButton(
     Column(
         Modifier.size(48.dp)
             .background(
-                if (danger) Color(0xFF3B232A) else if (primary) theme.button else Color(0xFF232933),
+                if (danger) Color(0xFF3B232A) else if (primary) theme.button else theme.elevatedColor,
                 CircleShape,
             )
             .border(
                 1.dp,
-                if (danger) Color(0xFF7D4653) else if (primary) theme.frame else HomeLine,
+                if (danger) Color(0xFF7D4653) else if (primary) theme.frame else theme.outlineColor,
                 CircleShape,
             )
             .clickable(role = Role.Button, onClick = onClick)
@@ -407,15 +413,16 @@ private fun HomeQuickButton(
             null,
             Modifier.size(22.dp),
             colorFilter = ColorFilter.tint(
-                if (danger) Color(0xFFEFBCC3) else if (primary) theme.secondaryColor else HomeWhite
+                if (danger) Color(0xFFEFBCC3) else theme.textColor
             ),
         )
-        HomeFitText(caption, Modifier.width(44.dp).height(13.dp), 8.5f, HomeWhite)
+        HomeFitText(caption, Modifier.width(44.dp).height(13.dp), 8.5f, theme.textColor)
     }
 }
 
 @Composable
 private fun HomeProgress(completed: Int, total: Int, theme: WearHomeTheme, modifier: Modifier) {
+    val HomeLine = theme.outlineColor
     Canvas(modifier) {
         val count = total.coerceIn(1, 12)
         val gap = 2.dp.toPx()

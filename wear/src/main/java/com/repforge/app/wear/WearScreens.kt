@@ -65,11 +65,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
-private val Black = Color(0xFF0E1015)
-private val Card = Color(0xFF1A1E25)
-private val Secondary = Color(0xFF232933)
-private val White = Color(0xFFF6F8FB)
-private val Muted = Color(0xFF9AA5B6)
+private val Black: Color
+    @Composable get() = LocalWearHomeTheme.current.backgroundColor
+private val Card: Color
+    @Composable get() = LocalWearHomeTheme.current.surfaceColor
+private val Secondary: Color
+    @Composable get() = LocalWearHomeTheme.current.elevatedColor
+private val White: Color
+    @Composable get() = LocalWearHomeTheme.current.textColor
+private val Muted: Color
+    @Composable get() = LocalWearHomeTheme.current.mutedColor
 private val Gold: Color
     @Composable get() = LocalWearHomeTheme.current.accentColor
 private val Danger = Color(0xFF3E2024)
@@ -230,7 +235,8 @@ internal fun TrainPilotWearApp(
         LocalOwnership193 provides workout.value?.takeIf { it.ownershipProtocol193==1 },
         LocalOpenSaveSync provides { syncBackRoute=route;route="save-sync" }
     ) {
-        MaterialTheme {
+        val syncedTheme = LocalWearHomeTheme.current
+        MaterialTheme(colorScheme = syncedTheme.materialColors(MaterialTheme.colorScheme)) {
             Box(Modifier.fillMaxSize().background(Black)) {
                 val active = workout.value
                 when {
@@ -598,7 +604,7 @@ private fun Pill(text: String, modifier: Modifier = Modifier, tone: Color = Gold
         .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
         .semantics { contentDescription = text }.padding(horizontal = 9.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center) {
-        Text(text, color = if (!enabled) Muted else if (tone == Gold) Black else if (tone == Danger) DangerText else if (tone == SaveTone) SaveText else White,
+        Text(text, color = if (!enabled) Muted else if (tone == Gold) LocalWearHomeTheme.current.onAccentColor else if (tone == Danger) DangerText else if (tone == SaveTone) SaveText else White,
             fontSize = (size * captionScale).sp, lineHeight = ((size + 2) * captionScale).sp,
             fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
             maxLines = lines, overflow = TextOverflow.Ellipsis)
@@ -2024,7 +2030,7 @@ private fun RoundControl(text: String, tone: Color = Secondary, enabled: Boolean
         .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
         .semantics { contentDescription = description },
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        val color = if (!enabled) Muted else if (tone == Gold) Black else if (tone == Danger) DangerText else if (tone == SaveTone) SaveText else White
+        val color = if (!enabled) Muted else if (tone == Gold) LocalWearHomeTheme.current.onAccentColor else if (tone == Danger) DangerText else if (tone == SaveTone) SaveText else White
         Text(text, color = color, fontSize = (glyph / fontScale).sp,
             lineHeight = ((glyph + 2) / fontScale).sp, fontWeight = FontWeight.Medium, maxLines = 1)
         if (caption != null) Text(caption, modifier = Modifier.widthIn(max = (actionSize - 4f).dp), style = captionStyle,
