@@ -98,6 +98,7 @@ jobs:
               --tests 'com.repforge.app.wear.WearSaveSyncTest' --tests 'com.repforge.app.wear.WorkoutOwnership193Test'
           elif [[ "$TARGETED_REGRESSIONS" == "true" ]]; then
             gradle --no-daemon --stacktrace --profile --continue :app:testDebugUnitTest \
+              --tests 'com.example.ActiveWorkoutDockNavigationRegressionTest' \
               --tests 'com.example.StudioProgress*' \
               --tests 'com.example.StudioHealthPermissionActionTest' \
               --tests 'com.example.StudioAppearanceRegressionTest' \
