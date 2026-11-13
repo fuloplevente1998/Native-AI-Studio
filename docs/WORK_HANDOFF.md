@@ -1,3 +1,19 @@
+# 2758 · 1.1-beta – mainen, aláírt csomagolás folyamatban
+
+PR#225 összevonva, main-source c6b0a98bd5ab84c09ab963616a022be8974d4a8d.
+A teljes fájlfa azonos a CI-ben ellenőrzött a56139249c1f0108d5787eeed8ba25483b8534b9
+forrással (git tree da695c3eca56bcf33454bed53393a02adaea60fd).
+Actions43446531333 SUCCESS: nyers XML/digest igazolt, telefon476+Wear187=663 teszt,
+0failure/error/skipped, shared NO-SOURCE; telefonos release R8 sikeres.
+Bizonyíték: releases/2758-ci-evidence.json.
+
+A felhasználó által jóváhagyott verzió: 1.1-beta, telefon275800/Wear275802.
+Aláírt közös main-run43448589388 fut: APK+AAB párok és a teljes JVM-kapu.
+Kész artifactot és aláírásellenőrzést még nem állítunk. A 2757-es fájlok megmaradnak.
+A külön telefon/Wear változásleírások a releases/2758-* fájlokban találhatók.
+
+---
+
 # 2758 – köztes teszteredmény és végső közös kapu
 
 43444451666 / f905204: nyers XML és artifact-digest ellenőrizve.

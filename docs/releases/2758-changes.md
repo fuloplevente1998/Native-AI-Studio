@@ -20,6 +20,6 @@ Verziókód: telefon **275800**, Wear OS **275802**. A felhasználó által mega
 
 ## Ellenőrzés és korlát
 
-A teljes közös telefon/Wear JVM és telefonos release R8 kapu fut. Az új regressziók a valódi űrlapokat és callbackeket használják: értékmegőrzés, egyedi súly, explicit rögzítés, vezérlésfüggő tiltás, lábléc, bezárás és szövegtördelés. A nyers teszteredményeket és a signed APK/AAB azonosságát a kiadás előtt ellenőrizzük.
+A közös telefon/Wear JVM és telefonos release R8 kapu sikeres: Actions43446531333, forrása56139249c1f0108d5787eeed8ba25483b8534b9. Nyers XML és ZIP-digest ellenőrizve: 476 telefonos + 187 Wear = 663 teszt, 0failure/error/skipped; shared NO-SOURCE. A main-merge c6b0a98bd5ab84c09ab963616a022be8974d4a8d fájlfája az ellenőrzött forráséval azonos. Az új regressziók a valódi űrlapokat és callbackeket használják: értékmegőrzés, egyedi súly, explicit rögzítés, vezérlésfüggő tiltás, lábléc, bezárás és szövegtördelés. A main aláírt csomagfutása (43448589388) még folyamatban; a kész APK/AAB fájlok azonosságát és aláíróját az átadás előtt ellenőrizzük.
 
 A készülékes Samsung Health/Health Connect/Wear és nagybetűs/világos/sötét vizuális elfogadás külön lépés; az automatikus teszt nem helyettesíti. Új funkciócsomag és új adatmodell nem része a kiadásnak.
