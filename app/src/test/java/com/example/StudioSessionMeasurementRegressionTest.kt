@@ -41,6 +41,24 @@ class StudioSessionMeasurementRegressionTest {
     private val scope = CoroutineScope(parent + Dispatchers.Main.immediate)
     private val models = ViewModelStore()
 
+    @Test fun undoSetCompletionDoesNotStartOrResetRest() {
+        val vm = model()
+        vm.startQuickStrengthWithExercise(strength(vm))
+        await { vm.uiState.value.isWorkoutSessionActive }
+        vm.toggleSetCompleted(1)
+        val running = vm.uiState.value
+        vm.toggleSetCompleted(1)
+        val undone = vm.uiState.value
+        assertFalse(undone.activeSets.first().completed)
+        assertEquals(running.restTimerRunning, undone.restTimerRunning)
+        assertEquals(running.restTimerRemainingSec, undone.restTimerRemainingSec)
+        vm.skipRestTimer()
+        vm.toggleSetCompleted(1)
+        vm.skipRestTimer()
+        vm.toggleSetCompleted(1)
+        assertFalse(vm.uiState.value.restTimerRunning)
+    }
+
     @Before fun prepare() {
         val field = PhoneWorkoutExecution::class.java.getDeclaredField("store").apply { isAccessible = true }
         (field.get(null) as? PhoneWorkoutExecutionStore)?.close(); field.set(null, null)

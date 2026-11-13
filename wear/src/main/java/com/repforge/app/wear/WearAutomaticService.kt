@@ -50,7 +50,7 @@ class WearAutomaticService : Service() {
     override fun onCreate() {
         super.onCreate();instance=this
         wake=getSystemService(PowerManager::class.java).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,"TrainPilot:wear-automatic")
-        getSystemService(NotificationManager::class.java).createNotificationChannel(NotificationChannel("workout-automatic","Automata edzés",NotificationManager.IMPORTANCE_LOW))
+        getSystemService(NotificationManager::class.java).createNotificationChannel(NotificationChannel("workout-automatic",wearText("Automata edzés"),NotificationManager.IMPORTANCE_LOW))
     }
     override fun onStartCommand(intent: Intent?,flags: Int,startId: Int): Int {
         val current=WorkoutSnapshotStore.load(this)
@@ -68,14 +68,14 @@ class WearAutomaticService : Service() {
     }
     private fun notification(workout: WearWorkout): Notification {
         val a=workout.automation!!
-        val phase=when { a.interrupted->"Megszakadt";a.paused->"Szünetel";a.phase=="rest"->"Pihenő";a.phase=="work"->"Munka";a.phase=="complete"->"Kész";else->"Sorozatra vár" }
+        val phase=when { a.interrupted->wearText("Megszakadt");a.paused->wearText("Szünetel");a.phase=="rest"->wearText("Pihenő");a.phase=="work"->wearText("Munka");a.phase=="complete"->wearText("Kész");else->wearText("Sorozatra vár") }
         val open=PendingIntent.getActivity(this,162,Intent(this,MainActivity::class.java).putExtra("destination","workout"),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         fun action(value: String)=PendingIntent.getService(this,value.hashCode(),Intent(this,WearAutomaticService::class.java).putExtra("workoutId",workout.workoutId).putExtra("action",value),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         return Notification.Builder(this,"workout-automatic").setSmallIcon(R.drawable.ic_workout_recording)
             .setContentTitle("TrainPilot · $phase").setContentText("${(a.remaining(SystemClock.elapsedRealtime())+999)/1000} s · ${workout.exercise?.name.orEmpty()}")
             .setContentIntent(open).setOngoing(true).setOnlyAlertOnce(true)
-            .addAction(Notification.Action.Builder(android.R.drawable.ic_media_pause,if(a.paused)"Folytatás" else "Szünet",action(if(a.paused)"resume" else "pause")).build())
-            .addAction(Notification.Action.Builder(android.R.drawable.ic_delete,"Automata kikapcsolása",action("disable")).build()).build()
+            .addAction(Notification.Action.Builder(android.R.drawable.ic_media_pause,if(a.paused)wearText("Folytatás") else wearText("Szünet"),action(if(a.paused)"resume" else "pause")).build())
+            .addAction(Notification.Action.Builder(android.R.drawable.ic_delete,wearText("Automata kikapcsolása"),action("disable")).build()).build()
     }
     private fun release(){if(wake?.isHeld==true)wake?.release()}
     private fun finish(){shuttingDown=true;handler.removeCallbacks(tick);release();stopForeground(STOP_FOREGROUND_REMOVE);stopSelf()}
@@ -116,12 +116,12 @@ object WearAutomaticController {
         synchronized(WorkoutSnapshotStore) {
         val current=restore(context) ?: return null
         if(current.workoutPaused||WearUndo188.blocked(current))return current
-        if(enabled&&WatchHomeStore.automaticProtocol(context)!=1){android.widget.Toast.makeText(context,"Frissítsd a telefonos appot, majd frissítsd az órás adatokat.",android.widget.Toast.LENGTH_LONG).show();return current}
+        if(enabled&&WatchHomeStore.automaticProtocol(context)!=1){android.widget.Toast.makeText(context,wearText("Frissítsd a telefonos appot, majd frissítsd az órás adatokat."),android.widget.Toast.LENGTH_LONG).show();return current}
         if(current.timerOwner!="watch")return current
         if(current.automation?.owner=="phone" && current.automation.enabled)return current
         if(enabled&&!WearAutomaticEngine.durationAllowed(current,current.automation?.workSeconds ?: 30,
             current.automation?.restSeconds ?: current.restSeconds,current.automation?.rounds ?: 1)){
-            android.widget.Toast.makeText(context,"Az automata menetrend legfeljebb 24 órás lehet.",android.widget.Toast.LENGTH_LONG).show();return current
+            android.widget.Toast.makeText(context,wearText("Az automata menetrend legfeljebb 24 órás lehet."),android.widget.Toast.LENGTH_LONG).show();return current
         }
         var next=if(enabled)WearAutomaticEngine.enable(current,UUID.randomUUID().toString(),
             current.automation?.workSeconds ?: 30,current.automation?.restSeconds ?: current.restSeconds,

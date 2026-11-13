@@ -87,6 +87,11 @@ class WorkoutPhotoRepository(context: Context) {
     }
 
     fun createPickImageIntent(): Intent {
+        if (Build.VERSION.SDK_INT >= 33) {
+            return androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()
+                .createIntent(appContext, androidx.activity.result.PickVisualMediaRequest(
+                    androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))
+        }
         if (isXiaomiFamily()) {
             val xiaomi = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI).apply {
                 type = "image/*"

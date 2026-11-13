@@ -651,7 +651,7 @@ fun ActiveStrengthWorkoutScreen(
                             HorizontalDivider(color = palette.cardBorder)
                             val switchableList = (workoutExercises + uiState.exercises.filter { !it.isTimed })
                                 .distinctBy { it.id }
-                                .take(25)
+
                             switchableList.forEach { exOption ->
                                 val isSel = exOption.id == currentExerciseId
                                 DropdownMenuItem(
@@ -772,7 +772,7 @@ fun ActiveStrengthWorkoutScreen(
                             modifier = Modifier
                                 .size(width = setNumberSize, height = setControlSize)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(if (setItem.completed) palette.success.copy(alpha = 0.15f) else if (isActiveSet) palette.primary.copy(alpha = 0.15f) else Color(0xFF14171D)),
+                                .background(if (setItem.completed) palette.success.copy(alpha = 0.15f) else if (isActiveSet) palette.primary.copy(alpha = 0.15f) else palette.surfaceElevated),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
@@ -795,12 +795,12 @@ fun ActiveStrengthWorkoutScreen(
                         // 3. kg input pill (distinct dark input surface with subtle border)
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = Color(0xFF12151B),
+                            color = palette.surface,
                             modifier = Modifier
                                 .weight(1f)
                                 .height(setControlSize)
                                 .padding(horizontal = 2.dp)
-                                .trainPilotBorder(0.5.dp, Color(0x33FFFFFF), RoundedCornerShape(8.dp))
+                                .trainPilotBorder(0.5.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable {
                                     editingSet = setItem
@@ -822,12 +822,12 @@ fun ActiveStrengthWorkoutScreen(
                         // 4. reps input pill (distinct dark input surface with subtle border)
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = Color(0xFF12151B),
+                            color = palette.surface,
                             modifier = Modifier
                                 .weight(1f)
                                 .height(setControlSize)
                                 .padding(horizontal = 2.dp)
-                                .trainPilotBorder(0.5.dp, Color(0x33FFFFFF), RoundedCornerShape(8.dp))
+                                .trainPilotBorder(0.5.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable {
                                     editingSet = setItem
@@ -849,12 +849,12 @@ fun ActiveStrengthWorkoutScreen(
                         // 5. RIR input pill
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = Color(0xFF12151B),
+                            color = palette.surface,
                             modifier = Modifier
                                 .weight(0.9f)
                                 .height(setControlSize)
                                 .padding(horizontal = 2.dp)
-                                .trainPilotBorder(0.5.dp, Color(0x33FFFFFF), RoundedCornerShape(8.dp))
+                                .trainPilotBorder(0.5.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable {
                                     val nextRir = if (!setItem.actualRirProvided || setItem.rir >= 3) 0 else setItem.rir + 1
@@ -1391,15 +1391,16 @@ private fun SmallAdjustChip(
     val palette = LocalTrainPilotPalette.current
     Surface(
         shape = RoundedCornerShape(8.dp),
-        color = Color(0xFF232933),
+        color = palette.surfaceElevated,
         modifier = Modifier
+            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
             .clip(RoundedCornerShape(8.dp))
             .clickable(enabled = enabled) { onClick() }
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-            color = Color(0xFFF4F5F7).copy(alpha = if (enabled) 1f else .38f),
+            color = palette.textPrimary.copy(alpha = if (enabled) 1f else .38f),
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             softWrap = false,
@@ -1682,7 +1683,7 @@ fun ActiveTimedWorkoutScreen(
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                text = tr(lang, "Cél: 00:$targetSec", "Target: 00:$targetSec", "Ziel: 00:$targetSec", "Țintă: 00:$targetSec"),
+                                text = tr(lang, "Cél: ${com.repforge.app.StudioWorkoutSessionPresentation.durationLabel(targetSec.toLong())}", "Target: ${com.repforge.app.StudioWorkoutSessionPresentation.durationLabel(targetSec.toLong())}", "Ziel: ${com.repforge.app.StudioWorkoutSessionPresentation.durationLabel(targetSec.toLong())}", "Țintă: ${com.repforge.app.StudioWorkoutSessionPresentation.durationLabel(targetSec.toLong())}"),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.primary,
                                 fontWeight = FontWeight.Bold
@@ -3464,7 +3465,7 @@ fun ActiveOutdoorGpsScreen(
     val formattedElapsed = String.format("%02d:%02d", elapsedSec / 60, elapsedSec % 60)
     val effectiveDistanceMeters = manualDistanceMetersState ?: distanceMeters
     val distanceKm = effectiveDistanceMeters / 1000f
-    val formattedDistance = String.format(java.util.Locale("hu", "HU"), "%.2f km", distanceKm)
+    val formattedDistance = String.format(com.example.localization.StudioLocale.forLanguage(lang), "%.2f km", distanceKm)
     val formattedPace = if (distanceKm >= 0.01f && elapsedSec > 0) {
         val paceSecPerKm = (elapsedSec / distanceKm).toInt()
         String.format("%d:%02d /km", (paceSecPerKm / 60).coerceIn(1, 59), (paceSecPerKm % 60).coerceIn(0, 59))
@@ -3821,7 +3822,12 @@ fun WorkoutSummaryScreen(
 
 
     val summaryListState = androidx.compose.foundation.lazy.rememberLazyListState()
-    val activeSnapshotForSummary = com.repforge.app.ActiveWorkoutStore.current(context)
+    remember(context) { ActiveWorkoutStore.current(context); com.repforge.app.WearLiveHealthStore.current(context) }
+    val summaryFrame by ActiveWorkoutStore.snapshotFlow.collectAsState()
+    val summaryLiveHealth by com.repforge.app.WearLiveHealthStore.liveHealthFlow.collectAsState()
+    val activeSnapshotForSummary = com.repforge.app.StudioWorkoutSummaryPresentation.current(
+        summaryFrame, uiState.activeWorkoutId, uiState.activeWorkoutGeneration)
+    val summaryNow = java.time.Instant.now()
     val persistedOutdoorDistKm = remember(uiState.activeWorkoutId, uiState.outdoorDistanceKm) {
         (com.repforge.app.StudioWorkoutBridge.readOutdoorEffectiveDistanceMeters(
             activeSnapshotForSummary,
@@ -3847,7 +3853,7 @@ fun WorkoutSummaryScreen(
 
         val summarySubtitle = if (isOutdoor) {
             val distLabel = if (effectiveOutdoorDistanceKm > 0f) {
-                String.format(java.util.Locale("hu", "HU"), "%.2f km", effectiveOutdoorDistanceKm)
+                String.format(com.example.localization.StudioLocale.forLanguage(lang), "%.2f km", effectiveOutdoorDistanceKm)
             } else {
                 uiState.outdoorElapsedLabel.ifBlank { "00:00" }
             }
@@ -3876,23 +3882,17 @@ fun WorkoutSummaryScreen(
             )
         }
 
-        val elapsedMs = if (uiState.workoutStartedEpochMs > 0L) {
-            (System.currentTimeMillis() - uiState.workoutStartedEpochMs).coerceAtLeast(0L)
-        } else 0L
-        val elapsedSec = (elapsedMs / 1000L).toInt()
-        val durationLabel = if (isOutdoor) {
-            uiState.outdoorElapsedLabel.ifBlank { "00:00" }
-        } else if (elapsedSec > 0) {
-            String.format("%02d:%02d", elapsedSec / 60, elapsedSec % 60)
-        } else {
-            "00:00"
+        val elapsedSec = activeSnapshotForSummary?.let {
+            com.repforge.app.StudioWorkoutSessionPresentation.elapsedSeconds(it, summaryNow)
         }
+        val durationLabel = elapsedSec?.let(com.repforge.app.StudioWorkoutSessionPresentation::durationLabel)
+            ?: "—"
 
         val volumeOrDistLabel: String
         val volumeOrDistHeader: String
         if (isOutdoor) {
             volumeOrDistHeader = strings.distanceLabel
-            volumeOrDistLabel = String.format(java.util.Locale("hu", "HU"), "%.2f km", effectiveOutdoorDistanceKm)
+            volumeOrDistLabel = String.format(com.example.localization.StudioLocale.forLanguage(lang), "%.2f km", effectiveOutdoorDistanceKm)
         } else {
             val totalVolKg = uiState.activeSetsByExerciseId.values.flatten().filter { it.completed }.sumOf { (it.weightKg * it.reps).toDouble() }
             val totalReps = uiState.activeSetsByExerciseId.values.flatten().filter { it.completed }.sumOf { it.reps }
@@ -3905,15 +3905,9 @@ fun WorkoutSummaryScreen(
             }
         }
 
-        // Daily calories and generic time/distance estimates are NOT workout sensor measurements.
-        // Show an explicit unavailable state until a verified workout-specific Health record exists.
-        val caloriesLabel = tr(
-            lang,
-            "— kcal (nincs hiteles edzésadat)",
-            "— kcal (no verified workout data)",
-            "— kcal (keine verifizierten Trainingsdaten)",
-            "— kcal (fără date verificate)"
-        )
+        val calories = com.repforge.app.StudioWorkoutSummaryPresentation.calories(
+            activeSnapshotForSummary, summaryLiveHealth, summaryNow)
+        val caloriesLabel = calories?.let { "${it.toInt()} kcal" } ?: "— kcal"
 
         item {
             Row(
@@ -4229,7 +4223,7 @@ fun WorkoutSummaryScreen(
                                             modifier = Modifier
                                                 .align(Alignment.TopEnd)
                                                 .padding(4.dp)
-                                                .size(32.dp)
+                                                .size(48.dp)
                                                 .border(1.dp, com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline, CircleShape)
                                                 .clip(CircleShape)
                                                 .clickable(enabled = !uiState.isSavingWorkout && !photoBusy) {

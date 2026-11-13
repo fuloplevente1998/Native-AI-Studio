@@ -316,7 +316,7 @@ fun LogTabScreen(
                     shape = CircleShape,
                     color = palette.surfaceCard,
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
                         .clip(CircleShape)
                         .clickable {
@@ -330,7 +330,7 @@ fun LogTabScreen(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                            contentDescription = "Előző hónap",
+                            contentDescription = trL(uiState.language, "Előző hónap", "Previous month", "Vorheriger Monat", "Luna precedentă"),
                             tint = palette.primary
                         )
                     }
@@ -370,7 +370,7 @@ fun LogTabScreen(
                         }
                         Icon(
                             imageVector = if (showInlineCalendar) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                            contentDescription = "Dátumválasztó megnyitása",
+                            contentDescription = trL(uiState.language, "Dátumválasztó megnyitása", "Open date picker", "Datumsauswahl öffnen", "Deschide selectorul de dată"),
                             tint = palette.primary
                         )
                     }
@@ -379,7 +379,7 @@ fun LogTabScreen(
                     shape = CircleShape,
                     color = palette.surfaceCard,
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
                         .clip(CircleShape)
                         .clickable {
@@ -393,7 +393,7 @@ fun LogTabScreen(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = "Következő hónap",
+                            contentDescription = trL(uiState.language, "Következő hónap", "Next month", "Nächster Monat", "Luna următoare"),
                             tint = palette.primary
                         )
                     }
@@ -491,6 +491,7 @@ fun LogTabScreen(
                             com.example.model.AppLanguage.DE -> listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
                             com.example.model.AppLanguage.RO -> listOf("Lun", "Mar", "Mie", "Joi", "Vin", "Sâm", "Dum")
                         }
+                        Column(Modifier.horizontalScroll(rememberScrollState()).widthIn(min = 336.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -501,7 +502,7 @@ fun LogTabScreen(
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.textSecondary,
-                                    modifier = Modifier.width(36.dp),
+                                    modifier = Modifier.width(48.dp),
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                 )
                             }
@@ -521,7 +522,7 @@ fun LogTabScreen(
                                 ) {
                                     for (col in 0..6) {
                                         if ((row == 0 && col < firstDayOffset) || dayCounter > daysInMonth) {
-                                            Spacer(modifier = Modifier.size(36.dp))
+                                            Spacer(modifier = Modifier.size(48.dp))
                                         } else {
                                             val dayNum = dayCounter
                                             val isStartOrEnd = dayNum == intervalStartDay || dayNum == intervalEndDay
@@ -539,7 +540,7 @@ fun LogTabScreen(
                                                     else -> palette.surfaceElevated
                                                 },
                                                 modifier = Modifier
-                                                    .size(36.dp)
+                                                    .size(48.dp)
                                                     .trainPilotBorder(
                                                         width = if (isToday || isStartOrEnd) 1.5.dp else 1.dp,
                                                         color = when {
@@ -576,6 +577,7 @@ fun LogTabScreen(
                                     }
                                 }
                             }
+                        }
                         }
                     }
                 }
@@ -1516,8 +1518,8 @@ internal fun MainProgressVolumeAndMuscleSection(
     var expandedAdviceDetails by remember { mutableStateOf(false) }
 
     val today = remember { java.time.LocalDate.now() }
-    val huFmt = remember { java.time.format.DateTimeFormatter.ofPattern("yyyy. MMM d.", java.util.Locale("hu", "HU")) }
-    val shortFmt = remember { java.time.format.DateTimeFormatter.ofPattern("MMM d.", java.util.Locale("hu", "HU")) }
+    val huFmt = remember(uiState.language) { java.time.format.DateTimeFormatter.ofPattern("yyyy. MMM d.", com.example.localization.StudioLocale.forLanguage(uiState.language)) }
+    val shortFmt = remember(uiState.language) { java.time.format.DateTimeFormatter.ofPattern("MMM d.", com.example.localization.StudioLocale.forLanguage(uiState.language)) }
 
     val period = StudioProgressWindow(progressPeriodDays(uiState.selectedProgressRangeIndex), today)
     val periodWorkouts = remember(uiState.loggedWorkouts, period) { period.workouts(uiState.loggedWorkouts) }
@@ -1597,7 +1599,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                             Spacer(modifier = Modifier.width(4.dp))
                             Icon(
                                 imageVector = if (expandedVolumeDetails) Icons.Default.ExpandMore else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = "Volumen grafikon lenyitása",
+                                contentDescription = trL(uiState.language, "Volumen grafikon lenyitása", "Expand volume chart", "Volumendiagramm öffnen", "Extinde graficul volumului"),
                                 tint = palette.primary,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -1637,7 +1639,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                 color = if (isSel) palette.primary else palette.surfaceElevated,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(42.dp)
+                                    .height(48.dp)
                                     .trainPilotBorder(
                                         width = 1.dp,
                                         color = if (isSel) palette.primary else palette.cardBorder,
@@ -1730,7 +1732,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                         color = if (isSel) palette.primary else palette.surfaceElevated,
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(34.dp)
+                                            .height(48.dp)
                                             .trainPilotBorder(
                                                 width = 1.dp,
                                                 color = if (isSel) palette.primary else palette.cardBorder,
@@ -1761,7 +1763,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                         color = if (isSel) palette.primary else palette.surfaceElevated,
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(34.dp)
+                                            .height(48.dp)
                                             .trainPilotBorder(
                                                 width = 1.dp,
                                                 color = if (isSel) palette.primary else palette.cardBorder,
@@ -2023,7 +2025,7 @@ internal fun MainProgressVolumeAndMuscleSection(
         // 3. COMPACT SIDE-BY-SIDE IZOMCSOPORT-TERHELÉS CARD (Front & Back bodies on left + 6 muscle bars on right)
         AnatomicalMuscleHeatmapCard(
             title = strings.muscleLoadTitle,
-            subtitle = "A színek és arányok az időszak legterheltebb izomcsoportjához viszonyítanak, nem fáradtságot mérnek.",
+            subtitle = trL(uiState.language, "Relatív sorozatterhelés, nem fáradtság.", "Relative set load, not fatigue.", "Relative Satzbelastung, keine Ermüdung.", "Încărcare relativă a seriilor, nu oboseală."),
             realMuscleLoads = uiState.realMuscleLoads,
             periodDays = progressPeriodDays(uiState.selectedProgressRangeIndex),
             onPeriodSelected = { periodDays ->

@@ -230,7 +230,6 @@ fun TrainPilotGlobalTopHeaderAndNav(
                             .size(48.dp)
                             .clickable { onSelectTab(MainTab.CALENDAR) }
                             .testTag("top_bar_calendar_button")
-                            .padding(6.dp)
                             .trainPilotBorder(1.dp, if (isCalendarActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
                     ) {
@@ -255,7 +254,6 @@ fun TrainPilotGlobalTopHeaderAndNav(
                             .size(48.dp)
                             .clickable { onSelectTab(MainTab.COACH) }
                             .testTag("top_bar_coach_button")
-                            .padding(6.dp)
                             .trainPilotBorder(1.dp, if (isCoachActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
                     ) {
@@ -280,7 +278,6 @@ fun TrainPilotGlobalTopHeaderAndNav(
                             .size(48.dp)
                             .clickable { onOpenSettings() }
                             .testTag("top_bar_settings_button")
-                            .padding(6.dp)
                             .trainPilotBorder(1.dp, if (isSettingsActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
                     ) {
@@ -2349,7 +2346,7 @@ fun QuickWorkoutSheet(
                                 .widthIn(min = 260.dp, max = 340.dp)
                                 .heightIn(max = 280.dp)
                         ) {
-                            strengthList.take(40).forEach { ex ->
+                            strengthList.forEach { ex ->
                                 val isSel = ex.id == selectedStrengthEx?.id
                                 DropdownMenuItem(
                                     text = {

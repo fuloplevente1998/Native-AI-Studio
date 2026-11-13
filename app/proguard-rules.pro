@@ -19,3 +19,7 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Samsung Health availability and SDK error codes are discovered by reflection.
+-keep class com.samsung.android.sdk.health.data.HealthDataService { *; }
+-keepclassmembers class com.samsung.android.sdk.health.data.** { public *** getErrorCode(...); }
