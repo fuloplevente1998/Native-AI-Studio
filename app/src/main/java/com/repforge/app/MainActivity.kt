@@ -44,7 +44,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.repforge.app.data.db.TrainPilotDatabase
 import com.repforge.app.data.migration.LegacyWebViewMigrator
 import com.repforge.app.data.store.TrainPilotSettingsStore
-import com.repforge.app.ui.navigation.TrainPilotAppScaffold
 import com.repforge.app.ui.theme.TrainPilotTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
