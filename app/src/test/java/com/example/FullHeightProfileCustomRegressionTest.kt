@@ -27,7 +27,7 @@ class FullHeightProfileCustomRegressionTest {
     private fun assertFullHeightAndPinnedFooter() {
         val body = compose.onNodeWithTag("full_height_form_body").getUnclippedBoundsInRoot()
         val footer = compose.onNodeWithTag("full_height_form_footer").getUnclippedBoundsInRoot()
-        assertTrue(body.height > 400.dp)
+        assertTrue(body.bottom - body.top > 400.dp)
         assertTrue(footer.top >= body.bottom)
         compose.onNodeWithTag("full_height_form_footer").assertIsDisplayed()
     }

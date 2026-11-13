@@ -3235,7 +3235,7 @@ fun AddCustomExerciseModalDialog(
 
     TrainPilotFullHeightFormSheet(
         onDismiss = onDismiss,
-        title = trW(lang, "Új egyedi gyakorlat hozzáadása", "Add new custom exercise", "Neue eigene Übung hinzufügen", "Adaugă exercițiu personalizat nou"),
+        title = trW(lang, "Új egyedi gyakorlat", "New custom exercise", "Neue eigene Übung", "Exercițiu personalizat nou"),
         content = {
             Column(
                 modifier = Modifier

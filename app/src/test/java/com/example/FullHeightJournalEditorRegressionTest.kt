@@ -69,7 +69,7 @@ class FullHeightJournalEditorRegressionTest {
             JournalEditorDialog(state, "hu", { state = state.copy(draft = it) }, { saved = it }, {})
         } } }
         val sheet = compose.onNodeWithTag("journal_editor_sheet").getUnclippedBoundsInRoot()
-        assertTrue(sheet.height > 650.dp)
+        assertTrue(sheet.bottom - sheet.top > 650.dp)
         val list = compose.onNodeWithTag("journal_editor_list")
         list.performScrollToNode(hasTestTag("journal_editor_weight_0_0"))
         compose.onNodeWithTag("journal_editor_weight_0_0").performTextReplacement("6.25")
@@ -86,6 +86,24 @@ class FullHeightJournalEditorRegressionTest {
         list.performScrollToNode(hasTestTag("journal_editor_add_set_0"))
         compose.onNodeWithTag("journal_editor_save").assertIsDisplayed()
         compose.onNodeWithTag("journal_editor_cancel_footer").assertIsDisplayed()
+    }
+
+    @Test fun swipeCannotSilentlyDiscardEditsAndKeepingTheDraftPreservesTheNote() {
+        var state by mutableStateOf(fixture())
+        var cancelled = 0
+        compose.setContent { TrainPilotTheme { StudioNativeEditorTheme {
+            JournalEditorDialog(state, "hu", { state = state.copy(draft = it) }, {}, { cancelled++ })
+        } } }
+        compose.onNodeWithTag("journal_editor_list").performScrollToNode(hasTestTag("journal_editor_note"))
+        compose.onNodeWithTag("journal_editor_note").performTextReplacement("Megőrzendő megjegyzés")
+        compose.onNodeWithTag("journal_editor_sheet").performTouchInput {
+            swipeDown(startY = 20f, endY = height - 20f, durationMillis = 250)
+        }
+        compose.onNodeWithTag("journal_editor_discard_confirmation").assertExists()
+        compose.runOnIdle { assertEquals(0, cancelled) }
+        compose.onNodeWithTag("journal_editor_discard_keep").performClick()
+        compose.runOnIdle { assertEquals("Megőrzendő megjegyzés", state.draft.note); assertEquals(0, cancelled) }
+        compose.onNodeWithTag("journal_editor_note").assertTextContains("Megőrzendő megjegyzés")
     }
 
     @Test fun savingBlocksCancelAndSaveUntilTheOperationCompletes() {

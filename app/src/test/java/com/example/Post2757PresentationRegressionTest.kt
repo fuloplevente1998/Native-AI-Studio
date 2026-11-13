@@ -46,7 +46,7 @@ class Post2757PresentationRegressionTest {
                 onStartOutdoorGps = {}, onBrowseExercises = {}, onDismiss = { dismissed++ })
         } }
         val sheet = compose.onNodeWithTag("quick_workout_sheet").assertIsDisplayed().getUnclippedBoundsInRoot()
-        assertTrue("Sheet should open at full available height", sheet.height.value >= 800f)
+        assertTrue("Sheet should open at full available height", (sheet.bottom - sheet.top).value >= 800f)
         compose.onNodeWithText("Első gyakorlat").performScrollTo().performClick()
         compose.onNodeWithText("Második gyakorlat").performClick()
         compose.onNodeWithText("▶ Indítás: Második gyakorlat").performScrollTo().performClick()
@@ -89,10 +89,12 @@ class Post2757PresentationRegressionTest {
             }
         }
         val summary = compose.onNodeWithTag("home_coach_summary", useUnmergedTree = true)
-        val collapsedHeight = summary.getUnclippedBoundsInRoot().height
+        val collapsedBounds = summary.getUnclippedBoundsInRoot()
+        val collapsedHeight = collapsedBounds.bottom - collapsedBounds.top
         compose.onNodeWithTag("home_coach_expand_summary", useUnmergedTree = true).performClick()
         compose.runOnIdle { assertEquals(0, opened) }
-        assertTrue(summary.getUnclippedBoundsInRoot().height > collapsedHeight)
+        val expandedBounds = summary.getUnclippedBoundsInRoot()
+        assertTrue(expandedBounds.bottom - expandedBounds.top > collapsedHeight)
         compose.onNodeWithTag("home_coach_advice_card").performClick()
         compose.runOnIdle { assertEquals(1, opened) }
     }

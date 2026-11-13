@@ -57,9 +57,15 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
         replaceExercise(e, draft.exercises[e].copy(sets = draft.exercises[e].sets.mapIndexed { i, set -> if (s == i) value else set }))
     }
     val savingNow by rememberUpdatedState(state.saving)
+    var confirmDiscard by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true,
-        confirmValueChange = { !savingNow || it != SheetValue.Hidden })
-    ModalBottomSheet(onDismissRequest = { if (!savingNow) onCancel() }, sheetState = sheetState,
+        confirmValueChange = {
+            if (it == SheetValue.Hidden) {
+                if (!savingNow) confirmDiscard = true
+                false // A drag/scrim must not silently discard the journal draft.
+            } else true
+        })
+    ModalBottomSheet(onDismissRequest = { if (!savingNow) confirmDiscard = true }, sheetState = sheetState,
         modifier = Modifier.fillMaxHeight().testTag("journal_editor_sheet"), dragHandle = null,
         containerColor = colors.card, contentColor = colors.text,
         // JournalEditorFrame already handles the visible window, IME and navigation insets.
@@ -226,6 +232,28 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                     }
                 }
         }
+    }
+    if (confirmDiscard && !savingNow) {
+        fun tr(hu: String, en: String, de: String, ro: String) = when (language) {
+            "en" -> en; "de" -> de; "ro" -> ro; else -> hu
+        }
+        AlertDialog(onDismissRequest = { confirmDiscard = false },
+            modifier = Modifier.testTag("journal_editor_discard_confirmation"),
+            containerColor = colors.card, titleContentColor = colors.text, textContentColor = colors.muted,
+            title = { Text(tr("Elveted a módosításokat?", "Discard changes?", "Änderungen verwerfen?", "Renunți la modificări?")) },
+            text = { Text(tr("A nem mentett módosítások elvesznek.", "Unsaved changes will be lost.",
+                "Ungespeicherte Änderungen gehen verloren.", "Modificările nesalvate se vor pierde.")) },
+            confirmButton = {
+                com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = { confirmDiscard = false; onCancel() },
+                    modifier = Modifier.testTag("journal_editor_discard_confirm")) {
+                    Text(tr("Elvetés", "Discard", "Verwerfen", "Renunță"))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDiscard = false }, modifier = Modifier.testTag("journal_editor_discard_keep")) {
+                    Text(tr("Szerkesztés folytatása", "Keep editing", "Weiter bearbeiten", "Continuă editarea"))
+                }
+            })
     }
 }
 
