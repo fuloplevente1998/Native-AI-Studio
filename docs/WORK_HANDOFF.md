@@ -1,3 +1,15 @@
+# TrainPilot 2759 · 1.1-beta – jóváhagyott kiadás előkészítése
+
+PR#228 main-integrációja: 97d56553dc266b55812aad68ac735fd95fcaac16.
+A felhasználó jóváhagyta a 2759-es kódot, változatlan 1.1-beta névvel.
+Telefon275900, Wear275902. Csak verziómetaadat és kiadási dokumentáció változik;
+a natív javításokat a 673/673 tesztes CI43494316049 már ellenőrizte.
+Következő: main-integráció után egyetlen közös persistent-signing kapu, majd
+nyers XML/ZIP-digest/package/verzió/hash/tartós aláíró ellenőrzés és Drive-átadás.
+Jelenleg még nincs új, átadott telepítő. Változások: releases/2759-changes.md.
+
+---
+
 # 2026-11-13 – felső sáv, kompakt sorozatok és gombvisszajelzés: ellenőrzött draft
 
 Draft PR#228, ágfix/sheet-top-safe-area, alapmain37494d3.
