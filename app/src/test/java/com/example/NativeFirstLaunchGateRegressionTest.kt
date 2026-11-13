@@ -12,6 +12,7 @@ import com.repforge.app.data.store.TrainPilotSettingsStore
 import com.repforge.app.ui.onboarding.NativeFirstLaunchGate
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,6 +28,11 @@ import org.robolectric.annotation.LooperMode
 class NativeFirstLaunchGateRegressionTest {
     @get:Rule val compose = createComposeRule()
     private val context get() = ApplicationProvider.getApplicationContext<Context>()
+    @Before fun isolateSettings() = runBlocking {
+        // DataStore's delegate may survive Robolectric application recreation.
+        // Reset only this test sandbox, through the existing settings API.
+        TrainPilotSettingsStore(context).resetAllSettingsForEraseLocal()
+    }
     private fun awaitTag(tag: String) {
         compose.waitUntil(30_000) {
             androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
@@ -36,7 +42,11 @@ class NativeFirstLaunchGateRegressionTest {
     }
     @Test fun firstRunShowsWelcomeAndOnlyACommittedSkipOpensHome() {
         val store = TrainPilotSettingsStore(context)
-        runBlocking { store.initializeOnboardingForMigration(false); store.markMigrationComplete() }
+        runBlocking {
+            store.initializeOnboardingForMigration(false)
+            store.markMigrationComplete()
+            assertEquals("welcome", store.current().onboarding128)
+        }
         compose.setContent { TrainPilotTheme {
             NativeFirstLaunchGate { Text("Home",Modifier.testTag("gated_home")) }
         } }
@@ -48,7 +58,12 @@ class NativeFirstLaunchGateRegressionTest {
     }
     @Test fun migratedUserDoesNotReceiveFreshInstallOnboarding() {
         val store=TrainPilotSettingsStore(context)
-        runBlocking { store.initializeOnboardingForMigration(true); store.markMigrationComplete() }
+        runBlocking {
+            store.importPortableSettings(org.json.JSONObject().put("onboarding128", "complete"))
+            store.initializeOnboardingForMigration(true)
+            store.markMigrationComplete()
+            assertEquals("complete", store.current().onboarding128)
+        }
         compose.setContent { TrainPilotTheme {
             NativeFirstLaunchGate { Text("Home",Modifier.testTag("gated_home")) }
         } }
