@@ -11,6 +11,7 @@ Verziókód: telefon **275800**, Wear OS **275802**. A felhasználó által mega
 - A Gyors edzés teljes elérhető magasságban nyílik, félállapot nélkül.
 - A Profil és új terv, az új egyedi gyakorlat és a naplóedzés szerkesztése teljes magasságú panelt kapott, a görgetéstől független mentési lábléccel. A mezők és a meglévő adatkezelési szerződések megmaradtak.
 - Az aktív súlyzós edzés sorozatai kártyásak: a súly, ismétlés és RIR helyben választható legördülőkből. Egyedi súly (például 6,25 kg) is megadható. Az értékválasztás különbözik a sorozat rögzítésétől; a rögzítésnek továbbra is külön gombja van.
+- A tizedes súlyok megjelenítése nem ír ki Float-pontatlanságból származó számjegyeket: például 19,7 kg jelenik meg 19,700001 helyett.
 - Nagy betűméretnél a sorozat értékmezői egymás alá rendeződnek. A naplóban mentés közben a bezárás tiltott marad.
 
 ## Wear OS
@@ -20,6 +21,10 @@ Verziókód: telefon **275800**, Wear OS **275802**. A felhasználó által mega
 
 ## Ellenőrzés és korlát
 
-A közös telefon/Wear JVM és telefonos release R8 kapu sikeres: Actions43446531333, forrása56139249c1f0108d5787eeed8ba25483b8534b9. Nyers XML és ZIP-digest ellenőrizve: 476 telefonos + 187 Wear = 663 teszt, 0failure/error/skipped; shared NO-SOURCE. A main-merge c6b0a98bd5ab84c09ab963616a022be8974d4a8d fájlfája az ellenőrzött forráséval azonos. Az új regressziók a valódi űrlapokat és callbackeket használják: értékmegőrzés, egyedi súly, explicit rögzítés, vezérlésfüggő tiltás, lábléc, bezárás és szövegtördelés. A main aláírt csomagfutása (43448589388) még folyamatban; a kész APK/AAB fájlok azonosságát és aláíróját az átadás előtt ellenőrizzük.
+Aláírt main-forrás: `38f6ecdd0347e81f6f7491871eb6c18c102e80e9` (#225 és #226). A közös APK+AAB és teljes JVM-futás sikeres: [Actions43450904480](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43450904480).
 
-A készülékes Samsung Health/Health Connect/Wear és nagybetűs/világos/sötét vizuális elfogadás külön lépés; az automatikus teszt nem helyettesíti. Új funkciócsomag és új adatmodell nem része a kiadásnak.
+Nyers XML és ZIP-digest ellenőrizve: **477 telefonos + 187 Wear = 664 teszt, 0failure/error/skipped**; shared NO-SOURCE. Az új regressziók tényleges űrlapokat és callbackeket ellenőriznek: értékmegőrzés, egyedi súly és tizedes megjelenítés, explicit rögzítés, vezérlésfüggő tiltás, rögzített lábléc, bezárás/lehúzás és szövegtördelés. Az előzetes663-as PR-kapu bizonyítéka külön `2758-ci-evidence.json`.
+
+Az APK/AAB párok azonos aláírt futásból készültek. A fájlhash, forrásSHA, package, verzió és tartós aláíró ellenőrizve. TelefonAPK5,5MB, WearAPK4,7MB; a telefon R8/resource-shrink méretcsökkentése megmaradt.
+
+A készülékes Samsung Health/Health Connect/Wear és nagybetűs/világos/sötét vizuális elfogadás külön lépés; az automatikus teszt nem helyettesíti. Új funkciócsomag és új adatmodell nem része a kiadásnak. Play-feltöltést a felhasználó végezhet a két külön AAB-val és a telefonos/órás Play-jegyzetekkel.

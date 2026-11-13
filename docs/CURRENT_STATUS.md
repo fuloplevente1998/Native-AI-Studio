@@ -1,3 +1,35 @@
+# TrainPilot 2758 · 1.1-beta – ellenőrzött main kiadás, 2026-11-13
+
+A felhasználó által kért mockupok, aktív sorozatszerkesztés és a további UI/ownership
+javítások mainen (#225, #226). Aláírt forrás: 38f6ecdd0347e81f6f7491871eb6c18c102e80e9.
+Telefon275800, Wear275802, mindkettő1.1-beta; package és tartós signer megmaradt.
+
+Közös signed run43450904480 SUCCESS: APK+AAB párok és teljes JVM-kapu.
+Nyers XML/digest igazolt: telefon87 fájl/477 teszt + Wear34 fájl/187 teszt =
+664 teszt, 0failure/error/skipped, shared NO-SOURCE. Előzetes PR-kapu43446531333:
+663/663; az utolsó tizedes-megjelenítési javítás új regressziója a signed futásban szerepel.
+A csomagok forrásSHA/package/verzió/hash/páridentitás/aláíró ellenőrzése sikeres.
+APK: telefon5,5MB, optimalizált Wear4,7MB. Mindkét AAB aláírója külön ellenőrizve.
+
+A négy bináris, a külön telefon/Wear Play-jegyzetek, a változáslista és az ellenőrzési
+bizonyíték a TrainPilot Native Drive-mappába feltöltve; név/méret/parent visszaolvasva.
+A korábbi2757 fájlok megmaradtak. Részletek: releases/2758-changes.md,
+releases/2758-verified-artifacts.json; előzetes CI: releases/2758-ci-evidence.json.
+Play-feltöltést a felhasználó végzi. Ebben a körben Console-módosítás nem történt.
+Fizikai Samsung/HC/Wear és világos/sötét/nagybetűs elfogadás külön hátravan.
+A záró dokumentáció az ellenőrzött natív/build/teszt forráson nem változtat.
+
+Telefon APK: https://drive.google.com/file/d/17vfssWxOKA9XFMR-peJdxJIIcYdFWzLJ/view?usp=drivesdk
+Wear APK: https://drive.google.com/file/d/1YtrtQt9yzQA-uMyAZ6V2UrKwNZKb8S3f/view?usp=drivesdk
+Telefon AAB: https://drive.google.com/file/d/1LJt-IpCRwk1YtoHxK-pWQ2GIzWVKKtHk/view?usp=drivesdk
+Wear AAB: https://drive.google.com/file/d/1A5QTiO0__btZ3bsk4gdMpZzDpVu50FKJ/view?usp=drivesdk
+Telefon Play-jegyzet: https://drive.google.com/file/d/1JsgFdnVGzc6pISYIUbw0C_4sjKQuiIB4/view?usp=drivesdk
+Wear Play-jegyzet: https://drive.google.com/file/d/1amM2AhhJpvtutwjZ01MOjsYOBzzZYg5h/view?usp=drivesdk
+Részletes változások: https://drive.google.com/file/d/1odYdT9UCRSTxk9JHkK5DQWyS-gze4wLF/view?usp=drivesdk
+Bizonyíték: https://drive.google.com/file/d/1_70Xt6j0k0kkgG586zPYVpnee_0FbH6S/view?usp=drivesdk
+
+---
+
 # TrainPilot2757 –ellenőrzött main kiadás,2026-11-13
 
 A felhasználó elfogadta a#223 javítócsomagot;main-integráció és APK+AAB kész.
