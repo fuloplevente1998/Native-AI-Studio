@@ -91,11 +91,11 @@ internal fun WearHomeDashboard(
     }
     val primaryDescription =
         when (model.action) {
-            HomeAction.START -> "Edzés indítása"
-            HomeAction.RESUME -> "Edzés folytatása"
+            HomeAction.START -> wearText("Edzés indítása")
+            HomeAction.RESUME -> wearText("Edzés folytatása")
             HomeAction.DAYS -> "Program napjai"
-            HomeAction.RESULT -> "Edzés mentésének állapota"
-            HomeAction.PHONE -> "Telefon megnyitása a folytatáshoz"
+            HomeAction.RESULT -> wearText("Edzés mentésének állapota")
+            HomeAction.PHONE -> wearText("Telefon megnyitása a folytatáshoz")
         }
     BoxWithConstraints(
         Modifier.fillMaxSize()
@@ -128,9 +128,9 @@ internal fun WearHomeDashboard(
         val bodyHeight = (footerTop.dp - bodyTop - 4.dp).coerceAtLeast(1.dp)
         val connectedLabel =
             when (phoneConnected) {
-                true -> "Telefon elérhető"
+                true -> wearText("Telefon elérhető")
                 false -> "Telefon nincs kapcsolatban"
-                null -> "Kapcsolat ellenőrzése"
+                null -> wearText("Kapcsolat ellenőrzése")
             }
         val connectionColor =
             when (phoneConnected) {
@@ -141,16 +141,16 @@ internal fun WearHomeDashboard(
         val curveSize = diameter - 12.dp
         val fontScale = LocalDensity.current.fontScale
         val sideLabel =
-            if (large) model.measurement
+            if (large) wearText(model.measurement)
             else
-                when (model.measurement) {
-                    "Mérés folyamatban" -> "Mérés aktív"
-                    "Mérés bekapcsolva" -> "Mérés be"
-                    "Mérés kikapcsolva" -> "Mérés ki"
-                    "Legutóbbi mérés" -> "Korábbi adat"
-                    "Mérés lezárása" -> "Lezárás"
-                    "Mérés lezárva" -> "Lezárva"
-                    else -> model.measurement
+                when (wearText(model.measurement)) {
+                    wearText("Mérés folyamatban") -> wearText("Mérés aktív")
+                    wearText("Mérés bekapcsolva") -> wearText("Mérés be")
+                    wearText("Mérés kikapcsolva") -> wearText("Mérés ki")
+                    wearText("Legutóbbi mérés") -> wearText("Korábbi adat")
+                    wearText("Mérés lezárása") -> wearText("Lezárás")
+                    wearText("Mérés lezárva") -> wearText("Lezárva")
+                    else -> wearText(model.measurement)
                 }
         CurvedLayout(Modifier.align(Alignment.Center).size(curveSize)) {
             curvedComposable {
@@ -181,8 +181,8 @@ internal fun WearHomeDashboard(
                 .height(if (tiny) 24.dp else 32.dp)
                 .clickable(role = Role.Button, onClick = onOpenPhone)
                 .semantics {
-                    contentDescription = "Megnyitás telefonon"
-                    stateDescription = "$connectedLabel · ${model.source}"
+                    contentDescription = wearText("Megnyitás telefonon")
+                    stateDescription = "$connectedLabel · ${wearText(model.source)}"
                 }
         )
         Canvas(Modifier.align(Alignment.Center).size(diameter)) {
@@ -242,10 +242,10 @@ internal fun WearHomeDashboard(
         ) {
             if (large)
                 HomeFitText(
-                    if (model.active) "${model.phase} · ${model.detail}"
+                    if (model.active) "${wearText(model.phase)} · ${wearText(model.detail)}"
                     else {
                         val date = Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault())
-                        "${listOf("HÉT","KEDD","SZE","CSÜT","PÉN","SZO","VAS")[date.dayOfWeek.value-1]} ${date.dayOfMonth} · ${model.phase}"
+                        "${listOf(wearText("HÉT"),wearText("KEDD"),wearText("SZE"),wearText("CSÜT"),wearText("PÉN"),wearText("SZO"),wearText("VAS"))[date.dayOfWeek.value-1]} ${date.dayOfMonth} · ${wearText(model.phase)}"
                     },
                     Modifier.fillMaxWidth().height(9.dp),
                     7.5f,
@@ -260,7 +260,7 @@ internal fun WearHomeDashboard(
                 mono = true,
             )
             HomeFitText(
-                if (model.phase == "PIHENŐ" && !large) "Pihenő · ${model.title}" else model.title,
+                if (model.phase == "PIHENŐ" && !large) "${wearText("Pihenő")} · ${wearText(model.title)}" else wearText(model.title),
                 Modifier.fillMaxWidth()
                     .height(
                         if (model.active) {
@@ -286,14 +286,14 @@ internal fun WearHomeDashboard(
                         )
                 } else {
                     HomeFitText(
-                        saveStatus?.let { wearSaveLabel(it.phase) } ?: model.subtitle,
+                        saveStatus?.let { wearSaveLabel(it.phase) } ?: wearText(model.subtitle),
                         Modifier.fillMaxWidth().height(10.dp),
                         8f,
                         HomeMuted,
                     )
                     if (large)
                         HomeFitText(
-                            "${model.detail} · ${model.source}",
+                            "${wearText(model.detail)} · ${wearText(model.source)}",
                             Modifier.fillMaxWidth().height(9.dp),
                             7.5f,
                             HomeMuted,
@@ -332,8 +332,8 @@ internal fun WearHomeDashboard(
         ) {
             HomeQuickButton(
                 if (model.active) R.drawable.ic_tp_delete else R.drawable.ic_tp_journal,
-                if (model.active) "Törlés" else "Napló",
-                if (model.active) "Megkezdett edzés törlése" else "Edzésnapló",
+                if (model.active) wearText("Törlés") else wearText("Napló"),
+                if (model.active) wearText("Megkezdett edzés törlése") else wearText("Edzésnapló"),
                 theme,
                 false,
                 if (model.active) onDiscard else onJournal,
@@ -343,7 +343,7 @@ internal fun WearHomeDashboard(
                 HomeQuickButton(
                     if (model.action == HomeAction.PHONE) R.drawable.ic_tp_phone
                     else R.drawable.ic_tp_workout,
-                    model.actionLabel,
+                    wearText(model.actionLabel),
                     primaryDescription,
                     theme,
                     true,
@@ -353,8 +353,8 @@ internal fun WearHomeDashboard(
             Box(Modifier.offset(x = (2 * arc.sideOffset).dp)) {
                 HomeQuickButton(
                     R.drawable.ic_tp_settings,
-                    "Beállít.",
-                    "Beállítások",
+                    wearText("Beállít."),
+                    wearText("Beállítások"),
                     theme,
                     false,
                     onSettings,
@@ -367,7 +367,7 @@ internal fun WearHomeDashboard(
             angularDirection = CurvedDirection.Angular.Reversed,
         ) {
             basicCurvedText(
-                "··· Menü",
+                wearText("··· Menü"),
                 style = CurvedTextStyle(color = HomeWhite, fontSize = (10f / fontScale).sp),
             )
         }
@@ -377,7 +377,7 @@ internal fun WearHomeDashboard(
                 .width(diameter * .6f)
                 .height(24.dp)
                 .clickable(role = Role.Button, onClick = onMenu)
-                .semantics { contentDescription = "Főmenü" }
+                .semantics { contentDescription = wearText("Főmenü") }
         )
     }
 }

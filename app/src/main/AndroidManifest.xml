@@ -101,7 +101,7 @@
         <!-- Studio UI/UX Prototípus Activity (másodlagos nézegető) -->
         <activity
             android:name="com.example.MainActivity"
-            android:exported="true"
+            android:exported="false"
             android:theme="@style/AppTheme.NoActionBar" />
 
         <!-- Health Connect permission rationale / privacy policy: discoverable by Android. -->

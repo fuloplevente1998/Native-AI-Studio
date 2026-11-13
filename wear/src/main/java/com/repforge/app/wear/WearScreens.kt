@@ -261,7 +261,7 @@ internal fun TrainPilotWearApp(
                                 route = "metrics"
                             },
                             onOpenPhone = onOpenPhone,
-                            backLabel = if (settingsBackRoute == "home") "‹ Kezdőlap" else "‹ Főmenü",
+                            backLabel = if (settingsBackRoute == "home") wearText("‹ Kezdőlap") else wearText("‹ Főmenü"),
                             onBack = { route = settingsBackRoute },
                         )
                     route == "metrics" ->
@@ -311,9 +311,9 @@ internal fun TrainPilotWearApp(
                             onOpenPhone = onOpenPhone,
                             backLabel =
                                 when (journalBackRoute) {
-                                    "menu" -> "‹ Főmenü"
-                                    "home" -> "‹ Kezdőlap"
-                                    else -> "‹ Mérések"
+                                    "menu" -> wearText("‹ Főmenü")
+                                    "home" -> wearText("‹ Kezdőlap")
+                                    else -> wearText("‹ Mérések")
                                 },
                             onBack = { route = journalBackRoute },
                         ) { selected ->
@@ -327,7 +327,7 @@ internal fun TrainPilotWearApp(
                                 it.workoutId == miniJournalId
                             },
                             backLabel =
-                                if (miniJournalBackRoute == "journal") "‹ Napló" else "‹ Mérések",
+                                if (miniJournalBackRoute == "journal") wearText("‹ Napló") else wearText("‹ Mérések"),
                             onBack = { route = miniJournalBackRoute },
                         )
                     route == "quick" ->
@@ -394,17 +394,17 @@ internal fun TrainPilotWearApp(
                             if (workout.value != null) route = "workout"
                         }
                     route in listOf("workout","editor","timer") && active?.workoutPaused==true ->
-                        RoundList(if(active.ownershipProtocol193==1)WearOwnershipText193.text("pausedTitle")else "Edzés szünetel") {
+                        RoundList(if(active.ownershipProtocol193==1)WearOwnershipText193.text("pausedTitle")else wearText("Edzés szünetel")) {
                             centerItem { Text(active.exercise?.name.orEmpty(),color=White,fontSize=14.sp,
                                 textAlign=TextAlign.Center,modifier=Modifier.fillMaxWidth()) }
-                            centerItem { Text(if(active.ownershipProtocol193==1)WearOwnershipText193.text("pausedDetail")else "A mérés és az időzítő szünetel.",color=Muted,fontSize=11.sp,textAlign=TextAlign.Center) }
+                            centerItem { Text(if(active.ownershipProtocol193==1)WearOwnershipText193.text("pausedDetail")else wearText("A mérés és az időzítő szünetel."),color=Muted,fontSize=11.sp,textAlign=TextAlign.Center) }
                             if(active.ownershipProtocol193==1&&WearOwnership193.pending(active)) {
                                 centerItem { Text(WearOwnershipText193.text("pending"),color=Muted,fontSize=11.sp,textAlign=TextAlign.Center) }
                                 centerItem { Pill(WearOwnershipText193.text("retry"),tone=Secondary) { onRetryOwnership193?.invoke() } }
                             }else if(active.ownershipProtocol193==1&&active.timerOwner=="watch") {
                                 centerItem { Pill(WearOwnershipText193.text("resume"),tone=Gold) { onResumeWorkout() } }
-                            }else centerItem { Pill("Folytatás telefonon",tone=Gold) { onOpenPhone() } }
-                            centerItem { Pill(if(active.ownershipProtocol193==1)WearOwnershipText193.text("home")else "Kezdőlap",tone=Secondary) { route="home" } }
+                            }else centerItem { Pill(wearText("Folytatás telefonon"),tone=Gold) { onOpenPhone() } }
+                            centerItem { Pill(if(active.ownershipProtocol193==1)WearOwnershipText193.text("home")else wearText("Kezdőlap"),tone=Secondary) { route="home" } }
                         }
                     route == "workout" && active != null ->
                         WorkoutPager(
@@ -547,7 +547,7 @@ internal fun FixedRoundPanel(
                     .width((diameter * .7f).dp)
                     .height(32.dp)
                     .clickable(role = Role.Button, onClick = onTitleClick)
-                    .semantics { contentDescription = "Megnyitás telefonon" }
+                    .semantics { contentDescription = wearText("Megnyitás telefonon") }
             )
     }
 }
@@ -777,24 +777,24 @@ private fun SettingsScreen(
     backLabel: String,
     onBack: () -> Unit,
 ) {
-    RoundList("Beállítások") {
-        centerItem { JournalText(if (enabled) "Edzésmérés bekapcsolva" else "Edzésmérés kikapcsolva", Gold, 12) }
+    RoundList(wearText("Beállítások")) {
+        centerItem { JournalText(if (enabled) wearText("Edzésmérés bekapcsolva") else wearText("Edzésmérés kikapcsolva"), Gold, 12) }
         centerItem {
             Pill(
-                if (enabled) "Mérés kikapcsolása" else "Mérések engedélyezése",
+                if (enabled) wearText("Mérés kikapcsolása") else wearText("Mérések engedélyezése"),
                 tone = if (enabled) Secondary else Gold,
                 onClick = if (enabled) onDisable else onEnable,
             )
         }
         centerItem {
-            Pill(if (gps) "GPS kikapcsolása" else "GPS engedélyezése", tone = Card, onClick = onGps)
+            Pill(if (gps) wearText("GPS kikapcsolása") else wearText("GPS engedélyezése"), tone = Card, onClick = onGps)
         }
         centerItem {
-            JournalText("A GPS a következő mozgásos edzés mérésétől használható.", size = 11)
+            JournalText(wearText("A GPS a következő mozgásos edzés mérésétől használható."), size = 11)
         }
-        centerItem { Pill("Órás mérések", tone = Card, onClick = onMetrics) }
-        centerItem { JournalText("A színek a telefonon választott témát követik.", size = 11) }
-        centerItem { Pill("Telefon megnyitása", tone = Secondary, onClick = onOpenPhone) }
+        centerItem { Pill(wearText("Órás mérések"), tone = Card, onClick = onMetrics) }
+        centerItem { JournalText(wearText("A színek a telefonon választott témát követik."), size = 11) }
+        centerItem { Pill(wearText("Telefon megnyitása"), tone = Secondary, onClick = onOpenPhone) }
         centerItem { Pill(backLabel, tone = Secondary, onClick = onBack) }
     }
 }
@@ -844,16 +844,16 @@ private fun MiniJournalScreen(
     onSelect: (MiniJournalWorkout) -> Unit,
 ) {
     val items = home?.recentWorkouts.orEmpty()
-    RoundList("Mini napló") {
-        centerItem { JournalText("Mentett telefonos edzések · offline másolat", size = 10) }
+    RoundList(wearText("Mini napló")) {
+        centerItem { JournalText(wearText("Mentett telefonos edzések · offline másolat"), size = 10) }
 
         if (items.isEmpty()) {
             val message =
                 when {
-                    home == null -> "Várakozás a telefonos napló szinkronizálására."
+                    home == null -> wearText("Várakozás a telefonos napló szinkronizálására.")
                     !home.journalAvailable ->
-                        "A telefon legutóbbi adatcsomagja még nem tartalmaz Mini naplót. Frissítsd és nyisd meg a telefonos TrainPilotot."
-                    else -> "A telefonos naplóban még nincs átadható, befejezett edzés."
+                        wearText("A telefon legutóbbi adatcsomagja még nem tartalmaz Mini naplót. Frissítsd és nyisd meg a telefonos TrainPilotot.")
+                    else -> wearText("A telefonos naplóban még nincs átadható, befejezett edzés.")
                 }
             centerItem {
                 JournalText(message, size = 12)
@@ -877,9 +877,9 @@ private fun MiniJournalScreen(
             }
         }
 
-        centerItem { Pill("Frissítés", tone = Secondary, onClick = onRefresh) }
+        centerItem { Pill(wearText("Frissítés"), tone = Secondary, onClick = onRefresh) }
 
-        centerItem { Pill("Telefon megnyitása", tone = Secondary, onClick = onOpenPhone) }
+        centerItem { Pill(wearText("Telefon megnyitása"), tone = Secondary, onClick = onOpenPhone) }
 
         centerItem { Pill(backLabel, tone = Secondary, onClick = onBack) }
     }
@@ -936,7 +936,7 @@ private fun LazyListScope.MiniJournalMetrics(
         }
     }
     miniNumber(metrics.steps)?.let { centerItem { JournalText("Lépések: $it", size = 11) } }
-    if (metrics.partial) centerItem { JournalText("Részleges órás mérés", Gold, 10) }
+    if (metrics.partial) centerItem { JournalText(wearText("Részleges órás mérés"), Gold, 10) }
 }
 
 @Composable
@@ -945,11 +945,11 @@ private fun MiniJournalDetailScreen(
     backLabel: String,
     onBack: () -> Unit,
 ) {
-    RoundList("Edzésnapló") {
+    RoundList(wearText("Edzésnapló")) {
         if (item == null) {
             centerItem {
                 JournalText(
-                    "Ez az edzés már nincs a szinkronizált listában.",
+                    wearText("Ez az edzés már nincs a szinkronizált listában."),
                     size = 12,
                 )
             }
@@ -964,8 +964,8 @@ private fun MiniJournalDetailScreen(
             }
 
             if (item.wear != null) {
-                MiniJournalMetrics("TrainPilot óra · Health Services", item.wear, true)
-            } else centerItem { JournalText("Nem érkezett órás mérési összesítés", size = 11) }
+                MiniJournalMetrics(wearText("TrainPilot óra · Health Services"), item.wear, true)
+            } else centerItem { JournalText(wearText("Nem érkezett órás mérési összesítés"), size = 11) }
             if (item.healthConnect != null) {
                 MiniJournalMetrics(
                     if (item.healthConnect.source == "samsung_health") "Samsung Health"
@@ -974,12 +974,12 @@ private fun MiniJournalDetailScreen(
                     false,
                 )
 
-                centerItem { JournalText("A két mérés nem adódik össze", size = 10) }
+                centerItem { JournalText(wearText("A két mérés nem adódik össze"), size = 10) }
             }
 
-            centerItem { JournalText("Elvégzett gyakorlatok", Gold, 12) }
+            centerItem { JournalText(wearText("Elvégzett gyakorlatok"), Gold, 12) }
             if (item.exercises.isEmpty()) {
-                centerItem { JournalText("Nincs rögzített sorozat", size = 11) }
+                centerItem { JournalText(wearText("Nincs rögzített sorozat"), size = 11) }
             }
             item.exercises.forEach { exercise ->
                 centerItem {
@@ -1009,7 +1009,7 @@ private fun MiniJournalDetailScreen(
                     }
                     centerItem {
                         JournalText(
-                            "${set.number}. sorozat • ${details.joinToString(" · ").ifBlank { "Kész" }}",
+                            "${set.number}. sorozat • ${details.joinToString(" · ").ifBlank { wearText("Kész") }}",
                             size = 11,
                         )
                     }
@@ -1045,11 +1045,11 @@ private fun QuickWorkoutPicker(
         }
     val pageCount = ((matches.size + 11) / 12).coerceAtLeast(1)
     val selectedPage = page.coerceIn(0, pageCount - 1)
-    RoundList(if (adding) "+ Gyakorlat" else "Gyors edzés") {
+    RoundList(if (adding) "+ Gyakorlat" else wearText("Gyors edzés")) {
         if (active != null && !adding) {
             centerItem {
                 Text(
-                    "Előbb zárd le a jelenlegi edzést.",
+                    wearText("Előbb zárd le a jelenlegi edzést."),
                     color = Muted,
                     fontSize = 12.sp,
                     textAlign = TextAlign.Center,
@@ -1058,7 +1058,7 @@ private fun QuickWorkoutPicker(
         } else if (!adding && !canStart) {
             centerItem {
                 Text(
-                    "A telefonos edzésvázlat vagy a függő szinkron lezárása után indítható.",
+                    wearText("A telefonos edzésvázlat vagy a függő szinkron lezárása után indítható."),
                     color = Muted,
                     fontSize = 12.sp,
                     textAlign = TextAlign.Center,
@@ -1067,7 +1067,7 @@ private fun QuickWorkoutPicker(
         } else if (catalog.isEmpty()) {
             centerItem {
                 Text(
-                    "A gyakorlatok szinkronizálásához nyisd meg a TrainPilotot a telefonon.",
+                    wearText("A gyakorlatok szinkronizálásához nyisd meg a TrainPilotot a telefonon."),
                     color = Muted,
                     fontSize = 12.sp,
                     textAlign = TextAlign.Center,
@@ -1090,7 +1090,7 @@ private fun QuickWorkoutPicker(
                     decorationBox = { content ->
                         Box {
                             if (query.isEmpty())
-                                Text("Gyakorlat keresése…", color = Muted, fontSize = 13.sp)
+                                Text(wearText("Gyakorlat keresése…"), color = Muted, fontSize = 13.sp)
                             content()
                         }
                     },
@@ -1100,7 +1100,7 @@ private fun QuickWorkoutPicker(
             if (matches.isEmpty())
                 centerItem {
                     Text(
-                        "Nincs további választható gyakorlat.",
+                        wearText("Nincs további választható gyakorlat."),
                         color = Muted,
                         fontSize = 12.sp,
                         textAlign = TextAlign.Center,
@@ -1114,10 +1114,10 @@ private fun QuickWorkoutPicker(
             if (pageCount > 1) {
                 centerItem { Label("${selectedPage + 1} / $pageCount") }
                 if (selectedPage > 0)
-                    centerItem { Pill("‹ Előző", tone = Secondary) { page = selectedPage - 1 } }
+                    centerItem { Pill(wearText("‹ Előző"), tone = Secondary) { page = selectedPage - 1 } }
                 if (selectedPage + 1 < pageCount)
                     centerItem {
-                        Pill("További gyakorlatok ›", tone = Secondary) { page = selectedPage + 1 }
+                        Pill(wearText("További gyakorlatok ›"), tone = Secondary) { page = selectedPage + 1 }
                     }
             }
         }
@@ -1153,16 +1153,16 @@ private fun CalendarScreen(
         return
     }
     if (home == null || entries.isEmpty()) {
-        RoundList("Naptár") {
+        RoundList(wearText("Naptár")) {
             centerItem {
                 Text(
-                    "A naptár frissítéséhez nyisd meg a TrainPilotot a telefonon.",
+                    wearText("A naptár frissítéséhez nyisd meg a TrainPilotot a telefonon."),
                     color = Muted,
                     fontSize = 12.sp,
                     textAlign = TextAlign.Center,
                 )
             }
-            centerItem { Pill("‹ Főmenü", tone = Secondary, onClick = onBack) }
+            centerItem { Pill(wearText("‹ Főmenü"), tone = Secondary, onClick = onBack) }
         }
         return
     }
@@ -1303,10 +1303,10 @@ private fun CalendarWeekPage(
                 .width(56.dp)
                 .height(20.dp)
                 .clickable(role = Role.Button, onClick = onBack)
-                .semantics { contentDescription = "Vissza a főmenübe" },
+                .semantics { contentDescription = wearText("Vissza a főmenübe") },
             contentAlignment = Alignment.Center,
         ) {
-            Text("Menü", color = Muted, fontSize = textSize(9f), maxLines = 1)
+            Text(wearText("Menü"), color = Muted, fontSize = textSize(9f), maxLines = 1)
         }
     }
 }
@@ -1328,7 +1328,7 @@ private fun CalendarDayScreen(
         if (entries.isEmpty()) {
             centerItem {
                 Text(
-                    "Ehhez a naphoz nincs adat az órán. A telefonos naptárban találod meg.",
+                    wearText("Ehhez a naphoz nincs adat az órán. A telefonos naptárban találod meg."),
                     color = Muted,
                     fontSize = 12.sp,
                     textAlign = TextAlign.Center,
@@ -1350,9 +1350,9 @@ private fun CalendarDayScreen(
                     }
                     Label(
                         when (entry.status) {
-                            "completed" -> "✓ Teljesítve"
+                            "completed" -> wearText("✓ Teljesítve")
                             "skipped" -> "Kihagyva"
-                            "rest" -> "Pihenőnap"
+                            "rest" -> wearText("Pihenőnap")
                             else -> "Tervezett"
                         },
                         size = 11,
@@ -1367,7 +1367,7 @@ private fun CalendarDayScreen(
                     if (time != null) Label(time, size = 10)
                     if (wearCalendarCanStart(entry, today, canStart)) {
                         Spacer(Modifier.height(6.dp))
-                        Pill("▶ Edzés indítása") { onStart(entry) }
+                        Pill(wearText("▶ Edzés indítása")) { onStart(entry) }
                     } else if (
                         !canStart &&
                             entry.status == "planned" &&
@@ -1375,7 +1375,7 @@ private fun CalendarDayScreen(
                             !date.isBefore(today)
                     ) {
                         Text(
-                            "Az aktív edzés vagy a függő szinkron lezárása után indítható.",
+                            wearText("Az aktív edzés vagy a függő szinkron lezárása után indítható."),
                             color = Muted,
                             fontSize = 10.sp,
                             textAlign = TextAlign.Center,
@@ -1384,7 +1384,7 @@ private fun CalendarDayScreen(
                 }
             }
         }
-        centerItem { Pill("‹ Heti naptár", tone = Secondary, onClick = onBack) }
+        centerItem { Pill(wearText("‹ Heti naptár"), tone = Secondary, onClick = onBack) }
     }
 }
 
@@ -1408,8 +1408,8 @@ private fun HealthScreen(
         return if (number == null || !number.isFinite()) "—"
         else "${trimWearNumber(number/divisor)} $unit"
     }
-    RoundList("Órás mérések") {
-        if (!hasWorkout && data != null) centerItem { Label("Legutóbbi edzés mérése", size = 10) }
+    RoundList(wearText("Órás mérések")) {
+        if (!hasWorkout && data != null) centerItem { Label(wearText("Legutóbbi edzés mérése"), size = 10) }
         centerItem {
             Text(
                 wearRecordingStatus(data, enabled, hasWorkout),
@@ -1446,29 +1446,29 @@ private fun HealthScreen(
                 data.optString("heartRateAvailability") !in listOf("acquiring", "unavailable") &&
                 System.currentTimeMillis() -
                     (data.optLong("lastSampleAt", data.optLong("updatedAt"))) < 15000
-        centerItem { Label(if (fresh) "Élő pulzus" else "Pulzus · utolsó mérés", size = 10) }
+        centerItem { Label(if (fresh) wearText("Élő pulzus") else wearText("Pulzus · utolsó mérés"), size = 10) }
         centerItem { Title(value("heartRate", "bpm"), 28) }
         for ((title, metric, unit) in
             listOf(
-                Triple("Átlagpulzus", "averageHeartRate", "bpm"),
-                Triple("Max. pulzus", "maxHeartRate", "bpm"),
-                Triple("Összes energia", "totalCalories", "kcal"),
-                Triple("Lépések", "steps", "lépés"),
-                Triple("Aktív mérési idő", "activeDurationSeconds", "s"),
-                Triple("Távolság", "distanceMeters", "m"),
-                Triple("Sebesség", "speedMps", "m/s"),
+                Triple(wearText("Átlagpulzus"), "averageHeartRate", "bpm"),
+                Triple(wearText("Max. pulzus"), "maxHeartRate", "bpm"),
+                Triple(wearText("Összes energia"), "totalCalories", "kcal"),
+                Triple(wearText("Lépések"), "steps", wearText("lépés")),
+                Triple(wearText("Aktív mérési idő"), "activeDurationSeconds", "s"),
+                Triple(wearText("Távolság"), "distanceMeters", "m"),
+                Triple(wearText("Sebesség"), "speedMps", "m/s"),
             )) {
             centerItem { Label(title, size = 10) }
             centerItem { Title(value(metric, unit), 17) }
         }
         val speed = data?.optDouble("speedMps", 0.0) ?: 0.0
         if (speed > 0 && speed.isFinite()) {
-            centerItem { Label("Aktuális tempó") }
+            centerItem { Label(wearText("Aktuális tempó")) }
             centerItem { Title("${formatSeconds((1000/speed).toInt())} /km", 17) }
         }
         centerItem {
             Text(
-                "A hiányzó adatot az óra még nem adta át. Az összes kcal az alapanyagcserét is tartalmazza.",
+                wearText("A hiányzó adatot az óra még nem adta át. Az összes kcal az alapanyagcserét is tartalmazza."),
                 color = Muted,
                 fontSize = 10.sp,
                 textAlign = TextAlign.Center,
@@ -1477,7 +1477,7 @@ private fun HealthScreen(
         if (data?.optBoolean("partial") == true)
             centerItem {
                 Text(
-                    "Részleges mérés: a rögzítés edzés közben indult újra.",
+                    wearText("Részleges mérés: a rögzítés edzés közben indult újra."),
                     color = Gold,
                     fontSize = 11.sp,
                     textAlign = TextAlign.Center,
@@ -1485,32 +1485,32 @@ private fun HealthScreen(
             }
         centerItem {
             Pill(
-                if (enabled) "Mérés kikapcsolása" else "Mérések engedélyezése",
+                if (enabled) wearText("Mérés kikapcsolása") else wearText("Mérések engedélyezése"),
                 tone = if (enabled) Secondary else Gold,
                 onClick = if (enabled) onDisable else onEnable,
             )
         }
         centerItem {
-            Pill(if (gps) "GPS kikapcsolása" else "GPS engedélyezése", tone = Card, onClick = onGps)
+            Pill(if (gps) wearText("GPS kikapcsolása") else wearText("GPS engedélyezése"), tone = Card, onClick = onGps)
         }
         centerItem {
             Text(
-                "GPS csak mozgásos edzésnél használható, a következő mérés indításától. Az óra az engedélyezett edzésmérést a háttérben is folytatja.",
+                wearText("GPS csak mozgásos edzésnél használható, a következő mérés indításától. Az óra az engedélyezett edzésmérést a háttérben is folytatja."),
                 color = Muted,
                 fontSize = 10.sp,
                 textAlign = TextAlign.Center,
             )
         }
 
-        centerItem { Label("Korábbi órás mérések", Gold, 13) }
-        centerItem { Label("Mentett edzések · TrainPilot óra", size = 10) }
+        centerItem { Label(wearText("Korábbi órás mérések"), Gold, 13) }
+        centerItem { Label(wearText("Mentett edzések · TrainPilot óra"), size = 10) }
         val previous = WatchMiniJournal.measurementHistory(home?.recentWorkouts.orEmpty()).take(3)
         if (previous.isEmpty()) {
             centerItem {
                 Text(
                     if (home?.journalAvailable == true)
-                        "A szinkronizált edzések között még nincs órás mérési összesítés."
-                    else "Az előzményekhez nyisd meg a telefonos TrainPilotot, majd frissíts.",
+                        wearText("A szinkronizált edzések között még nincs órás mérési összesítés.")
+                    else wearText("Az előzményekhez nyisd meg a telefonos TrainPilotot, majd frissíts."),
                     color = Muted,
                     fontSize = 11.sp,
                     textAlign = TextAlign.Center,
@@ -1546,13 +1546,13 @@ private fun HealthScreen(
                     miniNumber(metrics.averageHeartRate, 1)?.let {
                         Label("Átlagpulzus: $it bpm", size = 11)
                     }
-                    if (metrics.partial) Label("Részleges mérés", Gold, 10)
-                    Label("Edzés részletei ›", size = 10)
+                    if (metrics.partial) Label(wearText("Részleges mérés"), Gold, 10)
+                    Label(wearText("Edzés részletei ›"), size = 10)
                 }
             }
         }
-        centerItem { Pill("Mini napló megnyitása", tone = Card, onClick = onOpenJournal) }
-        centerItem { Pill("Előzmények frissítése", tone = Secondary, onClick = onRefresh) }
+        centerItem { Pill(wearText("Mini napló megnyitása"), tone = Card, onClick = onOpenJournal) }
+        centerItem { Pill(wearText("Előzmények frissítése"), tone = Secondary, onClick = onRefresh) }
         centerItem { Pill("‹ Vissza", tone = Secondary, onClick = onBack) }
     }
 }
@@ -1602,7 +1602,7 @@ private fun ProgramDays(
                 }
             }
         }
-        centerItem { Pill("‹ Kezdőlap", tone = Secondary, onClick = onBack) }
+        centerItem { Pill(wearText("‹ Kezdőlap"), tone = Secondary, onClick = onBack) }
     }
 }
 
@@ -1817,8 +1817,8 @@ private fun SetHeading(workout: WearWorkout, restRemaining: Int, detail: String?
     val toggle=LocalAutomaticToggle.current
     val touchLock=LocalTouchLock189.current
     val heading = when {
-        automatic?.awaitingPhone==true -> "Telefonra vár"
-        automatic?.enabled==true && automatic.interrupted -> "Megszakadt · folytatható"
+        automatic?.awaitingPhone==true -> wearText("Telefonra vár")
+        automatic?.enabled==true && automatic.interrupted -> wearText("Megszakadt · folytatható")
         automatic?.enabled==true && automatic.paused -> "Szünet · ${formatSeconds((automatic.remaining(android.os.SystemClock.elapsedRealtime())/1000).toInt())}"
         automatic?.enabled==true && automatic.phase=="rest" -> "Pihenő ${formatSeconds(restRemaining)}"
         restRemaining > 0 -> "Pihenő ${formatSeconds(restRemaining)} · $completed/$count"
@@ -1841,7 +1841,7 @@ private fun SetHeading(workout: WearWorkout, restRemaining: Int, detail: String?
             lineHeight = (10 * captionScale).sp, maxLines = 1)
         if(toggle!=null) Text(if(automatic?.enabled==true)" A" else " M",color=if(automatic?.enabled==true)Gold else Muted,
             fontSize=(7*captionScale).sp,modifier=Modifier.size(if(compact)16.dp else 20.dp).clickable(role=Role.Button,onClick=toggle)
-                .testTag("wear-automatic-toggle").semantics { contentDescription=if(automatic?.enabled==true)"Automata mód kikapcsolása" else "Automata mód bekapcsolása" })
+                .testTag("wear-automatic-toggle").semantics { contentDescription=if(automatic?.enabled==true)wearText("Automata mód kikapcsolása") else wearText("Automata mód bekapcsolása") })
         if(touchLock!=null)Box(Modifier.size(24.dp).clickable(role=Role.Button,onClick=touchLock).testTag("wear-touch-lock")
             .semantics { contentDescription=WearTouchCopy189.language(java.util.Locale.getDefault().language).lock },contentAlignment=Alignment.Center) {
             WearLockIcon189(Muted,Modifier.size(14.dp))
@@ -1857,13 +1857,13 @@ private fun ValueTile(value: String, label: String, modifier: Modifier, enabled:
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Text(value, color = White, fontSize = 18.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold,
             maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Label(if (label == "ismétlés") "ism." else label, size = 8)
+        Label(if (label == wearText("ismétlés")) "ism." else label, size = 8)
     }
 }
 
 @Composable
 private fun WorkoutControls(workout: WearWorkout, restRemaining: Int, recordingEnabled: Boolean,
-                            recordLabel: String = "Rögzítés", onRecord: () -> Unit,
+                            recordLabel: String = wearText("Rögzítés"), onRecord: () -> Unit,
                             onPrevious: () -> Unit, onNext: () -> Unit, onSkipRest: () -> Unit, onFinish: () -> Unit,
                             layout: WearArcLayout) {
     val automatic=workout.automation
@@ -1876,26 +1876,26 @@ private fun WorkoutControls(workout: WearWorkout, restRemaining: Int, recordingE
     }
     CompositionLocalProvider(LocalActionSize provides layout.buttonSize) {
         Box {
-            RoundControl("‹", enabled = workout.currentExercise > 0, caption = "Előző", description = "Előző gyakorlat", onClick = onPrevious)
+            RoundControl("‹", enabled = workout.currentExercise > 0, caption = wearText("Előző"), description = wearText("Előző gyakorlat"), onClick = onPrevious)
         }
         Box(Modifier.offset(x = layout.sideOffset.dp, y = (layout.centerTop).dp)) {
             when {
-                quickUndo&&undo!=null&&WearUndo188.available(workout) -> RoundControl("↶",Danger,caption="Visszavonás",description="Utolsó sorozat visszavonása",onClick={WearUndo188.record(workout)?.optString("recordId")?.let(undo)})
-                WearUndo188.blocked(workout) -> RoundControl("…",enabled=false,caption="Egyeztetés",description="Visszavonás egyeztetése",onClick={})
-                automatic?.awaitingPhone==true -> RoundControl("…",enabled=false,caption="Telefon",description="Várakozás a telefonra",onClick={})
-                automatic?.enabled==true&&automatic.paused&&command!=null -> RoundControl("▶",caption="Folytatás",description="Automata folytatása",onClick={command("resume")})
-                restRemaining > 0 -> RoundControl("»", caption = "Kihagyás", description = "Pihenő kihagyása", onClick = onSkipRest)
-                workout.exerciseComplete -> RoundControl("✓", enabled = false, caption = "Rögzítve", onClick = {})
+                quickUndo&&undo!=null&&WearUndo188.available(workout) -> RoundControl("↶",Danger,caption=wearText("Visszavonás"),description=wearText("Utolsó sorozat visszavonása"),onClick={WearUndo188.record(workout)?.optString("recordId")?.let(undo)})
+                WearUndo188.blocked(workout) -> RoundControl("…",enabled=false,caption=wearText("Egyeztetés"),description=wearText("Visszavonás egyeztetése"),onClick={})
+                automatic?.awaitingPhone==true -> RoundControl("…",enabled=false,caption=wearText("Telefon"),description=wearText("Várakozás a telefonra"),onClick={})
+                automatic?.enabled==true&&automatic.paused&&command!=null -> RoundControl("▶",caption=wearText("Folytatás"),description=wearText("Automata folytatása"),onClick={command("resume")})
+                restRemaining > 0 -> RoundControl("»", caption = wearText("Kihagyás"), description = wearText("Pihenő kihagyása"), onClick = onSkipRest)
+                workout.exerciseComplete -> RoundControl("✓", enabled = false, caption = wearText("Rögzítve"), onClick = {})
                 else -> RoundControl("✓", SaveTone, enabled = recordingEnabled, caption = recordLabel,
-                    description = if (recordLabel == "Mentés") "Idő rögzítése" else "Sorozat rögzítése", onClick = onRecord)
+                    description = if (recordLabel == wearText("Mentés")) wearText("Idő rögzítése") else wearText("Sorozat rögzítése"), onClick = onRecord)
             }
         }
         Box(Modifier.offset(x = (2 * layout.sideOffset).dp)) {
             if (workout.currentExercise == workout.exercises.lastIndex)
                 RoundControl("✓", SaveTone,
-                    enabled = workout.completedSets > 0 && !WearUndo188.blocked(workout), caption = "Befejezés", description = "Edzés befejezése", onClick = onFinish)
+                    enabled = workout.completedSets > 0 && !WearUndo188.blocked(workout), caption = wearText("Befejezés"), description = wearText("Edzés befejezése"), onClick = onFinish)
             else RoundControl("›", if (workout.exerciseComplete) Gold else Secondary,
-                caption = "Következő", description = "Következő gyakorlat", onClick = onNext)
+                caption = wearText("Következő"), description = wearText("Következő gyakorlat"), onClick = onNext)
         }
     }
 }
@@ -1922,13 +1922,13 @@ private fun AutomaticTimedSetScreen(workout: WearWorkout,restRemaining: Int,heal
             }
             val waiting=a.phase=="ready"
             val remaining=if(waiting)a.workSeconds else ((a.remaining(android.os.SystemClock.elapsedRealtime())+999)/1000).toInt()
-            val label=if(a.phase=="rest")"Pihenő" else if(a.phase=="complete")"Rögzítve" else "Munka"
+            val label=if(a.phase=="rest")wearText("Pihenő") else if(a.phase=="complete")wearText("Rögzítve") else "Munka"
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)) {
                 Text("${if(a.paused||waiting)"▶" else "Ⅱ"} ${formatSeconds(remaining)}",color=White,
                     fontSize=((if(tiny)18 else 24)*scale).sp,lineHeight=((if(tiny)20 else 28)*scale).sp,
                     fontWeight=FontWeight.SemiBold,maxLines=1,modifier=Modifier.weight(1f).testTag("wear-automatic-clock")
                         .clickable(enabled=command!=null&&a.phase!="complete",role=Role.Button){command?.invoke(if(waiting)"start" else if(a.paused)"resume" else "pause")}
-                        .semantics { contentDescription=if(waiting)"Automata munkaszakasz indítása" else if(a.paused)"Automata folytatása" else "Automata szüneteltetése" })
+                        .semantics { contentDescription=if(waiting)wearText("Automata munkaszakasz indítása") else if(a.paused)wearText("Automata folytatása") else wearText("Automata szüneteltetése") })
                 Text(label+if(a.rounds>1)" · ${if(waiting)1 else a.round}/${a.rounds}. kör" else "",color=Muted,
                     fontSize=((if(tiny)8 else 9)*scale).sp,lineHeight=((if(tiny)9 else 10)*scale).sp,maxLines=2,
                     textAlign=TextAlign.Center,modifier=Modifier.weight(1f))
@@ -1996,7 +1996,7 @@ private fun CurrentSetScreen(
                     }
                 ValueTile(
                     set?.reps?.ifBlank { "0" } ?: "0",
-                    "ismétlés",
+                    wearText("ismétlés"),
                     Modifier.weight(1f),
                     enabled = set?.done == false && (workout.automation?.counting!=true||workout.automation.paused),
                 ) {
@@ -2076,10 +2076,10 @@ internal fun ValueEditor(
     }
     val title =
         when (field) {
-            "weight" -> "Súly"
-            "leftSeconds" -> "Bal oldal"
-            "rightSeconds" -> "Jobb oldal"
-            else -> if (step == 5.0) "Idő" else "Ismétlés"
+            "weight" -> wearText("Súly")
+            "leftSeconds" -> wearText("Bal oldal")
+            "rightSeconds" -> wearText("Jobb oldal")
+            else -> if (step == 5.0) wearText("Idő") else wearText("Ismétlés")
         }
     Box(Modifier.fillMaxSize().testTag("wear-value-editor")
         .focusRequester(focus)
@@ -2096,8 +2096,8 @@ internal fun ValueEditor(
         actions = { layout ->
             CompositionLocalProvider(LocalActionSize provides layout.buttonSize) {
                 Row(horizontalArrangement = Arrangement.spacedBy(layout.gap.dp)) {
-                    RoundControl("×", caption = "Mégse", description = "Mégse", onClick = onBack)
-                    RoundControl("✓", SaveTone, enabled=editable && foreground,caption = "Mentés", description = "✓ Mentés") {
+                    RoundControl("×", caption = wearText("Mégse"), description = wearText("Mégse"), onClick = onBack)
+                    RoundControl("✓", SaveTone, enabled=editable && foreground,caption = wearText("Mentés"), description = wearText("✓ Mentés")) {
                         if(save!=null&&!save(field,edited,target))return@RoundControl
                         if (
                             field.endsWith("Seconds") ||
@@ -2122,7 +2122,7 @@ internal fun ValueEditor(
         },
     ) { compact ->
         val fontScale = LocalDensity.current.fontScale
-        val series = if(editable)"Sorozat ${workout.currentSetIndex + 1}/${workout.exercise?.sets?.size ?: 0}"else "A sorozat közben változott"
+        val series = if(editable)"Sorozat ${workout.currentSetIndex + 1}/${workout.exercise?.sets?.size ?: 0}"else wearText("A sorozat közben változott")
         if (compact) Text(series, color = Muted, fontSize = (8f / fontScale).sp,
             lineHeight = (10f / fontScale).sp, textAlign = TextAlign.Center)
         else Label(series, size = 9)
@@ -2207,7 +2207,7 @@ private fun TimedSetScreen(
                 restRemaining,
                 recordingEnabled =
                     !set.done && (timer.startedAt > 0 || elapsed > 0 || fieldValue(set, field) > 0),
-                recordLabel = "Mentés",
+                recordLabel = wearText("Mentés"),
                 onRecord = {
                     val measured = timer.elapsed()
                     val seconds =
@@ -2240,7 +2240,7 @@ private fun TimedSetScreen(
                 restRemaining,
                 detail =
                     if (perSide)
-                        "${if (side == "leftSeconds") "Bal" else "Jobb"} oldal · ${workout.currentSetIndex + 1}/${workout.exercise?.sets?.size ?: 0}"
+                        "${if (side == "leftSeconds") wearText("Bal") else wearText("Jobb")} oldal · ${workout.currentSetIndex + 1}/${workout.exercise?.sets?.size ?: 0}"
                     else null,
             )
             LiveWorkoutHealth(workout, health)
@@ -2258,8 +2258,8 @@ private fun TimedSetScreen(
                     }
                     .semantics {
                         contentDescription =
-                            if (timer.startedAt > 0) "Stopper szüneteltetése"
-                            else "Stopper indítása"
+                            if (timer.startedAt > 0) wearText("Stopper szüneteltetése")
+                            else wearText("Stopper indítása")
                     },
                 contentAlignment = Alignment.Center,
             ) {
@@ -2364,14 +2364,14 @@ private fun TimedSetToolsScreen(
                     if (timer.startedAt > 0) "Ⅱ" else "▶",
                     enabled = !set.done,
                     description =
-                        if (timer.startedAt > 0) "Stopper szüneteltetése" else "Stopper indítása",
+                        if (timer.startedAt > 0) wearText("Stopper szüneteltetése") else wearText("Stopper indítása"),
                 ) {
                     timer = WearStopwatchStore.save(context, timer.toggle())
                 }
                 RoundControl(
                     if (perSide) "B/J" else "↺",
                     enabled = !set.done,
-                    description = if (perSide) "Bal és jobb oldal váltása" else "Stopper nullázása",
+                    description = if (perSide) wearText("Bal és jobb oldal váltása") else wearText("Stopper nullázása"),
                 ) {
                     if (perSide) {
                         val measured = timer.elapsed()
@@ -2396,8 +2396,8 @@ private fun TimedSetToolsScreen(
 
         centerItem {
             Pill(
-                if (perSide) "✓ ${if (side == "leftSeconds") "Bal" else "Jobb"} idő rögzítése"
-                else "✓ Idő rögzítése",
+                if (perSide) "✓ ${if (side == "leftSeconds") wearText("Bal") else wearText("Jobb")} idő rögzítése"
+                else wearText("✓ Idő rögzítése"),
                 enabled =
                     !set.done &&
                         (timer.startedAt > 0 ||
@@ -2410,7 +2410,7 @@ private fun TimedSetToolsScreen(
         }
 
         centerItem {
-            Pill("± Kézi időbeállítás", tone = Secondary, enabled = !set.done, size = 11) {
+            Pill(wearText("± Kézi időbeállítás"), tone = Secondary, enabled = !set.done, size = 11) {
                 timer =
                     WearStopwatchStore.save(
                         context,
@@ -2440,21 +2440,21 @@ private fun WorkoutMenu(
     val status=LocalSaveSync.current
     val undo=LocalUndo.current
     val touchLock=LocalTouchLock189.current
-    RoundList("Edzésmenü") {
+    RoundList(wearText("Edzésmenü")) {
         touchLock?.let { lock -> centerItem { Pill(WearTouchCopy189.language(java.util.Locale.getDefault().language).lock,tone=Secondary,onClick=lock) } }
         if(undo!=null&&WearUndo188.available(workout))centerItem {
-            Pill("Utolsó sorozat visszavonása",tone=Gold) { WearUndo188.record(workout)?.optString("recordId")?.let(undo) }
+            Pill(wearText("Utolsó sorozat visszavonása"),tone=Gold) { WearUndo188.record(workout)?.optString("recordId")?.let(undo) }
         }
-        if(WearUndo188.marker(workout)?.optString("status")=="conflict")centerItem { Label("Eltérő módosítás. Ellenőrizd a telefonon.") }
+        if(WearUndo188.marker(workout)?.optString("status")=="conflict")centerItem { Label(wearText("Eltérő módosítás. Ellenőrizd a telefonon.")) }
         if(status!=null)saveSyncItem()
-        centerItem { Pill("‹ Kezdőlap", tone = Secondary, onClick = onHome) }
+        centerItem { Pill(wearText("‹ Kezdőlap"), tone = Secondary, onClick = onHome) }
         if(automaticToggle!=null) centerItem {
             Text("Automata mód: ${if(workout.automation?.enabled==true)"Be" else "Ki"}",color=Gold,fontSize=11.sp,
                 modifier=Modifier.fillMaxWidth().heightIn(min=30.dp).clickable(role=Role.Button,onClick=automaticToggle)
-                    .padding(6.dp).semantics { contentDescription="Automata mód kapcsoló" },textAlign=TextAlign.Center)
+                    .padding(6.dp).semantics { contentDescription=wearText("Automata mód kapcsoló") },textAlign=TextAlign.Center)
         }
         if(workout.automation?.enabled==true&&automaticCommand!=null) {
-            for((name,seconds,field) in listOf(Triple("Munka",workout.automation.workSeconds,"work"),Triple("Pihenő",workout.automation.restSeconds,"rest"),Triple("Kör",workout.automation.rounds,"rounds"))) centerItem {
+            for((name,seconds,field) in listOf(Triple("Munka",workout.automation.workSeconds,"work"),Triple(wearText("Pihenő"),workout.automation.restSeconds,"rest"),Triple(wearText("Kör"),workout.automation.rounds,"rounds"))) centerItem {
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
                     Text("−",color=White,modifier=Modifier.size(30.dp).clickable(enabled=!workout.automation.counting,role=Role.Button){automaticCommand(field+"Minus")}.semantics { contentDescription="$name csökkentése" })
                     Text("$name $seconds mp",color=Muted,fontSize=10.sp)
@@ -2478,7 +2478,7 @@ private fun WorkoutMenu(
         if (normalizeUnit(workout.exercise?.repUnit.orEmpty()).startsWith("mp")&&!(workout.automation?.enabled==true&&WearAutomaticEngine.timed(workout.exercise))) {
             centerItem {
                 Pill(
-                    "Stopper és oldalak",
+                    wearText("Stopper és oldalak"),
                     tone = Secondary,
                     enabled = restRemaining == 0 && !workout.exerciseComplete,
                     onClick = onTimerTools,
@@ -2487,13 +2487,13 @@ private fun WorkoutMenu(
         }
         centerItem {
             Pill(
-                "Edzés befejezése",
+                wearText("Edzés befejezése"),
                 tone = Danger,
                 enabled = workout.completedSets > 0 && !WearUndo188.blocked(workout),
                 onClick = onFinish,
             )
         }
-        if (workout.completedSets == 0) centerItem { Label("Előbb rögzíts egy sorozatot") }
+        if (workout.completedSets == 0) centerItem { Label(wearText("Előbb rögzíts egy sorozatot")) }
         centerItem { Label("GYAKORLATOK", Gold) }
         workout.exercises.forEachIndexed { index, exercise ->
             centerItem {
@@ -2518,7 +2518,7 @@ private fun WorkoutMenu(
 
         centerItem {
             Pill(
-                "‹ Előző",
+                wearText("‹ Előző"),
                 tone = Secondary,
                 enabled = workout.currentExercise > 0,
                 onClick = onPrevious,
@@ -2527,7 +2527,7 @@ private fun WorkoutMenu(
 
         centerItem {
             Pill(
-                "Következő ›",
+                wearText("Következő ›"),
                 tone = Secondary,
                 enabled = workout.currentExercise < workout.exercises.lastIndex,
                 onClick = onNext,
@@ -2539,24 +2539,24 @@ private fun WorkoutMenu(
 @Composable
 private fun ConfirmationScreen(discard: Boolean, completed: Int, onAnswer: (Boolean) -> Unit) {
     ActionPanel(
-        if (discard) "Félbehagyott edzés" else "Edzés befejezése",
+        if (discard) wearText("Félbehagyott edzés") else wearText("Edzés befejezése"),
         count = 2,
         actions = { layout ->
             CompositionLocalProvider(LocalActionSize provides layout.buttonSize) {
                 Row(horizontalArrangement = Arrangement.spacedBy(layout.gap.dp)) {
                     RoundControl(
                         "×",
-                        caption = "Mégse",
-                        description = "Vissza, az edzés megőrzése",
+                        caption = wearText("Mégse"),
+                        description = wearText("Vissza, az edzés megőrzése"),
                     ) {
                         onAnswer(false)
                     }
                     RoundControl(
                         if (discard) "✕" else "✓",
                         if (discard) Danger else SaveTone,
-                        caption = if (discard) "Törlés" else "Befejezés",
+                        caption = if (discard) wearText("Törlés") else wearText("Befejezés"),
                         description =
-                            if (discard) "Edzés törlése" else "Edzés befejezése és mentése",
+                            if (discard) wearText("Edzés törlése") else wearText("Edzés befejezése és mentése"),
                     ) {
                         onAnswer(true)
                     }
@@ -2566,15 +2566,15 @@ private fun ConfirmationScreen(discard: Boolean, completed: Int, onAnswer: (Bool
     ) { compact ->
         run {
             Title(
-                if (discard) "Törlöd az edzést?" else "Befejezed az edzést?",
+                if (discard) wearText("Törlöd az edzést?") else wearText("Befejezed az edzést?"),
                 if (compact) 14 else 17,
             )
         }
 
         run {
             Text(
-                if (discard) "A félbehagyott edzés elvész.\nA napló megmarad."
-                else "$completed sorozat bekerül a naplóba.\nRészleges edzés is menthető.",
+                if (discard) wearText("A félbehagyott edzés elvész.\nA napló megmarad.")
+                else wearFormat("%d sorozat bekerül a naplóba.\nRészleges edzés is menthető.", completed),
                 color = Muted,
                 fontSize = 11.sp,
                 lineHeight = 13.sp,
@@ -2586,12 +2586,12 @@ private fun ConfirmationScreen(discard: Boolean, completed: Int, onAnswer: (Bool
 
 @Composable
 internal fun WorkoutFeedbackScreen(onAnswer: (String?) -> Unit) {
-    RoundList("Milyen volt az edzés?") {
+    RoundList(wearText("Milyen volt az edzés?")) {
         WearWorkoutFeedback.choices.forEachIndexed { index, (value, label) ->
-            centerItem { Pill("${index + 1} · $label", tone = Card) { onAnswer(value) } }
+            centerItem { Pill("${index + 1} · ${wearText(label)}", tone = Card) { onAnswer(value) } }
         }
-        centerItem { Pill("Fájdalom / kellemetlenség", tone = Danger) { onAnswer("pain") } }
-        centerItem { Pill("Most kihagyom", tone = Secondary) { onAnswer(null) } }
+        centerItem { Pill(wearText("Fájdalom / kellemetlenség"), tone = Danger) { onAnswer("pain") } }
+        centerItem { Pill(wearText("Most kihagyom"), tone = Secondary) { onAnswer(null) } }
     }
 }
 
@@ -2604,9 +2604,9 @@ private fun SummaryScreen(
 ) {
     val saved = result.status == "saved" || result.status == "discarded"
     ActionPanel(
-        if (result.status == "error") "Szinkronizálás"
-        else if (!saved) "Várakozás a telefonra"
-        else if (result.action == "discardWorkout") "Edzés törölve" else "Edzés kész",
+        if (result.status == "error") wearText("Szinkronizálás")
+        else if (!saved) wearText("Várakozás a telefonra")
+        else if (result.action == "discardWorkout") wearText("Edzés törölve") else wearText("Edzés kész"),
         count = if (result.status == "error") 2 else 1,
         actions = { layout ->
             CompositionLocalProvider(LocalActionSize provides layout.buttonSize) {
@@ -2614,22 +2614,22 @@ private fun SummaryScreen(
                     RoundControl(
                         if (saved) "✓" else "‹",
                         if (saved) Gold else Secondary,
-                        caption = if (saved) "Kész" else "Kezdőlap",
+                        caption = if (saved) wearText("Kész") else wearText("Kezdőlap"),
                         onClick = onDone,
                     )
                     if (result.status == "error")
                         RoundControl(
                             "↻",
                             Gold,
-                            caption = "Újrapróba",
-                            description = "Mentés újrapróbálása",
+                            caption = wearText("Újrapróba"),
+                            description = wearText("Mentés újrapróbálása"),
                             onClick = onRetry,
                         )
                 }
             }
         },
     ) { compact ->
-        if (result.status == "error") run { Title("Még nem menthető", if (compact) 14 else 19) }
+        if (result.status == "error") run { Title(wearText("Még nem menthető"), if (compact) 14 else 19) }
         if (result.status == "error") {
             run {
                 Text(result.message, color = Muted, fontSize = 12.sp, textAlign = TextAlign.Center)
@@ -2658,23 +2658,23 @@ private fun SummaryScreen(
             }
             run {
                 Label(
-                    if (saved) "Mentve a telefonos naplóba"
-                    else "Helyben megőrizve · mentés várakozik",
+                    if (saved) wearText("Mentve a telefonos naplóba")
+                    else wearText("Helyben megőrizve · mentés várakozik"),
                     lines = 3,
                 )
             }
         } else
             run {
                 Label(
-                    if (saved) "A félbehagyott edzés törölve"
-                    else "A telefonos törlés még várakozik",
+                    if (saved) wearText("A félbehagyott edzés törölve")
+                    else wearText("A telefonos törlés még várakozik"),
                     lines = 3,
                 )
             }
         if (result.action == "finishWorkout") {
             val metrics = wearMeasuredTotals(health, result.workoutId)
             if (metrics.isNotEmpty()) {
-                run { Label("ÓRÁN MÉRT ADATOK", Gold, size = 10) }
+                run { Label(wearText("ÓRÁN MÉRT ADATOK"), Gold, size = 10) }
                 for (pair in metrics.chunked(2)) {
 
                     run {
@@ -2688,7 +2688,7 @@ private fun SummaryScreen(
                                     .padding(vertical = 7.dp, horizontal = 4.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
-                                Label(metric.label, size = 9)
+                                Label(wearText(metric.label), size = 9)
                                 Title(metric.value, 14)
                             }
                             if (pair.size == 1) Spacer(Modifier.weight(1f))
@@ -2697,7 +2697,7 @@ private fun SummaryScreen(
                 }
                 run {
                     Text(
-                        "Az összes kcal az alapanyagcserét is tartalmazza.",
+                        wearText("Az összes kcal az alapanyagcserét is tartalmazza."),
                         color = Muted,
                         fontSize = 10.sp,
                         textAlign = TextAlign.Center,
@@ -2708,7 +2708,7 @@ private fun SummaryScreen(
                 if (health.optString("state") in listOf("starting", "active", "ending")) {
                     run {
                         Text(
-                            "A mérés lezárása folyamatban; az utolsó adatok még frissülhetnek.",
+                            wearText("A mérés lezárása folyamatban; az utolsó adatok még frissülhetnek."),
                             color = Gold,
                             fontSize = 10.sp,
                             textAlign = TextAlign.Center,
@@ -2718,7 +2718,7 @@ private fun SummaryScreen(
                 if (health.optBoolean("partial"))
                     run {
                         Text(
-                            "Részleges mérés",
+                            wearText("Részleges mérés"),
                             color = Gold,
                             fontSize = 10.sp,
                             textAlign = TextAlign.Center,

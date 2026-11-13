@@ -1,3 +1,38 @@
+# Kiadás előkészítés –2026-11-13,2757
+
+A felhasználó elfogadta a#223 javítócsomagot:main-integráció,APK+AAB build,
+külön telefonos/órás változásleírás kért. Előző kiadás2756(6b38451).
+Új kódok:telefon275700/Wear275702,név1.0-beta. Részletek:releases/2757-changes.md.
+A meglévő persistent-signing kapu egy közös Gradle-futásban APK+AAB párokat készít,
+megtartva a JVM-,APK-metaadat-,tartós signer-,Maps- és páridentitás-ellenőrzéseket.
+Az AAB aláírás- és metaadat-ellenőrzése az eddigi AAB workflow-ból változatlan.
+Egyetlen közös main-build kell; külön AAB-workflowt nem indítunk.
+Kész artifact/CI állítást még nem teszünk; Play feltöltést a felhasználó végzi.
+
+---
+
+# Átadó –2026-11-13 audit1–4
+
+Draft PR#223, ág:fix/nov13-audit-1-4, alapmain6b38451.
+Részletes változáslista:AUDIT_1_4_2026-11-13.md.
+Ellenőrzött natív/build/teszt SHA:817940800d95daf674e91418bed988cd13d6964f.
+Actions43390595599 SUCCESS:645=459telefon+186Wear,0failure/error/skipped,
+shared NO-SOURCE; releaseR8 is sikeres. Nyers XML, SHA és artifact digest ellenőrizve.
+Bizonyíték:AUDIT_1_4_CI_EVIDENCE_2026-11-13.json.
+
+Fő változások:pihenő visszavétel, mm:ss cél, ritmus/hetek/évhatár/naptár,
+aktív idő+valós edzéskalória, teljes gyorslisták, éles onboarding+exportkapu,
+holt régi phone/Wear UI törlése, R8/shrink+PhotoPicker, paletta/a11y/lokalizáció.
+Kiadó:FulTechStudios; support:paszia1998@gmail.com, felhasználó által megerősítve.
+PrivacyURL eleve helyes; Health/FGS forrásmátrix külön dokumentumban.
+
+Az5. pont új funkciói kihagyva. Egyetlen root dolgozott, új agent nincs.
+Nincs main-merge, verzióemelés vagy új APK/AAB. Fizikai/vizuális/Console elfogadás
+hátravan. A további ViewModel-domainbontás külön megfontolt refaktorálás marad.
+A záró docs-only commit az ellenőrzött app/build/teszt kódon nem változtat.
+
+---
+
 # 2026-11-12 – ellenőrzött auditjavítás és új Play-frissítés
 
 A #221 mainre került: 7397b9b2fd62b15dbe46de733c256a849fda4a40.

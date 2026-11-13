@@ -108,7 +108,7 @@ jobs:
               --tests 'com.example.HealthProviderSelectionRegressionTest' \
               --tests 'com.example.HealthSyncAdmissionRegressionTest'
           else
-            gradle --no-daemon --stacktrace --profile --continue :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest
+            gradle --no-daemon --stacktrace --profile --continue :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest :app:minifyReleaseWithR8
           fi
 
       - name: Verify raw phone, Wear and shared JUnit XML test results

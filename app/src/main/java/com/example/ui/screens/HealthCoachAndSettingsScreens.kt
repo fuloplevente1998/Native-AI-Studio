@@ -2105,7 +2105,7 @@ internal fun CoachDetailScreen(
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
-                                Text(tr(uiState.language, "1. Mai Samsung...", "1. Samsung Energy", "1. Samsung Energie", "1. Energie Samsung"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
+                                Text(tr(uiState.language, "1. Samsung Health", "1. Samsung Energy", "1. Samsung Energie", "1. Energie Samsung"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Text(
                                     text = if (readiness?.samsungScore != null) "$samsungScore / 100" else "—",
                                     style = MaterialTheme.typography.titleMedium,
@@ -2127,7 +2127,7 @@ internal fun CoachDetailScreen(
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
-                                Text(tr(uiState.language, "2. TrainPilot saját...", "2. TrainPilot Own", "2. TrainPilot Eigen", "2. Scor TrainPilot"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
+                                Text(tr(uiState.language, "2. TrainPilot", "2. TrainPilot Own", "2. TrainPilot Eigen", "2. Scor TrainPilot"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Text(
                                     text = if (readiness?.trainpilotScore != null) "$ownReadinessScore / 100" else "—",
                                     style = MaterialTheme.typography.titleMedium,
@@ -2145,7 +2145,7 @@ internal fun CoachDetailScreen(
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
-                                Text(tr(uiState.language, "3. Terheléssel...", "3. Load-Adjusted", "3. Mit Belastung", "3. Cu sarcină"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1)
+                                Text(tr(uiState.language, "3. Terheléshez igazítva", "3. Load-Adjusted", "3. Mit Belastung", "3. Cu sarcină"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Text(
                                     text = if (hasScore) "$displayScore / 100" else "—",
                                     style = MaterialTheme.typography.titleMedium,

@@ -983,7 +983,7 @@ fun ProgramsListScreen(
                             )
                             Icon(
                                 imageVector = Icons.Default.DragHandle,
-                                contentDescription = "Sorrend módosítása",
+                                contentDescription = trW(state.language, "Sorrend módosítása", "Change order", "Reihenfolge ändern", "Schimbă ordinea"),
                                 tint = palette.textSecondary,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -1648,7 +1648,7 @@ fun CalendarPlannerScreen(
             confirmButton = {
                 com.repforge.app.ui.theme.TrainPilotSaveButton(
                     onClick = {
-                        onModifyCalendarEvent(ev.id, "$activeProgramTitle • Alap $splitSel", splitSel, timeSel, durSel)
+                        onModifyCalendarEvent(ev.id, "$activeProgramTitle • ${trW(state.language, "Alap", "Day", "Tag", "Ziua")} $splitSel", splitSel, timeSel, durSel)
                         editingEvent = null
                     }) {
                     Text(strings.saveBtn, fontWeight = FontWeight.Bold)
@@ -1893,7 +1893,7 @@ fun CalendarPlannerScreen(
                                     shape = RoundedCornerShape(12.dp),
                                     color = palette.danger.copy(alpha = 0.12f),
                                     modifier = Modifier
-                                        .size(42.dp)
+                                        .size(48.dp)
                                         .border(1.dp, palette.danger.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                                         .clip(RoundedCornerShape(12.dp))
                                         .clickable { onBack() }
@@ -2326,7 +2326,7 @@ fun CalendarPlannerScreen(
                             shape = RoundedCornerShape(12.dp),
                             color = palette.danger.copy(alpha = 0.12f),
                             modifier = Modifier
-                                .size(42.dp)
+                                .size(48.dp)
                                 .border(1.dp, palette.danger.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { onOpenReplanModal(false) }
@@ -2696,7 +2696,7 @@ fun ExerciseLibraryScreen(
                         shape = RoundedCornerShape(16.dp),
                         color = if (selected) palette.primary else palette.surface,
                         modifier = Modifier
-                            .heightIn(min = 36.dp)
+                            .heightIn(min = 48.dp)
                             .trainPilotBorder(
                                 1.dp,
                                 if (selected) palette.primary else palette.cardBorder,
@@ -2774,7 +2774,7 @@ fun ExerciseLibraryScreen(
                                 contentColor = palette.onPrimary
                             ),
                             modifier = Modifier
-                                .heightIn(min = 36.dp)
+                                .heightIn(min = 48.dp)
                                 .testTag("exercise_library_start_queued_workout_button")
                         ) {
                             Text("▶ ${strings.startAction}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold)
@@ -2869,7 +2869,7 @@ fun ExerciseLibraryScreen(
                             shape = RoundedCornerShape(8.dp),
                             color = if (inQueue) palette.primary else palette.surfaceElevated,
                             modifier = Modifier
-                                .sizeIn(minWidth = 34.dp, minHeight = 36.dp)
+                                .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                                 .trainPilotBorder(
                                     1.dp,
                                     if (inQueue) palette.primary else palette.cardBorder,
@@ -2894,7 +2894,7 @@ fun ExerciseLibraryScreen(
                             shape = RoundedCornerShape(8.dp),
                             color = palette.primary,
                             modifier = Modifier
-                                .sizeIn(minWidth = 34.dp, minHeight = 36.dp)
+                                .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable { onStartExerciseNow(ex) }
                                 .testTag("exercise_library_start_now_${ex.id}")

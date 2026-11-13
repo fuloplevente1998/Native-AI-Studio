@@ -33,12 +33,12 @@ android {
     manifestPlaceholders["TRAINPILOT_MAPS_API_KEY"] = mapsApiKey
     minSdk = 26
     targetSdk = 36
-    versionCode = 275600 // Play scheme: release 2756, mobile suffix 00
+    versionCode = 275700 // Play scheme: release 2757, mobile suffix 00
     versionName = "1.0-beta"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    buildConfigField("String", "DEVELOPER_NAME", "\"\"")
-    buildConfigField("String", "SUPPORT_EMAIL", "\"\"")
+    buildConfigField("String", "DEVELOPER_NAME", "\"FulTechStudios\"")
+    buildConfigField("String", "SUPPORT_EMAIL", "\"paszia1998@gmail.com\"")
     buildConfigField("String", "PRIVACY_POLICY_URL", "\"https://fuloplevente1998.github.io/TrainPilot.io/privacy.html\"")
   }
 
@@ -63,7 +63,8 @@ android {
   buildTypes {
     release {
       isCrunchPngs = false
-      isMinifyEnabled = false
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       // Do not remove or modify this signingConfig assignment. It is necessary for Android apps in
       // AI Studio.

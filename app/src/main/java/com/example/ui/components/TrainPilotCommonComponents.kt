@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.material.icons.filled.Flag
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
@@ -230,7 +231,6 @@ fun TrainPilotGlobalTopHeaderAndNav(
                             .size(48.dp)
                             .clickable { onSelectTab(MainTab.CALENDAR) }
                             .testTag("top_bar_calendar_button")
-                            .padding(6.dp)
                             .trainPilotBorder(1.dp, if (isCalendarActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
                     ) {
@@ -255,7 +255,6 @@ fun TrainPilotGlobalTopHeaderAndNav(
                             .size(48.dp)
                             .clickable { onSelectTab(MainTab.COACH) }
                             .testTag("top_bar_coach_button")
-                            .padding(6.dp)
                             .trainPilotBorder(1.dp, if (isCoachActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
                     ) {
@@ -280,7 +279,6 @@ fun TrainPilotGlobalTopHeaderAndNav(
                             .size(48.dp)
                             .clickable { onOpenSettings() }
                             .testTag("top_bar_settings_button")
-                            .padding(6.dp)
                             .trainPilotBorder(1.dp, if (isSettingsActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
                     ) {
@@ -1565,7 +1563,7 @@ fun PersonalPlannerModalDialog(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("🎯", fontSize = 16.sp)
+                            Icon(Icons.Default.Flag, contentDescription = null, modifier = Modifier.size(16.dp))
                             Column {
                                 Text(tr(lang, "Cél és edzettség", "Goal & fitness level", "Ziel & Fitnesslevel", "Obiectiv și nivel de fitness"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                                 Text("${option(selectedGoal)} • ${option(selectedExperience)} • ${option(selectedLocation)}", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
@@ -1767,7 +1765,7 @@ fun PersonalPlannerModalDialog(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("📅", fontSize = 16.sp)
+                            Icon(Icons.Default.CalendarMonth, contentDescription = null, modifier = Modifier.size(16.dp))
                             Column {
                                 Text(tr(lang, "Edzésbeosztás", "Workout schedule", "Trainingsplan", "Program de antrenament"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                                 Text(
@@ -2349,7 +2347,7 @@ fun QuickWorkoutSheet(
                                 .widthIn(min = 260.dp, max = 340.dp)
                                 .heightIn(max = 280.dp)
                         ) {
-                            strengthList.take(40).forEach { ex ->
+                            strengthList.forEach { ex ->
                                 val isSel = ex.id == selectedStrengthEx?.id
                                 DropdownMenuItem(
                                     text = {

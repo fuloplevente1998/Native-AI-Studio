@@ -277,9 +277,6 @@ class UiUx219RegressionTest {
                         HomeScreen(
                             state = state,
                             strings = TrainPilotStrings.forLanguage(AppLanguage.HU),
-                            onOpenPalettePicker = {},
-                            onOpenSettings = {},
-                            onCycleDemoMode = {},
                             onStartOrContinueWorkout = {},
                             onOpenProgramDayDetails = {},
                             onOpenQuickWorkout = {},
@@ -288,8 +285,6 @@ class UiUx219RegressionTest {
                             onOpenHealthHeart = {},
                             onOpenHealthSteps = {},
                             onOpenCoachReadiness = {},
-                            onOpenProgramsList = {},
-                            onOpenCalendarPlanner = {},
                             onOpenGoalsDialog = {},
                             onOpenPersonalPlanner = {}
                         )

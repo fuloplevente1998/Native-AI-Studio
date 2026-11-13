@@ -85,301 +85,6 @@ import com.repforge.app.ui.progress.MuscleLoadUiModel
 import android.net.Uri
 import kotlin.math.roundToInt
 
-data class NavRoute(
-    val tab: MainTab,
-    val subScreen: SubScreen = SubScreen.NONE
-)
-
-data class WeeklyHealthDaySummary(
-    val dateIso: String,
-    val dayLabelHu: String,
-    val steps: Int,
-    val activeCaloriesKcal: Int,
-    val sleepLabel: String,
-    val workoutMinutes: Int,
-    val workoutCount: Int,
-    val sourceLabelHu: String,
-    val stepOriginPackage: String = "",
-    val stepsAvailable: Boolean = false,
-    val stepsSourceLabelHu: String = "Nincs napi lépésadat",
-    val pulse: PulseDayReading? = null
-)
-
-/** Read-only comparison for the exact saved native program and mode proposal. */
-data class StudioTrainingModeRow(
-    val day: String,
-    val exercise: String,
-    val beforeSets: Int?,
-    val afterSets: Int?,
-    val beforeReps: String,
-    val afterReps: String,
-    val restSeconds: Int?,
-    val beforeWeight: Double?,
-    val afterWeight: Double?,
-    val rir: String
-)
-
-data class StudioTrainingModeReview(
-    val beforeStyle: String,
-    val beforeProgression: String,
-    val afterStyle: String,
-    val afterProgression: String,
-    val inheritGlobal: Boolean,
-    val programName: String,
-    val rows: List<StudioTrainingModeRow>
-)
-
-data class TrainPilotUiState(
-    // Theme & Localization & Accessibility
-    val selectedPaletteId: Int = 1, // Default: 01 • Grafit & Arany
-    val paletteFilterCategory: PaletteCategory? = null, // null = All 32
-    val showPalettePickerSheet: Boolean = false,
-    val language: AppLanguage = AppLanguage.HU,
-    val fontScaleMultiplier: Float = 1.0f,
-    val compactPhoneMode: Boolean = false,
-
-    // Navigation & Backstack
-    val currentTab: MainTab = MainTab.HOME,
-    val currentSubScreen: SubScreen = SubScreen.NONE,
-    val backStack: List<NavRoute> = emptyList(),
-
-    // Home Screen State (Mockup 1/4 #1 + main Home)
-    val homeDemoMode: HomeDemoMode = HomeDemoMode.PLANNED_NEXT,
-    val workoutGoalPeriod: com.example.model.WorkoutGoalPeriod = com.example.model.WorkoutGoalPeriod.WEEKLY,
-    val workoutGoalTarget: Int = 15,
-    val workoutGoalCompleted: Int = 0,
-    val weeklyGoalCompleted: Int = 0,
-    val weeklyGoalTarget: Int = 15,
-    val showGoalsDialog: Boolean = false,
-    val showPersonalPlannerModal: Boolean = false,
-    val showQuickWorkoutSheet: Boolean = false,
-    val sleepDurationLabel: String = "—",
-    val sleepHoursDecimal: String = "—",
-    val sleepHasStages: Boolean = false,
-    val sleepStagesSummaryHu: String = "",
-    val restingHrBpm: Int = 0,
-    val currentHrBpm: Int = 0,
-    val maxHrBpm: Int = 0,
-    val minHrBpm: Int = 0,
-    val dailyPulseHistory: List<com.repforge.app.NativeDailyHealthDetails.PulsePoint> = emptyList(),
-    val dailyPulseSampleCount: Int = 0,
-    val hrvRmssdMs: Float = 0f,
-    val bloodPressureLabel: String = "—",
-    val bloodGlucoseLabel: String = "—",
-    val respiratoryRateLabel: String = "—",
-    val dailyDistanceKm: Float = 0f,
-    val dailySteps: Int = 0,
-    val stepsGoal: Int = 10000,
-    val activeCaloriesKcal: Int = 0,
-    val totalCaloriesKcal: Int = 0,
-    val dailyHealthDate: String = "",
-    val dailyHealthAvailableFields: Set<String> = emptySet(),
-    val dailyHealthSourceLabel: String = "Health Connect",
-    val dailyHealthLastSyncIso: String = "—",
-    val healthLastSyncByProvider: Map<String, String> = emptyMap(),
-    val healthRefreshRevision: Long = 0L,
-    val healthAutoOnOpen: Boolean = true,
-    val healthBackgroundOptedIn: Boolean = false,
-    val healthBackgroundScheduled: Boolean = false,
-    val healthGrantedCount: Int = 0,
-    val healthPermissionCount: Int = 0,
-    val lastHealthSyncLabel: String = "—",
-    val healthProviderStatus: String = "A szolgáltató állapota még nem ismert",
-    val healthSyncMessage: String = "", val healthSyncBusy: Boolean = false,
-    val healthSyncPartial: Boolean = false, val healthSyncFailed: Boolean = false,
-    val samsungGrantedCount: Int = -1, val samsungPermissionCount: Int = com.repforge.app.SamsungHealthRepository.PERMISSION_KEYS.size,
-    val lastHealthReadLabel: String = "—",
-    val samsungEnergyScore: Int = 0,
-    val trainPilotReadinessScore: Int = 0,
-    val coachReadinessScore: Int = 0,
-    val todayPulseReading: PulseDayReading? = null,
-    val todayRecoveryReading: RecoveryDayReading? = null,
-
-    // Watch & Sync State (Mockup 4/4 #2 + main)
-    val watchName: String = "Nincs csatlakoztatott Wear OS óra",
-    val watchConnected: Boolean = false,
-    val watchAppAvailable: Boolean = false,
-    val watchBatteryPercent: Int = -1,
-    val watchInfoLoading: Boolean = false,
-    val watchInfoMessage: String = "",
-    val watchDeviceDetails: String = "",
-    val watchInfoCardData: WatchInfoCardData = WatchInfoCardData(),
-    val phoneControlsWorkout: Boolean = true,
-    val watchControlPending: Boolean = false,
-    val offlineContinuationEnabled: Boolean = true,
-    val lastWatchSyncLabel: String = "—",
-    val autoDriveSync: Boolean = false,
-    val autoCalendarSync: Boolean = false,
-    val lastDriveSyncLabel: String = "—",
-    val lastCalendarSyncLabel: String = "—",
-
-    // Programs & Program Editor State (Mockup 1/4 #3 + 4/4 #6 + main)
-    val programs: List<TrainingProgramModel> = emptyList(),
-    val programsTabCustomOnly: Boolean = false,
-    val editingProgramId: String = "",
-    val editingDayIndex: Int = 0,
-    val expandedEditorExerciseId: String? = null,
-    val showProgressionModal: Boolean = false,
-    val trainingStyleHu: String = "Normál hipertrófia",
-    val progressionRuleHu: String = "Dupla progresszió",
-    val beginnerGentleProfileActive: Boolean = false,
-    val trainingStyleCode: String = "normal",
-    val progressionModeCode: String = "double",
-    val programTrainingStyleCode: String = "normal",
-    val programProgressionModeCode: String = "double",
-    val programTrainingModeSource: String = "legacy",
-    val activeTrainingModeProgramId: String = "",
-    val globalTrainingModeUndo: Boolean = false,
-    val programTrainingModeUndo: Boolean = false,
-    val progressionModeReview: StudioTrainingModeReview? = null,
-    val progressionModeBusy: Boolean = false,
-
-    // Calendar & Replan State (Mockup 1/4 #4 + main Naptár & Újratervezés)
-    val calendarYearMonth: String = YearMonth.now().toString(),
-    val selectedCalendarDay: Int = LocalDate.now().dayOfMonth,
-    val calendarEvents: List<CalendarDayEvent> = emptyList(),
-    val calendarUndoStack: List<List<CalendarDayEvent>> = emptyList(),
-    val showReplanModal: Boolean = false,
-    val planningCadenceHu: String = "Minden második nap",
-    val planningFirstDayHu: String = "Alap A",
-    val planningStartDate: String = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy. MM. dd.")),
-    val planningTime: String = "10:00",
-    val planningDurationMin: Int = 60,
-    val planningWeeksCount: Int = 4,
-
-    // Exercise Library & Detail State (Mockup 1/4 #5 & #6)
-    val exercises: List<ExerciseItem> = emptyList(),
-    val exerciseSearchQuery: String = "",
-    val selectedExerciseCategory: ExerciseCategory = ExerciseCategory.ALL,
-    val selectedExerciseId: String = "",
-    val showAddCustomExerciseDialog: Boolean = false,
-    val libraryMutationBusy: Boolean = false,
-    val favoriteExerciseIds: Set<String> = emptySet(),
-    val favoriteExercisesOnly: Boolean = false,
-
-    // Active Workout & Measurement State (Mockup 2/4 #1..#6)
-    val isSavingWorkout: Boolean = false,
-    val isWorkoutSessionActive: Boolean = false,
-    val activeWorkoutId: String = "",
-    val activeWorkoutGeneration: Long = 0L,
-    val workoutStartedEpochMs: Long = 0L,
-    val activeWorkoutSubScreen: SubScreen = SubScreen.ACTIVE_STRENGTH,
-    val activeWorkoutTitleHu: String = "Otthoni A/B • A nap",
-    val activeWorkoutExercises: List<ExerciseItem> = emptyList(),
-    val activeExerciseIndex: Int = 0,
-    val activeSets: List<ExerciseSetItem> = listOf(
-        ExerciseSetItem(setNumber = 1, weightKg = 0f, reps = 10, rir = 2, completed = false),
-        ExerciseSetItem(setNumber = 2, weightKg = 0f, reps = 10, rir = 2, completed = false),
-        ExerciseSetItem(setNumber = 3, weightKg = 0f, reps = 10, rir = 2, completed = false)
-    ),
-    val activeSetsByExerciseId: Map<String, List<ExerciseSetItem>> = emptyMap(),
-    val quickWorkoutQueue: List<ExerciseItem> = emptyList(),
-    val autoModeEnabled: Boolean = false,
-    val profileComplete: Boolean = false,
-    val userHeightCm: Int = 179,
-    val userWeightKg: Float = 65f,
-    val userFitnessGoalHu: String = "Izomépítés",
-    val userExperienceLevelHu: String = "Kezdő",
-    val userWorkoutLocationHu: String = "Otthon",
-    val userSelectedEquipmentHu: String = "Kézisúlyzó és pad",
-    val userScheduleDaysPerWeek: Int = 3,
-    val userWorkoutDurationMin: Int = 45,
-    val userExcludedMusclesHu: Set<String> = emptySet(),
-    val userExcludedExercisesHu: Set<String> = emptySet(),
-    val restTimerRemainingSec: Int = 90,
-    val restTimerRunning: Boolean = false,
-    val restTimerEndRealtimeMs: Long = 0L,
-    val restTimerEndEpochMs: Long = 0L,
-    val restTimerLastTickRealtimeMs: Long = 0L,
-    val defaultRestSec: Int = 90,
-    val soundAlertEnabled: Boolean = true,
-    val vibrationEnabled: Boolean = true,
-    val autoStepIntervals: Boolean = true,
-    val intervalWorkSec: Int = 30,
-    val intervalRestSec: Int = 60,
-    val intervalRounds: Int = 3,
-    val timedCurrentSec: Int = 0,
-    val bilateralLeftSec: Int = 0,
-    val bilateralRightSec: Int = 0,
-    val outdoorGpsEnabled: Boolean = true,
-    val outdoorRouteKey: String = "",
-    val outdoorDistanceKm: Float = 0f,
-    val outdoorElapsedLabel: String = "00:00",
-    val outdoorPaceLabel: String = "0:00",
-    val workoutSummaryMoodIndex: Int = -1, // No feedback until explicitly chosen.
-    val workoutSummaryNote: String = "",
-    val summaryFeedbackWorkoutId: String = "",
-    val exerciseFeedbackWorkoutId: String = "",
-    val exerciseFeedbackChoices: Map<String, Int> = emptyMap(),
-    val exerciseFeedbackNotes: Map<String, String> = emptyMap(),
-
-    // Log / Diary State (Mockup 3/4 #1..#3 + main)
-    val logSearchQuery: String = "",
-    val selectedLogMonth: String = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy. MMMM", Locale("hu", "HU"))),
-    val loggedWorkouts: List<LoggedWorkoutEntry> = emptyList(),
-    val selectedLogWorkoutId: String = "",
-    val logDetailTabIndex: Int = 0, // 0 = Gyakorlatok, 1 = Statisztikák, 2 = Forrás
-    val expandedLogExerciseIndex: Int = 0,
-
-    // Progress / Fejlődés State (Mockup 3/4 #4 + full main Fejlődés & Statisztikák)
-    val progressMainSection: Int = 0, // 0 = Kompakt Fejlődés (main), 1 = Statisztikák (Rekordok & Kardió), 2 = 1RM Erőnlét
-    val selectedProgressExercise: String = "Fekvenyomás",
-    val selectedProgressRangeIndex: Int = 3, // 0 = 1 nap, 1 = 7 nap, 2 = 30 nap, 3 = 3 hó
-    val selectedVolumeBarIndex: Int = -1,
-    val expandedStatsCardIndex: Int = -1,
-    val statsSubTab: Int = 0, // 0 = Személyes rekordok, 1 = Kardióstatisztika
-    val cardioFilterStepsMode: Boolean = true, // false = Minden mozgás, true = Napi aktivitás / lépések
-    val prRecords: List<PrRecordEntry> = emptyList(),
-    val savedExerciseBests: List<com.repforge.app.SavedExerciseBest> = emptyList(),
-    val savedRecordsLoading: Boolean = true,
-    val savedRecordsError: Boolean = false,
-    val videoModalExerciseTitle: String? = null,
-    val videoModalExerciseId: String? = null,
-    val realMuscleLoads: List<com.example.ui.components.MuscleLoadItem> = emptyList(),
-    val muscleLoadPeriodDays: Int = 90,
-    val logWorkoutMuscleLoads: List<com.example.ui.components.MuscleLoadItem> = emptyList(),
-
-    // Health / Egészség State (Mockup 3/4 #5 + full main Egészség)
-    val expandedWeeklySteps: Boolean = false,
-    val expandedWeeklyWorkouts: Boolean = false,
-    val expandedHealthPulseTrend: Boolean = false,
-    val expandedHealthWeightLog: Boolean = false,
-    val expandedHealthExtraData: Boolean = false,
-    val expandedHealthJournal: Boolean = false,
-    val expandedHealthConnect: Boolean = false,
-    val weeklyHealthDays: List<WeeklyHealthDaySummary> = emptyList(),
-    val dailyActivityDays: List<WeeklyHealthDaySummary> = emptyList(),
-    val weeklyTotalSteps: Int = 0,
-    val weeklyTotalCaloriesKcal: Int = 0,
-    val weeklyTotalDistanceKm: Float = 0f,
-    val weeklyAvgSleepLabel: String = "—",
-    val weeklyDataSourcesSummary: String = "Health Connect / Samsung Health + Room edzésnapló",
-    val dailySourceModeLabel: String = "Automatikus (legteljesebb napi lépésforrás)",
-    val selectedWeightRangeIndex: Int = 1, // 0=7d, 1=30d, 2=3m, 3=1y, 4=All
-    val currentBodyWeightKg: Float = 0f,
-    val bodyWeightLogs: List<BodyWeightLogItem> = emptyList(),
-    val bodyFatPercent: Float = 0f,
-    val spo2Percent: Float = 0f,
-    val vo2Max: Float = 0f,
-    val showAddWeightDialog: Boolean = false,
-    val primaryHealthSourceSamsung: Boolean = true,
-
-    // Permissions & Backup State (Mockup 4/4 #3, #4, #5)
-    val selectedBackupFormat: String = "JSON", // JSON, ZIP, DRIVE
-    val includeHealthInBackup: Boolean = false,
-    val backupHealthConsentSaving: Boolean = false,
-    val permissionGpsEnabled: Boolean = false,
-    val permissionCentralLocEnabled: Boolean = false,
-    val permissionNotificationsEnabled: Boolean = false,
-    val permissionHealthConnectEnabled: Boolean = false,
-    val permissionSamsungHealthEnabled: Boolean = false,
-    val privatePhotoCount: Int = 0,
-    val privatePhotoWorkoutId: String? = null,
-
-    // Toast / Feedback banner for immediate visual confirmation of actions
-    val statusBannerMessage: String? = null
-)
-
 class TrainPilotViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(TrainPilotUiState())
     val uiState: StateFlow<TrainPilotUiState> = _uiState.asStateFlow()
@@ -1694,7 +1399,7 @@ class TrainPilotViewModel : ViewModel() {
                     if (currentDbl.isFinite() && currentDbl > 0) currentHrVal = currentDbl.toInt()
                     if (calDbl.isFinite() && calDbl > 0) activeCalVal = calDbl.toInt()
                     if (sleepMinDbl.isFinite() && sleepMinDbl > 0) {
-                        sleepStr = String.format("%d ó %d p", (sleepMinDbl / 60).toInt(), (sleepMinDbl % 60).toInt())
+                        sleepStr = com.example.localization.StudioLocale.durationMinutes(sleepMinDbl.toInt(), _uiState.value.language)
                         sleepDecimal = "${((sleepMinDbl / 60.0) * 10.0).roundToInt() / 10.0} h"
                     }
                 }
@@ -1864,6 +1569,10 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun navigateToSubScreen(subScreen: SubScreen, targetTab: MainTab? = null) {
+        if (subScreen == SubScreen.PROGRAMS_LIST) {
+            selectTab(MainTab.PROGRAMS)
+            return
+        }
         if (subScreen !in setOf(SubScreen.EXERCISE_LIBRARY, SubScreen.EXERCISE_DETAIL)) exerciseSelection = null
         if (subScreen != _uiState.value.currentSubScreen && !pauseWhenLeavingMeasurement()) return
         val isActiveMeasurement = subScreen == SubScreen.ACTIVE_STRENGTH ||
@@ -2790,107 +2499,16 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun planMonthlyWorkouts() {
-        _uiState.update { state ->
-            val startDayNum = state.planningStartDate
-                .split(".")
-                .mapNotNull { it.trim().toIntOrNull() }
-                .lastOrNull()
-                ?.coerceIn(1, 31) ?: state.selectedCalendarDay.coerceIn(1, 31)
-
-            val stepDays = when {
-                state.planningCadenceHu.contains("Minden nap", ignoreCase = true) -> 1
-                state.planningCadenceHu.contains("3", ignoreCase = true) -> 2
-                state.planningCadenceHu.contains("4", ignoreCase = true) -> 2
-                else -> 2 // Minden második nap
-            }
-
-            val retainedCompleted = state.calendarEvents.filter {
-                !it.dateIso.startsWith(state.calendarYearMonth) || it.status == CalendarEventStatus.COMPLETED || it.dayOfMonth < startDayNum
-            }
-            val activeProgName = state.programs.firstOrNull { it.isActive }?.nameHu
-                ?: "Otthoni A/B (személyre szabott)"
-
-            var currentSplit = if (state.planningFirstDayHu.contains("B", ignoreCase = true)) "B" else "A"
-            val newPlanned = mutableListOf<CalendarDayEvent>()
-            var d = startDayNum
-            while (d <= YearMonth.parse(state.calendarYearMonth).lengthOfMonth()) {
-                if (retainedCompleted.none { it.dayOfMonth == d && it.status == CalendarEventStatus.COMPLETED }) {
-                    newPlanned.add(
-                        CalendarDayEvent(
-                            id = "ev_plan_${d}_${System.currentTimeMillis()}",
-                            dayOfMonth = d,
-                            timeLabel = state.planningTime,
-                            titleHu = "$activeProgName • Alap $currentSplit",
-                            exerciseCount = 6,
-                            durationMinutes = state.planningDurationMin,
-                            status = CalendarEventStatus.PLANNED,
-                            dateIso = YearMonth.parse(state.calendarYearMonth).atDay(d).toString(),
-                        splitBadge = currentSplit
-                        )
-                    )
-                    currentSplit = if (currentSplit == "A") "B" else "A"
-                }
-                d += stepDays
-            }
-
-            state.copy(
-                calendarUndoStack = (state.calendarUndoStack + listOf(state.calendarEvents)).takeLast(12),
-                calendarEvents = (retainedCompleted + newPlanned).sortedBy { it.dayOfMonth },
-                selectedCalendarDay = startDayNum,
-                statusBannerMessage = "Edzések megtervezve (${newPlanned.size} alkalom • ${state.planningCadenceHu})"
-            )
-        }
+        _uiState.update { com.example.model.StudioCalendarPlanning.plan(it) }
         persistCalendarStateToRoomAsync()
     }
 
     fun applyCalendarReplan(newStartDate: String, firstDayHu: String) {
         _uiState.update { state ->
-            val startDayNum = newStartDate
-                .split(".")
-                .mapNotNull { it.trim().toIntOrNull() }
-                .lastOrNull()
-                ?.coerceIn(1, 31) ?: 28
-
-            val retained = state.calendarEvents.filter {
-                !it.dateIso.startsWith(state.calendarYearMonth) || it.status == CalendarEventStatus.COMPLETED
-            }
-            val activeProgName = state.programs.firstOrNull { it.isActive }?.nameHu
-                ?: "Otthoni A/B (személyre szabott)"
-
-            var split = when {
-                firstDayHu.contains("B", ignoreCase = true) -> "B"
-                firstDayHu.contains("A", ignoreCase = true) && !firstDayHu.contains("Automatikus", ignoreCase = true) -> "A"
-                else -> "A"
-            }
-            val replanned = mutableListOf<CalendarDayEvent>()
-            var d = startDayNum
-            while (d <= YearMonth.parse(state.calendarYearMonth).lengthOfMonth()) {
-                replanned.add(
-                    CalendarDayEvent(
-                        id = "ev_replan_${d}_${System.currentTimeMillis()}",
-                        dayOfMonth = d,
-                        timeLabel = state.planningTime,
-                        titleHu = "$activeProgName • Alap $split",
-                        exerciseCount = 6,
-                        durationMinutes = state.planningDurationMin,
-                        status = CalendarEventStatus.PLANNED,
-                        dateIso = YearMonth.parse(state.calendarYearMonth).atDay(d).toString(),
-                        splitBadge = split
-                    )
-                )
-                split = if (split == "A") "B" else "A"
-                d += 2
-            }
-
-            state.copy(
-                calendarUndoStack = (state.calendarUndoStack + listOf(state.calendarEvents)).takeLast(12),
+            com.example.model.StudioCalendarPlanning.plan(state.copy(
                 planningStartDate = newStartDate,
-                planningFirstDayHu = firstDayHu,
-                calendarEvents = (retained + replanned).sortedBy { it.dayOfMonth },
-                selectedCalendarDay = startDayNum,
-                showReplanModal = false,
-                statusBannerMessage = "Terv frissítve ($newStartDate • Alap ${replanned.firstOrNull()?.splitBadge ?: "A"})"
-            )
+                planningFirstDayHu = firstDayHu
+            )).copy(showReplanModal = false)
         }
         persistCalendarStateToRoomAsync()
     }
@@ -3043,10 +2661,7 @@ class TrainPilotViewModel : ViewModel() {
             if (newlyCompleted) {
                 com.repforge.app.StudioRestTimer.start(base, state.defaultRestSec)
             } else {
-                base.copy(
-                    restTimerRemainingSec = state.defaultRestSec,
-                    restTimerRunning = true
-                )
+                base // Undoing completion must preserve the canonical rest deadline/state.
             }
         }
         persistCanonicalActiveSessionAsync()
@@ -4674,8 +4289,8 @@ class TrainPilotViewModel : ViewModel() {
                 val provider = prefs.optString("provider", HealthJournalStore.HC)
                 val hcDailySourceRaw = prefs.optString("hcDailySource", "auto")
                 val dailySourceModeHu = when (hcDailySourceRaw) {
-                    "auto", "" -> "Automatikus (legteljesebb egyedi forrás, duplikáció nélkül)"
-                    "priority" -> "Prioritásos forrásválasztás"
+                    "auto", "" -> studioModesText("Automatikus (legteljesebb egyedi forrás, duplikáció nélkül)", "Automatic (most complete single source, no duplicates)", "Automatisch (vollständigste Einzelquelle, ohne Duplikate)", "Automat (sursa unică cea mai completă, fără duplicate)")
+                    "priority" -> studioModesText("Prioritásos forrásválasztás", "Source priority", "Quellenpriorität", "Prioritatea surselor")
                     com.repforge.app.HealthDailySource.SAMSUNG -> "Rögzített forrás: Samsung Health"
                     else -> "Rögzített csomag: $hcDailySourceRaw"
                 }
@@ -4700,9 +4315,9 @@ class TrainPilotViewModel : ViewModel() {
                     } else false
                 }.getOrDefault(false)
                 val sleepStagesSummary = if (hasSleepStages) {
-                    "Részletes alvásfázisok rögzítve (mély, REM, könnyű alvás)"
+                    studioModesText("Részletes alvásfázisok rögzítve (mély, REM, könnyű alvás)", "Sleep stages recorded (deep, REM, light)", "Schlafphasen aufgezeichnet (Tief-, REM-, Leichtschlaf)", "Stadii de somn înregistrate (profund, REM, ușor)")
                 } else {
-                    "A szolgáltató nem adott át alvásfázisbontást (csak teljes időtartam)"
+                    studioModesText("A szolgáltató nem adott át alvásfázisbontást (csak teljes időtartam)", "Provider supplied total sleep duration only", "Anbieter lieferte nur die Gesamtschlafdauer", "Furnizorul a transmis doar durata totală a somnului")
                 }
                 val availableFields = (setOf("steps", "activeCalories", "totalCalories", "averageHeartRate",
                     "restingHeartRate", "minHeartRate", "maxHeartRate", "heartRateSamples")
@@ -4739,7 +4354,7 @@ class TrainPilotViewModel : ViewModel() {
 
                 // Build 7-day breakdown & source attribution
                 val currentWorkouts = _uiState.value.loggedWorkouts
-                val dayFmt = DateTimeFormatter.ofPattern("MM. dd. (EEE)", java.util.Locale("hu", "HU"))
+                val dayFmt = DateTimeFormatter.ofPattern("MM. dd. (EEE)", com.example.localization.StudioLocale.forLanguage(_uiState.value.language))
                 val weeklyDaysList = mutableListOf<WeeklyHealthDaySummary>()
                 var sumSteps = 0
                 var sumKcal = 0
@@ -4765,7 +4380,7 @@ class TrainPilotViewModel : ViewModel() {
                     val dSleepMin = com.repforge.app.NativeDailyHealthDetails.sleepMinutes(
                         dayObj, d, java.time.ZoneId.systemDefault(), Instant.now()) ?: Double.NaN
                     val dSleepLabel = if (dSleepMin.isFinite()) {
-                        String.format("%d ó %d p", (dSleepMin / 60).toInt(), (dSleepMin % 60).toInt())
+                        com.example.localization.StudioLocale.durationMinutes(dSleepMin.toInt(), _uiState.value.language)
                     } else "—"
 
                     val workoutsForDay = currentWorkouts.filter { w ->
@@ -4779,14 +4394,14 @@ class TrainPilotViewModel : ViewModel() {
                     val stepOriginPkg = dayObj?.optString("stepsOrigin", "")?.ifBlank { dayObj.optString("activityOrigin", "") }.orEmpty()
                     val dayChannel = dayObj?.optString("channel", provider).orEmpty()
                     val sourceLabelHu = when {
-                        hasHealthRow && workoutCountForDay > 0 -> "${formatProviderLabelHu(dayChannel, stepOriginPkg)} + Room edzésnapló"
+                        hasHealthRow && workoutCountForDay > 0 -> "${formatProviderLabelHu(dayChannel, stepOriginPkg)} + ${studioModesText("Edzésnapló", "Workout journal", "Trainingstagebuch", "Jurnal de antrenament")}"
                         hasHealthRow -> formatProviderLabelHu(dayChannel, stepOriginPkg)
-                        workoutCountForDay > 0 -> "Room edzésnapló (aktív edzésintervallumok)"
-                        else -> "Nincs rögzített adat"
+                        workoutCountForDay > 0 -> studioModesText("Edzésnapló (aktív időszakok)", "Workout journal (active intervals)", "Trainingstagebuch (aktive Zeiträume)", "Jurnal de antrenament (intervale active)")
+                        else -> studioModesText("Nincs rögzített adat", "No recorded data", "Keine aufgezeichneten Daten", "Nu există date înregistrate")
                     }
                     if (offset <= 6) {
                     if (hasHealthRow) discoveredSources.add(formatProviderLabelHu(dayChannel, stepOriginPkg))
-                    if (workoutCountForDay > 0) discoveredSources.add("Room edzésnapló (aktív edzésidő)")
+                    if (workoutCountForDay > 0) discoveredSources.add(studioModesText("Edzésnapló (aktív idő)", "Workout journal (active time)", "Trainingstagebuch (aktive Zeit)", "Jurnal de antrenament (timp activ)"))
 
                     sumSteps += dSteps
                     sumKcal += dKcal
@@ -4819,7 +4434,7 @@ class TrainPilotViewModel : ViewModel() {
 
                 val avgSleepHu = if (sleepDaysCount > 0) {
                     val avgMin = (sumSleepMin / sleepDaysCount).roundToInt()
-                    String.format("%d ó %d p", avgMin / 60, avgMin % 60)
+                    com.example.localization.StudioLocale.durationMinutes(avgMin, _uiState.value.language)
                 } else "—"
 
                 val primaryProviderHu = if (provider == HealthJournalStore.SAMSUNG) "Samsung Health" else "Health Connect"
@@ -4861,7 +4476,7 @@ class TrainPilotViewModel : ViewModel() {
                             dailyPulseHistory = todayPulseHistory,
                             dailyPulseSampleCount = todayData?.optInt("heartRateSamples", 0)?.coerceAtLeast(0) ?: 0,
                             activeCaloriesKcal = if (caloriesDbl.isFinite() && caloriesDbl > 0) caloriesDbl.toInt() else 0,
-                            sleepDurationLabel = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) String.format("%d ó %d p", (sleepMinDbl / 60).toInt(), (sleepMinDbl % 60).toInt()) else "—",
+                            sleepDurationLabel = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) com.example.localization.StudioLocale.durationMinutes(sleepMinDbl.toInt(), _uiState.value.language) else "—",
                             sleepHoursDecimal = if (sleepMinDbl.isFinite() && sleepMinDbl > 0) "${((sleepMinDbl / 60.0) * 10.0).roundToInt() / 10.0} h" else "—",
                             sleepHasStages = hasSleepStages,
                             sleepStagesSummaryHu = sleepStagesSummary,

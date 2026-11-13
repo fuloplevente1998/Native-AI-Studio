@@ -84,9 +84,6 @@ import com.example.ui.viewmodel.TrainPilotUiState
 fun HomeScreen(
     state: TrainPilotUiState,
     strings: LocalizedStrings,
-    onOpenPalettePicker: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onCycleDemoMode: (HomeDemoMode) -> Unit,
     onStartOrContinueWorkout: () -> Unit,
     onOpenProgramDayDetails: () -> Unit,
     onOpenQuickWorkout: () -> Unit,
@@ -95,8 +92,6 @@ fun HomeScreen(
     onOpenHealthHeart: () -> Unit,
     onOpenHealthSteps: () -> Unit,
     onOpenCoachReadiness: () -> Unit,
-    onOpenProgramsList: () -> Unit,
-    onOpenCalendarPlanner: () -> Unit,
     onOpenGoalsDialog: () -> Unit,
     onOpenPersonalPlanner: () -> Unit,
     onDiscardWorkout: (String) -> Unit = {},
@@ -105,7 +100,6 @@ fun HomeScreen(
     val palette = LocalTrainPilotPalette.current
     val activeProgram = state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
     val currentDay = activeProgram?.days?.firstOrNull()
-    var showExtendedMainCards by remember { mutableStateOf(true) }
     fun tr(hu: String, en: String, de: String, ro: String) = when (state.language) {
         com.example.model.AppLanguage.HU -> hu
         com.example.model.AppLanguage.EN -> en
@@ -407,7 +401,7 @@ fun HomeScreen(
         }
 
         // 8. MAIN BRANCH HOME CARDS (Célok beállítása, Mai javaslat / Coach, Személyes edzéstervező, Aktív kalória)
-        AnimatedVisibility(visible = showExtendedMainCards) {
+        Column {
             Column(verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)) {
                 // Célok beállítása (1/15 edzés >) from main Home screenshot
                 Surface(
@@ -442,7 +436,7 @@ fun HomeScreen(
                                 text = if ("activeCalories" in state.dailyHealthAvailableFields)
                                     "$periodSub • ${strings.activeCaloriesAndWorkoutsToday(state.activeCaloriesKcal,
                                         state.loggedWorkouts.count { it.localWorkoutDate() == java.time.LocalDate.now() })}"
-                                    else "$periodSub • ${state.stepsGoal} lépés/nap",
+                                    else "$periodSub • ${state.stepsGoal} ${tr("lépés/nap", "steps/day", "Schritte/Tag", "pași/zi")}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.textSecondary,
                                 maxLines = 1,
@@ -499,154 +493,3 @@ private fun HomeCompactShortcut(modifier: Modifier, icon: androidx.compose.ui.gr
         }
     }
 }
-
-@Composable
-private fun HomeVitalCard(
-    modifier: Modifier = Modifier,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    iconTint: Color,
-    title: String,
-    mainValue: String,
-    statusText: String,
-    statusColor: Color,
-    progressFraction: Float? = null,
-    progressColor: Color = iconTint,
-    footerCaption: String? = null,
-    onClick: () -> Unit
-) {
-    val palette = LocalTrainPilotPalette.current
-    Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = palette.surface,
-        modifier = modifier
-            .heightIn(min = 48.dp)
-            .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-            .clickable { onClick() }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = iconTint,
-                    modifier = Modifier.size(22.dp)
-                )
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = palette.textSecondary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            Text(
-                text = mainValue,
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = palette.textPrimary
-            )
-
-            Text(
-                text = statusText,
-                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                color = statusColor
-            )
-
-            if (progressFraction != null) {
-                Spacer(modifier = Modifier.height(2.dp))
-                LinearProgressIndicator(
-                    progress = { progressFraction },
-                    color = progressColor,
-                    trackColor = palette.surfaceElevated,
-                    strokeCap = StrokeCap.Round,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                )
-            }
-
-            if (footerCaption != null) {
-                Text(
-                    text = footerCaption,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = palette.textSecondary.copy(alpha = 0.8f),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun HomeQuickShortcutTile(
-    modifier: Modifier = Modifier,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
-    val palette = LocalTrainPilotPalette.current
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = palette.surface,
-        modifier = modifier
-            .heightIn(min = 48.dp)
-            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-            .clickable { onClick() }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = palette.primary,
-                modifier = Modifier.size(22.dp)
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                color = palette.textPrimary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = palette.textSecondary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-private fun formatThousand(value: Int): String {
-    val s = value.toString()
-    return if (s.length > 3) {
-        "${s.dropLast(3)} ${s.takeLast(3)}"
-    } else s
-}
-
-private data class Quintuple<A, B, C, D, E>(
-    val first: A,
-    val second: B,
-    val third: C,
-    val fourth: D,
-    val fifth: E
-)
-

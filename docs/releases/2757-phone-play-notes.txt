@@ -1,0 +1,14 @@
+<hu-HU>
+- A sorozat visszavétele nem indít új pihenőt; helyes időcél-formátum.
+- Tervezés a választott heti ritmussal, 1–12 hétre.
+- Összegző aktív edzésidővel és edzéshez kötött mért kalóriával.
+- Teljes gyorsgyakorlat-listák és javított első indítás.
+- Világos témák, érintési célok, fordítások és fotóválasztó javítva.
+</hu-HU>
+<en-US>
+- Undoing a set no longer starts a new rest; corrected time-target formatting.
+- Planning follows the selected weekly rhythm for 1–12 weeks.
+- Summary uses active workout time and workout-specific measured calories.
+- Complete quick exercise lists and improved first-run onboarding.
+- Improved light themes, touch targets, translations and photo selection.
+</en-US>
