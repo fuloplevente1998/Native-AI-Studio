@@ -1,3 +1,30 @@
+# 2026-11-13 – aktív súlyzós edzés: inline sorozatkártyák és legördülő értékek
+
+Felhasználói kérés: a mockupok kártyás stílusa a valódi edzésen is jelenjen meg,
+felnyíló szerkesztőablak helyett közvetlen értékválasztással.
+A súlyzós aktív képernyő régi vízszintes táblázata/külön kitöltődialogja helyett
+`StudioStrengthSetCard` jelenik meg. Sorozatonként kg/ism./RIR választó, külön
+rögzítés/visszavonás és törlés; az új sorozat gomb megmarad. A súlynál egyedi
+érték inline megadható (vessző/pont, pozitív vagy nulla, véges érték), így
+az előzményből/importból származó, listán kívüli súly sem vész el.
+Ismétlés 1–100, RIR 0–10 vagy hiányzó; a többi mező és a hiányzó RIR jelzője
+értékválasztáskor megmarad. A sorozat csak a külön rögzítőgombbal lesz kész.
+
+A sorozat/session identitása és szerkeszthetősége reseteli a megnyitott menüt;
+órás vezérlés/átadás/mentés alatt a mezők és a törlés/rögzítés tiltottak.
+A korábbi natív mentési/ownership/ID/generation kapuk megmaradnak, nincs új motor.
+Szűk képernyőn/nagy betűn a mezők egymás alá rendeződnek.
+Az időalapú/kétoldalas/GPS-mérés, a pihenő és az edzésátadás motorja nem változott.
+A három korábbi teljesképernyős mockup továbbra is javaslat, ez a commit az aktív
+súlyzós sorozatszerkesztést valósítja meg.
+
+Tesztforrás: StudioStrengthSetCardRegressionTest – mezők megőrzése, egyedi 6,25 kg,
+RIR/ismétlés választás és külön rögzítés; ownership-tiltás bezárja a nyitott menüt.
+Ág/PR: maintenance/post2757-audit / #225. Diff ellenőrizve. Felhasználói kérésre
+nincs új CI/Gradle/APK/AAB, a tesztforrás és fizikai kinézet még nincs futtatva.
+
+---
+
 # 2026-11-13 – Gyors edzés teljes felnyitás, csak kód
 
 A QuickWorkoutSheet explicit `skipPartiallyExpanded = true` állapotot és teljes
