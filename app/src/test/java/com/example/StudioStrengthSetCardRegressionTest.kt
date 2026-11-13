@@ -59,6 +59,15 @@ class StudioStrengthSetCardRegressionTest {
         compose.runOnIdle { assertEquals(1, completions) }
     }
 
+    @Test fun decimalWeightUsesItsCanonicalTextWithoutFloatPrecisionNoise() {
+        compose.setContent { TrainPilotTheme {
+            StudioStrengthSetCard(ExerciseSetItem(1, 19.7f, 15, 2, false, id = "set-a"),
+                "workout/1/exercise/set-a", AppLanguage.HU, "kg", "ism.", true, true,
+                onValues = { _, _, _ -> }, onToggle = {}, onDelete = {})
+        } }
+        compose.onNodeWithTag("active_set_weight_1").assertTextContains("19,7")
+    }
+
     @Test fun ownershipLockDisablesValuesCompletionAndDeletionAndClosesAnOpenMenu() {
         var enabled by mutableStateOf(true)
         var changes = 0
