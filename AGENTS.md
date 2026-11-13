@@ -19,29 +19,28 @@ Ez a fájl a teljes repóra érvényes. Az aktuális felhasználói utasítás e
    feladatra szóló felhasználói elfogadást kövesse; másik feladat engedélye nem elég.
    Ne küldj külön kérés nélkül GitHub-kommentet vagy másoknak üzenetet.
 
-## Modell és thinking – 2026-11-05-i felhasználói szabály
+## Modell és thinking – 2026-11-13-i felhasználói szabály
 
-Alapmodell: **GPT-6.1 Sol**. A munkához válassz gondolkodási szintet:
+A fő koordinátor ajánlott modellje **GPT-6.1 Sol / High**. Nehéz hibakeresés,
+szinkron, állapotversenyek, kódellenőrzés és integráció szintén **Sol / High**.
+A felhasználó ezt a fő chat felületén állítja; eszköz nélkül ne állítsuk, hogy a
+fő chat tényleges modelljét/thinking-szintjét kiolvastuk vagy átállítottuk.
 
-| Feladat | Szint | Konkrét példa |
+| Feladat | Modell | Thinking |
 | --- | --- | --- |
-| Egyszerű keresés, státusz, dokumentáció | Light / Low (`low`) | PR-lista és átadó frissítése |
-| Fejlesztés és ismert működés bekötése | Medium (`medium`) | Meglévő adatmodell megjelenítése |
-| Vizuális dizájn/layout | Medium (`medium`) | Keret, ikon, szín és kompakt elrendezés |
-| Kódhiba vizsgálata és javítása | High (`high`) | Hibás API-útvonal, elutasított művelet |
-| Összetett debug, versenyhelyzet, CI-kapu hibája | High (`high`) | Dupla edzés, ownership, restore, stopperállapot |
+| Fő koordináció, kódreview és összeillesztés | GPT-6.1 Sol (`gpt-6.1-sol`) | High (`high`) |
+| Nehéz debug, szinkron, ownership/restore/CI-verseny | GPT-6.1 Sol (`gpt-6.1-sol`) | High (`high`) |
+| Körülhatárolt fejlesztés, ismert kódjavítás, dizájn | GPT-6.1 Terra (`gpt-6.1-terra`) | Medium (`medium`) |
+| Egyszerű keresés, státusz és dokumentáció | GPT-6 Luna (`gpt-6-luna`) | Low / Light (`low`) |
 
-Extra High (`xhigh`) agentet ne indíts: a 2026-11-05-i újabb felhasználói
-utasítás legfeljebb High szintet enged hibakereséshez.
-
-A szint feladaton belül is változhat. A dizájnhoz tartozó összetett állapot- vagy
-teszthibát a hibakeresési sor szerint kezeld. Az új kérés felülírja az eredeti
-WebView-repó régebbi „minden kódolás High” szabályát.
-
-Agent indításakor a modell/szint eszközparaméterét állítsd, ha elérhető. A futó
-fő chat felületi modelljét vagy thinking-szintjét ne állítsd átállítottnak, ha nincs
-hozzá eszközöd; jelezd röviden a szükséges fázist, és folytasd az engedélyezett munkát.
-A fázisjelzés nem új jóváhagyási kör.
+A felhasználó engedélyezte az alügynökös munkát. Csak hasznos, egymástól
+elkülöníthető részfeladatra indítsunk agentet; apró változáshoz nem kötelező.
+Minden agent rövid feladatot és csak a szükséges forrásokat kapja
+(`fork_turns="none"`); ne másoljuk át a teljes beszélgetést. Agent indításakor a
+fenti modell/thinking paramétereket ténylegesen adjuk meg. Ha a kéréshez más
+szint kell, a feladatot szűkítsük vagy adjuk vissza a fő Sol/High integrátornak.
+Extra High (`xhigh`) nem engedélyezett. Pontos költségarányt ellenőrzött
+áradat nélkül ne állítsunk; a több agent önmagában több tokent is fogyaszthat.
 
 ## Párhuzamos munka és feladathatárok
 
