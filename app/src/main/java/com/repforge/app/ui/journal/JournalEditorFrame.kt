@@ -54,6 +54,9 @@ internal fun JournalEditorFrame(title: String, saving: Boolean, onCancel: () -> 
                 .testTag("journal_editor_visible_viewport")) {
             Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
                 colors.accent.copy(alpha = 0.06f), colors.card, colors.card2))).padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    HorizontalDivider(Modifier.width(32.dp).height(4.dp), color = colors.muted.copy(alpha = 0.5f))
+                }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                     TrainPilotRedCloseButton(onClick = { if (!saving) onCancel() },

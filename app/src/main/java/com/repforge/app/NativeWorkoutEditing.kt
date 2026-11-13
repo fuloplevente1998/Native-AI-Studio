@@ -17,6 +17,15 @@ import java.util.UUID
  * is its UI/transport projection, committed before event acknowledgements. No second editor state.
  */
 internal object NativeWorkoutEditing {
+    /** Read-only admission: unlike project(), never saves a frame or acknowledges events. */
+    fun canEdit(context: Context, workoutId: String, generation: Long): Boolean = runCatching {
+        val store = PhoneWorkoutExecution.store(context)
+        if (store.restoreBlocked() || store.commandsSuspended()) return@runCatching false
+        val frame = store.snapshot() ?: return@runCatching false
+        requireEditable(frame, ActiveWorkoutStore.current(context))
+        frame.optString("workoutId") == workoutId && frame.optLong("generation") == generation
+    }.getOrDefault(false)
+
     fun project(context: Context, display: JSONObject? = null): JSONObject {
         val store = PhoneWorkoutExecution.store(context)
         check(!store.restoreBlocked() && !store.commandsSuspended()) { "A natív edzésvezérlés átmenetileg foglalt." }

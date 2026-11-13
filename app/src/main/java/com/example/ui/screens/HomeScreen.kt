@@ -389,14 +389,26 @@ fun HomeScreen(
             }
         }
 
-        // Shared compact 3 × 2 today summary. Details open on their existing destination pages.
-        StudioTodayStatusGrid(state, compact = true) { key ->
-            when (key) {
-                "sleep" -> onOpenHealthSleep()
-                "pulse" -> onOpenHealthHeart()
-                "steps" -> onOpenHealthSteps()
-                "recovery" -> onOpenCoachReadiness()
-                else -> onOpenHealthToday()
+        // One emphasized group frame; the six inner tiles keep their existing destinations.
+        val todayShape = RoundedCornerShape(20.dp)
+        Surface(
+            shape = todayShape,
+            color = palette.surfaceCard,
+            modifier = Modifier.fillMaxWidth()
+                .trainPilotSoftGlow(palette.primary, todayShape)
+                .border(com.repforge.app.ui.theme.TrainPilotFrames.page(palette.sectionBorder, palette.primary), todayShape)
+                .testTag("home_today_status_group")
+        ) {
+            Box(Modifier.padding(8.dp)) {
+                StudioTodayStatusGrid(state, compact = true) { key ->
+                    when (key) {
+                        "sleep" -> onOpenHealthSleep()
+                        "pulse" -> onOpenHealthHeart()
+                        "steps" -> onOpenHealthSteps()
+                        "recovery" -> onOpenCoachReadiness()
+                        else -> onOpenHealthToday()
+                    }
+                }
             }
         }
 

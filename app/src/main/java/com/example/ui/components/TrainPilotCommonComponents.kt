@@ -1470,50 +1470,11 @@ fun PersonalPlannerModalDialog(
         }
     }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = palette.surface,
-        titleContentColor = palette.textPrimary,
-        textContentColor = palette.textSecondary,
-        title = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = tr(lang, "Kezdőprofil és egyéni terv (A01)", "Starter Profile & Custom Plan (A01)", "Startprofil & individueller Plan (A01)", "Profil de start și plan personalizat (A01)"),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = palette.primary
-                    )
-                    Text(
-                        text = tr(lang, "Válaszd ki az opciókat a legördülő listákból (nem kell gépelni).", "Select options from the dropdowns (no typing required).", "Wähle Optionen aus den Dropdown-Listen (kein Tippen nötig).", "Selectează opțiunile din listele derulante (fără tastare)."),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.textSecondary
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.Transparent,
-                    modifier = Modifier
-                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable { onDismiss() }
-                        .testTag("planner_skip_btn")
-                ) {
-                    Text(
-                        text = strings.skipAction,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = palette.primary,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                    )
-                }
-            }
-        },
-        text = {
+    TrainPilotFullHeightFormSheet(
+        onDismiss = onDismiss,
+        title = tr(lang, "Profil és új terv", "Profile and new plan", "Profil und neuer Plan", "Profil și plan nou"),
+        closeTestTag = "planner_skip_btn",
+        content = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1815,7 +1776,7 @@ fun PersonalPlannerModalDialog(
                     color = palette.surfaceElevated,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, Color(0xFFE53935).copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                        .border(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                 ) {
                     Column(
                         modifier = Modifier.padding(12.dp),
@@ -1827,7 +1788,7 @@ fun PersonalPlannerModalDialog(
                         ) {
                             Text("⚙️", fontSize = 16.sp)
                             Column {
-                                Text(tr(lang, "Korlátozások", "Restrictions", "Einschränkungen", "Restricții"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color(0xFFFF8A80))
+                                Text(tr(lang, "Korlátozások", "Restrictions", "Einschränkungen", "Restricții"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = palette.primary)
                                 val totalExcluded = excludedMuscles.size + excludedExercises.size
                                 Text(
                                     text = if (totalExcluded == 0) {
@@ -1846,7 +1807,7 @@ fun PersonalPlannerModalDialog(
                         Box(modifier = Modifier.fillMaxWidth()) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = Color(0xFF1E0A0E),
+                                color = palette.surface,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .border(
@@ -1890,7 +1851,7 @@ fun PersonalPlannerModalDialog(
                                         },
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = if (excludedMuscles.isEmpty()) FontWeight.Normal else FontWeight.SemiBold,
-                                        color = if (excludedMuscles.isEmpty()) palette.textSecondary else Color(0xFFFF8A80)
+                                        color = if (excludedMuscles.isEmpty()) palette.textSecondary else palette.primary
                                     )
                                 }
                             }
@@ -1898,7 +1859,7 @@ fun PersonalPlannerModalDialog(
                             DropdownMenu(
                                 expanded = isMusclesOpen,
                                 onDismissRequest = { openDropdownKey = null },
-                                containerColor = Color(0xFF1E0A0E),
+                                containerColor = palette.surface,
                                 shape = RoundedCornerShape(12.dp),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFF6E6E)),
                                 modifier = Modifier
@@ -1949,7 +1910,7 @@ fun PersonalPlannerModalDialog(
                         Box(modifier = Modifier.fillMaxWidth()) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = Color(0xFF1E0A0E),
+                                color = palette.surface,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .border(
@@ -1993,7 +1954,7 @@ fun PersonalPlannerModalDialog(
                                         },
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = if (excludedExercises.isEmpty()) FontWeight.Normal else FontWeight.SemiBold,
-                                        color = if (excludedExercises.isEmpty()) palette.textSecondary else Color(0xFFFF8A80)
+                                        color = if (excludedExercises.isEmpty()) palette.textSecondary else palette.primary
                                     )
                                 }
                             }
@@ -2001,7 +1962,7 @@ fun PersonalPlannerModalDialog(
                             DropdownMenu(
                                 expanded = isExercisesOpen,
                                 onDismissRequest = { openDropdownKey = null },
-                                containerColor = Color(0xFF1E0A0E),
+                                containerColor = palette.surface,
                                 shape = RoundedCornerShape(12.dp),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFF6E6E)),
                                 modifier = Modifier
@@ -2090,8 +2051,7 @@ fun PersonalPlannerModalDialog(
                     fontWeight = FontWeight.Bold
                 )
             }
-        },
-        dismissButton = {}
+        }
     )
 }
 
@@ -2132,8 +2092,12 @@ fun QuickWorkoutSheet(
     }
     var timedDropdownOpen by remember { mutableStateOf(false) }
 
+    // Start fully expanded, including when the selected/queued content is short.
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        modifier = Modifier.fillMaxHeight().testTag("quick_workout_sheet"),
         containerColor = palette.surface,
         contentColor = palette.textPrimary
     ) {
@@ -2305,6 +2269,7 @@ fun QuickWorkoutSheet(
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(12.dp))
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { strengthDropdownOpen = true }
+                                .testTag("quick_strength_picker")
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -2350,6 +2315,7 @@ fun QuickWorkoutSheet(
                             strengthList.forEach { ex ->
                                 val isSel = ex.id == selectedStrengthEx?.id
                                 DropdownMenuItem(
+                                    modifier = Modifier.testTag("quick_strength_option_${ex.id}"),
                                     text = {
                                         Text(
                                             text = "${ex.localizedName(strings.language)} • ${ex.category.localized(strings.language)}",
@@ -2376,7 +2342,7 @@ fun QuickWorkoutSheet(
                             contentColor = palette.onPrimary
                         ),
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag("quick_strength_start")
                     ) {
                         Text(
                             text = tr(

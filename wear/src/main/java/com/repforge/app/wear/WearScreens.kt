@@ -992,7 +992,7 @@ private fun MiniJournalDetailScreen(
                 }
                 exercise.sets.forEach { set ->
                     val details = buildList {
-                        if (set.reps.isNotBlank()) add("${set.reps} ism.")
+                        if (set.reps.isNotBlank()) add("${set.reps} ${wearText("ism.")}")
                         if (set.weight != null && set.weight > 0.0)
                             add("${miniNumber(set.weight, 1)} kg")
                         if (
@@ -1009,7 +1009,7 @@ private fun MiniJournalDetailScreen(
                     }
                     centerItem {
                         JournalText(
-                            "${set.number}. sorozat • ${details.joinToString(" · ").ifBlank { wearText("Kész") }}",
+                            wearFormat("%d. sorozat • %s", set.number, details.joinToString(" · ").ifBlank { wearText("Kész") }),
                             size = 11,
                         )
                     }
@@ -1819,11 +1819,11 @@ private fun SetHeading(workout: WearWorkout, restRemaining: Int, detail: String?
     val heading = when {
         automatic?.awaitingPhone==true -> wearText("Telefonra vár")
         automatic?.enabled==true && automatic.interrupted -> wearText("Megszakadt · folytatható")
-        automatic?.enabled==true && automatic.paused -> "Szünet · ${formatSeconds((automatic.remaining(android.os.SystemClock.elapsedRealtime())/1000).toInt())}"
-        automatic?.enabled==true && automatic.phase=="rest" -> "Pihenő ${formatSeconds(restRemaining)}"
-        restRemaining > 0 -> "Pihenő ${formatSeconds(restRemaining)} · $completed/$count"
-        workout.exerciseComplete -> "✓ $completed/$count sorozat rögzítve"
-        else -> detail ?: "${workout.currentExercise + 1}/${workout.exercises.size} · Sorozat ${workout.currentSetIndex + 1}/$count"
+        automatic?.enabled==true && automatic.paused -> wearFormat("Szünet · %s", formatSeconds((automatic.remaining(android.os.SystemClock.elapsedRealtime())/1000).toInt()))
+        automatic?.enabled==true && automatic.phase=="rest" -> wearFormat("Pihenő %s", formatSeconds(restRemaining))
+        restRemaining > 0 -> wearFormat("Pihenő %s · %d/%d", formatSeconds(restRemaining), completed, count)
+        workout.exerciseComplete -> wearFormat("✓ %d/%d sorozat rögzítve", completed, count)
+        else -> detail ?: wearFormat("%d/%d · Sorozat %d/%d", workout.currentExercise + 1, workout.exercises.size, workout.currentSetIndex + 1, count)
     }
     val fontScale = LocalDensity.current.fontScale
     val captionScale = fontScale.coerceAtMost(if(compact)1f else 1.35f) / fontScale
@@ -1836,7 +1836,7 @@ private fun SetHeading(workout: WearWorkout, restRemaining: Int, detail: String?
         Text(" · ", color = Muted, fontSize = (7 * captionScale).sp,
             lineHeight = (10 * captionScale).sp, maxLines = 1)
         Text(clock, modifier = Modifier.testTag("wear-workout-clock")
-            .semantics { contentDescription = "Pontos idő: $clock" },
+            .semantics { contentDescription = wearFormat("Pontos idő: %s", clock) },
             color = Muted, fontSize = (7 * captionScale).sp,
             lineHeight = (10 * captionScale).sp, maxLines = 1)
         if(toggle!=null) Text(if(automatic?.enabled==true)" A" else " M",color=if(automatic?.enabled==true)Gold else Muted,
@@ -1922,14 +1922,14 @@ private fun AutomaticTimedSetScreen(workout: WearWorkout,restRemaining: Int,heal
             }
             val waiting=a.phase=="ready"
             val remaining=if(waiting)a.workSeconds else ((a.remaining(android.os.SystemClock.elapsedRealtime())+999)/1000).toInt()
-            val label=if(a.phase=="rest")wearText("Pihenő") else if(a.phase=="complete")wearText("Rögzítve") else "Munka"
+            val label=if(a.phase=="rest")wearText("Pihenő") else if(a.phase=="complete")wearText("Rögzítve") else wearText("Munka")
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)) {
                 Text("${if(a.paused||waiting)"▶" else "Ⅱ"} ${formatSeconds(remaining)}",color=White,
                     fontSize=((if(tiny)18 else 24)*scale).sp,lineHeight=((if(tiny)20 else 28)*scale).sp,
                     fontWeight=FontWeight.SemiBold,maxLines=1,modifier=Modifier.weight(1f).testTag("wear-automatic-clock")
                         .clickable(enabled=command!=null&&a.phase!="complete",role=Role.Button){command?.invoke(if(waiting)"start" else if(a.paused)"resume" else "pause")}
                         .semantics { contentDescription=if(waiting)wearText("Automata munkaszakasz indítása") else if(a.paused)wearText("Automata folytatása") else wearText("Automata szüneteltetése") })
-                Text(label+if(a.rounds>1)" · ${if(waiting)1 else a.round}/${a.rounds}. kör" else "",color=Muted,
+                Text(label+if(a.rounds>1)wearFormat(" · %d/%d. kör", if(waiting) 1 else a.round, a.rounds) else "",color=Muted,
                     fontSize=((if(tiny)8 else 9)*scale).sp,lineHeight=((if(tiny)9 else 10)*scale).sp,maxLines=2,
                     textAlign=TextAlign.Center,modifier=Modifier.weight(1f))
             }
@@ -2122,7 +2122,7 @@ internal fun ValueEditor(
         },
     ) { compact ->
         val fontScale = LocalDensity.current.fontScale
-        val series = if(editable)"Sorozat ${workout.currentSetIndex + 1}/${workout.exercise?.sets?.size ?: 0}"else wearText("A sorozat közben változott")
+        val series = if(editable) wearFormat("Sorozat %d/%d", workout.currentSetIndex + 1, workout.exercise?.sets?.size ?: 0)else wearText("A sorozat közben változott")
         if (compact) Text(series, color = Muted, fontSize = (8f / fontScale).sp,
             lineHeight = (10f / fontScale).sp, textAlign = TextAlign.Center)
         else Label(series, size = 9)
@@ -2131,7 +2131,7 @@ internal fun ValueEditor(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            RoundControl("−", enabled=editable,description = "$title csökkentése") {
+            RoundControl("−", enabled=editable,description = wearFormat("%s csökkentése", title)) {
                 rotary.reset(); edited = WearRotaryEditor212.adjust(edited, step, -1)
             }
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -2153,9 +2153,9 @@ internal fun ValueEditor(
                     lineHeight = (11f / fontScale).sp, textAlign = TextAlign.Center)
                 else Label(unit, size = 9)
             }
-            RoundControl("+", enabled=editable,description = "$title növelése") { rotary.reset(); edited = WearRotaryEditor212.adjust(edited, step, 1) }
+            RoundControl("+", enabled=editable,description = wearFormat("%s növelése", title)) { rotary.reset(); edited = WearRotaryEditor212.adjust(edited, step, 1) }
         }
-        if (!compact) Label("Lépésköz: ${numberText(step)}", size = 9)
+        if (!compact) Label(wearFormat("Lépésköz: %s", numberText(step)), size = 9)
     }
 }
 }
@@ -2240,7 +2240,7 @@ private fun TimedSetScreen(
                 restRemaining,
                 detail =
                     if (perSide)
-                        "${if (side == "leftSeconds") wearText("Bal") else wearText("Jobb")} oldal · ${workout.currentSetIndex + 1}/${workout.exercise?.sets?.size ?: 0}"
+                        wearFormat("%s · %d/%d", wearText(if (side == "leftSeconds") "Bal oldal" else "Jobb oldal"), workout.currentSetIndex + 1, workout.exercise?.sets?.size ?: 0)
                     else null,
             )
             LiveWorkoutHealth(workout, health)
@@ -2332,15 +2332,15 @@ private fun TimedSetToolsScreen(
     RoundList(workout.exercise?.name.orEmpty()) {
         centerItem {
             Label(
-                "Sorozat ${workout.currentSetIndex + 1}/${workout.exercise?.sets?.size ?: 0}",
+                wearFormat("Sorozat %d/%d", workout.currentSetIndex + 1, workout.exercise?.sets?.size ?: 0),
                 Gold,
             )
         }
         if (perSide)
             centerItem {
                 Label(
-                    if (side == "leftSeconds") "Bal oldal · jobb: ${set.rightSeconds} mp"
-                    else "Jobb oldal · bal: ${set.leftSeconds} mp"
+                    if (side == "leftSeconds") wearFormat("Bal oldal · jobb: %s mp", set.rightSeconds)
+                    else wearFormat("Jobb oldal · bal: %s mp", set.leftSeconds)
                 )
             }
         centerItem {
@@ -2354,8 +2354,8 @@ private fun TimedSetToolsScreen(
         }
         centerItem {
             Label(
-                workout.exercise?.targetReps?.let { if (it.isBlank()) "Stopper" else "Cél: $it mp" }
-                    ?: "Stopper"
+                workout.exercise?.targetReps?.let { if (it.isBlank()) wearText("Stopper") else wearFormat("Cél: %s mp", it) }
+                    ?: wearText("Stopper")
             )
         }
         centerItem {
@@ -2396,7 +2396,7 @@ private fun TimedSetToolsScreen(
 
         centerItem {
             Pill(
-                if (perSide) "✓ ${if (side == "leftSeconds") wearText("Bal") else wearText("Jobb")} idő rögzítése"
+                if (perSide) wearText(if (side == "leftSeconds") "✓ Bal idő rögzítése" else "✓ Jobb idő rögzítése")
                 else wearText("✓ Idő rögzítése"),
                 enabled =
                     !set.done &&
@@ -2449,25 +2449,25 @@ private fun WorkoutMenu(
         if(status!=null)saveSyncItem()
         centerItem { Pill(wearText("‹ Kezdőlap"), tone = Secondary, onClick = onHome) }
         if(automaticToggle!=null) centerItem {
-            Text("Automata mód: ${if(workout.automation?.enabled==true)"Be" else "Ki"}",color=Gold,fontSize=11.sp,
+            Text(wearFormat("Automata mód: %s", wearText(if(workout.automation?.enabled==true) "Be" else "Ki")),color=Gold,fontSize=11.sp,
                 modifier=Modifier.fillMaxWidth().heightIn(min=30.dp).clickable(role=Role.Button,onClick=automaticToggle)
                     .padding(6.dp).semantics { contentDescription=wearText("Automata mód kapcsoló") },textAlign=TextAlign.Center)
         }
         if(workout.automation?.enabled==true&&automaticCommand!=null) {
-            for((name,seconds,field) in listOf(Triple("Munka",workout.automation.workSeconds,"work"),Triple(wearText("Pihenő"),workout.automation.restSeconds,"rest"),Triple(wearText("Kör"),workout.automation.rounds,"rounds"))) centerItem {
+            for((name,seconds,field) in listOf(Triple(wearText("Munka"),workout.automation.workSeconds,"work"),Triple(wearText("Pihenő"),workout.automation.restSeconds,"rest"),Triple(wearText("Kör"),workout.automation.rounds,"rounds"))) centerItem {
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
-                    Text("−",color=White,modifier=Modifier.size(30.dp).clickable(enabled=!workout.automation.counting,role=Role.Button){automaticCommand(field+"Minus")}.semantics { contentDescription="$name csökkentése" })
-                    Text("$name $seconds mp",color=Muted,fontSize=10.sp)
-                    Text("+",color=White,modifier=Modifier.size(30.dp).clickable(enabled=!workout.automation.counting,role=Role.Button){automaticCommand(field+"Plus")}.semantics { contentDescription="$name növelése" })
+                    Text("−",color=White,modifier=Modifier.size(30.dp).clickable(enabled=!workout.automation.counting,role=Role.Button){automaticCommand(field+"Minus")}.semantics { contentDescription=wearFormat("%s csökkentése", name) })
+                    Text(if(field == "rounds") "$name $seconds" else "$name $seconds ${wearText("mp")}",color=Muted,fontSize=10.sp)
+                    Text("+",color=White,modifier=Modifier.size(30.dp).clickable(enabled=!workout.automation.counting,role=Role.Button){automaticCommand(field+"Plus")}.semantics { contentDescription=wearFormat("%s növelése", name) })
                 }
             }
-            centerItem { Text("Rezgés: ${if(workout.automation.vibration)"Be" else "Ki"}",color=Muted,fontSize=10.sp,
+            centerItem { Text(wearFormat("Rezgés: %s", wearText(if(workout.automation.vibration) "Be" else "Ki")),color=Muted,fontSize=10.sp,
                 modifier=Modifier.fillMaxWidth().heightIn(min=30.dp).clickable(role=Role.Button){automaticCommand("vibration")}.padding(6.dp)) }
         }
         if (workout.exercise?.loadType != "bodyweight") {
             centerItem {
                 Pill(
-                    "Súly: ${workout.currentSet?.weight?.ifBlank { "0" } ?: "0"} kg",
+                    wearFormat("Súly: %s kg", workout.currentSet?.weight?.ifBlank { "0" } ?: "0"),
                     tone = Secondary,
                     enabled = !workout.exerciseComplete,
                 ) {
@@ -2508,7 +2508,7 @@ private fun WorkoutMenu(
                 ) {
                     Text(exercise.name, color = White, fontSize = 13.sp, maxLines = 2)
                     Text(
-                        "${exercise.sets.count { it.done }}/${exercise.sets.size} sorozat",
+                        wearFormat("%d/%d sorozat", exercise.sets.count { it.done }, exercise.sets.size),
                         color = if (index == workout.currentExercise) Gold else Muted,
                         fontSize = 11.sp,
                     )
@@ -2648,11 +2648,11 @@ private fun SummaryScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(19.dp)) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Title("${result.exerciseCount}", 22)
-                        Label("gyakorlat")
+                        Label(wearText("gyakorlat"))
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Title("${result.completedSets}", 22)
-                        Label("sorozat")
+                        Label(wearText("sorozat"))
                     }
                 }
             }

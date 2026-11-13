@@ -1,0 +1,6 @@
+<hu-HU>
+Bővített magyar, angol, német és román feliratok az óra nyelve szerint. A sorozatok, bal/jobb oldal, körök, stopper és menük dinamikus szövegei is fordítást kaptak. A mérési és szinkronizálási működés megmaradt. A telefonos 1.1-beta kiadáshoz tartozó optimalizált Wear OS-változat.
+</hu-HU>
+<en-US>
+Expanded Hungarian, English, German and Romanian labels based on the watch language. Dynamic text for sets, left/right sides, rounds, stopwatch and menus is now localized. Measurement and synchronization behavior is preserved. Optimized Wear OS companion for the phone 1.1-beta release.
+</en-US>

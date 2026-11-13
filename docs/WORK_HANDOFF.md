@@ -1,3 +1,178 @@
+# 2758 – köztes teszteredmény és végső közös kapu
+
+43444451666 / f905204: nyers XML és artifact-digest ellenőrizve.
+Telefon476 tesztből475 sikeres, Wear187/187; összes663 teszt,1failure,0error,
+0skipped. Egyedül a gyorsedzés-teszt kereste a kiválasztó feliratát kategória nélkül.
+A választó/opció/indítás stabil tesztazonosítót kapott; a teszt ugyanúgy a tényleges
+második gyakorlat kiválasztását/indítását és a bezárást ellenőrzi. Nincs tesztgyengítés.
+A végső 2758/1.1-beta forrásra új közös CI szükséges, utána signed APK+AAB.
+
+---
+
+# 2758 · 1.1-beta – kiadás előkészítve, ellenőrzés folyamatban
+
+A felhasználó kifejezett verzióválasza: „2758 1.1-beta”. Telefon275800,
+Wear275802, mindkettő versionName1.1-beta. A teljes telefon+Wear APK/AAB csomag
+és a regresszió/CI engedélyezett. Folyamatban lévő javított CI43444451666,
+forrásf905204; a verzió/metaadat és a végső palettás űrlappanel ezutáni commit.
+Az első43443198395 a tesztben használt DpRect.height fordítási hibán állt meg;
+a változatlan méretellenőrzéseket bottom-top különbségre javítottuk.
+A napló lehúzásos elvetése megerősítést kér, mentés közben továbbra is tiltott.
+
+Külön telefon/Wear Play-jegyzetek és részletes változások: releases/2758-*.
+Az új csomag még nem készült el, main-merge és signed build előtt a végső forrás
+közös kapuja szükséges. PR#225 / maintenance/post2757-audit.
+
+---
+
+# 2026-11-13 – a három mockup beépítve, közös regresszió/build engedélyezve
+
+Profil/tervező és egyedi gyakorlat: közös TrainPilotFullHeightFormSheet, teljes
+magasság, kötött görgethető törzs, rögzített zöld mentés/Mégse, piros bezárás.
+A tényleges mezők/callbackek és beállításértékek megmaradnak. A profil címe rövidült.
+Naplószerkesztő: teljes magasságú sheet; a meglévő tényleges látható ablak/IME
+keret, izolált draft, dátumfeldolgozás és tartós mentési út megmarad. Mentés közben
+nem csukható le; a mentés és Mégse a listán kívüli rögzített láblécben van.
+
+A felhasználó most feloldotta a buildszünetet: minden friss változtatáshoz
+regresszió, majd közös CI és telefon+Wear APK/AAB kért. Új források:
+FullHeightProfileCustomRegressionTest, FullHeightJournalEditorRegressionTest,
+Post2757PresentationRegressionTest; korábban StudioStrengthSetCardRegressionTest,
+a settings és natív ownership regressziók. A régi megfelelő regressziók megmaradnak.
+Még nincs új futási siker állítva. Ág/PR: maintenance/post2757-audit / #225.
+A Play-kompatibilis következő verziókód kérdése a felhasználónak kiküldve.
+
+---
+
+# 2026-11-13 – aktív súlyzós edzés: inline sorozatkártyák és legördülő értékek
+
+Felhasználói kérés: a mockupok kártyás stílusa a valódi edzésen is jelenjen meg,
+felnyíló szerkesztőablak helyett közvetlen értékválasztással.
+A súlyzós aktív képernyő régi vízszintes táblázata/külön kitöltődialogja helyett
+`StudioStrengthSetCard` jelenik meg. Sorozatonként kg/ism./RIR választó, külön
+rögzítés/visszavonás és törlés; az új sorozat gomb megmarad. A súlynál egyedi
+érték inline megadható (vessző/pont, pozitív vagy nulla, véges érték), így
+az előzményből/importból származó, listán kívüli súly sem vész el.
+Ismétlés 1–100, RIR 0–10 vagy hiányzó; a többi mező és a hiányzó RIR jelzője
+értékválasztáskor megmarad. A sorozat csak a külön rögzítőgombbal lesz kész.
+
+A sorozat/session identitása és szerkeszthetősége reseteli a megnyitott menüt;
+órás vezérlés/átadás/mentés alatt a mezők és a törlés/rögzítés tiltottak.
+A korábbi natív mentési/ownership/ID/generation kapuk megmaradnak, nincs új motor.
+Szűk képernyőn/nagy betűn a mezők egymás alá rendeződnek.
+Az időalapú/kétoldalas/GPS-mérés, a pihenő és az edzésátadás motorja nem változott.
+A három korábbi teljesképernyős mockup továbbra is javaslat, ez a commit az aktív
+súlyzós sorozatszerkesztést valósítja meg.
+
+Tesztforrás: StudioStrengthSetCardRegressionTest – mezők megőrzése, egyedi 6,25 kg,
+RIR/ismétlés választás és külön rögzítés; ownership-tiltás bezárja a nyitott menüt.
+Ág/PR: maintenance/post2757-audit / #225. Diff ellenőrizve. Felhasználói kérésre
+nincs új CI/Gradle/APK/AAB, a tesztforrás és fizikai kinézet még nincs futtatva.
+
+---
+
+# 2026-11-13 – Gyors edzés teljes felnyitás, csak kód
+
+A QuickWorkoutSheet explicit `skipPartiallyExpanded = true` állapotot és teljes
+elérhető magasságot kapott. Rövidebb tartalomnál sem marad félmagas; a hosszú
+belső tartalom a meglévő görgetőben érhető el. Bezárás és indítás callbackjei,
+listák, kijelölés és sorozatadatok változatlanok. Rendszerinsetek megmaradnak.
+
+További javasolt helyek (ebben a commitban nem alakítottuk át):
+- Személyes edzéstervező/profil: hosszú űrlap, sok mező/kizárás.
+- Új egyedi gyakorlat: mezők és billentyűzet mellett több függőleges hely.
+- Naplóedzés és sorozatok szerkesztése: hosszú szerkesztő/feljegyzések.
+A palettaválasztó és a natív aktív edzés gyakorlatválasztója már kihagyja a
+félállapotot; ez önmagában nem jelent teljes képernyőmagasságot.
+A rövid megerősítések és egyetlen értéket kérő ablakok maradjanak kompaktak.
+
+Ág/PR: maintenance/post2757-audit / #225. Diff ellenőrizve; a felhasználó által
+kért buildszünet miatt nincs CI/Gradle/APK/AAB, készülékes ellenőrzés hátravan.
+
+---
+
+# 2026-11-13 – kezdőlap napi összefoglaló és Coach, csak kód
+
+A hat napi mutató (két sor, három oszlop) egy közös Surface/oldalkeretet kapott
+`TrainPilotFrames.page` témaszínnel és finom fénnyel; a belső lapok maradnak
+visszafogottak. A hat érték számítása és kattintási célja változatlan.
+A meglévő Coach-kártya olvashatóbb bodySmall betűvel, két helyett legfeljebb négy
+sorban mutatja az ajánlást. Ha valóban túlcsordul, „Teljes javaslat”/„Kevesebb”
+gomb nyitja-csukja helyben. A kártya továbbra is a Coach oldalra vezet.
+Új modul, generált mérés vagy külön Coach-számítás nem került be.
+
+Ág/PR: maintenance/post2757-audit / #225. Diff ellenőrizve.
+A kért buildszünet érvényes: nincs új CI/Gradle/APK/AAB. A korábbi zöld CI nem
+ellenőrizte ezeket a UI-változtatásokat. Fizikai/világos/sötét/nagybetűs elfogadás
+később, a felhasználó által kért közös buildben történik.
+
+---
+
+# 2026-11-13 – mentés/import/visszaállítás gombszöveg vágás, csak kód
+
+A képen a RepForge import és a fájlból visszaállítás felirata a fix gombmagasság
+miatt levágódott. A három mentési művelet most minimum magasságot használ
+felső korlát nélkül; a felirat az ikon mellett megmaradó szélességen tördelhet,
+függőleges belső térrel. A Drive bejelentkezés hosszabb felirata is így működik.
+Nincs szövegrövidítés, maxLines vagy működés/adatkezelés változtatás.
+
+Ág/PR: maintenance/post2757-audit / #225. Diff ellenőrizve.
+A felhasználó kérésére nincs új CI/Gradle/APK/AAB futás; fizikai/nagybetűs
+vizuális ellenőrzés hátravan. Main és a korábbi telepítők változatlanok.
+
+---
+
+# 2026-11-13 – egyetlen lenyitható edzésbeállítás, csak kód
+
+Felhasználói kérés: a duplikált hang/rezgés kapcsolók helyett egy
+„Edzés beállításai” blokk, benne a teljes eddigi szerkesztővel.
+A főoldali két külön kapcsoló és a külön szerkesztőgomb megszűnt.
+A meglévő közös szerkesztő inline jelenik meg: pihenő, hang, rezgés,
+edzésstílus, progresszió, előnézet/jóváhagyás/visszavonás változatlan callbackekkel.
+Nincs új preference vagy értékreset. Nincs belső görgető az inline változatban.
+A programhoz tartozó szerkesztő továbbra is párbeszédablak; a globális szerkesztő
+elhagyásakor a globális előnézet törlődik, nem nyílik másik képernyőn programdialog.
+Regressziós tesztforrás: lenyitás, egyetlen hang/rezgés kapcsoló, valódi callbackek,
+pihenő és HIT-előnézet, visszacsukás. A teszt ebben a körben nem futott.
+
+Ág/PR: maintenance/post2757-audit / #225. A felhasználó most kifejezetten
+nem kér buildet: Gradle/CI/APK/AAB nem indult. A diff ellenőrizve.
+A korábbi 43427331218 CI SUCCESS az előző, 0ec517c forrásra vonatkozik,
+nem bizonyítja ezt az új UI-módosítást. Main és a 2757-es telepítők változatlanok.
+
+---
+
+# 2026-11-13 – 2757 utáni célzott javítás (ellenőrzés alatt)
+
+Ág: `maintenance/post2757-audit`, alap: `720f145`. Új verzió és kiadás nincs.
+Az AGENTS.md rögzíti: koordináció/nehéz debug Sol High, fejlesztés Terra Medium,
+státusz/keresés Luna Low; rövid agent-kontextus, Extra High nélkül.
+
+- Wear: a dinamikus sorozat-, oldal-, kör-, stopper- és menüfeliratok is a meglévő
+  HU/EN/DE/RO lokalizációt használják. Az adatmodell és a protokoll változatlan.
+- Telefon: nyolc sorozatszerkesztési belépési pont a helyi draft módosítása előtt
+  ellenőrzi a natív szerkeszthetőséget és a session ID/generation egyezését.
+  Órás vezérlés/felfüggesztett parancsok alatt nincs fantom készre jelölés,
+  pihenőindítás vagy helyi sorozatátírás. A natív commit ellenőrzése megmarad.
+- Regresszió: órás ownership és a UI-t megelőző parancsfelfüggesztés mellett
+  mind a nyolc szerkesztési út változatlan draftot/tartós állapotot vár.
+
+Draft PR: #225. Ellenőrzött diff; a közös teljes JVM + telefonos release R8
+Actions-futás: 43427331218, forrás: 0ec517c73fd916e7a84ce0a1ae027fa35c37a463.
+Átadáskor még folyamatban, új teszt-/buildsikert nem állítunk.
+A 2757 korábbi 645 tesztje nem ennek az ágnak bizonyítéka.
+Az előzetes 43427216334 futást a readonly admission pontosítása miatt a setup
+szakaszban leállítottuk; az nem validációs bizonyíték. Csak a végleges futás számít.
+
+Nyitott jegyek: #214/#216 szinkron/pihenő, #217 szolgáltatói eredet/deduplikáció,
+#218 heti/havi célok, #219 kompakt UI kódja már a 2757-ben van; készülékes,
+nagybetűs és képernyőképes elfogadásuk még hiányzik, ezért nem zárjuk őket.
+A #220 témaszinkron és valós Store-képek külön nyitott feladat; ez a változtatás
+nem valósít meg új nyelv-/témaátadási protokollt. #210/#211 naptárjavító PR-ek
+külön felülvizsgálandók, nem tekintjük automatikusan összevontnak.
+
+---
+
 # TrainPilot2757 –ellenőrzött main kiadás,2026-11-13
 
 A felhasználó elfogadta a#223 javítócsomagot;main-integráció és APK+AAB kész.

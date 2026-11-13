@@ -880,6 +880,55 @@ class StudioSessionMeasurementRegressionTest {
         assertNull(model.uiState.value.statusBannerMessage)
     }
 
+    @Test fun watchOwnedSetEditsCannotChangeThePhoneDraftOrStartRest() {
+        val model = model()
+        model.startQuickStrengthWithExercise(strength(model)); awaitStarted(model)
+        model.toggleSetCompleted(1)
+        await { ActiveWorkoutStore.current(context)!!.getJSONArray("exercises").getJSONObject(0)
+            .getJSONArray("sets").getJSONObject(0).optBoolean("done") }
+        ActiveWorkoutStore.saveOwned(context, JSONObject(ActiveWorkoutStore.current(context)!!.toString())
+            .put("timerOwner", "watch"))
+        PhoneWorkoutExecution.store(context).suspendCommands(true)
+        await { !model.uiState.value.phoneControlsWorkout }
+        assertSetEditsRejected(model)
+    }
+
+    @Test fun suspendedNativeCommandsRejectSetEditsEvenBeforeTheUiMirrorsOwnership() {
+        val model = model()
+        model.startQuickStrengthWithExercise(strength(model)); awaitStarted(model)
+        assertTrue(model.uiState.value.phoneControlsWorkout)
+        PhoneWorkoutExecution.store(context).suspendCommands(true)
+        assertSetEditsRejected(model)
+    }
+
+    private fun assertSetEditsRejected(model: TrainPilotViewModel) {
+        model.clearBannerMessage()
+        val before = model.uiState.value
+        val durable = ActiveWorkoutStore.current(context)!!.toString()
+        val edits = listOf<() -> Unit>(
+            { model.toggleSetCompleted(1) },
+            { model.adjustSetValues(1, 10f, 2, 1) },
+            { model.updateSetValuesExact(1, 20f, 8, 1) },
+            { model.updateBilateralSetExact(1, 20, 25, 1) },
+            { model.recordBilateralSideStop(true, 20, 1) },
+            { model.deleteSet(1) },
+            { model.addSet() },
+            { model.undoLastCompletedSet() }
+        )
+        edits.forEach { edit ->
+            edit()
+            shadowOf(Looper.getMainLooper()).idle()
+            val after = model.uiState.value
+            assertEquals(before.activeSets, after.activeSets)
+            assertEquals(before.activeSetsByExerciseId, after.activeSetsByExerciseId)
+            assertEquals(before.restTimerRunning, after.restTimerRunning)
+            assertEquals(before.restTimerEndEpochMs, after.restTimerEndEpochMs)
+            assertEquals(before.bilateralLeftSec, after.bilateralLeftSec)
+            assertEquals(durable, ActiveWorkoutStore.current(context)!!.toString())
+            assertNull(after.statusBannerMessage)
+        }
+    }
+
     private fun awaitStarted(model: TrainPilotViewModel) {
         await { ActiveWorkoutStore.current(context)?.let { it.optBoolean("active") &&
             model.uiState.value.activeWorkoutId == it.optString("workoutId") && model.uiState.value.isWorkoutSessionActive } == true }

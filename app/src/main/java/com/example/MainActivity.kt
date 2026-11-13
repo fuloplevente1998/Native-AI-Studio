@@ -293,8 +293,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
         }
 
         // One shared Studio editor for Settings/global and Workout/active-program modes.
-        if (uiState.showProgressionModal) {
-            val modeScope = if (uiState.currentSubScreen == SubScreen.SETTINGS_MAIN) "global" else "program"
+        if (uiState.showProgressionModal && uiState.currentSubScreen != SubScreen.SETTINGS_MAIN) {
+            val modeScope = "program"
             StudioWorkoutModesDialog(
                 state = uiState,
                 scope = modeScope,
@@ -719,6 +719,11 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     }
 
                     SubScreen.SETTINGS_MAIN -> {
+                        // Leaving the inline global editor must not open a program dialog
+                        // or leave a global preview approvable on the next screen.
+                        androidx.compose.runtime.DisposableEffect(viewModel) {
+                            onDispose { viewModel.toggleProgressionModal(false) }
+                        }
                         SettingsMainScreen(
                             uiState = uiState,
                             strings = strings,
@@ -732,7 +737,13 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onToggleProgressionModal = { viewModel.toggleProgressionModal(it) },
                             onNavigateToSubScreen = { viewModel.navigateToSubScreen(it) },
                             onShowBanner = { viewModel.showBannerMessage(it) },
-                            onCloudSyncCompleted = { viewModel.refreshAfterCloudSync(context) }
+                            onCloudSyncCompleted = { viewModel.refreshAfterCloudSync(context) },
+                            onPreviewProgression = { style, progression, inherit ->
+                                viewModel.previewProgressionSettings(style, progression, "global", inherit)
+                            },
+                            onApproveProgression = { viewModel.approveProgressionSettings() },
+                            onEditProgressionPreview = { viewModel.discardProgressionPreview() },
+                            onUndoProgression = { viewModel.undoProgressionSettings("global") }
                         )
                     }
 
