@@ -3691,7 +3691,7 @@ fun BackupRestoreScreen(
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(46.dp)
+                            .heightIn(min = 48.dp)
                             .testTag("import_repforge_legacy_btn")
                     ) {
                         Icon(imageVector = Icons.Default.Restore, contentDescription = null, tint = palette.primary)
@@ -3699,7 +3699,9 @@ fun BackupRestoreScreen(
                         Text(
                             text = tr(uiState.language, "RepForge ZIP / JSON mentés importálása", "Import RepForge ZIP / JSON Backup", "RepForge ZIP / JSON importieren", "Importă backup ZIP / JSON RepForge"),
                             color = palette.primary,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f).padding(vertical = 4.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
                 }
@@ -3724,7 +3726,7 @@ fun BackupRestoreScreen(
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .heightIn(min = 50.dp)
             ) {
                 Icon(imageVector = Icons.Default.Backup, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -3734,7 +3736,9 @@ fun BackupRestoreScreen(
                     } else {
                         "${tr(uiState.language, "Mentés indítása", "Start Backup", "Sicherung starten", "Pornește backup")} (${uiState.selectedBackupFormat})"
                     },
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f).padding(vertical = 4.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -3745,14 +3749,16 @@ fun BackupRestoreScreen(
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
+                    .heightIn(min = 48.dp)
             ) {
                 Icon(imageVector = Icons.Default.Restore, contentDescription = null, tint = palette.textPrimary)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     tr(uiState.language, "Visszaállítás fájlból (TrainPilot / RepForge)", "Restore from file (TrainPilot / RepForge)", "Aus Datei wiederherstellen (TrainPilot / RepForge)", "Restaurare din fișier (TrainPilot / RepForge)"),
                     color = palette.textPrimary,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f).padding(vertical = 4.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
         }

@@ -1,3 +1,17 @@
+# 2026-11-13 – mentés/import/visszaállítás gombszöveg vágás, csak kód
+
+A képen a RepForge import és a fájlból visszaállítás felirata a fix gombmagasság
+miatt levágódott. A három mentési művelet most minimum magasságot használ
+felső korlát nélkül; a felirat az ikon mellett megmaradó szélességen tördelhet,
+függőleges belső térrel. A Drive bejelentkezés hosszabb felirata is így működik.
+Nincs szövegrövidítés, maxLines vagy működés/adatkezelés változtatás.
+
+Ág/PR: maintenance/post2757-audit / #225. Diff ellenőrizve.
+A felhasználó kérésére nincs új CI/Gradle/APK/AAB futás; fizikai/nagybetűs
+vizuális ellenőrzés hátravan. Main és a korábbi telepítők változatlanok.
+
+---
+
 # 2026-11-13 – egyetlen lenyitható edzésbeállítás, csak kód
 
 Felhasználói kérés: a duplikált hang/rezgés kapcsolók helyett egy
