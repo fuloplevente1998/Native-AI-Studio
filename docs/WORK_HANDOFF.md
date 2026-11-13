@@ -13,8 +13,12 @@ státusz/keresés Luna Low; rövid agent-kontextus, Extra High nélkül.
 - Regresszió: órás ownership és a UI-t megelőző parancsfelfüggesztés mellett
   mind a nyolc szerkesztési út változatlan draftot/tartós állapotot vár.
 
-Ellenőrzés: diff ellenőrizve; a közös teljes JVM + telefonos release R8 kapu
-futtatása következik. A 2757 korábbi 645 tesztje nem ennek az ágnak bizonyítéka.
+Draft PR: #225. Ellenőrzött diff; a közös teljes JVM + telefonos release R8
+Actions-futás: 43427331218, forrás: 0ec517c73fd916e7a84ce0a1ae027fa35c37a463.
+Átadáskor még folyamatban, új teszt-/buildsikert nem állítunk.
+A 2757 korábbi 645 tesztje nem ennek az ágnak bizonyítéka.
+Az előzetes 43427216334 futást a readonly admission pontosítása miatt a setup
+szakaszban leállítottuk; az nem validációs bizonyíték. Csak a végleges futás számít.
 
 Nyitott jegyek: #214/#216 szinkron/pihenő, #217 szolgáltatói eredet/deduplikáció,
 #218 heti/havi célok, #219 kompakt UI kódja már a 2757-ben van; készülékes,
