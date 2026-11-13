@@ -1,3 +1,20 @@
+# 2026-11-13 – kezdőlap napi összefoglaló és Coach, csak kód
+
+A hat napi mutató (két sor, három oszlop) egy közös Surface/oldalkeretet kapott
+`TrainPilotFrames.page` témaszínnel és finom fénnyel; a belső lapok maradnak
+visszafogottak. A hat érték számítása és kattintási célja változatlan.
+A meglévő Coach-kártya olvashatóbb bodySmall betűvel, két helyett legfeljebb négy
+sorban mutatja az ajánlást. Ha valóban túlcsordul, „Teljes javaslat”/„Kevesebb”
+gomb nyitja-csukja helyben. A kártya továbbra is a Coach oldalra vezet.
+Új modul, generált mérés vagy külön Coach-számítás nem került be.
+
+Ág/PR: maintenance/post2757-audit / #225. Diff ellenőrizve.
+A kért buildszünet érvényes: nincs új CI/Gradle/APK/AAB. A korábbi zöld CI nem
+ellenőrizte ezeket a UI-változtatásokat. Fizikai/világos/sötét/nagybetűs elfogadás
+később, a felhasználó által kért közös buildben történik.
+
+---
+
 # 2026-11-13 – mentés/import/visszaállítás gombszöveg vágás, csak kód
 
 A képen a RepForge import és a fájlból visszaállítás felirata a fix gombmagasság

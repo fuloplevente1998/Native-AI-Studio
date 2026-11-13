@@ -10,7 +10,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -70,6 +76,8 @@ internal fun HomeCoachAdviceCard(state: TrainPilotUiState, strings: LocalizedStr
             "Începe cu încălzirea și urmează recomandările Coach pe exerciții. Poți verifica ajustările de greutate în previzualizare."
         )
     }
+    var summaryExpanded by rememberSaveable(summary) { mutableStateOf(false) }
+    var summaryOverflow by remember(summary) { mutableStateOf(false) }
     val shape = RoundedCornerShape(18.dp)
     Surface(shape = shape, color = p.surface,
         modifier = Modifier.fillMaxWidth().trainPilotSoftGlow(p.primary, shape)
@@ -83,8 +91,21 @@ internal fun HomeCoachAdviceCard(state: TrainPilotUiState, strings: LocalizedStr
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = p.primary, modifier = Modifier.size(18.dp))
             }
             Text(heading, color = p.textPrimary, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-            Text(summary, color = p.textSecondary, style = MaterialTheme.typography.labelSmall,
-                maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("home_coach_summary"))
+            Text(summary, color = p.textSecondary, style = MaterialTheme.typography.bodySmall,
+                maxLines = if (summaryExpanded) Int.MAX_VALUE else 4,
+                overflow = TextOverflow.Ellipsis,
+                onTextLayout = { if (!summaryExpanded) summaryOverflow = it.hasVisualOverflow },
+                modifier = Modifier.testTag("home_coach_summary"))
+            if (summaryOverflow || summaryExpanded) {
+                TextButton(
+                    onClick = { summaryExpanded = !summaryExpanded },
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("home_coach_expand_summary")
+                ) {
+                    Text(if (summaryExpanded) tr("Kevesebb", "Show less", "Weniger", "Mai puțin")
+                        else tr("Teljes javaslat", "Full advice", "Vollständiger Rat", "Recomandarea completă"),
+                        color = p.primary)
+                }
+            }
             Surface(color = p.surfaceElevated, shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(horizontal = 8.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(strings.readinessTodayLabel, color = p.textSecondary, style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
