@@ -2596,7 +2596,7 @@ fun SettingsMainScreen(
             ) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(
-                        Modifier.fillMaxWidth()
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
                             .clickable(enabled = !uiState.progressionModeBusy, role = androidx.compose.ui.semantics.Role.Button) {
                                 onToggleProgressionModal(!uiState.showProgressionModal)
                             }.testTag("settings_workout_toggle").padding(vertical = 8.dp),

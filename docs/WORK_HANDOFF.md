@@ -1,3 +1,26 @@
+# 2026-11-13 – felső biztonsági sáv, kompakt sorozatok, lekerekített nyomási effekt
+
+Ág:fix/sheet-top-safe-area, alapmain37494d3. Új APK/verzióemelés nincs.
+A Gyors edzés és a három szerkesztő ugyanazt a nyers statusBarsIgnoringVisibility /
+displayCutout maximumot foglalja a teljes panelen kívül, így a húzófül és X is
+lejjebb kerül. A napló viewportja ezt az egyszer már lefoglalt helyet veszi figyelembe;
+a sheet animált eltolása nem zsugorítja meg a szerkesztő láblécét.
+
+Napló: normál nézetben súly/ismétlés/RIR egy sorban, kompakt 48dp értékválasztók,
+helyben szerkeszthető egyéni értékek és kis piros törlésikonok. A dátumok,
+RIR-hiány, draft és mentési/validálási út megmaradt; a többi mérésfajta is szerkeszthető.
+Aktív súlyzós edzés: kisebb térközök, címke+érték egy vezérlőben; a rögzítés egy
+be/ki állapotú, akadálymentes pipa. A natív callbacks/ownership kapuk változatlanok.
+
+A közös X/videó gombok nagyobb találati területe megmarad, de a nyomási effekt a
+belső vizuális mérethez/alakhoz kötött. Fejléc, gyorsopciók, kezdőlapi kártyák és
+módválasztók: a clip a clickable elé került. Nincs globális effektletiltás.
+Új regressziók: szintetikus status/cutout, kompakt elrendezés és pipakapcsolás,
+valódi naplómentési payload és mezőmegőrzés, nyomási effekt képhatára/nagy találati terület.
+Közös teljes CI következik; készülékes vizuális elfogadás még hátravan.
+
+---
+
 # TrainPilot 2758 · 1.1-beta – ellenőrzött main kiadás, 2026-11-13
 
 A felhasználó által kért mockupok, aktív sorozatszerkesztés és a további UI/ownership

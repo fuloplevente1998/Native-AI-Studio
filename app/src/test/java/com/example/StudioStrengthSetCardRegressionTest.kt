@@ -3,6 +3,7 @@ package com.example
 import androidx.compose.runtime.*
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.unit.dp
 import com.example.model.AppLanguage
 import com.example.model.ExerciseSetItem
 import com.example.ui.components.StudioStrengthSetCard
@@ -66,6 +67,37 @@ class StudioStrengthSetCardRegressionTest {
                 onValues = { _, _, _ -> }, onToggle = {}, onDelete = {})
         } }
         compose.onNodeWithTag("active_set_weight_1").assertTextContains("19,7")
+    }
+
+    @Test fun completionToggleExposesCheckedStateAndCanBeReversed() {
+        var item by mutableStateOf(ExerciseSetItem(1, 5.5f, 15, 2, false, id = "set-a"))
+        compose.setContent { TrainPilotTheme {
+            StudioStrengthSetCard(item, "workout/1/exercise/set-a", AppLanguage.HU, "kg", "ism.", true, true,
+                onValues = { _, _, _ -> }, onToggle = { item = item.copy(completed = !item.completed) }, onDelete = {})
+        } }
+        val toggle = compose.onNodeWithTag("toggle_set_1")
+        toggle.assertContentDescriptionEquals("Sorozat teljesítve").assertIsOff().performClick()
+        toggle.assertIsOn().performClick()
+        toggle.assertIsOff()
+    }
+
+    @Test fun valueControlsShareOneCompactRowAndKeepTouchTargets() {
+        compose.setContent { TrainPilotTheme {
+            StudioStrengthSetCard(ExerciseSetItem(1, 19.7f, 15, 2, false, id = "set-a"),
+                "workout/1/exercise/set-a", AppLanguage.HU, "kg", "ism.", true, true,
+                onValues = { _, _, _ -> }, onToggle = {}, onDelete = {})
+        } }
+        val weight = compose.onNodeWithTag("active_set_weight_1").getUnclippedBoundsInRoot()
+        val reps = compose.onNodeWithTag("active_set_reps_1").getUnclippedBoundsInRoot()
+        val rir = compose.onNodeWithTag("active_set_rir_1").getUnclippedBoundsInRoot()
+        assertEquals(weight.top, reps.top)
+        assertEquals(weight.top, rir.top)
+        assertTrue(weight.right <= reps.left && reps.right <= rir.left)
+        assertTrue(weight.bottom - weight.top >= 48.dp && reps.bottom - reps.top >= 48.dp && rir.bottom - rir.top >= 48.dp)
+        val toggleBounds = compose.onNodeWithTag("toggle_set_1").getUnclippedBoundsInRoot()
+        val cardBounds = compose.onNodeWithTag("active_strength_set_1").getUnclippedBoundsInRoot()
+        assertTrue(toggleBounds.bottom - toggleBounds.top >= 48.dp)
+        assertTrue(cardBounds.bottom - cardBounds.top <= 130.dp)
     }
 
     @Test fun ownershipLockDisablesValuesCompletionAndDeletionAndClosesAnOpenMenu() {

@@ -15,10 +15,13 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -65,25 +68,35 @@ internal fun StudioStrengthSetCard(
             else BorderStroke(0.75.dp, p.cardBorder.copy(alpha = 0.55f)),
         modifier = Modifier.fillMaxWidth().testTag("active_strength_set_${item.setNumber}")
     ) {
-        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("${item.setNumber}. " + tr("sorozat", "set", "Satz", "serie"),
                     modifier = Modifier.weight(1f), color = p.textPrimary, fontWeight = FontWeight.Bold)
-                Row(Modifier.heightIn(min = 48.dp).toggleable(value = item.completed, enabled = enabled, role = Role.Checkbox, onValueChange = { onToggle() })
-                    .testTag("toggle_set_${item.setNumber}"), verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = item.completed, onCheckedChange = null, enabled = enabled)
-                    Text(if (item.completed) tr("Kész", "Done", "Fertig", "Gata")
-                        else tr("Rögzít", "Record", "Erfassen", "Înregistrează"),
-                        color = p.textPrimary, style = MaterialTheme.typography.labelMedium)
+                val toggleShape = RoundedCornerShape(12.dp)
+                Surface(
+                    shape = toggleShape,
+                    color = if (item.completed) p.success.copy(alpha = 0.18f) else p.surface,
+                    border = BorderStroke(1.dp, if (item.completed) p.success else p.cardBorder),
+                    modifier = Modifier.size(48.dp).clip(toggleShape)
+                        .toggleable(value = item.completed, enabled = enabled, role = Role.Checkbox, onValueChange = { onToggle() })
+                        .semantics { contentDescription = tr("Sorozat teljesítve", "Set completed", "Satz abgeschlossen", "Serie finalizată") }
+                        .testTag("toggle_set_${item.setNumber}")
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Check, contentDescription = null,
+                            tint = (if (item.completed) p.success else p.textSecondary)
+                                .copy(alpha = if (enabled) 1f else 0.5f),
+                            modifier = Modifier.size(22.dp))
+                    }
                 }
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(4.dp))
                 TrainPilotNegativeButton(onClick = onDelete, enabled = enabled,
                     modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).testTag("delete_set_${item.setNumber}"),
                     contentPadding = PaddingValues(8.dp)) { Text("−") }
             }
             // Flow to separate rows at larger fonts rather than requiring horizontal scrolling.
             BoxWithConstraints(Modifier.fillMaxWidth()) {
-                val sideBySide = maxWidth >= 290.dp && LocalDensity.current.fontScale <= 1.3f
+                val sideBySide = maxWidth >= 270.dp && LocalDensity.current.fontScale <= 1.5f
                 val fields: @Composable (Modifier) -> Unit = { field ->
                     WorkoutSetValuePicker(identity + "/weight", weightLabel, item.weightKg.toString(), weights,
                         enabled, language, "active_set_weight_${item.setNumber}", field,
@@ -123,16 +136,20 @@ private fun WorkoutSetValuePicker(
     val canonical = draft.trim().replace(',', '.')
     val valid = customValid?.invoke(canonical) == true
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(label, color = p.textSecondary, style = MaterialTheme.typography.labelSmall)
         Box(Modifier.fillMaxWidth()) {
             Surface(color = p.surface, shape = RoundedCornerShape(10.dp),
                 border = BorderStroke(0.5.dp, p.cardBorder),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    .clip(RoundedCornerShape(10.dp))
                     .clickable(enabled = enabled, role = Role.Button) { custom = false; expanded = true }
                     .testTag(tag)) {
-                Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(display(value), color = p.textPrimary.copy(alpha = if (enabled) 1f else 0.5f),
-                        fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Row(Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(label, color = p.textSecondary, style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1)
+                        Text(display(value), color = p.textPrimary.copy(alpha = if (enabled) 1f else 0.5f),
+                            fontWeight = FontWeight.Bold, maxLines = 1)
+                    }
                     Icon(Icons.Default.ExpandMore, null, tint = p.primary, modifier = Modifier.size(18.dp))
                 }
             }

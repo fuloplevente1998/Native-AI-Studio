@@ -72,7 +72,16 @@ class FullHeightJournalEditorRegressionTest {
         assertTrue(sheet.bottom - sheet.top > 650.dp)
         val list = compose.onNodeWithTag("journal_editor_list")
         list.performScrollToNode(hasTestTag("journal_editor_weight_0_0"))
-        compose.onNodeWithTag("journal_editor_weight_0_0").performTextReplacement("6.25")
+        val weightBounds = compose.onNodeWithTag("journal_editor_weight_0_0").getUnclippedBoundsInRoot()
+        val repsBounds = compose.onNodeWithTag("journal_editor_reps_0_0").getUnclippedBoundsInRoot()
+        val rirBounds = compose.onNodeWithTag("journal_editor_rir_0_0").getUnclippedBoundsInRoot()
+        assertEquals(weightBounds.top, repsBounds.top)
+        assertEquals(weightBounds.top, rirBounds.top)
+        val cardBounds = compose.onNodeWithTag("journal_editor_set_0_0").getUnclippedBoundsInRoot()
+        assertTrue(cardBounds.bottom - cardBounds.top <= 140.dp)
+        compose.onNodeWithTag("journal_editor_weight_0_0").performClick()
+        compose.onNodeWithTag("journal_editor_weight_0_0_custom").performClick()
+        compose.onNodeWithTag("journal_editor_weight_0_0_custom_input").performTextReplacement("6.25")
         compose.onNodeWithTag("journal_editor_save").assertIsDisplayed().performClick()
         compose.runOnIdle {
             val result = requireNotNull(saved)
@@ -86,6 +95,31 @@ class FullHeightJournalEditorRegressionTest {
         list.performScrollToNode(hasTestTag("journal_editor_add_set_0"))
         compose.onNodeWithTag("journal_editor_save").assertIsDisplayed()
         compose.onNodeWithTag("journal_editor_cancel_footer").assertIsDisplayed()
+    }
+
+    @Test fun choosingSetValuesChangesDraftWithoutCompletingTheSet() {
+        var state by mutableStateOf(fixture())
+        compose.setContent { TrainPilotTheme { StudioNativeEditorTheme {
+            JournalEditorDialog(state, "hu", { state = state.copy(draft = it) }, {}, {})
+        } } }
+        compose.onNodeWithTag("journal_editor_list").performScrollToNode(hasTestTag("journal_editor_done_0_0"))
+        val weight = compose.onNodeWithTag("journal_editor_weight_0_0").getUnclippedBoundsInRoot()
+        val reps = compose.onNodeWithTag("journal_editor_reps_0_0").getUnclippedBoundsInRoot()
+        val rir = compose.onNodeWithTag("journal_editor_rir_0_0").getUnclippedBoundsInRoot()
+        assertEquals(weight.top, reps.top)
+        assertEquals(reps.top, rir.top)
+        compose.onNodeWithTag("journal_editor_done_0_0").performClick()
+        compose.onNodeWithTag("journal_editor_reps_0_0").performClick()
+        compose.onNodeWithTag("journal_editor_reps_0_0_option_1").performClick()
+        compose.onNodeWithTag("journal_editor_rir_0_0").performClick()
+        compose.onNodeWithTag("journal_editor_rir_0_0_option_empty").performClick()
+        compose.runOnIdle {
+            val set = state.draft.exercises.first().sets.first()
+            assertEquals("1", set.reps)
+            assertEquals("", set.rir)
+            assertFalse(set.done)
+            assertEquals("5.5", set.weight)
+        }
     }
 
     @Test fun swipeCannotSilentlyDiscardEditsAndKeepingTheDraftPreservesTheNote() {
