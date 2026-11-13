@@ -21,6 +21,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.TrainPilotRedCloseButton
 import com.example.ui.theme.TrainPilotTheme
+import com.repforge.app.ui.theme.TrainPilotActionAppearance
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -65,10 +66,14 @@ class RoundedPressFeedbackRegressionTest {
                 canvasBounds.width.roundToInt(), canvasBounds.height.roundToInt()).asImageBitmap().toPixelMap()
         }
         val before = capturePixels()
+        val probeX = (painted.left - canvasBounds.left + 6f).roundToInt()
+        val probeY = (painted.center.y - canvasBounds.top).roundToInt()
+        assertEquals("The real visual must be present in the captured Compose host",
+            TrainPilotActionAppearance.negativeBackground.toArgb(), before[probeX, probeY].toArgb())
         compose.mainClock.autoAdvance = false
         var pointerDown = false
         try {
-            target.performTouchInput { down(Offset(1f, centerY)) }
+            target.performTouchInput { down(center) }
             pointerDown = true
             compose.mainClock.advanceTimeBy(200)
             compose.runOnIdle { shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(200)) }
@@ -88,4 +93,16 @@ class RoundedPressFeedbackRegressionTest {
         }
         compose.runOnIdle { assertEquals(1, clicks) }
     }
+    @Test fun transparentPartOfTheLargerHitTargetStillInvokesClose() {
+        var clicks = 0
+        compose.setContent { TrainPilotTheme {
+            Box(Modifier.size(100.dp).background(Color.White)) {
+                TrainPilotRedCloseButton(onClick = { clicks++ }, modifier = Modifier.align(Alignment.Center), testTag = "close")
+            }
+        } }
+        val target = compose.onNodeWithTag("close")
+        target.performTouchInput { click(Offset(1f, centerY)) }
+        compose.runOnIdle { assertEquals(1, clicks) }
+    }
+
 }
