@@ -1,3 +1,22 @@
+# 2026-11-13 – a három mockup beépítve, közös regresszió/build engedélyezve
+
+Profil/tervező és egyedi gyakorlat: közös TrainPilotFullHeightFormSheet, teljes
+magasság, kötött görgethető törzs, rögzített zöld mentés/Mégse, piros bezárás.
+A tényleges mezők/callbackek és beállításértékek megmaradnak. A profil címe rövidült.
+Naplószerkesztő: teljes magasságú sheet; a meglévő tényleges látható ablak/IME
+keret, izolált draft, dátumfeldolgozás és tartós mentési út megmarad. Mentés közben
+nem csukható le; a mentés és Mégse a listán kívüli rögzített láblécben van.
+
+A felhasználó most feloldotta a buildszünetet: minden friss változtatáshoz
+regresszió, majd közös CI és telefon+Wear APK/AAB kért. Új források:
+FullHeightProfileCustomRegressionTest, FullHeightJournalEditorRegressionTest,
+Post2757PresentationRegressionTest; korábban StudioStrengthSetCardRegressionTest,
+a settings és natív ownership regressziók. A régi megfelelő regressziók megmaradnak.
+Még nincs új futási siker állítva. Ág/PR: maintenance/post2757-audit / #225.
+A Play-kompatibilis következő verziókód kérdése a felhasználónak kiküldve.
+
+---
+
 # 2026-11-13 – aktív súlyzós edzés: inline sorozatkártyák és legördülő értékek
 
 Felhasználói kérés: a mockupok kártyás stílusa a valódi edzésen is jelenjen meg,

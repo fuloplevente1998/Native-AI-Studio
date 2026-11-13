@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
+import com.example.ui.components.TrainPilotFullHeightFormSheet
 
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
@@ -3232,20 +3233,10 @@ fun AddCustomExerciseModalDialog(
     var isTimed by remember { mutableStateOf(false) }
     var addToCurrentProgramDay by remember { mutableStateOf(true) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = palette.surfaceCard,
-        titleContentColor = palette.textPrimary,
-        textContentColor = palette.textSecondary,
-        title = {
-            Text(
-                text = trW(lang, "Új egyedi gyakorlat hozzáadása", "Add new custom exercise", "Neue eigene Übung hinzufügen", "Adaugă exercițiu personalizat nou"),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = palette.textPrimary
-            )
-        },
-        text = {
+    TrainPilotFullHeightFormSheet(
+        onDismiss = onDismiss,
+        title = trW(lang, "Új egyedi gyakorlat hozzáadása", "Add new custom exercise", "Neue eigene Übung hinzufügen", "Adaugă exercițiu personalizat nou"),
+        content = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -3430,14 +3421,9 @@ fun AddCustomExerciseModalDialog(
                         addToCurrentProgramDay
                     )
                 },
-                modifier = Modifier.testTag("custom_exercise_save_button")
+                modifier = Modifier.fillMaxWidth().testTag("custom_exercise_save_button")
             ) {
                 Text(strings.saveBtn, fontWeight = FontWeight.Bold)
-            }
-        },
-        dismissButton = {
-            TrainPilotOutlinedButton(onClick = onDismiss) {
-                Text(strings.cancelBtn, color = palette.textPrimary)
             }
         }
     )
