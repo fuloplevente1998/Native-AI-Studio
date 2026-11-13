@@ -1,0 +1,57 @@
+{
+  "source": "1019f605ce737341f66c2776a5b0cdc15ebf944a",
+  "run": 43494316049,
+  "artifact": 14070099037,
+  "digest": "sha256:beb0645b3b0a02927834e9be7b1f03d554eb94fda0906f3b60d0e158009f1f23",
+  "rawJUnit": {
+    "app": {
+      "files": 90,
+      "tests": 486,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "wear": {
+      "files": 34,
+      "tests": 187,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "verification": {
+    "commit": "1019f605ce737341f66c2776a5b0cdc15ebf944a",
+    "modules": {
+      "phone": {
+        "files": 90,
+        "tests": 486,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "wear": {
+        "files": 34,
+        "tests": 187,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "shared": {
+        "files": 0,
+        "tests": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": true
+      }
+    },
+    "total": {
+      "tests": 673,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  }
+}
