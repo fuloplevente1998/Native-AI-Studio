@@ -334,10 +334,10 @@ fun ActiveStrengthWorkoutScreen(
                 Text(
                     text = tr(
                         lang,
-                        "✏️ ${targetSet.setNumber}. sorozat kitöltése",
-                        "✏️ Fill set #${targetSet.setNumber}",
-                        "✏️ ${targetSet.setNumber}. Satz ausfüllen",
-                        "✏️ Completare seria #${targetSet.setNumber}"
+                        "${targetSet.setNumber}. sorozat kitöltése",
+                        "Fill set #${targetSet.setNumber}",
+                        "${targetSet.setNumber}. Satz ausfüllen",
+                        "Completare seria #${targetSet.setNumber}"
                     ),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
@@ -634,10 +634,10 @@ fun ActiveStrengthWorkoutScreen(
                                         Text(
                                             text = tr(
                                                 lang,
-                                                "📚 Választás a ${uiState.exercises.size} gyakorlatkönyvtárból...",
-                                                "📚 Choose from the ${uiState.exercises.size} exercise library...",
-                                                "📚 Aus der ${uiState.exercises.size} Übungsbibliothek wählen...",
-                                                "📚 Alege din biblioteca de ${uiState.exercises.size} exerciții..."
+                                                "Választás a ${uiState.exercises.size} gyakorlatkönyvtárból...",
+                                                "Choose from the ${uiState.exercises.size} exercise library...",
+                                                "Aus der ${uiState.exercises.size} Übungsbibliothek wählen...",
+                                                "Alege din biblioteca de ${uiState.exercises.size} exerciții..."
                                             ),
                                             color = palette.primary,
                                             fontWeight = FontWeight.Bold
@@ -1602,10 +1602,10 @@ fun ActiveTimedWorkoutScreen(
                                             Text(
                                                 text = tr(
                                                     lang,
-                                                    "📚 Gyakorlatkönyvtár megnyitása...",
-                                                    "📚 Open Exercise Library...",
-                                                    "📚 Übungsbibliothek öffnen...",
-                                                    "📚 Deschide biblioteca de exerciții..."
+                                                    "Gyakorlatkönyvtár megnyitása...",
+                                                    "Open Exercise Library...",
+                                                    "Übungsbibliothek öffnen...",
+                                                    "Deschide biblioteca de exerciții..."
                                                 ),
                                                 color = palette.primary,
                                                 fontWeight = FontWeight.Bold
@@ -2247,10 +2247,10 @@ fun ActiveBilateralWorkoutScreen(
                                             Text(
                                                 text = tr(
                                                     lang,
-                                                    "📚 Gyakorlatkönyvtár megnyitása...",
-                                                    "📚 Open Exercise Library...",
-                                                    "📚 Übungsbibliothek öffnen...",
-                                                    "📚 Deschide biblioteca de exerciții..."
+                                                    "Gyakorlatkönyvtár megnyitása...",
+                                                    "Open Exercise Library...",
+                                                    "Übungsbibliothek öffnen...",
+                                                    "Deschide biblioteca de exerciții..."
                                                 ),
                                                 color = palette.primary,
                                                 fontWeight = FontWeight.Bold

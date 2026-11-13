@@ -18,6 +18,20 @@ internal fun wearText(hu: String, language: String = Locale.getDefault().languag
 }
 
 private val wearTranslations = mapOf(
+    "Túl könnyű" to listOf("Too easy", "Zu leicht", "Prea ușor"),
+    "Kicsit könnyű" to listOf("A little easy", "Etwas leicht", "Puțin ușor"),
+    "Pont jó" to listOf("Just right", "Genau richtig", "Potrivit"),
+    "Kicsit nehéz" to listOf("A little hard", "Etwas schwer", "Puțin greu"),
+    "Túl nehéz" to listOf("Too hard", "Zu schwer", "Prea greu"),
+    "Most kihagyom" to listOf("Skip for now", "Jetzt überspringen", "Omite acum"),
+    "Bal oldal" to listOf("Left side", "Linke Seite", "Partea stângă"),
+    "Jobb oldal" to listOf("Right side", "Rechte Seite", "Partea dreaptă"),
+    "Bal" to listOf("Left", "Links", "Stânga"),
+    "Jobb" to listOf("Right", "Rechts", "Dreapta"),
+    "mp" to listOf("s", "Sek.", "s"),
+    "ism." to listOf("reps", "Wdh.", "rep."),
+    "Max. pulzus" to listOf("Max. heart rate", "Max. Puls", "Puls maxim"),
+    "%d sorozat bekerül a naplóba.\nRészleges edzés is menthető." to listOf("%d sets will be saved to the journal.\nPartial workouts can be saved.", "%d Sätze werden im Tagebuch gespeichert.\nTeiltrainings können gespeichert werden.", "%d serii vor fi salvate în jurnal.\nSe pot salva și antrenamente parțiale."),
     "Mérés szünetel" to listOf("Recording paused", "Messung pausiert", "Măsurare întreruptă"),
     "Mérés indul" to listOf("Starting recording", "Messung startet", "Măsurarea pornește"),
     "Mérési hiba" to listOf("Recording error", "Messfehler", "Eroare de măsurare"),
@@ -238,3 +252,6 @@ private val wearTranslations = mapOf(
     "Frissítsd a telefonos appot, majd frissítsd az órás adatokat." to listOf("Update the phone app, then refresh watch data.", "Telefon-App aktualisieren, dann Uhrdaten aktualisieren.", "Actualizează aplicația telefonului, apoi datele ceasului."),
     "Az automata menetrend legfeljebb 24 órás lehet." to listOf("Automatic schedules can be at most 24 hours long.", "Automatische Zeitpläne dürfen höchstens 24 Stunden dauern.", "Programul automat poate dura cel mult 24 de ore.")
 )
+
+internal fun wearFormat(pattern: String, vararg values: Any): String =
+    String.format(Locale.getDefault(), wearText(pattern), *values)

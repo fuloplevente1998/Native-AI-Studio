@@ -84,9 +84,6 @@ import com.example.ui.viewmodel.TrainPilotUiState
 fun HomeScreen(
     state: TrainPilotUiState,
     strings: LocalizedStrings,
-    onOpenPalettePicker: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onCycleDemoMode: (HomeDemoMode) -> Unit,
     onStartOrContinueWorkout: () -> Unit,
     onOpenProgramDayDetails: () -> Unit,
     onOpenQuickWorkout: () -> Unit,
@@ -95,8 +92,6 @@ fun HomeScreen(
     onOpenHealthHeart: () -> Unit,
     onOpenHealthSteps: () -> Unit,
     onOpenCoachReadiness: () -> Unit,
-    onOpenProgramsList: () -> Unit,
-    onOpenCalendarPlanner: () -> Unit,
     onOpenGoalsDialog: () -> Unit,
     onOpenPersonalPlanner: () -> Unit,
     onDiscardWorkout: (String) -> Unit = {},
@@ -406,7 +401,7 @@ fun HomeScreen(
         }
 
         // 8. MAIN BRANCH HOME CARDS (Célok beállítása, Mai javaslat / Coach, Személyes edzéstervező, Aktív kalória)
-        AnimatedVisibility(visible = true) {
+        Column {
             Column(verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)) {
                 // Célok beállítása (1/15 edzés >) from main Home screenshot
                 Surface(

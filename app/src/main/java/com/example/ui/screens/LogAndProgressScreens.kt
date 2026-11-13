@@ -243,7 +243,7 @@ fun LogTabScreen(
             textContentColor = palette.textSecondary,
             title = {
                 Text(
-                    text = trL(uiState.language, "📅 Napló intervallum-szűrő", "📅 Log interval filter", "📅 Protokoll-Intervallfilter", "📅 Filtru interval jurnal"),
+                    text = trL(uiState.language, "Napló intervallum-szűrő", "Log interval filter", "Protokoll-Intervallfilter", "Filtru interval jurnal"),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = palette.textPrimary
@@ -306,7 +306,7 @@ fun LogTabScreen(
             CompactJournalSearchField(uiState.logSearchQuery, onSearchChange, strings.logSearchHint)
         }
 
-        // Interactive Month & Date selector row (< | 📅 2026. október v | >)
+        // Interactive Month & Date selector row (< | 2026. október v | >)
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),

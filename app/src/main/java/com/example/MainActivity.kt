@@ -795,9 +795,6 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 HomeScreen(
                                     state = uiState,
                                     strings = strings,
-                                    onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
-                                    onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
-                                    onCycleDemoMode = { mode -> viewModel.cycleHomeDemoMode(mode) },
                                     onDiscardWorkout = { id -> viewModel.stopActiveWorkoutSession(id, uiState.activeWorkoutGeneration) },
                                     onStartOrContinueWorkout = {
                                         if (uiState.isWorkoutSessionActive) {
@@ -827,12 +824,6 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     },
                                     onOpenCoachReadiness = {
                                         viewModel.navigateToSubScreen(SubScreen.COACH_DETAIL)
-                                    },
-                                    onOpenProgramsList = {
-                                        viewModel.navigateToSubScreen(SubScreen.PROGRAMS_LIST, MainTab.WORKOUT)
-                                    },
-                                    onOpenCalendarPlanner = {
-                                        viewModel.navigateToSubScreen(SubScreen.CALENDAR_PLANNER)
                                     },
                                     onOpenGoalsDialog = { viewModel.toggleGoalsDialog(true) },
                                     onOpenPersonalPlanner = { viewModel.togglePersonalPlannerModal(true) }

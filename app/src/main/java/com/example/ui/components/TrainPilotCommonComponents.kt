@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.material.icons.filled.Flag
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
@@ -1562,7 +1563,7 @@ fun PersonalPlannerModalDialog(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("🎯", fontSize = 16.sp)
+                            Icon(Icons.Default.Flag, contentDescription = null, modifier = Modifier.size(16.dp))
                             Column {
                                 Text(tr(lang, "Cél és edzettség", "Goal & fitness level", "Ziel & Fitnesslevel", "Obiectiv și nivel de fitness"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                                 Text("${option(selectedGoal)} • ${option(selectedExperience)} • ${option(selectedLocation)}", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
@@ -1764,7 +1765,7 @@ fun PersonalPlannerModalDialog(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("📅", fontSize = 16.sp)
+                            Icon(Icons.Default.CalendarMonth, contentDescription = null, modifier = Modifier.size(16.dp))
                             Column {
                                 Text(tr(lang, "Edzésbeosztás", "Workout schedule", "Trainingsplan", "Program de antrenament"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                                 Text(

@@ -1451,7 +1451,7 @@ private fun HealthScreen(
         for ((title, metric, unit) in
             listOf(
                 Triple(wearText("Átlagpulzus"), "averageHeartRate", "bpm"),
-                Triple("Max. pulzus", "maxHeartRate", "bpm"),
+                Triple(wearText("Max. pulzus"), "maxHeartRate", "bpm"),
                 Triple(wearText("Összes energia"), "totalCalories", "kcal"),
                 Triple(wearText("Lépések"), "steps", wearText("lépés")),
                 Triple(wearText("Aktív mérési idő"), "activeDurationSeconds", "s"),
@@ -2077,8 +2077,8 @@ internal fun ValueEditor(
     val title =
         when (field) {
             "weight" -> wearText("Súly")
-            "leftSeconds" -> "Bal oldal"
-            "rightSeconds" -> "Jobb oldal"
+            "leftSeconds" -> wearText("Bal oldal")
+            "rightSeconds" -> wearText("Jobb oldal")
             else -> if (step == 5.0) wearText("Idő") else wearText("Ismétlés")
         }
     Box(Modifier.fillMaxSize().testTag("wear-value-editor")
@@ -2240,7 +2240,7 @@ private fun TimedSetScreen(
                 restRemaining,
                 detail =
                     if (perSide)
-                        "${if (side == "leftSeconds") "Bal" else "Jobb"} oldal · ${workout.currentSetIndex + 1}/${workout.exercise?.sets?.size ?: 0}"
+                        "${if (side == "leftSeconds") wearText("Bal") else wearText("Jobb")} oldal · ${workout.currentSetIndex + 1}/${workout.exercise?.sets?.size ?: 0}"
                     else null,
             )
             LiveWorkoutHealth(workout, health)
@@ -2396,7 +2396,7 @@ private fun TimedSetToolsScreen(
 
         centerItem {
             Pill(
-                if (perSide) "✓ ${if (side == "leftSeconds") "Bal" else "Jobb"} idő rögzítése"
+                if (perSide) "✓ ${if (side == "leftSeconds") wearText("Bal") else wearText("Jobb")} idő rögzítése"
                 else wearText("✓ Idő rögzítése"),
                 enabled =
                     !set.done &&
@@ -2574,7 +2574,7 @@ private fun ConfirmationScreen(discard: Boolean, completed: Int, onAnswer: (Bool
         run {
             Text(
                 if (discard) wearText("A félbehagyott edzés elvész.\nA napló megmarad.")
-                else "$completed sorozat bekerül a naplóba.\nRészleges edzés is menthető.",
+                else wearFormat("%d sorozat bekerül a naplóba.\nRészleges edzés is menthető.", completed),
                 color = Muted,
                 fontSize = 11.sp,
                 lineHeight = 13.sp,
@@ -2588,10 +2588,10 @@ private fun ConfirmationScreen(discard: Boolean, completed: Int, onAnswer: (Bool
 internal fun WorkoutFeedbackScreen(onAnswer: (String?) -> Unit) {
     RoundList(wearText("Milyen volt az edzés?")) {
         WearWorkoutFeedback.choices.forEachIndexed { index, (value, label) ->
-            centerItem { Pill("${index + 1} · $label", tone = Card) { onAnswer(value) } }
+            centerItem { Pill("${index + 1} · ${wearText(label)}", tone = Card) { onAnswer(value) } }
         }
         centerItem { Pill(wearText("Fájdalom / kellemetlenség"), tone = Danger) { onAnswer("pain") } }
-        centerItem { Pill("Most kihagyom", tone = Secondary) { onAnswer(null) } }
+        centerItem { Pill(wearText("Most kihagyom"), tone = Secondary) { onAnswer(null) } }
     }
 }
 
@@ -2688,7 +2688,7 @@ private fun SummaryScreen(
                                     .padding(vertical = 7.dp, horizontal = 4.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
-                                Label(metric.label, size = 9)
+                                Label(wearText(metric.label), size = 9)
                                 Title(metric.value, 14)
                             }
                             if (pair.size == 1) Spacer(Modifier.weight(1f))
