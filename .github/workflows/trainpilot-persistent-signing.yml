@@ -1,4 +1,4 @@
-name: TrainPilot persistent signed APK pair
+name: TrainPilot persistent signed APK and AAB pairs
 # Signed verification build for UI/UX issue #219 implementation, source 23ba07fc691fbe35c46b0b7a4c313bd869c8251a.
 # Verification build for health fixes #217/#218, AI Studio commit 8822fd963d7588c6197ff9e8861446850ebed120.
 # 2753: device-feedback fixes PR159/160/161, verified 550 JVM tests; signed pair trigger only.
@@ -109,11 +109,11 @@ jobs:
               output.write('KEYSTORE_PATH=' + str(target) + '\n')
           PY
 
-      - name: Build persistent signed phone and Wear pair and run all JVM tests
+      - name: Build signed phone and Wear APKs and AABs and run all JVM tests
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: gradle --no-daemon --stacktrace --profile --continue :app:assembleRelease :wear:assembleRelease :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest
+        run: gradle --no-daemon --stacktrace --profile --continue :app:assembleRelease :wear:assembleRelease :app:bundleRelease :wear:bundleRelease :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest
 
       - name: Verify raw phone, Wear and shared JUnit XML test results
         if: always()
@@ -123,6 +123,58 @@ jobs:
 
       - name: Verify package, embedded Maps configuration and pinned signer
         run: python3 scripts/verify_android_apk_metadata.py
+
+      - name: Verify signed AABs and write Play metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          PHONE="app/build/outputs/bundle/release/app-release.aab"
+          WEAR="wear/build/outputs/bundle/release/wear-release.aab"
+          test -s "$PHONE"
+          test -s "$WEAR"
+          jarsigner -verify "$PHONE"
+          jarsigner -verify "$WEAR"
+          python3 - <<'PY'
+          import os, re, subprocess
+          expected = os.environ.get('TRAINPILOT_RELEASE_CERT_SHA256', '').replace(':', '').lower().strip()
+          if len(expected) != 64:
+              raise SystemExit('Pinned release certificate SHA-256 missing')
+          for bundle in ('app/build/outputs/bundle/release/app-release.aab', 'wear/build/outputs/bundle/release/wear-release.aab'):
+              out = subprocess.check_output(['keytool', '-printcert', '-jarfile', bundle], text=True, stderr=subprocess.STDOUT)
+              match = re.search(r'SHA256:\s*([0-9A-Fa-f:]+)', out)
+              if not match:
+                  raise SystemExit(f'Unable to read signer SHA-256 from {bundle}')
+              actual = match.group(1).replace(':', '').lower()
+              if actual != expected:
+                  raise SystemExit(f'AAB signer differs from pinned TrainPilot release key: {bundle}')
+          print('AAB signatures verified against pinned TrainPilot upload certificate.')
+          PY
+          python3 - <<'PY'
+          import hashlib, json, pathlib, re
+          def field(module, name):
+              src = pathlib.Path(module, 'build.gradle.kts').read_text()
+              m = re.search(rf'(?m)^\s*{name}\s*=\s*(\d+|"[^"\n]+")', src)
+              if not m:
+                  raise SystemExit(f'Missing {module} {name}')
+              return m.group(1).strip('"')
+          phone = pathlib.Path('app/build/outputs/bundle/release/app-release.aab')
+          wear = pathlib.Path('wear/build/outputs/bundle/release/wear-release.aab')
+          meta = {
+              'commit': __import__('os').environ.get('GITHUB_SHA'),
+              'applicationId': 'com.TrainPilot.com',
+              'versionName': field('app', 'versionName'),
+              'mobileVersionCode': int(field('app', 'versionCode')),
+              'wearVersionCode': int(field('wear', 'versionCode')),
+              'mobileAabSha256': hashlib.sha256(phone.read_bytes()).hexdigest(),
+              'wearAabSha256': hashlib.sha256(wear.read_bytes()).hexdigest(),
+              'mobileBytes': phone.stat().st_size,
+              'wearBytes': wear.stat().st_size,
+          }
+          if meta['mobileVersionCode'] == meta['wearVersionCode']:
+              raise SystemExit('Phone and Wear versionCode must be unique for Play form-factor releases')
+          pathlib.Path('app/build/outputs/play-aab-metadata.json').write_text(json.dumps(meta, indent=2) + '\n')
+          print(json.dumps(meta, indent=2))
+          PY
 
       - name: Remove temporary private signing file
         if: always()
@@ -138,6 +190,18 @@ jobs:
             app/build/outputs/apk/release/app-release.apk
             wear/build/outputs/apk/release/wear-release.apk
             app/build/outputs/apk-verification.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload signed Play Console AAB pair
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trainpilot-play-internal-aab-pair
+          path: |
+            app/build/outputs/bundle/release/app-release.aab
+            wear/build/outputs/bundle/release/wear-release.aab
+            app/build/outputs/play-aab-metadata.json
           if-no-files-found: error
           retention-days: 7
 

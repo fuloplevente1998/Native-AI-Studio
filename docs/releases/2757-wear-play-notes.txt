@@ -1,0 +1,12 @@
+<hu-HU>
+- A menük, edzésvezérlők, mérési és visszajelző feliratok HU/EN/DE/RO fordítása bővült.
+- A feliratok az óra rendszerének nyelvét követik.
+- Az automata edzés értesítései is lokalizáltak.
+- Használaton kívüli régi órás komponensek eltávolítva.
+</hu-HU>
+<en-US>
+- Expanded HU/EN/DE/RO translations for menus, workout controls, measurements and feedback.
+- Labels follow the watch system language.
+- Automatic workout notifications are localized.
+- Removed unused legacy watch components.
+</en-US>

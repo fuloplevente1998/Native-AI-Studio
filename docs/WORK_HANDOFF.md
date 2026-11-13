@@ -1,3 +1,16 @@
+# Kiadás előkészítés –2026-11-13,2757
+
+A felhasználó elfogadta a#223 javítócsomagot:main-integráció,APK+AAB build,
+külön telefonos/órás változásleírás kért. Előző kiadás2756(6b38451).
+Új kódok:telefon275700/Wear275702,név1.0-beta. Részletek:releases/2757-changes.md.
+A meglévő persistent-signing kapu egy közös Gradle-futásban APK+AAB párokat készít,
+megtartva a JVM-,APK-metaadat-,tartós signer-,Maps- és páridentitás-ellenőrzéseket.
+Az AAB aláírás- és metaadat-ellenőrzése az eddigi AAB workflow-ból változatlan.
+Egyetlen közös main-build kell; külön AAB-workflowt nem indítunk.
+Kész artifact/CI állítást még nem teszünk; Play feltöltést a felhasználó végzi.
+
+---
+
 # Átadó –2026-11-13 audit1–4
 
 Draft PR#223, ág:fix/nov13-audit-1-4, alapmain6b38451.
