@@ -182,7 +182,7 @@ internal fun WearHomeDashboard(
                 .clickable(role = Role.Button, onClick = onOpenPhone)
                 .semantics {
                     contentDescription = wearText("Megnyitás telefonon")
-                    stateDescription = "$connectedLabel · ${model.source}"
+                    stateDescription = "$connectedLabel · ${wearText(model.source)}"
                 }
         )
         Canvas(Modifier.align(Alignment.Center).size(diameter)) {
@@ -242,10 +242,10 @@ internal fun WearHomeDashboard(
         ) {
             if (large)
                 HomeFitText(
-                    if (model.active) "${model.phase} · ${model.detail}"
+                    if (model.active) "${wearText(model.phase)} · ${wearText(model.detail)}"
                     else {
                         val date = Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault())
-                        "${listOf(wearText("HÉT"),wearText("KEDD"),wearText("SZE"),wearText("CSÜT"),wearText("PÉN"),wearText("SZO"),wearText("VAS"))[date.dayOfWeek.value-1]} ${date.dayOfMonth} · ${model.phase}"
+                        "${listOf(wearText("HÉT"),wearText("KEDD"),wearText("SZE"),wearText("CSÜT"),wearText("PÉN"),wearText("SZO"),wearText("VAS"))[date.dayOfWeek.value-1]} ${date.dayOfMonth} · ${wearText(model.phase)}"
                     },
                     Modifier.fillMaxWidth().height(9.dp),
                     7.5f,
@@ -260,7 +260,7 @@ internal fun WearHomeDashboard(
                 mono = true,
             )
             HomeFitText(
-                if (model.phase == "PIHENŐ" && !large) "${wearText("Pihenő")} · ${model.title}" else model.title,
+                if (model.phase == "PIHENŐ" && !large) "${wearText("Pihenő")} · ${wearText(model.title)}" else wearText(model.title),
                 Modifier.fillMaxWidth()
                     .height(
                         if (model.active) {
@@ -286,14 +286,14 @@ internal fun WearHomeDashboard(
                         )
                 } else {
                     HomeFitText(
-                        saveStatus?.let { wearSaveLabel(it.phase) } ?: model.subtitle,
+                        saveStatus?.let { wearSaveLabel(it.phase) } ?: wearText(model.subtitle),
                         Modifier.fillMaxWidth().height(10.dp),
                         8f,
                         HomeMuted,
                     )
                     if (large)
                         HomeFitText(
-                            "${model.detail} · ${model.source}",
+                            "${wearText(model.detail)} · ${wearText(model.source)}",
                             Modifier.fillMaxWidth().height(9.dp),
                             7.5f,
                             HomeMuted,
@@ -343,7 +343,7 @@ internal fun WearHomeDashboard(
                 HomeQuickButton(
                     if (model.action == HomeAction.PHONE) R.drawable.ic_tp_phone
                     else R.drawable.ic_tp_workout,
-                    model.actionLabel,
+                    wearText(model.actionLabel),
                     primaryDescription,
                     theme,
                     true,

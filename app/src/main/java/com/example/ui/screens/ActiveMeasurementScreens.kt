@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.layout.sizeIn
 import com.example.ui.components.WorkoutControlAppearance
 
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog

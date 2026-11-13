@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.layout.widthIn
 import com.repforge.app.ui.theme.trainPilotSoftGlow
 
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog

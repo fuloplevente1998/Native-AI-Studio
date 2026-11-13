@@ -137,7 +137,7 @@ internal data class WearMeasuredMetric(val label: String, val value: String)
 internal fun wearRecordingRequestForWorkout(workout: WearWorkout, gps: Boolean): WearRecordingRequest {
     fun unit(exercise: WearExercise) = exercise.repUnit.trim().lowercase(java.util.Locale.ROOT)
     fun steps(exercise: WearExercise) = exercise.measurementType == "steps" ||
-        unit(exercise) in listOf(wearText("lépés"), "lépések", "step", "steps", "schritte", "pași")
+        unit(exercise) in listOf("lépés", "lépések", "step", "steps", "schritte", "pași")
     val cardio = workout.exercises.firstOrNull {
         steps(it) || it.measurementType == "distance" || unit(it) in listOf("m", "km") ||
             it.id.lowercase(java.util.Locale.ROOT) in listOf("running", "walking", "cycling")
@@ -161,7 +161,7 @@ internal fun wearLiveWorkoutRows(data: JSONObject?, workoutId: String, now: Long
         return if (!number.isFinite() || number < minimum) null else "${trimWearNumber(number)} $unit"
     }
     val primary = listOfNotNull(value("heartRate", "bpm", 20.0), value("totalCalories", "kcal"))
-    val movement = listOfNotNull(value("steps", wearText("lépés")), value("distanceMeters", "m"))
+    val movement = listOfNotNull(value("steps", "lépés"), value("distanceMeters", "m"))
     if (primary.isEmpty() && movement.isEmpty()) return emptyList()
     val isDelayed = (now - data.optLong("updatedAt") > 20000L) ||
         (data.has("heartRate") && data.optLong("lastSampleAt") > 0L && now - data.optLong("lastSampleAt") > 20000L) ||
@@ -171,7 +171,7 @@ internal fun wearLiveWorkoutRows(data: JSONObject?, workoutId: String, now: Long
         "reconnecting" -> "Újrakapcsolódás…"
         "active" -> if (isDelayed) "Legutóbbi adat" else null
         "starting" -> "Mérés indul"
-        "ending" -> wearText("Mérés lezárása")
+        "ending" -> "Mérés lezárása"
         "error" -> "Mérés megszakadt"
         else -> "Legutóbbi adat"
     }
@@ -202,11 +202,11 @@ internal fun wearHealthDisplaySummary(workoutId: String, stored: JSONObject?, pu
 internal fun wearMeasuredTotals(data: JSONObject?, workoutId: String): List<WearMeasuredMetric> {
     if (data == null || data.optString("workoutId") != workoutId) return emptyList()
     return listOf(
-        Triple(wearText("Átlagpulzus"), "averageHeartRate", "bpm"),
+        Triple("Átlagpulzus", "averageHeartRate", "bpm"),
         Triple("Max. pulzus", "maxHeartRate", "bpm"),
-        Triple(wearText("Összes energia"), "totalCalories", "kcal"),
-        Triple(wearText("Lépések"), "steps", wearText("lépés")),
-        Triple(wearText("Távolság"), "distanceMeters", "m")
+        Triple("Összes energia", "totalCalories", "kcal"),
+        Triple("Lépések", "steps", "lépés"),
+        Triple("Távolság", "distanceMeters", "m")
     ).mapNotNull { (label, key, unit) ->
         val number = if (data.has(key) && !data.isNull(key)) data.optDouble(key) else Double.NaN
         if (!number.isFinite() || number < 0) null
@@ -233,5 +233,5 @@ internal fun wearRecordingStatus(data: JSONObject?, enabled: Boolean, hasWorkout
         data.optBoolean("locationPermissionRequired") -> "Pontos helyengedély szükséges"
         else -> "A mérés megszakadt"
     }
-    else -> if (!enabled) wearText("Mérés kikapcsolva") else if(hasWorkout) "Az aktuális edzés mérése még nem indult" else "Mérés a következő edzésnél"
+    else -> if (!enabled) "Mérés kikapcsolva" else if(hasWorkout) "Az aktuális edzés mérése még nem indult" else "Mérés a következő edzésnél"
 }

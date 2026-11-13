@@ -5,10 +5,51 @@ import java.util.Locale
 /** Existing Wear UI localization follows the watch locale; no new phone sync protocol. */
 internal fun wearText(hu: String, language: String = Locale.getDefault().language): String {
     val index = when (language) { "hu" -> return hu; "de" -> 1; "ro" -> 2; else -> 0 }
-    return wearTranslations[hu]?.get(index) ?: hu
+    wearTranslations[hu]?.get(index)?.let { return it }
+    // These are UI format strings, never translated program/exercise identifiers.
+    for (prefix in listOf("Adat", "Sorozat")) {
+        if (hu.startsWith("$prefix ")) return wearTranslations.getValue(prefix)[index] + hu.removePrefix(prefix)
+    }
+    if (hu.matches(Regex("[0-9]+/[0-9]+ sorozat kész")))
+        return hu.substringBefore(' ') + " " + wearTranslations.getValue("sorozat kész")[index]
+    if (hu.matches(Regex("[0-9]+ gyakorlat.*")))
+        return hu.replace("gyakorlat", wearTranslations.getValue("gyakorlat")[index])
+    return hu
 }
 
 private val wearTranslations = mapOf(
+    "Mérés szünetel" to listOf("Recording paused", "Messung pausiert", "Măsurare întreruptă"),
+    "Mérés indul" to listOf("Starting recording", "Messung startet", "Măsurarea pornește"),
+    "Mérési hiba" to listOf("Recording error", "Messfehler", "Eroare de măsurare"),
+    "Mérésre vár" to listOf("Waiting to record", "Warten auf Messung", "Se așteaptă măsurarea"),
+    "EDZÉS" to listOf("WORKOUT", "TRAINING", "ANTRENAMENT"),
+    "MENTÉSI HIBA" to listOf("SAVE ERROR", "SPEICHERFEHLER", "EROARE LA SALVARE"),
+    "MENTÉS VÁR" to listOf("SAVE PENDING", "SPEICHERN AUSSTEHEND", "SALVARE ÎN AȘTEPTARE"),
+    "Elvetés visszaigazolása" to listOf("Discard confirmation", "Verwerfen bestätigen", "Confirmarea abandonării"),
+    "Órán megőrizve" to listOf("Kept on watch", "Auf Uhr aufbewahrt", "Păstrat pe ceas"),
+    "A telefon válaszának ellenőrzése" to listOf("Checking phone reply", "Telefonantwort prüfen", "Se verifică răspunsul telefonului"),
+    "Az edzés a telefonra vár" to listOf("Workout waiting for phone", "Training wartet auf Telefon", "Antrenamentul așteaptă telefonul"),
+    "Állapot" to listOf("Status", "Status", "Stare"),
+    "SZINKRONRA VÁR" to listOf("WAITING FOR SYNC", "WARTEN AUF SYNC", "SE AȘTEAPTĂ SINCRONIZAREA"),
+    "Nyisd meg a telefonon" to listOf("Open on your phone", "Am Telefon öffnen", "Deschide pe telefon"),
+    "A programadat még nem érkezett meg" to listOf("Program data has not arrived yet", "Programmdaten noch nicht empfangen", "Datele programului nu au sosit încă"),
+    "FÉLBEHAGYOTT" to listOf("UNFINISHED", "UNVOLLENDET", "NETERMINAT"),
+    "Edzés a telefonon" to listOf("Workout on phone", "Training am Telefon", "Antrenament pe telefon"),
+    "Nyisd meg a folytatáshoz" to listOf("Open to continue", "Zum Fortsetzen öffnen", "Deschide pentru continuare"),
+    "KÖVETKEZŐ EDZÉS" to listOf("NEXT WORKOUT", "NÄCHSTES TRAINING", "URMĂTORUL ANTRENAMENT"),
+    "Indítás" to listOf("Start", "Starten", "Pornește"),
+    "EDZÉSRE KÉSZ" to listOf("READY TO TRAIN", "TRAININGSBEREIT", "PREGĂTIT DE ANTRENAMENT"),
+    "Programnapok" to listOf("Program days", "Programmtage", "Zilele programului"),
+    "Válassz edzésnapot" to listOf("Choose a workout day", "Trainingstag wählen", "Alege o zi de antrenament"),
+    "Napok" to listOf("Days", "Tage", "Zile"),
+    "NINCS PROGRAM" to listOf("NO PROGRAM", "KEIN PROGRAMM", "NICIUN PROGRAM"),
+    "Válassz programot" to listOf("Choose a program", "Programm wählen", "Alege un program"),
+    "A telefonos alkalmazásban" to listOf("In the phone app", "In der Telefon-App", "În aplicația telefonului"),
+    "Helyi adat" to listOf("Local data", "Lokale Daten", "Date locale"),
+    "Adat" to listOf("Data", "Daten", "Date"),
+    "Sorozat" to listOf("Set", "Satz", "Serie"),
+    "gyakorlat" to listOf("exercises", "Übungen", "exerciții"),
+    "sorozat kész" to listOf("sets done", "Sätze fertig", "serii finalizate"),
     "Munka" to listOf("Work", "Arbeit", "Lucru"),
     "Megszakadt" to listOf("Interrupted", "Unterbrochen", "Întrerupt"),
     "SZOM" to listOf("SAT", "SA", "SÂM"),

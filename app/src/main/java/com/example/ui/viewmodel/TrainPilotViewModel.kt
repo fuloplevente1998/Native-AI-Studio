@@ -4289,8 +4289,8 @@ class TrainPilotViewModel : ViewModel() {
                 val provider = prefs.optString("provider", HealthJournalStore.HC)
                 val hcDailySourceRaw = prefs.optString("hcDailySource", "auto")
                 val dailySourceModeHu = when (hcDailySourceRaw) {
-                    "auto", "" -> "Automatikus (legteljesebb egyedi forrás, duplikáció nélkül)"
-                    "priority" -> "Prioritásos forrásválasztás"
+                    "auto", "" -> studioModesText("Automatikus (legteljesebb egyedi forrás, duplikáció nélkül)", "Automatic (most complete single source, no duplicates)", "Automatisch (vollständigste Einzelquelle, ohne Duplikate)", "Automat (sursa unică cea mai completă, fără duplicate)")
+                    "priority" -> studioModesText("Prioritásos forrásválasztás", "Source priority", "Quellenpriorität", "Prioritatea surselor")
                     com.repforge.app.HealthDailySource.SAMSUNG -> "Rögzített forrás: Samsung Health"
                     else -> "Rögzített csomag: $hcDailySourceRaw"
                 }
@@ -4315,9 +4315,9 @@ class TrainPilotViewModel : ViewModel() {
                     } else false
                 }.getOrDefault(false)
                 val sleepStagesSummary = if (hasSleepStages) {
-                    "Részletes alvásfázisok rögzítve (mély, REM, könnyű alvás)"
+                    studioModesText("Részletes alvásfázisok rögzítve (mély, REM, könnyű alvás)", "Sleep stages recorded (deep, REM, light)", "Schlafphasen aufgezeichnet (Tief-, REM-, Leichtschlaf)", "Stadii de somn înregistrate (profund, REM, ușor)")
                 } else {
-                    "A szolgáltató nem adott át alvásfázisbontást (csak teljes időtartam)"
+                    studioModesText("A szolgáltató nem adott át alvásfázisbontást (csak teljes időtartam)", "Provider supplied total sleep duration only", "Anbieter lieferte nur die Gesamtschlafdauer", "Furnizorul a transmis doar durata totală a somnului")
                 }
                 val availableFields = (setOf("steps", "activeCalories", "totalCalories", "averageHeartRate",
                     "restingHeartRate", "minHeartRate", "maxHeartRate", "heartRateSamples")
@@ -4394,14 +4394,14 @@ class TrainPilotViewModel : ViewModel() {
                     val stepOriginPkg = dayObj?.optString("stepsOrigin", "")?.ifBlank { dayObj.optString("activityOrigin", "") }.orEmpty()
                     val dayChannel = dayObj?.optString("channel", provider).orEmpty()
                     val sourceLabelHu = when {
-                        hasHealthRow && workoutCountForDay > 0 -> "${formatProviderLabelHu(dayChannel, stepOriginPkg)} + Room edzésnapló"
+                        hasHealthRow && workoutCountForDay > 0 -> "${formatProviderLabelHu(dayChannel, stepOriginPkg)} + ${studioModesText("Edzésnapló", "Workout journal", "Trainingstagebuch", "Jurnal de antrenament")}"
                         hasHealthRow -> formatProviderLabelHu(dayChannel, stepOriginPkg)
-                        workoutCountForDay > 0 -> "Room edzésnapló (aktív edzésintervallumok)"
-                        else -> "Nincs rögzített adat"
+                        workoutCountForDay > 0 -> studioModesText("Edzésnapló (aktív időszakok)", "Workout journal (active intervals)", "Trainingstagebuch (aktive Zeiträume)", "Jurnal de antrenament (intervale active)")
+                        else -> studioModesText("Nincs rögzített adat", "No recorded data", "Keine aufgezeichneten Daten", "Nu există date înregistrate")
                     }
                     if (offset <= 6) {
                     if (hasHealthRow) discoveredSources.add(formatProviderLabelHu(dayChannel, stepOriginPkg))
-                    if (workoutCountForDay > 0) discoveredSources.add("Room edzésnapló (aktív edzésidő)")
+                    if (workoutCountForDay > 0) discoveredSources.add(studioModesText("Edzésnapló (aktív idő)", "Workout journal (active time)", "Trainingstagebuch (aktive Zeit)", "Jurnal de antrenament (timp activ)"))
 
                     sumSteps += dSteps
                     sumKcal += dKcal
