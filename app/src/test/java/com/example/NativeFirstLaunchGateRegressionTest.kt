@@ -59,7 +59,8 @@ class NativeFirstLaunchGateRegressionTest {
     @Test fun migratedUserDoesNotReceiveFreshInstallOnboarding() {
         val store=TrainPilotSettingsStore(context)
         runBlocking {
-            store.importPortableSettings(org.json.JSONObject().put("onboarding128", "complete"))
+            store.importPortableSettings(org.json.JSONObject().put("settings",
+                org.json.JSONObject().put("onboarding128", "complete")))
             store.initializeOnboardingForMigration(true)
             store.markMigrationComplete()
             assertEquals("complete", store.current().onboarding128)
