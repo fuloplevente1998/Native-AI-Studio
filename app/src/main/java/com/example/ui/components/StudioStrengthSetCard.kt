@@ -87,7 +87,7 @@ internal fun StudioStrengthSetCard(
                 val fields: @Composable (Modifier) -> Unit = { field ->
                     WorkoutSetValuePicker(identity + "/weight", weightLabel, item.weightKg.toString(), weights,
                         enabled, language, "active_set_weight_${item.setNumber}", field,
-                        display = { it.toFloatOrNull()?.let { n -> number.format(n) } ?: it },
+                        display = { it.toDoubleOrNull()?.let { n -> number.format(n) } ?: it },
                         customValid = { it.toFloatOrNull()?.let { n -> n.isFinite() && n >= 0f } == true },
                         onSelect = { onValues(it.toFloat(), item.reps, selectedRir) })
                     WorkoutSetValuePicker(identity + "/reps", repsLabel, item.reps.toString(),
