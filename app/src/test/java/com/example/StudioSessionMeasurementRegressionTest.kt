@@ -883,6 +883,9 @@ class StudioSessionMeasurementRegressionTest {
     @Test fun watchOwnedSetEditsCannotChangeThePhoneDraftOrStartRest() {
         val model = model()
         model.startQuickStrengthWithExercise(strength(model)); awaitStarted(model)
+        model.toggleSetCompleted(1)
+        await { ActiveWorkoutStore.current(context)!!.getJSONArray("exercises").getJSONObject(0)
+            .getJSONArray("sets").getJSONObject(0).optBoolean("done") }
         ActiveWorkoutStore.saveOwned(context, JSONObject(ActiveWorkoutStore.current(context)!!.toString())
             .put("timerOwner", "watch"))
         PhoneWorkoutExecution.store(context).suspendCommands(true)

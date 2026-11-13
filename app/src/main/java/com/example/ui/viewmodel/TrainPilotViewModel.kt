@@ -2652,9 +2652,7 @@ class TrainPilotViewModel : ViewModel() {
                 current.optBoolean("finalizationPending") ||
                 current.optString("workoutId") != state.activeWorkoutId ||
                 current.optLong("generation") != state.activeWorkoutGeneration) return@runCatching false
-            val editable = com.repforge.app.NativeWorkoutEditing.project(context)
-            editable.optString("workoutId") == state.activeWorkoutId &&
-                editable.optLong("generation") == state.activeWorkoutGeneration
+            com.repforge.app.NativeWorkoutEditing.canEdit(context, state.activeWorkoutId, state.activeWorkoutGeneration)
         }.getOrDefault(false)
     }
 
