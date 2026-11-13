@@ -2132,8 +2132,12 @@ fun QuickWorkoutSheet(
     }
     var timedDropdownOpen by remember { mutableStateOf(false) }
 
+    // Start fully expanded, including when the selected/queued content is short.
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        modifier = Modifier.fillMaxHeight().testTag("quick_workout_sheet"),
         containerColor = palette.surface,
         contentColor = palette.textPrimary
     ) {

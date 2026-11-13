@@ -1,3 +1,23 @@
+# 2026-11-13 – Gyors edzés teljes felnyitás, csak kód
+
+A QuickWorkoutSheet explicit `skipPartiallyExpanded = true` állapotot és teljes
+elérhető magasságot kapott. Rövidebb tartalomnál sem marad félmagas; a hosszú
+belső tartalom a meglévő görgetőben érhető el. Bezárás és indítás callbackjei,
+listák, kijelölés és sorozatadatok változatlanok. Rendszerinsetek megmaradnak.
+
+További javasolt helyek (ebben a commitban nem alakítottuk át):
+- Személyes edzéstervező/profil: hosszú űrlap, sok mező/kizárás.
+- Új egyedi gyakorlat: mezők és billentyűzet mellett több függőleges hely.
+- Naplóedzés és sorozatok szerkesztése: hosszú szerkesztő/feljegyzések.
+A palettaválasztó és a natív aktív edzés gyakorlatválasztója már kihagyja a
+félállapotot; ez önmagában nem jelent teljes képernyőmagasságot.
+A rövid megerősítések és egyetlen értéket kérő ablakok maradjanak kompaktak.
+
+Ág/PR: maintenance/post2757-audit / #225. Diff ellenőrizve; a felhasználó által
+kért buildszünet miatt nincs CI/Gradle/APK/AAB, készülékes ellenőrzés hátravan.
+
+---
+
 # 2026-11-13 – kezdőlap napi összefoglaló és Coach, csak kód
 
 A hat napi mutató (két sor, három oszlop) egy közös Surface/oldalkeretet kapott
