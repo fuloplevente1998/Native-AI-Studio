@@ -3,7 +3,7 @@
 Ág:fix/nov13-audit-1-4, alapmain6b38451. Részletek:AUDIT_1_4_2026-11-13.md.
 Az5. pont új funkciói kihagyva. Egyetlen root, nincs új agent.
 Implementáció/regressziók készülnek, közös CI és R8ellenőrzés következik.
-Kiadói név és support e-mail felhasználói válaszra vár. Verzió/build/main-merge nincs.
+Kiadói név:FulTechStudios, support:paszia1998@gmail.com a publikus privacyoldalból. Verzió/build/main-merge nincs.
 
 ---
 

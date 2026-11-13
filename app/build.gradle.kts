@@ -37,8 +37,8 @@ android {
     versionName = "1.0-beta"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    buildConfigField("String", "DEVELOPER_NAME", "\"\"")
-    buildConfigField("String", "SUPPORT_EMAIL", "\"\"")
+    buildConfigField("String", "DEVELOPER_NAME", "\"FulTechStudios\"")
+    buildConfigField("String", "SUPPORT_EMAIL", "\"paszia1998@gmail.com\"")
     buildConfigField("String", "PRIVACY_POLICY_URL", "\"https://fuloplevente1998.github.io/TrainPilot.io/privacy.html\"")
   }
 
