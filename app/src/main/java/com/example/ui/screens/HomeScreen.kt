@@ -129,6 +129,7 @@ fun HomeScreen(
                 .fillMaxWidth()
                 .trainPilotSoftGlow(palette.primary, RoundedCornerShape(14.dp), 3.dp)
                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(14.dp))
                 .clickable { onOpenPersonalPlanner() }
                 .testTag("home_personal_planner_mini_card")
         ) {
@@ -210,6 +211,7 @@ fun HomeScreen(
                     ),
                     shape = RoundedCornerShape(20.dp)
                 )
+                .clip(RoundedCornerShape(20.dp))
                 .clickable { onOpenProgramDayDetails() }
                 .testTag("home_hero_workout_card")
         ) {
@@ -423,7 +425,8 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .heightIn(min = 48.dp)
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                        .clickable { onOpenGoalsDialog() }
+                        .clip(RoundedCornerShape(16.dp))
+                .clickable { onOpenGoalsDialog() }
                         .testTag("home_goals_row_card")
                 ) {
                     Row(
@@ -491,7 +494,7 @@ private fun HomeCompactShortcut(modifier: Modifier, icon: androidx.compose.ui.gr
     Surface(color = p.surface, shape = shape,
         modifier = modifier.trainPilotSoftGlow(p.primary, shape, 3.dp)
             .trainPilotBorder(1.dp, Brush.linearGradient(listOf(p.sectionBorder, p.cardBorder)), shape)
-            .clickable(enabled = enabled, onClick = onClick)) {
+            .clip(shape).clickable(enabled = enabled, onClick = onClick)) {
         Column(Modifier.fillMaxWidth().heightIn(min = 60.dp).padding(horizontal = 9.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Icon(icon, null, tint = p.primary, modifier = Modifier.size(18.dp))

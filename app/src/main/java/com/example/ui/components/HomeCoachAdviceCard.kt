@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.testTag
@@ -82,7 +83,7 @@ internal fun HomeCoachAdviceCard(state: TrainPilotUiState, strings: LocalizedStr
     Surface(shape = shape, color = p.surface,
         modifier = Modifier.fillMaxWidth().trainPilotSoftGlow(p.primary, shape)
             .trainPilotBorder(1.dp, Brush.linearGradient(listOf(p.primary.copy(alpha = 0.7f), p.cardBorder)), shape)
-            .clickable(onClick = onOpen).testTag("home_coach_advice_card")) {
+            .clip(shape).clickable(onClick = onOpen).testTag("home_coach_advice_card")) {
         Column(Modifier.background(Brush.verticalGradient(listOf(p.surfaceElevated.copy(alpha = 0.65f), p.surface)))
             .padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

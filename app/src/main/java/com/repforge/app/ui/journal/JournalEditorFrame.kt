@@ -24,7 +24,7 @@ import com.repforge.app.ui.theme.trainPilotSoftGlow
 /** Bound header, scrolling form and footer to the actual visible Android window, including IME. */
 @Composable
 internal fun JournalEditorFrame(title: String, saving: Boolean, onCancel: () -> Unit,
-    content: @Composable ColumnScope.() -> Unit) {
+    topSafeAreaPx: Int = 0, content: @Composable ColumnScope.() -> Unit) {
     val colors = LocalTrainPilotColors.current
     val density = LocalDensity.current
     val view = LocalView.current
@@ -37,7 +37,9 @@ internal fun JournalEditorFrame(title: String, saving: Boolean, onCancel: () -> 
         val location = IntArray(2)
         view.getWindowVisibleDisplayFrame(visible)
         view.getLocationOnScreen(location)
-        val next = listOf(coordinates.size.height, location[1], visible.top, visible.bottom)
+        // The child starts after safe-area padding. Do not include the animated drag offset:
+        // shrinking the form while the sheet moves would make its footer jump.
+        val next = listOf(coordinates.size.height, location[1] + topSafeAreaPx, visible.top, visible.bottom)
         if (bounds != next) bounds = next
     }.testTag("journal_editor_safe_host")) {
         val viewport = bounds?.let {
@@ -70,9 +72,9 @@ internal fun JournalEditorFrame(title: String, saving: Boolean, onCancel: () -> 
 
 /** Softer palette-derived boxes inside the editor's single page frame. */
 @Composable
-internal fun JournalEditorPanel(content: @Composable ColumnScope.() -> Unit) {
+internal fun JournalEditorPanel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val colors = LocalTrainPilotColors.current
-    Surface(color = colors.card2, shape = RoundedCornerShape(12.dp),
+    Surface(modifier = modifier, color = colors.card2, shape = RoundedCornerShape(12.dp),
         border = TrainPilotFrames.stroke(TrainPilotFrames.panelWidth, colors.line)) {
         Column(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(
             colors.accent.copy(alpha = 0.05f), colors.card2))).padding(8.dp),

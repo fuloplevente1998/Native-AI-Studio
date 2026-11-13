@@ -1,6 +1,10 @@
 package com.repforge.app.ui.journal
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
+import com.example.ui.components.trainPilotSheetTopPadding
+import com.example.ui.components.trainPilotSheetTopSafeArea
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.selection.toggleable
@@ -56,6 +60,8 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
     fun editSet(e: Int, s: Int, value: NativeJournalEditor.Set) {
         replaceExercise(e, draft.exercises[e].copy(sets = draft.exercises[e].sets.mapIndexed { i, set -> if (s == i) value else set }))
     }
+    val topSafeArea = trainPilotSheetTopPadding()
+    val topSafeAreaPx = with(LocalDensity.current) { topSafeArea.roundToPx() }
     val savingNow by rememberUpdatedState(state.saving)
     var confirmDiscard by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true,
@@ -66,11 +72,11 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
             } else true
         })
     ModalBottomSheet(onDismissRequest = { if (!savingNow) confirmDiscard = true }, sheetState = sheetState,
-        modifier = Modifier.fillMaxHeight().testTag("journal_editor_sheet"), dragHandle = null,
+        modifier = Modifier.trainPilotSheetTopSafeArea().fillMaxHeight().testTag("journal_editor_sheet"), dragHandle = null,
         containerColor = colors.card, contentColor = colors.text,
         // JournalEditorFrame already handles the visible window, IME and navigation insets.
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }) {
-        JournalEditorFrame(text.getString(R.string.journal_edit_title), state.saving, onCancel) {
+        JournalEditorFrame(text.getString(R.string.journal_edit_title), state.saving, onCancel, topSafeAreaPx = topSafeAreaPx) {
                 if (choosing) {
                     OutlinedTextField(search, { search = it }, modifier = Modifier.fillMaxWidth().testTag("journal_editor_search"),
                         singleLine = true, label = { Text(text.getString(R.string.journal_search)) })
@@ -135,9 +141,11 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                                 JournalEditorPanel {
                                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                         Text(name, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                                        com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = { onChange(draft.copy(exercises = draft.exercises.filterIndexed { i, _ -> i != e })) },
+                                        com.repforge.app.ui.theme.TrainPilotNegativeButton(contentPadding = PaddingValues(8.dp), shape = RoundedCornerShape(10.dp), onClick = { onChange(draft.copy(exercises = draft.exercises.filterIndexed { i, _ -> i != e })) },
                                             enabled = !state.saving && draft.exercises.size > 1,
-                                            modifier = Modifier.heightIn(min = 48.dp).testTag("journal_editor_remove_exercise_$e")) { Text(text.getString(R.string.journal_edit_remove)) }
+                                            modifier = Modifier.size(48.dp).testTag("journal_editor_remove_exercise_$e")) {
+                                            Icon(Icons.Default.Close, text.getString(R.string.journal_edit_remove))
+                                        }
                                 }
                                 com.example.ui.components.ExerciseFeedbackControl(
                                     effort = exercise.effort, note = exercise.note, language = language,
@@ -150,53 +158,45 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                             }
                             exercise.sets.forEachIndexed { s, set ->
                                 item {
-                                    JournalEditorPanel {
-                                        FlowRow(Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                            verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    JournalEditorPanel(modifier = Modifier.testTag("journal_editor_set_${e}_$s")) {
+                                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                             Text("${s + 1}.", style = MaterialTheme.typography.labelLarge,
-                                                color = colors.accentText, modifier = Modifier
-                                                    .background(colors.accent.copy(alpha = 0.10f), RoundedCornerShape(8.dp))
-                                                    .padding(horizontal = 8.dp, vertical = 6.dp))
-                                            Row(Modifier.widthIn(min = 120.dp).heightIn(min = 48.dp)
+                                                color = colors.accentText, modifier = Modifier.padding(horizontal = 8.dp))
+                                            Row(Modifier.weight(1f).heightIn(min = 48.dp)
                                                 .toggleable(set.done, enabled = !state.saving, role = Role.Checkbox,
                                                     onValueChange = { editSet(e, s, set.copy(done = it)) })
-                                                .testTag("journal_editor_done_${e}_$s"),
-                                                verticalAlignment = Alignment.CenterVertically) {
+                                                .testTag("journal_editor_done_${e}_$s"), verticalAlignment = Alignment.CenterVertically) {
                                                 Checkbox(set.done, onCheckedChange = null, enabled = !state.saving)
-                                                Text(text.getString(R.string.journal_edit_done),
-                                                    style = MaterialTheme.typography.labelMedium)
+                                                Text(text.getString(R.string.journal_edit_done), style = MaterialTheme.typography.labelMedium)
                                             }
-                                            com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = { replaceExercise(e, exercise.copy(sets = exercise.sets.filterIndexed { i, _ -> i != s })) },
+                                            com.repforge.app.ui.theme.TrainPilotNegativeButton(contentPadding = PaddingValues(8.dp), shape = RoundedCornerShape(10.dp), onClick = { replaceExercise(e, exercise.copy(sets = exercise.sets.filterIndexed { i, _ -> i != s })) },
                                                 enabled = !state.saving && exercise.sets.size > 1,
-                                                modifier = Modifier.heightIn(min = 48.dp).testTag("journal_editor_remove_set_${e}_$s")) {
-                                                Text(text.getString(R.string.journal_edit_remove), style = MaterialTheme.typography.labelMedium)
+                                                modifier = Modifier.size(48.dp).testTag("journal_editor_remove_set_${e}_$s")) {
+                                                Icon(Icons.Default.Close, text.getString(R.string.journal_edit_remove))
                                             }
+                                        }
+                                        fun shortLabel(hu: String, en: String, de: String, ro: String) = when (language) { "en" -> en; "de" -> de; "ro" -> ro; else -> hu }
+                                        val customLabel = when (language) { "en" -> "Custom"; "de" -> "Eigener Wert"; "ro" -> "Personalizat"; else -> "Egyéni" }
+                                        val values = mutableListOf<@Composable () -> Unit>()
+                                        if (!bodyweight) values.add {
+                                            JournalSetValueDropdown(set.weight, shortLabel("Súly (kg)", "Weight (kg)", "Gewicht (kg)", "Greutate (kg)"), "journal_editor_weight_${e}_$s", !state.saving,
+                                                (0..40).map { (it * 2.5).let { n -> if (n % 1 == 0.0) n.toInt().toString() else n.toString() } }, customLabel) { editSet(e, s, set.copy(weight = it)) }
                                         }
                                         if (bilateral) {
-                                            if (!bodyweight) JournalEditField(set.weight, { editSet(e, s, set.copy(weight = it)) },
-                                                text.getString(R.string.journal_edit_weight), "journal_editor_weight_${e}_$s", !state.saving)
-                                            JournalEditorFieldPair(
-                                                first = { JournalEditField(set.left, { editSet(e, s, set.copy(left = it)) },
-                                                    text.getString(R.string.journal_edit_left), "journal_editor_left_${e}_$s", !state.saving) },
-                                                second = { JournalEditField(set.right, { editSet(e, s, set.copy(right = it)) },
-                                                    text.getString(R.string.journal_edit_right), "journal_editor_right_${e}_$s", !state.saving) })
-                                        } else {
-                                            JournalEditorFieldPair(
-                                                first = {
-                                                    if (!bodyweight) JournalEditField(set.weight, { editSet(e, s, set.copy(weight = it)) },
-                                                        text.getString(R.string.journal_edit_weight), "journal_editor_weight_${e}_$s", !state.saving)
-                                                    else JournalEditField(set.rir, { editSet(e, s, set.copy(rir = it)) },
-                                                        text.getString(R.string.journal_edit_rir), "journal_editor_rir_${e}_$s", !state.saving)
-                                                },
-                                                second = { JournalEditField(set.reps, { editSet(e, s, set.copy(reps = it)) },
-                                                    text.getString(if (distance || type == "time" || SetEditorRules212.normalizeUnit(unit).startsWith("mp"))
-                                                        R.string.journal_edit_seconds else R.string.journal_edit_reps), "journal_editor_reps_${e}_$s", !state.saving) })
+                                            values.add { JournalSetValueDropdown(set.left, shortLabel("Bal (mp)", "Left (s)", "Links (s)", "Stânga (s)"), "journal_editor_left_${e}_$s", !state.saving,
+                                                (0..60).map(Int::toString), customLabel) { editSet(e, s, set.copy(left = it)) } }
+                                            values.add { JournalSetValueDropdown(set.right, shortLabel("Jobb (mp)", "Right (s)", "Rechts (s)", "Dreapta (s)"), "journal_editor_right_${e}_$s", !state.saving,
+                                                (0..60).map(Int::toString), customLabel) { editSet(e, s, set.copy(right = it)) } }
+                                        } else values.add {
+                                            JournalSetValueDropdown(set.reps, if (distance || type == "time" || SetEditorRules212.normalizeUnit(unit).startsWith("mp"))
+                                                shortLabel("Idő (mp)", "Time (s)", "Zeit (s)", "Timp (s)") else shortLabel("Ism.", "Reps", "Wdh.", "Rep."), "journal_editor_reps_${e}_$s", !state.saving,
+                                                (0..60).map(Int::toString), customLabel) { editSet(e, s, set.copy(reps = it)) }
                                         }
-                                        if (distance) JournalEditField(set.distance, { editSet(e, s, set.copy(distance = it)) },
-                                            text.getString(R.string.journal_edit_distance), "journal_editor_distance_${e}_$s", !state.saving)
-                                        if (!bodyweight || bilateral) JournalEditField(set.rir, { editSet(e, s, set.copy(rir = it)) },
-                                            text.getString(R.string.journal_edit_rir), "journal_editor_rir_${e}_$s", !state.saving)
+                                        if (distance) values.add { JournalSetValueDropdown(set.distance, shortLabel("Táv (m)", "Distance (m)", "Distanz (m)", "Distanță (m)"), "journal_editor_distance_${e}_$s", !state.saving,
+                                            (0..20).map(Int::toString), customLabel) { editSet(e, s, set.copy(distance = it)) } }
+                                        values.add { JournalSetValueDropdown(set.rir, "RIR", "journal_editor_rir_${e}_$s", !state.saving,
+                                            listOf("") + (0..10).map(Int::toString), customLabel) { editSet(e, s, set.copy(rir = it)) } }
+                                        JournalSetValueGrid(values)
                                     }
                                 }
                             }
@@ -266,19 +266,19 @@ private fun JournalEditField(value: String, change: (String) -> Unit, label: Str
         keyboardOptions = KeyboardOptions(keyboardType = keyboard), modifier = Modifier.fillMaxWidth().testTag(tag))
 }
 
-/** Keep numeric values side by side only when labels and scaled text have room. */
+/** Three compact controls fit normal phones; larger text and narrow widths wrap safely. */
 @Composable
-private fun JournalEditorFieldPair(first: @Composable () -> Unit, second: @Composable () -> Unit) {
+private fun JournalSetValueGrid(values: List<@Composable () -> Unit>) {
     val fontScale = LocalDensity.current.fontScale
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        if (maxWidth >= 300.dp && fontScale <= 1.3f) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { first() }
-                Box(Modifier.weight(1f)) { second() }
+        val columns = if (maxWidth >= 270.dp && fontScale <= 1.3f) 3 else if (maxWidth >= 190.dp && fontScale <= 1.5f) 2 else 1
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            values.chunked(columns).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    row.forEach { value -> Box(Modifier.weight(1f)) { value() } }
+                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                }
             }
-        } else Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            first()
-            second()
         }
     }
 }

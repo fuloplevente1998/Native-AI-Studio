@@ -11,6 +11,10 @@ import com.repforge.app.ui.theme.TrainPilotFrames
 
 import com.repforge.app.ui.theme.trainPilotBorder
 
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.material3.ripple
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -85,6 +89,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -229,6 +234,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         color = if (isCalendarActive) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
+                            .clip(RoundedCornerShape(10.dp))
                             .clickable { onSelectTab(MainTab.CALENDAR) }
                             .testTag("top_bar_calendar_button")
                             .trainPilotBorder(1.dp, if (isCalendarActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
@@ -253,6 +259,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         color = if (isCoachActive) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
+                            .clip(RoundedCornerShape(10.dp))
                             .clickable { onSelectTab(MainTab.COACH) }
                             .testTag("top_bar_coach_button")
                             .trainPilotBorder(1.dp, if (isCoachActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
@@ -277,6 +284,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         color = if (isSettingsActive) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
+                            .clip(RoundedCornerShape(10.dp))
                             .clickable { onOpenSettings() }
                             .testTag("top_bar_settings_button")
                             .trainPilotBorder(1.dp, if (isSettingsActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
@@ -440,13 +448,18 @@ fun TrainPilotRedCloseButton(
 ) {
     val strings = LocalTrainPilotStrings.current
     val palette = LocalTrainPilotPalette.current
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
     val iconColor = com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeForeground
     // The painted control shrinks ~10%; its independent hit target remains 48 dp.
     Box(modifier = modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-        .clickable(role = Role.Button, onClick = onClick)
+        .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
         .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier), contentAlignment = Alignment.Center) {
-        Surface(shape = RoundedCornerShape(11.dp), color = com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeBackground,
-            modifier = Modifier.size(size)
+        Surface(shape = RoundedCornerShape(11.dp), color = lerp(
+            com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeBackground,
+            com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeForeground, if (pressed) 0.10f else 0f),
+            modifier = Modifier.size(size).clip(RoundedCornerShape(11.dp))
+                .indication(interaction, ripple())
                 .border(1.dp, com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.7f), RoundedCornerShape(11.dp))
                 .then(if (testTag.isNotEmpty()) Modifier.testTag("${testTag}_visual") else Modifier)) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -2097,7 +2110,7 @@ fun QuickWorkoutSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        modifier = Modifier.fillMaxHeight().testTag("quick_workout_sheet"),
+        modifier = Modifier.trainPilotSheetTopSafeArea().fillMaxHeight().testTag("quick_workout_sheet"),
         containerColor = palette.surface,
         contentColor = palette.textPrimary
     ) {
@@ -2524,6 +2537,7 @@ private fun QuickOptionRow(
             .fillMaxWidth()
             .heightIn(min = 48.dp)
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(14.dp))
             .clickable { onClick() }
     ) {
         Row(
@@ -2587,6 +2601,8 @@ fun SmallExerciseVideoButton(
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
     val openVideo = LocalOpenExerciseVideo.current
 
     Box(
@@ -2594,14 +2610,14 @@ fun SmallExerciseVideoButton(
         modifier = modifier
             .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
             .clip(RoundedCornerShape(8.dp))
-            .clickable { openVideo(exerciseName, exerciseId) }
+            .clickable(interactionSource = interaction, indication = null) { openVideo(exerciseName, exerciseId) }
             .semantics { contentDescription = "${strings.videoLabel}: $exerciseName" }
             .testTag("exercise_video_btn_${exerciseName.hashCode()}")
     ) {
         Surface(
             shape = RoundedCornerShape(8.dp),
-            color = Color(0xFFE53935).copy(alpha = 0.16f),
-            modifier = Modifier.border(1.dp, Color(0xFFE53935).copy(alpha = 0.55f), RoundedCornerShape(8.dp))
+            color = Color(0xFFE53935).copy(alpha = if (pressed) 0.24f else 0.16f),
+            modifier = Modifier.clip(RoundedCornerShape(8.dp)).indication(interaction, ripple()).border(1.dp, Color(0xFFE53935).copy(alpha = 0.55f), RoundedCornerShape(8.dp))
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = if (compactIconOnly) 8.dp else 10.dp, vertical = 6.dp),

@@ -38,7 +38,7 @@ fun TrainPilotFullHeightFormSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        modifier = Modifier.fillMaxHeight().testTag("full_height_form_sheet"),
+        modifier = Modifier.trainPilotSheetTopSafeArea().fillMaxHeight().testTag("full_height_form_sheet"),
         sheetState = sheetState,
         containerColor = palette.surface,
         contentColor = palette.textPrimary,
