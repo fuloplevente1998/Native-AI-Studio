@@ -49,11 +49,9 @@ class HomeCompactStatusRegressionTest {
         compose.setContent { TrainPilotTheme {
             Box(Modifier.size(393.dp, 680.dp).clipToBounds().testTag("home_viewport")) {
                 HomeScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU),
-                    onOpenPalettePicker = {}, onOpenSettings = {}, onCycleDemoMode = {},
                     onStartOrContinueWorkout = {}, onOpenProgramDayDetails = {}, onOpenQuickWorkout = {},
                     onOpenWatchAndSync = {}, onOpenHealthSleep = {}, onOpenHealthHeart = {}, onOpenHealthSteps = {},
-                    onOpenCoachReadiness = { coach++ }, onOpenProgramsList = {}, onOpenCalendarPlanner = {},
-                    onOpenGoalsDialog = {}, onOpenPersonalPlanner = { planner++ }, onOpenHealthToday = { health++ })
+                    onOpenCoachReadiness = { coach++ }, onOpenGoalsDialog = {}, onOpenPersonalPlanner = { planner++ }, onOpenHealthToday = { health++ })
             }
         } }
         compose.onNodeWithTag("home_personal_planner_mini_card").assertIsDisplayed().performClick()
