@@ -1,0 +1,359 @@
+{
+  "source": "38f6ecdd0347e81f6f7491871eb6c18c102e80e9",
+  "run": 43450904480,
+  "artifactDigests": {
+    "apk": "sha256:c238cd4be6496eaed8fb555c11bb41e0cb49aa922d1d5f17fe8e1d6b241f6038",
+    "aab": "sha256:eea9bf47ed99235f74750030abfda0f354ab95c10bf432e1c99edf073abd9d0b",
+    "tests": "sha256:e3c8a06961990cde354d2a4c88f241d8471c9de16e31c1429aa083201963efe2"
+  },
+  "files": {
+    "app-release.apk": {
+      "bytes": 5496595,
+      "sha256": "6bfc33a432f008ef563f7eb6a2bae8f7124cc2a7b68c4cbd9e93f5fb047cd6c7"
+    },
+    "wear-release.apk": {
+      "bytes": 4669627,
+      "sha256": "e6055ebdb5258a5c7c1e11a4ea6f58495b1743489c45adecad82d92dd5192fbd"
+    },
+    "app-release.aab": {
+      "bytes": 10082096,
+      "sha256": "057760099942f8355678b68016204b90ca81bf9e6bdad328b4728a80f32bf13b"
+    },
+    "wear-release.aab": {
+      "bytes": 5580206,
+      "sha256": "9bf5dcd2e59daae0cf7947ec4c6fb83b9f1a68e4520a6587778f2f98bf227c42"
+    }
+  },
+  "rawJUnit": {
+    "app": [
+      87,
+      477,
+      0,
+      0,
+      0
+    ],
+    "wear": [
+      34,
+      187,
+      0,
+      0,
+      0
+    ],
+    "shared": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "apkVerification": {
+    "applicationId": "com.TrainPilot.com",
+    "versionCode": "275800",
+    "versionName": "1.1-beta",
+    "apkSha256": "6bfc33a432f008ef563f7eb6a2bae8f7124cc2a7b68c4cbd9e93f5fb047cd6c7",
+    "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+    "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+    "mapsApiKeyConfigured": true,
+    "ciCheckout": "38f6ecdd0347e81f6f7491871eb6c18c102e80e9",
+    "wear": {
+      "applicationId": "com.TrainPilot.com",
+      "versionCode": "275802",
+      "versionName": "1.1-beta",
+      "apkSha256": "e6055ebdb5258a5c7c1e11a4ea6f58495b1743489c45adecad82d92dd5192fbd",
+      "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "variant": "release",
+      "bytes": 4669627
+    },
+    "wearCompanionCapabilityRetained": true,
+    "dataLayerPairIdentityVerified": true,
+    "wearHardwareRequired": true
+  },
+  "playMetadata": {
+    "commit": "38f6ecdd0347e81f6f7491871eb6c18c102e80e9",
+    "applicationId": "com.TrainPilot.com",
+    "versionName": "1.1-beta",
+    "mobileVersionCode": 275800,
+    "wearVersionCode": 275802,
+    "mobileAabSha256": "057760099942f8355678b68016204b90ca81bf9e6bdad328b4728a80f32bf13b",
+    "wearAabSha256": "9bf5dcd2e59daae0cf7947ec4c6fb83b9f1a68e4520a6587778f2f98bf227c42",
+    "mobileBytes": 10082096,
+    "wearBytes": 5580206
+  },
+  "junitVerification": {
+    "commit": "38f6ecdd0347e81f6f7491871eb6c18c102e80e9",
+    "modules": {
+      "phone": {
+        "files": 87,
+        "tests": 477,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "wear": {
+        "files": 34,
+        "tests": 187,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "shared": {
+        "files": 0,
+        "tests": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": true
+      }
+    },
+    "total": {
+      "tests": 664,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "drive": [
+    {
+      "local": "app-release.apk",
+      "name": "TrainPilot-1.1-beta-275800-phone-release.apk",
+      "id": "17vfssWxOKA9XFMR-peJdxJIIcYdFWzLJ",
+      "url": "https://drive.google.com/file/d/17vfssWxOKA9XFMR-peJdxJIIcYdFWzLJ/view?usp=drivesdk",
+      "metadata": {
+        "id": "17vfssWxOKA9XFMR-peJdxJIIcYdFWzLJ",
+        "title": "TrainPilot-1.1-beta-275800-phone-release.apk",
+        "mime_type": "application/vnd.android.package-archive",
+        "size": "5496595",
+        "url": "https://drive.google.com/file/d/17vfssWxOKA9XFMR-peJdxJIIcYdFWzLJ/view?usp=drivesdk",
+        "display_url": "https://drive.google.com/file/d/17vfssWxOKA9XFMR-peJdxJIIcYdFWzLJ/view?usp=drivesdk",
+        "file_or_folder": "file",
+        "created_time": null,
+        "modified_time": null,
+        "parent_ids": [
+          "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+        ],
+        "drive_id": null,
+        "current_user_can_share": null,
+        "has_augmented_permissions": null,
+        "shared": null,
+        "permissions": null,
+        "source_visibility_status": "access_not_verified"
+      }
+    },
+    {
+      "local": "wear-release.apk",
+      "name": "TrainPilot-1.1-beta-275802-wear-release.apk",
+      "id": "1YtrtQt9yzQA-uMyAZ6V2UrKwNZKb8S3f",
+      "url": "https://drive.google.com/file/d/1YtrtQt9yzQA-uMyAZ6V2UrKwNZKb8S3f/view?usp=drivesdk",
+      "metadata": {
+        "id": "1YtrtQt9yzQA-uMyAZ6V2UrKwNZKb8S3f",
+        "title": "TrainPilot-1.1-beta-275802-wear-release.apk",
+        "mime_type": "application/vnd.android.package-archive",
+        "size": "4669627",
+        "url": "https://drive.google.com/file/d/1YtrtQt9yzQA-uMyAZ6V2UrKwNZKb8S3f/view?usp=drivesdk",
+        "display_url": "https://drive.google.com/file/d/1YtrtQt9yzQA-uMyAZ6V2UrKwNZKb8S3f/view?usp=drivesdk",
+        "file_or_folder": "file",
+        "created_time": null,
+        "modified_time": null,
+        "parent_ids": [
+          "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+        ],
+        "drive_id": null,
+        "current_user_can_share": null,
+        "has_augmented_permissions": null,
+        "shared": null,
+        "permissions": null,
+        "source_visibility_status": "access_not_verified"
+      }
+    },
+    {
+      "local": "app-release.aab",
+      "name": "TrainPilot-1.1-beta-275800-phone-release.aab",
+      "id": "1LJt-IpCRwk1YtoHxK-pWQ2GIzWVKKtHk",
+      "url": "https://drive.google.com/file/d/1LJt-IpCRwk1YtoHxK-pWQ2GIzWVKKtHk/view?usp=drivesdk",
+      "metadata": {
+        "id": "1LJt-IpCRwk1YtoHxK-pWQ2GIzWVKKtHk",
+        "title": "TrainPilot-1.1-beta-275800-phone-release.aab",
+        "mime_type": "application/x-zip",
+        "size": "10082096",
+        "url": "https://drive.google.com/file/d/1LJt-IpCRwk1YtoHxK-pWQ2GIzWVKKtHk/view?usp=drivesdk",
+        "display_url": "https://drive.google.com/file/d/1LJt-IpCRwk1YtoHxK-pWQ2GIzWVKKtHk/view?usp=drivesdk",
+        "file_or_folder": "file",
+        "created_time": null,
+        "modified_time": null,
+        "parent_ids": [
+          "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+        ],
+        "drive_id": null,
+        "current_user_can_share": null,
+        "has_augmented_permissions": null,
+        "shared": null,
+        "permissions": null,
+        "source_visibility_status": "access_not_verified"
+      }
+    },
+    {
+      "local": "wear-release.aab",
+      "name": "TrainPilot-1.1-beta-275802-wear-release.aab",
+      "id": "1A5QTiO0__btZ3bsk4gdMpZzDpVu50FKJ",
+      "url": "https://drive.google.com/file/d/1A5QTiO0__btZ3bsk4gdMpZzDpVu50FKJ/view?usp=drivesdk",
+      "metadata": {
+        "id": "1A5QTiO0__btZ3bsk4gdMpZzDpVu50FKJ",
+        "title": "TrainPilot-1.1-beta-275802-wear-release.aab",
+        "mime_type": "application/x-zip",
+        "size": "5580206",
+        "url": "https://drive.google.com/file/d/1A5QTiO0__btZ3bsk4gdMpZzDpVu50FKJ/view?usp=drivesdk",
+        "display_url": "https://drive.google.com/file/d/1A5QTiO0__btZ3bsk4gdMpZzDpVu50FKJ/view?usp=drivesdk",
+        "file_or_folder": "file",
+        "created_time": null,
+        "modified_time": null,
+        "parent_ids": [
+          "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+        ],
+        "drive_id": null,
+        "current_user_can_share": null,
+        "has_augmented_permissions": null,
+        "shared": null,
+        "permissions": null,
+        "source_visibility_status": "access_not_verified"
+      }
+    },
+    {
+      "local": "2758-phone-play-notes.txt",
+      "name": "TrainPilot-2758-phone-Play-notes.txt",
+      "id": "1JsgFdnVGzc6pISYIUbw0C_4sjKQuiIB4",
+      "url": "https://drive.google.com/file/d/1JsgFdnVGzc6pISYIUbw0C_4sjKQuiIB4/view?usp=drivesdk",
+      "metadata": {
+        "id": "1JsgFdnVGzc6pISYIUbw0C_4sjKQuiIB4",
+        "title": "TrainPilot-2758-phone-Play-notes.txt",
+        "mime_type": "text/plain",
+        "size": "817",
+        "url": "https://drive.google.com/file/d/1JsgFdnVGzc6pISYIUbw0C_4sjKQuiIB4/view?usp=drivesdk",
+        "display_url": "https://drive.google.com/file/d/1JsgFdnVGzc6pISYIUbw0C_4sjKQuiIB4/view?usp=drivesdk",
+        "file_or_folder": "file",
+        "created_time": null,
+        "modified_time": null,
+        "parent_ids": [
+          "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+        ],
+        "drive_id": null,
+        "current_user_can_share": null,
+        "has_augmented_permissions": null,
+        "shared": null,
+        "permissions": null,
+        "source_visibility_status": "access_not_verified"
+      }
+    },
+    {
+      "local": "2758-wear-play-notes.txt",
+      "name": "TrainPilot-2758-wear-Play-notes.txt",
+      "id": "1amM2AhhJpvtutwjZ01MOjsYOBzzZYg5h",
+      "url": "https://drive.google.com/file/d/1amM2AhhJpvtutwjZ01MOjsYOBzzZYg5h/view?usp=drivesdk",
+      "metadata": {
+        "id": "1amM2AhhJpvtutwjZ01MOjsYOBzzZYg5h",
+        "title": "TrainPilot-2758-wear-Play-notes.txt",
+        "mime_type": "text/plain",
+        "size": "628",
+        "url": "https://drive.google.com/file/d/1amM2AhhJpvtutwjZ01MOjsYOBzzZYg5h/view?usp=drivesdk",
+        "display_url": "https://drive.google.com/file/d/1amM2AhhJpvtutwjZ01MOjsYOBzzZYg5h/view?usp=drivesdk",
+        "file_or_folder": "file",
+        "created_time": null,
+        "modified_time": null,
+        "parent_ids": [
+          "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+        ],
+        "drive_id": null,
+        "current_user_can_share": null,
+        "has_augmented_permissions": null,
+        "shared": null,
+        "permissions": null,
+        "source_visibility_status": "access_not_verified"
+      }
+    },
+    {
+      "local": "2758-changes.md",
+      "name": "TrainPilot-2758-changes.md",
+      "id": "1odYdT9UCRSTxk9JHkK5DQWyS-gze4wLF",
+      "url": "https://drive.google.com/file/d/1odYdT9UCRSTxk9JHkK5DQWyS-gze4wLF/view?usp=drivesdk",
+      "metadata": {
+        "id": "1odYdT9UCRSTxk9JHkK5DQWyS-gze4wLF",
+        "title": "TrainPilot-2758-changes.md",
+        "mime_type": "text/markdown",
+        "size": "3341",
+        "url": "https://drive.google.com/file/d/1odYdT9UCRSTxk9JHkK5DQWyS-gze4wLF/view?usp=drivesdk",
+        "display_url": "https://drive.google.com/file/d/1odYdT9UCRSTxk9JHkK5DQWyS-gze4wLF/view?usp=drivesdk",
+        "file_or_folder": "file",
+        "created_time": null,
+        "modified_time": null,
+        "parent_ids": [
+          "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+        ],
+        "drive_id": null,
+        "current_user_can_share": null,
+        "has_augmented_permissions": null,
+        "shared": null,
+        "permissions": null,
+        "source_visibility_status": "access_not_verified"
+      }
+    }
+  ],
+  "priorCi": {
+    "source": "a56139249c1f0108d5787eeed8ba25483b8534b9",
+    "run": 43446531333,
+    "digest": "sha256:dfb524fc2f4d66f06f8dcddfa7d0d47d1faa275ac7fd74a2a1427d8e09b840db",
+    "rawJUnit": {
+      "app": {
+        "files": 87,
+        "tests": 476,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "wear": {
+        "files": 34,
+        "tests": 187,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "verification": {
+      "commit": "a56139249c1f0108d5787eeed8ba25483b8534b9",
+      "modules": {
+        "phone": {
+          "files": 87,
+          "tests": 476,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "noSource": false
+        },
+        "wear": {
+          "files": 34,
+          "tests": 187,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "noSource": false
+        },
+        "shared": {
+          "files": 0,
+          "tests": 0,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "noSource": true
+        }
+      },
+      "total": {
+        "tests": 663,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    }
+  }
+}
