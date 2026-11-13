@@ -367,53 +367,9 @@ fun ActiveStrengthWorkoutScreen(
                         )
                     },
                     exerciseSequence = {
-                        if (workoutExercises.size > 1) {
-                        Row(
-                        modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .testTag("active_workout_exercise_sequence"),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                        workoutExercises.forEachIndexed { idx, exItem ->
-                        val isCurrent = idx == currentExerciseIdx
-                        val isDone = com.example.ui.components.exerciseFullyCompleted(
-                        if (isCurrent) uiState.activeSets else uiState.activeSetsByExerciseId[exItem.id])
-                        Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = when {
-                        isCurrent -> palette.primary
-                        isDone -> palette.success.copy(alpha = 0.18f)
-                        else -> palette.surfaceElevated
-                        },
-                        modifier = Modifier
-                        .trainPilotBorder(
-                        width = 1.dp,
-                        color = when {
-                        isCurrent -> palette.primary
-                        isDone -> palette.success
-                        else -> palette.cardBorder
-                        },
-                        shape = RoundedCornerShape(12.dp)
-                        )
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onSwitchExercise(exItem) }
-                        ) {
-                        Text(
-                        text = "${idx + 1}. ${exItem.localizedName(lang)}" + if (isDone && !isCurrent) " ✓" else "",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = when {
-                        isCurrent -> palette.onPrimary
-                        isDone -> palette.success
-                        else -> palette.textSecondary
-                        },
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                        )
-                        }
-                        }
-                        }
-                        }
+                        com.example.ui.components.StudioExerciseSequenceStrip(
+                            state = uiState, exercises = workoutExercises,
+                            currentIndex = currentExerciseIdx, onSelect = onSwitchExercise)
                     }
                 )
 
@@ -641,140 +597,13 @@ fun ActiveStrengthWorkoutScreen(
                             .clickable { restTimerManualOverride = true }
                             .testTag("sticky_rest_timer_compact")
                     ) {
-                        androidx.compose.foundation.layout.BoxWithConstraints(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 6.dp)
-                        ) {
-                            val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
-                            val effectiveWidthDp = maxWidth.value / fontScale
-                            val compactTwoRow = effectiveWidthDp < 285f
-                            val toggleButton: @Composable () -> Unit = {
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = if (uiState.restTimerRunning) palette.primary else palette.success,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .clickable(enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onToggleRestRunning() }
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = if (uiState.restTimerRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                            contentDescription = null,
-                                            tint = palette.onPrimary,
-                                            modifier = Modifier.size(13.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(2.dp))
-                                        Text(
-                                            text = if (uiState.restTimerRunning) tr(lang, "Szünet", "Pause", "Pause", "Pauză") else tr(lang, "Indít", "Start", "Start", "Start"),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = palette.onPrimary,
-                                            maxLines = 1,
-                                            softWrap = false,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                }
-                            }
-                            if (compactTwoRow) {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(5.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Timer,
-                                                contentDescription = null,
-                                                tint = palette.primary,
-                                                modifier = Modifier.size(15.dp)
-                                            )
-                                            Text(
-                                                text = "$restWord: $formattedRest",
-                                                style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"),
-                                                fontWeight = FontWeight.ExtraBold,
-                                                color = palette.textPrimary,
-                                                maxLines = 1,
-                                                softWrap = false
-                                            )
-                                        }
-                                        Icon(
-                                            imageVector = Icons.Default.ExpandLess,
-                                            contentDescription = tr(lang, "Nagy pihenő mód", "Expanded rest timer", "Großer Pausenmodus", "Mod pauză extins"),
-                                            tint = palette.primary,
-                                            modifier = Modifier
-                                                .size(18.dp)
-                                                .clickable { restTimerManualOverride = true }
-                                        )
-                                    }
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End)
-                                    ) {
-                                        SmallAdjustChip("-15", enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onAdjustRestTimer(-15) }
-                                        toggleButton()
-                                        SmallAdjustChip("+15", enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onAdjustRestTimer(15) }
-                                        SmallAdjustChip(tr(lang, "Kihagy", "Skip", "Überspr.", "Omite"), enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onSkipRest() }
-                                    }
-                                }
-                            } else {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Timer,
-                                            contentDescription = null,
-                                            tint = palette.primary,
-                                            modifier = Modifier.size(15.dp)
-                                        )
-                                        Text(
-                                            text = "$restWord: $formattedRest",
-                                            style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"),
-                                            fontWeight = FontWeight.ExtraBold,
-                                            color = palette.textPrimary,
-                                            maxLines = 1,
-                                            softWrap = false
-                                        )
-                                    }
-
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(3.dp)
-                                    ) {
-                                        SmallAdjustChip("-15", enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onAdjustRestTimer(-15) }
-                                        toggleButton()
-                                        SmallAdjustChip("+15", enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onAdjustRestTimer(15) }
-                                        SmallAdjustChip(tr(lang, "Kihagy", "Skip", "Überspr.", "Omite"), enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onSkipRest() }
-                                        Icon(
-                                            imageVector = Icons.Default.ExpandLess,
-                                            contentDescription = tr(lang, "Nagy pihenő mód", "Expanded rest timer", "Großer Pausenmodus", "Mod pauză extins"),
-                                            tint = palette.primary,
-                                            modifier = Modifier
-                                                .size(18.dp)
-                                                .clickable { restTimerManualOverride = true }
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                        com.example.ui.components.StudioCompactRestControls(
+                            language = lang, remainingSec = uiState.restTimerRemainingSec,
+                            running = uiState.restTimerRunning,
+                            enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending,
+                            onAdjust = onAdjustRestTimer, onToggle = onToggleRestRunning,
+                            onSkip = onSkipRest, onExpand = { restTimerManualOverride = true },
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp))
                     }
                 } else {
                     // LARGE EXPANDED STICKY REST TIMER CARD (shown when scrolled down or expanded)
@@ -2580,42 +2409,13 @@ fun ActiveBilateralWorkoutScreen(
                         .clickable { restTimerLargeMode = !restTimerLargeMode }
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(5.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Timer,
-                                    contentDescription = null,
-                                    tint = if (uiState.restTimerRunning) palette.primary else palette.textSecondary,
-                                    modifier = Modifier.size(15.dp)
-                                )
-                                Text(
-                                    text = "${tr(lang, "Pihenő", "Rest", "Pause", "Pauză")}: " + String.format("%02d:%02d", uiState.restTimerRemainingSec / 60, uiState.restTimerRemainingSec % 60),
-                                    style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"),
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = if (uiState.restTimerRunning) palette.primary else palette.textPrimary,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
-                            }
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                SmallAdjustChip("-15", enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onAdjustRestTimer(-15) }
-                                SmallAdjustChip("+15", enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onAdjustRestTimer(15) }
-                                SmallAdjustChip(if (uiState.restTimerRunning) tr(lang, "Szünet", "Pause", "Pause", "Pauză") else tr(lang, "Indít", "Start", "Start", "Start"), enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onToggleRestRunning() }
-                                if (uiState.restTimerRunning || uiState.restTimerRemainingSec < uiState.defaultRestSec) {
-                                    SmallAdjustChip(strings.skipAction, enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onSkipRest() }
-                                }
-                            }
-                        }
+                        com.example.ui.components.StudioCompactRestControls(
+                            language = lang, remainingSec = uiState.restTimerRemainingSec,
+                            running = uiState.restTimerRunning,
+                            enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending,
+                            onAdjust = onAdjustRestTimer, onToggle = onToggleRestRunning,
+                            onSkip = onSkipRest, onExpand = { restTimerLargeMode = !restTimerLargeMode },
+                            showSkip = uiState.restTimerRunning || uiState.restTimerRemainingSec < uiState.defaultRestSec)
                         if (restTimerLargeMode) {
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(

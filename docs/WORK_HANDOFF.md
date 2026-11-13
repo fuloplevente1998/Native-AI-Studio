@@ -1,3 +1,18 @@
+# 2759 kiadási kiegészítés – pihenősáv és automatikus gyakorlatgörgetés
+
+A futó build alatt érkezett két új készülékes visszajelzés bekerül a végleges2759-be.
+A korábbi43505815125 futás leállítva, azt nem adjuk át végleges csomagként.
+A kompakt pihenő az időt és a gombokat tényleges szélességük alapján rendezi;
+a vezérlők szűk/nagybetűs nézetben tördelnek, 48dp érintési célokkal és középre
+igazított szöveggel. A súlyzós és kétoldalas időalapú felület közös megoldást használ.
+A felső gyakorlatsor LazyRow, aktív indexváltozáskor animáltan az elem elejére görget,
+az utolsó elemnél is. Készültség és natív callbackek változatlanok.
+Új regressziók: keskeny pihenő és callbacks, nagybetűs német elrendezés, széles sor
+és ownership-tiltás, előre/hátra/utolsó elem automatikus igazítása.
+Következő: egy közös main signed build, teljes regresszióval, majd artifact-ellenőrzés.
+
+---
+
 # TrainPilot 2759 · 1.1-beta – jóváhagyott kiadás előkészítése
 
 PR#228 main-integrációja: 97d56553dc266b55812aad68ac735fd95fcaac16.

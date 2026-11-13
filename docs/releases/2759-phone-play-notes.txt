@@ -2,3 +2,4 @@
 • Kompaktabb napló- és edzéssorozatok, súly/ismétlés/RIR értékválasztókkal.
 • A sorozat rögzítése és visszavonása pipával történik.
 • A gombok nyomási effektje követi a látható alakot; az érintési terület megmarad.
+• A pihenősáv helyhez igazodva tördel; a felső gyakorlatlista automatikusan az aktív gyakorlathoz görget.

@@ -11,6 +11,9 @@ A felhasználó jóváhagyta a 2759-es javítókiadást, változatlan 1.1-beta n
 - A kis X- és videógombok nyomási effektje a látható alakjukon belül marad. A fejlécen, kezdőlapi kártyákon és módválasztóknál is követi a lekerekítést. A legalább 48dp érintési cél és a látható nyomási visszajelzés megmarad.
 - A naplószerkesztő rögzített mentési lábléce a billentyűzet és a panel mozgatása mellett is megőrzi a látható terület kezelését.
 
+- A pihenősáv a ténylegesen mért felirat- és gombszélesség szerint egy vagy több sorba rendeződik. Nagy betűvel is külön marad az idő és a vezérlés; a gombok középre igazított szöveget és legalább 48dp érintési célt kapnak. A súlyzós és az időalapú felület ugyanazt a komponenst használja.
+- A felső, oldalra görgethető gyakorlatsor az aktív gyakorlat változásakor automatikusan annak elejéhez görget, az utolsó gyakorlatnál is. A készre jelölés továbbra is a valóban rögzített sorozatokból származik.
+
 ## Wear OS
 
 - A telefonos javítókiadással együtt készült, optimalizált Wear OS csomag.
