@@ -1,0 +1,2 @@
+• A telefonos javítókiadással együtt készült, optimalizált Wear OS csomag.
+• Ebben a kiadásban az órás felület, szinkron és mérési működés változatlan.

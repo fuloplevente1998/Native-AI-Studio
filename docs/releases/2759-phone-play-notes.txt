@@ -1,0 +1,4 @@
+• A Gyors edzés és a szerkesztők fejléce helyet hagy a státuszsávnak és a kamerakivágásnak.
+• Kompaktabb napló- és edzéssorozatok, súly/ismétlés/RIR értékválasztókkal.
+• A sorozat rögzítése és visszavonása pipával történik.
+• A gombok nyomási effektje követi a látható alakot; az érintési terület megmarad.
