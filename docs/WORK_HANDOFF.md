@@ -1,3 +1,19 @@
+# 2758 · 1.1-beta – kiadás előkészítve, ellenőrzés folyamatban
+
+A felhasználó kifejezett verzióválasza: „2758 1.1-beta”. Telefon275800,
+Wear275802, mindkettő versionName1.1-beta. A teljes telefon+Wear APK/AAB csomag
+és a regresszió/CI engedélyezett. Folyamatban lévő javított CI43444451666,
+forrásf905204; a verzió/metaadat és a végső palettás űrlappanel ezutáni commit.
+Az első43443198395 a tesztben használt DpRect.height fordítási hibán állt meg;
+a változatlan méretellenőrzéseket bottom-top különbségre javítottuk.
+A napló lehúzásos elvetése megerősítést kér, mentés közben továbbra is tiltott.
+
+Külön telefon/Wear Play-jegyzetek és részletes változások: releases/2758-*.
+Az új csomag még nem készült el, main-merge és signed build előtt a végső forrás
+közös kapuja szükséges. PR#225 / maintenance/post2757-audit.
+
+---
+
 # 2026-11-13 – a három mockup beépítve, közös regresszió/build engedélyezve
 
 Profil/tervező és egyedi gyakorlat: közös TrainPilotFullHeightFormSheet, teljes

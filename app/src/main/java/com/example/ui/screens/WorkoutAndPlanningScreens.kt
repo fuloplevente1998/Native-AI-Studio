@@ -75,6 +75,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -3255,11 +3256,16 @@ fun AddCustomExerciseModalDialog(
                     color = palette.textSecondary
                 )
 
+                Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceElevated,
+                    modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
                     value = nameHu,
                     onValueChange = { nameHu = it },
                     label = { Text(trW(lang, "Gyakorlat neve (pl. Kör futás)", "Exercise name (e.g. Track run)", "Übungsname (z. B. Bahnlauf)", "Numele exercițiului (ex. Alergare pe pistă)")) },
                     singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = palette.surface,
+                        unfocusedContainerColor = palette.surface),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("custom_exercise_name_input")
@@ -3372,6 +3378,8 @@ fun AddCustomExerciseModalDialog(
                     label = { Text(trW(lang, "Leírás / Végrehajtási lépések", "Description / Execution steps", "Beschreibung / Ausführungsschritte", "Descriere / Pași de execuție")) },
                     placeholder = { Text(trW(lang, "Pl. 400m egyenletes tempójú kör futás, majd 60 mp séta pihenő...", "E.g. 400m steady pace run, then 60 s walking rest...", "Z. B. 400 m gleichmäßiger Lauf, dann 60 Sek. Gehpause...", "Ex. alergare 400 m ritm constant, apoi 60 sec pauză de mers...")) },
                     minLines = 3,
+                    colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = palette.surface,
+                        unfocusedContainerColor = palette.surface),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("custom_exercise_description_input")
@@ -3382,6 +3390,8 @@ fun AddCustomExerciseModalDialog(
                     onValueChange = { videoUrl = it },
                     label = { Text(trW(lang, "Videó link vagy YouTube azonosító (opcionális)", "Video URL or YouTube ID (optional)", "Video-Link oder YouTube-ID (optional)", "Link video sau ID YouTube (opțional)")) },
                     singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = palette.surface,
+                        unfocusedContainerColor = palette.surface),
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -3405,6 +3415,8 @@ fun AddCustomExerciseModalDialog(
                 ) {
                     Checkbox(checked = addToCurrentProgramDay, onCheckedChange = { addToCurrentProgramDay = it })
                     Text(trW(lang, "Hozzáadás az aktuálisan szerkesztett programnaphoz", "Add to currently edited program day", "Zum aktuell bearbeiteten Programmtag hinzufügen", "Adaugă la ziua de program editată curent"), style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
+                }
+                    }
                 }
             }
         },

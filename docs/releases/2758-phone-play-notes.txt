@@ -1,0 +1,6 @@
+<hu-HU>
+Egységes, lenyitható edzésbeállítások. Teljes magasságú gyorsedzés, profil-, egyedigyakorlat- és naplószerkesztő, rögzített mentéssel. Az aktív súlyzós edzésen közvetlen súly/ismétlés/RIR választók, egyedi súlybevitellel. Kiemelt napi összefoglaló és olvashatóbb Coach. Javított többsoros gombok és védelem az órás vezérlés közbeni telefonos módosítások ellen.
+</hu-HU>
+<en-US>
+Unified, expandable workout settings. Full-height quick workout, profile, custom exercise and journal editors with fixed save actions. Active strength sessions now offer inline weight/reps/RIR selectors and custom weight entry. Highlighted daily summary and clearer Coach advice. Improved multiline buttons and safeguards against phone edits while the watch controls the workout.
+</en-US>
