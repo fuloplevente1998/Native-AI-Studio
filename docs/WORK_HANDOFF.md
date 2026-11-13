@@ -1,3 +1,14 @@
+# 2758 – köztes teszteredmény és végső közös kapu
+
+43444451666 / f905204: nyers XML és artifact-digest ellenőrizve.
+Telefon476 tesztből475 sikeres, Wear187/187; összes663 teszt,1failure,0error,
+0skipped. Egyedül a gyorsedzés-teszt kereste a kiválasztó feliratát kategória nélkül.
+A választó/opció/indítás stabil tesztazonosítót kapott; a teszt ugyanúgy a tényleges
+második gyakorlat kiválasztását/indítását és a bezárást ellenőrzi. Nincs tesztgyengítés.
+A végső 2758/1.1-beta forrásra új közös CI szükséges, utána signed APK+AAB.
+
+---
+
 # 2758 · 1.1-beta – kiadás előkészítve, ellenőrzés folyamatban
 
 A felhasználó kifejezett verzióválasza: „2758 1.1-beta”. Telefon275800,

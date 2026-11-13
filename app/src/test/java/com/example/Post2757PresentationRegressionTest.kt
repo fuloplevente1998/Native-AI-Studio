@@ -47,9 +47,9 @@ class Post2757PresentationRegressionTest {
         } }
         val sheet = compose.onNodeWithTag("quick_workout_sheet").assertIsDisplayed().getUnclippedBoundsInRoot()
         assertTrue("Sheet should open at full available height", (sheet.bottom - sheet.top).value >= 800f)
-        compose.onNodeWithText("Első gyakorlat").performScrollTo().performClick()
-        compose.onNodeWithText("Második gyakorlat").performClick()
-        compose.onNodeWithText("▶ Indítás: Második gyakorlat").performScrollTo().performClick()
+        compose.onNodeWithTag("quick_strength_picker").performScrollTo().performClick()
+        compose.onNodeWithTag("quick_strength_option_two").performClick()
+        compose.onNodeWithTag("quick_strength_start").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(second, started) }
         compose.onNodeWithContentDescription(TrainPilotStrings.forLanguage(AppLanguage.HU).closeAction).performScrollTo().performClick()
         compose.runOnIdle { assertEquals(1, dismissed) }

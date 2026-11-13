@@ -2269,6 +2269,7 @@ fun QuickWorkoutSheet(
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(12.dp))
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { strengthDropdownOpen = true }
+                                .testTag("quick_strength_picker")
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -2314,6 +2315,7 @@ fun QuickWorkoutSheet(
                             strengthList.forEach { ex ->
                                 val isSel = ex.id == selectedStrengthEx?.id
                                 DropdownMenuItem(
+                                    modifier = Modifier.testTag("quick_strength_option_${ex.id}"),
                                     text = {
                                         Text(
                                             text = "${ex.localizedName(strings.language)} • ${ex.category.localized(strings.language)}",
@@ -2340,7 +2342,7 @@ fun QuickWorkoutSheet(
                             contentColor = palette.onPrimary
                         ),
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag("quick_strength_start")
                     ) {
                         Text(
                             text = tr(
