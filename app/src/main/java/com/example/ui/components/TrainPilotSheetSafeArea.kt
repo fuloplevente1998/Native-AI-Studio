@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.padding
@@ -14,6 +15,7 @@ import androidx.compose.ui.platform.LocalDensity
  * Raw top padding deliberately survives consumed content insets in an edge-to-edge modal.
  * Union takes the larger obstruction, avoiding double status-bar/cutout padding.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun trainPilotSheetTopPadding(
     statusBar: WindowInsets = WindowInsets.statusBarsIgnoringVisibility,
@@ -23,6 +25,7 @@ internal fun trainPilotSheetTopPadding(
     return with(density) { statusBar.union(cutout).getTop(density).toDp() }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun Modifier.trainPilotSheetTopSafeArea(
     statusBar: WindowInsets = WindowInsets.statusBarsIgnoringVisibility,

@@ -17,6 +17,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.*
 
+@OptIn(ExperimentalLayoutApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w400dp-h900dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
