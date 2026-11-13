@@ -1,3 +1,28 @@
+# TrainPilot2757 –ellenőrzött main kiadás,2026-11-13
+
+A felhasználó elfogadta a#223 javítócsomagot;main-integráció és APK+AAB kész.
+Aláírt main-source:0c0e0621e139c0ac73850a8cc1c38d63947839a0.
+Közös Actions43407855167 SUCCESS:645=459telefon+186Wear,0failure/error/skipped;
+shared NO-SOURCE. APK+AAB párok azonos futásból,versionName1.0-beta,
+telefon275700/Wear275702,tartós signer és csomagazonosság ellenőrizve.
+ZIP digestek,nyersXML,forrásSHA,fájlhash-ek és a Drive-fájlok metaadatai ellenőrizve.
+
+Részletek:releases/2757-changes.md, bizonyíték:releases/2757-verified-artifacts.json.
+Külön telefonos/órás Play-jegyzetek:releases/2757-phone-play-notes.txt,
+releases/2757-wear-play-notes.txt. Az előző átadott build2756(6b38451).
+A telefonos APK20,6MB-ról5,5MB-ra csökkent, a Wear4,7MB optimalizált release.
+Az audit5. pont új funkciói kimaradtak; a VM további domainbontása külön munka.
+Play-feltöltést a felhasználó végzi; ebben a körben Console-módosítás nem történt.
+Fizikai eszközös,világos/nagybetűs és Store-elfogadás külön hátravan.
+A záró dokumentációs commit az ellenőrzött natív/build/teszt forráson nem változtat.
+
+Telefon APK:https://drive.google.com/file/d/1ZirXKXr9_txvNyAcgpRFC8rIKFS0L1jU/view?usp=drivesdk
+Wear APK:https://drive.google.com/file/d/1tRpbY0_AjlHYQ-MhnXvZLpSUtSs3hNAS/view?usp=drivesdk
+Telefon AAB:https://drive.google.com/file/d/1EUS7mxzzP-oerL8kqCDZ46ArHRB6a9_x/view?usp=drivesdk
+Wear AAB:https://drive.google.com/file/d/1BN_Q-u1TzaeGe5P0lXn754zt7NNOS5gN/view?usp=drivesdk
+
+---
+
 # Kiadás előkészítés –2026-11-13,2757
 
 A felhasználó elfogadta a#223 javítócsomagot:main-integráció,APK+AAB build,
