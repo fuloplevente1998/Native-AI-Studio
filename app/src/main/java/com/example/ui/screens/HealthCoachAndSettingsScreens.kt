@@ -2281,7 +2281,11 @@ fun SettingsMainScreen(
     onToggleProgressionModal: (Boolean) -> Unit,
     onNavigateToSubScreen: (SubScreen) -> Unit,
     onShowBanner: (String) -> Unit,
-    onCloudSyncCompleted: () -> Unit = {}
+    onCloudSyncCompleted: () -> Unit = {},
+    onPreviewProgression: (String, String, Boolean) -> Unit = { _, _, _ -> },
+    onApproveProgression: () -> Unit = {},
+    onEditProgressionPreview: () -> Unit = {},
+    onUndoProgression: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val currentPaletteObj = TrainPilotPalettes.getById(uiState.selectedPaletteId)
@@ -2591,51 +2595,37 @@ fun SettingsMainScreen(
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
             ) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(tr(uiState.language, "Edzés és értesítések", "Workout & Notifications", "Training & Benachrichtigungen", "Antrenament și notificări"), style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                    Surface(
-                        shape = RoundedCornerShape(18.dp),
-                        color = palette.surfaceCard,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .trainPilotBorder(0.75.dp, palette.cardBorder.copy(alpha = 0.45f), RoundedCornerShape(18.dp))
+                    Row(
+                        Modifier.fillMaxWidth()
+                            .clickable(enabled = !uiState.progressionModeBusy, role = androidx.compose.ui.semantics.Role.Button) {
+                                onToggleProgressionModal(!uiState.showProgressionModal)
+                            }.testTag("settings_workout_toggle").padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text(strings.soundAlertTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                                    Text(tr(uiState.language, "Pihenőidő lejártakor", "When rest timer expires", "Nach Ablauf der Pausenzeit", "La expirarea pauzei"), style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
-                                }
-                                Switch(checked = uiState.soundAlertEnabled, onCheckedChange = onToggleSoundAlert)
-                            }
-                            HorizontalDivider(color = palette.cardBorder)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text(tr(uiState.language, "Rezgés", "Vibration", "Vibration", "Vibrație"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                                    Text(tr(uiState.language, "Haptikus visszajelzés pihenőidő végén", "Haptic feedback at the end of rest", "Haptisches Feedback am Pausenende", "Feedback haptic la finalul pauzei"), style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
-                                }
-                                Switch(
-                                    checked = uiState.vibrationEnabled,
-                                    onCheckedChange = onToggleVibration
-                                )
-                            }
+                        Column(Modifier.weight(1f)) {
+                            Text(tr(uiState.language, "Edzés beállításai", "Workout settings", "Trainingseinstellungen", "Setări antrenament"),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                            Text("${localizeTrainingStyle(uiState.trainingStyleHu, uiState.language)} • ${localizeProgressionRule(uiState.progressionRuleHu, uiState.language)} • ${strings.restLabel}: ${uiState.defaultRestSec} $secUnit",
+                                style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                         }
+                        Icon(if (uiState.showProgressionModal) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null, tint = palette.primary)
                     }
-                    SettingsActionRowCard(
-                        title = tr(uiState.language, "Edzés beállításai és progresszió", "Workout Settings & Progression", "Trainingseinstellungen & Progression", "Setări antrenament și progresie"),
-                        subtitle = "${localizeTrainingStyle(uiState.trainingStyleHu, uiState.language)} • ${localizeProgressionRule(uiState.progressionRuleHu, uiState.language)} • ${strings.restLabel}: ${uiState.defaultRestSec} $secUnit",
-                        badgeText = tr(uiState.language, "Szerk.", "Edit", "Bearb.", "Edit."),
-                        subtleBorder = true,
-                        onClick = { onToggleProgressionModal(true) }
-                    )
+                    if (uiState.showProgressionModal) {
+                        HorizontalDivider(color = palette.cardBorder)
+                        StudioWorkoutModesDialog(
+                            state = uiState, scope = "global", embedded = true,
+                            onDismiss = { onToggleProgressionModal(false) },
+                            onCycleRest = onCycleRestTimer,
+                            onToggleSound = onToggleSoundAlert,
+                            onToggleVibration = onToggleVibration,
+                            onPreview = onPreviewProgression,
+                            onApprove = onApproveProgression,
+                            onEditPreview = onEditProgressionPreview,
+                            onUndo = onUndoProgression
+                        )
+                    }
                 }
             }
         }

@@ -78,7 +78,8 @@ internal fun StudioWorkoutModesDialog(
     onPreview: (String, String, Boolean) -> Unit,
     onApprove: () -> Unit,
     onEditPreview: () -> Unit,
-    onUndo: () -> Unit
+    onUndo: () -> Unit,
+    embedded: Boolean = false
 ) {
     val p = LocalTrainPilotPalette.current
     val lang = state.language
@@ -92,7 +93,8 @@ internal fun StudioWorkoutModesDialog(
     val active = state.isWorkoutSessionActive
     val unit = workoutModeText(lang, "mp", "sec", "Sek.", "sec")
 
-    TrainPilotAlertDialog(
+    WorkoutModesContainer(
+        embedded = embedded,
         onDismissRequest = { if (!busy) onDismiss() },
         containerColor = p.surfaceCard,
         titleContentColor = p.textPrimary,
@@ -103,7 +105,7 @@ internal fun StudioWorkoutModesDialog(
         },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                modifier = if (embedded) Modifier.fillMaxWidth() else Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 if (isProgram) Text(
@@ -278,4 +280,31 @@ internal fun StudioWorkoutModesDialog(
             }
         }
     )
+}
+
+/** The same editor/actions render inline in Settings and in a dialog for programs. */
+@Composable
+private fun WorkoutModesContainer(
+    embedded: Boolean,
+    onDismissRequest: () -> Unit,
+    containerColor: androidx.compose.ui.graphics.Color,
+    titleContentColor: androidx.compose.ui.graphics.Color,
+    title: @Composable () -> Unit,
+    text: @Composable () -> Unit,
+    dismissButton: @Composable () -> Unit,
+    confirmButton: @Composable () -> Unit
+) {
+    if (embedded) {
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            text()
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+                confirmButton()
+                dismissButton()
+            }
+        }
+    } else {
+        TrainPilotAlertDialog(onDismissRequest = onDismissRequest, containerColor = containerColor,
+            titleContentColor = titleContentColor, title = title, text = text,
+            dismissButton = dismissButton, confirmButton = confirmButton)
+    }
 }

@@ -1,3 +1,23 @@
+# 2026-11-13 – egyetlen lenyitható edzésbeállítás, csak kód
+
+Felhasználói kérés: a duplikált hang/rezgés kapcsolók helyett egy
+„Edzés beállításai” blokk, benne a teljes eddigi szerkesztővel.
+A főoldali két külön kapcsoló és a külön szerkesztőgomb megszűnt.
+A meglévő közös szerkesztő inline jelenik meg: pihenő, hang, rezgés,
+edzésstílus, progresszió, előnézet/jóváhagyás/visszavonás változatlan callbackekkel.
+Nincs új preference vagy értékreset. Nincs belső görgető az inline változatban.
+A programhoz tartozó szerkesztő továbbra is párbeszédablak; a globális szerkesztő
+elhagyásakor a globális előnézet törlődik, nem nyílik másik képernyőn programdialog.
+Regressziós tesztforrás: lenyitás, egyetlen hang/rezgés kapcsoló, valódi callbackek,
+pihenő és HIT-előnézet, visszacsukás. A teszt ebben a körben nem futott.
+
+Ág/PR: maintenance/post2757-audit / #225. A felhasználó most kifejezetten
+nem kér buildet: Gradle/CI/APK/AAB nem indult. A diff ellenőrizve.
+A korábbi 43427331218 CI SUCCESS az előző, 0ec517c forrásra vonatkozik,
+nem bizonyítja ezt az új UI-módosítást. Main és a 2757-es telepítők változatlanok.
+
+---
+
 # 2026-11-13 – 2757 utáni célzott javítás (ellenőrzés alatt)
 
 Ág: `maintenance/post2757-audit`, alap: `720f145`. Új verzió és kiadás nincs.
