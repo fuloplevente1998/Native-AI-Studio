@@ -2639,8 +2639,28 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
+    // Reject mirror/recovery callbacks before changing the local draft. The native
+    // commit still rechecks ownership/revision if a handoff races this admission.
+    private fun canEditActiveSets(): Boolean {
+        val context = nativeContext ?: return false
+        val state = _uiState.value
+        if (!state.isWorkoutSessionActive || state.isSavingWorkout ||
+            !state.phoneControlsWorkout || state.watchControlPending) return false
+        return runCatching {
+            val current = ActiveWorkoutStore.current(context) ?: return@runCatching false
+            if (!current.optBoolean("active") || current.optBoolean("discardPending") ||
+                current.optBoolean("finalizationPending") ||
+                current.optString("workoutId") != state.activeWorkoutId ||
+                current.optLong("generation") != state.activeWorkoutGeneration) return@runCatching false
+            val editable = com.repforge.app.NativeWorkoutEditing.project(context)
+            editable.optString("workoutId") == state.activeWorkoutId &&
+                editable.optLong("generation") == state.activeWorkoutGeneration
+        }.getOrDefault(false)
+    }
+
     // Active Workout Actions (persisted canonically to ActiveWorkoutStore)
     fun toggleSetCompleted(setNumber: Int) {
+        if (!canEditActiveSets()) return
         _uiState.update { state ->
             var newlyCompleted = false
             val updated = state.activeSets.map { s ->
@@ -2668,6 +2688,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun adjustSetValues(setNumber: Int, deltaWeight: Float, deltaReps: Int, deltaRir: Int) {
+        if (!canEditActiveSets()) return
         _uiState.update { state ->
             val updated = state.activeSets.map { s ->
                 if (s.setNumber == setNumber) {
@@ -2692,6 +2713,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun updateSetValuesExact(setNumber: Int, weightKg: Float, reps: Int, rir: Int?) {
+        if (!canEditActiveSets()) return
         _uiState.update { state ->
             val updated = state.activeSets.map { s ->
                 if (s.setNumber == setNumber) {
@@ -2715,6 +2737,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun updateBilateralSetExact(setNumber: Int, leftSec: Int, rightSec: Int, rir: Int?) {
+        if (!canEditActiveSets()) return
         _uiState.update { state ->
             val cleanLeft = leftSec.coerceIn(1, 600)
             val cleanRight = rightSec.coerceIn(1, 600)
@@ -2751,6 +2774,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun recordBilateralSideStop(isLeftSide: Boolean, measuredSec: Int, targetSetNumber: Int? = null) {
+        if (!canEditActiveSets()) return
         _uiState.update { state ->
             val recordedSec = measuredSec.coerceAtLeast(1)
             val sets = state.activeSets
@@ -2815,6 +2839,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun deleteSet(setNumber: Int) {
+        if (!canEditActiveSets()) return
         _uiState.update { state ->
             val remaining = state.activeSets.filter { it.setNumber != setNumber }
             val renumbered = remaining.mapIndexed { idx, item ->
@@ -2840,6 +2865,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun addSet() {
+        if (!canEditActiveSets()) return
         _uiState.update { state ->
             val lastSet = state.activeSets.lastOrNull()
             val nextNumber = (lastSet?.setNumber ?: 0) + 1
@@ -3152,6 +3178,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun undoLastCompletedSet() {
+        if (!canEditActiveSets()) return
         _uiState.update { state ->
             val lastCompleted = state.activeSets.lastOrNull { it.completed }
             if (lastCompleted == null) state

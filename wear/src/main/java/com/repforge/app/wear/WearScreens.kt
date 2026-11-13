@@ -2355,7 +2355,7 @@ private fun TimedSetToolsScreen(
         centerItem {
             Label(
                 workout.exercise?.targetReps?.let { if (it.isBlank()) wearText("Stopper") else wearFormat("Cél: %s mp", it) }
-                    ?: "Stopper"
+                    ?: wearText("Stopper")
             )
         }
         centerItem {

@@ -1,3 +1,30 @@
+# 2026-11-13 – 2757 utáni célzott javítás (ellenőrzés alatt)
+
+Ág: `maintenance/post2757-audit`, alap: `720f145`. Új verzió és kiadás nincs.
+Az AGENTS.md rögzíti: koordináció/nehéz debug Sol High, fejlesztés Terra Medium,
+státusz/keresés Luna Low; rövid agent-kontextus, Extra High nélkül.
+
+- Wear: a dinamikus sorozat-, oldal-, kör-, stopper- és menüfeliratok is a meglévő
+  HU/EN/DE/RO lokalizációt használják. Az adatmodell és a protokoll változatlan.
+- Telefon: nyolc sorozatszerkesztési belépési pont a helyi draft módosítása előtt
+  ellenőrzi a natív szerkeszthetőséget és a session ID/generation egyezését.
+  Órás vezérlés/felfüggesztett parancsok alatt nincs fantom készre jelölés,
+  pihenőindítás vagy helyi sorozatátírás. A natív commit ellenőrzése megmarad.
+- Regresszió: órás ownership és a UI-t megelőző parancsfelfüggesztés mellett
+  mind a nyolc szerkesztési út változatlan draftot/tartós állapotot vár.
+
+Ellenőrzés: diff ellenőrizve; a közös teljes JVM + telefonos release R8 kapu
+futtatása következik. A 2757 korábbi 645 tesztje nem ennek az ágnak bizonyítéka.
+
+Nyitott jegyek: #214/#216 szinkron/pihenő, #217 szolgáltatói eredet/deduplikáció,
+#218 heti/havi célok, #219 kompakt UI kódja már a 2757-ben van; készülékes,
+nagybetűs és képernyőképes elfogadásuk még hiányzik, ezért nem zárjuk őket.
+A #220 témaszinkron és valós Store-képek külön nyitott feladat; ez a változtatás
+nem valósít meg új nyelv-/témaátadási protokollt. #210/#211 naptárjavító PR-ek
+külön felülvizsgálandók, nem tekintjük automatikusan összevontnak.
+
+---
+
 # TrainPilot2757 –ellenőrzött main kiadás,2026-11-13
 
 A felhasználó elfogadta a#223 javítócsomagot;main-integráció és APK+AAB kész.
