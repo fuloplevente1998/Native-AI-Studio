@@ -41,6 +41,9 @@ internal object StudioCalendarPlanning {
             .getOrDefault(month.atDay(event.dayOfMonth.coerceIn(1, month.lengthOfMonth())))
         val retained = state.calendarEvents.filter { event ->
             event.status != CalendarEventStatus.PLANNED || date(event) < start || date(event) >= end
+        }.map { event ->
+            // Freeze legacy day-only rows in their original month before moving the viewport.
+            if (event.dateIso.isBlank()) event.copy(dateIso = date(event).toString()) else event
         }
         val completedDates = retained.filter { it.status == CalendarEventStatus.COMPLETED }.map(::date).toSet()
         val program = state.programs.firstOrNull { it.isActive }

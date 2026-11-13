@@ -37,4 +37,14 @@ class StudioCalendarPlanningRegressionTest {
         assertEquals(complete,replan.calendarEvents.first())
         assertTrue(replan.calendarEvents.any { it.dateIso.startsWith("2026-12") })
     }
+    @Test fun changingThePlanningMonthDoesNotMoveLegacyCompletedRows() {
+        val old = CalendarDayEvent(id="old",dayOfMonth=5,timeLabel="10:00",titleHu="Saved",
+            exerciseCount=1,durationMinutes=30,status=CalendarEventStatus.COMPLETED)
+        val state = TrainPilotUiState(calendarYearMonth="2026-11", planningStartDate="2026-12-01",
+            planningWeeksCount=1,calendarEvents=listOf(old))
+        val result = StudioCalendarPlanning.plan(state)
+        assertEquals("2026-12",result.calendarYearMonth)
+        assertEquals("2026-11-05",result.calendarEvents.single { it.id=="old" }.dateIso)
+    }
+
 }
