@@ -1,0 +1,36 @@
+{
+  "commit": "817940800d95daf674e91418bed988cd13d6964f",
+  "modules": {
+    "phone": {
+      "files": 83,
+      "tests": 459,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "noSource": false
+    },
+    "wear": {
+      "files": 34,
+      "tests": 186,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "noSource": false
+    },
+    "shared": {
+      "files": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "noSource": true
+    }
+  },
+  "total": {
+    "tests": 645,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "artifactDigest": "4350bef8ab3290f3d4a997b61652f1c2dbec7caa7e88fe3561ba0c1d2e529a6f"
+}

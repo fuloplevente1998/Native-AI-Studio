@@ -1,9 +1,22 @@
-# Folyamatban –2026-11-13 audit1–4
+# Átadó –2026-11-13 audit1–4
 
-Ág:fix/nov13-audit-1-4, alapmain6b38451. Részletek:AUDIT_1_4_2026-11-13.md.
-Az5. pont új funkciói kihagyva. Egyetlen root, nincs új agent.
-Implementáció/regressziók készülnek, közös CI és R8ellenőrzés következik.
-Kiadói név:FulTechStudios, support:paszia1998@gmail.com a publikus privacyoldalból. Verzió/build/main-merge nincs.
+Draft PR#223, ág:fix/nov13-audit-1-4, alapmain6b38451.
+Részletes változáslista:AUDIT_1_4_2026-11-13.md.
+Ellenőrzött natív/build/teszt SHA:817940800d95daf674e91418bed988cd13d6964f.
+Actions43390595599 SUCCESS:645=459telefon+186Wear,0failure/error/skipped,
+shared NO-SOURCE; releaseR8 is sikeres. Nyers XML, SHA és artifact digest ellenőrizve.
+Bizonyíték:AUDIT_1_4_CI_EVIDENCE_2026-11-13.json.
+
+Fő változások:pihenő visszavétel, mm:ss cél, ritmus/hetek/évhatár/naptár,
+aktív idő+valós edzéskalória, teljes gyorslisták, éles onboarding+exportkapu,
+holt régi phone/Wear UI törlése, R8/shrink+PhotoPicker, paletta/a11y/lokalizáció.
+Kiadó:FulTechStudios; support:paszia1998@gmail.com, felhasználó által megerősítve.
+PrivacyURL eleve helyes; Health/FGS forrásmátrix külön dokumentumban.
+
+Az5. pont új funkciói kihagyva. Egyetlen root dolgozott, új agent nincs.
+Nincs main-merge, verzióemelés vagy új APK/AAB. Fizikai/vizuális/Console elfogadás
+hátravan. A további ViewModel-domainbontás külön megfontolt refaktorálás marad.
+A záró docs-only commit az ellenőrzött app/build/teszt kódon nem változtat.
 
 ---
 
