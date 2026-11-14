@@ -38,7 +38,11 @@ Nyolc új regressziós eset és frissített meglévő elvárások védik a visel
 
 ## Kért tesztcsomag
 
-- [ ] Aláírt, ellenőrzött 2761 · 1.1-beta telefonos APK (276100) és Wear APK (276102), közös forrásból.
-- [ ] APK-páros átadása a megszokott Drive-mappában.
+- [x] Aláírt, ellenőrzött 2761 · 1.1-beta telefonos APK (276100) és Wear APK (276102), közös forrásból.
+- [x] APK-páros átadása a megszokott Drive-mappában.
 
 Az új build a meglévő main/android-signing kaput használja, új build_aab=false bemenettel. A main-korlát, tartós aláíró, Maps-ellenőrzés, teljes JVM-kapu és ideiglenes kulcs törlése megmarad. Az APK-only és APK+AAB feladatválasztás shell-szinten ellenőrizve; APK-only módban nincs bundle-feladat vagy AAB-ellenőrzés/feltöltés. AAB csak a felhasználó készülékes jóváhagyása után; Play Console feltöltés nincs ebben a kérésben.
+
+## APK-páros átadva
+
+A mainre integrált forrás a9b903f353a0e5dc2b2e8e01e6d3291bc560ccc1; signed run43593234136 SUCCESS. Helyben ellenőrzött 693/693 JVM teszt, ZIP-digest, APK-hash, tényleges manifest-verzió és tartós signer. Mindkét APK és a külön telefonos/órás leírás a Drive-on, metaadat-visszaolvasással. Részletek: [2761 APK átadás](releases/2761-apk-changes.md). AAB nem készült; készülékes elfogadásra vár.

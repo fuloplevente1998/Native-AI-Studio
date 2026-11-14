@@ -1,0 +1,205 @@
+{
+  "source": "a9b903f353a0e5dc2b2e8e01e6d3291bc560ccc1",
+  "run": 43593234136,
+  "apkOnly": true,
+  "aabBuilt": false,
+  "artifactDigests": {
+    "apk": "sha256:bab6f279f9206c1ff177dc45cb68e4c8922602750596e37261e6a67a7cf14055",
+    "tests": "sha256:88e2056b5a34648023c6156a36b0d0b6d26e3c87ac7f72daf7dc8cd263c28634"
+  },
+  "files": {
+    "app-release.apk": {
+      "file": "app-release.apk",
+      "bytes": 5495467,
+      "sha256": "4d9fb4b6f09ae8f4ff8bb8aef5f7250208a8e5e3a3a92f12cc81689b1841ac76",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "manifest": {
+        "versionCode": 276100,
+        "versionName": "1.1-beta",
+        "package": "com.TrainPilot.com"
+      }
+    },
+    "wear-release.apk": {
+      "file": "wear-release.apk",
+      "bytes": 4669627,
+      "sha256": "13c52f9e93c88cfc317a0f59014dc3ab228a6bc422197e50046d0233604ffacb",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "manifest": {
+        "versionCode": 276102,
+        "versionName": "1.1-beta",
+        "package": "com.TrainPilot.com"
+      }
+    }
+  },
+  "rawJUnit": {
+    "app": {
+      "files": 94,
+      "tests": 504,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "wear": {
+      "files": 35,
+      "tests": 189,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "files": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "apkVerification": {
+    "applicationId": "com.TrainPilot.com",
+    "versionCode": "276100",
+    "versionName": "1.1-beta",
+    "apkSha256": "4d9fb4b6f09ae8f4ff8bb8aef5f7250208a8e5e3a3a92f12cc81689b1841ac76",
+    "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+    "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+    "mapsApiKeyConfigured": true,
+    "ciCheckout": "a9b903f353a0e5dc2b2e8e01e6d3291bc560ccc1",
+    "wear": {
+      "applicationId": "com.TrainPilot.com",
+      "versionCode": "276102",
+      "versionName": "1.1-beta",
+      "apkSha256": "13c52f9e93c88cfc317a0f59014dc3ab228a6bc422197e50046d0233604ffacb",
+      "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "variant": "release",
+      "bytes": 4669627
+    },
+    "wearCompanionCapabilityRetained": true,
+    "dataLayerPairIdentityVerified": true,
+    "wearHardwareRequired": true
+  },
+  "junitVerification": {
+    "commit": "a9b903f353a0e5dc2b2e8e01e6d3291bc560ccc1",
+    "modules": {
+      "phone": {
+        "files": 94,
+        "tests": 504,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "wear": {
+        "files": 35,
+        "tests": 189,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "shared": {
+        "files": 0,
+        "tests": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": true
+      }
+    },
+    "total": {
+      "tests": 693,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "physicalAcceptance": false,
+  "release": 2761,
+  "versionName": "1.1-beta",
+  "localManifestReadBack": true,
+  "localSignerReadBack": true,
+  "artifactDigestsVerifiedLocally": true,
+  "driveMetadataVerified": true,
+  "drive": {
+    "phone": {
+      "id": "15AvJxFTAaSBn0sK3tgKysP77RaTzwoRp",
+      "title": "TrainPilot-phone-2761-1.1-beta-release.apk",
+      "mime_type": "application/vnd.android.package-archive",
+      "size": "5495467",
+      "url": "https://drive.google.com/file/d/15AvJxFTAaSBn0sK3tgKysP77RaTzwoRp/view?usp=drivesdk",
+      "display_url": "https://drive.google.com/file/d/15AvJxFTAaSBn0sK3tgKysP77RaTzwoRp/view?usp=drivesdk",
+      "file_or_folder": "file",
+      "created_time": null,
+      "modified_time": null,
+      "parent_ids": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "drive_id": null,
+      "current_user_can_share": null,
+      "has_augmented_permissions": null,
+      "shared": null,
+      "permissions": null,
+      "source_visibility_status": "access_not_verified"
+    },
+    "wear": {
+      "id": "1uEWjaFM4VdWDJSWLTwRjk1Vb7TjWMov3",
+      "title": "TrainPilot-wear-2761-1.1-beta-release.apk",
+      "mime_type": "application/vnd.android.package-archive",
+      "size": "4669627",
+      "url": "https://drive.google.com/file/d/1uEWjaFM4VdWDJSWLTwRjk1Vb7TjWMov3/view?usp=drivesdk",
+      "display_url": "https://drive.google.com/file/d/1uEWjaFM4VdWDJSWLTwRjk1Vb7TjWMov3/view?usp=drivesdk",
+      "file_or_folder": "file",
+      "created_time": null,
+      "modified_time": null,
+      "parent_ids": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "drive_id": null,
+      "current_user_can_share": null,
+      "has_augmented_permissions": null,
+      "shared": null,
+      "permissions": null,
+      "source_visibility_status": "access_not_verified"
+    },
+    "phoneNotes": {
+      "id": "13eFVjbFbCJfh_spsBVm29GH6DwihfXr5",
+      "title": "TrainPilot-2761-phone-changes.txt",
+      "mime_type": "text/plain",
+      "size": "882",
+      "url": "https://drive.google.com/file/d/13eFVjbFbCJfh_spsBVm29GH6DwihfXr5/view?usp=drivesdk",
+      "display_url": "https://drive.google.com/file/d/13eFVjbFbCJfh_spsBVm29GH6DwihfXr5/view?usp=drivesdk",
+      "file_or_folder": "file",
+      "created_time": null,
+      "modified_time": null,
+      "parent_ids": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "drive_id": null,
+      "current_user_can_share": null,
+      "has_augmented_permissions": null,
+      "shared": null,
+      "permissions": null,
+      "source_visibility_status": "access_not_verified"
+    },
+    "wearNotes": {
+      "id": "1uitklXOSXJAUKwDTbdAhO2dLm-PKFRbB",
+      "title": "TrainPilot-2761-wear-changes.txt",
+      "mime_type": "text/plain",
+      "size": "517",
+      "url": "https://drive.google.com/file/d/1uitklXOSXJAUKwDTbdAhO2dLm-PKFRbB/view?usp=drivesdk",
+      "display_url": "https://drive.google.com/file/d/1uitklXOSXJAUKwDTbdAhO2dLm-PKFRbB/view?usp=drivesdk",
+      "file_or_folder": "file",
+      "created_time": null,
+      "modified_time": null,
+      "parent_ids": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "drive_id": null,
+      "current_user_can_share": null,
+      "has_augmented_permissions": null,
+      "shared": null,
+      "permissions": null,
+      "source_visibility_status": "access_not_verified"
+    }
+  },
+  "aabStatus": "deferred pending user device acceptance"
+}
