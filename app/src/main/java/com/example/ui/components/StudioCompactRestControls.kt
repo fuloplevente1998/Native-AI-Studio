@@ -48,7 +48,7 @@ internal fun StudioCompactRestControls(
             Text("$rest: %02d:%02d".format(remainingSec.coerceAtLeast(0) / 60, remainingSec.coerceAtLeast(0) % 60),
                 style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"),
                 fontWeight = FontWeight.ExtraBold, color = palette.textPrimary,
-                maxLines = 1, softWrap = false)
+                maxLines = 1, softWrap = false, modifier = Modifier.width(IntrinsicSize.Max))
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -60,7 +60,8 @@ internal fun StudioCompactRestControls(
                     Box(Modifier.padding(horizontal = 6.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
                         Text(label, style = MaterialTheme.typography.labelSmall,
                             color = (if (highlighted) palette.onPrimary else palette.textPrimary).copy(alpha = if (enabled) 1f else .38f),
-                            fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                            fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false,
+                            modifier = Modifier.width(IntrinsicSize.Max))
                     }
                 }
             }

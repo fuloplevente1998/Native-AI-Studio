@@ -1,3 +1,15 @@
+# 2759 pihenőfelirat – természetes szélesség szerinti mérés
+
+A43564865519 célzott körben az Ellipsis eltávolítása önmagában nem volt elég:
+a Text paragraph továbbra is a teljes laza mérési korlátot tartotta, miközben a
+szemantikus doboz természetes szélességű volt. Az idő- és gombfeliratok ezért
+IntrinsicSize.Max szerinti saját szélességet kapnak, a szülő szélességi korlátján
+belül. A sorváltás e ténylegesen méretezett címkékkel történik. A szigorú
+hasVisualOverflow/bounds/overlap/touch/callback tesztek változatlanul érvényesek.
+Következő: célzott app + Wear/shared kör, majd siker esetén teljes signed kapu.
+
+---
+
 # 2759 pihenősáv – célzott ellenőrzés a teljes újrafutás előtt
 
 A43508709582 signed kapu677 tesztből3 pihenőfelirat-túlcsordulási ellenőrzésen
