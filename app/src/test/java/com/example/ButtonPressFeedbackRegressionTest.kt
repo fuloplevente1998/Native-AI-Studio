@@ -23,6 +23,7 @@ import com.example.ui.theme.TrainPilotTheme
 import com.repforge.app.ui.theme.TrainPilotButton
 import com.repforge.app.ui.theme.TrainPilotTextButton
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.focusable
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 import com.repforge.app.ui.theme.TrainPilotSaveButton
 import com.repforge.app.ui.theme.TrainPilotNegativeButton
@@ -86,19 +87,19 @@ class ButtonPressFeedbackRegressionTest {
 
     @Test fun textButtonsRetainVisibleKeyboardFocusAndNativeKeyboardActivation() {
         val requester = androidx.compose.ui.focus.FocusRequester()
-        var focusManager: androidx.compose.ui.focus.FocusManager? = null
+        val otherRequester = androidx.compose.ui.focus.FocusRequester()
         var inputMode: androidx.compose.ui.input.InputModeManager? = null
         var host: View? = null
         var clicks = 0
         compose.setContent { TrainPilotTheme {
             val view = LocalView.current
-            val manager = androidx.compose.ui.platform.LocalFocusManager.current
             val mode = androidx.compose.ui.platform.LocalInputModeManager.current
-            SideEffect { host = view; focusManager = manager; inputMode = mode }
+            SideEffect { host = view; inputMode = mode }
             Column(Modifier.background(Color.Black).padding(16.dp)) {
                 TrainPilotTextButton(onClick = { clicks++ },
                     modifier = Modifier.width(280.dp).height(48.dp)
                         .then(Modifier.focusRequester(requester)).testTag("focused_text")) { Text("Continue") }
+                Text("Next target", Modifier.focusRequester(otherRequester).focusable().testTag("other_focus"))
             }
         } }
         fun pixels() = compose.runOnIdle {
@@ -123,7 +124,9 @@ class ButtonPressFeedbackRegressionTest {
             keyDown(androidx.compose.ui.input.key.Key.Enter)
             keyUp(androidx.compose.ui.input.key.Key.Enter)
         }
-        compose.runOnIdle { assertEquals(1, clicks); requireNotNull(focusManager).clearFocus(force = true) }
+        compose.runOnIdle { assertEquals(1, clicks); otherRequester.requestFocus() }
+        node.assertIsNotFocused()
+        compose.onNodeWithTag("other_focus").assertIsFocused()
         val after = pixels()
         assertEquals(before[x, y].toArgb(), after[x, y].toArgb())
     }
