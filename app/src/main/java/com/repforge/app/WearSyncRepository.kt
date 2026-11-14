@@ -71,11 +71,14 @@ object WearSyncRepository {
 
     fun refreshWatchHomeAsync(context: Context) {
         val app = context.applicationContext
+        // Bind the database before detaching. A delayed job must never reopen another app context's singleton.
+        val database = runCatching { TrainPilotDatabase.getInstance(app) }.getOrNull() ?: return
         syncScope.launch {
             repeat(3) { attempt ->
-                try { publishWatchHomeSnapshot(app); return@launch }
+                try { publishWatchHomeSnapshot(app, database = database); return@launch }
                 catch (cancelled: CancellationException) { throw cancelled }
                 catch (error: Exception) {
+                    if (!database.isOpen) return@launch
                     if (attempt == 2) android.util.Log.w("WearHomeSync", "Home publication failed: ${error.javaClass.simpleName}")
                     else delay((attempt + 1) * 1000L)
                 }
@@ -655,9 +658,10 @@ object WearSyncRepository {
      * to `/trainpilot/watch-home` so the watch has up-to-date programs, calendar,
      * quick exercises, Mini Journal (recentWorkouts), theme, and pendingFeedback.
      */
-    suspend fun publishWatchHomeSnapshot(context: Context, workoutResult: JSONObject? = null) {
+    suspend fun publishWatchHomeSnapshot(context: Context, workoutResult: JSONObject? = null,
+        database: TrainPilotDatabase? = null) {
         val ticket = NativeDataReplacement.continuationForCurrentData(context)
-        val homeSnapshot = buildWatchHomeSnapshot(context, workoutResult)
+        val homeSnapshot = buildWatchHomeSnapshot(context, workoutResult, database)
         ticket.requireCurrent(context)
         val map = PutDataMapRequest.create(WATCH_HOME_PATH)
         com.repforge.shared.WatchHomePayload.write(map.dataMap, homeSnapshot.toString())
