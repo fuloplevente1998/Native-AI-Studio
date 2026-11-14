@@ -1,0 +1,1 @@
+A telefonos 2762-es javítókiadás órás párja. Ebben a verzióban nincs új órás funkció; a meglévő edzésmérés és telefonos szinkron működése megmarad. A telefonos és az órás alkalmazást is frissítsd.
