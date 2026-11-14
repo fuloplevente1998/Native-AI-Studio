@@ -1,0 +1,3 @@
+• Az óra átveszi a telefonon kiválasztott palettát, mind a 32 téma támogatott.
+• Frissülő Mini napló és automatikus adatfrissítési kérés az app megnyitásakor.
+• Tömörített adatátvitel, a korábbi és hibás csomagok elleni védelemmel.
