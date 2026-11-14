@@ -66,12 +66,12 @@ class PlannedWorkoutFollowupRegressionTest {
         await { model.uiState.value.isWorkoutSessionActive }
         val frame = ActiveWorkoutStore.current(context)!!
         assertEquals("home-basic", frame.getString("programId"))
-        assertEquals("b", frame.getString("dayId"))
+        assertEquals("B", frame.getString("dayId"))
         val id = frame.getString("scheduleId")
         assertTrue(id.isNotBlank())
         await { model.uiState.value.homeWorkoutTarget?.scheduleId == id }
-        assertEquals("b", model.uiState.value.homeWorkoutTarget?.dayId)
-        assertEquals("b", native { db.calendarScheduleDao().getEntry(id) }!!.dayId)
+        assertEquals("B", model.uiState.value.homeWorkoutTarget?.dayId)
+        assertEquals("B", native { db.calendarScheduleDao().getEntry(id) }!!.dayId)
     }
 
     @Test fun replanningAnotherProgramDoesNotReassignRetainedRowsAndSurvivesRebind() {

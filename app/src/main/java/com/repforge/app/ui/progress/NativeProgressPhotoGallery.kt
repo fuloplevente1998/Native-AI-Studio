@@ -35,6 +35,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -218,7 +219,7 @@ internal fun NativeProgressPhotoGallery(
                     ) {
                         items(state.progressPhotos.sortedByDescending { it.workoutStartedEpochMs }, key = { it.id }) { photo ->
                             Row(
-                                modifier = Modifier.fillMaxWidth().clickable { open(photo.id) }
+                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { open(photo.id) }
                                     .testTag("progress_photo_${photo.id}"),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalAlignment = Alignment.CenterVertically

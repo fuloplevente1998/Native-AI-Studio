@@ -41,13 +41,16 @@ class DeviceFollowupUiRegressionTest {
         selectedExerciseId = exercise.id, editingProgramId = program.id)
 
     @Test fun homeDayBadgeTracksTheRealTargetInsteadOfAlwaysShowingFirstDay() {
-        var state by mutableStateOf(state().copy(homeWorkoutTarget = HomeWorkoutTarget("home-basic", "a")))
+        var state by mutableStateOf(state().copy(homeWorkoutTarget = HomeWorkoutTarget("home-basic", "a"),
+            calendarEvents = listOf(CalendarDayEvent("plan-b", 14, "18:00", "B nap", 1, 120,
+                CalendarEventStatus.PLANNED, "B", "2026-11-14", "home-basic", "b"))))
         compose.setContent { TrainPilotTheme {
             HomeScreen(state, strings, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
         } }
         compose.onNodeWithTag("home_planned_day").assertTextEquals("A nap")
         compose.runOnIdle { state = state.copy(homeWorkoutTarget = HomeWorkoutTarget("home-basic", "b", "plan-b")) }
         compose.onNodeWithTag("home_planned_day").assertTextEquals("B nap")
+        compose.onNodeWithText("1 gyakorlat • kb. 120 perc").assertExists()
         compose.onNodeWithText("Aktív program • Otthoni A/B").assertExists()
     }
 

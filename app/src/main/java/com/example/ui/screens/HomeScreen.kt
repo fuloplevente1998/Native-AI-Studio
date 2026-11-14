@@ -99,6 +99,7 @@ fun HomeScreen(
 ) {
     val palette = LocalTrainPilotPalette.current
     val target = state.homeWorkoutTarget
+    val plannedEvent = state.calendarEvents.firstOrNull { it.id == target?.scheduleId }
     val activeProgram = state.programs.firstOrNull { it.id == target?.programId }
         ?: state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
     val currentDay = activeProgram?.days?.firstOrNull {
@@ -323,10 +324,10 @@ fun HomeScreen(
                                 )
                             } else {
                                 tr(
-                                    "${currentDay?.exercises?.size ?: 8} gyakorlat • kb. ${currentDay?.durationMinutes ?: 60} perc",
-                                    "${currentDay?.exercises?.size ?: 8} exercises • ~${currentDay?.durationMinutes ?: 60} min",
-                                    "${currentDay?.exercises?.size ?: 8} Übungen • ca. ${currentDay?.durationMinutes ?: 60} Min.",
-                                    "${currentDay?.exercises?.size ?: 8} exerciții • aprox. ${currentDay?.durationMinutes ?: 60} min"
+                                    "${currentDay?.exercises?.size ?: 8} gyakorlat • kb. ${plannedEvent?.durationMinutes ?: currentDay?.durationMinutes ?: 60} perc",
+                                    "${currentDay?.exercises?.size ?: 8} exercises • ~${plannedEvent?.durationMinutes ?: currentDay?.durationMinutes ?: 60} min",
+                                    "${currentDay?.exercises?.size ?: 8} Übungen • ca. ${plannedEvent?.durationMinutes ?: currentDay?.durationMinutes ?: 60} Min.",
+                                    "${currentDay?.exercises?.size ?: 8} exerciții • aprox. ${plannedEvent?.durationMinutes ?: currentDay?.durationMinutes ?: 60} min"
                                 )
                             },
                             style = MaterialTheme.typography.labelSmall,

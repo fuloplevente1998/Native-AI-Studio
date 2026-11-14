@@ -45,11 +45,14 @@ class StudioCoachDomainRegressionTest {
         var workoutPage = 0
         compose.setContent { TrainPilotTheme {
             StudioCoachRecommendations(CoachUiState(loading = false,
-                target = CoachTarget("actual-program", "b", "B nap")),
+                target = CoachTarget("actual-program", "b", "B nap", schedule =
+                    com.repforge.app.data.db.CalendarScheduleEntity("actual-schedule", "", "2026-11-14",
+                        "2026-11-14T10:00:00Z", "2026-11-14T11:00:00Z", "actual-program", "Program",
+                        "b", "B", "planned", 1, "{}"))),
                 { p, d, s -> started = "$p:$d:$s" }, { workoutPage++ }, {}, {}, {}, {})
         } }
         compose.onNodeWithTag("studio_coach_start_target").performClick()
-        assertEquals("actual-program:b:null", started)
+        assertEquals("actual-program:b:actual-schedule", started)
         assertEquals(0, workoutPage)
     }
 
