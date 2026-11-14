@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -110,7 +111,8 @@ class NavigationOriginUiRegressionTest {
             compose.onNodeWithTag("progress_overview_list").assertExists()
             val returned = compose.onNodeWithTag("progress_overview_list")
                 .fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
-            assertEquals("Return to the same scrolled origin", scroll, returned, 1f)
+            assertTrue("The restored view must remain scrolled", returned > 0f)
+            assertEquals("Return to the same scrolled origin", scroll, returned, 0.000001f)
             compose.runOnIdle {
                 assertEquals(0, model.uiState.value.progressMainSection)
                 assertEquals(2, model.uiState.value.expandedStatsCardIndex)

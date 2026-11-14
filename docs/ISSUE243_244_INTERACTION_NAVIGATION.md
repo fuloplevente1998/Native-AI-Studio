@@ -19,3 +19,5 @@ Regresszió: Fejlődés/Napló/Statisztikák → részlet; egymásra nyitott edz
 Teljes közös CI a kész kóddal futtatandó. A #241 korábbi 696 tesztje a korábbi forrás bizonyítéka; a mostani változásokra új közös eredmény szükséges.
 
 A 43633039679 előzetes kört a végső gyors-koppintási regresszió hozzáadása miatt leállítottuk; nem validációs bizonyíték. A kész végleges kóddal egy közös teljes futás indul.
+
+A 43633617617 körben az alkalmazáskód lefordult, a tesztfordítás két API/import hiányon állt meg (ExperimentalTestApi és toArgb). Ezek javítva; a görgetés-összehasonlítás normalizált szemantikai értékre szigorítva. Ez a futás nem kész tesztbizonyíték.
