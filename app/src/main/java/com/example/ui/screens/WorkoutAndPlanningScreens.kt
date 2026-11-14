@@ -19,6 +19,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -56,6 +57,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.OndemandVideo
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
@@ -97,6 +99,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -2685,7 +2689,8 @@ fun ExerciseLibraryScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            CompactJournalSearchField(state.exerciseSearchQuery, onSearchQueryChange, strings.logSearchHint)
+            CompactJournalSearchField(state.exerciseSearchQuery, onSearchQueryChange,
+                trW(state.language, "Gyakorlatok keresése…", "Search exercises…", "Übungen suchen…", "Caută exerciții…"))
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)) {
             FilterChip(selected = state.favoriteExercisesOnly, onClick = onToggleFavoritesOnly,
@@ -2693,10 +2698,11 @@ fun ExerciseLibraryScreen(
                 modifier = Modifier.testTag("studio_library_favorites_only"))
                 Button(onClick = onOpenAddCustomExercise,
                     modifier = Modifier.heightIn(min = 48.dp).testTag("exercise_library_add_custom_button"),
-                    shape = RoundedCornerShape(12.dp)) {
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp)) {
                     Icon(Icons.Default.Add, null, Modifier.size(20.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text(trW(state.language, "Új egyedi gyakorlat", "New custom exercise", "Neue eigene Übung", "Exercițiu personalizat nou"),
+                    Text(trW(state.language, "Új gyakorlat", "New exercise", "Neue Übung", "Exercițiu nou"),
                         fontWeight = FontWeight.Bold)
                 }
             }
@@ -2806,138 +2812,102 @@ fun ExerciseLibraryScreen(
                 }
             }
 
-            // Compact Exercise Cards (single-row layout, clean Hungarian labels, popup video button)
             filtered.forEach { ex ->
                 val inQueue = state.quickWorkoutQueue.any { it.id == ex.id }
+                val favorite = ex.id in state.favoriteExerciseIds
+                val name = ex.localizedName(state.language)
+                val metadata = listOf(ex.category.localized(state.language), ex.localizedPrimaryMuscles(state.language),
+                    ex.localizedEquipment(state.language)).map { it.trim() }.filter { it.isNotBlank() }
+                    .distinctBy { it.lowercase(java.util.Locale.ROOT) }.joinToString(" • ")
+                val openVideo = LocalOpenExerciseVideo.current
+                val nameStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold)
+                val measurer = rememberTextMeasurer()
+                val density = LocalDensity.current
+                val longestWord = remember(name, nameStyle, density) {
+                    name.split(Regex("\\s+")).maxOfOrNull { measurer.measure(it, style = nameStyle).size.width } ?: 0
+                }
                 Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = palette.surface,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .trainPilotBorder(
-                            if (inQueue) 1.5.dp else 1.dp,
-                            if (inQueue) palette.primary else palette.cardBorder,
-                            RoundedCornerShape(14.dp)
-                        )
-                        .clip(RoundedCornerShape(14.dp))
-                        .clickable { onSelectExercise(ex.id) }
+                    shape = RoundedCornerShape(14.dp), color = palette.surface,
+                    modifier = Modifier.fillMaxWidth()
+                        .trainPilotBorder(if (inQueue) 1.5.dp else 1.dp,
+                            if (inQueue) palette.primary else palette.cardBorder, RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(14.dp)).clickable { onSelectExercise(ex.id) }
                         .testTag("exercise_library_row_${ex.id}")
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 7.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = ex.localizedName(state.language),
-                                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 18.sp),
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.textPrimary,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier
-                                        .weight(1f, fill = false)
-                                        .testTag("exercise_library_name_${ex.id}")
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = palette.primary.copy(alpha = 0.16f)
-                                ) {
-                                    Text(
-                                        text = ex.category.localized(state.language),
-                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = palette.primary,
-                                        maxLines = 1,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
-                                    )
+                    BoxWithConstraints(Modifier.fillMaxWidth()) {
+                        val inline = with(density) { (maxWidth - 48.dp - 144.dp - 8.dp).toPx() >= longestWord }
+                        val favoriteControl: @Composable () -> Unit = {
+                            IconToggleButton(checked = favorite, onCheckedChange = { onToggleFavorite(ex.id) },
+                                enabled = !state.libraryMutationBusy,
+                                modifier = Modifier.size(48.dp).testTag("exercise_library_favorite_${ex.id}")) {
+                                Icon(if (favorite) Icons.Default.Star else Icons.Default.StarBorder,
+                                    contentDescription = if (favorite) trW(state.language, "Eltávolítás a kedvencekből", "Remove from favorites", "Aus Favoriten entfernen", "Elimină din favorite")
+                                    else trW(state.language, "Hozzáadás a kedvencekhez", "Add to favorites", "Zu Favoriten hinzufügen", "Adaugă la favorite"),
+                                    tint = if (favorite) palette.primary else palette.textSecondary, modifier = Modifier.size(20.dp))
+                            }
+                        }
+                        val textContent: @Composable () -> Unit = {
+                            Column(Modifier.padding(vertical = 6.dp)) {
+                                Text(name, style = nameStyle, color = palette.textPrimary,
+                                    modifier = Modifier.fillMaxWidth().testTag("exercise_library_name_${ex.id}"))
+                                Text("$metadata • ${ex.defaultSets}×${ex.defaultReps}",
+                                    style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
+                                    color = palette.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.fillMaxWidth().testTag("exercise_library_meta_${ex.id}"))
+                            }
+                        }
+                        val actions: @Composable () -> Unit = {
+                            Row(Modifier.padding(end = 4.dp).clip(RoundedCornerShape(10.dp))
+                                .border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                                .testTag("exercise_library_actions_${ex.id}")) {
+                                ExerciseLibraryAction("exercise_video_btn_${name.hashCode()}", "${strings.videoLabel}: $name",
+                                    Color(0xFFE53935).copy(alpha = 0.12f), Color(0xFFE53935), Icons.Default.OndemandVideo) { openVideo(name, ex.id) }
+                                ExerciseLibraryAction("exercise_library_add_to_queue_${ex.id}",
+                                    trW(state.language, "Hozzáadás az edzéshez", "Add to workout", "Zum Training hinzufügen", "Adaugă la antrenament"),
+                                    if (inQueue) palette.primary.copy(alpha = 0.2f) else palette.surfaceElevated,
+                                    palette.primary, if (inQueue) Icons.Default.Check else Icons.Default.Add) { onAddExerciseToQueue(ex) }
+                                ExerciseLibraryAction("exercise_library_start_now_${ex.id}", strings.startAction,
+                                    palette.primary.copy(alpha = 0.15f), palette.primary, Icons.Default.PlayArrow) { onStartExerciseNow(ex) }
+                            }
+                        }
+                        if (inline) {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                favoriteControl()
+                                Box(Modifier.weight(1f).padding(end = 4.dp)) { textContent() }
+                                actions()
+                            }
+                        } else {
+                            Column(Modifier.fillMaxWidth()) {
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    favoriteControl()
+                                    Box(Modifier.weight(1f).padding(end = 8.dp)) { textContent() }
                                 }
-                            }
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "${ex.localizedPrimaryMuscles(state.language)} • ${ex.localizedEquipment(state.language)} • ${ex.defaultSets}×${ex.defaultReps}",
-                                style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
-                                color = palette.textSecondary,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.testTag("exercise_library_meta_${ex.id}")
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(4.dp))
-                        val favorite = ex.id in state.favoriteExerciseIds
-                        IconToggleButton(checked = favorite, onCheckedChange = { onToggleFavorite(ex.id) },
-                            enabled = !state.libraryMutationBusy,
-                            modifier = Modifier.sizeIn(minWidth = 40.dp, minHeight = 48.dp).testTag("exercise_library_favorite_${ex.id}")) {
-                            Icon(if (favorite) Icons.Default.Star else Icons.Default.StarBorder,
-                                contentDescription = if (favorite) trW(state.language, "Eltávolítás a kedvencekből", "Remove from favorites", "Aus Favoriten entfernen", "Elimină din favorite")
-                                else trW(state.language, "Hozzáadás a kedvencekhez", "Add to favorites", "Zu Favoriten hinzufügen", "Adaugă la favorite"),
-                                tint = if (favorite) palette.primary else palette.textSecondary,
-                                modifier = Modifier.size(20.dp))
-                        }
-                        // Video popup button (opens modal dialog ONLY when clicked)
-                        SmallExerciseVideoButton(
-                            exerciseName = ex.localizedName(state.language),
-                            compactIconOnly = true,
-                            exerciseId = ex.id
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        // Compact Add to workout queue button (+)
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = if (inQueue) palette.primary else palette.surfaceElevated,
-                            modifier = Modifier
-                                .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                                .trainPilotBorder(
-                                    1.dp,
-                                    if (inQueue) palette.primary else palette.cardBorder,
-                                    RoundedCornerShape(8.dp)
-                                )
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { onAddExerciseToQueue(ex) }
-                                .testTag("exercise_library_add_to_queue_${ex.id}")
-                        ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
-                                Text(
-                                    text = if (inQueue) "✓" else "+",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = if (inQueue) palette.onPrimary else palette.primary
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(4.dp))
-                        // Compact Immediate Start button (▶)
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = palette.primary,
-                            modifier = Modifier
-                                .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { onStartExerciseNow(ex) }
-                                .testTag("exercise_library_start_now_${ex.id}")
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
-                            ) {
-                                Text(
-                                    text = "▶",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = palette.onPrimary
-                                )
+                                Box(Modifier.fillMaxWidth().padding(bottom = 4.dp), contentAlignment = Alignment.CenterEnd) { actions() }
                             }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ExerciseLibraryAction(
+    tag: String,
+    description: String,
+    color: Color,
+    iconColor: Color,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier.size(48.dp).background(color)
+            .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick)
+            .semantics { contentDescription = description }.testTag(tag),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
     }
 }
 
@@ -3259,7 +3229,7 @@ fun AddCustomExerciseModalDialog(
 
     TrainPilotFullHeightFormSheet(
         onDismiss = onDismiss,
-        title = trW(lang, "Új egyedi gyakorlat", "New custom exercise", "Neue eigene Übung", "Exercițiu personalizat nou"),
+        title = trW(lang, "Új gyakorlat", "New exercise", "Neue Übung", "Exercițiu nou"),
         content = {
             Column(
                 modifier = Modifier

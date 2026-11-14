@@ -154,11 +154,11 @@ class UiUx219RegressionTest {
         val rowBounds = compose.onNodeWithTag("exercise_library_row_arnold-press").getUnclippedBoundsInRoot()
         val nameBounds = compose.onNodeWithTag("exercise_library_name_arnold-press", useUnmergedTree = true).getUnclippedBoundsInRoot()
 
-        // Without the 38dp stick figure + 10dp spacer, the exercise name starts near the left edge of the row
-        assertTrue(
-            "Exercise name must start near the left edge of the row (no stick-figure placeholder width)",
-            nameBounds.left - rowBounds.left <= 16.dp
-        )
+        // The approved compact layout uses this space for the favorite control,
+        // without restoring the old decorative stick figure or an extra gutter.
+        val favoriteBounds = compose.onNodeWithTag("exercise_library_favorite_arnold-press").getUnclippedBoundsInRoot()
+        assertEquals(rowBounds.left, favoriteBounds.left)
+        assertEquals(favoriteBounds.right, nameBounds.left)
         compose.onNodeWithTag("exercise_library_name_arnold-press", useUnmergedTree = true).assertTextEquals("Arnold-nyomás")
         compose.onNodeWithTag("exercise_library_meta_arnold-press", useUnmergedTree = true)
             .assertTextContains("Váll • 2 kézisúlyzó • 3×10")
