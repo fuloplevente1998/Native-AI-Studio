@@ -1,0 +1,23 @@
+{
+  "source": "14091b12bd462e473d7110e6233edf98c8724d63",
+  "run": 43565270201,
+  "artifact": 14101714087,
+  "digest": "sha256:52a94a42f0f91e75d8c34f777d5795e08ef6151ce1bdb1dbf30a8364c4ca5c7b",
+  "rawJUnit": {
+    "app": [
+      12,
+      69,
+      0,
+      0,
+      0
+    ],
+    "wear": [
+      34,
+      187,
+      0,
+      0,
+      0
+    ]
+  },
+  "scope": "targeted phone regressions and full Wear tests; full signed gate still required"
+}

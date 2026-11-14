@@ -1,29 +1,21 @@
-# 2759 pihenőfelirat – természetes szélesség szerinti mérés
+# 2759 pihenősáv – célzottan ellenőrzött javítás, teljes kiadás következik
 
-A43564865519 célzott körben az Ellipsis eltávolítása önmagában nem volt elég:
-a Text paragraph továbbra is a teljes laza mérési korlátot tartotta, miközben a
-szemantikus doboz természetes szélességű volt. Az idő- és gombfeliratok ezért
-IntrinsicSize.Max szerinti saját szélességet kapnak, a szülő szélességi korlátján
-belül. A sorváltás e ténylegesen méretezett címkékkel történik. A szigorú
-hasVisualOverflow/bounds/overlap/touch/callback tesztek változatlanul érvényesek.
-Következő: célzott app + Wear/shared kör, majd siker esetén teljes signed kapu.
+Ágfix/rest-label-layout-diagnostics, PR#231. Natív/teszt/CI forrás14091b12bd462e473d7110e6233edf98c8724d63.
+Actions43565270201 SUCCESS: nyers XML és ZIP-digest ellenőrizve, célzott telefon12
+fájl/69 teszt + Wear34 fájl/187 teszt =256,0failure/error/skipped; shared NO-SOURCE.
+Bizonyíték: releases/2759-targeted-evidence.json. Ez nem a teljes kiadási kapu.
 
----
+A timer és gombfeliratok saját természetes szélességre méretezettek; az időérték
+nem rövidül. A mért szélesség alapján sorváltó dock széles nézetben egy sor marad,
+keskeny/nagybetűs nézetben nem fed át és nem vág szöveget. A szigorú képernyőbounds,
+hasVisualOverflow,48dp,callback és ownership-tiltás tesztek megmaradtak, mind zöldek.
+A célzott workflow a Wear/shared feladatokat is futtatja, hogy az összes tesztforrásos
+modul nyers XML-je meglegyen; a teljes alapkapu és a signed workflow változatlan.
+Az automatikus gyakorlatgörgetés is zöld, előre/hátra/utolsó elem esetén.
 
-# 2759 pihenősáv – célzott ellenőrzés a teljes újrafutás előtt
-
-A43508709582 signed kapu677 tesztből3 pihenőfelirat-túlcsordulási ellenőrzésen
-megbukott; az automatikus gyakorlatgörgetés és a többi674 teszt sikeres.
-Célzott diagnosztika43511589246: a timer Text softWrap=false + Ellipsis beállítása
-mellett a paragraph szélessége a teljes mérési korlát maradt (pl.721px), miközben
-a Text doboza a természetes91px volt. Így a szigorú túlcsordulás-ellenőrzés jelzett.
-A timer teljes értéke nem rövidítendő: az Ellipsis eltávolítva, a külső mérésalapú
-sorváltás és az összes bounds/overlap/hasVisualOverflow állítás megmaradt.
-A meglévő célzott progress/health CI-listához hozzáadva a négy új dock regresszió;
-A célzott kör a Wear/shared tesztfeladatokat is futtatja, mert a meglévő nyers-XML
-ellenőrző minden tesztforrásos modulhoz megköveteli a jelentést. A teljes alapkapu
-és a signed workflow változatlan. Sikeres célzott kör után jön
-az új közös main signed APK+AAB/JVM kapu. Jelenleg nincs új átadott telepítő.
+A43508709582 teljes kapu három címke-layout ellenőrzésen megbukott, ezért nincs
+átadott2759. Következő: main-integráció, egy új teljes signed APK+AAB/JVM kapu,
+csomagellenőrzés és Drive-átadás. A készülékes vizuális elfogadás külön lépés.
 
 ---
 
