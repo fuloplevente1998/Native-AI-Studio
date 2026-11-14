@@ -96,6 +96,8 @@ class TrainPilotViewModel : ViewModel() {
     private var programWriteJob: Job? = null
     @Volatile private var programWriteError: String? = null
     @Volatile private var calendarWriteRevision = 0L
+    private var calendarWriteJob: Job? = null
+    @Volatile private var calendarWriteError: String? = null
     private var nativeSettingsStore: TrainPilotSettingsStore? = null
     private var nativeDatabase: TrainPilotDatabase? = null
     private var nativeScope: CoroutineScope? = null
@@ -464,10 +466,13 @@ class TrainPilotViewModel : ViewModel() {
         val activeProg = state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
         val nowMs = System.currentTimeMillis()
         val revision = ++calendarWriteRevision
-        scope.launch(Dispatchers.IO) {
+        calendarWriteError = null
+        calendarWriteJob = scope.launch(Dispatchers.IO) {
             runCatching {
               calendarWriteMutex.withLock {
                 if (revision != calendarWriteRevision) return@withLock
+                programWriteJob?.join()
+                check(programWriteError == null) { requireNotNull(programWriteError) }
                 db.withTransaction {
                 val oldDocument = db.keyValueDocumentDao().getDocument("native:calendarState")
                 val previous = oldDocument?.json?.let { JSONObject(it).optJSONArray("events") } ?: JSONArray()
@@ -511,6 +516,8 @@ class TrainPilotViewModel : ViewModel() {
                         put("durationMinutes", ev.durationMinutes)
                         put("status", ev.status.name)
                         put("splitBadge", ev.splitBadge)
+                        put("programId", ev.programId)
+                        put("dayId", ev.dayId)
                     }
                     CalendarScheduleEntity(
                         id = ev.id,
@@ -518,9 +525,13 @@ class TrainPilotViewModel : ViewModel() {
                         date = dateStr,
                         startIso = start.toString(),
                         endIso = end.toString(),
-                        programId = activeProg?.id ?: existing?.programId ?: "program_default",
-                        programName = activeProg?.nameHu ?: existing?.programName ?: ev.titleHu,
-                        dayId = ev.splitBadge,
+                        programId = ev.programId.ifBlank { existing?.programId.orEmpty() }.ifBlank { activeProg?.id.orEmpty() },
+                        programName = state.programs.firstOrNull { it.id == ev.programId }?.nameHu
+                            ?: existing?.programName ?: activeProg?.nameHu ?: ev.titleHu,
+                        dayId = ev.dayId.ifBlank { existing?.dayId.orEmpty() }.ifBlank {
+                            activeProg?.days?.firstOrNull { it.id.substringAfter("${activeProg.id}:").equals(ev.splitBadge, true) }
+                                ?.id?.substringAfter("${activeProg.id}:") ?: ev.splitBadge
+                        },
                         dayName = ev.titleHu,
                         status = statusStr,
                         updatedAt = nowMs,
@@ -545,6 +556,8 @@ class TrainPilotViewModel : ViewModel() {
                                 put("durationMinutes", ev.durationMinutes)
                                 put("status", ev.status.name)
                                 put("splitBadge", ev.splitBadge)
+                                put("programId", ev.programId)
+                                put("dayId", ev.dayId)
                             }
                         )
                     }
@@ -563,6 +576,8 @@ class TrainPilotViewModel : ViewModel() {
                             put("durationMinutes", ev.durationMinutes)
                             put("status", ev.status.name)
                             put("splitBadge", ev.splitBadge)
+                            put("programId", ev.programId)
+                            put("dayId", ev.dayId)
                         }
                     )
                 }
@@ -582,6 +597,7 @@ class TrainPilotViewModel : ViewModel() {
               }
             }.onFailure { error ->
                 if (error is kotlinx.coroutines.CancellationException) throw error
+                if (revision == calendarWriteRevision) calendarWriteError = error.message ?: "A naptármódosítás nem menthető."
                 _uiState.update { it.copy(statusBannerMessage = "A naptármódosítás nem menthető. Próbáld újra.") }
             }
         }
@@ -960,6 +976,22 @@ class TrainPilotViewModel : ViewModel() {
         nativeObserversJob = observersJob
         val observersScope = CoroutineScope(scope.coroutineContext + observersJob)
         observersScope.launch {
+            val repository = com.repforge.app.ui.home.NativeHomeRepository(database)
+            kotlinx.coroutines.flow.combine(repository.invalidations(),
+                settingsStore.settingsFlow.map { it.activeProgramId to it.language }.distinctUntilChanged()
+            ) { _, settings -> settings }.collect { (activeId, language) ->
+                try {
+                    val ticket = NativeDataReplacement.continuationForCurrentData(context)
+                    val snapshot = withContext(Dispatchers.IO) {
+                        repository.read(activeId, language, Instant.now(), ZoneId.systemDefault())
+                    }
+                    ticket.requireCurrent(context)
+                    if (nativeDatabase === database) _uiState.update { it.copy(homeWorkoutTarget = snapshot.target) }
+                } catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { /* Keep last valid target while a dataset is being replaced. */ }
+            }
+        }
+        observersScope.launch {
             settingsStore.settingsFlow.map { it.healthBackupConsent }.distinctUntilChanged().collect { consent ->
                 _uiState.update { it.copy(includeHealthInBackup = consent) }
             }
@@ -1199,6 +1231,8 @@ class TrainPilotViewModel : ViewModel() {
                 id = w.id,
                 dateLabelHu = w.started.take(16).replace('T', ' '),
                 titleHu = w.programName.ifBlank { w.dayName }.ifBlank { "Edzés" },
+                programId = w.programId, dayId = if (w.quickWorkout) "" else w.dayId,
+                dayName = if (w.quickWorkout) "" else w.dayName,
                 durationMinutes = realDurationMin,
                 workTimeLabel = realWorkLabel,
                 restTimeLabel = "—",
@@ -1233,6 +1267,7 @@ class TrainPilotViewModel : ViewModel() {
     ) {
         nativeReloadJob?.cancel()
         nativeReloadJob = scope.launch(Dispatchers.IO) {
+            val calendarRevisionAtRead = calendarWriteRevision
             // Seed catalog into Room DB
             try {
                 TrainPilotDatabase.ensureBuiltinCatalogSeeded(database, context)
@@ -1334,6 +1369,8 @@ class TrainPilotViewModel : ViewModel() {
                                 durationMinutes = o.optInt("durationMinutes", 60),
                                 status = runCatching { CalendarEventStatus.valueOf(o.optString("status", "PLANNED")) }.getOrDefault(CalendarEventStatus.PLANNED),
                                 splitBadge = o.optString("splitBadge", "A"),
+                                programId = o.optString("programId").ifBlank { calendarRows[o.optString("id")]?.programId.orEmpty() },
+                                dayId = o.optString("dayId").ifBlank { calendarRows[o.optString("id")]?.dayId.orEmpty() },
                                 dateIso = o.optString("dateIso").ifBlank {
                                     calendarRows[o.optString("id")]?.date ?: legacyMonth.atDay(
                                         o.optInt("dayOfMonth", 1).coerceIn(1, legacyMonth.lengthOfMonth())).toString()
@@ -1356,6 +1393,8 @@ class TrainPilotViewModel : ViewModel() {
                                     durationMinutes = o.optInt("durationMinutes", 60),
                                     status = runCatching { CalendarEventStatus.valueOf(o.optString("status", "PLANNED")) }.getOrDefault(CalendarEventStatus.PLANNED),
                                     splitBadge = o.optString("splitBadge", "A"),
+                                programId = o.optString("programId").ifBlank { calendarRows[o.optString("id")]?.programId.orEmpty() },
+                                dayId = o.optString("dayId").ifBlank { calendarRows[o.optString("id")]?.dayId.orEmpty() },
                                 dateIso = o.optString("dateIso").ifBlank {
                                     calendarRows[o.optString("id")]?.date ?: legacyMonth.atDay(
                                         o.optInt("dayOfMonth", 1).coerceIn(1, legacyMonth.lengthOfMonth())).toString()
@@ -1507,8 +1546,8 @@ class TrainPilotViewModel : ViewModel() {
                         editingProgramId = if (st.currentSubScreen == SubScreen.PROGRAM_EDITOR &&
                             mappedPrograms.any { it.id == st.editingProgramId }) st.editingProgramId
                             else activeProg?.id ?: st.editingProgramId,
-                        calendarEvents = if (loadedCalendarEvents.isNotEmpty()) loadedCalendarEvents else st.calendarEvents,
-                        calendarUndoStack = if (loadedCalendarUndo.isNotEmpty()) loadedCalendarUndo else st.calendarUndoStack,
+                        calendarEvents = if (calendarWriteRevision == calendarRevisionAtRead) loadedCalendarEvents else st.calendarEvents,
+                        calendarUndoStack = if (calendarWriteRevision == calendarRevisionAtRead) loadedCalendarUndo else st.calendarUndoStack,
                         isWorkoutSessionActive = restoredActiveSnap != null,
                         outdoorRouteKey = restoredActiveSnap?.optString("studioGpsKey") ?: st.outdoorRouteKey,
                         outdoorGpsEnabled = restoredActiveSnap?.takeIf { it.has("studioIndoor") }?.let { !it.optBoolean("studioIndoor") } ?: st.outdoorGpsEnabled,
@@ -2503,7 +2542,10 @@ class TrainPilotViewModel : ViewModel() {
         persistCalendarStateToRoomAsync()
     }
 
-    fun applyCalendarReplan(newStartDate: String, firstDayHu: String) {
+    fun applyCalendarReplan(newStartDate: String, firstDayHu: String, programId: String? = null) {
+        val current = _uiState.value
+        if (current.libraryMutationBusy || (programId != null && current.programs.none { it.id == programId })) return
+        if (programId != null) activateProgram(programId)
         _uiState.update { state ->
             com.example.model.StudioCalendarPlanning.plan(state.copy(
                 planningStartDate = newStartDate,
@@ -2527,7 +2569,10 @@ class TrainPilotViewModel : ViewModel() {
                         titleHu = newTitleHu,
                         splitBadge = newSplitBadge,
                         timeLabel = newTimeLabel,
-                        durationMinutes = newDurationMin
+                        durationMinutes = newDurationMin,
+                        dayId = state.programs.firstOrNull { it.id == ev.programId }?.days
+                            ?.firstOrNull { it.dayCode.substringBefore(' ').equals(newSplitBadge, true) }
+                            ?.id?.removePrefix("${ev.programId}:") ?: newSplitBadge.lowercase()
                     )
                 } else ev
             }
@@ -2583,18 +2628,20 @@ class TrainPilotViewModel : ViewModel() {
 
     fun addPlannedWorkoutOnDay(day: Int, splitBadge: String, timeLabel: String, durationMin: Int) {
         _uiState.update { state ->
-            val activeProgName = state.programs.firstOrNull { it.isActive }?.nameHu
-                ?: "Otthoni A/B (személyre szabott)"
+            val program = state.programs.firstOrNull { it.isActive }
+            val selectedDay = program?.days?.firstOrNull { it.dayCode.substringBefore(' ').equals(splitBadge, true) }
+            val activeProgName = program?.localizedName(state.language) ?: "TrainPilot"
             val newEv = CalendarDayEvent(
                 id = "ev_manual_${day}_${System.currentTimeMillis()}",
                 dayOfMonth = day.coerceIn(1, YearMonth.parse(state.calendarYearMonth).lengthOfMonth()),
                 timeLabel = timeLabel,
-                titleHu = "$activeProgName • Alap $splitBadge",
-                exerciseCount = 6,
+                titleHu = "$activeProgName • ${selectedDay?.localizedDayCode(state.language) ?: "$splitBadge nap"}",
+                exerciseCount = selectedDay?.exercises?.size ?: 0,
                 durationMinutes = durationMin,
                 status = CalendarEventStatus.PLANNED,
                 dateIso = YearMonth.parse(state.calendarYearMonth).atDay(day.coerceIn(1, YearMonth.parse(state.calendarYearMonth).lengthOfMonth())).toString(),
-                splitBadge = splitBadge
+                splitBadge = splitBadge,
+                programId = program?.id.orEmpty(), dayId = selectedDay?.id?.removePrefix("${program?.id}:").orEmpty()
             )
             state.copy(
                 calendarUndoStack = (state.calendarUndoStack + listOf(state.calendarEvents)).takeLast(12),
@@ -3312,23 +3359,40 @@ class TrainPilotViewModel : ViewModel() {
 
     private var nativeStartJob: kotlinx.coroutines.Job? = null
 
-    fun startPlannedWorkout(programId: String? = null, dayIndex: Int = 0) {
-        val state = _uiState.value
-        val program = state.programs.firstOrNull { it.id == programId }
-            ?: state.programs.firstOrNull { it.isActive }
-        val day = program?.days?.getOrNull(dayIndex)
-        if (program == null || day == null) {
-            _uiState.update { it.copy(statusBannerMessage = "Az edzésprogram vagy nap nem található.") }
-            return
-        }
+    fun startPlannedWorkout(programId: String? = null, dayIndex: Int? = null) {
         startCanonicalWorkout {
             val db = requireNotNull(nativeDatabase)
+            calendarWriteJob?.join()
+            check(calendarWriteError == null) { requireNotNull(calendarWriteError) }
+            val state = _uiState.value
+            val target = if (programId == null && dayIndex == null) withContext(Dispatchers.IO) {
+                com.repforge.app.ui.home.NativeHomeRepository(db).read(
+                    requireNotNull(nativeSettingsStore).current().activeProgramId,
+                    state.language.code, Instant.now(), ZoneId.systemDefault()).target
+            } else null
+            val program = state.programs.firstOrNull { it.id == (target?.programId ?: programId) }
+                ?: state.programs.firstOrNull { it.isActive }
+            requireNotNull(program) { "Az edzésprogram nem található." }
             val saved = withContext(Dispatchers.IO) { db.programDao().getProgramWithDaysById(program.id) }
-            val nativeDay = saved?.days?.singleOrNull { it.compositeId == day.id || it.dayId == day.id }
-                ?: error("Az edzésnap megváltozott. Nyisd meg újra a programot.")
+            val requestedDay = program.days.getOrNull(dayIndex ?: 0)
+            val nativeDay = saved?.days?.singleOrNull {
+                if (target != null) it.dayId == target.dayId
+                else it.compositeId == requestedDay?.id || it.dayId == requestedDay?.id
+            } ?: error("Az edzésnap megváltozott. Nyisd meg újra a programot.")
             com.repforge.app.NativeWorkoutSession.startProgramWorkout(requireNotNull(nativeContext),
-                program.id, nativeDay.dayId, database = db, automaticEnabled = state.autoModeEnabled).snapshot
+                program.id, nativeDay.dayId, target?.scheduleId, database = db,
+                automaticEnabled = state.autoModeEnabled).snapshot
         }
+    }
+
+    fun openPlannedProgramDetails() {
+        val state = _uiState.value
+        val target = state.homeWorkoutTarget
+        val program = state.programs.firstOrNull { it.id == target?.programId }
+            ?: state.programs.firstOrNull { it.isActive } ?: return
+        val index = program.days.indexOfFirst { it.id == target?.dayId ||
+            it.id == "${program.id}:${target?.dayId}" }.coerceAtLeast(0)
+        openProgramEditor(program.id, index)
     }
 
     fun startCoachWorkout(programId: String, dayId: String, scheduleId: String?) {
@@ -3853,6 +3917,8 @@ class TrainPilotViewModel : ViewModel() {
                         id = finalWorkoutId,
                         dateLabelHu = dbW.started.take(16).replace('T', ' '),
                         titleHu = dbW.programName.ifBlank { workoutTitle },
+                        programId = dbW.programId, dayId = if (dbW.quickWorkout) "" else dbW.dayId,
+                        dayName = if (dbW.quickWorkout) "" else dbW.dayName,
                         durationMinutes = realDurationMins,
                         workTimeLabel = realWorkTimeLabel,
                         restTimeLabel = "—",

@@ -160,10 +160,10 @@ internal fun StudioCoachNextTrainingCard(
                 }
             }
             Button(enabled = !state.loading && !state.error,
-                onClick = onWorkout,
+                onClick = { onStart(target.programId, target.dayId, target.schedule?.id) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     .testTag("studio_coach_start_target")) {
-                Text(coachTr(lang, "Megnyitás az Edzés oldalon", "Open on Workout Page", "Auf der Trainingsseite öffnen", "Deschide în pagina Antrenament"),
+                Text(coachTr(lang, "Edzés indítása", "Start workout", "Training starten", "Începe antrenamentul"),
                     fontWeight = FontWeight.Bold)
             }
         }

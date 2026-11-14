@@ -260,7 +260,7 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
             }
 
             item { NativeProgressPhotoGallery(all.copy(progressPhotos = photos, language = state.language.name.lowercase()),
-                model::openPhoto, model::closePhoto) }
+                model::openPhoto, model::closePhoto, vertical = true) }
         }
     }
 }

@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -182,7 +184,8 @@ private fun PrivateProgressPhoto(id: String, edge: Int, language: String, modifi
 internal fun NativeProgressPhotoGallery(
     state: ProgressUiState,
     open: (String) -> Unit,
-    close: () -> Unit
+    close: () -> Unit,
+    vertical: Boolean = false
 ) {
     val colors = LocalTrainPilotColors.current
     val context = LocalContext.current
@@ -208,26 +211,54 @@ internal fun NativeProgressPhotoGallery(
                 Text(strings.getString(R.string.native_progress_photo_empty),
                     color = colors.muted, modifier = Modifier.testTag("progress_photo_empty"))
             } else {
-                LazyRow(
-                    state = rememberLazyListState(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.testTag("progress_photo_choices")
-                ) {
-                    items(state.progressPhotos, key = { it.id }) { photo ->
-                        Column(
-                            modifier = Modifier.clickable { open(photo.id) }
-                                .testTag("progress_photo_${photo.id}").size(140.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            PrivateProgressPhoto(photo.id, 256, state.language,
-                                Modifier.size(112.dp).background(colors.card2, RoundedCornerShape(12.dp)))
-                            val label = when (photo.label) {
-                                "before" -> strings.getString(R.string.native_progress_photo_before)
-                                "after" -> strings.getString(R.string.native_progress_photo_after)
-                                else -> photo.label
+                if (vertical) {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.heightIn(max = 600.dp).testTag("progress_photo_choices")
+                    ) {
+                        items(state.progressPhotos.sortedByDescending { it.workoutStartedEpochMs }, key = { it.id }) { photo ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().clickable { open(photo.id) }
+                                    .testTag("progress_photo_${photo.id}"),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                PrivateProgressPhoto(photo.id, 256, state.language,
+                                    Modifier.size(112.dp).background(colors.card2, RoundedCornerShape(12.dp)))
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(date.format(Instant.ofEpochMilli(photo.workoutStartedEpochMs)), color = colors.text)
+                                    val label = when (photo.label) {
+                                        "before" -> strings.getString(R.string.native_progress_photo_before)
+                                        "after" -> strings.getString(R.string.native_progress_photo_after)
+                                        else -> photo.label
+                                    }
+                                    if (label.isNotBlank()) Text(label, color = colors.muted)
+                                }
                             }
-                            Text(label.ifBlank { date.format(Instant.ofEpochMilli(photo.workoutStartedEpochMs)) },
-                                color = colors.text, maxLines = 1)
+                        }
+                    }
+                } else {
+                    LazyRow(
+                        state = rememberLazyListState(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.testTag("progress_photo_choices")
+                    ) {
+                        items(state.progressPhotos, key = { it.id }) { photo ->
+                            Column(
+                                modifier = Modifier.clickable { open(photo.id) }
+                                    .testTag("progress_photo_${photo.id}").size(140.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                PrivateProgressPhoto(photo.id, 256, state.language,
+                                    Modifier.size(112.dp).background(colors.card2, RoundedCornerShape(12.dp)))
+                                val label = when (photo.label) {
+                                    "before" -> strings.getString(R.string.native_progress_photo_before)
+                                    "after" -> strings.getString(R.string.native_progress_photo_after)
+                                    else -> photo.label
+                                }
+                                Text(label.ifBlank { date.format(Instant.ofEpochMilli(photo.workoutStartedEpochMs)) },
+                                    color = colors.text, maxLines = 1)
+                            }
                         }
                     }
                 }

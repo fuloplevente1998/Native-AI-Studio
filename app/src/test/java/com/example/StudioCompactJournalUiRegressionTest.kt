@@ -71,7 +71,7 @@ class StudioCompactJournalUiRegressionTest {
         val workout = LoggedWorkoutEntry(
             "w1", "2026-11-02 08:00", "Otthoni A/B – Alap", 54,
             "54:00", "00:00", 15, 1254,
-            "Hosszú, elhagyandó gyakorlatlista", hasPr = true
+            "Hosszú, elhagyandó gyakorlatlista", hasPr = true, programId = "home-basic", dayId = "b", dayName = "B"
         )
         compose.setContent { TrainPilotTheme {
             Column(Modifier.width(350.dp)) {
@@ -82,7 +82,7 @@ class StudioCompactJournalUiRegressionTest {
         val row = compose.onNodeWithTag("log_card_w1")
         val bounds = row.getUnclippedBoundsInRoot()
         assertTrue("Journal row must be compact enough for 5–6 entries", bounds.bottom - bounds.top < 90.dp)
-        compose.onNodeWithText("Otthoni A/B – Alap").assertExists()
+        compose.onNodeWithText("Otthoni A/B • B nap").assertExists()
         compose.onNodeWithText("54 perc · 15 sorozat · 1254 kg").assertExists()
         compose.onNodeWithText("Hosszú, elhagyandó gyakorlatlista").assertDoesNotExist()
         row.performClick()

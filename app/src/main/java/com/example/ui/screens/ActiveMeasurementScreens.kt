@@ -560,10 +560,11 @@ fun ActiveStrengthWorkoutScreen(
         // 1) Sticky Rest Timer above Previous/Next (Compact flat mode by default; transitions to Large mode when scrolling down or swiping/tapping)
         // 2) Sticky < Előző | Következő > buttons
         Surface(
+            shape = RoundedCornerShape(20.dp),
             color = palette.surfaceElevated,
             modifier = Modifier
                 .fillMaxWidth()
-                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
                 .pointerInput(isRestTimerLargeMode) {
                     detectVerticalDragGestures { _, dragAmount ->
                         if (dragAmount < -12f) {
@@ -577,8 +578,8 @@ fun ActiveStrengthWorkoutScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 if (com.repforge.app.StudioRestTimer.visible(uiState)) {
                 val progress = (uiState.restTimerRemainingSec.toFloat() / uiState.defaultRestSec.coerceAtLeast(1)).coerceIn(0f, 1f)
@@ -604,7 +605,7 @@ fun ActiveStrengthWorkoutScreen(
                             enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending,
                             onAdjust = onAdjustRestTimer, onToggle = onToggleRestRunning,
                             onSkip = onSkipRest, onExpand = { restTimerManualOverride = true },
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                            modifier = Modifier.padding(start = 8.dp, end = 0.dp, top = 2.dp, bottom = 2.dp))
                     }
                 } else {
                     // LARGE EXPANDED STICKY REST TIMER CARD (shown when scrolled down or expanded)
@@ -1342,10 +1343,11 @@ fun ActiveTimedWorkoutScreen(
 
         // Fixed Sticky Bottom navigation buttons
         Surface(
+            shape = RoundedCornerShape(18.dp),
             color = palette.surfaceElevated,
             modifier = Modifier
                 .fillMaxWidth()
-                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
+                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
         ) {
             val lang = uiState.language
             val hasNext = currentIdx + 1 < totalCount
@@ -2378,16 +2380,17 @@ fun ActiveBilateralWorkoutScreen(
 
         // Fixed Sticky Bottom Area: Rest Timer Dock + Előző / Következő Navigation
         Surface(
+            shape = RoundedCornerShape(18.dp),
             color = palette.surfaceElevated,
             modifier = Modifier
                 .fillMaxWidth()
-                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
+                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 // Sticky compact/expandable Rest Timer strip
                 if (com.repforge.app.StudioRestTimer.visible(uiState)) {
@@ -2409,7 +2412,7 @@ fun ActiveBilateralWorkoutScreen(
                         }
                         .clickable { restTimerLargeMode = !restTimerLargeMode }
                 ) {
-                    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)) {
+                    Column(modifier = Modifier.padding(start = 8.dp, end = 0.dp, top = 2.dp, bottom = 2.dp)) {
                         com.example.ui.components.StudioCompactRestControls(
                             language = lang, remainingSec = uiState.restTimerRemainingSec,
                             running = uiState.restTimerRunning,

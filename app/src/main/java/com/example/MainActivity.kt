@@ -466,8 +466,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onSelectDay = { viewModel.selectCalendarDay(it) },
                                     onSelectMonth = { viewModel.selectCalendarMonth(it) },
                             onOpenReplanModal = { viewModel.toggleReplanModal(it) },
-                            onApplyReplan = { dateStr, firstDay ->
-                                viewModel.applyCalendarReplan(dateStr, firstDay)
+                            onApplyReplan = { dateStr, firstDay, programId ->
+                                viewModel.applyCalendarReplan(dateStr, firstDay, programId)
                             },
                             onOpenWorkoutDetail = {
                                 uiState.loggedWorkouts.firstOrNull()?.id?.let(viewModel::openLogWorkoutDetail)
@@ -817,8 +817,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onOpenProgramDayDetails = {
                                         if (uiState.isWorkoutSessionActive) viewModel.returnToActiveWorkout()
                                         else {
-                                            val activeProg = uiState.programs.firstOrNull { it.isActive } ?: uiState.programs.firstOrNull()
-                                            viewModel.openProgramEditor(activeProg?.id ?: "home_ab_basic", 0)
+                                            viewModel.openPlannedProgramDetails()
                                         }
                                     },
                                     onOpenQuickWorkout = { viewModel.toggleQuickWorkoutSheet(true) },
@@ -883,8 +882,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onSelectDay = { viewModel.selectCalendarDay(it) },
                                     onSelectMonth = { viewModel.selectCalendarMonth(it) },
                                     onOpenReplanModal = { viewModel.toggleReplanModal(it) },
-                                    onApplyReplan = { dateStr, firstDay ->
-                                        viewModel.applyCalendarReplan(dateStr, firstDay)
+                                    onApplyReplan = { dateStr, firstDay, programId ->
+                                        viewModel.applyCalendarReplan(dateStr, firstDay, programId)
                                     },
                                     onOpenWorkoutDetail = {
                                         uiState.loggedWorkouts.firstOrNull()?.id?.let(viewModel::openLogWorkoutDetail)

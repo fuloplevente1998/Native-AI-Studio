@@ -80,6 +80,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Watch
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -3325,6 +3326,8 @@ fun StudioGoogleCloudSyncCard(
                         onClick = { activity?.let { settingsViewModel.syncCalendarCloud(it) } },
                         enabled = !gs.isBusy && !settingsState.replacementBusy && !settingsState.maintenanceBusy && activity != null,
                         shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = palette.surfaceElevated),
+                        border = BorderStroke(1.dp, palette.cardBorder),
                         modifier = Modifier
                             .weight(1f)
                             .heightIn(min = 48.dp)
@@ -3351,8 +3354,11 @@ fun StudioGoogleCloudSyncCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(
+                    TrainPilotOutlinedButton(
                         onClick = { settingsViewModel.disconnectGoogle() },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = palette.surfaceElevated),
+                        border = BorderStroke(1.dp, palette.danger.copy(alpha = 0.45f)),
                         enabled = !gs.isBusy && !settingsState.replacementBusy && !settingsState.maintenanceBusy,
                         modifier = Modifier
                             .heightIn(min = 48.dp)
@@ -3360,13 +3366,16 @@ fun StudioGoogleCloudSyncCard(
                     ) {
                         Text(
                             text = tr(lang, "Google-fiók lekapcsolása", "Disconnect Google Account", "Google-Konto trennen", "Deconectează contul Google"),
-                            color = Color(0xFFEF4444),
+                            color = palette.danger,
                             fontWeight = FontWeight.SemiBold,
                             style = MaterialTheme.typography.labelMedium
                         )
                     }
-                    TextButton(
+                    TrainPilotOutlinedButton(
                         onClick = { showMaintenanceOptions = !showMaintenanceOptions },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = palette.surfaceElevated),
+                        border = BorderStroke(1.dp, palette.cardBorder),
                         modifier = Modifier.heightIn(min = 48.dp)
                     ) {
                         Text(
@@ -3659,55 +3668,6 @@ fun BackupRestoreScreen(
             }
         }
         item {
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .trainPilotBorder(1.2.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(18.dp))
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = tr(uiState.language, "Korábbi RepForge app mentés behozása", "Import Legacy RepForge Backup", "Früheres RepForge-Backup importieren", "Importă backup RepForge anterior"),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = palette.primary
-                    )
-                    Text(
-                        text = tr(
-                            uiState.language,
-                            "Teljes kompatibilitás a korábbi RepForge (.zip és .json) biztonsági mentésekkel: edzésnapló, egyéni programok, gyakorlatok, testsúlynapló és privát fotók automatikus konvertálása.",
-                            "Full compatibility with earlier RepForge (.zip and .json) backups: automatic conversion of workout logs, custom programs, exercises, weight log, and private photos.",
-                            "Volle Kompatibilität mit früheren RepForge-Backups (.zip und .json): automatische Konvertierung von Trainingsprotokoll, Programmen, Übungen, Gewicht und privaten Fotos.",
-                            "Compatibilitate completă cu backup-urile RepForge (.zip și .json): conversie automată pentru jurnal, programe, exerciții, greutate și fotografii private."
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.textSecondary
-                    )
-                    TrainPilotOutlinedButton(
-                        onClick = {
-                            importLauncher.launch(arrayOf("application/json", "application/zip", "application/octet-stream", "*/*"))
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 48.dp)
-                            .testTag("import_repforge_legacy_btn")
-                    ) {
-                        Icon(imageVector = Icons.Default.Restore, contentDescription = null, tint = palette.primary)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = tr(uiState.language, "RepForge ZIP / JSON mentés importálása", "Import RepForge ZIP / JSON Backup", "RepForge ZIP / JSON importieren", "Importă backup ZIP / JSON RepForge"),
-                            color = palette.primary,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.weight(1f).padding(vertical = 4.dp),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                    }
-                }
-            }
-        }
-        item {
             com.repforge.app.ui.theme.TrainPilotSaveButton(
                 onClick = {
                     if (uiState.selectedBackupFormat == "DRIVE") {
@@ -3734,7 +3694,7 @@ fun BackupRestoreScreen(
                     text = if (uiState.selectedBackupFormat == "DRIVE" && gs.connectedEmail.isEmpty()) {
                         tr(uiState.language, "Bejelentkezés Google-fiókkal (Drive)", "Sign in with Google (Drive)", "Mit Google anmelden (Drive)", "Conectare cu Google (Drive)")
                     } else {
-                        "${tr(uiState.language, "Mentés indítása", "Start Backup", "Sicherung starten", "Pornește backup")} (${uiState.selectedBackupFormat})"
+                        "${tr(uiState.language, "Mentés", "Backup", "Sichern", "Salvează")} (${uiState.selectedBackupFormat})"
                     },
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f).padding(vertical = 4.dp),
@@ -3750,17 +3710,26 @@ fun BackupRestoreScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
+                    .testTag("import_repforge_legacy_btn")
             ) {
                 Icon(imageVector = Icons.Default.Restore, contentDescription = null, tint = palette.textPrimary)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    tr(uiState.language, "Visszaállítás fájlból (TrainPilot / RepForge)", "Restore from file (TrainPilot / RepForge)", "Aus Datei wiederherstellen (TrainPilot / RepForge)", "Restaurare din fișier (TrainPilot / RepForge)"),
+                    tr(uiState.language, "Visszaállítás / Importálás", "Restore / Import", "Wiederherstellen / Importieren", "Restaurare / Importă"),
                     color = palette.textPrimary,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f).padding(vertical = 4.dp),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
+            Text(
+                tr(uiState.language, "JSON és ZIP mentések, korábbi verziókból is.",
+                    "JSON and ZIP backups, including earlier versions.",
+                    "JSON- und ZIP-Sicherungen, auch aus früheren Versionen.",
+                    "Backup-uri JSON și ZIP, inclusiv din versiuni anterioare."),
+                color = palette.textSecondary,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }

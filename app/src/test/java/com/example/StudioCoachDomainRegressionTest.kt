@@ -40,7 +40,7 @@ class StudioCoachDomainRegressionTest {
         assertEquals(before, compose.onNodeWithTag("studio_coach_target").fetchSemanticsNode().boundsInRoot)
     }
 
-    @Test fun currentCoachDayOpensWorkoutWithoutAutomaticallyStarting() {
+    @Test fun currentCoachDayStartsItsActualProgramAndDay() {
         var started = ""
         var workoutPage = 0
         compose.setContent { TrainPilotTheme {
@@ -49,11 +49,11 @@ class StudioCoachDomainRegressionTest {
                 { p, d, s -> started = "$p:$d:$s" }, { workoutPage++ }, {}, {}, {}, {})
         } }
         compose.onNodeWithTag("studio_coach_start_target").performClick()
-        assertEquals("", started)
-        assertEquals(1, workoutPage)
+        assertEquals("actual-program:b:null", started)
+        assertEquals(0, workoutPage)
     }
 
-    @Test fun upcomingDayNavigatesToWorkoutInsteadOfStartingItEarly() {
+    @Test fun explicitUpcomingDayStartUsesCanonicalStartCallback() {
         var starts = 0
         var workoutPage = 0
         compose.setContent { TrainPilotTheme {
@@ -62,10 +62,10 @@ class StudioCoachDomainRegressionTest {
                 { _, _, _ -> starts++ }, { workoutPage++ }, {}, {}, {}, {})
         } }
         compose.onNodeWithTag("studio_coach_start_target").performClick()
-        assertEquals(0, starts); assertEquals(1, workoutPage)
+        assertEquals(1, starts); assertEquals(0, workoutPage)
     }
 
-    @Test fun nextDayCardHighlightsRealProgramAndOpensWorkout() {
+    @Test fun nextDayCardHighlightsRealProgramAndStartsIt() {
         var workoutPage = 0
         var started = 0
         val target = CoachTarget("p", "a", "A", upcoming = true, programTitle = "Otthoni A/B – Alap")
@@ -78,8 +78,8 @@ class StudioCoachDomainRegressionTest {
         compose.onNodeWithTag("studio_coach_day_badge").assertExists()
         compose.onNodeWithText("A").assertExists()
         compose.onNodeWithTag("studio_coach_start_target").performClick()
-        assertEquals(1, workoutPage)
-        assertEquals(0, started)
+        assertEquals(0, workoutPage)
+        assertEquals(1, started)
     }
 
     @Test fun laterExerciseAdviceDoesNotDuplicateHighlightedNextDay() {

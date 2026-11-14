@@ -52,6 +52,7 @@ class ActiveWorkoutDockNavigationRegressionTest {
         val actions = compose.onNodeWithTag("compact_rest_actions").getUnclippedBoundsInRoot()
         assertTrue(title.right <= actions.left)
         assertTrue("Collapsed rest must stay one 48dp row", root.bottom - root.top <= 48.dp)
+        assertEquals("Expand target should reach the row's right edge", root.right, actions.right)
         val bounds = tags.map { tag ->
             compose.onNodeWithTag("compact_rest_$tag").assertIsDisplayed()
                 .assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp).getUnclippedBoundsInRoot()
