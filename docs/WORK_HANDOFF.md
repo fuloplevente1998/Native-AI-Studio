@@ -1,3 +1,22 @@
+# TrainPilot 2762 · 1.1-beta — APK+AAB átadva, 2026-11-14
+
+PR239 mainre került; aláírt forrás155ea6295b0025280b08e30203ff32cac9912b19.
+Signed run43620628637 SUCCESS, build_aab=true. Telefon276200, Wear276202.
+Közös PR-kapu43620241055 és signed kapu: telefon96 fájl/506 teszt + Wear35/189 =695, 0failure/error/skipped, shared NO-SOURCE. A három artifact-ZIP digestje, nyers XML, fájlhash, a négy bináris package/verziója és tartós signer helyben igazolt; Maps és páros identitás a CI-ben ellenőrzött. TelefonAPK5 511 851 bájt, WearAPK4 669 627 bájt (R8/shrink); AAB-k10 142 316 és5 580 499 bájt.
+
+A gyakorlatlista a felhasználó mintája szerint bal oldali kedvencet, középső név/részleteket és jobb oldali közös keretű, külön színezett Videó/hozzáadás/indítás csoportot kapott. Szűk/nagybetűs nézetben a csoport szükség esetén lekerül; a teljes adatlap elérhető. A mentési oldal rövidült, a Drive-panel kontextushoz kötött, a health-tájékoztató infógombbal nyílik. A nagy backup-regresszió fixture tartalmazza a gyári katalógust; nincs import-retry vagy védelmi kapu megkerülés.
+
+A felhasználó új kérésére az APK mellett az AAB-páros is elkészült; a korábbi AAB-halasztás erre a kiadásra feloldva. Négy bináris, két Play-jegyzet, részletes változások és bizonyíték feltöltve a meglévő TrainPilot Native Drive-mappába; mind a nyolc fájl neve/mérete/parentje visszaolvasva, régi fájlok megmaradtak. Play-feltöltést a felhasználó végzi. Készülékes vizuális és telefon/óra elfogadás külön hátravan; mindkét app frissítendő. Wear alkalmazáslogika ebben a körben nem változott.
+
+Részletek: releases/2762-changes.md, releases/2762-verified-artifacts.json; PR-bizonyíték: verification/PR239-ci-evidence.json. A következő commit csak dokumentáció, az alkalmazáskód a fenti signed forrás.
+
+Telefon APK: https://drive.google.com/file/d/1cy2zD4m0jBm-vhhukZ2U1TejCmce2Pxv/view?usp=drivesdk
+Wear APK: https://drive.google.com/file/d/18UMnSTAOGLAYC760uizl2r00uHFD-2A8/view?usp=drivesdk
+Telefon AAB: https://drive.google.com/file/d/1NwPw8nBuQIABdaeXKy5QWa6-pL9zM8BI/view?usp=drivesdk
+Wear AAB: https://drive.google.com/file/d/1e5KpFpIGECOUmub4v3OFG1O6F51MiQiF/view?usp=drivesdk
+
+---
+
 # TrainPilot 2761 · 1.1-beta — ellenőrzött APK-páros átadva, 2026-11-14
 
 Forrás a9b903f353a0e5dc2b2e8e01e6d3291bc560ccc1, PR #236. Signed run43593234136 SUCCESS, kizárólag APK-mód (build_aab=false). Telefon276100, Wear276102, mindkettő1.1-beta. A két ZIP digestje, nyers XML, fájlhashek, a binárisból olvasott package/verzió és v2 signer helyben ellenőrizve. Tartós tanúsítvány egyezik. Maps és páridentitás a signed kapuban igazolt. Telefon5 495 467 bájt, Wear4 669 627 bájt (R8/shrink).

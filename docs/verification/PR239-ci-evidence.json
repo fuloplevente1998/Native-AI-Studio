@@ -1,0 +1,29 @@
+{
+  "source": "8bffb88c9a8d486780bedfb4e7e79b9fee497cf0",
+  "run": 43620241055,
+  "artifactDigest": "sha256:e9e59d4035db02a741bd39c1b1f74e7b81cdd4e6fc806ac8016a4889ce16ebb1",
+  "rawJUnit": {
+    "app": {
+      "files": 96,
+      "tests": 506,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "wear": {
+      "files": 35,
+      "tests": 189,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "files": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "physicalAcceptance": false
+}

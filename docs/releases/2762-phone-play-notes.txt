@@ -1,0 +1,1 @@
+Kompaktabb gyakorlatválasztó, közös keretű Videó / Hozzáadás / Indítás gombcsoporttal. A részletek továbbra is megnyithatók. Rövidebb mentési felület, kisebb JSON/ZIP/DRIVE választó; a Drive-panel csak a megfelelő nézetben jelenik meg. Az egészségadatok tájékoztatója infógombbal érhető el.
