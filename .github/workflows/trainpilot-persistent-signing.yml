@@ -1,4 +1,5 @@
 name: TrainPilot persistent signed APK and AAB pairs
+# 2760: requested signed phone/Wear APK+AAB pair after verified PR233 (685 JVM tests); workflow checks unchanged.
 # Signed verification build for UI/UX issue #219 implementation, source 23ba07fc691fbe35c46b0b7a4c313bd869c8251a.
 # Verification build for health fixes #217/#218, AI Studio commit 8822fd963d7588c6197ff9e8861446850ebed120.
 # 2753: device-feedback fixes PR159/160/161, verified 550 JVM tests; signed pair trigger only.

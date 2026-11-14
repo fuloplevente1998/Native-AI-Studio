@@ -245,7 +245,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             try { HealthJournalStore.get(this@MainActivity).retireWatchUi() } catch (_: Exception) {}
             try { HealthBackgroundJob.schedule(this@MainActivity) } catch (_: Exception) {}
-            WearSyncRepository.publishWatchHomeSnapshot(this@MainActivity)
+            WearSyncRepository.refreshWatchHomeAsync(this@MainActivity)
         }
     }
 

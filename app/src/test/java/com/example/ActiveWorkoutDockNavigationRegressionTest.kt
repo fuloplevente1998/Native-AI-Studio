@@ -46,12 +46,12 @@ class ActiveWorkoutDockNavigationRegressionTest {
         } }
     }
 
-    private fun assertRestFits() {
+    private fun assertRestFits(tags: List<String> = listOf("minus", "toggle", "plus", "skip", "expand")) {
         val root = compose.onNodeWithTag("compact_rest_controls").getUnclippedBoundsInRoot()
         val title = compose.onNodeWithTag("compact_rest_time").getUnclippedBoundsInRoot()
         val actions = compose.onNodeWithTag("compact_rest_actions").getUnclippedBoundsInRoot()
-        assertTrue(title.bottom <= actions.top || title.right <= actions.left)
-        val tags = listOf("minus", "toggle", "plus", "skip", "expand")
+        assertTrue(title.right <= actions.left)
+        assertTrue("Collapsed rest must stay one 48dp row", root.bottom - root.top <= 48.dp)
         val bounds = tags.map { tag ->
             compose.onNodeWithTag("compact_rest_$tag").assertIsDisplayed()
                 .assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp).getUnclippedBoundsInRoot()
@@ -76,7 +76,7 @@ class ActiveWorkoutDockNavigationRegressionTest {
     @Test fun narrowRestKeepsLabelsApartAndAllControlsOperate() {
         val adjustments = mutableListOf<Int>()
         var toggles = 0; var skips = 0; var expansions = 0
-        showRest(320.dp, 1.3f, AppLanguage.HU,
+        showRest(355.dp, 1f, AppLanguage.HU,
             adjust = { adjustments += it }, toggle = { toggles++ }, skip = { skips++ }, expand = { expansions++ })
         assertRestFits()
         compose.onNodeWithTag("compact_rest_minus").performClick()
@@ -90,9 +90,21 @@ class ActiveWorkoutDockNavigationRegressionTest {
         }
     }
 
-    @Test fun largeGermanFontWrapsControlsWithoutClippingOrOverlap() {
+    @Test fun largeGermanFontStaysOnOneRowWithoutClippingOrOverlap() {
         showRest(280.dp, 1.6f, AppLanguage.DE)
-        assertRestFits()
+        assertRestFits(listOf("toggle", "skip", "expand"))
+        compose.onNodeWithTag("compact_rest_minus").assertDoesNotExist()
+        compose.onNodeWithTag("compact_rest_plus").assertDoesNotExist()
+    }
+
+    @Test fun narrowLargeFontUsesIconsInOneRowAndExpandsForAdjustments() {
+        var expanded = 0
+        showRest(320.dp, 1.3f, AppLanguage.HU, expand = { expanded++ })
+        assertRestFits(listOf("toggle", "skip", "expand"))
+        compose.onNodeWithTag("compact_rest_minus").assertDoesNotExist()
+        compose.onNodeWithTag("compact_rest_plus").assertDoesNotExist()
+        compose.onNodeWithTag("compact_rest_expand").performClick()
+        compose.runOnIdle { assertEquals(1, expanded) }
     }
 
     @Test fun wideRestStaysInlineAndOwnershipStillDisablesActions() {

@@ -1,0 +1,3 @@
+• Kompaktabb edzésfelület: egysoros sorozatkártyák és keskeny pihenősáv.
+• Javított órás napló- és témaszinkron, nagyobb adatcsomagok megbízható átvitelével.
+• A háttérfrissítés és a mentés-visszaállítás együttműködésének javítása.

@@ -1,0 +1,66 @@
+{
+  "source": "b25fd65bc0ad0c1182bb9004d32d0e735ef470db",
+  "sourceBlob": "8fcf93406ee10c8b993e71c962e98d052b0adf55",
+  "run": 43571746498,
+  "job": 132377416597,
+  "conclusion": "success",
+  "verificationSource": "scripts/verify_junit_xml.py output from the GitHub Actions runner",
+  "junit": {
+    "commit": "b25fd65bc0ad0c1182bb9004d32d0e735ef470db",
+    "modules": {
+      "phone": {
+        "files": 92,
+        "tests": 496,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "wear": {
+        "files": 35,
+        "tests": 189,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "shared": {
+        "files": 0,
+        "tests": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": true
+      }
+    },
+    "total": {
+      "tests": 685,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "artifact": {
+    "id": 14104817284,
+    "name": "trainpilot-jvm-test-reports",
+    "digest": "sha256:9633e5dc45def28a152cb470b71dcb2f47c33754c1d91d5f38c6bc04b426922f",
+    "localArchiveDownloaded": false,
+    "localArchiveDigestVerified": false,
+    "reason": "Managed execution environment unavailable; runner XML verification and GitHub artifact metadata were read through the connected GitHub tools."
+  },
+  "wireFixture": {
+    "run": 43569716695,
+    "source": "cb46da3cac19158c0996a614792f9b5a1edf1787",
+    "downloadedArtifact": 14103637365,
+    "verifiedArchiveDigest": "sha256:63664179128f16e1e8c0163cd5777a1ccfeebb3b631d841bccaed7598983a975",
+    "decodedBytes": 196440,
+    "dataMapBytes": 8347,
+    "description": "Real bundled catalogue with the maximum supported eight-workout Mini Journal fixture; no production user data."
+  },
+  "delivery": {
+    "mainMerged": false,
+    "versionChanged": false,
+    "newApkOrAab": false,
+    "physicalDeviceAcceptance": false
+  }
+}
