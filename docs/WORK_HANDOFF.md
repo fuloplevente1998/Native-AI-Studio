@@ -1,44 +1,35 @@
-# 2026-11-14 – órás napló/téma és kompakt edzés: új javítóág
+# 2026-11-14 – órás napló/téma és kompakt edzés: ellenőrzött draft
 
-Ágfix/wear-journal-theme, alapmainf4de131 (kiadott2759). Nincs verzióemelés vagy új build.
-Készülékes visszajelzés: telefonon friss/lila napló, órán régi1.0-beta home/kék téma;
-a telefon témamentése jó. A teljes katalógus/napló/paletta egyetlen WatchHome
-DataItemben utazott, a putDataItem eredménye nem volt megvárva. A nagyobb payload
-most méretkorlátos GZIP mezőt használ (48KiB felett), az inline régi forma olvasható.
-64KiB packed és2MiB decoded limit; minden home-fogadó és a cached Data Layer scan
-ugyanazt a dekódert használja. Küldés await +15s timeout, async frissítés három
-próbával; az óra onResume tartós requestHome parancsot küld. Hibás vagy régi csomag
-nem cserélheti le az új naplót/palettát. Az órás mini napló továbbra is a legutóbbi8
-edzés olvasható másolata; telefonon nincs adat-/naplólétszám-módosítás.
-A telefon32 palettájának teljes színtokenjei már léteztek: a teljes adatátvitel és
-az órás Material/custom palette alkalmazása kapott új regressziót, nincs új párhuzamos témaállapot.
+PR#233, ágfix/wear-journal-theme, alapmainf4de131. Ellenőrzött app/teszt/CI forrás:
+b25fd65bc0ad0c1182bb9004d32d0e735ef470db. Actions43571746498 SUCCESS, telefonos R8 is zöld.
+A runner nyers JUnit-ellenőrzője szerint telefon92 fájl/496 teszt + Wear35 fájl/189 teszt =
+685 teszt,0failure/error/skipped; shared NO-SOURCE. A végső ZIP helyi letöltése/digest-ellenőrzése
+a munkakörnyezet kiesése miatt még nem történt meg; a runner riport és a GitHub által közölt
+artifact-digest külön rögzítve: WEAR_HOME_COMPACT_CI_EVIDENCE_2026-11-14.json.
 
-Új készülékes panasz: magas aktív kártyák és a két sorra nőtt kompakt pihenő.
-A pihenő most egyetlen48dp sor: teljes/rövid időfelirat a mért hely szerint,
-lejátszás/kihagyás/lenyitás ikonok; ha nincs hely, a±15s a meglévő nagy nézetben
-érhető el. Normál355dp szélességnél az aktív sorozat száma, három értéke, pipája és
-törlése egy sorba fér, kb60dp kártyával; nagybetűs/keskeny fallback megmarad.
-A Tárcsa/Bemelegítés művelet ikonra rövidült, a gyakorlatcím kevésbé tördelődik.
+A napló/paletta/katalógus közös Home DataItemje méretkorlátos GZIP átvitelt kapott.
+Reprodukció: a valódi katalógus + maximális Mini napló196440 byte helyett8347 byte DataMap;
+a korábbi ellenőrzött ZIP digestje és a fixture forrása a bizonyítékban szerepel. Kis régi
+inline csomagok olvashatók, sérült/lejárt csomag nem reseteli a friss cache-t. A telefon
+megvárja a helyi Data Layer commitot; requestHome az írási zároláson kívül vár, dataset
+continuation ellenőrzéssel. Async frissítés három próbával, az óra onResume új Home-ot kér.
+A telefon32 palettájának teljes színei átvihetők, a telefon témamentése változatlan.
+Az órás Mini napló továbbra is a legutóbbi8 edzés olvasható másolata.
 
-Regressziók előkészítve: teljes valódi katalógus + maximális mini napló wire-budget,
-32 paletta tömörített körútja, legacy forma, sérült/ismételten használt csomag,
-decode budget; órás napló/verzió/téma tartósság és késői csomagok; egy48dp pihenősor
-nagy betűvel is,355dp/60dp aktív kártya. Az első közös CI43569160660 az app Compose receiver-fordításán megállt;
-a BoxWithConstraints szélességét explicit lokális értékként használjuk a nested
-Columnban. A requestHome olvasási művelet a mutációs zároláson kívül vár a helyi
-Data Layer commitra, dataset continuation ellenőrzéssel előtte/utána; a frissítés
-nem tarthatja fogva az edzésírásokat. A43569716695 körben az új felületi/átviteli tesztek átmentek, de a restore/cloud
-utólagos órás publikációját a még aktív adatcsere-fence elutasította. A két restore
-és egy Drive utóhatás ezért a már meglévő async/újrapróbálható projekciót használja:
-a kanonikus helyi restore/sync sikerét nem az órakapcsolat dönti el. A worker a
-fence lezárása után épít friss snapshotot, epoch ellenőrzéssel. Tesztállítás nem
-változott. A43570729316 kör ezután három fixture-életciklus versenyt mutatott: egy
-késleltetett régi contextű async job singleton-nyitása bezárhatta az új fixture DB-jét.
-A worker most a leválasztás előtt rögzített DB-példányt használja, és lezárt DB-nél
-nem jut új singletonhoz. A restore-védelmek és tesztek megmaradtak. A javítás a
-munkakörnyezet kiesése után közvetlenül GitHubon került fel: b25fd65bc0ad0c1182bb9004d32d0e735ef470db.
-A teljes CI újra fut; nincs main-merge/verzióemelés/új telepítő.
-Készülékes elfogadás külön szükséges; #220 store-media része nem része a javításnak.
+A csukott pihenő egy48dp sor, ikonokkal és mért hely alapján teljes/rövid időfelirattal;
+ha nincs hely, a±15s a meglévő nagy nézetben érhető el.355dp normál nézetben a sorozatszám,
+három értékmező, pipa és törlés egy kb60dp kártyába fér. Nagybetűs fallback és48dp célok
+megmaradtak. A Tárcsa/Bemelegítés ikonra rövidült, a gyakorlatcím kevésbé tördelődik.
+
+A teljes CI a restore/cloud integrációt is ellenőrizte. Ezen műveletek utólagos órás
+projekciója async, így a helyi kanonikus mentést nem az órakapcsolat dönti el. A worker
+a leválasztáskor rögzített DB-példányt használja, lezárt DB-nél leáll. Az ismert regressziók
+és eredeti restore-állítások változatlanul átmentek.
+
+Nincs main-merge, verzióemelés vagy új APK/AAB. A2759 telepítők ezeket még nem tartalmazzák.
+Készülékes elfogadás külön hátravan; az új Home átviteli módhoz a telefonos és órás appot
+együtt kell majd frissíteni. A#220 store-media része külön feladat marad.
+A bizonyítékot rögzítő záró commitok csak dokumentációt módosítanak.
 
 ---
 
