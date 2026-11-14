@@ -965,6 +965,7 @@ data class LoggedWorkoutEntry(
         val customProgram = programs.any { it.id == programId && it.isCustom }
         val title = when {
             isHomeBasicLegacyName(titleHu) && programId in homeBasicProgramIds && !customProgram -> canonicalHomeBasicName(lang)
+            isHomeBasicLegacyName(titleHu) && programId.isBlank() && lang != AppLanguage.HU -> canonicalHomeBasicName(lang)
             isHomeBasicLegacyName(titleHu) && (programId.isNotBlank() || customProgram) -> titleHu
             else -> localizedBaseTitle(lang, programs, exercises)
         }
