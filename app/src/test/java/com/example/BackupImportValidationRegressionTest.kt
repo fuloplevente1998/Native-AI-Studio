@@ -343,6 +343,12 @@ class BackupImportValidationRegressionTest {
         assertFalse(NativeDataReplacement.blocked(context))
     }
     @Test fun largeHealthJournalRestoresThroughJsonCanonicalZipAndLegacyRepForgeZip() {
+        // A normal app backup includes the built-in catalog. Otherwise each successful
+        // restore launches a Wear-home refresh that must seed the fixture's missing
+        // catalog, racing the next format's deliberately immediate exclusive restore.
+        // Include that catalog in the source archive; do not retry imports or bypass
+        // the real replacement lease. The 600-record/photo assertions remain below.
+        awaitNative { TrainPilotDatabase.ensureBuiltinCatalogSeeded(TrainPilotDatabase.getInstance(context), context) }
         val original = seedPhotoHealthArchive()
         val data = ZipFile(original).use { zip ->
             com.repforge.app.BackupJsonIO.read(zip.getInputStream(zip.getEntry("backup.json")).reader()) as JSONObject
