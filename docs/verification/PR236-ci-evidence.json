@@ -1,0 +1,46 @@
+{
+  "sourceSha": "52ee89af1166fca621efeaf50353bf1bf55d16fb",
+  "runId": 43592120564,
+  "url": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43592120564",
+  "conclusion": "success",
+  "modules": {
+    "app": {
+      "files": 94,
+      "tests": 504,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "wear": {
+      "files": 35,
+      "tests": 189,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "files": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "total": {
+    "tests": 693,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "artifact": {
+    "id": 14112494580,
+    "name": "trainpilot-jvm-test-reports",
+    "zipSha256": "11b7cbd0f9a92b312e63657b5dc01a24826a5a41fe03d850a189904351e79da7",
+    "bytes": 339625,
+    "digestVerifiedLocally": true
+  },
+  "rawXmlVerifiedLocally": true,
+  "apkProduced": false,
+  "aabProduced": false,
+  "physicalAcceptance": false
+}

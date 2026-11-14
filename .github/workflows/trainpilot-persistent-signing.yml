@@ -18,6 +18,11 @@ name: TrainPilot persistent signed APK and AAB pairs
 # Retry #54 after correcting home-basic day ID case in catalog regression test (#53).
 on:
   workflow_dispatch:
+    inputs:
+      build_aab:
+        description: 'Also build Play Console AABs (disable for a device-test APK pair)'
+        type: boolean
+        default: true
   push:
     branches: [main]
     paths:
@@ -110,11 +115,18 @@ jobs:
               output.write('KEYSTORE_PATH=' + str(target) + '\n')
           PY
 
-      - name: Build signed phone and Wear APKs and AABs and run all JVM tests
+      - name: Build signed phone and Wear pair and run all JVM tests
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: gradle --no-daemon --stacktrace --profile --continue :app:assembleRelease :wear:assembleRelease :app:bundleRelease :wear:bundleRelease :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest
+          BUILD_AAB: ${{ github.event_name != 'workflow_dispatch' || inputs.build_aab }}
+        shell: bash
+        run: |
+          tasks=(:app:assembleRelease :wear:assembleRelease)
+          if [[ "$BUILD_AAB" == "true" ]]; then
+            tasks+=(:app:bundleRelease :wear:bundleRelease)
+          fi
+          gradle --no-daemon --stacktrace --profile --continue "${tasks[@]}" :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest
 
       - name: Verify raw phone, Wear and shared JUnit XML test results
         if: always()
@@ -126,6 +138,7 @@ jobs:
         run: python3 scripts/verify_android_apk_metadata.py
 
       - name: Verify signed AABs and write Play metadata
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.build_aab }}
         shell: bash
         run: |
           set -euo pipefail
@@ -195,7 +208,7 @@ jobs:
           retention-days: 7
 
       - name: Upload signed Play Console AAB pair
-        if: success()
+        if: ${{ success() && (github.event_name != 'workflow_dispatch' || inputs.build_aab) }}
         uses: actions/upload-artifact@v4
         with:
           name: trainpilot-play-internal-aab-pair

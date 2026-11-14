@@ -1,3 +1,13 @@
+# PR #236 — ellenőrzött javítások, kért 2761 APK-páros, 2026-11-14
+
+A kódjavítások forrása 52ee89af1166fca621efeaf50353bf1bf55d16fb, közös CI43592120564 SUCCESS. Letöltött artifact-digest és nyers XML helyben ellenőrizve: telefon94 fájl/504 teszt + Wear35 fájl/189 teszt =693,0failure/error/skipped; shared NO-SOURCE. Bizonyíték: verification/PR236-ci-evidence.json; részletes gyűjtő: DEVICE_FOLLOWUP_2760.md.
+
+Javítva: kezdőlapi natív tervfrissülés és azonos cél indítása, megmaradó naptári sorok program/nap ID-ja, csak alkalmazáskor választott újratervezési program, mentett napló A/B nap, Coach közvetlen natív indítás. A kompakt pihenődokk, fejléc és nyomási effekt, nappill, 15–240 perc, dátumos függőleges fotók, finom gombháttér és egyszerű mentési feliratok is benne vannak. Régi import/egyedi nevek és natív ownership/restore védelem megmaradnak.
+
+A felhasználó ezután kérte a telefonos és órás APK-párost; AAB csak készülékes jóváhagyása után. Következő verzió2761, név1.1-beta, telefon276100/Wear276102. A meglévő trusted-main signing workflow build_aab=false móddal készíti az APK-kat, teljes JVM- és signer/Maps-kapuval. APK-only és APK+AAB feladatválasztás helyben shell-szinten ellenőrizve. A build/átadás még folyamatban; készülékes elfogadás nincs. Play-feltöltés nincs engedélyezve ebben a kérésben.
+
+---
+
 # TrainPilot 2760 · 1.1-beta – ellenőrzött Drive-átadás, 2026-11-14
 
 Az eredeti signed build letöltése és Drive-átadása befejezve, új build nélkül.
