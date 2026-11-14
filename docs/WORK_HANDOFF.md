@@ -32,7 +32,12 @@ utólagos órás publikációját a még aktív adatcsere-fence elutasította. A
 és egy Drive utóhatás ezért a már meglévő async/újrapróbálható projekciót használja:
 a kanonikus helyi restore/sync sikerét nem az órakapcsolat dönti el. A worker a
 fence lezárása után épít friss snapshotot, epoch ellenőrzéssel. Tesztállítás nem
-változott; a teljes kör újra szükséges.
+változott. A43570729316 kör ezután három fixture-életciklus versenyt mutatott: egy
+késleltetett régi contextű async job singleton-nyitása bezárhatta az új fixture DB-jét.
+A worker most a leválasztás előtt rögzített DB-példányt használja, és lezárt DB-nél
+nem jut új singletonhoz. A restore-védelmek és tesztek megmaradtak. A javítás a
+munkakörnyezet kiesése után közvetlenül GitHubon került fel: b25fd65bc0ad0c1182bb9004d32d0e735ef470db.
+A teljes CI újra fut; nincs main-merge/verzióemelés/új telepítő.
 Készülékes elfogadás külön szükséges; #220 store-media része nem része a javításnak.
 
 ---
