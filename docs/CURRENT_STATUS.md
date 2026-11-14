@@ -1,3 +1,41 @@
+# TrainPilot 2759 · 1.1-beta – ellenőrzött main kiadás, 2026-11-14
+
+A felhasználó által jóváhagyott telefon275900 és Wear275902 elkészült.
+Aláírt forrás985969595083575d5b8dfe183df64cc8228d94b2 (#228,#229,#230,#231).
+Közös signed Actions43565800117 SUCCESS: telefon/Wear APK+AAB és teljes JVM-kapu.
+Nyers XML és ZIP-digest igazolt: telefon91 fájl/490 teszt + Wear34 fájl/187 teszt =
+677 teszt,0failure/error/skipped; shared NO-SOURCE. A megelőző célzott kör256/256.
+Package, verziók, fájlhashek, páridentitás és tartós signer ellenőrizve; az AAB-k
+aláírója helyben is összevetve. TelefonAPK5,5MB, WearAPK4,7MB, R8/shrink megmaradt.
+
+Benne van a kamerakivágás/státuszsáv helyének kihagyása, a kompakt napló- és aktív
+sorozatszerkesztő, a pipás rögzítés és az alakba vágott nyomási effekt. A pihenősáv
+saját szélességre mért feliratokkal, a tényleges hely alapján tördel, nagybetűs/német
+és keskeny nézetben is ellenőrizve. A gyakorlatsor aktívváltáskor automatikusan az
+aktuális elem elejére görget, előre/hátra és az utolsó elemnél is. Készültség és
+natív ownership/callback kapuk megmaradtak. Wear alkalmazáskód ebben a körben nem
+változott; a verziókód a páros kiadás része, #220 külön feladat marad.
+
+A négy csomag, két külön Play-jegyzet, részletes változáslista és bizonyíték a
+TrainPilot Native Drive-mappába feltöltve, név/méret/parent visszaellenőrizve.
+A régi kiadások megmaradtak. A felhasználó töltheti fel a két AAB-t a Play Console-ba;
+Console-módosítás nem történt. Részletek: releases/2759-changes.md,
+releases/2759-verified-artifacts.json és releases/2759-targeted-evidence.json.
+A43505815125 és43508709582 korábbi futásokból telepítőt nem adtunk át.
+Készülékes kamerakivágásos, világos/sötét/nagybetűs vizuális és Samsung/HC/Wear
+elfogadás külön hátravan. A záró dokumentáció a kiadott alkalmazáskódon nem változtat.
+
+Telefon APK: https://drive.google.com/file/d/1UsX_jxCFq12QLSc4vjtKiisWTDQIY0Jv/view?usp=drivesdk
+Wear APK: https://drive.google.com/file/d/1PVbCIlASe9pzK8HyC-W2jCp2_5aAccWY/view?usp=drivesdk
+Telefon AAB: https://drive.google.com/file/d/13x2q9gn9gfHDiheELCvccRHYn66wZA74/view?usp=drivesdk
+Wear AAB: https://drive.google.com/file/d/1c7T2NDVBzkIviWTuLHCnIXu7kq_dg3QR/view?usp=drivesdk
+Telefon Play-jegyzet: https://drive.google.com/file/d/15C1pyQzNFa4komp2wXtnYAys92ffTZy3/view?usp=drivesdk
+Wear Play-jegyzet: https://drive.google.com/file/d/1vSmuTUbbvFqSTLjVYZZmDzqD2n-LVkA1/view?usp=drivesdk
+Részletes változások: https://drive.google.com/file/d/1o18SeXknUykNZ0C--FcOacEQlCNcSvAd/view?usp=drivesdk
+Bizonyíték: https://drive.google.com/file/d/17mdUwlaGWOWwhS37_t0VW9ZHSETL7pIU/view?usp=drivesdk
+
+---
+
 # TrainPilot 2758 · 1.1-beta – ellenőrzött main kiadás, 2026-11-13
 
 A felhasználó által kért mockupok, aktív sorozatszerkesztés és a további UI/ownership

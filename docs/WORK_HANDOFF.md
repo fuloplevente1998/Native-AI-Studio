@@ -1,97 +1,38 @@
-# 2759 pihenősáv – célzottan ellenőrzött javítás, teljes kiadás következik
+# TrainPilot 2759 · 1.1-beta – ellenőrzött main kiadás, 2026-11-14
 
-Ágfix/rest-label-layout-diagnostics, PR#231. Natív/teszt/CI forrás14091b12bd462e473d7110e6233edf98c8724d63.
-Actions43565270201 SUCCESS: nyers XML és ZIP-digest ellenőrizve, célzott telefon12
-fájl/69 teszt + Wear34 fájl/187 teszt =256,0failure/error/skipped; shared NO-SOURCE.
-Bizonyíték: releases/2759-targeted-evidence.json. Ez nem a teljes kiadási kapu.
+A felhasználó által jóváhagyott telefon275900 és Wear275902 elkészült.
+Aláírt forrás985969595083575d5b8dfe183df64cc8228d94b2 (#228,#229,#230,#231).
+Közös signed Actions43565800117 SUCCESS: telefon/Wear APK+AAB és teljes JVM-kapu.
+Nyers XML és ZIP-digest igazolt: telefon91 fájl/490 teszt + Wear34 fájl/187 teszt =
+677 teszt,0failure/error/skipped; shared NO-SOURCE. A megelőző célzott kör256/256.
+Package, verziók, fájlhashek, páridentitás és tartós signer ellenőrizve; az AAB-k
+aláírója helyben is összevetve. TelefonAPK5,5MB, WearAPK4,7MB, R8/shrink megmaradt.
 
-A timer és gombfeliratok saját természetes szélességre méretezettek; az időérték
-nem rövidül. A mért szélesség alapján sorváltó dock széles nézetben egy sor marad,
-keskeny/nagybetűs nézetben nem fed át és nem vág szöveget. A szigorú képernyőbounds,
-hasVisualOverflow,48dp,callback és ownership-tiltás tesztek megmaradtak, mind zöldek.
-A célzott workflow a Wear/shared feladatokat is futtatja, hogy az összes tesztforrásos
-modul nyers XML-je meglegyen; a teljes alapkapu és a signed workflow változatlan.
-Az automatikus gyakorlatgörgetés is zöld, előre/hátra/utolsó elem esetén.
+Benne van a kamerakivágás/státuszsáv helyének kihagyása, a kompakt napló- és aktív
+sorozatszerkesztő, a pipás rögzítés és az alakba vágott nyomási effekt. A pihenősáv
+saját szélességre mért feliratokkal, a tényleges hely alapján tördel, nagybetűs/német
+és keskeny nézetben is ellenőrizve. A gyakorlatsor aktívváltáskor automatikusan az
+aktuális elem elejére görget, előre/hátra és az utolsó elemnél is. Készültség és
+natív ownership/callback kapuk megmaradtak. Wear alkalmazáskód ebben a körben nem
+változott; a verziókód a páros kiadás része, #220 külön feladat marad.
 
-A43508709582 teljes kapu három címke-layout ellenőrzésen megbukott, ezért nincs
-átadott2759. Következő: main-integráció, egy új teljes signed APK+AAB/JVM kapu,
-csomagellenőrzés és Drive-átadás. A készülékes vizuális elfogadás külön lépés.
+A négy csomag, két külön Play-jegyzet, részletes változáslista és bizonyíték a
+TrainPilot Native Drive-mappába feltöltve, név/méret/parent visszaellenőrizve.
+A régi kiadások megmaradtak. A felhasználó töltheti fel a két AAB-t a Play Console-ba;
+Console-módosítás nem történt. Részletek: releases/2759-changes.md,
+releases/2759-verified-artifacts.json és releases/2759-targeted-evidence.json.
+A43505815125 és43508709582 korábbi futásokból telepítőt nem adtunk át.
+Készülékes kamerakivágásos, világos/sötét/nagybetűs vizuális és Samsung/HC/Wear
+elfogadás külön hátravan. A záró dokumentáció a kiadott alkalmazáskódon nem változtat.
 
----
-
-# 2759 kiadási kiegészítés – pihenősáv és automatikus gyakorlatgörgetés
-
-A futó build alatt érkezett két új készülékes visszajelzés bekerül a végleges2759-be.
-A korábbi43505815125 futás leállítva, azt nem adjuk át végleges csomagként.
-A kompakt pihenő az időt és a gombokat tényleges szélességük alapján rendezi;
-a vezérlők szűk/nagybetűs nézetben tördelnek, 48dp érintési célokkal és középre
-igazított szöveggel. A súlyzós és kétoldalas időalapú felület közös megoldást használ.
-A felső gyakorlatsor LazyRow, aktív indexváltozáskor animáltan az elem elejére görget,
-az utolsó elemnél is. Készültség és natív callbackek változatlanok.
-Új regressziók: keskeny pihenő és callbacks, nagybetűs német elrendezés, széles sor
-és ownership-tiltás, előre/hátra/utolsó elem automatikus igazítása.
-Következő: egy közös main signed build, teljes regresszióval, majd artifact-ellenőrzés.
-
----
-
-# TrainPilot 2759 · 1.1-beta – jóváhagyott kiadás előkészítése
-
-PR#228 main-integrációja: 97d56553dc266b55812aad68ac735fd95fcaac16.
-A felhasználó jóváhagyta a 2759-es kódot, változatlan 1.1-beta névvel.
-Telefon275900, Wear275902. Csak verziómetaadat és kiadási dokumentáció változik;
-a natív javításokat a 673/673 tesztes CI43494316049 már ellenőrizte.
-Következő: main-integráció után egyetlen közös persistent-signing kapu, majd
-nyers XML/ZIP-digest/package/verzió/hash/tartós aláíró ellenőrzés és Drive-átadás.
-Jelenleg még nincs új, átadott telepítő. Változások: releases/2759-changes.md.
-
----
-
-# 2026-11-13 – felső sáv, kompakt sorozatok és gombvisszajelzés: ellenőrzött draft
-
-Draft PR#228, ágfix/sheet-top-safe-area, alapmain37494d3.
-Ellenőrzött app/build/teszt forrás1019f605ce737341f66c2776a5b0cdc15ebf944a.
-Actions43494316049 SUCCESS: nyers XML/digest igazolt, telefon90 fájl/486 teszt +
-Wear34 fájl/187 teszt =673 teszt,0failure/error/skipped, shared NO-SOURCE;
-telefonos release R8 is sikeres. Bizonyíték:SHEET_COMPACT_PRESS_CI_EVIDENCE_2026-11-13.json.
-
-A Gyors edzés, profil/tervező, egyedi gyakorlat és naplószerkesztő közös top-safe-area
-kezelése kihagyja a státuszsáv/kamerakivágás közül a nagyobb helyet. A napló és aktív
-edzés sorozatkártyái kompaktabbak, normál nézetben három érték egy sorban. Az aktív
-rögzítés be/ki pipával történik. A közös kis gombok effektje a látható alakba vágott;
-a 48dp találati terület és a látható visszajelzés megmaradt.
-
-A nyomási képvizsgálat a valódi Compose hostot szinkron rajzolja, és ellenőrzi, hogy
-kívül nem változnak a pixelek, belül látható visszajelzés marad; a nagyobb találati
-terület szélén végzett koppintás külön teszt. A korábbi PixelCopy/forceRedraw várakozás
-Robolectricen nem adott képkockát, azt cseréltük; a képi feltételek nem gyengültek.
-A meglévő mentési/dátum/RIR/ownership és elvetési ellenőrzések megmaradtak.
-
-Nincs main-merge, verzióemelés vagy új APK/AAB ebben a javító körben. Az átadott
-2758-as telepítők ezt még nem tartalmazzák; készülékes vizuális elfogadás hátravan.
-A záró docs-only commit nem változtat az ellenőrzött alkalmazáskódon.
-
----
-
-# 2026-11-13 – felső biztonsági sáv, kompakt sorozatok, lekerekített nyomási effekt
-
-Ág:fix/sheet-top-safe-area, alapmain37494d3. Új APK/verzióemelés nincs.
-A Gyors edzés és a három szerkesztő ugyanazt a nyers statusBarsIgnoringVisibility /
-displayCutout maximumot foglalja a teljes panelen kívül, így a húzófül és X is
-lejjebb kerül. A napló viewportja ezt az egyszer már lefoglalt helyet veszi figyelembe;
-a sheet animált eltolása nem zsugorítja meg a szerkesztő láblécét.
-
-Napló: normál nézetben súly/ismétlés/RIR egy sorban, kompakt 48dp értékválasztók,
-helyben szerkeszthető egyéni értékek és kis piros törlésikonok. A dátumok,
-RIR-hiány, draft és mentési/validálási út megmaradt; a többi mérésfajta is szerkeszthető.
-Aktív súlyzós edzés: kisebb térközök, címke+érték egy vezérlőben; a rögzítés egy
-be/ki állapotú, akadálymentes pipa. A natív callbacks/ownership kapuk változatlanok.
-
-A közös X/videó gombok nagyobb találati területe megmarad, de a nyomási effekt a
-belső vizuális mérethez/alakhoz kötött. Fejléc, gyorsopciók, kezdőlapi kártyák és
-módválasztók: a clip a clickable elé került. Nincs globális effektletiltás.
-Új regressziók: szintetikus status/cutout, kompakt elrendezés és pipakapcsolás,
-valódi naplómentési payload és mezőmegőrzés, nyomási effekt képhatára/nagy találati terület.
-Közös teljes CI következik; készülékes vizuális elfogadás még hátravan.
+Telefon APK: https://drive.google.com/file/d/1UsX_jxCFq12QLSc4vjtKiisWTDQIY0Jv/view?usp=drivesdk
+Wear APK: https://drive.google.com/file/d/1PVbCIlASe9pzK8HyC-W2jCp2_5aAccWY/view?usp=drivesdk
+Telefon AAB: https://drive.google.com/file/d/13x2q9gn9gfHDiheELCvccRHYn66wZA74/view?usp=drivesdk
+Wear AAB: https://drive.google.com/file/d/1c7T2NDVBzkIviWTuLHCnIXu7kq_dg3QR/view?usp=drivesdk
+Telefon Play-jegyzet: https://drive.google.com/file/d/15C1pyQzNFa4komp2wXtnYAys92ffTZy3/view?usp=drivesdk
+Wear Play-jegyzet: https://drive.google.com/file/d/1vSmuTUbbvFqSTLjVYZZmDzqD2n-LVkA1/view?usp=drivesdk
+Részletes változások: https://drive.google.com/file/d/1o18SeXknUykNZ0C--FcOacEQlCNcSvAd/view?usp=drivesdk
+Bizonyíték: https://drive.google.com/file/d/17mdUwlaGWOWwhS37_t0VW9ZHSETL7pIU/view?usp=drivesdk
 
 ---
 
