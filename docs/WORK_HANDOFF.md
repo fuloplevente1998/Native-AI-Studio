@@ -1,3 +1,18 @@
+# 2759 pihenősáv – célzott ellenőrzés a teljes újrafutás előtt
+
+A43508709582 signed kapu677 tesztből3 pihenőfelirat-túlcsordulási ellenőrzésen
+megbukott; az automatikus gyakorlatgörgetés és a többi674 teszt sikeres.
+Célzott diagnosztika43511589246: a timer Text softWrap=false + Ellipsis beállítása
+mellett a paragraph szélessége a teljes mérési korlát maradt (pl.721px), miközben
+a Text doboza a természetes91px volt. Így a szigorú túlcsordulás-ellenőrzés jelzett.
+A timer teljes értéke nem rövidítendő: az Ellipsis eltávolítva, a külső mérésalapú
+sorváltás és az összes bounds/overlap/hasVisualOverflow állítás megmaradt.
+A meglévő célzott progress/health CI-listához hozzáadva a négy új dock regresszió;
+a teljes alapkapu és a signed workflow változatlan. Sikeres célzott kör után jön
+az új közös main signed APK+AAB/JVM kapu. Jelenleg nincs új átadott telepítő.
+
+---
+
 # 2759 kiadási kiegészítés – pihenősáv és automatikus gyakorlatgörgetés
 
 A futó build alatt érkezett két új készülékes visszajelzés bekerül a végleges2759-be.

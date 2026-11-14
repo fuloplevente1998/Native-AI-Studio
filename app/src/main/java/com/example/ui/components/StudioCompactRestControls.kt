@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
@@ -49,7 +48,7 @@ internal fun StudioCompactRestControls(
             Text("$rest: %02d:%02d".format(remainingSec.coerceAtLeast(0) / 60, remainingSec.coerceAtLeast(0) % 60),
                 style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"),
                 fontWeight = FontWeight.ExtraBold, color = palette.textPrimary,
-                maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+                maxLines = 1, softWrap = false)
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
