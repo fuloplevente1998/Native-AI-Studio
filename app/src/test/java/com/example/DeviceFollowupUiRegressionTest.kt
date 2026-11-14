@@ -81,16 +81,16 @@ class DeviceFollowupUiRegressionTest {
                 }
             }
         } }
-        fun assertHeader(title: String) {
+        fun assertHeader(title: String, body: String) {
             val before = compose.onNodeWithText(title).getUnclippedBoundsInRoot()
             val content = compose.onNodeWithTag("followup_content").getUnclippedBoundsInRoot()
             assertTrue(before.top >= content.top)
             assertTrue(before.bottom <= content.bottom)
-            compose.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+            compose.onNodeWithTag(body).performTouchInput { swipeUp() }
             assertEquals(before, compose.onNodeWithText(title).getUnclippedBoundsInRoot())
         }
-        assertHeader(strings.editProgramTitle)
+        assertHeader(strings.editProgramTitle, "program_editor_body")
         compose.runOnIdle { detail = true }
-        assertHeader(strings.detailsAction)
+        assertHeader(strings.detailsAction, "exercise_detail_body")
     }
 }

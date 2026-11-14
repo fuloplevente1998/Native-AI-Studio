@@ -506,6 +506,15 @@ class TrainPilotViewModel : ViewModel() {
                         CalendarEventStatus.MISSED -> "skipped"
                         else -> "planned"
                     }
+                    val programId = ev.programId.ifBlank { existing?.programId.orEmpty() }.ifBlank { activeProg?.id.orEmpty() }
+                    val program = state.programs.firstOrNull { it.id == programId }
+                    val requestedDayId = ev.dayId.ifBlank { existing?.dayId.orEmpty() }.ifBlank { ev.splitBadge }
+                    val day = program?.days?.firstOrNull {
+                        it.id.removePrefix("$programId:").equals(requestedDayId, true)
+                    }
+                    val dayId = day?.id?.removePrefix("$programId:") ?: requestedDayId
+                    val programName = program?.nameHu ?: existing?.programName ?: ev.titleHu
+                    val dayName = day?.titleHu ?: existing?.dayName ?: ev.titleHu
                     val rawEv = JSONObject().apply {
                         put("id", ev.id)
                         put("dayOfMonth", ev.dayOfMonth)
@@ -516,8 +525,10 @@ class TrainPilotViewModel : ViewModel() {
                         put("durationMinutes", ev.durationMinutes)
                         put("status", ev.status.name)
                         put("splitBadge", ev.splitBadge)
-                        put("programId", ev.programId)
-                        put("dayId", ev.dayId)
+                        put("programId", programId)
+                        put("programName", programName)
+                        put("dayId", dayId)
+                        put("dayName", dayName)
                     }
                     CalendarScheduleEntity(
                         id = ev.id,
@@ -525,14 +536,8 @@ class TrainPilotViewModel : ViewModel() {
                         date = dateStr,
                         startIso = start.toString(),
                         endIso = end.toString(),
-                        programId = ev.programId.ifBlank { existing?.programId.orEmpty() }.ifBlank { activeProg?.id.orEmpty() },
-                        programName = state.programs.firstOrNull { it.id == ev.programId }?.nameHu
-                            ?: existing?.programName ?: activeProg?.nameHu ?: ev.titleHu,
-                        dayId = ev.dayId.ifBlank { existing?.dayId.orEmpty() }.ifBlank {
-                            activeProg?.days?.firstOrNull { it.id.substringAfter("${activeProg.id}:").equals(ev.splitBadge, true) }
-                                ?.id?.substringAfter("${activeProg.id}:") ?: ev.splitBadge
-                        },
-                        dayName = ev.titleHu,
+                        programId = programId, programName = programName,
+                        dayId = dayId, dayName = dayName,
                         status = statusStr,
                         updatedAt = nowMs,
                         rawJson = rawEv.toString()
