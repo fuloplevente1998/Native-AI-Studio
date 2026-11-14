@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.*
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
 import com.example.localization.TrainPilotStrings
@@ -47,11 +48,11 @@ class DeviceFollowupUiRegressionTest {
         compose.setContent { TrainPilotTheme {
             HomeScreen(state, strings, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
         } }
-        compose.onNodeWithTag("home_planned_day").assertTextEquals("A nap")
+        compose.onNodeWithTag("home_planned_day", useUnmergedTree = true).assertTextEquals("A nap")
         compose.runOnIdle { state = state.copy(homeWorkoutTarget = HomeWorkoutTarget("home-basic", "b", "plan-b")) }
-        compose.onNodeWithTag("home_planned_day").assertTextEquals("B nap")
-        compose.onNodeWithText("1 gyakorlat • kb. 120 perc").assertExists()
-        compose.onNodeWithText("Aktív program • Otthoni A/B").assertExists()
+        compose.onNodeWithTag("home_planned_day", useUnmergedTree = true).assertTextEquals("B nap")
+        compose.onNodeWithText("1 gyakorlat • kb. 120 perc", useUnmergedTree = true).assertExists()
+        compose.onNodeWithText("Aktív program • Otthoni A/B", useUnmergedTree = true).assertExists()
     }
 
     @Test fun privatePhotoChoicesAreNewestFirstAndVerticalAndOpenTheCorrectPhoto() {
@@ -76,7 +77,7 @@ class DeviceFollowupUiRegressionTest {
     @Test fun editorAndExerciseDetailHeadersRemainBelowGlobalNavWhileTheirBodyScrolls() {
         var detail by mutableStateOf(false)
         compose.setContent { TrainPilotTheme {
-            Scaffold(topBar = { TrainPilotGlobalTopHeaderAndNav(MainTab.PROGRAMS, SubScreen.PROGRAM_EDITOR,
+            Scaffold(modifier = Modifier.height(600.dp), topBar = { TrainPilotGlobalTopHeaderAndNav(MainTab.PROGRAMS, SubScreen.PROGRAM_EDITOR,
                 AppLanguage.HU, 1, strings, {}, { _, _ -> }, {}, {}, {}) }) { padding ->
                 Box(Modifier.fillMaxSize().padding(padding).testTag("followup_content")) {
                     if (detail) ExerciseDetailScreen(state(), {}, {}, {}, {})
@@ -90,6 +91,8 @@ class DeviceFollowupUiRegressionTest {
             assertTrue(before.top >= content.top)
             assertTrue(before.bottom <= content.bottom)
             compose.onNodeWithTag(body).performTouchInput { swipeUp() }
+            val range = compose.onNodeWithTag(body).fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange]
+            assertTrue("Body must actually scroll", range.value() > 0f)
             assertEquals(before, compose.onNodeWithText(title).getUnclippedBoundsInRoot())
         }
         assertHeader(strings.editProgramTitle, "program_editor_body")

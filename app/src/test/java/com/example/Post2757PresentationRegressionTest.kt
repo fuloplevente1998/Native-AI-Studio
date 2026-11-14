@@ -111,8 +111,8 @@ class Post2757PresentationRegressionTest {
             }
         }
         val labels = mapOf(
-            AppLanguage.HU to listOf("RepForge ZIP / JSON mentés importálása", "Mentés indítása (JSON)", "Visszaállítás fájlból (TrainPilot / RepForge)"),
-            AppLanguage.DE to listOf("RepForge ZIP / JSON importieren", "Sicherung starten (JSON)", "Aus Datei wiederherstellen (TrainPilot / RepForge)")
+            AppLanguage.HU to listOf("Mentés (JSON)", "Visszaállítás / Importálás"),
+            AppLanguage.DE to listOf("Sichern (JSON)", "Wiederherstellen / Importieren")
         )
         labels.forEach { (lang, texts) ->
             compose.runOnIdle { language = lang }

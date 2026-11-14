@@ -962,9 +962,10 @@ data class LoggedWorkoutEntry(
         programs: List<TrainingProgramModel> = emptyList(),
         exercises: List<ExerciseItem> = emptyList()
     ): String {
+        val customProgram = programs.any { it.id == programId && it.isCustom }
         val title = when {
-            isHomeBasicLegacyName(titleHu) && programId in homeBasicProgramIds -> canonicalHomeBasicName(lang)
-            isHomeBasicLegacyName(titleHu) -> titleHu
+            isHomeBasicLegacyName(titleHu) && programId in homeBasicProgramIds && !customProgram -> canonicalHomeBasicName(lang)
+            isHomeBasicLegacyName(titleHu) && (programId.isNotBlank() || customProgram) -> titleHu
             else -> localizedBaseTitle(lang, programs, exercises)
         }
         val day = recordedDayLabel(dayId, dayName, lang) ?: return title

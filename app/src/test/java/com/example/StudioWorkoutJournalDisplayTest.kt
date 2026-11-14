@@ -11,6 +11,8 @@ class StudioWorkoutJournalDisplayTest {
     @Test fun savedDayLabelsNeverInferMissingHistoryOrRewriteCustomTitles() {
         val old = LoggedWorkoutEntry("old", titleHu = "Otthoni A/B – Alap")
         assertEquals("Otthoni A/B – Alap", old.localizedTitle(AppLanguage.HU))
+        assertEquals("Home A/B", old.localizedTitle(AppLanguage.EN))
+        assertEquals("Otthoni A/B – Alap • Day B", old.copy(programId = "custom", dayId = "b").localizedTitle(AppLanguage.EN))
         assertEquals("Otthoni A/B – Alap • B nap", old.copy(programId = "custom", dayId = "b")
             .localizedTitle(AppLanguage.HU))
         val builtin = old.copy(programId = "home-basic", dayId = "b")
