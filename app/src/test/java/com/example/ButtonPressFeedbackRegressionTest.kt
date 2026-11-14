@@ -40,7 +40,7 @@ import kotlin.math.roundToInt
 @Config(sdk = [34], qualifiers = "w400dp-h800dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @LooperMode(LooperMode.Mode.PAUSED)
-@OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
+@OptIn(androidx.compose.ui.test.ExperimentalTestApi::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
 class ButtonPressFeedbackRegressionTest {
     @get:Rule val compose = createComposeRule()
 
