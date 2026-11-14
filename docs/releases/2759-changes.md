@@ -23,4 +23,12 @@ A felhasználó jóváhagyta a 2759-es javítókiadást, változatlan 1.1-beta n
 
 A telefonos javítások PR#228-cal mainre kerültek. Előzetes CI: [43494316049](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43494316049), forrás 1019f605ce737341f66c2776a5b0cdc15ebf944a. Nyers XML és artifact-digest ellenőrizve: 486 telefonos + 187 Wear = **673 teszt**, 0 failure/error/skipped; shared NO-SOURCE.
 
-A közös aláírt main APK+AAB futás, a csomagok és a Drive-átadás bizonyítéka a kiadás végén kerül ide. A készülékes vizuális elfogadás külön ellenőrzés.
+A végleges közös aláírt main APK+AAB futás sikeres: [43565800117](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43565800117), forrás `985969595083575d5b8dfe183df64cc8228d94b2` (#228, #229, #230, #231).
+
+Nyers XML és ZIP-digest ellenőrizve: **490 telefonos + 187 Wear = 677 teszt**, 0 failure/error/skipped; shared NO-SOURCE. A négy új dock regresszió a teljes körben is zöld. A megelőző célzott kör 69 telefonos + 187 Wear tesztje is sikeres (43565270201, `2759-targeted-evidence.json`).
+
+Az APK/AAB csomagok azonos aláírt futásból készültek. A forrásSHA, package, verziók, fájlhashek, telefon–óra páridentitás és tartós signer ellenőrizve; az AAB-k tanúsítványa helyben is összevetve. TelefonAPK: **5 495 467 byte** (5,5 MB); WearAPK: **4 669 627 byte** (4,7 MB), R8 és resource shrinking megmaradt.
+
+A korábbi, kiegészítés nélküli 43505815125 futás leállítva; a 43508709582 futás három pihenőfelirat-ellenőrzésen megbukott. Ezekből telepítőt nem adtunk át. A végleges fenti futás az összes javítást tartalmazza.
+
+Az APK-k telepítéshez, az AAB-k a két Play Console tesztcsatorna frissítéséhez valók; a feltöltést a felhasználó végezheti a külön telefon/Wear jegyzetekkel. A készülékes kamerakivágásos, világos/sötét és nagybetűs vizuális elfogadás külön ellenőrzés. A teszt nem helyettesíti a fizikai Samsung/HC/Wear ellenőrzést.
