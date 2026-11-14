@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
+import com.repforge.app.ui.settings.SettingsUiState
 import com.repforge.app.ui.settings.SettingsViewModel
 import com.repforge.app.GoogleSyncRepository
 import com.repforge.app.GoogleSyncUiState
@@ -64,18 +65,25 @@ class BackupCompactViewportRegressionTest {
                 lastDriveSyncIso = "2026-11-01T09:00:00Z")
         }
         listOf(AppLanguage.HU, AppLanguage.EN, AppLanguage.DE, AppLanguage.RO).forEach { lang ->
-            compose.runOnIdle { language = lang; format = "JSON"; health = false }
+            compose.runOnIdle {
+                language = lang; format = "JSON"; health = false
+                val model = ViewModelProvider(compose.activity)[SettingsViewModel::class.java]
+                val field = SettingsViewModel::class.java.getDeclaredField("_uiState").apply { isAccessible = true }
+                @Suppress("UNCHECKED_CAST")
+                val flow = field.get(model) as MutableStateFlow<SettingsUiState>
+                flow.value = flow.value.copy(settings = flow.value.settings.copy(language = lang.code))
+            }
             val viewport = compose.onNodeWithTag("backup_restore_screen").getUnclippedBoundsInRoot()
             listOf("backup_format_JSON", "backup_format_ZIP", "backup_format_DRIVE", "backup_health_switch", "backup_export_btn", "import_repforge_legacy_btn").forEach { tag ->
                 val node = compose.onNodeWithTag(tag).assertIsDisplayed()
                 val bounds = node.getUnclippedBoundsInRoot()
                 assertTrue("$lang $tag outside viewport", bounds.top >= viewport.top && bounds.bottom <= viewport.bottom)
-                assertTrue("$lang $tag has a short touch target", bounds.height.value >= 48f)
+                assertTrue("$lang $tag has a short touch target", (bounds.bottom - bounds.top).value >= 48f)
             }
             compose.onNodeWithTag("studio_google_cloud_card").assertDoesNotExist()
             compose.onNodeWithTag("backup_format_JSON").assertIsSelected()
             val visual = compose.onNodeWithTag("backup_format_JSON_visual", useUnmergedTree = true).getUnclippedBoundsInRoot()
-            assertEquals(36.dp, visual.height)
+            assertEquals(36.dp, (visual.bottom - visual.top))
             capture("backup-${lang.code}-json")
             compose.onNodeWithTag("backup_health_switch").performClick()
             compose.runOnIdle { assertTrue(health) }

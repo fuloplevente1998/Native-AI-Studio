@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.background
+import com.example.ui.theme.LocalTrainPilotPalette
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.*
@@ -63,7 +65,7 @@ class ExerciseLibraryCompactRegressionTest {
                 LocalOpenExerciseVideo provides { name, id -> video = name to id }
             ) {
                 TrainPilotTheme {
-                    Box(Modifier.width(width.dp)) {
+                    Box(Modifier.width(width.dp).background(LocalTrainPilotPalette.current.background)) {
                         ExerciseLibraryScreen(
                             state = TrainPilotUiState(language = language, exercises = listOf(exercise, arnold),
                                 favoriteExerciseIds = if (favorite) setOf(exercise.id) else emptySet(),
@@ -83,7 +85,7 @@ class ExerciseLibraryCompactRegressionTest {
             val node = compose.onNodeWithTag("exercise_library_name_long", useUnmergedTree = true)
             node.performScrollTo().assertTextEquals(name)
             val bounds = node.getUnclippedBoundsInRoot()
-            assertTrue("Title should use the card width", bounds.width >= (w - 60).dp)
+            assertTrue("Title should use the card width", (bounds.right - bounds.left) >= (w - 60).dp)
             val layouts = mutableListOf<TextLayoutResult>()
             val action = node.fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult]
             assertTrue(action.action!!.invoke(layouts))
@@ -99,12 +101,12 @@ class ExerciseLibraryCompactRegressionTest {
                 "exercise_library_add_to_queue_long", "exercise_library_start_now_long")) {
                 val control = compose.onNodeWithTag(tag).performScrollTo().assertIsEnabled()
                 val hit = control.getUnclippedBoundsInRoot()
-                assertTrue("$tag width", hit.width >= 48.dp)
-                assertTrue("$tag height", hit.height >= 48.dp)
+                assertTrue("$tag width", (hit.right - hit.left) >= 48.dp)
+                assertTrue("$tag height", (hit.bottom - hit.top) >= 48.dp)
                 if (!tag.startsWith("exercise_library_favorite_")) {
                     val visual = compose.onNodeWithTag("${tag}_visual", useUnmergedTree = true).getUnclippedBoundsInRoot()
-                    assertEquals(32.dp, visual.width)
-                    assertEquals(32.dp, visual.height)
+                    assertEquals(32.dp, (visual.right - visual.left))
+                    assertEquals(32.dp, (visual.bottom - visual.top))
                 }
             }
         }
@@ -114,7 +116,7 @@ class ExerciseLibraryCompactRegressionTest {
             compose.onNodeWithTag("exercise_library_row_long").performScrollTo()
             val shortCard = compose.onNodeWithTag("exercise_library_row_arnold").performScrollTo()
                 .getUnclippedBoundsInRoot()
-            assertTrue("Short title card must stay compact: ${shortCard.height}", shortCard.height <= 100.dp)
+            assertTrue("Short title card must stay compact: ${(shortCard.bottom - shortCard.top)}", (shortCard.bottom - shortCard.top) <= 100.dp)
             compose.onNodeWithTag("exercise_library_row_long").performScrollTo()
             compose.runOnIdle {
                 val view = compose.activity.findViewById<View>(android.R.id.content)
