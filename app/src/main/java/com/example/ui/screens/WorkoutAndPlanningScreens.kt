@@ -2654,7 +2654,8 @@ fun ExerciseLibraryScreen(
     onAddExerciseToQueue: (ExerciseItem) -> Unit = {},
     onStartQueuedWorkout: () -> Unit = {},
     onToggleFavoritesOnly: () -> Unit = {},
-    onToggleFavorite: (String) -> Unit = {}
+    onToggleFavorite: (String) -> Unit = {},
+    onRemoveExerciseFromQueue: (String) -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
@@ -2863,9 +2864,13 @@ fun ExerciseLibraryScreen(
                                 ExerciseLibraryAction("exercise_video_btn_${name.hashCode()}", "${strings.videoLabel}: $name",
                                     Color(0xFFE53935).copy(alpha = 0.12f), Color(0xFFE53935), Icons.Default.OndemandVideo) { openVideo(name, ex.id) }
                                 ExerciseLibraryAction("exercise_library_add_to_queue_${ex.id}",
-                                    trW(state.language, "Hozzáadás az edzéshez", "Add to workout", "Zum Training hinzufügen", "Adaugă la antrenament"),
-                                    if (inQueue) palette.primary.copy(alpha = 0.2f) else palette.surfaceElevated,
-                                    palette.primary, if (inQueue) Icons.Default.Check else Icons.Default.Add) { onAddExerciseToQueue(ex) }
+                                    if (inQueue) trW(state.language, "Visszavonás az összeállításból", "Remove from workout selection", "Aus Trainingsauswahl entfernen", "Elimină din selecția antrenamentului")
+                                    else trW(state.language, "Hozzáadás az edzéshez", "Add to workout", "Zum Training hinzufügen", "Adaugă la antrenament"),
+                                    if (inQueue) Color(0xFFE53935).copy(alpha = 0.12f) else palette.surfaceElevated,
+                                    if (inQueue) Color(0xFFE53935) else palette.primary,
+                                    if (inQueue) Icons.Default.Check else Icons.Default.Add) {
+                                    if (inQueue) onRemoveExerciseFromQueue(ex.id) else onAddExerciseToQueue(ex)
+                                }
                                 ExerciseLibraryAction("exercise_library_start_now_${ex.id}", strings.startAction,
                                     palette.primary.copy(alpha = 0.15f), palette.primary, Icons.Default.PlayArrow) { onStartExerciseNow(ex) }
                             }

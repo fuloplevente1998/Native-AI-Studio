@@ -3654,8 +3654,17 @@ class TrainPilotViewModel : ViewModel() {
 
     fun removeExerciseFromWorkoutQueue(exerciseId: String) {
         _uiState.update { state ->
+            val removed = state.quickWorkoutQueue.firstOrNull { it.id == exerciseId } ?: return@update state
+            val name = removed.localizedName(state.language)
             state.copy(
-                quickWorkoutQueue = state.quickWorkoutQueue.filterNot { it.id == exerciseId }
+                quickWorkoutQueue = state.quickWorkoutQueue.filterNot { it.id == exerciseId },
+                statusBannerMessage = tr(
+                    "„$name” eltávolítva az összeállításból",
+                    "“$name” removed from workout selection",
+                    "„$name“ aus der Trainingsauswahl entfernt",
+                    "„$name” eliminat din selecția antrenamentului",
+                    state.language
+                )
             )
         }
     }
