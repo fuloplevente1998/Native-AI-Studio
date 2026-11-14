@@ -1,0 +1,122 @@
+{
+  "release": 2760,
+  "versionName": "1.1-beta",
+  "source": "fcf465785ba1bdc14f3148fa72be480a7ec9b1c2",
+  "run": 43578727032,
+  "job": 132398638690,
+  "conclusion": "success",
+  "junit": {
+    "commit": "fcf465785ba1bdc14f3148fa72be480a7ec9b1c2",
+    "modules": {
+      "phone": {
+        "files": 92,
+        "tests": 496,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "wear": {
+        "files": 35,
+        "tests": 189,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "shared": {
+        "files": 0,
+        "tests": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": true
+      }
+    },
+    "total": {
+      "tests": 685,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "apkMetadataFromRunnerLog": {
+    "applicationId": "com.TrainPilot.com",
+    "versionCode": "276000",
+    "versionName": "1.1-beta",
+    "apkSha256": "cdbf9c235559d3533035c4edf16f25ac932bdfdb144f5332f322c2ee1a0daf4b",
+    "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+    "signerSha256": "***",
+    "mapsApiKeyConfigured": true,
+    "ciCheckout": "fcf465785ba1bdc14f3148fa72be480a7ec9b1c2",
+    "wear": {
+      "applicationId": "com.TrainPilot.com",
+      "versionCode": "276002",
+      "versionName": "1.1-beta",
+      "apkSha256": "a0cb4d8b2bdf456cdc9bd5e6acef865e129d91cc073bd72eebdbab8695f10a8c",
+      "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+      "signerSha256": "***",
+      "variant": "release",
+      "bytes": 4669627
+    },
+    "wearCompanionCapabilityRetained": true,
+    "dataLayerPairIdentityVerified": true,
+    "wearHardwareRequired": true
+  },
+  "playMetadataFromRunnerLog": {
+    "commit": "fcf465785ba1bdc14f3148fa72be480a7ec9b1c2",
+    "applicationId": "com.TrainPilot.com",
+    "versionName": "1.1-beta",
+    "mobileVersionCode": 276000,
+    "wearVersionCode": 276002,
+    "mobileAabSha256": "db85c1ae93205df01cebe941a3c115e894cb557f4343e6039ce3ce3a7e014be8",
+    "wearAabSha256": "54b8e685e344f33e71ed483df2ebe89a42c8be6f68bf544c585ffd60b15c87ff",
+    "mobileBytes": 10109234,
+    "wearBytes": 5580506
+  },
+  "artifacts": [
+    {
+      "id": 14108510765,
+      "name": "trainpilot-persistent-signing-test-reports",
+      "bytes": 136306,
+      "digest": "sha256:1fe1252256377859f4f929e1af053665181c8215e544757f25c1997366e65f61",
+      "expiresAt": "2026-11-21T09:22:00Z",
+      "downloadUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43578727032/artifacts/14108510765"
+    },
+    {
+      "id": 14107921912,
+      "name": "trainpilot-play-internal-aab-pair",
+      "bytes": 15316494,
+      "digest": "sha256:c144ad6c5edac506099749b4c03759c758913daf525200d11fd14942536aad17",
+      "expiresAt": "2026-11-21T09:21:59Z",
+      "downloadUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43578727032/artifacts/14107921912"
+    },
+    {
+      "id": 14107842389,
+      "name": "trainpilot-persistent-signed-apk-pair",
+      "bytes": 6917201,
+      "digest": "sha256:ccb1339206848c0211fd33635b972bfc608f8d597ff7d1212b33f70ff1b9706b",
+      "expiresAt": "2026-11-21T09:21:57Z",
+      "downloadUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43578727032/artifacts/14107842389"
+    }
+  ],
+  "verification": {
+    "sourcePackageAndVersionChecked": true,
+    "runnerPinnedApkSigner": true,
+    "runnerPinnedAabSigner": true,
+    "runnerMapsAndPairIdentity": true,
+    "certificateFingerprintsRedactedInLogs": true,
+    "localArchivesDownloaded": false,
+    "localArchiveDigestVerified": false,
+    "localBinaryHashAndSignerReadback": false,
+    "reason": "Execution environment unavailable. GitHub runner verification and immutable artifact metadata were checked through the connected GitHub tools."
+  },
+  "delivery": {
+    "mainMerged": true,
+    "pr": 233,
+    "githubZipLinksAvailable": true,
+    "driveUploaded": false,
+    "driveFolder": "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9",
+    "physicalAcceptance": false
+  }
+}
