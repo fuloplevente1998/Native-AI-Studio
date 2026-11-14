@@ -1602,7 +1602,7 @@ class TrainPilotViewModel : ViewModel() {
             if (state.currentTab == tab && state.currentSubScreen == SubScreen.NONE) {
                 state
             } else {
-                val updatedStack = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16)
+                val updatedStack = (state.backStack + state.navigationRoute()).takeLast(16)
                 state.copy(
                     currentTab = tab,
                     currentSubScreen = SubScreen.NONE,
@@ -1630,7 +1630,9 @@ class TrainPilotViewModel : ViewModel() {
         }
 
         _uiState.update { state ->
-            val updatedStack = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16)
+            if (state.currentSubScreen == subScreen && state.currentTab == (targetTab ?: state.currentTab))
+                return@update state
+            val updatedStack = (state.backStack + state.navigationRoute()).takeLast(16)
             state.copy(
                 currentTab = targetTab ?: state.currentTab,
                 currentSubScreen = subScreen,
@@ -1653,7 +1655,7 @@ class TrainPilotViewModel : ViewModel() {
         if (!pauseActiveWorkout(false)) return
         _uiState.update { state ->
             val targetSub = state.activeWorkoutSubScreen
-            val updatedStack = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16)
+            val updatedStack = (state.backStack + state.navigationRoute()).takeLast(16)
             state.copy(
                 currentTab = MainTab.WORKOUT,
                 currentSubScreen = targetSub,
@@ -1711,12 +1713,13 @@ class TrainPilotViewModel : ViewModel() {
         if (current.backStack.isNotEmpty()) {
             val previous = current.backStack.last()
             _uiState.update {
-                it.copy(
-                    currentTab = previous.tab,
-                    currentSubScreen = previous.subScreen,
-                    backStack = it.backStack.dropLast(1)
-                )
+                val restored = it.restoreNavigation(previous)
+                restored.copy(backStack = it.backStack.dropLast(1),
+                    logWorkoutMuscleLoads = if (restored.selectedLogWorkoutId != it.selectedLogWorkoutId)
+                        emptyList() else it.logWorkoutMuscleLoads)
             }
+            if (_uiState.value.currentSubScreen == SubScreen.LOG_WORKOUT_DETAIL)
+                loadWorkoutMuscleSummary(_uiState.value.selectedLogWorkoutId)
             return true
         } else if (current.currentSubScreen != SubScreen.NONE) {
             _uiState.update { it.copy(currentSubScreen = SubScreen.NONE) }
@@ -2108,7 +2111,7 @@ class TrainPilotViewModel : ViewModel() {
             runCatching { com.repforge.app.NativeDataReplacement.continuationForCurrentData(it) }.getOrNull()
         }
         _uiState.update {
-            val back = (it.backStack + NavRoute(it.currentTab, it.currentSubScreen)).takeLast(16)
+            val back = (it.backStack + it.navigationRoute()).takeLast(16)
             it.copy(
                 editingProgramId = programId,
                 editingDayIndex = dayIndex,
@@ -2313,7 +2316,7 @@ class TrainPilotViewModel : ViewModel() {
                 )
             )
             val updatedPrograms = listOf(newProg) + state.programs.map { it.copy(isActive = false) }
-            val back = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16)
+            val back = (state.backStack + state.navigationRoute()).takeLast(16)
             state.copy(
                 programs = updatedPrograms,
                 programsTabCustomOnly = true,
@@ -2681,8 +2684,10 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun openExerciseDetail(exerciseId: String) {
+        if (_uiState.value.currentSubScreen == SubScreen.EXERCISE_DETAIL &&
+            _uiState.value.selectedExerciseId == exerciseId) return
         _uiState.update {
-            val back = (it.backStack + NavRoute(it.currentTab, it.currentSubScreen)).takeLast(16)
+            val back = (it.backStack + it.navigationRoute()).takeLast(16)
             it.copy(
                 selectedExerciseId = exerciseId,
                 currentSubScreen = SubScreen.EXERCISE_DETAIL,
@@ -3486,7 +3491,7 @@ class TrainPilotViewModel : ViewModel() {
                 !com.repforge.app.NativeWatchHandoffReceipt.pending(frame, watchJournal()),
             watchControlPending = watchHandoffBusy || com.repforge.app.NativeWatchHandoffReceipt.pending(frame, watchJournal()),
             currentSubScreen = target, showQuickWorkoutSheet = false, timedCurrentSec = 0,
-            backStack = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16),
+            backStack = (state.backStack + state.navigationRoute()).takeLast(16),
             statusBannerMessage = null) }
     }
 
@@ -3526,7 +3531,7 @@ class TrainPilotViewModel : ViewModel() {
             ExerciseSetItem(setNumber = 1, weightKg = 0f, reps = 0, rir = 0, completed = false)
         )
         _uiState.update { state ->
-            val back = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16)
+            val back = (state.backStack + state.navigationRoute()).takeLast(16)
             state.copy(
                 isWorkoutSessionActive = false,
                 activeWorkoutId = newWorkoutId,
@@ -4003,8 +4008,10 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun openLogWorkoutDetail(workoutId: String) {
+        if (_uiState.value.currentSubScreen == SubScreen.LOG_WORKOUT_DETAIL &&
+            _uiState.value.selectedLogWorkoutId == workoutId) return
         _uiState.update {
-            val back = (it.backStack + NavRoute(it.currentTab, it.currentSubScreen)).takeLast(16)
+            val back = (it.backStack + it.navigationRoute()).takeLast(16)
             it.copy(
                 selectedLogWorkoutId = workoutId,
                 logWorkoutMuscleLoads = emptyList(),
@@ -4121,7 +4128,7 @@ class TrainPilotViewModel : ViewModel() {
         connect: Boolean = false
     ) {
         _uiState.update { state ->
-            val back = (state.backStack + NavRoute(state.currentTab, state.currentSubScreen)).takeLast(16)
+            val back = (state.backStack + state.navigationRoute()).takeLast(16)
             state.copy(
                 currentTab = MainTab.HEALTH,
                 currentSubScreen = SubScreen.NONE,

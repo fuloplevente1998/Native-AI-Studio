@@ -64,13 +64,13 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Vibration
-import androidx.compose.material3.Button
+import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton as OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -1570,7 +1570,7 @@ fun ActiveBilateralWorkoutScreen(
                 }
             },
             dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { editingBilateralSet = null }) {
+                com.repforge.app.ui.theme.TrainPilotTextButton(onClick = { editingBilateralSet = null }) {
                     Text(strings.cancelBtn, color = palette.textSecondary)
                 }
             }

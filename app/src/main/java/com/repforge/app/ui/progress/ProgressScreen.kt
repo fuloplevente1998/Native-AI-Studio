@@ -141,7 +141,7 @@ fun ProgressScreen(
         }
         if (state.loadError) item {
             Text(strings.getString(R.string.native_progress_error), color = colors.dangerText, modifier = Modifier.testTag("progress_error"))
-            androidx.compose.material3.TextButton(onClick = viewModel::loadProgressData) {
+            com.repforge.app.ui.theme.TrainPilotTextButton(onClick = viewModel::loadProgressData) {
                 Text(strings.getString(R.string.native_progress_retry))
             }
         }
@@ -233,7 +233,7 @@ fun ProgressScreen(
                                     color = colors.muted, modifier = Modifier.testTag("progress_strength_loading"))
                             }
                             state.strengthError -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                androidx.compose.material3.TextButton(
+                                com.repforge.app.ui.theme.TrainPilotTextButton(
                                     onClick = viewModel::retryStrength,
                                     modifier = Modifier.testTag("progress_strength_retry")
                                 ) {

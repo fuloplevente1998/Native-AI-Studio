@@ -1,3 +1,11 @@
+# #241/#243/#244 — közös interakciós és navigációs javítócsomag
+
+Ág fix/exercise-queue-undo, draft PR242. A korábbi #241 visszavonás mellé két új, külön követett feladat került: #243 teljes alakú gombnyomás-visszajelzés; #244 X/rendszer-vissza az eredeti lapra, alfülre és görgetési helyre. A közös gombcsalád bekötése jellemzően import alias; a nézetméretek és a natív motor megmaradnak. Új regressziók a tényleges gombokat és Progress→részlet→X útvonalat tesztelik. Részletek: ISSUE243_244_INTERACTION_NAVIGATION.md.
+
+A #241 korábbi forrása696 teszttel ellenőrzött; a mostani kódra egy új közös teljes CI indul. Új APK/AAB és verzióemelés nincs kérve. A korábbi #238 UI/mentési csomag készre zárva; a kiadott 2762-es telepítők változatlanok. Main-merge és kiadás nincs ebben a folytatásban.
+
+---
+
 # #241 — összeállított gyakorlatlista visszavonása, külön javító PR
 
 A #238 eddigi UI/mentési módosításait a felhasználó a 2762-es képernyőkép alapján elfogadta és készre záratta; a jegy CLOSED. Az elrendezés marad. Új utófeladat: a listában kijelölt gyakorlat pipája eltávolítson az összeállításból, ne ismét hozzáadjon. Saját ág: fix/exercise-queue-undo; draft PR242, issue241.
