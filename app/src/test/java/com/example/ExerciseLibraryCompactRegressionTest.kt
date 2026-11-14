@@ -45,16 +45,23 @@ class ExerciseLibraryCompactRegressionTest {
             id = "long", nameHu = "Bicepszhajlítás – kétkezes súlyzóval állva",
             nameEn = "Standing barbell biceps curl with both hands",
             nameDe = "Bizepscurls mit der Langhantel im Stehen",
-            nameRo = "Flexii pentru biceps cu bara din picioare"
+            nameRo = "Flexii pentru biceps cu bara din picioare",
+            category = com.example.model.ExerciseCategory.ARMS,
+            equipmentHu = "Kétkezes rúd (súlyzórúd)", primaryMusclesHu = "Bicepsz"
         )
         val arnold = ExerciseItem(id = "arnold", nameHu = "Arnold-nyomás", nameDe = "Arnold-Drücken",
             equipmentHu = "2 kézisúlyzó", primaryMusclesHu = "Váll", category = com.example.model.ExerciseCategory.SHOULDERS)
+        val bird = ExerciseItem(id = "bird", nameHu = "Bird dog – négykézláb ellentétes kar és láb", nameDe = "Bird Dog im Vierfüßlerstand",
+            category = com.example.model.ExerciseCategory.CORE)
+        val squat = ExerciseItem(id = "squat", nameHu = "Guggolás", nameDe = "Kniebeuge",
+            category = com.example.model.ExerciseCategory.LEGS)
         var language by mutableStateOf(AppLanguage.HU)
         var width by mutableIntStateOf(320)
         var scale by mutableFloatStateOf(1f)
         var favorite by mutableStateOf(false)
         var queued by mutableStateOf(false)
-        var selected = 0
+        var selected: String? = null
+        var mutationBusy by mutableStateOf(false)
         var started = 0
         var video: Pair<String, String?>? = null
         compose.setContent {
@@ -67,11 +74,12 @@ class ExerciseLibraryCompactRegressionTest {
                 TrainPilotTheme {
                     Box(Modifier.width(width.dp).background(LocalTrainPilotPalette.current.background)) {
                         ExerciseLibraryScreen(
-                            state = TrainPilotUiState(language = language, exercises = listOf(exercise, arnold),
+                            state = TrainPilotUiState(language = language, exercises = listOf(exercise, arnold, bird, squat),
                                 favoriteExerciseIds = if (favorite) setOf(exercise.id) else emptySet(),
+                                libraryMutationBusy = mutationBusy,
                                 quickWorkoutQueue = if (queued) listOf(exercise) else emptyList()),
                             onBack = {}, onOpenSettings = {}, onSearchQueryChange = {},
-                            onSelectCategory = {}, onSelectExercise = { selected++ },
+                            onSelectCategory = {}, onSelectExercise = { selected = it },
                             onToggleFavorite = { favorite = !favorite },
                             onAddExerciseToQueue = { queued = true }, onStartExerciseNow = { started++ }
                         )
@@ -84,8 +92,6 @@ class ExerciseLibraryCompactRegressionTest {
             val name = exercise.localizedName(lang)
             val node = compose.onNodeWithTag("exercise_library_name_long", useUnmergedTree = true)
             node.performScrollTo().assertTextEquals(name)
-            val bounds = node.getUnclippedBoundsInRoot()
-            assertTrue("Title should use the card width", (bounds.right - bounds.left) >= (w - 60).dp)
             val layouts = mutableListOf<TextLayoutResult>()
             val action = node.fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult]
             assertTrue(action.action!!.invoke(layouts))
@@ -103,26 +109,41 @@ class ExerciseLibraryCompactRegressionTest {
                 val hit = control.getUnclippedBoundsInRoot()
                 assertTrue("$tag width", (hit.right - hit.left) >= 48.dp)
                 assertTrue("$tag height", (hit.bottom - hit.top) >= 48.dp)
-                if (!tag.startsWith("exercise_library_favorite_")) {
-                    val visual = compose.onNodeWithTag("${tag}_visual", useUnmergedTree = true).getUnclippedBoundsInRoot()
-                    assertEquals(32.dp, (visual.right - visual.left))
-                    assertEquals(32.dp, (visual.bottom - visual.top))
-                }
+
             }
+            val videoBounds = compose.onNodeWithTag("exercise_video_btn_${name.hashCode()}").getUnclippedBoundsInRoot()
+            val addBounds = compose.onNodeWithTag("exercise_library_add_to_queue_long").getUnclippedBoundsInRoot()
+            val startBounds = compose.onNodeWithTag("exercise_library_start_now_long").getUnclippedBoundsInRoot()
+            assertEquals(videoBounds.right, addBounds.left)
+            assertEquals(addBounds.right, startBounds.left)
+            assertEquals(videoBounds.top, addBounds.top)
+            assertEquals(addBounds.top, startBounds.top)
+            val group = compose.onNodeWithTag("exercise_library_actions_long", useUnmergedTree = true).getUnclippedBoundsInRoot()
+            assertTrue(group.left <= videoBounds.left && group.right >= startBounds.right)
+            val titleBounds = node.getUnclippedBoundsInRoot()
+            assertTrue("Actions must not overlap the title", group.left >= titleBounds.right || group.top >= titleBounds.bottom)
+            val meta = compose.onNodeWithTag("exercise_library_meta_long", useUnmergedTree = true)
+            meta.assertTextContains("${exercise.defaultSets}×${exercise.defaultReps}", substring = true)
         }
         // Capture the actual Compose fixture via the Android Canvas, without PixelCopy.
         for (lang in listOf(AppLanguage.HU, AppLanguage.DE)) {
             compose.runOnIdle { width = 360; scale = 1f; language = lang }
+            val favoriteFilter = compose.onNodeWithTag("studio_library_favorites_only").performScrollTo().getUnclippedBoundsInRoot()
+            val custom = compose.onNodeWithTag("exercise_library_add_custom_button").performScrollTo().getUnclippedBoundsInRoot()
+            assertTrue("Header controls should fit on one row", favoriteFilter.bottom > custom.top && custom.bottom > favoriteFilter.top)
             compose.onNodeWithTag("exercise_library_row_long").performScrollTo()
             val shortCard = compose.onNodeWithTag("exercise_library_row_arnold").performScrollTo()
                 .getUnclippedBoundsInRoot()
-            assertTrue("Short title card must stay compact: ${(shortCard.bottom - shortCard.top)}", (shortCard.bottom - shortCard.top) <= 100.dp)
-            compose.onNodeWithTag("exercise_library_row_long").performScrollTo()
+            assertTrue("Short title card must stay compact: ${(shortCard.bottom - shortCard.top)}", (shortCard.bottom - shortCard.top) <= 70.dp)
+            val title = compose.onNodeWithTag("exercise_library_name_arnold", useUnmergedTree = true).getUnclippedBoundsInRoot()
+            val actions = compose.onNodeWithTag("exercise_library_actions_arnold", useUnmergedTree = true).getUnclippedBoundsInRoot()
+            assertTrue("Short title and actions should be inline", title.right <= actions.left && title.bottom > actions.top)
+            compose.onNodeWithTag("studio_library_favorites_only").performScrollTo()
             compose.runOnIdle {
                 val view = compose.activity.findViewById<View>(android.R.id.content)
                 val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
                 view.draw(Canvas(bitmap))
-                val cropped = Bitmap.createBitmap(bitmap, 0, 0, minOf(360, bitmap.width), bitmap.height)
+                val cropped = Bitmap.createBitmap(bitmap, 0, 0, minOf(360, bitmap.width), minOf(800, bitmap.height))
                 val appDir = if (File("app/build.gradle.kts").exists()) File("app") else File(".")
                 val output = File(appDir, "build/reports/tests/device-ui/exercise-picker-${lang.code}.png")
                 output.parentFile!!.mkdirs()
@@ -131,14 +152,18 @@ class ExerciseLibraryCompactRegressionTest {
                 bitmap.recycle()
             }
         }
+        compose.runOnIdle { mutationBusy = true }
+        compose.onNodeWithTag("exercise_library_favorite_long").performScrollTo().assertIsNotEnabled()
+        compose.runOnIdle { mutationBusy = false }
         compose.onNodeWithTag("exercise_library_favorite_long").performClick().assertIsOn()
-        compose.onNodeWithTag("exercise_video_btn_${exercise.localizedName(language).hashCode()}").performClick()
+        compose.onNodeWithTag("exercise_video_btn_${exercise.localizedName(language).hashCode()}").performScrollTo().performClick()
         assertEquals(exercise.localizedName(language) to exercise.id, video)
-        compose.onNodeWithTag("exercise_library_add_to_queue_long").performClick()
+        compose.onNodeWithTag("exercise_library_add_to_queue_long").performScrollTo().performClick()
         assertTrue(queued)
         compose.onNodeWithTag("exercise_library_start_now_long").performScrollTo().performClick()
         assertEquals(1, started)
+        assertNull("Action segments must not trigger the details click", selected)
         compose.onNodeWithTag("exercise_library_name_long", useUnmergedTree = true).performScrollTo().performClick()
-        assertEquals(1, selected)
+        assertEquals(exercise.id, selected)
     }
 }

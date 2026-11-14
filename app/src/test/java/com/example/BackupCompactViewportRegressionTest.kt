@@ -19,6 +19,7 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import com.example.localization.TrainPilotStrings
+import com.example.localization.LocalTrainPilotStrings
 import com.example.model.AppLanguage
 import com.example.ui.screens.BackupRestoreScreen
 import com.example.ui.theme.TrainPilotTheme
@@ -44,7 +45,9 @@ class BackupCompactViewportRegressionTest {
         var format by mutableStateOf("JSON")
         var health by mutableStateOf(false)
         var toggleCalls = 0
-        compose.setContent { TrainPilotTheme {
+        compose.setContent { CompositionLocalProvider(
+            LocalTrainPilotStrings provides TrainPilotStrings.forLanguage(language)
+        ) { TrainPilotTheme {
             Box(Modifier.size(400.dp, 640.dp)) {
                 BackupRestoreScreen(
                     TrainPilotUiState(language = language, selectedBackupFormat = format, includeHealthInBackup = health),
@@ -52,7 +55,7 @@ class BackupCompactViewportRegressionTest {
                     onSelectFormat = { format = it }, onToggleIncludeHealth = { health = it; toggleCalls++ }, onShowBanner = {}
                 )
             }
-        } }
+        } } }
         // Exercise the same connected/calendar-success state seen on the device, without
         // real credentials or network calls. Settings collects this real repository flow.
         compose.runOnIdle {
@@ -101,6 +104,14 @@ class BackupCompactViewportRegressionTest {
             compose.onNodeWithTag("studio_google_cloud_card").assertIsDisplayed()
             compose.onNodeWithTag("settings_google_calendar_sync_success").assertDoesNotExist()
             compose.onNodeWithTag("backup_drive_last_sync").assertIsDisplayed()
+            val lastBackupLabel = when (lang) {
+                AppLanguage.HU -> "Utolsó mentés"
+                AppLanguage.EN -> "Last backup"
+                AppLanguage.DE -> "Letzte Sicherung"
+                AppLanguage.RO -> "Ultimul backup"
+            }
+            compose.onNodeWithTag("backup_drive_last_sync")
+                .assertTextContains(lastBackupLabel, substring = true)
             listOf("backup_export_btn", "import_repforge_legacy_btn").forEach { tag ->
                 val bounds = compose.onNodeWithTag(tag).assertIsDisplayed().getUnclippedBoundsInRoot()
                 assertTrue("$lang Drive $tag outside viewport", bounds.top >= viewport.top && bounds.bottom <= viewport.bottom)
