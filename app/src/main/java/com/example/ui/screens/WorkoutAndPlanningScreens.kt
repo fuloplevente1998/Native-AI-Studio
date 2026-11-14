@@ -17,6 +17,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,6 +66,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.IconToggleButton
+import androidx.compose.material3.ripple
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
@@ -2806,9 +2810,15 @@ fun ExerciseLibraryScreen(
                 }
             }
 
-            // Compact Exercise Cards (single-row layout, clean Hungarian labels, popup video button)
+            // The title owns the full card width; actions keep their 48 dp hit areas below it.
             filtered.forEach { ex ->
                 val inQueue = state.quickWorkoutQueue.any { it.id == ex.id }
+                val favorite = ex.id in state.favoriteExerciseIds
+                val name = ex.localizedName(state.language)
+                val metadata = listOf(ex.category.localized(state.language), ex.localizedPrimaryMuscles(state.language),
+                    ex.localizedEquipment(state.language)).map { it.trim() }.filter { it.isNotBlank() }
+                    .distinctBy { it.lowercase(java.util.Locale.ROOT) }.joinToString(" • ")
+                val openVideo = LocalOpenExerciseVideo.current
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = palette.surface,
@@ -2823,120 +2833,100 @@ fun ExerciseLibraryScreen(
                         .clickable { onSelectExercise(ex.id) }
                         .testTag("exercise_library_row_${ex.id}")
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 7.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = ex.localizedName(state.language),
-                                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 18.sp),
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.textPrimary,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier
-                                        .weight(1f, fill = false)
-                                        .testTag("exercise_library_name_${ex.id}")
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = palette.primary.copy(alpha = 0.16f)
-                                ) {
-                                    Text(
-                                        text = ex.category.localized(state.language),
-                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = palette.primary,
-                                        maxLines = 1,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "${ex.localizedPrimaryMuscles(state.language)} • ${ex.localizedEquipment(state.language)} • ${ex.defaultSets}×${ex.defaultReps}",
-                                style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
-                                color = palette.textSecondary,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.testTag("exercise_library_meta_${ex.id}")
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(4.dp))
-                        val favorite = ex.id in state.favoriteExerciseIds
-                        IconToggleButton(checked = favorite, onCheckedChange = { onToggleFavorite(ex.id) },
-                            enabled = !state.libraryMutationBusy,
-                            modifier = Modifier.sizeIn(minWidth = 40.dp, minHeight = 48.dp).testTag("exercise_library_favorite_${ex.id}")) {
-                            Icon(if (favorite) Icons.Default.Star else Icons.Default.StarBorder,
-                                contentDescription = if (favorite) trW(state.language, "Eltávolítás a kedvencekből", "Remove from favorites", "Aus Favoriten entfernen", "Elimină din favorite")
-                                else trW(state.language, "Hozzáadás a kedvencekhez", "Add to favorites", "Zu Favoriten hinzufügen", "Adaugă la favorite"),
-                                tint = if (favorite) palette.primary else palette.textSecondary,
-                                modifier = Modifier.size(20.dp))
-                        }
-                        // Video popup button (opens modal dialog ONLY when clicked)
-                        SmallExerciseVideoButton(
-                            exerciseName = ex.localizedName(state.language),
-                            compactIconOnly = true,
-                            exerciseId = ex.id
+                    Column(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 7.dp, bottom = 2.dp)) {
+                        Text(
+                            text = name,
+                            style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 18.sp),
+                            fontWeight = FontWeight.Bold,
+                            color = palette.textPrimary,
+                            modifier = Modifier.fillMaxWidth().testTag("exercise_library_name_${ex.id}")
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        // Compact Add to workout queue button (+)
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = if (inQueue) palette.primary else palette.surfaceElevated,
-                            modifier = Modifier
-                                .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                                .trainPilotBorder(
-                                    1.dp,
-                                    if (inQueue) palette.primary else palette.cardBorder,
-                                    RoundedCornerShape(8.dp)
-                                )
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { onAddExerciseToQueue(ex) }
-                                .testTag("exercise_library_add_to_queue_${ex.id}")
-                        ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
-                                Text(
-                                    text = if (inQueue) "✓" else "+",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = if (inQueue) palette.onPrimary else palette.primary
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(4.dp))
-                        // Compact Immediate Start button (▶)
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = palette.primary,
-                            modifier = Modifier
-                                .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { onStartExerciseNow(ex) }
-                                .testTag("exercise_library_start_now_${ex.id}")
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                        Text(
+                            text = "$metadata • ${ex.defaultSets}×${ex.defaultReps}",
+                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
+                            color = palette.textSecondary,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth().testTag("exercise_library_meta_${ex.id}")
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconToggleButton(
+                                checked = favorite,
+                                onCheckedChange = { onToggleFavorite(ex.id) },
+                                enabled = !state.libraryMutationBusy,
+                                modifier = Modifier.size(48.dp).testTag("exercise_library_favorite_${ex.id}")
                             ) {
-                                Text(
-                                    text = "▶",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = palette.onPrimary
+                                Icon(
+                                    if (favorite) Icons.Default.Star else Icons.Default.StarBorder,
+                                    contentDescription = if (favorite) trW(state.language, "Eltávolítás a kedvencekből", "Remove from favorites", "Aus Favoriten entfernen", "Elimină din favorite")
+                                    else trW(state.language, "Hozzáadás a kedvencekhez", "Add to favorites", "Zu Favoriten hinzufügen", "Adaugă la favorite"),
+                                    tint = if (favorite) palette.primary else palette.textSecondary,
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
+                            ExerciseLibraryAction(
+                                tag = "exercise_video_btn_${name.hashCode()}",
+                                description = "${strings.videoLabel}: $name",
+                                color = Color(0xFFE53935).copy(alpha = 0.16f),
+                                borderColor = Color(0xFFE53935).copy(alpha = 0.55f),
+                                iconColor = Color(0xFFE53935),
+                                icon = Icons.Default.PlayArrow,
+                                onClick = { openVideo(name, ex.id) }
+                            )
+                            ExerciseLibraryAction(
+                                tag = "exercise_library_add_to_queue_${ex.id}",
+                                description = trW(state.language, "Hozzáadás az edzéshez", "Add to workout", "Zum Training hinzufügen", "Adaugă la antrenament"),
+                                color = if (inQueue) palette.primary else palette.surfaceElevated,
+                                borderColor = if (inQueue) palette.primary else palette.cardBorder,
+                                iconColor = if (inQueue) palette.onPrimary else palette.primary,
+                                icon = if (inQueue) Icons.Default.Check else Icons.Default.Add,
+                                onClick = { onAddExerciseToQueue(ex) }
+                            )
+                            ExerciseLibraryAction(
+                                tag = "exercise_library_start_now_${ex.id}",
+                                description = strings.startAction,
+                                color = palette.primary,
+                                borderColor = palette.primary,
+                                iconColor = palette.onPrimary,
+                                icon = Icons.Default.PlayArrow,
+                                onClick = { onStartExerciseNow(ex) }
+                            )
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ExerciseLibraryAction(
+    tag: String,
+    description: String,
+    color: Color,
+    borderColor: Color,
+    iconColor: Color,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val shape = RoundedCornerShape(8.dp)
+    Box(
+        modifier = Modifier.size(48.dp).clip(shape)
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .semantics { contentDescription = description }
+            .testTag(tag),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier.size(32.dp).clip(shape)
+                .background(if (pressed) borderColor else color)
+                .indication(interaction, ripple()).border(1.dp, borderColor, shape)
+                .testTag("${tag}_visual"),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
         }
     }
 }

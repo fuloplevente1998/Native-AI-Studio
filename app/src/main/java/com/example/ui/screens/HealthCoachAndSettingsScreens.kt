@@ -24,6 +24,12 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.material3.ripple
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -62,6 +68,7 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LocalFireDepartment
@@ -3125,7 +3132,8 @@ fun WatchAndSyncScreen(
 fun StudioGoogleCloudSyncCard(
     onShowBanner: (String) -> Unit,
     onCloudSyncCompleted: () -> Unit = {},
-    settingsViewModel: SettingsViewModel = viewModel()
+    settingsViewModel: SettingsViewModel = viewModel(),
+    compact: Boolean = false
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = com.example.localization.LocalTrainPilotStrings.current
@@ -3176,12 +3184,12 @@ fun StudioGoogleCloudSyncCard(
             .testTag("studio_google_cloud_card")
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(if (compact) 4.dp else 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                    .testTag("settings_google_expand").clickable { cloudExpanded = !cloudExpanded },
+                    .testTag("settings_google_expand").clip(RoundedCornerShape(10.dp)).clickable { cloudExpanded = !cloudExpanded },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -3189,7 +3197,7 @@ fun StudioGoogleCloudSyncCard(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Box(
+                    if (!compact) Box(
                         modifier = Modifier
                             .size(46.dp)
                             .clip(CircleShape)
@@ -3203,15 +3211,15 @@ fun StudioGoogleCloudSyncCard(
                             modifier = Modifier.size(22.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(if (compact) 8.dp else 12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = tr(lang, "Google Cloud Szinkron", "Google Cloud Sync", "Google Cloud-Synchronisierung", "Sincronizare Google Cloud"),
+                            text = if (compact) "Google Drive" else tr(lang, "Google Cloud Szinkron", "Google Cloud Sync", "Google Cloud-Synchronisierung", "Sincronizare Google Cloud"),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = palette.textPrimary
                         )
-                        Text(
+                        if (!compact) Text(
                             text = if (gs.connectedEmail.isNotEmpty()) {
                                 gs.connectedEmail
                             } else {
@@ -3457,7 +3465,15 @@ fun StudioGoogleCloudSyncCard(
                 }
             }
 
-            if (!gs.isBusy && gs.errorMessage.isNullOrBlank() && gs.lastCalendarSyncIso.isNotBlank()) {
+            if (compact && !gs.isBusy && gs.errorMessage.isNullOrBlank() && gs.lastDriveSyncIso.isNotBlank()) {
+                Text(
+                    text = "${tr(lang, "Utolsó mentés", "Last backup", "Letzte Sicherung", "Ultimul backup")}: ${gs.lastDriveSyncIso.take(19).replace('T', ' ')}",
+                    style = MaterialTheme.typography.labelSmall, color = palette.textSecondary,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = 8.dp).testTag("backup_drive_last_sync")
+                )
+            }
+            if (!compact && !gs.isBusy && gs.errorMessage.isNullOrBlank() && gs.lastCalendarSyncIso.isNotBlank()) {
                 val syncedCountLabel = gs.lastCalendarSyncCount?.let { cnt ->
                     " • " + tr(lang, "$cnt esemény szinkronizálva", "$cnt events synced", "$cnt Termine synchronisiert", "$cnt evenimente sincronizate")
                 }.orEmpty()
@@ -3526,6 +3542,7 @@ fun BackupRestoreScreen(
     val context = LocalContext.current
     val activity = context as? Activity
     val mimeType = if (uiState.selectedBackupFormat == "ZIP") "application/zip" else "application/json"
+    var showHealthInfo by remember { mutableStateOf(false) }
     val defaultFileName = if (uiState.selectedBackupFormat == "ZIP") "trainpilot-backup.zip" else "trainpilot-backup.json"
 
     val exportLauncher = rememberLauncherForActivityResult(
@@ -3552,6 +3569,19 @@ fun BackupRestoreScreen(
         }
     }
 
+    if (showHealthInfo) {
+        AlertDialog(
+            onDismissRequest = { showHealthInfo = false },
+            title = { Text(tr(uiState.language, "Egészségadatok", "Health data", "Gesundheitsdaten", "Date de sănătate")) },
+            text = { Text(modifier = Modifier.verticalScroll(rememberScrollState()), text = tr(uiState.language,
+                "Alapból kikapcsolva. JSON/ZIP: tárolt egészségnapló és edzésösszesítések. Drive: csak az edzéshez mentett egészségadatok; a teljes napi egészségnapló nem kerül Drive-ra. Kikapcsolás nem törli a helyi adatokat vagy a korábbi mentéseket.",
+                "Off by default. JSON/ZIP: stored health journal and workout summaries. Drive: workout-attached health summaries only; the full daily health journal is not uploaded to Drive. Turning off does not delete local data or existing backups.",
+                "Standardmäßig aus. JSON/ZIP: gespeichertes Gesundheitstagebuch und Trainingszusammenfassungen. Drive: nur trainingsbezogene Gesundheitsdaten; das vollständige Tagestagebuch wird nicht hochgeladen. Das Ausschalten löscht weder lokale Daten noch vorhandene Sicherungen.",
+                "Dezactivat implicit. JSON/ZIP: jurnalul de sănătate stocat și rezumatele antrenamentelor. Drive: doar datele de sănătate atașate antrenamentelor; jurnalul zilnic complet nu este încărcat. Dezactivarea nu șterge datele locale sau backup-urile existente.")) },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { showHealthInfo = false }) { Text("OK") } }
+        )
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -3571,30 +3601,39 @@ fun BackupRestoreScreen(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("JSON", "ZIP", "DRIVE").forEach { fmt ->
                     val sel = uiState.selectedBackupFormat == fmt
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = if (sel) palette.primary else palette.surfaceCard,
-                        modifier = Modifier
-                            .weight(1f)
-                            .trainPilotBorder(1.dp, if (sel) palette.primary else palette.cardBorder, RoundedCornerShape(14.dp))
-                            .clickable { onSelectFormat(fmt) }
+                    val interaction = remember(fmt) { MutableInteractionSource() }
+                    val pressed by interaction.collectIsPressedAsState()
+                    val shape = RoundedCornerShape(10.dp)
+                    val background = if (sel) palette.primary else palette.surfaceCard
+                    Box(
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                            .testTag("backup_format_$fmt")
+                            .selectable(selected = sel, role = androidx.compose.ui.semantics.Role.Tab,
+                                interactionSource = interaction, indication = null, onClick = { onSelectFormat(fmt) }),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 14.dp)) {
-                            Text(
-                                text = fmt,
-                                fontWeight = FontWeight.Bold,
-                                color = if (sel) palette.onPrimary else palette.textPrimary
-                            )
+                        Surface(
+                            shape = shape,
+                            color = lerp(background, palette.primary, if (pressed) 0.12f else 0f),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 36.dp).clip(shape)
+                                .indication(interaction, ripple())
+                                .trainPilotBorder(1.dp, if (sel) palette.primary else palette.cardBorder, shape)
+                                .testTag("backup_format_${fmt}_visual")
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(fmt, fontWeight = FontWeight.Bold, color = if (sel) palette.onPrimary else palette.textPrimary)
+                            }
                         }
                     }
                 }
             }
         }
-        item {
+        if (uiState.selectedBackupFormat == "DRIVE") item {
             StudioGoogleCloudSyncCard(
                 onShowBanner = onShowBanner,
                 onCloudSyncCompleted = onCloudSyncCompleted,
-                settingsViewModel = settingsViewModel
+                settingsViewModel = settingsViewModel,
+                compact = true
             )
         }
         item {
@@ -3605,65 +3644,18 @@ fun BackupRestoreScreen(
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(tr(uiState.language, "Mentés tartalma", "Backup Contents", "Inhalt der Sicherung", "Conținutul backup-ului"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                    Text(
-                        tr(
-                            uiState.language,
-                            "✓ Edzésnapló és PR rekordok (${uiState.loggedWorkouts.size} edzés)",
-                            "✓ Workout log & PR records (${uiState.loggedWorkouts.size} workouts)",
-                            "✓ Trainingsprotokoll & PR-Rekorde (${uiState.loggedWorkouts.size} Trainings)",
-                            "✓ Jurnal antrenamente și recorduri PR (${uiState.loggedWorkouts.size} antrenamente)"
-                        ),
-                        color = palette.success
-                    )
-                    Text(
-                        tr(
-                            uiState.language,
-                            "✓ Saját programok és gyakorlatok (${uiState.programs.size} program)",
-                            "✓ Custom programs & exercises (${uiState.programs.size} programs)",
-                            "✓ Eigene Programme & Übungen (${uiState.programs.size} Programme)",
-                            "✓ Programe și exerciții proprii (${uiState.programs.size} programe)"
-                        ),
-                        color = palette.success
-                    )
-                    Text(
-                        tr(
-                            uiState.language,
-                            "✓ Beállítások és 32 színpaletta profil",
-                            "✓ Settings & 32 color palette profile",
-                            "✓ Einstellungen & 32-Farbpaletten-Profil",
-                            "✓ Setări și profilul celor 32 de palete"
-                        ),
-                        color = palette.success
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            tr(
-                                uiState.language,
-                                "Health Connect, Samsung Health és órás egészségadatok",
-                                "Health Connect, Samsung Health & watch health data",
-                                "Health Connect-, Samsung Health- und Uhren-Gesundheitsdaten",
-                                "Date de sănătate Health Connect, Samsung Health și ceas"
-                            ),
-                            color = palette.textPrimary, modifier = Modifier.weight(1f)
-                        )
-                        Switch(checked = uiState.includeHealthInBackup, enabled = !uiState.backupHealthConsentSaving, onCheckedChange = onToggleIncludeHealth)
+                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(tr(uiState.language, "Mentés tartalma", "Backup contents", "Sicherungsinhalt", "Conținut backup"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                    Text(tr(uiState.language, "✓ Edzések és rekordok", "✓ Workouts and records", "✓ Trainings und Rekorde", "✓ Antrenamente și recorduri"), color = palette.success, style = MaterialTheme.typography.bodyMedium)
+                    Text(tr(uiState.language, "✓ Programok és gyakorlatok", "✓ Programs and exercises", "✓ Programme und Übungen", "✓ Programe și exerciții"), color = palette.success, style = MaterialTheme.typography.bodyMedium)
+                    Text(tr(uiState.language, "✓ Beállítások és színek", "✓ Settings and colors", "✓ Einstellungen und Farben", "✓ Setări și culori"), color = palette.success, style = MaterialTheme.typography.bodyMedium)
+                    Row(modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(tr(uiState.language, "Egészségadatok", "Health data", "Gesundheitsdaten", "Date de sănătate"), color = palette.textPrimary, modifier = Modifier.weight(1f))
+                        IconButton(onClick = { showHealthInfo = true }, modifier = Modifier.testTag("backup_health_info")) {
+                            Icon(Icons.Default.Info, contentDescription = tr(uiState.language, "Egészségadatok információ", "Health data information", "Informationen zu Gesundheitsdaten", "Informații despre datele de sănătate"), tint = palette.textSecondary)
+                        }
+                        Switch(checked = uiState.includeHealthInBackup, enabled = !uiState.backupHealthConsentSaving, onCheckedChange = onToggleIncludeHealth, modifier = Modifier.testTag("backup_health_switch"))
                     }
-                    Text(
-                        tr(
-                            uiState.language,
-                            "Alapból kikapcsolva. JSON/ZIP: tárolt egészségnapló és edzésösszesítések. Drive: az edzéshez mentett egészségadatok; a teljes napi egészségnapló nem kerül Drive-ra. Kikapcsolás nem törli a helyi adatokat vagy a korábbi mentéseket.",
-                            "Off by default. JSON/ZIP: stored health journal & workout summaries. Drive: workout-attached health summaries only; full daily health journal is not uploaded to Drive. Turning off does not delete local data or existing backups.",
-                            "Standardmäßig aus. JSON/ZIP: gespeichertes Gesundheitstagebuch & Trainingszusammenfassungen. Drive: nur trainingsbezogene Gesundheitsdaten; das volle Tagesprotokoll wird nicht auf Drive geladen.",
-                            "Dezactivat implicit. JSON/ZIP: jurnalul de sănătate stocat și rezumatele antrenamentelor. Drive: doar datele de sănătate atașate antrenamentelor; jurnalul zilnic complet nu este încărcat pe Drive."
-                        ),
-                        color = palette.textSecondary, style = MaterialTheme.typography.bodySmall
-                    )
                 }
             }
         }
@@ -3687,6 +3679,7 @@ fun BackupRestoreScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 50.dp)
+                    .testTag("backup_export_btn")
             ) {
                 Icon(imageVector = Icons.Default.Backup, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
