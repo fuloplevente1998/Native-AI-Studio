@@ -8,7 +8,9 @@ a Text doboza a természetes91px volt. Így a szigorú túlcsordulás-ellenőrz�
 A timer teljes értéke nem rövidítendő: az Ellipsis eltávolítva, a külső mérésalapú
 sorváltás és az összes bounds/overlap/hasVisualOverflow állítás megmaradt.
 A meglévő célzott progress/health CI-listához hozzáadva a négy új dock regresszió;
-a teljes alapkapu és a signed workflow változatlan. Sikeres célzott kör után jön
+A célzott kör a Wear/shared tesztfeladatokat is futtatja, mert a meglévő nyers-XML
+ellenőrző minden tesztforrásos modulhoz megköveteli a jelentést. A teljes alapkapu
+és a signed workflow változatlan. Sikeres célzott kör után jön
 az új közös main signed APK+AAB/JVM kapu. Jelenleg nincs új átadott telepítő.
 
 ---
