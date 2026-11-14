@@ -1,3 +1,24 @@
+# 2759 pihenősáv – célzottan ellenőrzött javítás, teljes kiadás következik
+
+Ágfix/rest-label-layout-diagnostics, PR#231. Natív/teszt/CI forrás14091b12bd462e473d7110e6233edf98c8724d63.
+Actions43565270201 SUCCESS: nyers XML és ZIP-digest ellenőrizve, célzott telefon12
+fájl/69 teszt + Wear34 fájl/187 teszt =256,0failure/error/skipped; shared NO-SOURCE.
+Bizonyíték: releases/2759-targeted-evidence.json. Ez nem a teljes kiadási kapu.
+
+A timer és gombfeliratok saját természetes szélességre méretezettek; az időérték
+nem rövidül. A mért szélesség alapján sorváltó dock széles nézetben egy sor marad,
+keskeny/nagybetűs nézetben nem fed át és nem vág szöveget. A szigorú képernyőbounds,
+hasVisualOverflow,48dp,callback és ownership-tiltás tesztek megmaradtak, mind zöldek.
+A célzott workflow a Wear/shared feladatokat is futtatja, hogy az összes tesztforrásos
+modul nyers XML-je meglegyen; a teljes alapkapu és a signed workflow változatlan.
+Az automatikus gyakorlatgörgetés is zöld, előre/hátra/utolsó elem esetén.
+
+A43508709582 teljes kapu három címke-layout ellenőrzésen megbukott, ezért nincs
+átadott2759. Következő: main-integráció, egy új teljes signed APK+AAB/JVM kapu,
+csomagellenőrzés és Drive-átadás. A készülékes vizuális elfogadás külön lépés.
+
+---
+
 # 2759 kiadási kiegészítés – pihenősáv és automatikus gyakorlatgörgetés
 
 A futó build alatt érkezett két új készülékes visszajelzés bekerül a végleges2759-be.

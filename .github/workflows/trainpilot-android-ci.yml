@@ -98,6 +98,7 @@ jobs:
               --tests 'com.repforge.app.wear.WearSaveSyncTest' --tests 'com.repforge.app.wear.WorkoutOwnership193Test'
           elif [[ "$TARGETED_REGRESSIONS" == "true" ]]; then
             gradle --no-daemon --stacktrace --profile --continue :app:testDebugUnitTest \
+              --tests 'com.example.ActiveWorkoutDockNavigationRegressionTest' \
               --tests 'com.example.StudioProgress*' \
               --tests 'com.example.StudioHealthPermissionActionTest' \
               --tests 'com.example.StudioAppearanceRegressionTest' \
@@ -106,7 +107,8 @@ jobs:
               --tests 'com.example.LegacyRestoreEvidenceRegressionTest' \
               --tests 'com.example.PhoneReturnInstallationRegressionTest' \
               --tests 'com.example.HealthProviderSelectionRegressionTest' \
-              --tests 'com.example.HealthSyncAdmissionRegressionTest'
+              --tests 'com.example.HealthSyncAdmissionRegressionTest' \
+              :wear:testDebugUnitTest :shared:testDebugUnitTest
           else
             gradle --no-daemon --stacktrace --profile --continue :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest :app:minifyReleaseWithR8
           fi

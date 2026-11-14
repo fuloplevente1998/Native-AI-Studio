@@ -69,7 +69,7 @@ class ActiveWorkoutDockNavigationRegressionTest {
             .fetchSemanticsNodes().forEach { node ->
                 val layouts = mutableListOf<TextLayoutResult>()
                 node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
-                layouts.forEach { assertFalse("A rest label is clipped", it.hasVisualOverflow) }
+                layouts.forEach { assertFalse("Clipped rest label: ${it.layoutInput.text.text}; size=${it.size}; paragraph=${it.multiParagraph.width}x${it.multiParagraph.height}; constraints=${it.layoutInput.constraints}; width=${it.didOverflowWidth}; height=${it.didOverflowHeight}", it.hasVisualOverflow) }
             }
     }
 
