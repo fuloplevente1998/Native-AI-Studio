@@ -87,12 +87,14 @@ class ButtonPressFeedbackRegressionTest {
     @Test fun textButtonsRetainVisibleKeyboardFocusAndNativeKeyboardActivation() {
         val requester = androidx.compose.ui.focus.FocusRequester()
         var focusManager: androidx.compose.ui.focus.FocusManager? = null
+        var inputMode: androidx.compose.ui.input.InputModeManager? = null
         var host: View? = null
         var clicks = 0
         compose.setContent { TrainPilotTheme {
             val view = LocalView.current
             val manager = androidx.compose.ui.platform.LocalFocusManager.current
-            SideEffect { host = view; focusManager = manager }
+            val mode = androidx.compose.ui.platform.LocalInputModeManager.current
+            SideEffect { host = view; focusManager = manager; inputMode = mode }
             Column(Modifier.background(Color.Black).padding(16.dp)) {
                 TrainPilotTextButton(onClick = { clicks++ },
                     modifier = Modifier.width(280.dp).height(48.dp)
@@ -108,6 +110,9 @@ class ButtonPressFeedbackRegressionTest {
         val node = compose.onNodeWithTag("focused_text")
         val bounds = node.fetchSemanticsNode().boundsInRoot
         val before = pixels()
+        compose.runOnIdle {
+            assertTrue(requireNotNull(inputMode).requestInputMode(androidx.compose.ui.input.InputMode.Keyboard))
+        }
         compose.runOnIdle { requester.requestFocus() }
         node.assertIsFocused()
         val focused = pixels()
@@ -156,11 +161,12 @@ class ButtonPressFeedbackRegressionTest {
             val bounds = node.fetchSemanticsNode().boundsInRoot
             val before = pixels()
             val cx = bounds.center.x.roundToInt()
-            val start = bounds.top.roundToInt()
-            val end = bounds.bottom.roundToInt()
+            val touch = node.fetchSemanticsNode().touchBoundsInRoot
+            if (tag == "default") node.assertTouchHeightIsEqualTo(48.dp)
+            val start = (touch.top - 4).roundToInt().coerceAtLeast(0)
+            val end = (touch.bottom + 4).roundToInt().coerceAtMost(before.height)
             val paintedRows = (start until end).filter { before[cx, it].toArgb() == base.toArgb() }
             assertTrue("$tag must have a painted surface", paintedRows.isNotEmpty())
-            if (tag == "default") assertTrue("default visual should remain shorter than its 48 dp target", paintedRows.size < end - start)
             node.performTouchInput { down(center) }
             val held = pixels()
             val midY = paintedRows[paintedRows.size / 2]

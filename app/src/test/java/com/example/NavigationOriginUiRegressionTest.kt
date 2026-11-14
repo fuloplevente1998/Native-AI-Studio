@@ -77,10 +77,13 @@ class NavigationOriginUiRegressionTest {
             } }
         } }
         for (systemBack in listOf(false, true)) {
+            // The row can already fit on a compact layout: deliberately establish a
+            // nonzero origin first rather than assuming a particular card height.
+            compose.onNodeWithTag("progress_overview_list").performTouchInput { swipeUp() }
             val row = compose.onNodeWithTag("progress_workout_${workout.id}").performScrollTo()
             val scroll = compose.onNodeWithTag("progress_overview_list")
                 .fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
-            assertTrue("The workout row must be reached by scrolling", scroll > 0f)
+            assertTrue("The origin must be deliberately scrolled", scroll > 0f)
             if (!systemBack) {
                 val bounds = row.fetchSemanticsNode().boundsInRoot
                 fun pixels() = compose.runOnIdle {

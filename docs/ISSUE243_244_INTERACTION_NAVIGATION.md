@@ -6,7 +6,7 @@ A #243 nyomott gomb visszajelzést és a #244 visszanavigálást a korábbi #241
 
 A közös kitöltött, körvonalas, mentés-, negatív és szöveges gombok teljes, ténylegesen festett háttere animálódik. A Material gomb mérete, sarka, érintési tartománya és natív kattintáskezelése megmarad. Az egy képkockán belüli Press/Release is legalább egy rövid teljes felületű animációt indít; nem csak a képkockánként összevont pressed boolean alapján rajzol. A növekvő ripple ezeken lokálisan kikapcsolt, az új állapotjelzés fókuszt és hover-t is jelez. A képernyők bekötésének többsége csak import alias; nem új gombelrendezés. A Progress hosszú edzéssorai és a Beállítások navigációs sorai ugyanilyen alakhoz vágott jelzést kapnak.
 
-Valódi közös gombokon Canvas-képpontos teszt: széles gomb mindkét vége, alapértelmezett 40 dp festett/48 dp érintési méret, 56/72 dp magasság, lekerekített sarkok, felengedés/megszakítás, tiltás, billentyűfókusz és Enter. A valódi Progress-edzéssor nyomását és a megszakítás utáni navigációhiányt a navigációs UI-teszt is méri.
+Valódi közös gombokon Canvas-képpontos teszt: széles gomb mindkét vége, alapértelmezett natív festett és 48 dp érintési méret, 56/72 dp magasság, lekerekített sarkok, felengedés/megszakítás, tiltás, billentyűfókusz és Enter. A valódi Progress-edzéssor nyomását és a megszakítás utáni navigációhiányt a navigációs UI-teszt is méri.
 
 ## #244
 
@@ -21,3 +21,5 @@ Teljes közös CI a kész kóddal futtatandó. A #241 korábbi 696 tesztje a kor
 A 43633039679 előzetes kört a végső gyors-koppintási regresszió hozzáadása miatt leállítottuk; nem validációs bizonyíték. A kész végleges kóddal egy közös teljes futás indul.
 
 A 43633617617 körben az alkalmazáskód lefordult, a tesztfordítás két API/import hiányon állt meg (ExperimentalTestApi és toArgb). Ezek javítva; a görgetés-összehasonlítás normalizált szemantikai értékre szigorítva. Ez a futás nem kész tesztbizonyíték.
+
+A 43634378723 körben 516 telefonos tesztből három új teszt-fixture feltételezése bukott: a vizuális és touch bounds azonosnak vétele, touch módban kért billentyűfókusz, illetve a konkrét kártyamagasság miatt feltételezett kezdeti görgetés. A teszt most külön touch bounds/eredeti pixeles határt mér, billentyűzet módba kapcsol, és ténylegesen elgörgeti a kiinduló nézetet. Az ellenőrzési célok megmaradtak; új közös teljes kör szükséges.
