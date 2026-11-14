@@ -25,6 +25,7 @@ import com.example.ui.components.LocalOpenExerciseVideo
 import com.example.ui.screens.ExerciseLibraryScreen
 import com.example.ui.theme.TrainPilotTheme
 import com.example.ui.viewmodel.TrainPilotUiState
+import com.example.ui.viewmodel.TrainPilotViewModel
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -81,7 +82,8 @@ class ExerciseLibraryCompactRegressionTest {
                             onBack = {}, onOpenSettings = {}, onSearchQueryChange = {},
                             onSelectCategory = {}, onSelectExercise = { selected = it },
                             onToggleFavorite = { favorite = !favorite },
-                            onAddExerciseToQueue = { queued = true }, onStartExerciseNow = { started++ }
+                            onAddExerciseToQueue = { queued = true }, onRemoveExerciseFromQueue = { queued = false },
+                            onStartExerciseNow = { started++ }
                         )
                     }
                 }
@@ -165,5 +167,80 @@ class ExerciseLibraryCompactRegressionTest {
         assertNull("Action segments must not trigger the details click", selected)
         compose.onNodeWithTag("exercise_library_name_long", useUnmergedTree = true).performScrollTo().performClick()
         assertEquals(exercise.id, selected)
+    }
+
+    @Test fun queuedCheckRemovesOnlyItsExerciseUpdatesCountAndAllowsReaddingInEveryLanguage() {
+        val model = TrainPilotViewModel()
+        val exercises = model.uiState.value.exercises.take(3)
+        assertEquals(3, exercises.size)
+        var added = 0
+        var removed = 0
+        var otherActions = 0
+        compose.setContent {
+            val state by model.uiState.collectAsState()
+            CompositionLocalProvider(LocalTrainPilotStrings provides TrainPilotStrings.forLanguage(state.language)) {
+                TrainPilotTheme { Box(Modifier.width(360.dp)) {
+                    ExerciseLibraryScreen(state.copy(exercises = exercises), onBack = {}, onOpenSettings = {},
+                        onSearchQueryChange = {}, onSelectCategory = {}, onSelectExercise = { otherActions++ },
+                        onStartExerciseNow = { otherActions++ },
+                        onAddExerciseToQueue = { added++; model.addExerciseToWorkoutQueue(it) },
+                        onRemoveExerciseFromQueue = { removed++; model.removeExerciseFromWorkoutQueue(it) })
+                } }
+            }
+        }
+        val ids = exercises.map { it.id }
+        fun button(id: String) = compose.onNodeWithTag("exercise_library_add_to_queue_$id").performScrollTo()
+        for (language in AppLanguage.entries) {
+            compose.runOnIdle { model.selectLanguage(language) }
+            exercises.forEach { button(it.id).performClick() }
+            compose.runOnIdle { assertEquals(ids, model.uiState.value.quickWorkoutQueue.map { it.id }) }
+            val before = model.uiState.value
+            val undoLabel = when (language) {
+                AppLanguage.HU -> "Visszavonás az összeállításból"
+                AppLanguage.EN -> "Remove from workout selection"
+                AppLanguage.DE -> "Aus Trainingsauswahl entfernen"
+                AppLanguage.RO -> "Elimină din selecția antrenamentului"
+            }
+            button(ids[1]).assertContentDescriptionEquals(undoLabel).performClick()
+            compose.runOnIdle {
+                val after = model.uiState.value
+                assertEquals(listOf(ids[0], ids[2]), after.quickWorkoutQueue.map { it.id })
+                assertEquals(before.programs, after.programs)
+                assertEquals(before.activeWorkoutExercises, after.activeWorkoutExercises)
+                assertEquals(before.activeSetsByExerciseId, after.activeSetsByExerciseId)
+                assertEquals(before.activeSets, after.activeSets)
+                val messageWord = when (language) {
+                    AppLanguage.HU -> "eltávolítva"
+                    AppLanguage.EN -> "removed"
+                    AppLanguage.DE -> "entfernt"
+                    AppLanguage.RO -> "eliminat"
+                }
+                assertTrue(after.statusBannerMessage.orEmpty().contains(messageWord))
+                model.removeExerciseFromWorkoutQueue(ids[1])
+                assertEquals("An already removed item is a no-op", after, model.uiState.value)
+            }
+            val countLabel = when (language) {
+                AppLanguage.HU -> "Edzésre összeállítva (2 gyakorlat)"
+                AppLanguage.EN -> "Queued for workout (2 exercises)"
+                AppLanguage.DE -> "Für Training zusammengestellt (2 Übungen)"
+                AppLanguage.RO -> "Pregătit pentru antrenament (2 exerciții)"
+            }
+            compose.onNodeWithText(countLabel).assertExists()
+            button(ids[1]).assertContentDescriptionEquals(when (language) {
+                AppLanguage.HU -> "Hozzáadás az edzéshez"
+                AppLanguage.EN -> "Add to workout"
+                AppLanguage.DE -> "Zum Training hinzufügen"
+                AppLanguage.RO -> "Adaugă la antrenament"
+            }).performClick()
+            compose.runOnIdle { assertEquals(listOf(ids[0], ids[2], ids[1]), model.uiState.value.quickWorkoutQueue.map { it.id }) }
+            ids.forEach { button(it).performClick() }
+            compose.runOnIdle { assertTrue(model.uiState.value.quickWorkoutQueue.isEmpty()) }
+            compose.onNodeWithTag("exercise_library_start_queued_workout_button").assertDoesNotExist()
+        }
+        compose.runOnIdle {
+            assertEquals(16, added)
+            assertEquals(16, removed)
+            assertEquals("Queue controls must not open details or start a workout", 0, otherActions)
+        }
     }
 }

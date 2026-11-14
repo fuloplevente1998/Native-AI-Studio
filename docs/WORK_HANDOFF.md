@@ -1,3 +1,19 @@
+# #241/#243/#244 — közös interakciós és navigációs javítócsomag
+
+Ág fix/exercise-queue-undo, draft PR242. A korábbi #241 visszavonás mellé két új, külön követett feladat került: #243 teljes alakú gombnyomás-visszajelzés; #244 X/rendszer-vissza az eredeti lapra, alfülre és görgetési helyre. A közös gombcsalád bekötése jellemzően import alias; a nézetméretek és a natív motor megmaradnak. Új regressziók a tényleges gombokat és Progress→részlet→X útvonalat tesztelik. Részletek: ISSUE243_244_INTERACTION_NAVIGATION.md.
+
+A #241 korábbi forrása696 teszttel ellenőrzött; a mostani kódra egy új közös teljes CI indul. Új APK/AAB és verzióemelés nincs kérve. A korábbi #238 UI/mentési csomag készre zárva; a kiadott 2762-es telepítők változatlanok. Main-merge és kiadás nincs ebben a folytatásban.
+
+---
+
+# #241 — összeállított gyakorlatlista visszavonása, külön javító PR
+
+A #238 eddigi UI/mentési módosításait a felhasználó a 2762-es képernyőkép alapján elfogadta és készre záratta; a jegy CLOSED. Az elrendezés marad. Új utófeladat: a listában kijelölt gyakorlat pipája eltávolítson az összeállításból, ne ismét hozzáadjon. Saját ág: fix/exercise-queue-undo; draft PR242, issue241.
+
+A képernyő eltávolító callbackje a meglévő ViewModel-műveletre kötve. A visszavonás csak a várólistát és lokalizált visszajelzését módosítja, a programot/aktív sorozatokat nem törli. Piros, finom visszavonási szín, megőrzött geometria. UI→ViewModel regresszió mind a négy nyelven; CI43629146558 SUCCESS, forrás39bf7c0ac1264be6a6b9acd2c73faa4335ea2d7b. ZIP-digest és nyers XML ellenőrizve: telefon96 fájl/507 teszt + Wear35/189 =696, 0failure/error/skipped; shared NO-SOURCE. Bizonyíték: verification/PR242-ci-evidence.json. A következő commit csak dokumentáció; készülékes elfogadás még nincs. Új build/verzióemelés nincs kérve; a 2762-es APK/AAB még nem tartalmazza ezt az új utófeladatot. Részletek: ISSUE241_QUEUE_UNDO.md.
+
+---
+
 # TrainPilot 2762 · 1.1-beta — APK+AAB átadva, 2026-11-14
 
 PR239 mainre került; aláírt forrás155ea6295b0025280b08e30203ff32cac9912b19.

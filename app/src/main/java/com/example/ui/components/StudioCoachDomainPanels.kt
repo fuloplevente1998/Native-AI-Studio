@@ -7,6 +7,9 @@ import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton as OutlinedButton
+import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext

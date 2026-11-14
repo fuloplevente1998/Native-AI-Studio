@@ -10,6 +10,7 @@ import com.repforge.app.ui.theme.TrainPilotFrames
 import com.example.model.workoutsOn
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotBorder
 
 import androidx.compose.material3.LinearProgressIndicator
@@ -88,13 +89,13 @@ import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Watch
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.material3.Button
+import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton as OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -133,7 +134,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.TextButton
+import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -2726,7 +2727,7 @@ private fun SettingsActionRowCard(
                 if (subtleBorder) palette.cardBorder.copy(alpha = 0.45f) else palette.sectionBorder,
                 RoundedCornerShape(18.dp))
             .clip(RoundedCornerShape(18.dp))
-            .clickable { onClick() }
+            .trainPilotClickable(RoundedCornerShape(18.dp), onClick = onClick)
             .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier)
     ) {
         Row(
@@ -3578,7 +3579,7 @@ fun BackupRestoreScreen(
                 "Off by default. JSON/ZIP: stored health journal and workout summaries. Drive: workout-attached health summaries only; the full daily health journal is not uploaded to Drive. Turning off does not delete local data or existing backups.",
                 "Standardmäßig aus. JSON/ZIP: gespeichertes Gesundheitstagebuch und Trainingszusammenfassungen. Drive: nur trainingsbezogene Gesundheitsdaten; das vollständige Tagestagebuch wird nicht hochgeladen. Das Ausschalten löscht weder lokale Daten noch vorhandene Sicherungen.",
                 "Dezactivat implicit. JSON/ZIP: jurnalul de sănătate stocat și rezumatele antrenamentelor. Drive: doar datele de sănătate atașate antrenamentelor; jurnalul zilnic complet nu este încărcat. Dezactivarea nu șterge datele locale sau backup-urile existente.")) },
-            confirmButton = { androidx.compose.material3.TextButton(onClick = { showHealthInfo = false }) { Text("OK") } }
+            confirmButton = { com.repforge.app.ui.theme.TrainPilotTextButton(onClick = { showHealthInfo = false }) { Text("OK") } }
         )
     }
 

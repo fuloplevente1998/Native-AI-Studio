@@ -87,8 +87,40 @@ import kotlin.math.roundToInt
 
 data class NavRoute(
     val tab: MainTab,
-    val subScreen: SubScreen = SubScreen.NONE
+    val subScreen: SubScreen = SubScreen.NONE,
+    val view: NavViewState? = null
 )
+
+/** Navigation focus only: never store workout execution, records or settings here. */
+data class NavViewState(
+    val progressMainSection: Int,
+    val selectedLogWorkoutId: String,
+    val logDetailTabIndex: Int,
+    val expandedLogExerciseIndex: Int,
+    val selectedExerciseId: String,
+    val privatePhotoWorkoutId: String?,
+    val editingProgramId: String,
+    val editingDayIndex: Int
+)
+
+internal fun TrainPilotUiState.navigationRoute() = NavRoute(currentTab, currentSubScreen,
+    NavViewState(progressMainSection, selectedLogWorkoutId, logDetailTabIndex,
+        expandedLogExerciseIndex, selectedExerciseId, privatePhotoWorkoutId, editingProgramId, editingDayIndex))
+
+internal fun TrainPilotUiState.restoreNavigation(route: NavRoute): TrainPilotUiState {
+    val origin = route.view
+    val measurement = route.subScreen in setOf(SubScreen.ACTIVE_STRENGTH, SubScreen.ACTIVE_TIMED,
+        SubScreen.ACTIVE_BILATERAL, SubScreen.ACTIVE_OUTDOOR_GPS)
+    return copy(currentTab = route.tab, currentSubScreen = route.subScreen,
+        progressMainSection = origin?.progressMainSection ?: progressMainSection,
+        selectedLogWorkoutId = origin?.selectedLogWorkoutId ?: selectedLogWorkoutId,
+        logDetailTabIndex = origin?.logDetailTabIndex ?: logDetailTabIndex,
+        expandedLogExerciseIndex = origin?.expandedLogExerciseIndex ?: expandedLogExerciseIndex,
+        selectedExerciseId = if (measurement) selectedExerciseId else origin?.selectedExerciseId ?: selectedExerciseId,
+        privatePhotoWorkoutId = if (origin != null) origin.privatePhotoWorkoutId else privatePhotoWorkoutId,
+        editingProgramId = origin?.editingProgramId ?: editingProgramId,
+        editingDayIndex = origin?.editingDayIndex ?: editingDayIndex)
+}
 
 data class WeeklyHealthDaySummary(
     val dateIso: String,
@@ -325,7 +357,7 @@ data class TrainPilotUiState(
     val expandedLogExerciseIndex: Int = 0,
 
     // Progress / Fejlődés State (Mockup 3/4 #4 + full main Fejlődés & Statisztikák)
-    val progressMainSection: Int = 0, // 0 = Kompakt Fejlődés (main), 1 = Statisztikák (Rekordok & Kardió), 2 = 1RM Erőnlét
+    val progressMainSection: Int = 0, // 0 = Fejlődés, 1 = Napló, 2 = Statisztikák
     val selectedProgressExercise: String = "Fekvenyomás",
     val selectedProgressRangeIndex: Int = 3, // 0 = 1 nap, 1 = 7 nap, 2 = 30 nap, 3 = 3 hó
     val selectedVolumeBarIndex: Int = -1,
