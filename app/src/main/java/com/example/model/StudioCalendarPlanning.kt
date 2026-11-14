@@ -47,16 +47,21 @@ internal object StudioCalendarPlanning {
         }
         val completedDates = retained.filter { it.status == CalendarEventStatus.COMPLETED }.map(::date).toSet()
         val program = state.programs.firstOrNull { it.isActive }
-        var split = if (state.planningFirstDayHu.contains("B", true)) "B" else "A"
+        val days = program?.days.orEmpty()
+        var index = if (state.planningFirstDayHu.contains("B", true) && days.size > 1) 1 else 0
         val planned = dates(start, state.planningWeeksCount, state.planningCadenceHu)
-            .filterNot { it in completedDates }.map { day ->
+            .filterNot { it in completedDates }.map { date ->
+                val selected = days.getOrNull(index % days.size.coerceAtLeast(1))
+                val dayId = selected?.id?.removePrefix("${program?.id}:").orEmpty()
+                val split = selected?.dayCode?.substringBefore(' ') ?: if (index % 2 == 0) "A" else "B"
                 CalendarDayEvent(
-                    id = "ev_plan_${UUID.randomUUID()}", dayOfMonth = day.dayOfMonth,
-                    dateIso = day.toString(), timeLabel = state.planningTime,
-                    titleHu = "${program?.nameHu ?: "TrainPilot"} • Alap $split",
-                    exerciseCount = 6, durationMinutes = state.planningDurationMin,
-                    status = CalendarEventStatus.PLANNED, splitBadge = split
-                ).also { split = if (split == "A") "B" else "A" }
+                    id = "ev_plan_${UUID.randomUUID()}", dayOfMonth = date.dayOfMonth,
+                    dateIso = date.toString(), timeLabel = state.planningTime,
+                    titleHu = "${program?.localizedName(state.language) ?: "TrainPilot"} • ${selected?.localizedDayCode(state.language) ?: "$split nap"}",
+                    exerciseCount = selected?.exercises?.size ?: 0, durationMinutes = state.planningDurationMin,
+                    status = CalendarEventStatus.PLANNED, splitBadge = split,
+                    programId = program?.id.orEmpty(), dayId = dayId
+                ).also { index++ }
             }
         return state.copy(
             calendarUndoStack = (state.calendarUndoStack + listOf(state.calendarEvents)).takeLast(12),

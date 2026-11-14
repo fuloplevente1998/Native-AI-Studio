@@ -236,7 +236,7 @@ class StudioProgressUiRegressionTest {
                     com.example.ui.screens.CalendarPlannerScreen(
                         state = TrainPilotUiState(selectedCalendarDay = 2, calendarEvents = emptyList(), calendarUndoStack = listOf(emptyList())),
                         onBack = {}, onOpenSettings = {}, onSelectDay = {}, onOpenReplanModal = {},
-                        onApplyReplan = { _, _ -> }, onOpenWorkoutDetail = {},
+                        onApplyReplan = { _, _, _ -> }, onOpenWorkoutDetail = {},
                         onAddPlannedWorkoutOnDay = { day, split, _, _ -> assertEquals(5, day); adds += split },
                         onUndoCalendarAction = { undos++ })
                 }

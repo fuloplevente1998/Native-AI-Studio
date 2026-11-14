@@ -781,6 +781,39 @@ data class ProgramDayModel(
     }
 }
 
+private val homeBasicProgramIds = setOf("home-basic", "home_ab_basic")
+private val homeBasicLegacyNames = setOf(
+    "otthoni a/b - alap", "otthoni alap a/b", "home a/b - basic", "home a/b - core",
+    "home basic a/b", "zuhause a/b - basis", "heim a/b - basis", "acasă a/b - bază", "acasa a/b - baza"
+)
+
+private fun isHomeBasicLegacyName(name: String): Boolean =
+    name.trim().replace('–', '-').replace('—', '-').lowercase(java.util.Locale.ROOT) in homeBasicLegacyNames
+
+private fun canonicalHomeBasicName(lang: AppLanguage): String = when (lang) {
+    AppLanguage.HU -> "Otthoni A/B"
+    AppLanguage.EN -> "Home A/B"
+    AppLanguage.DE -> "Zuhause A/B"
+    AppLanguage.RO -> "Acasă A/B"
+}
+
+private fun recordedDayLabel(dayId: String, dayName: String, lang: AppLanguage): String? {
+    fun letter(value: String): String? {
+        val text = value.trim()
+        val match = Regex("^(?:day[_ -]?)?([AB])$|^([AB])\\s*nap$|^(?:day|tag|ziua|alap)\\s+([AB])$", RegexOption.IGNORE_CASE).matchEntire(text)
+            ?: return null
+        return match.groupValues.drop(1).first { it.isNotEmpty() }.uppercase(java.util.Locale.ROOT)
+    }
+    val code = letter(dayId) ?: letter(dayName)
+    if (code != null) return when (lang) {
+        AppLanguage.HU -> "$code nap"
+        AppLanguage.EN -> "Day $code"
+        AppLanguage.DE -> "Tag $code"
+        AppLanguage.RO -> "Ziua $code"
+    }
+    return dayName.trim().takeIf { it.isNotEmpty() && !it.equals("session", ignoreCase = true) }
+}
+
 data class TrainingProgramModel(
     val id: String,
     val nameHu: String,
@@ -800,6 +833,7 @@ data class TrainingProgramModel(
     val tagsRo: List<String> = emptyList()
 ) {
     fun localizedName(lang: AppLanguage): String {
+        if (!isCustom && id in homeBasicProgramIds && isHomeBasicLegacyName(nameHu)) return canonicalHomeBasicName(lang)
         if (lang == AppLanguage.HU) return nameHu
         val candidate = when (lang) {
             AppLanguage.HU -> nameHu
@@ -852,7 +886,9 @@ data class CalendarDayEvent(
     val durationMinutes: Int,
     val status: CalendarEventStatus,
     val splitBadge: String = "A",
-    val dateIso: String = ""
+    val dateIso: String = "",
+    val programId: String = "",
+    val dayId: String = ""
 ) {
     fun localizedTitle(lang: AppLanguage, programs: List<TrainingProgramModel> = emptyList()): String {
         if (lang == AppLanguage.HU) return titleHu
@@ -916,9 +952,30 @@ data class LoggedWorkoutEntry(
     val exerciseDetails: List<LoggedExerciseDetail> = emptyList(),
     val originDevice: String = "phone",
     val savedStartIso: String = "",
-    val savedFinishIso: String = ""
+    val savedFinishIso: String = "",
+    val programId: String = "",
+    val dayId: String = "",
+    val dayName: String = ""
 ) {
     fun localizedTitle(
+        lang: AppLanguage,
+        programs: List<TrainingProgramModel> = emptyList(),
+        exercises: List<ExerciseItem> = emptyList()
+    ): String {
+        val customProgram = programs.any { it.id == programId && it.isCustom }
+        val title = when {
+            isHomeBasicLegacyName(titleHu) && programId in homeBasicProgramIds && !customProgram -> canonicalHomeBasicName(lang)
+            isHomeBasicLegacyName(titleHu) && programId.isBlank() && lang != AppLanguage.HU -> canonicalHomeBasicName(lang)
+            isHomeBasicLegacyName(titleHu) && (programId.isNotBlank() || customProgram) -> titleHu
+            else -> localizedBaseTitle(lang, programs, exercises)
+        }
+        val day = recordedDayLabel(dayId, dayName, lang) ?: return title
+        if (title.equals(day, ignoreCase = true) || title.equals(dayName.trim(), ignoreCase = true) ||
+            title.split('•').any { it.trim().equals(day, ignoreCase = true) }) return title
+        return "$title • $day"
+    }
+
+    private fun localizedBaseTitle(
         lang: AppLanguage,
         programs: List<TrainingProgramModel> = emptyList(),
         exercises: List<ExerciseItem> = emptyList()

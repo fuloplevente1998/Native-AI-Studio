@@ -138,6 +138,9 @@ data class TrainPilotUiState(
     val fontScaleMultiplier: Float = 1.0f,
     val compactPhoneMode: Boolean = false,
 
+    // Shared native Home/Coach target, refreshed by real Room writes.
+    val homeWorkoutTarget: com.repforge.app.ui.home.HomeWorkoutTarget? = null,
+
     // Navigation & Backstack
     val currentTab: MainTab = MainTab.HOME,
     val currentSubScreen: SubScreen = SubScreen.NONE,

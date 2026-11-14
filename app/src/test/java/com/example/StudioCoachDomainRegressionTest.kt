@@ -40,20 +40,23 @@ class StudioCoachDomainRegressionTest {
         assertEquals(before, compose.onNodeWithTag("studio_coach_target").fetchSemanticsNode().boundsInRoot)
     }
 
-    @Test fun currentCoachDayOpensWorkoutWithoutAutomaticallyStarting() {
+    @Test fun currentCoachDayStartsItsActualProgramAndDay() {
         var started = ""
         var workoutPage = 0
         compose.setContent { TrainPilotTheme {
             StudioCoachRecommendations(CoachUiState(loading = false,
-                target = CoachTarget("actual-program", "b", "B nap")),
+                target = CoachTarget("actual-program", "b", "B nap", schedule =
+                    com.repforge.app.data.db.CalendarScheduleEntity("actual-schedule", "", "2026-11-14",
+                        "2026-11-14T10:00:00Z", "2026-11-14T11:00:00Z", "actual-program", "Program",
+                        "b", "B", "planned", 1, "{}"))),
                 { p, d, s -> started = "$p:$d:$s" }, { workoutPage++ }, {}, {}, {}, {})
         } }
         compose.onNodeWithTag("studio_coach_start_target").performClick()
-        assertEquals("", started)
-        assertEquals(1, workoutPage)
+        assertEquals("actual-program:b:actual-schedule", started)
+        assertEquals(0, workoutPage)
     }
 
-    @Test fun upcomingDayNavigatesToWorkoutInsteadOfStartingItEarly() {
+    @Test fun explicitUpcomingDayStartUsesCanonicalStartCallback() {
         var starts = 0
         var workoutPage = 0
         compose.setContent { TrainPilotTheme {
@@ -62,10 +65,10 @@ class StudioCoachDomainRegressionTest {
                 { _, _, _ -> starts++ }, { workoutPage++ }, {}, {}, {}, {})
         } }
         compose.onNodeWithTag("studio_coach_start_target").performClick()
-        assertEquals(0, starts); assertEquals(1, workoutPage)
+        assertEquals(1, starts); assertEquals(0, workoutPage)
     }
 
-    @Test fun nextDayCardHighlightsRealProgramAndOpensWorkout() {
+    @Test fun nextDayCardHighlightsRealProgramAndStartsIt() {
         var workoutPage = 0
         var started = 0
         val target = CoachTarget("p", "a", "A", upcoming = true, programTitle = "Otthoni A/B – Alap")
@@ -78,8 +81,8 @@ class StudioCoachDomainRegressionTest {
         compose.onNodeWithTag("studio_coach_day_badge").assertExists()
         compose.onNodeWithText("A").assertExists()
         compose.onNodeWithTag("studio_coach_start_target").performClick()
-        assertEquals(1, workoutPage)
-        assertEquals(0, started)
+        assertEquals(0, workoutPage)
+        assertEquals(1, started)
     }
 
     @Test fun laterExerciseAdviceDoesNotDuplicateHighlightedNextDay() {

@@ -42,6 +42,7 @@ import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
@@ -116,6 +117,8 @@ import com.example.localization.LocalTrainPilotStrings
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.viewmodel.TrainPilotUiState
 
+private val calendarDurationOptions = (15..240 step 15).map(Int::toString)
+
 private fun trW(lang: com.example.model.AppLanguage, hu: String, en: String, de: String, ro: String): String = when (lang) {
     com.example.model.AppLanguage.HU -> hu
     com.example.model.AppLanguage.EN -> en
@@ -163,6 +166,7 @@ fun WorkoutTabScreen(
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
                 .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                .clip(RoundedCornerShape(18.dp))
                 .clickable { onOpenQuickWorkout() }
                 .testTag("workout_tab_quick_card")
         ) {
@@ -210,6 +214,7 @@ fun WorkoutTabScreen(
                 modifier = Modifier
                     .weight(1f)
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                    .clip(RoundedCornerShape(18.dp))
                     .clickable { onOpenExerciseLibrary() }
                     .testTag("workout_tab_exercise_picker")
             ) {
@@ -280,6 +285,7 @@ fun WorkoutTabScreen(
                 modifier = Modifier
                     .weight(1f)
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                    .clip(RoundedCornerShape(18.dp))
                     .clickable { onOpenOutdoorWorkout() }
                     .testTag("workout_tab_outdoor_card")
             ) {
@@ -429,6 +435,7 @@ fun WorkoutTabScreen(
                                 color = if (isPrimaryDay) palette.primary else palette.cardBorder,
                                 shape = RoundedCornerShape(18.dp)
                             )
+                            .clip(RoundedCornerShape(18.dp))
                             .clickable { onOpenProgramEditor(activeProgram.id, index) }
                     ) {
                         Column(
@@ -520,6 +527,7 @@ fun WorkoutTabScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .clickable { onOpenProgressionModal() }
             ) {
                 Row(
@@ -622,6 +630,7 @@ private fun ShortcutSquareCard(
         modifier = modifier
             .heightIn(min = 48.dp)
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
             .clickable { onClick() }
     ) {
         Column(
@@ -791,6 +800,7 @@ fun ProgramsListScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .heightIn(min = 48.dp)
+                                .clip(RoundedCornerShape(20.dp))
                                 .clickable { onToggleCustomTab(isCustom) }
                         ) {
                             Box(
@@ -822,6 +832,7 @@ fun ProgramsListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(16.dp))
                         .clickable { onOpenProgramEditor(activeProgram.id) }
                         .testTag("programs_active_program_card")
                 ) {
@@ -944,6 +955,7 @@ fun ProgramsListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(14.dp))
                         .clickable { onOpenProgramEditor(program.id) }
                         .testTag("program_card_${program.id}")
                 ) {
@@ -1168,18 +1180,20 @@ fun ProgramEditorScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(bottom = 24.dp)
     ) {
         // Matches Mockup 4/4 #6 "Program szerkesztése"
-        SubScreenTopBar(
-            title = strings.editProgramTitle,
-            onBack = onBack,
-            onOpenSettings = onOpenSettings
-        )
+        Box(Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 8.dp)) {
+            SubScreenTopBar(
+                title = strings.editProgramTitle,
+                onBack = onBack,
+                onOpenSettings = onOpenSettings
+            )
+        }
 
         Column(
-            modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
+            modifier = Modifier.weight(1f).testTag("program_editor_body").verticalScroll(rememberScrollState())
+                .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
+                .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
             OutlinedTextField(
@@ -1214,6 +1228,7 @@ fun ProgramEditorScreen(
                                 if (selected) palette.primary else palette.cardBorder,
                                 RoundedCornerShape(12.dp)
                             )
+                            .clip(RoundedCornerShape(12.dp))
                             .clickable { onSelectDayIndex(idx) }
                     ) {
                         Box(
@@ -1262,6 +1277,7 @@ fun ProgramEditorScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 48.dp)
+                                .clip(RoundedCornerShape(16.dp))
                                 .clickable { onToggleExpandExercise(ex.id) },
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -1519,7 +1535,7 @@ fun CalendarPlannerScreen(
     onOpenSettings: () -> Unit,
     onSelectDay: (Int) -> Unit,
     onOpenReplanModal: (Boolean) -> Unit,
-    onApplyReplan: (String, String) -> Unit,
+    onApplyReplan: (String, String, String) -> Unit,
     onOpenWorkoutDetail: () -> Unit,
     onUpdatePlanningParams: (String, String, String, String, Int, Int) -> Unit = { _, _, _, _, _, _ -> },
     onPlanMonthlyWorkouts: () -> Unit = {},
@@ -1565,8 +1581,8 @@ fun CalendarPlannerScreen(
     val localizeFirstDayLabel: (String) -> String = { raw ->
         when {
             raw.contains("Automatikus", ignoreCase = true) -> trW(state.language, "Automatikus", "Automatic", "Automatisch", "Automat")
-            raw.contains("B", ignoreCase = true) -> trW(state.language, "Alap B", "Day B", "Tag B", "Ziua B")
-            else -> trW(state.language, "Alap A", "Day A", "Tag A", "Ziua A")
+            raw.contains("B", ignoreCase = true) -> trW(state.language, "B nap", "Day B", "Tag B", "Ziua B")
+            else -> trW(state.language, "A nap", "Day A", "Tag A", "Ziua A")
         }
     }
 
@@ -1603,6 +1619,8 @@ fun CalendarPlannerScreen(
                                 color = if (isSel) palette.primary else palette.surfaceElevated,
                                 modifier = Modifier
                                     .weight(1f)
+                                    .heightIn(min = 48.dp)
+                                    .clip(RoundedCornerShape(10.dp))
                                     .clickable { splitSel = sp }
                             ) {
                                 Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 10.dp)) {
@@ -1620,6 +1638,8 @@ fun CalendarPlannerScreen(
                                 color = if (isSel) palette.primary else palette.surfaceElevated,
                                 modifier = Modifier
                                     .weight(1f)
+                                    .heightIn(min = 48.dp)
+                                    .clip(RoundedCornerShape(8.dp))
                                     .clickable { timeSel = tm }
                             ) {
                                 Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 8.dp)) {
@@ -1628,23 +1648,12 @@ fun CalendarPlannerScreen(
                             }
                         }
                     }
-                    Text(trW(state.language, "Időtartam (perc):", "Duration (min):", "Dauer (Min.):", "Durată (min):"), style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        listOf(45, 60, 75, 90).forEach { dr ->
-                            val isSel = durSel == dr
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = if (isSel) palette.primary else palette.surfaceElevated,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable { durSel = dr }
-                            ) {
-                                Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 8.dp)) {
-                                    Text("$dr ${trW(state.language, "p", "m", "M", "m")}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = if (isSel) palette.onPrimary else palette.textPrimary)
-                                }
-                            }
-                        }
-                    }
+                    PlannerFieldTile(
+                        label = trW(state.language, "Időtartam (perc)", "Duration (min)", "Dauer (Min.)", "Durată (min)"),
+                        value = durSel.toString(),
+                        dropdownOptions = calendarDurationOptions,
+                        onSelectOption = { durSel = it.toInt() }
+                    )
                 }
             },
             confirmButton = {
@@ -1699,6 +1708,8 @@ fun CalendarPlannerScreen(
                         color = palette.surfaceElevated,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .clip(RoundedCornerShape(10.dp))
                             .clickable { shiftAllFollowing = !shiftAllFollowing }
                     ) {
                         Row(
@@ -1773,7 +1784,7 @@ fun CalendarPlannerScreen(
                         dateStr to dateStr
                     }
                     "time" -> listOf("07:00", "08:30", "10:00", "16:00", "17:30", "18:00", "19:30").map { it to it }
-                    "duration" -> listOf("30", "45", "60", "75", "90").map { it to it }
+                    "duration" -> calendarDurationOptions.map { it to it }
                     else -> listOf("1", "2", "4", "6", "8", "12").map { it to it }
                 }
                 Column(
@@ -1788,6 +1799,8 @@ fun CalendarPlannerScreen(
                             color = palette.surfaceElevated,
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .heightIn(min = 48.dp)
+                                .clip(RoundedCornerShape(10.dp))
                                 .clickable {
                                     when (fieldKey) {
                                         "cadence" -> onUpdatePlanningParams(canonicalVal, state.planningFirstDayHu, state.planningStartDate, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
@@ -2043,10 +2056,11 @@ fun CalendarPlannerScreen(
                                 color = palette.textSecondary, style = MaterialTheme.typography.labelSmall,
                                 maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-                        if (state.calendarUndoStack.isNotEmpty()) com.repforge.app.ui.theme.TrainPilotNegativeIconButton(onClick = onUndoCalendarAction,
+                        if (state.calendarUndoStack.isNotEmpty()) IconButton(onClick = onUndoCalendarAction,
                             modifier = Modifier.size(48.dp).testTag("calendar_undo_action")) {
-                            Text("↶", color = androidx.compose.material3.LocalContentColor.current, style = MaterialTheme.typography.headlineSmall,
-                                modifier = Modifier.semantics { contentDescription = trW(state.language, "Visszavonás (${state.calendarUndoStack.size})", "Undo (${state.calendarUndoStack.size})", "Rückgängig (${state.calendarUndoStack.size})", "Anulează (${state.calendarUndoStack.size})") })
+                            Icon(Icons.AutoMirrored.Filled.Undo,
+                                contentDescription = trW(state.language, "Visszavonás (${state.calendarUndoStack.size})", "Undo (${state.calendarUndoStack.size})", "Rückgängig (${state.calendarUndoStack.size})", "Anulează (${state.calendarUndoStack.size})"),
+                                tint = palette.textSecondary)
                         }
                         Button(
                             onClick = { onOpenReplanModal(true) },
@@ -2128,7 +2142,7 @@ fun CalendarPlannerScreen(
                             compact = true,
                             label = trW(state.language, "Időtartam (perc)", "Duration (min)", "Dauer (Min.)", "Durată (min)"),
                             value = "${state.planningDurationMin}",
-                            dropdownOptions = listOf("30", "45", "60", "75", "90"),
+                            dropdownOptions = calendarDurationOptions,
                             onSelectOption = { opt ->
                                 onUpdatePlanningParams(state.planningCadenceHu, state.planningFirstDayHu, state.planningStartDate, state.planningTime, opt.toIntOrNull() ?: 60, state.planningWeeksCount)
                             }
@@ -2226,7 +2240,7 @@ fun CalendarPlannerScreen(
                                         Surface(
                                             shape = RoundedCornerShape(8.dp),
                                             color = palette.primary.copy(alpha = 0.16f),
-                                            modifier = Modifier.clickable { openedDay = null; onOpenWorkoutDetail() }
+                                            modifier = Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(8.dp)).clickable { openedDay = null; onOpenWorkoutDetail() }
                                         ) {
                                             Text(
                                                 text = "${strings.navLog} >",
@@ -2279,7 +2293,7 @@ fun CalendarPlannerScreen(
 
     // 4. EXACT SCREENSHOT 8 "Edzések újratervezése" MODAL DIALOG
     if (state.showReplanModal) {
-        var selectedProgId by remember(activeProgram?.id) { mutableStateOf(activeProgram?.id ?: "") }
+        var selectedProgId by remember { mutableStateOf(activeProgram?.id ?: "") }
         var selectedFirstDay by remember { mutableStateOf("Automatikus") }
         val defaultTomorrow = remember {
             today.plusDays(1).format(java.time.format.DateTimeFormatter.ofPattern("yyyy. MM. dd."))
@@ -2328,7 +2342,7 @@ fun CalendarPlannerScreen(
                             shape = RoundedCornerShape(12.dp),
                             color = palette.danger.copy(alpha = 0.12f),
                             modifier = Modifier
-                                .size(48.dp)
+                                .size(48.dp).testTag("calendar_replan_close")
                                 .border(1.dp, palette.danger.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { onOpenReplanModal(false) }
@@ -2355,17 +2369,23 @@ fun CalendarPlannerScreen(
                         color = palette.textSecondary
                     )
 
-                    // Program selector (floating dropdown)
+                    // Keep selection local until the plan is applied. Disambiguate duplicate names
+                    // so each option still maps to its stable program ID.
+                    val programNames = state.programs.map { it.localizedName(state.language) }
+                    val hasDuplicateProgramNames = programNames.distinct().size != programNames.size
+                    val programOptions = state.programs.mapIndexed { index, program ->
+                        val name = programNames[index]
+                        val label = if (hasDuplicateProgramNames) "${index + 1}. $name" else name
+                        label to program.id
+                    }
                     PlannerFieldTile(
+                        modifier = Modifier.testTag("calendar_replan_program"),
                         label = trW(state.language, "Program", "Program", "Programm", "Program"),
                         value = selectedProgName,
                         showChevron = true,
-                        dropdownOptions = state.programs.map { it.localizedName(state.language) },
-                        onSelectOption = { chosenName ->
-                            state.programs.firstOrNull { it.localizedName(state.language) == chosenName || it.nameHu == chosenName }?.let { chosen ->
-                                selectedProgId = chosen.id
-                                onActivateProgram(chosen.id)
-                            }
+                        dropdownOptions = programOptions.map { it.first },
+                        onSelectOption = { label ->
+                            programOptions.firstOrNull { it.first == label }?.let { selectedProgId = it.second }
                         }
                     )
 
@@ -2430,7 +2450,8 @@ fun CalendarPlannerScreen(
 
                     Spacer(modifier = Modifier.height(6.dp))
                     Button(
-                        onClick = { onApplyReplan(selectedNewStartDate, selectedFirstDay) },
+                        onClick = { onApplyReplan(selectedNewStartDate, selectedFirstDay, selectedProgObj?.id ?: "") },
+                        enabled = selectedProgObj != null && !state.libraryMutationBusy,
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = palette.primary,
@@ -2438,7 +2459,7 @@ fun CalendarPlannerScreen(
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(54.dp)
+                            .height(54.dp).testTag("calendar_replan_apply")
                     ) {
                         Text(
                             text = trW(state.language, "Terv frissítése", "Update plan", "Plan aktualisieren", "Actualizează planul"),
@@ -2954,18 +2975,20 @@ fun ExerciseDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(bottom = 24.dp)
     ) {
         // Matches Mockup 1/4 #6 "Gyakorlat részletei"
-        SubScreenTopBar(
-            title = strings.detailsAction,
-            onBack = onBack,
-            onOpenSettings = onOpenSettings
-        )
+        Box(Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 8.dp)) {
+            SubScreenTopBar(
+                title = strings.detailsAction,
+                onBack = onBack,
+                onOpenSettings = onOpenSettings
+            )
+        }
 
         Column(
-            modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter),
+            modifier = Modifier.weight(1f).testTag("exercise_detail_body").verticalScroll(rememberScrollState())
+                .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
+                .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
             Row(
@@ -3169,7 +3192,7 @@ fun ExerciseDetailScreen(
                 ) {
                     Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(trW(state.language, "▶ Edzés indítása ezzel", "▶ Start workout with this", "▶ Training damit starten", "▶ Începe antrenamentul cu acesta"), fontWeight = FontWeight.Bold)
+                    Text(trW(state.language, "Edzés indítása ezzel", "Start workout with this", "Training damit starten", "Începe antrenamentul cu acesta"), fontWeight = FontWeight.Bold)
                 }
             }
         }

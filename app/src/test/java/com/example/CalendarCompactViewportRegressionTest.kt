@@ -36,6 +36,8 @@ class CalendarCompactViewportRegressionTest {
         planningTime = "18:00", planningDurationMin = 60, planningWeeksCount = 4,
         calendarEvents = emptyList(), calendarUndoStack = listOf(emptyList())
     ))
+    private val applies = mutableListOf<String>()
+    private var activations = 0
     private var plans = 0
     private var undos = 0
     private val adds = mutableListOf<List<Any>>()
@@ -51,7 +53,8 @@ class CalendarCompactViewportRegressionTest {
                             onBack = {}, onOpenSettings = {},
                             onSelectDay = { state = state.copy(selectedCalendarDay = it) },
                             onOpenReplanModal = { state = state.copy(showReplanModal = it) },
-                            onApplyReplan = { _, _ -> }, onOpenWorkoutDetail = {},
+                            onApplyReplan = { _, _, id -> applies += id }, onOpenWorkoutDetail = {},
+                            onActivateProgram = { activations++ },
                             onUpdatePlanningParams = { cadence, firstDay, startDate, time, duration, weeks ->
                                 updates += listOf(cadence, firstDay, startDate, time, duration, weeks)
                                 state = state.copy(planningCadenceHu = cadence, planningFirstDayHu = firstDay,
@@ -107,21 +110,42 @@ class CalendarCompactViewportRegressionTest {
         assertInsideViewport("calendar_plan_action")
     }
 
+    @Test fun selectingAnotherProgramOnlyAppliesItAfterConfirmationAndCancelDiscardsTheDraft() {
+        fun program(id: String, active: Boolean) = com.example.model.TrainingProgramModel(
+            id, id, id, "", "", emptyList(), true, active, emptyList())
+        state = state.copy(programs = listOf(program("Original", true), program("Other", false)))
+        render()
+        fun chooseOther() {
+            compose.onNodeWithTag("calendar_replan_action").performClick()
+            compose.onNode(hasClickAction() and hasAnyAncestor(hasTestTag("calendar_replan_program"))).performClick()
+            compose.onNode(hasText("Other") and hasAnyAncestor(isPopup())).performClick()
+            assertEquals(0, activations)
+            assertTrue(applies.isEmpty())
+        }
+        chooseOther()
+        compose.onNodeWithTag("calendar_replan_close").performClick()
+        assertFalse(state.showReplanModal)
+        chooseOther()
+        compose.onNodeWithTag("calendar_replan_apply").performScrollTo().performClick()
+        assertEquals(listOf("Other"), applies)
+        assertEquals(0, activations)
+    }
+
     @Test fun allSixFieldsForwardUpdatedParametersWithoutChangingOtherValues() {
         render()
         select("cadence", "Minden nap")
-        select("first_day", "Alap B")
+        select("first_day", "B nap")
         select("start_date", "2026. 03. 02.")
         select("time", "07:00")
-        select("duration", "90")
+        select("duration", "240")
         select("weeks", "12")
         assertEquals(listOf(
             listOf("Minden nap", "Alap A", "2026. 03. 01.", "18:00", 60, 4),
             listOf("Minden nap", "Alap B", "2026. 03. 01.", "18:00", 60, 4),
             listOf("Minden nap", "Alap B", "2026. 03. 02.", "18:00", 60, 4),
             listOf("Minden nap", "Alap B", "2026. 03. 02.", "07:00", 60, 4),
-            listOf("Minden nap", "Alap B", "2026. 03. 02.", "07:00", 90, 4),
-            listOf("Minden nap", "Alap B", "2026. 03. 02.", "07:00", 90, 12)
+            listOf("Minden nap", "Alap B", "2026. 03. 02.", "07:00", 240, 4),
+            listOf("Minden nap", "Alap B", "2026. 03. 02.", "07:00", 240, 12)
         ), updates)
         assertInsideViewport("calendar_plan_action")
         compose.onNodeWithTag("calendar_plan_action").performClick()

@@ -20,7 +20,8 @@ fun TrainPilotOutlinedButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     shape: Shape = ButtonDefaults.outlinedShape,
-    colors: ButtonColors = ButtonDefaults.outlinedButtonColors(),
+    colors: ButtonColors = ButtonDefaults.outlinedButtonColors(
+        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
     elevation: ButtonElevation? = null,
     border: BorderStroke? = TrainPilotFrames.control(MaterialTheme.colorScheme.outline),
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,

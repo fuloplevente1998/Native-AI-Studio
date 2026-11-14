@@ -98,8 +98,13 @@ fun HomeScreen(
     onOpenHealthToday: () -> Unit = onOpenHealthSteps
 ) {
     val palette = LocalTrainPilotPalette.current
-    val activeProgram = state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
-    val currentDay = activeProgram?.days?.firstOrNull()
+    val target = state.homeWorkoutTarget
+    val plannedEvent = state.calendarEvents.firstOrNull { it.id == target?.scheduleId }
+    val activeProgram = state.programs.firstOrNull { it.id == target?.programId }
+        ?: state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
+    val currentDay = activeProgram?.days?.firstOrNull {
+        it.id == target?.dayId || it.id == "${activeProgram.id}:${target?.dayId}"
+    } ?: activeProgram?.days?.firstOrNull()
     fun tr(hu: String, en: String, de: String, ro: String) = when (state.language) {
         com.example.model.AppLanguage.HU -> hu
         com.example.model.AppLanguage.EN -> en
@@ -292,14 +297,22 @@ fun HomeScreen(
                             }
                         }
 
-                        Text(
-                            text = if (state.isWorkoutSessionActive) {
-                                com.example.model.LoggedWorkoutEntry(id = "active", titleHu = state.activeWorkoutTitleHu)
-                                    .localizedTitle(state.language, state.programs, state.exercises)
-                            } else currentDay?.localizedTitle(state.language) ?: tr("Teljes test A", "Full Body A", "Ganzkörper A", "Full Body A"),
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            color = palette.textPrimary
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = palette.tintedSurface(0.12f),
+                            modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
+                        ) {
+                            Text(
+                                text = if (state.isWorkoutSessionActive) {
+                                    com.example.model.LoggedWorkoutEntry(id = "active", titleHu = state.activeWorkoutTitleHu)
+                                        .localizedTitle(state.language, state.programs, state.exercises)
+                                } else currentDay?.localizedDayCode(state.language) ?: tr("A nap", "Day A", "Tag A", "Ziua A"),
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold,
+                                    fontSize = MaterialTheme.typography.titleSmall.fontSize * 1.1f),
+                                color = palette.primary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp).testTag("home_planned_day")
+                            )
+                        }
 
                         Text(
                             text = if (state.isWorkoutSessionActive) {
@@ -311,10 +324,10 @@ fun HomeScreen(
                                 )
                             } else {
                                 tr(
-                                    "${currentDay?.exercises?.size ?: 8} gyakorlat • kb. ${currentDay?.durationMinutes ?: 60} perc",
-                                    "${currentDay?.exercises?.size ?: 8} exercises • ~${currentDay?.durationMinutes ?: 60} min",
-                                    "${currentDay?.exercises?.size ?: 8} Übungen • ca. ${currentDay?.durationMinutes ?: 60} Min.",
-                                    "${currentDay?.exercises?.size ?: 8} exerciții • aprox. ${currentDay?.durationMinutes ?: 60} min"
+                                    "${currentDay?.exercises?.size ?: 8} gyakorlat • kb. ${plannedEvent?.durationMinutes ?: currentDay?.durationMinutes ?: 60} perc",
+                                    "${currentDay?.exercises?.size ?: 8} exercises • ~${plannedEvent?.durationMinutes ?: currentDay?.durationMinutes ?: 60} min",
+                                    "${currentDay?.exercises?.size ?: 8} Übungen • ca. ${plannedEvent?.durationMinutes ?: currentDay?.durationMinutes ?: 60} Min.",
+                                    "${currentDay?.exercises?.size ?: 8} exerciții • aprox. ${plannedEvent?.durationMinutes ?: currentDay?.durationMinutes ?: 60} min"
                                 )
                             },
                             style = MaterialTheme.typography.labelSmall,
