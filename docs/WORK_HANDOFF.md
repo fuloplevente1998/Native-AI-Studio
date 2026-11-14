@@ -1,8 +1,8 @@
 # #241 — összeállított gyakorlatlista visszavonása, külön javító PR
 
-A #238 eddigi UI/mentési módosításait a felhasználó a 2762-es képernyőkép alapján elfogadta és készre záratta; a jegy CLOSED. Az elrendezés marad. Új utófeladat: a listában kijelölt gyakorlat pipája eltávolítson az összeállításból, ne ismét hozzáadjon. Saját ág: fix/exercise-queue-undo.
+A #238 eddigi UI/mentési módosításait a felhasználó a 2762-es képernyőkép alapján elfogadta és készre záratta; a jegy CLOSED. Az elrendezés marad. Új utófeladat: a listában kijelölt gyakorlat pipája eltávolítson az összeállításból, ne ismét hozzáadjon. Saját ág: fix/exercise-queue-undo; draft PR242, issue241.
 
-A képernyő eltávolító callbackje a meglévő ViewModel-műveletre kötve. A visszavonás csak a várólistát és lokalizált visszajelzését módosítja, a programot/aktív sorozatokat nem törli. Piros, finom visszavonási szín, megőrzött geometria. UI→ViewModel regresszió mind a négy nyelven; közös CI még futtatandó. Új build/verzióemelés nincs kérve; a 2762-es APK/AAB még nem tartalmazza ezt az új utófeladatot. Részletek: ISSUE241_QUEUE_UNDO.md.
+A képernyő eltávolító callbackje a meglévő ViewModel-műveletre kötve. A visszavonás csak a várólistát és lokalizált visszajelzését módosítja, a programot/aktív sorozatokat nem törli. Piros, finom visszavonási szín, megőrzött geometria. UI→ViewModel regresszió mind a négy nyelven; CI43629146558 SUCCESS, forrás39bf7c0ac1264be6a6b9acd2c73faa4335ea2d7b. ZIP-digest és nyers XML ellenőrizve: telefon96 fájl/507 teszt + Wear35/189 =696, 0failure/error/skipped; shared NO-SOURCE. Bizonyíték: verification/PR242-ci-evidence.json. A következő commit csak dokumentáció; készülékes elfogadás még nincs. Új build/verzióemelés nincs kérve; a 2762-es APK/AAB még nem tartalmazza ezt az új utófeladatot. Részletek: ISSUE241_QUEUE_UNDO.md.
 
 ---
 

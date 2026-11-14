@@ -5,3 +5,5 @@ A pipa most a meglévő removeExerciseFromWorkoutQueue műveletet kapja, a plusz
 Az eltávolítás csak az összeállított listát módosítja: a mentett program és a futó edzés sorozatai nem törlődnek. Már kivett/hiányzó ID eltávolítása no-op. A visszavonási banner lokalizált.
 
 Új UI→valódi ViewModel regresszió ellenőrzi mind a négy nyelven a hozzáadás/középső elem kivétele/újra hozzáadás/teljes ürítés ciklust, a darabszámot és sorrendet, valamint a többi adat megőrzését. A meglévő kompakt méret- és callbackteszt is megmarad. Teljes CI a meglévő workflow-ban; új APK/AAB és verzióemelés ehhez az utófeladathoz nincs kérve. A kiadott 2762-es fájlok változatlanok.
+
+Ellenőrizve: CI43629146558 SUCCESS, forrás39bf7c0ac1264be6a6b9acd2c73faa4335ea2d7b. Nyers696 teszt,0failure/error/skipped; letöltött ZIP-digest egyezik. Draft PR242, főágba még nem került, új telepítő nincs. Következő lépés az új funkció elfogadása és a később kért közös integráció/kiadás.
