@@ -1,0 +1,51 @@
+{
+  "source": "a8343a7f73b6fa02c735001c3e8474bff9c3b75d",
+  "run": 43635962331,
+  "artifactDigest": "sha256:4c98848ee5300d448249919cbf5519f3a232c51e635c5ba3883a742960b47ce9",
+  "rawJUnit": {
+    "app": {
+      "files": 99,
+      "tests": 516,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "wear": {
+      "files": 35,
+      "tests": 189,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "files": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "regressionCases": {
+    "ButtonPressFeedbackRegressionTest": [
+      "aPressAndReleaseInOneFrameStillProduceVisibleWholeButtonFeedback",
+      "filledButtonsKeepTheirPaintedHeightAndCoverWideSurfaces",
+      "wideButtonsShowHeldFeedbackAcrossTheRoundedVisualAndClearOnReleaseOrCancel",
+      "textButtonsRetainVisibleKeyboardFocusAndNativeKeyboardActivation",
+      "disabledButtonDoesNotInvokeItsAction"
+    ],
+    "ExerciseLibraryCompactRegressionTest": [
+      "queuedCheckRemovesOnlyItsExerciseUpdatesCountAndAllowsReaddingInEveryLanguage",
+      "longLocalizedTitlesAndActionsRemainUsableAtNarrowWidthsAndLargeText"
+    ],
+    "NavigationOriginRegressionTest": [
+      "logDetailsRestoreTheOriginSectionAndNestedWorkoutPhotoAndMapFocus",
+      "exerciseDetailsAndSettingsPopOneRealOriginWithoutAddingHistory"
+    ],
+    "NavigationOriginUiRegressionTest": [
+      "realProgressWorkoutRowAndDetailCloseOrSystemBackRestoreSectionAndScroll",
+      "aPoppedEditorDoesNotResurrectItsCancelledLocalDraft"
+    ]
+  },
+  "physicalAcceptance": false,
+  "newInstallersPackaged": false
+}

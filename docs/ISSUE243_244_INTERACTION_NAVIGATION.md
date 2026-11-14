@@ -16,10 +16,4 @@ A visszatérő böngészőnézetek SaveableStateHolder révén megőrzik a görg
 
 Regresszió: Fejlődés/Napló/Statisztikák → részlet; egymásra nyitott edzések, fotó és térkép; gyakorlatválasztó/részlet; Beállítások alnézetei. A valódi Progress és naplórészlet X-ét és rendszer-visszáját, az eredeti görgetési pozíciót és az elvetett lokális draft tisztulását Compose UI-teszt fedi.
 
-Teljes közös CI a kész kóddal futtatandó. A #241 korábbi 696 tesztje a korábbi forrás bizonyítéka; a mostani változásokra új közös eredmény szükséges.
-
-A 43633039679 előzetes kört a végső gyors-koppintási regresszió hozzáadása miatt leállítottuk; nem validációs bizonyíték. A kész végleges kóddal egy közös teljes futás indul.
-
-A 43633617617 körben az alkalmazáskód lefordult, a tesztfordítás két API/import hiányon állt meg (ExperimentalTestApi és toArgb). Ezek javítva; a görgetés-összehasonlítás normalizált szemantikai értékre szigorítva. Ez a futás nem kész tesztbizonyíték.
-
-A 43634378723 körben 516 telefonos tesztből három új teszt-fixture feltételezése bukott: a vizuális és touch bounds azonosnak vétele, touch módban kért billentyűfókusz, illetve a konkrét kártyamagasság miatt feltételezett kezdeti görgetés. A teszt most külön touch bounds/eredeti pixeles határt mér, billentyűzet módba kapcsol, és ténylegesen elgörgeti a kiinduló nézetet. Az ellenőrzési célok megmaradtak; új közös teljes kör szükséges.
+Közös ellenőrzés: CI43635962331 SUCCESS, forrása8343a7f73b6fa02c735001c3e8474bff9c3b75d. A letöltött ZIP digestje és a nyers XML helyben ellenőrizve: telefon99 fájl/516 teszt + Wear35/189 =705, 0failure/error/skipped; shared NO-SOURCE. A gombok 5, navigáció 4 és queue 2 célzott regressziója a teljes csomag része. Bizonyíték: verification/PR242-interaction-ci-evidence.json. A korábbi 696-os bizonyíték történeti, a #241 első forrására vonatkozik.
