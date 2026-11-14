@@ -1,50 +1,30 @@
-# TrainPilot 2760 · 1.1-beta – felhasználó által kért kiadás előkészítve
+# TrainPilot 2760 · 1.1-beta – aláírt main build, 2026-11-14
 
-A felhasználó kérte a PR#233 javításait tartalmazó új APK+AAB csomagot.
-Telefon276000, Wear276002, név1.1-beta. A javított alkalmazáskód előzetes CI-je685/685:
-Actions43571746498, forrásb25fd65bc0ad0c1182bb9004d32d0e735ef470db. Utána csak verziómetaadat,
-kiadási dokumentáció és a meglévő signing workflow egy trigger-kommentje változik;
-a trusted-main/signer/Maps/teszt kapuk megmaradtak. A merge indítja az egyetlen közös
-signed main kört. Telefon/Wear Play-jegyzetek: releases/2760-*-play-notes.txt.
+PR#233 mainen. Aláírt forrásfcf465785ba1bdc14f3148fa72be480a7ec9b1c2.
+Telefon276000, Wear276002, mindkettő1.1-beta. Közös signed Actions43578727032 SUCCESS:
+telefon/Wear APK+AAB és teljes JVM-kapu. A runner nyers XML-ellenőrzése szerint
+telefon92 fájl/496 teszt + Wear35 fájl/189 teszt =685,0failure/error/skipped; shared NO-SOURCE.
+A runner source/package/verzió/Maps/páridentitás/pinned APK- és AAB-signer ellenőrzése zöld.
+A tanúsítványhash a logban maszkolt. Részletes adat: releases/2760-ci-evidence.json.
 
-A munkakörnyezet még nem használható; a GitHub-connectorral előkészített kiadás után
-a binárisok letöltése, helyi digest/hash/signer ellenőrzése és Drive-feltöltése külön
-befejezendő. Jelenleg nincs új átadott telepítő. Készülékes elfogadás külön szükséges.
+A napló/téma/katalógus tömörített Home átvitelt kapott, megvárt helyi Data Layer committal,
+újrapróbálható frissítéssel és órás onResume adatkérelemmel. Mind32 paletta támogatott.
+A Mini napló továbbra is a legutóbbi8 edzés olvasható másolata. Restore/Drive után a
+projekció nem dönt a kanonikus mentés sikeréről, és a worker a rögzített DB-élettartamot követi.
+A pihenő egy48dp sor, a sorozatkártyák normál355dp nézetben kb60dp magasak, egysoros
+érték/pipa/törlés elrendezéssel. Nagybetűs fallback és érintési célok megmaradtak.
 
----
+A munkakörnyezet jelenleg nem használható: a ZIP-ek helyi digest-/bináris-hash-/aláíró
+visszaellenőrzése és a TrainPilot Native Drive-feltöltés MÉG NINCS meg. Az adatok a
+runner ellenőrzött JSON-riportjából és a GitHub artifact-metaadataiból származnak.
+A GitHub ZIP-letöltések elérhetők; az artifactok2026-11-21-én járnak le. A helyi/Drive
+átadás folytatásakor a fenti run ugyanazon ZIP-jeit kell használni, új build nélkül.
 
-# 2026-11-14 – órás napló/téma és kompakt edzés: ellenőrzött draft
-
-PR#233, ágfix/wear-journal-theme, alapmainf4de131. Ellenőrzött app/teszt/CI forrás:
-b25fd65bc0ad0c1182bb9004d32d0e735ef470db. Actions43571746498 SUCCESS, telefonos R8 is zöld.
-A runner nyers JUnit-ellenőrzője szerint telefon92 fájl/496 teszt + Wear35 fájl/189 teszt =
-685 teszt,0failure/error/skipped; shared NO-SOURCE. A végső ZIP helyi letöltése/digest-ellenőrzése
-a munkakörnyezet kiesése miatt még nem történt meg; a runner riport és a GitHub által közölt
-artifact-digest külön rögzítve: WEAR_HOME_COMPACT_CI_EVIDENCE_2026-11-14.json.
-
-A napló/paletta/katalógus közös Home DataItemje méretkorlátos GZIP átvitelt kapott.
-Reprodukció: a valódi katalógus + maximális Mini napló196440 byte helyett8347 byte DataMap;
-a korábbi ellenőrzött ZIP digestje és a fixture forrása a bizonyítékban szerepel. Kis régi
-inline csomagok olvashatók, sérült/lejárt csomag nem reseteli a friss cache-t. A telefon
-megvárja a helyi Data Layer commitot; requestHome az írási zároláson kívül vár, dataset
-continuation ellenőrzéssel. Async frissítés három próbával, az óra onResume új Home-ot kér.
-A telefon32 palettájának teljes színei átvihetők, a telefon témamentése változatlan.
-Az órás Mini napló továbbra is a legutóbbi8 edzés olvasható másolata.
-
-A csukott pihenő egy48dp sor, ikonokkal és mért hely alapján teljes/rövid időfelirattal;
-ha nincs hely, a±15s a meglévő nagy nézetben érhető el.355dp normál nézetben a sorozatszám,
-három értékmező, pipa és törlés egy kb60dp kártyába fér. Nagybetűs fallback és48dp célok
-megmaradtak. A Tárcsa/Bemelegítés ikonra rövidült, a gyakorlatcím kevésbé tördelődik.
-
-A teljes CI a restore/cloud integrációt is ellenőrizte. Ezen műveletek utólagos órás
-projekciója async, így a helyi kanonikus mentést nem az órakapcsolat dönti el. A worker
-a leválasztáskor rögzített DB-példányt használja, lezárt DB-nél leáll. Az ismert regressziók
-és eredeti restore-állítások változatlanul átmentek.
-
-Nincs main-merge, verzióemelés vagy új APK/AAB. A2759 telepítők ezeket még nem tartalmazzák.
-Készülékes elfogadás külön hátravan; az új Home átviteli módhoz a telefonos és órás appot
-együtt kell majd frissíteni. A#220 store-media része külön feladat marad.
-A bizonyítékot rögzítő záró commitok csak dokumentációt módosítanak.
+APK pár: https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43578727032/artifacts/14107842389
+AAB pár: https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43578727032/artifacts/14107921912
+Telefon/Wear Play-jegyzetek: releases/2760-phone-play-notes.txt és2760-wear-play-notes.txt.
+Változáslista: releases/2760-changes.md. Mindkét app frissítendő; fizikai elfogadás hátravan.
+A záró dokumentáció az aláírt alkalmazáskódon nem változtat.
 
 ---
 

@@ -21,4 +21,11 @@ Verziókód: telefon **276000**, Wear OS **276002**. A felhasználó kérte a ja
 
 A javítások előzetes teljes CI-je: [43571746498](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43571746498), alkalmazás/teszt forrás b25fd65bc0ad0c1182bb9004d32d0e735ef470db. A runner nyers JUnit-ellenőrzője szerint **496 telefonos + 189 Wear = 685 teszt**, 0 failure/error/skipped; shared NO-SOURCE. A telefonos R8 is sikeres. A valódi katalógust és maximális Mini naplót használó korábbi fixture 196440 byte-ról 8347 byte DataMapra csökkent, adatvesztés nélkül.
 
-A közös aláírt main APK+AAB futás eredménye és a csomagok ellenőrzése a kiadás lezárásakor kerül ide. Készülékes elfogadás külön lépés.
+A közös aláírt main kiadás sikeres: [43578727032](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43578727032), forrás `fcf465785ba1bdc14f3148fa72be480a7ec9b1c2`. **685 JVM teszt, 0 failure/error/skipped**, shared NO-SOURCE. A runner ellenőrizte a package-et, verziókat, Maps-konfigurációt, páros identitást és a pinned APK/AAB aláírót. A fájlhashek és a GitHub által közölt ZIP-digestei a `2760-ci-evidence.json` fájlban szerepelnek.
+
+A munkakörnyezet kiesése miatt a ZIP-ek helyi letöltése és független digest/bináris/aláíró ellenőrzése, valamint a Drive-feltöltés még nincs meg. A letöltések a GitHubon érhetők el:
+
+- [Telefon + Wear APK ZIP](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43578727032/artifacts/14107842389)
+- [Telefon + Wear AAB ZIP](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43578727032/artifacts/14107921912)
+
+Az artifactok 2026. november 21-én járnak le. A fizikai telefon/óra elfogadás külön lépés; mindkét app frissítendő.

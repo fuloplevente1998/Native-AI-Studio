@@ -1,3 +1,33 @@
+# TrainPilot 2760 · 1.1-beta – aláírt main build, 2026-11-14
+
+PR#233 mainen. Aláírt forrásfcf465785ba1bdc14f3148fa72be480a7ec9b1c2.
+Telefon276000, Wear276002, mindkettő1.1-beta. Közös signed Actions43578727032 SUCCESS:
+telefon/Wear APK+AAB és teljes JVM-kapu. A runner nyers XML-ellenőrzése szerint
+telefon92 fájl/496 teszt + Wear35 fájl/189 teszt =685,0failure/error/skipped; shared NO-SOURCE.
+A runner source/package/verzió/Maps/páridentitás/pinned APK- és AAB-signer ellenőrzése zöld.
+A tanúsítványhash a logban maszkolt. Részletes adat: releases/2760-ci-evidence.json.
+
+A napló/téma/katalógus tömörített Home átvitelt kapott, megvárt helyi Data Layer committal,
+újrapróbálható frissítéssel és órás onResume adatkérelemmel. Mind32 paletta támogatott.
+A Mini napló továbbra is a legutóbbi8 edzés olvasható másolata. Restore/Drive után a
+projekció nem dönt a kanonikus mentés sikeréről, és a worker a rögzített DB-élettartamot követi.
+A pihenő egy48dp sor, a sorozatkártyák normál355dp nézetben kb60dp magasak, egysoros
+érték/pipa/törlés elrendezéssel. Nagybetűs fallback és érintési célok megmaradtak.
+
+A munkakörnyezet jelenleg nem használható: a ZIP-ek helyi digest-/bináris-hash-/aláíró
+visszaellenőrzése és a TrainPilot Native Drive-feltöltés MÉG NINCS meg. Az adatok a
+runner ellenőrzött JSON-riportjából és a GitHub artifact-metaadataiból származnak.
+A GitHub ZIP-letöltések elérhetők; az artifactok2026-11-21-én járnak le. A helyi/Drive
+átadás folytatásakor a fenti run ugyanazon ZIP-jeit kell használni, új build nélkül.
+
+APK pár: https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43578727032/artifacts/14107842389
+AAB pár: https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43578727032/artifacts/14107921912
+Telefon/Wear Play-jegyzetek: releases/2760-phone-play-notes.txt és2760-wear-play-notes.txt.
+Változáslista: releases/2760-changes.md. Mindkét app frissítendő; fizikai elfogadás hátravan.
+A záró dokumentáció az aláírt alkalmazáskódon nem változtat.
+
+---
+
 # TrainPilot 2759 · 1.1-beta – ellenőrzött main kiadás, 2026-11-14
 
 A felhasználó által jóváhagyott telefon275900 és Wear275902 elkészült.
