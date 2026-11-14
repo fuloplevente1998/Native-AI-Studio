@@ -106,17 +106,104 @@
     "runnerPinnedAabSigner": true,
     "runnerMapsAndPairIdentity": true,
     "certificateFingerprintsRedactedInLogs": true,
-    "localArchivesDownloaded": false,
-    "localArchiveDigestVerified": false,
-    "localBinaryHashAndSignerReadback": false,
-    "reason": "Execution environment unavailable. GitHub runner verification and immutable artifact metadata were checked through the connected GitHub tools."
+    "localArchivesDownloaded": true,
+    "localArchiveDigestVerified": true,
+    "localBinaryHashAndSignerReadback": true,
+    "reason": "Execution environment recovered; original signed artifacts downloaded, all ZIP and binary hashes verified, raw XML counted, APK signing-block and AAB certificates checked against the permanent signer."
   },
   "delivery": {
     "mainMerged": true,
     "pr": 233,
     "githubZipLinksAvailable": true,
-    "driveUploaded": false,
+    "driveUploaded": true,
     "driveFolder": "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9",
-    "physicalAcceptance": false
-  }
+    "physicalAcceptance": false,
+    "driveFiles": [
+      {
+        "key": "phoneApk",
+        "local": "app-release.apk",
+        "name": "TrainPilot-2760-1.1-beta-phone-release.apk",
+        "mime": "application/vnd.android.package-archive",
+        "id": "1dggVXmPWeXwi9HBUxZiUmW4yw4wamZ2e",
+        "url": "https://drive.google.com/file/d/1dggVXmPWeXwi9HBUxZiUmW4yw4wamZ2e/view?usp=drivesdk",
+        "bytes": 5495467,
+        "mime_type": "application/vnd.android.package-archive",
+        "metadataVerified": true
+      },
+      {
+        "key": "wearApk",
+        "local": "wear-release.apk",
+        "name": "TrainPilot-2760-1.1-beta-wear-release.apk",
+        "mime": "application/vnd.android.package-archive",
+        "id": "1ejSH-s7F16FHzHmTqe_c-oEKWgzD2vjD",
+        "url": "https://drive.google.com/file/d/1ejSH-s7F16FHzHmTqe_c-oEKWgzD2vjD/view?usp=drivesdk",
+        "bytes": 4669627,
+        "mime_type": "application/vnd.android.package-archive",
+        "metadataVerified": true
+      },
+      {
+        "key": "phoneAab",
+        "local": "app-release.aab",
+        "name": "TrainPilot-2760-1.1-beta-phone-release.aab",
+        "mime": "application/octet-stream",
+        "id": "19n4YBk0G7BjDV5o_RfQVEQQuWFhpPD58",
+        "url": "https://drive.google.com/file/d/19n4YBk0G7BjDV5o_RfQVEQQuWFhpPD58/view?usp=drivesdk",
+        "bytes": 10109234,
+        "mime_type": "application/x-zip",
+        "metadataVerified": true
+      },
+      {
+        "key": "wearAab",
+        "local": "wear-release.aab",
+        "name": "TrainPilot-2760-1.1-beta-wear-release.aab",
+        "mime": "application/octet-stream",
+        "id": "13t_-gqUX0ZTMA-LPc2RJvlcTGjm2ALdU",
+        "url": "https://drive.google.com/file/d/13t_-gqUX0ZTMA-LPc2RJvlcTGjm2ALdU/view?usp=drivesdk",
+        "bytes": 5580506,
+        "mime_type": "application/x-zip",
+        "metadataVerified": true
+      },
+      {
+        "key": "phoneNotes",
+        "local": "TrainPilot-2760-phone-play-notes.txt",
+        "name": "TrainPilot-2760-phone-play-notes.txt",
+        "mime": "text/plain",
+        "id": "1FLcSEwCtjlqiH9a2slS463cq0HTbF109",
+        "url": "https://drive.google.com/file/d/1FLcSEwCtjlqiH9a2slS463cq0HTbF109/view?usp=drivesdk",
+        "bytes": 271,
+        "mime_type": "text/plain",
+        "metadataVerified": true
+      },
+      {
+        "key": "wearNotes",
+        "local": "TrainPilot-2760-wear-play-notes.txt",
+        "name": "TrainPilot-2760-wear-play-notes.txt",
+        "mime": "text/plain",
+        "id": "1zoOk7UfTH7YgQv5wz1a00DxiAHd_F4Kj",
+        "url": "https://drive.google.com/file/d/1zoOk7UfTH7YgQv5wz1a00DxiAHd_F4Kj/view?usp=drivesdk",
+        "bytes": 261,
+        "mime_type": "text/plain",
+        "metadataVerified": true
+      },
+      {
+        "key": "changes",
+        "local": "TrainPilot-2760-changes.md",
+        "name": "TrainPilot-2760-changes.md",
+        "mime": "text/markdown",
+        "id": "1YlxaDvYX71-qzFbNSGNB-pJibT5x460Y",
+        "url": "https://drive.google.com/file/d/1YlxaDvYX71-qzFbNSGNB-pJibT5x460Y/view?usp=drivesdk",
+        "bytes": 3938,
+        "mime_type": "text/markdown",
+        "metadataVerified": true
+      }
+    ],
+    "driveEvidence": {
+      "id": "1l_92QhNSwrI6VIEOOxQUzFEdP_ea563G",
+      "url": "https://drive.google.com/file/d/1l_92QhNSwrI6VIEOOxQUzFEdP_ea563G/view?usp=drivesdk",
+      "name": "TrainPilot-2760-verified-release-evidence.json",
+      "bytes": 6924
+    }
+  },
+  "localArtifactEvidence": "2760-verified-artifacts.json",
+  "localVerifiedAt": "2026-11-14T09:54:24.678935+00:00"
 }

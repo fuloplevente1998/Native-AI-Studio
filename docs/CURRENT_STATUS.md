@@ -1,30 +1,34 @@
-# TrainPilot 2760 · 1.1-beta – aláírt main build, 2026-11-14
+# TrainPilot 2760 · 1.1-beta – ellenőrzött Drive-átadás, 2026-11-14
 
-PR#233 mainen. Aláírt forrásfcf465785ba1bdc14f3148fa72be480a7ec9b1c2.
-Telefon276000, Wear276002, mindkettő1.1-beta. Közös signed Actions43578727032 SUCCESS:
-telefon/Wear APK+AAB és teljes JVM-kapu. A runner nyers XML-ellenőrzése szerint
+Az eredeti signed build letöltése és Drive-átadása befejezve, új build nélkül.
+Aláírt forrásfcf465785ba1bdc14f3148fa72be480a7ec9b1c2, Actions43578727032 SUCCESS.
+Telefon276000, Wear276002, mindkettő1.1-beta. Mindhárom letöltött ZIP SHA-256 digestje
+egyezik a GitHub artifact-metaadatával. A nyers XML független összesítése:
 telefon92 fájl/496 teszt + Wear35 fájl/189 teszt =685,0failure/error/skipped; shared NO-SOURCE.
-A runner source/package/verzió/Maps/páridentitás/pinned APK- és AAB-signer ellenőrzése zöld.
-A tanúsítványhash a logban maszkolt. Részletes adat: releases/2760-ci-evidence.json.
+Mind a négy fájl forrás/package/verzió/hash ellenőrzése sikeres. Az APK-k v2 signing
+blokkjából és az AAB-k tanúsítványából is kiolvasott aláíró a korábbi tartós kulcs.
+A két APK új Home codecet tartalmaz. TelefonAPK5,5MB, WearAPK4,7MB.
 
-A napló/téma/katalógus tömörített Home átvitelt kapott, megvárt helyi Data Layer committal,
-újrapróbálható frissítéssel és órás onResume adatkérelemmel. Mind32 paletta támogatott.
-A Mini napló továbbra is a legutóbbi8 edzés olvasható másolata. Restore/Drive után a
-projekció nem dönt a kanonikus mentés sikeréről, és a worker a rögzített DB-élettartamot követi.
-A pihenő egy48dp sor, a sorozatkártyák normál355dp nézetben kb60dp magasak, egysoros
-érték/pipa/törlés elrendezéssel. Nagybetűs fallback és érintési célok megmaradtak.
+A négy külön bináris, két Play-jegyzet, részletes változáslista és bizonyíték a
+TrainPilot Native Drive-mappába feltöltve. Név/méret/parent visszaolvasva minden
+fájlhoz; a régi kiadások megmaradtak. A korábbi runtime/Drive akadály megszűnt.
+Bizonyíték: releases/2760-verified-artifacts.json; a korábbi runner-only rekord is
+frissítve a helyi ellenőrzéssel: releases/2760-ci-evidence.json.
 
-A munkakörnyezet jelenleg nem használható: a ZIP-ek helyi digest-/bináris-hash-/aláíró
-visszaellenőrzése és a TrainPilot Native Drive-feltöltés MÉG NINCS meg. Az adatok a
-runner ellenőrzött JSON-riportjából és a GitHub artifact-metaadataiból származnak.
-A GitHub ZIP-letöltések elérhetők; az artifactok2026-11-21-én járnak le. A helyi/Drive
-átadás folytatásakor a fenti run ugyanazon ZIP-jeit kell használni, új build nélkül.
+A kiadásban a napló/téma tömörített szinkronja,32 paletta, újrapróbálható Home és
+órás onResume adatkérelem, egysoros pihenő és kompakt aktív sorozatok szerepelnek.
+Az órás Mini napló továbbra is a legutóbbi8 edzés másolata. Mindkét app frissítendő.
+Készülékes vizuális/Samsung/HC/Wear elfogadás külön hátravan; Play-feltöltést a
+felhasználó végezheti a külön AAB-kkal. A záró commit csak dokumentáció.
 
-APK pár: https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43578727032/artifacts/14107842389
-AAB pár: https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43578727032/artifacts/14107921912
-Telefon/Wear Play-jegyzetek: releases/2760-phone-play-notes.txt és2760-wear-play-notes.txt.
-Változáslista: releases/2760-changes.md. Mindkét app frissítendő; fizikai elfogadás hátravan.
-A záró dokumentáció az aláírt alkalmazáskódon nem változtat.
+Telefon APK: https://drive.google.com/file/d/1dggVXmPWeXwi9HBUxZiUmW4yw4wamZ2e/view?usp=drivesdk
+Wear APK: https://drive.google.com/file/d/1ejSH-s7F16FHzHmTqe_c-oEKWgzD2vjD/view?usp=drivesdk
+Telefon AAB: https://drive.google.com/file/d/19n4YBk0G7BjDV5o_RfQVEQQuWFhpPD58/view?usp=drivesdk
+Wear AAB: https://drive.google.com/file/d/13t_-gqUX0ZTMA-LPc2RJvlcTGjm2ALdU/view?usp=drivesdk
+Telefon Play-jegyzet: https://drive.google.com/file/d/1FLcSEwCtjlqiH9a2slS463cq0HTbF109/view?usp=drivesdk
+Wear Play-jegyzet: https://drive.google.com/file/d/1zoOk7UfTH7YgQv5wz1a00DxiAHd_F4Kj/view?usp=drivesdk
+Részletes változások: https://drive.google.com/file/d/1YlxaDvYX71-qzFbNSGNB-pJibT5x460Y/view?usp=drivesdk
+Bizonyíték: https://drive.google.com/file/d/1l_92QhNSwrI6VIEOOxQUzFEdP_ea563G/view?usp=drivesdk
 
 ---
 
