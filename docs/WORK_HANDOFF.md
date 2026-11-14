@@ -1,3 +1,18 @@
+# TrainPilot 2760 · 1.1-beta – felhasználó által kért kiadás előkészítve
+
+A felhasználó kérte a PR#233 javításait tartalmazó új APK+AAB csomagot.
+Telefon276000, Wear276002, név1.1-beta. A javított alkalmazáskód előzetes CI-je685/685:
+Actions43571746498, forrásb25fd65bc0ad0c1182bb9004d32d0e735ef470db. Utána csak verziómetaadat,
+kiadási dokumentáció és a meglévő signing workflow egy trigger-kommentje változik;
+a trusted-main/signer/Maps/teszt kapuk megmaradtak. A merge indítja az egyetlen közös
+signed main kört. Telefon/Wear Play-jegyzetek: releases/2760-*-play-notes.txt.
+
+A munkakörnyezet még nem használható; a GitHub-connectorral előkészített kiadás után
+a binárisok letöltése, helyi digest/hash/signer ellenőrzése és Drive-feltöltése külön
+befejezendő. Jelenleg nincs új átadott telepítő. Készülékes elfogadás külön szükséges.
+
+---
+
 # 2026-11-14 – órás napló/téma és kompakt edzés: ellenőrzött draft
 
 PR#233, ágfix/wear-journal-theme, alapmainf4de131. Ellenőrzött app/teszt/CI forrás:
