@@ -23,7 +23,11 @@ A Tárcsa/Bemelegítés művelet ikonra rövidült, a gyakorlatcím kevésbé t�
 Regressziók előkészítve: teljes valódi katalógus + maximális mini napló wire-budget,
 32 paletta tömörített körútja, legacy forma, sérült/ismételten használt csomag,
 decode budget; órás napló/verzió/téma tartósság és késői csomagok; egy48dp pihenősor
-nagy betűvel is,355dp/60dp aktív kártya. Egyetlen közös teljes CI következik.
+nagy betűvel is,355dp/60dp aktív kártya. Az első közös CI43569160660 az app Compose receiver-fordításán megállt;
+a BoxWithConstraints szélességét explicit lokális értékként használjuk a nested
+Columnban. A requestHome olvasási művelet a mutációs zároláson kívül vár a helyi
+Data Layer commitra, dataset continuation ellenőrzéssel előtte/utána; a frissítés
+nem tarthatja fogva az edzésírásokat. Javított forráson teljes CI következik.
 Készülékes elfogadás külön szükséges; #220 store-media része nem része a javításnak.
 
 ---

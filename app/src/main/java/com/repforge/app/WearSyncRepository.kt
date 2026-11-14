@@ -140,6 +140,12 @@ object WearSyncRepository {
         val appContext = context.applicationContext
         syncScope.launch {
             try {
+                // Read-only refresh must not hold the dataset writer lock while awaiting Data Layer.
+                if (command.optString("action") == "requestHome") {
+                    publishWatchHomeSnapshot(appContext)
+                    withContext(Dispatchers.Main) { WearCommandReceipts.complete(appContext, command, "processed", uri) }
+                    return@launch
+                }
                 // Explicit Unit bounds the K2 inference across the many command branches
                 // and nested Main dispatcher receipts; result is intentionally discarded.
                 NativeDataReplacement.mutate<Unit>(appContext) {
@@ -425,12 +431,6 @@ object WearSyncRepository {
                         publishWatchHomeSnapshot(appContext)
                     }
 
-                    "requestHome" -> {
-                        publishWatchHomeSnapshot(appContext)
-                        withContext(Dispatchers.Main) {
-                            WearCommandReceipts.complete(appContext, command, "processed", uri)
-                        }
-                    }
 
                     else -> {
                         withContext(Dispatchers.Main) {
@@ -656,7 +656,9 @@ object WearSyncRepository {
      * quick exercises, Mini Journal (recentWorkouts), theme, and pendingFeedback.
      */
     suspend fun publishWatchHomeSnapshot(context: Context, workoutResult: JSONObject? = null) {
+        val ticket = NativeDataReplacement.continuationForCurrentData(context)
         val homeSnapshot = buildWatchHomeSnapshot(context, workoutResult)
+        ticket.requireCurrent(context)
         val map = PutDataMapRequest.create(WATCH_HOME_PATH)
         com.repforge.shared.WatchHomePayload.write(map.dataMap, homeSnapshot.toString())
         map.dataMap.putLong("publishedAt", homeSnapshot.getLong("publishedAt"))
@@ -664,6 +666,7 @@ object WearSyncRepository {
         kotlinx.coroutines.withTimeout(15_000L) {
             Wearable.getDataClient(context.applicationContext).putDataItem(map.asPutDataRequest().setUrgent()).await()
         }
+        ticket.requireCurrent(context)
     }
 
     internal suspend fun buildWatchHomeSnapshot(context: Context, workoutResult: JSONObject? = null,

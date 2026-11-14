@@ -69,7 +69,8 @@ internal fun StudioStrengthSetCard(
         modifier = Modifier.fillMaxWidth().testTag("active_strength_set_${item.setNumber}")
     ) {
         BoxWithConstraints(Modifier.padding(6.dp)) {
-            val singleRow = maxWidth >= 324.dp && LocalDensity.current.fontScale <= 1.3f
+            val availableWidth = maxWidth
+            val singleRow = availableWidth >= 324.dp && LocalDensity.current.fontScale <= 1.3f
                 val fields: @Composable (Modifier) -> Unit = { field ->
                     WorkoutSetValuePicker(identity + "/weight", weightLabel, item.weightKg.toString(), weights,
                         enabled, language, "active_set_weight_${item.setNumber}", field,
@@ -126,7 +127,7 @@ internal fun StudioStrengthSetCard(
                             modifier = Modifier.weight(1f), color = p.textPrimary, fontWeight = FontWeight.Bold)
                         actions()
                     }
-                    if (maxWidth >= 270.dp && LocalDensity.current.fontScale <= 1.5f)
+                    if (availableWidth >= 270.dp && LocalDensity.current.fontScale <= 1.5f)
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) { fields(Modifier.weight(1f)) }
                     else Column(verticalArrangement = Arrangement.spacedBy(4.dp)) { fields(Modifier.fillMaxWidth()) }
                 }
