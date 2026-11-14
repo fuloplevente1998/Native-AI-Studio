@@ -1,3 +1,16 @@
+# TrainPilot 2761 · 1.1-beta — ellenőrzött APK-páros átadva, 2026-11-14
+
+Forrás a9b903f353a0e5dc2b2e8e01e6d3291bc560ccc1, PR #236. Signed run43593234136 SUCCESS, kizárólag APK-mód (build_aab=false). Telefon276100, Wear276102, mindkettő1.1-beta. A két ZIP digestje, nyers XML, fájlhashek, a binárisból olvasott package/verzió és v2 signer helyben ellenőrizve. Tartós tanúsítvány egyezik. Maps és páridentitás a signed kapuban igazolt. Telefon5 495 467 bájt, Wear4 669 627 bájt (R8/shrink).
+
+Telefon94 fájl/504 teszt + Wear35 fájl/189 teszt =693,0failure/error/skipped; shared NO-SOURCE. AAB ellenőrzés/feltöltés SKIPPED, AAB artifact nincs. AAB-páros csak a felhasználó készülékes jóváhagyása után készülhet; Play-feltöltés nem történt.
+
+A két APK, két külön változásleírás és átadási bizonyíték a meglévő Drive-mappába feltöltve, név/méret/parent visszaolvasva mind az öt fájlhoz. Korábbi fájlok megmaradtak. Készülékes vizuális és telefon/óra elfogadás hátravan; mindkét app frissítendő. Részletek: releases/2761-apk-changes.md, releases/2761-verified-apks.json. A következő commit csak dokumentáció, az alkalmazáskód továbbra is a fenti signed forrás.
+
+Telefon APK: https://drive.google.com/file/d/15AvJxFTAaSBn0sK3tgKysP77RaTzwoRp/view?usp=drivesdk
+Wear APK: https://drive.google.com/file/d/1uEWjaFM4VdWDJSWLTwRjk1Vb7TjWMov3/view?usp=drivesdk
+
+---
+
 # PR #236 — ellenőrzött javítások, kért 2761 APK-páros, 2026-11-14
 
 A kódjavítások forrása 52ee89af1166fca621efeaf50353bf1bf55d16fb, közös CI43592120564 SUCCESS. Letöltött artifact-digest és nyers XML helyben ellenőrizve: telefon94 fájl/504 teszt + Wear35 fájl/189 teszt =693,0failure/error/skipped; shared NO-SOURCE. Bizonyíték: verification/PR236-ci-evidence.json; részletes gyűjtő: DEVICE_FOLLOWUP_2760.md.

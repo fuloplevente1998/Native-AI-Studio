@@ -1,0 +1,10 @@
+TrainPilot 2761 · 1.1-beta — telefonos teszt-APK
+
+• A kezdőlap az újratervezett naptári programot/napot követi; indításkor bevárja a mentést.
+• A kezdőlapon és a naplóban egyértelmű A nap / B nap jelölés. A megmaradó naptári sorok megőrzik a saját programjukat.
+• A Coach következő edzése közvetlenül indítható; az újratervező programválasztása csak alkalmazáskor lép életbe.
+• 15–240 perces tervezési idő, egyetlen indításikon, laposabb/íves pihenődokk és nagyobb időfelirat.
+• Finomabb gombháttér és nyomási effekt; a program- és gyakorlatrészletek fejléce görgetéskor is megmarad.
+• Privát fotók dátum szerint függőlegesen; egyszerűbb Mentés / Visszaállítás / Importálás, régi mentések támogatásával.
+
+Mindkét APK frissítése javasolt. AAB-páros a készülékes jóváhagyás után készül.

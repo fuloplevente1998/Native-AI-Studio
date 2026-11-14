@@ -1,0 +1,5 @@
+TrainPilot 2761 · 1.1-beta — Wear OS teszt-APK
+
+A telefonos 2761-es javítócsomaghoz kiadott, tartósan aláírt órás pár (276102). Megőrzi a 2760-ban bevezetett napló-/téma-szinkront és az aktuális natív mérőmotort. A külön Wear regressziós kapu is ellenőrzi a páros kompatibilitását.
+
+Az aktuális javítások a telefonos programozást, naplómegjelenítést és felületet érintik. Az órán is ezt a verziót telepítsd a telefonos 276100 mellé. AAB csak a visszajelzésed után készül.
