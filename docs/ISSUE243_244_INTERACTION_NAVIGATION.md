@@ -4,7 +4,7 @@ A #243 nyomott gomb visszajelzést és a #244 visszanavigálást a korábbi #241
 
 ## #243
 
-A közös kitöltött, körvonalas, mentés-, negatív és szöveges gombok teljes, ténylegesen festett háttere animálódik. A Material gomb mérete, sarka, érintési tartománya és natív kattintáskezelése megmarad. A növekvő ripple ezeken lokálisan kikapcsolt, az új állapotjelzés fókuszt és hover-t is jelez. A képernyők bekötésének többsége csak import alias; nem új gombelrendezés. A Progress hosszú edzéssorai és a Beállítások navigációs sorai ugyanilyen alakhoz vágott jelzést kapnak.
+A közös kitöltött, körvonalas, mentés-, negatív és szöveges gombok teljes, ténylegesen festett háttere animálódik. A Material gomb mérete, sarka, érintési tartománya és natív kattintáskezelése megmarad. Az egy képkockán belüli Press/Release is legalább egy rövid teljes felületű animációt indít; nem csak a képkockánként összevont pressed boolean alapján rajzol. A növekvő ripple ezeken lokálisan kikapcsolt, az új állapotjelzés fókuszt és hover-t is jelez. A képernyők bekötésének többsége csak import alias; nem új gombelrendezés. A Progress hosszú edzéssorai és a Beállítások navigációs sorai ugyanilyen alakhoz vágott jelzést kapnak.
 
 Valódi közös gombokon Canvas-képpontos teszt: széles gomb mindkét vége, alapértelmezett 40 dp festett/48 dp érintési méret, 56/72 dp magasság, lekerekített sarkok, felengedés/megszakítás, tiltás, billentyűfókusz és Enter. A valódi Progress-edzéssor nyomását és a megszakítás utáni navigációhiányt a navigációs UI-teszt is méri.
 
@@ -17,3 +17,5 @@ A visszatérő böngészőnézetek SaveableStateHolder révén megőrzik a görg
 Regresszió: Fejlődés/Napló/Statisztikák → részlet; egymásra nyitott edzések, fotó és térkép; gyakorlatválasztó/részlet; Beállítások alnézetei. A valódi Progress és naplórészlet X-ét és rendszer-visszáját, az eredeti görgetési pozíciót és az elvetett lokális draft tisztulását Compose UI-teszt fedi.
 
 Teljes közös CI a kész kóddal futtatandó. A #241 korábbi 696 tesztje a korábbi forrás bizonyítéka; a mostani változásokra új közös eredmény szükséges.
+
+A 43633039679 előzetes kört a végső gyors-koppintási regresszió hozzáadása miatt leállítottuk; nem validációs bizonyíték. A kész végleges kóddal egy közös teljes futás indul.

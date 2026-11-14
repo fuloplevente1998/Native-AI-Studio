@@ -43,6 +43,46 @@ import kotlin.math.roundToInt
 class ButtonPressFeedbackRegressionTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun aPressAndReleaseInOneFrameStillProduceVisibleWholeButtonFeedback() {
+        val source = androidx.compose.foundation.interaction.MutableInteractionSource()
+        var host: View? = null
+        var clicks = 0
+        compose.setContent { TrainPilotTheme {
+            val view = LocalView.current
+            SideEffect { host = view }
+            Column(Modifier.padding(16.dp)) {
+                TrainPilotButton(onClick = { clicks++ }, interactionSource = source,
+                    modifier = Modifier.width(280.dp).height(48.dp).testTag("short_press")) { Text("") }
+            }
+        } }
+        fun pixels() = compose.runOnIdle {
+            val view = requireNotNull(host)
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            bitmap.asImageBitmap().toPixelMap()
+        }
+        val bounds = compose.onNodeWithTag("short_press").fetchSemanticsNode().boundsInRoot
+        val before = pixels()
+        compose.mainClock.autoAdvance = false
+        try {
+            compose.runOnIdle {
+                val press = androidx.compose.foundation.interaction.PressInteraction.Press(bounds.center)
+                assertTrue(source.tryEmit(press))
+                assertTrue(source.tryEmit(androidx.compose.foundation.interaction.PressInteraction.Release(press)))
+            }
+            compose.mainClock.advanceTimeBy(96)
+            val visible = pixels()
+            val y = bounds.center.y.roundToInt()
+            for (x in listOf((bounds.left + 12).roundToInt(), (bounds.right - 12).roundToInt()))
+                assertNotEquals("A coalesced short tap must still light the button ends", before[x, y].toArgb(), visible[x, y].toArgb())
+            compose.mainClock.advanceTimeBy(400)
+            val after = pixels()
+            val x = bounds.center.x.roundToInt()
+            assertEquals(before[x, y].toArgb(), after[x, y].toArgb())
+            compose.runOnIdle { assertEquals(0, clicks) }
+        } finally { compose.mainClock.autoAdvance = true }
+    }
+
     @Test fun textButtonsRetainVisibleKeyboardFocusAndNativeKeyboardActivation() {
         val requester = androidx.compose.ui.focus.FocusRequester()
         var focusManager: androidx.compose.ui.focus.FocusManager? = null

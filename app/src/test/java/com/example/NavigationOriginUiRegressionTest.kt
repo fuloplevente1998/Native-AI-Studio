@@ -90,6 +90,12 @@ class NavigationOriginUiRegressionTest {
                 }
                 val before = pixels()
                 row.performTouchInput { down(center) }
+                // Scrollable clickables defer their press indication to distinguish a drag.
+                compose.runOnIdle {
+                    org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper())
+                        .idleFor(200, java.util.concurrent.TimeUnit.MILLISECONDS)
+                }
+                compose.mainClock.advanceTimeBy(200)
                 val held = pixels()
                 val y = (bounds.top + 4).roundToInt()
                 for (x in listOf((bounds.left + 12).roundToInt(), (bounds.right - 12).roundToInt()))
