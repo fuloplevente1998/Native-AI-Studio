@@ -32,7 +32,7 @@ class CalendarAndWatchUiRegressionTest {
     @Test fun calendarActuallyPaintsLightThenDarkOnThemeChange() {
         var palette by mutableStateOf(TrainPilotPalettes.allPalettes.first { !it.isDark })
         compose.setContent { TrainPilotTheme(palette) {
-            CalendarPlannerScreen(TrainPilotUiState(), {}, {}, {}, {}, { _, _ -> }, {})
+            CalendarPlannerScreen(TrainPilotUiState(), {}, {}, {}, {}, { _, _, _ -> }, {})
         } }
         fun panelLuminance(): Float {
             val bounds = compose.onNodeWithTag("calendar_month_panel").fetchSemanticsNode().boundsInRoot
