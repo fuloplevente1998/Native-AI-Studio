@@ -27,7 +27,12 @@ nagy betűvel is,355dp/60dp aktív kártya. Az első közös CI43569160660 az ap
 a BoxWithConstraints szélességét explicit lokális értékként használjuk a nested
 Columnban. A requestHome olvasási művelet a mutációs zároláson kívül vár a helyi
 Data Layer commitra, dataset continuation ellenőrzéssel előtte/utána; a frissítés
-nem tarthatja fogva az edzésírásokat. Javított forráson teljes CI következik.
+nem tarthatja fogva az edzésírásokat. A43569716695 körben az új felületi/átviteli tesztek átmentek, de a restore/cloud
+utólagos órás publikációját a még aktív adatcsere-fence elutasította. A két restore
+és egy Drive utóhatás ezért a már meglévő async/újrapróbálható projekciót használja:
+a kanonikus helyi restore/sync sikerét nem az órakapcsolat dönti el. A worker a
+fence lezárása után épít friss snapshotot, epoch ellenőrzéssel. Tesztállítás nem
+változott; a teljes kör újra szükséges.
 Készülékes elfogadás külön szükséges; #220 store-media része nem része a javításnak.
 
 ---

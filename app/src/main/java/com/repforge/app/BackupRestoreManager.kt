@@ -705,7 +705,7 @@ class BackupRestoreManager(context: Context) {
         // #163 / #193: Prune local GPS route files that are no longer referenced after confirmed restore
         val restoredWorkouts = database.workoutHistoryDao().getAllWorkoutsWithDetails()
         pruneRoutesAfterRestore(previousWorkouts.map { it.workout.rawJson }, restoredWorkouts.map { it.workout.rawJson })
-        WearSyncRepository.publishWatchHomeSnapshot(appContext)
+        WearSyncRepository.refreshWatchHomeAsync(appContext)
     }
 
     private fun pruneRoutesAfterRestore(previousRawJsonList: List<String>, restoredRawJsonList: List<String>) {
@@ -802,7 +802,7 @@ class BackupRestoreManager(context: Context) {
                 withContext(Dispatchers.Main) {
                     runCatching { ActiveWorkoutStore.clear(appContext) }
                 }
-                WearSyncRepository.publishWatchHomeSnapshot(appContext)
+                WearSyncRepository.refreshWatchHomeAsync(appContext)
             journal.write(entry.copy(committed = true))
         }
         journal.clear()

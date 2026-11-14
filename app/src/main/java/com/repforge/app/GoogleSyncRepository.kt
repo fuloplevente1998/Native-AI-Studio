@@ -483,7 +483,7 @@ class GoogleSyncRepository internal constructor(
                 catch (_: Exception) { /* Optional retention; the verified snapshot stays authoritative. */ }
             }
 
-            WearSyncRepository.publishWatchHomeSnapshot(appContext)
+            WearSyncRepository.refreshWatchHomeAsync(appContext)
             prefs().edit().putString("lastDriveSyncIso", nowIso).apply()
             _uiState.value = _uiState.value.copy(
                 lastDriveSyncIso = nowIso,
