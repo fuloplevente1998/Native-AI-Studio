@@ -68,10 +68,26 @@ internal fun StudioStrengthSetCard(
             else BorderStroke(0.75.dp, p.cardBorder.copy(alpha = 0.55f)),
         modifier = Modifier.fillMaxWidth().testTag("active_strength_set_${item.setNumber}")
     ) {
-        Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("${item.setNumber}. " + tr("sorozat", "set", "Satz", "serie"),
-                    modifier = Modifier.weight(1f), color = p.textPrimary, fontWeight = FontWeight.Bold)
+        BoxWithConstraints(Modifier.padding(6.dp)) {
+            val singleRow = maxWidth >= 324.dp && LocalDensity.current.fontScale <= 1.3f
+                val fields: @Composable (Modifier) -> Unit = { field ->
+                    WorkoutSetValuePicker(identity + "/weight", weightLabel, item.weightKg.toString(), weights,
+                        enabled, language, "active_set_weight_${item.setNumber}", field,
+                        display = { it.toDoubleOrNull()?.let { n -> number.format(n) } ?: it },
+                        customValid = { it.toFloatOrNull()?.let { n -> n.isFinite() && n >= 0f } == true },
+                        onSelect = { onValues(it.toFloat(), item.reps, selectedRir) })
+                    WorkoutSetValuePicker(identity + "/reps", repsLabel, item.reps.toString(),
+                        ((1..100).map(Int::toString) + item.reps.toString()).distinct(), enabled, language,
+                        "active_set_reps_${item.setNumber}", field,
+                        onSelect = { onValues(item.weightKg, it.toInt(), selectedRir) })
+                    WorkoutSetValuePicker(identity + "/rir", "RIR", selectedRir?.toString() ?: "—",
+                        listOf("—") + (0..10).map(Int::toString), enabled, language,
+                        "active_set_rir_${item.setNumber}", field,
+                        onSelect = { onValues(item.weightKg, item.reps, it.toIntOrNull()) })
+                }
+
+            val actions: @Composable () -> Unit = {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 val toggleShape = RoundedCornerShape(12.dp)
                 Surface(
                     shape = toggleShape,
@@ -89,31 +105,31 @@ internal fun StudioStrengthSetCard(
                             modifier = Modifier.size(22.dp))
                     }
                 }
-                Spacer(Modifier.width(4.dp))
                 TrainPilotNegativeButton(onClick = onDelete, enabled = enabled,
-                    modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).testTag("delete_set_${item.setNumber}"),
+                    modifier = Modifier.size(48.dp).testTag("delete_set_${item.setNumber}"),
                     contentPadding = PaddingValues(8.dp)) { Text("−") }
-            }
-            // Flow to separate rows at larger fonts rather than requiring horizontal scrolling.
-            BoxWithConstraints(Modifier.fillMaxWidth()) {
-                val sideBySide = maxWidth >= 270.dp && LocalDensity.current.fontScale <= 1.5f
-                val fields: @Composable (Modifier) -> Unit = { field ->
-                    WorkoutSetValuePicker(identity + "/weight", weightLabel, item.weightKg.toString(), weights,
-                        enabled, language, "active_set_weight_${item.setNumber}", field,
-                        display = { it.toDoubleOrNull()?.let { n -> number.format(n) } ?: it },
-                        customValid = { it.toFloatOrNull()?.let { n -> n.isFinite() && n >= 0f } == true },
-                        onSelect = { onValues(it.toFloat(), item.reps, selectedRir) })
-                    WorkoutSetValuePicker(identity + "/reps", repsLabel, item.reps.toString(),
-                        ((1..100).map(Int::toString) + item.reps.toString()).distinct(), enabled, language,
-                        "active_set_reps_${item.setNumber}", field,
-                        onSelect = { onValues(item.weightKg, it.toInt(), selectedRir) })
-                    WorkoutSetValuePicker(identity + "/rir", "RIR", selectedRir?.toString() ?: "—",
-                        listOf("—") + (0..10).map(Int::toString), enabled, language,
-                        "active_set_rir_${item.setNumber}", field,
-                        onSelect = { onValues(item.weightKg, item.reps, it.toIntOrNull()) })
                 }
-                if (sideBySide) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { fields(Modifier.weight(1f)) }
-                else Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { fields(Modifier.fillMaxWidth()) }
+            }
+            if (singleRow) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text("${item.setNumber}.", color = p.textPrimary, style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold, modifier = Modifier.width(20.dp)
+                            .semantics { contentDescription = "${item.setNumber}. " + tr("sorozat", "set", "Satz", "serie") })
+                    fields(Modifier.weight(1f))
+                    actions()
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("${item.setNumber}. " + tr("sorozat", "set", "Satz", "serie"),
+                            modifier = Modifier.weight(1f), color = p.textPrimary, fontWeight = FontWeight.Bold)
+                        actions()
+                    }
+                    if (maxWidth >= 270.dp && LocalDensity.current.fontScale <= 1.5f)
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) { fields(Modifier.weight(1f)) }
+                    else Column(verticalArrangement = Arrangement.spacedBy(4.dp)) { fields(Modifier.fillMaxWidth()) }
+                }
             }
         }
     }
@@ -143,14 +159,14 @@ private fun WorkoutSetValuePicker(
                     .clip(RoundedCornerShape(10.dp))
                     .clickable(enabled = enabled, role = Role.Button) { custom = false; expanded = true }
                     .testTag(tag)) {
-                Row(Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.padding(horizontal = 4.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(label, color = p.textSecondary, style = MaterialTheme.typography.labelSmall,
                             maxLines = 1)
                         Text(display(value), color = p.textPrimary.copy(alpha = if (enabled) 1f else 0.5f),
                             fontWeight = FontWeight.Bold, maxLines = 1)
                     }
-                    Icon(Icons.Default.ExpandMore, null, tint = p.primary, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.ExpandMore, null, tint = p.primary, modifier = Modifier.size(14.dp))
                 }
             }
             val density = LocalDensity.current

@@ -46,7 +46,9 @@ class WearDataListenerService : WearableListenerService() {
                 com.google.android.gms.wearable.Wearable.getDataClient(this).deleteDataItems(item.uri)
                 continue
             }
-            val raw = DataMapItem.fromDataItem(item).dataMap.getString("snapshot")
+            val data = DataMapItem.fromDataItem(item).dataMap
+            val raw = if (item.uri.path == WATCH_HOME_PATH) com.repforge.shared.WatchHomePayload.read(data)
+                else data.getString("snapshot")
             when (item.uri.path) {
                 ACTIVE_WORKOUT_PATH -> WorkoutSnapshotStore.save(this, raw)
                 WearPhoneAutomatic.PATH -> WearPhoneAutomatic.receive(this,DataMapItem.fromDataItem(item).dataMap.getString("automatic"))

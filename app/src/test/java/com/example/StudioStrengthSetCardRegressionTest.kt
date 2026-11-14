@@ -1,5 +1,8 @@
 package com.example
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.*
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -82,11 +85,11 @@ class StudioStrengthSetCardRegressionTest {
     }
 
     @Test fun valueControlsShareOneCompactRowAndKeepTouchTargets() {
-        compose.setContent { TrainPilotTheme {
+        compose.setContent { TrainPilotTheme { Box(Modifier.width(355.dp)) {
             StudioStrengthSetCard(ExerciseSetItem(1, 19.7f, 15, 2, false, id = "set-a"),
                 "workout/1/exercise/set-a", AppLanguage.HU, "kg", "ism.", true, true,
                 onValues = { _, _, _ -> }, onToggle = {}, onDelete = {})
-        } }
+        } } }
         val weight = compose.onNodeWithTag("active_set_weight_1").getUnclippedBoundsInRoot()
         val reps = compose.onNodeWithTag("active_set_reps_1").getUnclippedBoundsInRoot()
         val rir = compose.onNodeWithTag("active_set_rir_1").getUnclippedBoundsInRoot()
@@ -97,7 +100,9 @@ class StudioStrengthSetCardRegressionTest {
         val toggleBounds = compose.onNodeWithTag("toggle_set_1").getUnclippedBoundsInRoot()
         val cardBounds = compose.onNodeWithTag("active_strength_set_1").getUnclippedBoundsInRoot()
         assertTrue(toggleBounds.bottom - toggleBounds.top >= 48.dp)
-        assertTrue(cardBounds.bottom - cardBounds.top <= 130.dp)
+        assertEquals(weight.top, toggleBounds.top)
+        compose.onNodeWithTag("delete_set_1").assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp)
+        assertTrue(cardBounds.bottom - cardBounds.top <= 64.dp)
     }
 
     @Test fun ownershipLockDisablesValuesCompletionAndDeletionAndClosesAnOpenMenu() {

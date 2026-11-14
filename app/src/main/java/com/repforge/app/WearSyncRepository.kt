@@ -25,6 +25,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -69,7 +71,16 @@ object WearSyncRepository {
 
     fun refreshWatchHomeAsync(context: Context) {
         val app = context.applicationContext
-        syncScope.launch { runCatching { publishWatchHomeSnapshot(app) } }
+        syncScope.launch {
+            repeat(3) { attempt ->
+                try { publishWatchHomeSnapshot(app); return@launch }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (error: Exception) {
+                    if (attempt == 2) android.util.Log.w("WearHomeSync", "Home publication failed: ${error.javaClass.simpleName}")
+                    else delay((attempt + 1) * 1000L)
+                }
+            }
+        }
     }
 
     /**
@@ -644,10 +655,22 @@ object WearSyncRepository {
      * to `/trainpilot/watch-home` so the watch has up-to-date programs, calendar,
      * quick exercises, Mini Journal (recentWorkouts), theme, and pendingFeedback.
      */
-    suspend fun publishWatchHomeSnapshot(context: Context, workoutResult: JSONObject? = null) =
+    suspend fun publishWatchHomeSnapshot(context: Context, workoutResult: JSONObject? = null) {
+        val homeSnapshot = buildWatchHomeSnapshot(context, workoutResult)
+        val map = PutDataMapRequest.create(WATCH_HOME_PATH)
+        com.repforge.shared.WatchHomePayload.write(map.dataMap, homeSnapshot.toString())
+        map.dataMap.putLong("publishedAt", homeSnapshot.getLong("publishedAt"))
+        // Await the local Data Layer commit: failed sends must not acknowledge a home refresh.
+        kotlinx.coroutines.withTimeout(15_000L) {
+            Wearable.getDataClient(context.applicationContext).putDataItem(map.asPutDataRequest().setUrgent()).await()
+        }
+    }
+
+    internal suspend fun buildWatchHomeSnapshot(context: Context, workoutResult: JSONObject? = null,
+        database: TrainPilotDatabase? = null): JSONObject =
         withContext(Dispatchers.IO) {
             val appContext = context.applicationContext
-            val db = TrainPilotDatabase.getInstance(appContext)
+            val db = database ?: TrainPilotDatabase.getInstance(appContext)
             val settingsStore = TrainPilotSettingsStore(appContext)
             TrainPilotDatabase.ensureBuiltinCatalogSeeded(db, appContext)
 
@@ -829,10 +852,7 @@ object WearSyncRepository {
                 homeSnapshot.put("workoutResult", workoutResult)
             }
 
-            val mapRequest = PutDataMapRequest.create(WATCH_HOME_PATH)
-            mapRequest.dataMap.putString("snapshot", homeSnapshot.toString())
-            mapRequest.dataMap.putLong("publishedAt", now)
-            Wearable.getDataClient(appContext).putDataItem(mapRequest.asPutDataRequest().setUrgent())
+            homeSnapshot
         }
 
     /**

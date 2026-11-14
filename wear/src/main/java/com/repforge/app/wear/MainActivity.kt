@@ -462,7 +462,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         closure.value = WearClosureStore.load(this)
         restoreRestFromSnapshot(workout.value)
         Wearable.getDataClient(this).addListener(this)
-        refreshFromDataLayer()
+        requestHomeSnapshot()
         WearCommandOutbox.flush(this)
         uiHandler.removeCallbacks(healthTick);uiHandler.post(healthTick)
         if(workout.value==null && WearHealthStore.active(this).isNotBlank())WearHealthService.stop(this)
@@ -494,7 +494,9 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                 runOnUiThread { refreshSaveSync() }
                 continue
             }
-            val raw = DataMapItem.fromDataItem(item).dataMap.getString("snapshot")
+            val data = DataMapItem.fromDataItem(item).dataMap
+            val raw = if (item.uri.path == WearDataListenerService.WATCH_HOME_PATH)
+                com.repforge.shared.WatchHomePayload.read(data) else data.getString("snapshot")
             when (item.uri.path) {
                 WearPhoneAutomatic.PATH -> WearPhoneAutomatic.receive(this,DataMapItem.fromDataItem(item).dataMap.getString("automatic"))
                 WearDataListenerService.ACTIVE_WORKOUT_PATH -> {
@@ -508,7 +510,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                 }
                 WearDataListenerService.WATCH_HOME_PATH -> {
                     val parsed = WatchHomeStore.save(this, raw, DataMapItem.fromDataItem(item).dataMap.getLong("publishedAt"),item.uri.host)
-                    runOnUiThread { home.value = parsed; closure.value = WearClosureStore.load(this) }
+                    if (parsed != null) runOnUiThread { home.value = parsed; closure.value = WearClosureStore.load(this) }
                 }
             }
         }
@@ -543,7 +545,9 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
                                     Wearable.getDataClient(this).deleteDataItems(item.uri)
                                 continue
                             }
-                            val raw = DataMapItem.fromDataItem(item).dataMap.getString("snapshot") ?: continue
+                            val data = DataMapItem.fromDataItem(item).dataMap
+                            val raw = (if (item.uri.path == WearDataListenerService.WATCH_HOME_PATH)
+                                com.repforge.shared.WatchHomePayload.read(data) else data.getString("snapshot")) ?: continue
                             when (item.uri.path) {
                                 WearDataListenerService.ACTIVE_WORKOUT_PATH -> {
                                     val revision = JSONObject(raw).optLong("revision", 0L)

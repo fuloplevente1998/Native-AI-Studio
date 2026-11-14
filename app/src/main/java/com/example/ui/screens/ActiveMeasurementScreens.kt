@@ -387,11 +387,13 @@ fun ActiveStrengthWorkoutScreen(
                                 .padding(vertical = 2.dp)
                         ) {
                             Row(
+                                modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Text(
                                     text = currentExerciseName,
+                                    modifier = Modifier.weight(1f),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary
@@ -406,6 +408,7 @@ fun ActiveStrengthWorkoutScreen(
                             Spacer(modifier = Modifier.height(3.dp))
                             Text(
                                 text = currentExerciseSubtitle,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = palette.textSecondary
                             )
@@ -491,13 +494,11 @@ fun ActiveStrengthWorkoutScreen(
                                 .clip(RoundedCornerShape(10.dp))
                                 .clickable { onOpenExerciseDetail(currentExerciseId) }
                         ) {
-                            Text(
-                                text = tr(lang, "Tárcsa & Bemelegítés", "Plates & Warm-up", "Scheiben & Aufwärmen", "Discuri & Încălzire"),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = palette.textPrimary,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
-                            )
+                            Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.FitnessCenter,
+                                    contentDescription = tr(lang, "Tárcsa & Bemelegítés", "Plates & Warm-up", "Scheiben & Aufwärmen", "Discuri & Încălzire"),
+                                    tint = palette.textPrimary, modifier = Modifier.size(20.dp))
+                            }
                         }
                     }
                 }
@@ -603,7 +604,7 @@ fun ActiveStrengthWorkoutScreen(
                             enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending,
                             onAdjust = onAdjustRestTimer, onToggle = onToggleRestRunning,
                             onSkip = onSkipRest, onExpand = { restTimerManualOverride = true },
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp))
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
                     }
                 } else {
                     // LARGE EXPANDED STICKY REST TIMER CARD (shown when scrolled down or expanded)

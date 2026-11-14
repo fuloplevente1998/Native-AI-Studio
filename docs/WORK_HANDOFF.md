@@ -1,3 +1,33 @@
+# 2026-11-14 – órás napló/téma és kompakt edzés: új javítóág
+
+Ágfix/wear-journal-theme, alapmainf4de131 (kiadott2759). Nincs verzióemelés vagy új build.
+Készülékes visszajelzés: telefonon friss/lila napló, órán régi1.0-beta home/kék téma;
+a telefon témamentése jó. A teljes katalógus/napló/paletta egyetlen WatchHome
+DataItemben utazott, a putDataItem eredménye nem volt megvárva. A nagyobb payload
+most méretkorlátos GZIP mezőt használ (48KiB felett), az inline régi forma olvasható.
+64KiB packed és2MiB decoded limit; minden home-fogadó és a cached Data Layer scan
+ugyanazt a dekódert használja. Küldés await +15s timeout, async frissítés három
+próbával; az óra onResume tartós requestHome parancsot küld. Hibás vagy régi csomag
+nem cserélheti le az új naplót/palettát. Az órás mini napló továbbra is a legutóbbi8
+edzés olvasható másolata; telefonon nincs adat-/naplólétszám-módosítás.
+A telefon32 palettájának teljes színtokenjei már léteztek: a teljes adatátvitel és
+az órás Material/custom palette alkalmazása kapott új regressziót, nincs új párhuzamos témaállapot.
+
+Új készülékes panasz: magas aktív kártyák és a két sorra nőtt kompakt pihenő.
+A pihenő most egyetlen48dp sor: teljes/rövid időfelirat a mért hely szerint,
+lejátszás/kihagyás/lenyitás ikonok; ha nincs hely, a±15s a meglévő nagy nézetben
+érhető el. Normál355dp szélességnél az aktív sorozat száma, három értéke, pipája és
+törlése egy sorba fér, kb60dp kártyával; nagybetűs/keskeny fallback megmarad.
+A Tárcsa/Bemelegítés művelet ikonra rövidült, a gyakorlatcím kevésbé tördelődik.
+
+Regressziók előkészítve: teljes valódi katalógus + maximális mini napló wire-budget,
+32 paletta tömörített körútja, legacy forma, sérült/ismételten használt csomag,
+decode budget; órás napló/verzió/téma tartósság és késői csomagok; egy48dp pihenősor
+nagy betűvel is,355dp/60dp aktív kártya. Egyetlen közös teljes CI következik.
+Készülékes elfogadás külön szükséges; #220 store-media része nem része a javításnak.
+
+---
+
 # TrainPilot 2759 · 1.1-beta – ellenőrzött main kiadás, 2026-11-14
 
 A felhasználó által jóváhagyott telefon275900 és Wear275902 elkészült.
