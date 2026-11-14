@@ -3654,7 +3654,7 @@ fun BackupRestoreScreen(
                         IconButton(onClick = { showHealthInfo = true }, modifier = Modifier.testTag("backup_health_info")) {
                             Icon(Icons.Default.Info, contentDescription = tr(uiState.language, "Egészségadatok információ", "Health data information", "Informationen zu Gesundheitsdaten", "Informații despre datele de sănătate"), tint = palette.textSecondary)
                         }
-                        Switch(checked = uiState.includeHealthInBackup, enabled = !uiState.backupHealthConsentSaving, onCheckedChange = onToggleIncludeHealth, modifier = Modifier.testTag("backup_health_switch"))
+                        Switch(checked = uiState.includeHealthInBackup, enabled = !uiState.backupHealthConsentSaving, onCheckedChange = onToggleIncludeHealth, modifier = Modifier.heightIn(min = 48.dp).testTag("backup_health_switch"))
                     }
                 }
             }
