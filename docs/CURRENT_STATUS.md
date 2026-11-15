@@ -1,3 +1,17 @@
+# TrainPilot 2763 · 1.1-beta — ellenőrzött APK-páros átadva, 2026-11-15
+
+PR242 mainen, signed forrás8367634a78824d1955956ce90ec424ee92e891a3.
+Actions43675171894 SUCCESS, build_aab=false. Telefon276300, Wear276302, mindkettő1.1-beta. Nyers XML: telefon99 fájl/516 teszt + Wear35/189 =705, 0failure/error/skipped; shared NO-SOURCE. Két ZIP digestje, tényleges APK-manifeszt/package/verzió/hash/v2 signer helyben ellenőrizve, a tartós aláíró egyezik. Maps/páros identitás/Wear capability a CI-kapuban igazolt. Telefon5 528 235 bájt, Wear4 669 627 bájt (R8/shrink).
+
+Benne van a #241 pipa-visszavonás, #243 teljes alakú nyomott gombjelzés, #244 eredeti lap/alfül/görgetési hely visszaállítása X/rendszer-vissza után. A teljes érdemi regresszió zöld; fizikai elfogadás külön hátravan, ezért a három issue nem zárult automatikusan. Wear alkalmazáslogika ebben a körben nem változott.
+
+A két APK, két külön leírás és bizonyíték a meglévő TrainPilot Native Drive-mappába feltöltve, mind az öt fájl neve/mérete/parentje visszaolvasva. Régi fájlok megmaradtak. AAB verify/upload SKIPPED, AAB artifact nincs; Play-feltöltés nem történt. Mindkét app frissítendő. Részletek: releases/2763-apk-changes.md és releases/2763-verified-apks.json. A következő commit csak dokumentáció, a kód a fenti signed forrás.
+
+Telefon APK: https://drive.google.com/file/d/1o6gIxwpbkSagtoYRbWDhFo_Pq_1ZI53z/view?usp=drivesdk
+Wear APK: https://drive.google.com/file/d/1wiMX-k6tx2DiEqXTDrpJB0pfLx-fp74P/view?usp=drivesdk
+
+---
+
 # 2763 APK-páros kérve — PR242 integráció és signed build
 
 2026-11-15: a felhasználó a konkrétan bemutatott, 705 teszttel ellenőrzött #241/#243/#244 javításokhoz APK-t kért. Ez az adott javítócsomag main-integrációját és a trusted-main aláírt buildet engedélyezi. Telefon276300, Wear276302, mindkettő1.1-beta; build_aab=false, AAB nincs most kérve. A 2762-es fájlok megmaradnak.
