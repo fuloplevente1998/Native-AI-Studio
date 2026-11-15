@@ -1,3 +1,27 @@
+# 2763 APK-páros kérve — PR242 integráció és signed build
+
+2026-11-15: a felhasználó a konkrétan bemutatott, 705 teszttel ellenőrzött #241/#243/#244 javításokhoz APK-t kért. Ez az adott javítócsomag main-integrációját és a trusted-main aláírt buildet engedélyezi. Telefon276300, Wear276302, mindkettő1.1-beta; build_aab=false, AAB nincs most kérve. A 2762-es fájlok megmaradnak.
+
+Az alkalmazás-/tesztkód az ellenőrzött a8343a7f73b6fa02c735001c3e8474bff9c3b75d forráshoz képest változatlan; csak verziókód és dokumentáció frissült. A signed főági kapu újra futtatja a teljes regressziót, a package/verzió/Maps/páros/signer ellenőrzéssel. Új artifactot még nem állítunk késznek, készülékes elfogadás külön hátravan.
+
+---
+
+# #241/#243/#244 — közös interakciós és navigációs javítócsomag
+
+Ág fix/exercise-queue-undo, draft PR242. A korábbi #241 visszavonás mellé két új, külön követett feladat került: #243 teljes alakú gombnyomás-visszajelzés; #244 X/rendszer-vissza az eredeti lapra, alfülre és görgetési helyre. A közös gombcsalád bekötése jellemzően import alias; a nézetméretek és a natív motor megmaradnak. Új regressziók a tényleges gombokat és Progress→részlet→X útvonalat tesztelik. Részletek: ISSUE243_244_INTERACTION_NAVIGATION.md.
+
+CI43635962331 SUCCESS, alkalmazás-/tesztforrása8343a7f73b6fa02c735001c3e8474bff9c3b75d. Ellenőrzött ZIP-digest és nyers XML: telefon99 fájl/516 teszt + Wear35/189 =705, 0failure/error/skipped; shared NO-SOURCE. Bizonyíték: verification/PR242-interaction-ci-evidence.json. A záró commit csak dokumentáció, a tesztelt kód változatlan. Készülékes elfogadás még nincs. Új APK/AAB és verzióemelés nincs kérve. A korábbi #238 UI/mentési csomag készre zárva; a kiadott 2762-es telepítők változatlanok. Main-merge és kiadás nincs ebben a folytatásban.
+
+---
+
+# #241 — összeállított gyakorlatlista visszavonása, külön javító PR
+
+A #238 eddigi UI/mentési módosításait a felhasználó a 2762-es képernyőkép alapján elfogadta és készre záratta; a jegy CLOSED. Az elrendezés marad. Új utófeladat: a listában kijelölt gyakorlat pipája eltávolítson az összeállításból, ne ismét hozzáadjon. Saját ág: fix/exercise-queue-undo; draft PR242, issue241.
+
+A képernyő eltávolító callbackje a meglévő ViewModel-műveletre kötve. A visszavonás csak a várólistát és lokalizált visszajelzését módosítja, a programot/aktív sorozatokat nem törli. Piros, finom visszavonási szín, megőrzött geometria. UI→ViewModel regresszió mind a négy nyelven; CI43629146558 SUCCESS, forrás39bf7c0ac1264be6a6b9acd2c73faa4335ea2d7b. ZIP-digest és nyers XML ellenőrizve: telefon96 fájl/507 teszt + Wear35/189 =696, 0failure/error/skipped; shared NO-SOURCE. Bizonyíték: verification/PR242-ci-evidence.json. A következő commit csak dokumentáció; készülékes elfogadás még nincs. Új build/verzióemelés nincs kérve; a 2762-es APK/AAB még nem tartalmazza ezt az új utófeladatot. Részletek: ISSUE241_QUEUE_UNDO.md.
+
+---
+
 # TrainPilot 2762 · 1.1-beta — APK+AAB átadva, 2026-11-14
 
 PR239 mainre került; aláírt forrás155ea6295b0025280b08e30203ff32cac9912b19.

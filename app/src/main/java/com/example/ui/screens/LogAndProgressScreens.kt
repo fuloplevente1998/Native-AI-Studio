@@ -11,6 +11,7 @@ import com.example.model.volumeAxisMaximum
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotBorder
 
 import com.example.model.workoutsInWeekEnding
@@ -69,14 +70,14 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Watch
-import androidx.compose.material3.Button
+import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton as OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -106,7 +107,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material3.TextButton
+import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
 import com.example.localization.LocalizedStrings
 import com.example.model.LoggedWorkoutEntry
 import com.example.model.SubScreen
@@ -1461,7 +1462,7 @@ fun ProgressTabScreen(
             // 1. AL-OLDAL (0): 📈 FEJLŐDÉS (Összes volumen, 4 lenyíló statisztika ablak, Izomcsoport-terhelés, Rekordok & Kardió)
             0 -> {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().testTag("progress_overview_list"),
                     contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 2.dp, bottom = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
@@ -1938,7 +1939,8 @@ internal fun MainProgressVolumeAndMuscleSection(
                                             .fillMaxWidth()
                                             .clip(RoundedCornerShape(10.dp))
                                             .background(palette.surfaceElevated)
-                                            .clickable { onOpenWorkoutDetail(w.id) }
+                                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenWorkoutDetail(w.id) }
+                                            .testTag("progress_workout_${w.id}")
                                             .padding(8.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
@@ -1973,7 +1975,8 @@ internal fun MainProgressVolumeAndMuscleSection(
                                             .fillMaxWidth()
                                             .clip(RoundedCornerShape(10.dp))
                                             .background(palette.surfaceElevated)
-                                            .clickable { onOpenWorkoutDetail(w.id) }
+                                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenWorkoutDetail(w.id) }
+                                            .testTag("progress_workout_${w.id}")
                                             .padding(8.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
@@ -2008,7 +2011,8 @@ internal fun MainProgressVolumeAndMuscleSection(
                                             .fillMaxWidth()
                                             .clip(RoundedCornerShape(10.dp))
                                             .background(palette.surfaceElevated)
-                                            .clickable { onOpenWorkoutDetail(w.id) }
+                                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenWorkoutDetail(w.id) }
+                                            .testTag("progress_workout_${w.id}")
                                             .padding(8.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {

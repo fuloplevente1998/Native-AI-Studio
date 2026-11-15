@@ -9,3 +9,5 @@ A 2761-es teszt-APK készülékes visszajelzései alapján a gyakorlatválasztó
 A felhasználó 2026-11-14-én a kész javításokhoz az APK- és AAB-párost is kifejezetten kérte; a korábbi AAB-halasztást ez feloldotta. Az elutasított külön gombsoros gyakorlatlista helyett a felhasználó által küldött új minta és a közös gombkeret készül. A képi ellenőrzés nem helyettesíti a készülékes próbát. Export/import, health-consent és natív edzéslogika megmarad. Egy monolit fájlnak egy agent a tulajdonosa; külön agentenkénti CI nem készül.
 
 Átadva: signed155ea6295b0025280b08e30203ff32cac9912b19, run43620628637 SUCCESS, 695 teszt/0hiba/0kihagyás. APK+AAB páros és leírások Drive-metaadattal visszaellenőrizve. Készülékes elfogadás külön hátravan; részletek: releases/2762-verified-artifacts.json.
+
+A felhasználó a 2762-es készülékes képernyőkép után az eddigi javítások készre zárását kérte: #238 CLOSED (completed). Az elfogadott elrendezés megmarad. A pipa visszavonása külön #241 funkcionális utófeladat; ez még nincs a kiadott 2762-es telepítőkben.

@@ -11,6 +11,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
+import com.repforge.app.ui.theme.TrainPilotButton as Button
 import android.content.res.Resources
 import androidx.compose.ui.platform.LocalContext
 import com.repforge.app.R

@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
 import com.repforge.app.R
 import com.repforge.app.ui.text.nativeResources
 import com.repforge.app.ui.theme.LocalTrainPilotColors

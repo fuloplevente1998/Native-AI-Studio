@@ -21,6 +21,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
+import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
+import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.runtime.*
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.Alignment

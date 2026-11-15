@@ -29,14 +29,14 @@ import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Watch
-import androidx.compose.material3.Button
+import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.OutlinedButton
+import com.repforge.app.ui.theme.TrainPilotOutlinedButton as OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -145,7 +145,7 @@ fun HomeScreen(
                 color = colors.muted)
             TrainPilotPrimaryButton(strings.getString(R.string.studio_home_new_plan), onPersonalPlan,
                 Modifier.fillMaxWidth().testTag("home_personal_plan"), !busy)
-            androidx.compose.material3.TextButton(onClick = onProfile, enabled = !busy,
+            com.repforge.app.ui.theme.TrainPilotTextButton(onClick = onProfile, enabled = !busy,
                 modifier = Modifier.fillMaxWidth().heightIn(min = TrainPilotDimensions.Control).testTag("home_profile_open")) {
                 Text(strings.getString(R.string.native_settings_profile_title))
             }

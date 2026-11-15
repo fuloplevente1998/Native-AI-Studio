@@ -417,6 +417,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         onEffort = { id, index -> viewModel.updateExerciseFeedback(id, index = index) },
                         onNote = { id, note -> viewModel.updateExerciseFeedback(id, note = note) })
                     else ({})
+                com.example.ui.components.TrainPilotRouteContent(uiState) {
                 when (uiState.currentSubScreen) {
                     SubScreen.PROGRAMS_LIST -> {
                         ProgramsListScreen(
@@ -505,6 +506,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 viewModel.addExerciseToWorkoutQueue(ex)
                                 viewModel.addExerciseToActiveProgramDay(ex)
                             },
+                            onRemoveExerciseFromQueue = viewModel::removeExerciseFromWorkoutQueue,
                             onStartQueuedWorkout = { viewModel.startQueuedWorkout() },
                             onToggleFavoritesOnly = viewModel::toggleFavoriteExercisesOnly,
                             onToggleFavorite = viewModel::toggleExerciseFavorite
@@ -843,7 +845,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             MainTab.PROGRAMS -> {
                                 ProgramsListScreen(
                                     state = uiState,
-                                    onBack = { viewModel.selectTab(MainTab.HOME) },
+                                    onBack = { viewModel.navigateBack() },
                                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                                     onToggleCustomTab = { viewModel.setProgramsTabCustomOnly(it) },
                                     onActivateProgram = { viewModel.activateProgram(it) },
@@ -877,7 +879,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             MainTab.CALENDAR -> {
                                 CalendarPlannerScreen(
                                     state = uiState,
-                                    onBack = { viewModel.selectTab(MainTab.HOME) },
+                                    onBack = { viewModel.navigateBack() },
                                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                                     onSelectDay = { viewModel.selectCalendarDay(it) },
                                     onSelectMonth = { viewModel.selectCalendarMonth(it) },
@@ -911,7 +913,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 CoachDetailScreen(
                                     uiState = uiState,
                                     strings = strings,
-                                    onBack = { viewModel.selectTab(MainTab.HOME) },
+                                    onBack = { viewModel.navigateBack() },
                                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                                     onStartSuggestedWorkout = {
                                         viewModel.startPlannedWorkout()
@@ -1008,6 +1010,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         }
                     }
                 }
+                } // retained browsing route content
             }
 
             // Compact Flat Floating Active Workout Return Button/Bar (visible from ANY other screen/tab/settings while a workout is active)

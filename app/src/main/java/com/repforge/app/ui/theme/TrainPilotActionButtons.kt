@@ -34,28 +34,35 @@ object TrainPilotActionAppearance {
 fun TrainPilotActionButton(positive: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier,
     enabled: Boolean = true, shape: Shape = RoundedCornerShape(12.dp),
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding, content: @Composable RowScope.() -> Unit) {
+    val colors = if (positive) TrainPilotActionAppearance.saveColors() else TrainPilotActionAppearance.negativeColors()
+    TrainPilotPressFeedback(colors, enabled, null) { feedbackColors, source ->
     OutlinedButton(onClick, modifier.heightIn(min = 48.dp), enabled, shape,
-        colors = if (positive) TrainPilotActionAppearance.saveColors() else TrainPilotActionAppearance.negativeColors(),
+        interactionSource = source, colors = feedbackColors,
         border = if (positive) TrainPilotActionAppearance.saveBorder(enabled) else TrainPilotActionAppearance.negativeBorder(enabled),
         contentPadding = contentPadding, content = content)
+    }
 }
 
 @Composable
 fun TrainPilotSaveButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
     shape: Shape = RoundedCornerShape(12.dp), contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
     interactionSource: MutableInteractionSource? = null, content: @Composable RowScope.() -> Unit) {
+    TrainPilotPressFeedback(TrainPilotActionAppearance.saveColors(), enabled, interactionSource) { feedbackColors, source ->
     OutlinedButton(onClick, modifier.heightIn(min = 48.dp), enabled, shape,
-        colors = TrainPilotActionAppearance.saveColors(), border = TrainPilotActionAppearance.saveBorder(enabled),
-        contentPadding = contentPadding, interactionSource = interactionSource, content = content)
+        colors = feedbackColors, border = TrainPilotActionAppearance.saveBorder(enabled),
+        contentPadding = contentPadding, interactionSource = source, content = content)
+    }
 }
 
 @Composable
 fun TrainPilotNegativeButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
     shape: Shape = RoundedCornerShape(12.dp), contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
     interactionSource: MutableInteractionSource? = null, content: @Composable RowScope.() -> Unit) {
+    TrainPilotPressFeedback(TrainPilotActionAppearance.negativeColors(), enabled, interactionSource) { feedbackColors, source ->
     OutlinedButton(onClick, modifier.heightIn(min = 48.dp), enabled, shape,
-        colors = TrainPilotActionAppearance.negativeColors(), border = TrainPilotActionAppearance.negativeBorder(enabled),
-        contentPadding = contentPadding, interactionSource = interactionSource, content = content)
+        colors = feedbackColors, border = TrainPilotActionAppearance.negativeBorder(enabled),
+        contentPadding = contentPadding, interactionSource = source, content = content)
+    }
 }
 
 @Composable

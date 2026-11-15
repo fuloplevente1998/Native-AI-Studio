@@ -28,5 +28,7 @@ fun TrainPilotOutlinedButton(
     interactionSource: MutableInteractionSource? = null,
     content: @Composable RowScope.() -> Unit
 ) {
-    OutlinedButton(onClick, modifier, enabled, shape, colors, elevation, border, contentPadding, interactionSource, content)
+    TrainPilotPressFeedback(colors, enabled, interactionSource) { feedbackColors, source ->
+        OutlinedButton(onClick, modifier, enabled, shape, feedbackColors, elevation, border, contentPadding, source, content)
+    }
 }

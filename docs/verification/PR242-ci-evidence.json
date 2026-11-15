@@ -1,0 +1,34 @@
+{
+  "source": "39bf7c0ac1264be6a6b9acd2c73faa4335ea2d7b",
+  "run": 43629146558,
+  "artifactDigest": "sha256:9023fb3cd4dce14b7f657055321042dd5959dbb92f4fe065d50f3b29fa83d911",
+  "rawJUnit": {
+    "app": {
+      "files": 96,
+      "tests": 507,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "wear": {
+      "files": 35,
+      "tests": 189,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "files": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "queueRegressionTests": [
+    "queuedCheckRemovesOnlyItsExerciseUpdatesCountAndAllowsReaddingInEveryLanguage",
+    "longLocalizedTitlesAndActionsRemainUsableAtNarrowWidthsAndLargeText"
+  ],
+  "physicalAcceptance": false,
+  "newReleaseBuilt": false
+}
