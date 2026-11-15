@@ -1,3 +1,16 @@
+# 2763 változáslisták — 2756 óta összesítve, 2026-11-15
+
+A felhasználó a Play Console-ban lévő 2756-os kiadást adta meg alapnak
+(kiadási bizonyíték szerint telefon275600/Wear275602, 1.0-beta). A 2763-as
+telefonos és Wear TXT-leírás a 2757–2763 közötti változásokat összesíti;
+végükön külön 422/395 karakteres Play Console-szöveg. A két meglévő Drive-fájl
+azonos ID-val frissült, a teljes tartalom, név, méret és parent visszaolvasva.
+Bizonyíték: releases/2763-cumulative-notes-verification.json. A kezdeti átadás
+bizonyítéka történeti állapotként megmaradt; a binárisok nem változtak.
+Csak dokumentációs módosítás; új build/AAB/Play-feltöltés nem történt.
+
+---
+
 # TrainPilot 2763 · 1.1-beta — ellenőrzött APK-páros átadva, 2026-11-15
 
 PR242 mainen, signed forrás8367634a78824d1955956ce90ec424ee92e891a3.

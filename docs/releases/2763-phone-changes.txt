@@ -1,8 +1,52 @@
 TrainPilot 2763 · 1.1-beta — telefon
+Összesített változások a 2756-os kiadás óta (2757–2763)
 
-A 2762-höz képest:
-• A gyakorlatválasztó kijelölt pipája kiveszi a gyakorlatot az összeállított listából. A darabszám és a névsor frissül; újra hozzáadható.
-• A közös gombok nyomott állapota a teljes látható, íves felületet követi. A gyors koppintás is kap jelzést; a gombok mérete és elrendezése megmarad.
-• A részletek X-e és a rendszer-vissza az eredeti lapra, alfülre és görgetési helyre tér vissza. A már bezárt nézet elvetett helyi draftja nem jelenik meg újranyitáskor.
+Előző kiadás: 1.0-beta, telefon 275600 / Wear OS 275602.
+Mostani kiadás: 1.1-beta, telefon 276300 / Wear OS 276302.
 
-Telefonos verziókód276300. A Wear OS276302-es párját is frissítsd. Ebben a körben csak APK készül, Play Console-feltöltésre szánt AAB nem. Készülékes visszateszt még szükséges.
+EDZÉS ÉS PIHENŐ
+• Kompaktabb sorozatsorok: súly, ismétlés és RIR helyben választható, egyedi érték is megadható. A tizedes súlyok megjelenítése pontosabb.
+• A sorozat pipával rögzíthető és visszavonható. A visszavonás nem indít új pihenőt; az értékválasztás önmagában nem jelöl készre sorozatot.
+• Órás vezérlésnél a telefonos szerkesztés a módosítás előtt ellenőrzi a vezérlési jogosultságot.
+• Alacsonyabb, íves pihenősáv, nagyobb időfelirat és helyhez igazodó ikonvezérlők. Szűk helyen a ±15 másodperc a lenyitott nézetben érhető el.
+• Gyakorlatváltáskor a felső lista automatikusan az aktív gyakorlatra görget. A kész állapotot a rögzített sorozatok határozzák meg.
+• Az időcél valódi perc:másodperc formátumú. Az összegzés az aktív edzésidőt használja; a szünet nem számít bele. A kalória az adott edzéshez tartozó mérésből származik, forrásduplikáció nélkül.
+
+TERVEZÉS, KEZDŐLAP ÉS COACH
+• A kezdőlap az újratervezett naptári programot és napot követi; az indítás bevárja a mentést. Egyértelműbb, nagyobb A nap / B nap jelölések.
+• A napló a program mellett a tényleges edzésnapot is jelzi.
+• A tervezés és újratervezés közös heti ritmust használ, 1–12 hetes időszakkal; a megmaradó naptári alkalmak megőrzik saját programjukat és napjukat.
+• Újratervezésnél a programválasztás az alkalmazáskor lép életbe. Az edzéshossz 15–240 perc között, 15 perces lépésekben választható.
+• A Coach következő edzése közvetlenül indítható. A kezdőlapi ajánlás hosszabb szövege lenyitható; a hat napi mutató közös témaszínű keretet kapott.
+
+GYAKORLATVÁLASZTÓ ÉS SZERKESZTÉS
+• Megszűnt a gyors gyakorlatlisták korábbi elemszám-korlátja.
+• Több hely jut a gyakorlatneveknek. A kedvenc balra, a részletek középre, a Videó / Hozzáadás / Indítás közös keretű gombcsoportja jobbra került. A teljes adatlap továbbra is megnyitható.
+• A kijelölt pipa eltávolítja a gyakorlatot az összeállított listából; a névsor és darabszám frissül, a gyakorlat újra hozzáadható.
+• Teljes magasságban nyíló Gyors edzés, profil/tervező, egyedi gyakorlat és naplószerkesztő, helyet hagyva a státuszsávnak és kamerakivágásnak.
+• Kompaktabb naplószerkesztés, helyben választható értékek és kisebb eltávolítógombok. Az űrlapok mentési lábléce görgetéskor is elérhető; nagy betűméretnél az elrendezés alkalmazkodik.
+
+BEÁLLÍTÁSOK ÉS MENTÉSEK
+• A hang, rezgés, pihenőidő, edzésstílus és progresszió egyetlen lenyitható Edzés beállításai blokkban van; a duplikált kapcsolók megszűntek.
+• Rövidebb mentési oldal, kisebb JSON / ZIP / DRIVE választó és egyszerűbb Mentés / Visszaállítás / Importálás feliratok. A régi mentések importja megmaradt.
+• A Drive-kártya csak a DRIVE nézetben jelenik meg. Az egészségadatok mentésének teljes tájékoztatója infógombbal nyitható; a hozzájárulás alapból kikapcsolt.
+• A privát edzésfotók dátum szerint, függőlegesen jelennek meg. Android 13-tól rendszeres fotóválasztó; a régebbi eszközök tartalékmódja megmarad.
+
+MEGJELENÉS ÉS NAVIGÁCIÓ
+• A közös gombok teljes látható, lekerekített felülete jelzi az érintést, gyors koppintáskor is. Finomabb gombhátterek, javított világos téma és nagyobb érintési célok.
+• A részletek X-e és a rendszer-vissza az eredeti lapra, alfülre és görgetési helyre tér vissza. Az elvetett helyi szerkesztési állapot nem jelenik meg újranyitáskor.
+• Az indítógombokon egyetlen indításikon látható; a program- és gyakorlatrészletek fejléce görgetéskor is megmarad.
+• Javított nyelvi címkék és szám-, dátum-, időformázás. Az első indítási útmutató tartós állapotot kapott; a meglévő felhasználók adatai megmaradnak.
+
+ÓRÁS KAPCSOLAT ÉS MÉRET
+• Megbízhatóbb napló-, paletta- és katalógusátvitel az órára: a nagy adatcsomagok tömörítve mennek át, a háttérfrissítés újrapróbálható.
+• A visszaállítás és Drive-szinkron helyi mentésének sikerét az órás háttérfrissítés nem befolyásolja.
+• Bekapcsolt kód- és erőforrás-optimalizálás: a telefonos APK a 2756-os körülbelül 20,6 MB helyett most 5,53 MB, mintegy 73%-kal kisebb.
+• Kiadói és támogatási adatok rendezve: FulTechStudios, paszia1998@gmail.com.
+
+ELLENŐRZÉS ÉS TELEPÍTÉS
+A 2763-as kiadási körben 516 telefonos és 189 Wear OS teszt, összesen 705 futott hibamentesen, kihagyás nélkül. A két APK verziója és tartós aláírása ellenőrizve. A fizikai készülékes visszateszt külön lépés.
+Mindkét appot frissítsd a 2763-as párra. Ehhez a kiadáshoz APK-pár készült; 2763-as AAB még nem készült.
+
+RÖVID PLAY CONSOLE-VÁLTOZÁSLISTA (500 KARAKTER ALATT)
+Kompaktabb edzés- és naplószerkesztő, legördülő értékek, pipás rögzítés/visszavonás. Kisebb pihenősáv és automatikus gyakorlatkövetés. Javított naptári tervezés, A/B napjelölés és Coach-indítás. Átláthatóbb gyakorlatválasztó és mentés. Teljes gombfelületet követő érintési jelzés, visszatérés az eredeti nézetre. Megbízhatóbb órás napló- és témaszinkron. A telefonos APK mérete mintegy 73%-kal csökkent. 705 sikeres teszt.

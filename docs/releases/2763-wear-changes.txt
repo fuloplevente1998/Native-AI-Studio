@@ -1,5 +1,25 @@
 TrainPilot 2763 · 1.1-beta — Wear OS
+Összesített változások a 2756-os kiadás óta (2757–2763)
 
-A telefonos 2763-as javítókiadás órás párja, verziókód276302. Ebben a körben nincs új órás működés; a natív mérés és a telefonos szinkron meglévő kódja megmarad. A teljes Wear OS regressziós kapu is része az ellenőrzésnek.
+Előző kiadás: 1.0-beta, Wear OS 275602 / telefon 275600.
+Mostani kiadás: 1.1-beta, Wear OS 276302 / telefon 276300.
 
-A telefonos276300-as verzióval együtt telepítsd. Ez R8/resource shrinking release APK, a korábbi tartós aláírással. Új AAB vagy Play-feltöltés nem része ennek a kérésnek.
+NAPLÓ ÉS TÉMASZINKRON
+• Javított telefon–óra adatátvitel: a nagyobb napló-, paletta- és katalóguscsomagok tömörítve érkeznek, így nem akadnak el a korábbi átviteli méretkorláton.
+• Az óra megnyitáskor friss telefonos adatcsomagot kér. A régi, sérült vagy ismeretlen csomag nem írja felül a frissebb tárolt adatokat.
+• Az óra a telefonon kiválasztott teljes színpalettát veszi át; az átvitelt mind a 32 palettával ellenőriztük.
+• A Mini napló a legutóbbi 8 mentett telefonos edzés offline olvasható másolata; a telefon teljes naplója megmarad.
+
+NYELV ÉS KIADÁS
+• Bővített magyar, angol, német és román feliratok az óra rendszerének nyelve szerint: menük, edzésvezérlés, mérés, napló, visszajelzések és hozzáférhetőségi címkék.
+• A változó sorozat-, oldal-, kör- és stopperfeliratok, valamint az automatikus edzésértesítések fordítása is bővült.
+• A már nem használt régi órás motor és felület eltávolítva. Az aktív natív mérőmotor megmaradt.
+• Optimalizált R8- és erőforrás-csökkentett release APK, 4,67 MB méretben, a korábbi tartós aláírással.
+
+ELLENŐRZÉS ÉS TELEPÍTÉS
+A 2760-as verzióban érkezett a napló-/palettaátvitel javítása. A 2761–2763 kiadások a telefonos javításokhoz tartozó verziópárok; ezekben új órás alkalmazáslogika nem került be.
+A 2763-as közös kiadási körben 189 Wear OS és 516 telefonos teszt, összesen 705 futott hibamentesen, kihagyás nélkül. A fizikai telefon–óra ellenőrzés külön lépés.
+Az új átvitelhez mindkét appot frissítsd: telefon 276300 és Wear OS 276302. Appadatok törlése nem szükséges. Ehhez a kiadáshoz APK-pár készült; 2763-as AAB még nem készült.
+
+RÖVID PLAY CONSOLE-VÁLTOZÁSLISTA (500 KARAKTER ALATT)
+Javított telefon–óra napló- és témaszinkron, tömörített adatátvitellel és megnyitáskori frissítéssel. A telefonon választott 32 színpaletta átvétele. Mini napló a legutóbbi 8 mentett edzéssel, offline is. Bővített HU/EN/DE/RO feliratok és értesítések az óra nyelve szerint. Optimalizált, 4,67 MB-os órás APK. A 276300-as telefonos verzióval együtt frissítsd. A közös kiadásban 705 sikeres teszt.

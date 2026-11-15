@@ -1,0 +1,63 @@
+{
+  "updatedAt": "2026-11-15",
+  "scope": "Cumulative release notes only; no application change or new build.",
+  "baseline": {
+    "release": 2756,
+    "versionName": "1.0-beta",
+    "phoneVersionCode": 275600,
+    "wearVersionCode": 275602,
+    "sourceSha": "6b384519f28fb5c06c128cda45312a1a09087cc9",
+    "playConsoleStatus": "User-reported baseline; no live Console read in this task."
+  },
+  "target": {
+    "release": 2763,
+    "versionName": "1.1-beta",
+    "phoneVersionCode": 276300,
+    "wearVersionCode": 276302,
+    "sourceSha": "8367634a78824d1955956ce90ec424ee92e891a3",
+    "signedRun": 43675171894,
+    "aabBuilt": false
+  },
+  "sources": [
+    "2757-changes.md",
+    "2758-changes.md",
+    "2759-changes.md",
+    "2760-changes.md",
+    "2761-apk-changes.md",
+    "2762-changes.md",
+    "2763-apk-changes.md"
+  ],
+  "files": [
+    {
+      "device": "phone",
+      "fileId": "1necHkPGpBTUD62hrUAQSF-Ak_xhHmEjP",
+      "url": "https://drive.google.com/file/d/1necHkPGpBTUD62hrUAQSF-Ak_xhHmEjP/view?usp=drivesdk",
+      "title": "TrainPilot-2763-phone-changes.txt",
+      "bytes": 5626,
+      "sha256": "34bd7ca1178cccbf9c1a46a9a206e034ce1c97ef12e2163c5643b17a5fe83cc4",
+      "modifiedTime": "2026-11-15T13:56:24.930Z",
+      "parentIds": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "contentVerified": true,
+      "metadataVerified": true,
+      "shortNoteCharacters": 422
+    },
+    {
+      "device": "wear",
+      "fileId": "1KIFJEb37p4zNLpOfjV1JUItjxznORcr6",
+      "url": "https://drive.google.com/file/d/1KIFJEb37p4zNLpOfjV1JUItjxznORcr6/view?usp=drivesdk",
+      "title": "TrainPilot-2763-wear-changes.txt",
+      "bytes": 2481,
+      "sha256": "409a09f4bb7d6739ee7eecf6b53b3b5ede8098825841c27994b2f3a2244ac364",
+      "modifiedTime": "2026-11-15T13:56:28.066Z",
+      "parentIds": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ],
+      "contentVerified": true,
+      "metadataVerified": true,
+      "shortNoteCharacters": 395
+    }
+  ],
+  "originalDeliveryEvidence": "2763-verified-apks.json records initial upload metadata; this file records subsequent note revisions. APK bytes and initial evidence were not changed."
+}
