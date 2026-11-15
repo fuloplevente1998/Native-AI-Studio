@@ -1,0 +1,5 @@
+TrainPilot 2763 · 1.1-beta — Wear OS
+
+A telefonos 2763-as javítókiadás órás párja, verziókód276302. Ebben a körben nincs új órás működés; a natív mérés és a telefonos szinkron meglévő kódja megmarad. A teljes Wear OS regressziós kapu is része az ellenőrzésnek.
+
+A telefonos276300-as verzióval együtt telepítsd. Ez R8/resource shrinking release APK, a korábbi tartós aláírással. Új AAB vagy Play-feltöltés nem része ennek a kérésnek.

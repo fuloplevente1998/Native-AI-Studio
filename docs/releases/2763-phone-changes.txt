@@ -1,0 +1,8 @@
+TrainPilot 2763 · 1.1-beta — telefon
+
+A 2762-höz képest:
+• A gyakorlatválasztó kijelölt pipája kiveszi a gyakorlatot az összeállított listából. A darabszám és a névsor frissül; újra hozzáadható.
+• A közös gombok nyomott állapota a teljes látható, íves felületet követi. A gyors koppintás is kap jelzést; a gombok mérete és elrendezése megmarad.
+• A részletek X-e és a rendszer-vissza az eredeti lapra, alfülre és görgetési helyre tér vissza. A már bezárt nézet elvetett helyi draftja nem jelenik meg újranyitáskor.
+
+Telefonos verziókód276300. A Wear OS276302-es párját is frissítsd. Ebben a körben csak APK készül, Play Console-feltöltésre szánt AAB nem. Készülékes visszateszt még szükséges.
