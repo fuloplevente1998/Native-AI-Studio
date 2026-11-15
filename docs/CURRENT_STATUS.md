@@ -1,3 +1,11 @@
+# 2763 APK-páros kérve — PR242 integráció és signed build
+
+2026-11-15: a felhasználó a konkrétan bemutatott, 705 teszttel ellenőrzött #241/#243/#244 javításokhoz APK-t kért. Ez az adott javítócsomag main-integrációját és a trusted-main aláírt buildet engedélyezi. Telefon276300, Wear276302, mindkettő1.1-beta; build_aab=false, AAB nincs most kérve. A 2762-es fájlok megmaradnak.
+
+Az alkalmazás-/tesztkód az ellenőrzött a8343a7f73b6fa02c735001c3e8474bff9c3b75d forráshoz képest változatlan; csak verziókód és dokumentáció frissült. A signed főági kapu újra futtatja a teljes regressziót, a package/verzió/Maps/páros/signer ellenőrzéssel. Új artifactot még nem állítunk késznek, készülékes elfogadás külön hátravan.
+
+---
+
 # #241/#243/#244 — közös interakciós és navigációs javítócsomag
 
 Ág fix/exercise-queue-undo, draft PR242. A korábbi #241 visszavonás mellé két új, külön követett feladat került: #243 teljes alakú gombnyomás-visszajelzés; #244 X/rendszer-vissza az eredeti lapra, alfülre és görgetési helyre. A közös gombcsalád bekötése jellemzően import alias; a nézetméretek és a natív motor megmaradnak. Új regressziók a tényleges gombokat és Progress→részlet→X útvonalat tesztelik. Részletek: ISSUE243_244_INTERACTION_NAVIGATION.md.
