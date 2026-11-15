@@ -1,6 +1,6 @@
 {
   "updatedAt": "2026-11-15",
-  "scope": "Cumulative release notes only; no application change or new build.",
+  "scope": "Cumulative release notes updated for requested AAB delivery; application code unchanged.",
   "baseline": {
     "release": 2756,
     "versionName": "1.0-beta",
@@ -16,7 +16,9 @@
     "wearVersionCode": 276302,
     "sourceSha": "8367634a78824d1955956ce90ec424ee92e891a3",
     "signedRun": 43675171894,
-    "aabBuilt": false
+    "aabBuilt": true,
+    "aabSourceSha": "089a0917d3e71b75b44e9b62dc59b7efc030ad48",
+    "aabSignedRun": 43721805883
   },
   "sources": [
     "2757-changes.md",
@@ -33,9 +35,9 @@
       "fileId": "1necHkPGpBTUD62hrUAQSF-Ak_xhHmEjP",
       "url": "https://drive.google.com/file/d/1necHkPGpBTUD62hrUAQSF-Ak_xhHmEjP/view?usp=drivesdk",
       "title": "TrainPilot-2763-phone-changes.txt",
-      "bytes": 5626,
-      "sha256": "34bd7ca1178cccbf9c1a46a9a206e034ce1c97ef12e2163c5643b17a5fe83cc4",
-      "modifiedTime": "2026-11-15T13:56:24.930Z",
+      "bytes": 5736,
+      "sha256": "be296267aac8d6fa0aadfc34a593eeb9f1bc0626426762d9f170ace09e6d1020",
+      "modifiedTime": "2026-11-15T14:02:32.684Z",
       "parentIds": [
         "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
       ],
@@ -48,9 +50,9 @@
       "fileId": "1KIFJEb37p4zNLpOfjV1JUItjxznORcr6",
       "url": "https://drive.google.com/file/d/1KIFJEb37p4zNLpOfjV1JUItjxznORcr6/view?usp=drivesdk",
       "title": "TrainPilot-2763-wear-changes.txt",
-      "bytes": 2481,
-      "sha256": "409a09f4bb7d6739ee7eecf6b53b3b5ede8098825841c27994b2f3a2244ac364",
-      "modifiedTime": "2026-11-15T13:56:28.066Z",
+      "bytes": 2591,
+      "sha256": "96e0981418e351496f8383c70e01d24cca3b75a20ec93c54ce24a111b1ff0c77",
+      "modifiedTime": "2026-11-15T14:02:35.456Z",
       "parentIds": [
         "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
       ],
@@ -59,5 +61,6 @@
       "shortNoteCharacters": 395
     }
   ],
-  "originalDeliveryEvidence": "2763-verified-apks.json records initial upload metadata; this file records subsequent note revisions. APK bytes and initial evidence were not changed."
+  "originalDeliveryEvidence": "2763-verified-apks.json records initial upload metadata; this file records subsequent note revisions. APK bytes and initial evidence were not changed.",
+  "aabEvidence": "2763-verified-aabs.json"
 }

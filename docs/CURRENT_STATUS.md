@@ -1,3 +1,17 @@
+# TrainPilot 2763 · 1.1-beta — AAB-pár is átadva, 2026-11-15
+
+Az APK-átadás után a felhasználó kérte az AAB-párt is. Signed main run43721805883
+SUCCESS, source089a0917d3e71b75b44e9b62dc59b7efc030ad48; változatlan alkalmazáskód,
+telefon276300/Wear276302. Nyers XML705 teszt, 0failure/error/skipped; ZIP-digest,
+hash, tényleges APK/AAB-manifeszt és tartós signer helyben ellenőrizve.
+A két AAB és bizonyíték Drive-ra feltöltve, név/méret/parent visszaolvasva.
+A 2756 óta összesített telefon/Wear változáslisták az AAB-státusszal frissítve.
+Korábbi APK-k megmaradtak; Play-feltöltés nem történt. Részletek:
+releases/2763-aab-changes.md, releases/2763-verified-aabs.json. Fizikai elfogadás
+külön hátravan. Dokumentáció PR246, main-merge ebben a körben nincs kérve.
+
+---
+
 # TrainPilot 2763 · 1.1-beta — ellenőrzött APK-páros átadva, 2026-11-15
 
 PR242 mainen, signed forrás8367634a78824d1955956ce90ec424ee92e891a3.

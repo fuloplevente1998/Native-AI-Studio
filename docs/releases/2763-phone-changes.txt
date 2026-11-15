@@ -46,7 +46,7 @@ MEGJELENÉS ÉS NAVIGÁCIÓ
 
 ELLENŐRZÉS ÉS TELEPÍTÉS
 A 2763-as kiadási körben 516 telefonos és 189 Wear OS teszt, összesen 705 futott hibamentesen, kihagyás nélkül. A két APK verziója és tartós aláírása ellenőrizve. A fizikai készülékes visszateszt külön lépés.
-Mindkét appot frissítsd a 2763-as párra. Ehhez a kiadáshoz APK-pár készült; 2763-as AAB még nem készült.
+Mindkét appot frissítsd a 2763-as párra. Az APK-pár mellett a 2763-as telefonos és Wear OS AAB-pár is elkészült a Play Console tesztcsatornáinak frissítéséhez; mindkét AAB verziója és aláírása ellenőrizve.
 
 RÖVID PLAY CONSOLE-VÁLTOZÁSLISTA (500 KARAKTER ALATT)
 Kompaktabb edzés- és naplószerkesztő, legördülő értékek, pipás rögzítés/visszavonás. Kisebb pihenősáv és automatikus gyakorlatkövetés. Javított naptári tervezés, A/B napjelölés és Coach-indítás. Átláthatóbb gyakorlatválasztó és mentés. Teljes gombfelületet követő érintési jelzés, visszatérés az eredeti nézetre. Megbízhatóbb órás napló- és témaszinkron. A telefonos APK mérete mintegy 73%-kal csökkent. 705 sikeres teszt.

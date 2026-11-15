@@ -3,6 +3,10 @@
 Telefon276300, Wear276302. PR242, signed forrás8367634a78824d1955956ce90ec424ee92e891a3.
 Actions43675171894 SUCCESS, build_aab=false.
 
+A felhasználó később a 2763-as AAB-párt is kérte; az elkészült és Drive-ra
+került. Részletek: [2763-aab-changes.md](2763-aab-changes.md). Az alábbi
+APK-only futás és eredeti átadási adatok történeti bizonyítékként megmaradnak.
+
 A két külön Drive-változáslista 2026-11-15-én frissült: a felhasználó által
 Play Console-alapnak megadott 2756-os kiadás (telefon275600, Wear275602) óta
 összegyűlt összes változást tartalmazza, a 2757–2763 kiadási leírások alapján.
