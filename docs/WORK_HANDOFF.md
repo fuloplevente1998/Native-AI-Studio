@@ -1,3 +1,39 @@
+# 2763 AAB-pár — ellenőrizve és Drive-ra átadva, 2026-11-15
+
+A felhasználó az APK-k után az AAB-párt is kérte. Signed run43721805883 SUCCESS,
+build_aab=true, main forrás089a0917d3e71b75b44e9b62dc59b7efc030ad48. Az app/test/build
+fa az előző APK-k forrásával azonos; az új APK-kban csak a beágyazott commitadat
+változott. Verziók maradtak: telefon276300, Wear276302, név1.1-beta.
+Nyers XML: telefon99 fájl/516 teszt + Wear35/189 =705, 0failure/error/skipped;
+shared NO-SOURCE. Három ZIP-digest, négy fájlhash, tényleges manifest, tartós signer
+és helyi AAB JAR-aláírás ellenőrizve. TelefonAAB10 158 922, WearAAB5 580 504 bájt.
+
+A két AAB és ellenőrzési JSON a meglévő TrainPilot Native Drive-mappában,
+név/méret/parent visszaolvasva. A meglévő két TXT a 2756→2763 összesítést és
+az AAB-k elkészültét is tartalmazza, teljes tartalom-visszaellenőrzéssel.
+A korábbi APK-k és fájlok megmaradtak. Play-feltöltés nem történt.
+Részletek: releases/2763-aab-changes.md és releases/2763-verified-aabs.json.
+Készülékes elfogadás külön hátravan. Dokumentáció a docs/2763-cumulative-notes
+ágon, PR246; main-merge ebben a dokumentációs körben nincs kérve.
+
+Telefon AAB: https://drive.google.com/file/d/1Q52YEiNRYBFOnyzqRjyFAwuH8_2EM7AC/view?usp=drivesdk
+Wear AAB: https://drive.google.com/file/d/13qrXuYJWLsm4TQkmtgoPV3VvAWiMcWUa/view?usp=drivesdk
+
+---
+
+# 2763 változáslisták — 2756 óta összesítve, 2026-11-15
+
+A felhasználó a Play Console-ban lévő 2756-os kiadást adta meg alapnak
+(kiadási bizonyíték szerint telefon275600/Wear275602, 1.0-beta). A 2763-as
+telefonos és Wear TXT-leírás a 2757–2763 közötti változásokat összesíti;
+végükön külön 422/395 karakteres Play Console-szöveg. A két meglévő Drive-fájl
+azonos ID-val frissült, a teljes tartalom, név, méret és parent visszaolvasva.
+Bizonyíték: releases/2763-cumulative-notes-verification.json. A kezdeti átadás
+bizonyítéka történeti állapotként megmaradt; a binárisok nem változtak.
+Csak dokumentációs módosítás; új build/AAB/Play-feltöltés nem történt.
+
+---
+
 # TrainPilot 2763 · 1.1-beta — ellenőrzött APK-páros átadva, 2026-11-15
 
 PR242 mainen, signed forrás8367634a78824d1955956ce90ec424ee92e891a3.
