@@ -1,22 +1,25 @@
-# P1 auditjavítás közös ágon — 2026-11-16
+# P1 auditjavítás — ellenőrzött draft PR253, 2026-11-16
 
-Ág `fix/audit-p1`, main alap `17ecad0`; #250 órás kétoldali kész/Undo,
-#251 védett natív léptetés és utolsó mérés szüneteltetése, #252 tartós egyedi
-könyvtármentés. Az ág tartalmazza PR248 elsőindítás-javítását és PR249
-helyesbített auditját is; az eredeti PR-ek külön nyitva maradnak.
-Részletek: AUDIT_P1_IMPLEMENTATION_2026-11-16.md.
+Ág `fix/audit-p1`, main alap `17ecad0`; draft PR253. #250: telefon-tulajdonú
+kétoldali órás kész/Undo tartós natív eseményekkel és védett nyugtával;
+#251: natív léptetés ownership/admission védelemmel, utolsó mérés szüneteltetése;
+#252: tartós egyedi gyakorlat/program mentés és helyes hibajelzés.
+A csomag PR248 elsőindítás-javítását és PR249 helyesbített auditját is tartalmazza.
+Az eredeti PR-ek és issue-k nyitva maradtak; nem történt main-merge.
 
-Draft PR253. Első közös CI43881467244: fordítás/R8 kész, 755 tesztből
-4 telefonos failure, Wear198/198 zöld. Forrás0b7a426. Nyers XML és ZIP-digest
-ellenőrizve: verification/PR253-first-ci-evidence.json. A pending-léptetés
-teszt valódi handoff-guardra javítva. Második CI43937198481 (4d13f98):755/3,
-Wear198 zöld, pending-javítás igazolt. A mentési okok megvannak: nagybetűs
-UI-nyelvkód vs kisbetűs natív szerződés; Room-close belső cancellation aktív
-hívónál banner nélkül. Két nyelvhívás és célzott catch javítva; új, valódi
-hívó-megszakítást/hiányzó írást védő teszt. Következő teljes kapu előkészítve;
-46 új regresszió, várt összes756. Második bizonyíték:
-verification/PR253-second-ci-evidence.json. Nincs új APK/AAB, verzióemelés, main-merge vagy készülékes
-elfogadás. A P2/P3 auditpontok következő külön csomagban kezelendők.
+Teljes CI43938232095 SUCCESS, forrás
+`2b4d968f953364d5fb0e21434230e08de92a8dee`. Ellenőrzött artifact ZIP-digest
+és nyers XML: telefon105 fájl/558 teszt + Wear36/198 =756,
+0failure/error/skipped; shared NO-SOURCE. 46 új P1 regresszió. Első két kapu
+hibáiból a pending fixture, nyelvkód-bekötés és belső Room cancellation kezelése
+javítva; a valódi caller-cancel továbbra sem ír vagy jelez téves eredményt.
+Bizonyíték: verification/PR253-ci-evidence.json. Részletek és fizikai próbamatrix:
+AUDIT_P1_IMPLEMENTATION_2026-11-16.md.
+
+A záró commit csak dokumentáció, a kód a fenti tesztelt forrásé. Új APK/AAB,
+verzióemelés és készülékes elfogadás nincs ebben a körben. Következő lépés:
+review/fizikai telefon–óra elfogadás, majd külön main-integráció és kiadás;
+a P2/P3 auditpontok későbbi külön csomagban maradnak.
 
 ---
 

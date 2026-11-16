@@ -73,34 +73,40 @@ nem nyitja meg váratlanul a korábbi lap szerkesztőjét.
 
 ## Ellenőrzés
 
-A helyi körben forrásellenőrzés és `git diff --check` történt. Android/Gradle
-fordítás és regresszió kizárólag a meglévő
-`trainpilot-android-ci.yml` teljes kapujában fut. A kész integráció után egy
-közös kézi futás szükséges; APK/AAB-csomagolás és verzióemelés nincs ebben a
-feladatban.
+**SUCCESS — 43938232095**, tesztelt forrás
+`2b4d968f953364d5fb0e21434230e08de92a8dee`, draft
+[PR253](https://github.com/fuloplevente1998/Native-AI-Studio/pull/253).
+A meglévő `trainpilot-android-ci.yml` teljes kapuja futott: telefon/Wear fordítás,
+teljes JVM regresszió és telefon release R8; telepítő-csomagolás nélkül.
 
-CI-státusz: **első futás sikertelen**, run `43881467244`, forrás
-`0b7a426312c72e7ad31da0e43349be15bc9d7a1b`, draft PR253.
-Nyers XML: telefon557/4 failure, Wear198/0 failure, összesen755/4;
-error/skipped0. Fordítás és R8 sikerült. ZIP-digest ellenőrizve;
-[első CI bizonyíték](verification/PR253-first-ci-evidence.json).
-A pending teszt fixture valós átadási guardra javítva, a három mentési
-kimenetelhez célzott coroutine-diagnosztika került. Új közös kapu következik;
-alkalmazáskódot igazolatlan ok miatt nem módosítottunk.
-Második kapu `43937198481`, forrás `4d13f98f61a4fd77fc346032db5e4611bb5d9d55`:
-755 teszt, 3 telefonos failure, Wear198/198 zöld. A pending fixture javítása
-igazolt. A coroutine-diagnosztika és a nyelvszerződés ellenőrzése megadta a
-maradék okokat: az új VM-bekötés nagybetűs nyelvkódot adott a kisbetűset váró
-natív szerkesztőnek; a bezárt Room a saját scope-ját megszakítva aktív hívóhoz
-is CancellationException-t dob, ezért nem lett hibabanner.
-A két hívás most a meglévő ROOT-locale szerinti kisbetűs szerződést követi;
-a catch aktív hívónál látható hibát ad, a tényleges hívó-megszakítást az
-ensureActive továbbdobja. Új regresszió tényleges írási mutex mögött várakozó
-mentést szakít meg, és ellenőrzi a hiányzó írást és bannert.
-[Második CI bizonyíték](verification/PR253-second-ci-evidence.json).
-Harmadik teljes közös kapu következik.
+| Modul | XML-fájl | Teszt | Failure / error / skipped |
+| --- | ---: | ---: | --- |
+| Telefon | 105 | 558 | 0 / 0 / 0 |
+| Wear | 36 | 198 | 0 / 0 / 0 |
+| Shared | 0 | 0 | NO-SOURCE |
+| Összesen | 141 | 756 | 0 / 0 / 0 |
 
-Összesen 46 új regresszió a korábbi 710 tesztes állapothoz képest.
+A letöltött `trainpilot-jvm-test-reports` ZIP digestje a GitHub artifact
+metaadatával egyezik:
+`sha256:087bb72c3b6799da2a6ef25a1c1d5f5b94f97b526e1bf5dcb6c80c6871fbfaaf`.
+A nyers XML-fájlok független összesítése egyezik a kapu saját jelentésével;
+a forrás-SHA is ellenőrzött. 46 új P1 regresszió a korábbi PR248 710 tesztjéhez
+képest, a beemelt elsőindítás-javítás tesztjeivel együtt.
+[Gépi bizonyíték és pontos tesztesetek](verification/PR253-ci-evidence.json).
+Helyi Gradle/SDK/emulátor-futtatás nem történt; `git diff --check` tiszta.
+
+Az első két kapu hibái megőrzött bizonyítékkal:
+[első futás](verification/PR253-first-ci-evidence.json),
+[második futás](verification/PR253-second-ci-evidence.json).
+A pending-léptetés fixture valós átadási guardra javult. A mentési
+regressziók két bekötési hibát tártak fel: a nagybetűs UI-nyelvkód helyett
+kisbetűs natív nyelvkód kell, a bezárt Room belső cancellationje pedig aktív
+hívónál látható mentési hibát igényel. Mindkettő javítva; a tényleges hívó
+megszakítását külön, zárolás mögött várakozó írással ellenőrzi az új regresszió.
+Az eredeti perzisztencia-, hiba- és értékmegőrzési elvárások megmaradtak.
+
+A CI utáni záró commit kizárólag dokumentáció. Alkalmazás-, teszt- és
+buildforrás az ellenőrzött SHA-val azonos. Verzióemelés és új APK/AAB nincs.
 
 ## Elfogadás és további munka
 
