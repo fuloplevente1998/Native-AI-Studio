@@ -6,8 +6,11 @@ könyvtármentés. Az ág tartalmazza PR248 elsőindítás-javítását és PR24
 helyesbített auditját is; az eredeti PR-ek külön nyitva maradnak.
 Részletek: AUDIT_P1_IMPLEMENTATION_2026-11-16.md.
 
-Állapot: implementáció/integráció és kódreview folyamatban; közös teljes CI
-még nem indult. Nincs új APK/AAB, verzióemelés, main-merge vagy készülékes
+Draft PR253. Első közös CI43881467244: fordítás/R8 kész, 755 tesztből
+4 telefonos failure, Wear198/198 zöld. Forrás0b7a426. Nyers XML és ZIP-digest
+ellenőrizve: verification/PR253-first-ci-evidence.json. A pending-léptetés
+teszt valódi handoff-guardra javítva; három mentési tesztbe megszakítási
+diagnosztika került, oka még nem igazolt. Következő teljes CI előkészítve. Nincs új APK/AAB, verzióemelés, main-merge vagy készülékes
 elfogadás. A P2/P3 auditpontok következő külön csomagban kezelendők.
 
 ---

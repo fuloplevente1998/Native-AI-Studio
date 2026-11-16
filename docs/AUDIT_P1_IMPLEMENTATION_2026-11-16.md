@@ -11,7 +11,7 @@ cáfolt állításait javítandó hibának.
 | Jegy | Módosítás | Regressziós bizonyíték |
 | --- | --- | --- |
 | #247 / PR248 | Az első profilbeállítás a Home-mal közös jóváhagyott tervezőt használja; az onboarding csak tartós siker után kész. A korábbi javítóág bekerült ebbe a csomagba. | Korábbi PR248 kapu: 710 teszt. Ebben a csomagban ismét a teljes közös kapu része. |
-| #250 | A telefon által vezérelt kétoldali órás készre jelölés natív mért eseménnyé válik; az eseményhez kötött visszavonás és a nyugta kezelése a meglévő tartós végrehajtási úton történik. | Új telefonos és Wear regressziók a valós parancskészítővel, végrehajtóval és tartós állapottal. A végleges lefedettség a közös ellenőrzés után alább. |
+| #250 | A telefon által vezérelt kétoldali órás készre jelölés natív mért eseménnyé válik; az eseményhez kötött visszavonás és a nyugta kezelése a meglévő tartós végrehajtási úton történik. | 16 új telefonos és 9 Wear regresszió a valós parancskészítővel, végrehajtóval, tartós állapottal, outboxszal és nyugtával. |
 | #251 | A következő/előző léptetés a meglévő natív exercise/set ID-kat választja ki. Órás vezérlés, átadás, felfüggesztés vagy mentés alatt nem írhat; az utolsó gyakorlatból az összesítésre lépés szünetelteti a futó mérést. | 7 ViewModel/natív folyamat- és 3 tényleges képernyő-interakciós teszt. |
 | #252 | Az egyedi gyakorlat és program csak tartós siker után jelenik meg késznek. A gyakorlat és a programnap kapcsolata közös Room-tranzakció, adatkészlet-generációs védelemmel; hiba nem zárja be sikeresen a szerkesztőt. | 5 natív tranzakciós és 5 ViewModel-regresszió; a korábbi quick-workout teszt immár valós Room-mentést és a mentett gyakorlatokat használja. |
 
@@ -79,7 +79,15 @@ fordítás és regresszió kizárólag a meglévő
 közös kézi futás szükséges; APK/AAB-csomagolás és verzióemelés nincs ebben a
 feladatban.
 
-CI-státusz: **integráció alatt, még nem ellenőrzött**.
+CI-státusz: **első futás sikertelen**, run `43881467244`, forrás
+`0b7a426312c72e7ad31da0e43349be15bc9d7a1b`, draft PR253.
+Nyers XML: telefon557/4 failure, Wear198/0 failure, összesen755/4;
+error/skipped0. Fordítás és R8 sikerült. ZIP-digest ellenőrizve;
+[első CI bizonyíték](verification/PR253-first-ci-evidence.json).
+A pending teszt fixture valós átadási guardra javítva, a három mentési
+kimenetelhez célzott coroutine-diagnosztika került. Új közös kapu következik;
+alkalmazáskódot igazolatlan ok miatt nem módosítottunk.
+Összesen 45 új regresszió a korábbi 710 tesztes állapothoz képest.
 
 ## Elfogadás és további munka
 
