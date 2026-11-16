@@ -12,7 +12,7 @@ import kotlinx.coroutines.withContext
 
 /** The production Studio root shares the existing first-run policy and persisted profile. */
 @Composable
-internal fun NativeFirstLaunchGate(content: @Composable () -> Unit) {
+internal fun NativeFirstLaunchGate(viewModel: com.example.ui.viewmodel.TrainPilotViewModel, content: @Composable () -> Unit) {
     val context = LocalContext.current
     val store = remember(context) { TrainPilotSettingsStore(context) }
     val loaded by store.settingsFlow.collectAsState(initial = null)
@@ -43,6 +43,10 @@ internal fun NativeFirstLaunchGate(content: @Composable () -> Unit) {
         saving = saving, failed = failed,
         onBegin = { write { store.transitionOnboarding(settings.onboarding128, NativeOnboardingPolicy.IN_PROGRESS, it) } },
         onSkip = { write { store.transitionOnboarding(settings.onboarding128, NativeOnboardingPolicy.SKIPPED, it) } },
-        onProfileSave = { fields -> write { store.completeOnboarding(settings.profileJson, fields, it) } },
+        profileEditor = { dismiss ->
+            com.example.ui.components.StudioPersonalPlannerDialog(
+                viewModel = viewModel, completeOnboarding = true, onDismiss = dismiss
+            )
+        },
         onBack = {})
 }

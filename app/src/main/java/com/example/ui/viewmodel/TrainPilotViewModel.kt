@@ -330,23 +330,35 @@ class TrainPilotViewModel : ViewModel() {
             }
     }
 
-    private fun persistProgramsToRoomAsync(profile: JSONObject? = null) {
-        val db = nativeDatabase ?: return
-        val scope = nativeScope ?: return
+    private fun persistProgramsToRoomAsync(
+        profile: JSONObject? = null,
+        completeOnboarding: Boolean = false,
+        onSaveResult: ((Boolean) -> Unit)? = null
+    ) {
+        val db = nativeDatabase
+        val scope = nativeScope
         val currentPrograms = _uiState.value.programs
-        if (currentPrograms.isEmpty()) return
+        if (db == null || scope == null || currentPrograms.isEmpty()) {
+            onSaveResult?.invoke(false)
+            return
+        }
         val nowMs = System.currentTimeMillis()
         val revision = ++programWriteRevision
         programWriteError = null
-        val context = nativeContext ?: return
+        val context = nativeContext ?: run { onSaveResult?.invoke(false); return }
         val ticket = try { com.repforge.app.NativeDataReplacement.continuationForCurrentData(context) }
             catch (error: Exception) {
                 programWriteError = error.message ?: "A terv nem menthető."
-                _uiState.update { it.copy(statusBannerMessage = programWriteError) }; return
+                _uiState.update { it.copy(statusBannerMessage = programWriteError) }
+                onSaveResult?.invoke(false)
+                return
             }
         programWriteJob = scope.launch(Dispatchers.IO) {
             programWriteMutex.withLock {
-            if (revision != programWriteRevision) return@withLock
+            if (revision != programWriteRevision) {
+                onSaveResult?.invoke(false)
+                return@withLock
+            }
             runCatching {
                 com.repforge.app.NativeDataReplacement.mutate(context) {
                 ticket.requireCurrent(context)
@@ -432,7 +444,12 @@ class TrainPilotViewModel : ViewModel() {
                     val active = currentPrograms.first { it.isActive }
                     check(db.programDao().getProgramWithDaysById(active.id)?.days?.isNotEmpty() == true)
                     store.setActiveProgramId(active.id)
-                    _uiState.update { it.copy(profileComplete = true,
+                    if (completeOnboarding) {
+                        check(store.completeOnboarding(merged.toString(), emptyMap(), ticket)) {
+                            "First-run profile changed before completion"
+                        }
+                    }
+                    _uiState.update { it.copy(profileComplete = true, showPersonalPlannerModal = false,
                         statusBannerMessage = tr(
                             "Profil és egyéni terv tartósan elmentve.",
                             "Profile and personalized plan saved.",
@@ -442,8 +459,10 @@ class TrainPilotViewModel : ViewModel() {
                         )) }
                 }
                 }
-            }.onFailure { failure ->
+            }.onSuccess { onSaveResult?.invoke(true) }
+            .onFailure { failure ->
                 if (failure is kotlinx.coroutines.CancellationException) throw failure
+                onSaveResult?.invoke(false)
                 val errMsg = tr(
                     "A terv/profil mentése nem sikerült. Próbáld újra.",
                     "Failed to save plan/profile. Please try again.",
@@ -3080,7 +3099,9 @@ class TrainPilotViewModel : ViewModel() {
         daysPerWeek: Int,
         durationMin: Int,
         excludedMuscles: Set<String>,
-        excludedExercises: Set<String>
+        excludedExercises: Set<String>,
+        completeOnboarding: Boolean = false,
+        onSaveResult: ((Boolean) -> Unit)? = null
     ) {
         val (selectedGear, includeBodyweight) = parseEquipmentSelectionToGearKeys(equipmentHu)
         val perDayCapacity = com.repforge.app.NativePlannerPolicy.capacity(durationMin).coerceIn(4, 7)
@@ -3213,7 +3234,6 @@ class TrainPilotViewModel : ViewModel() {
                 userExcludedExercisesHu = excludedExercises,
                 programs = updatedPrograms,
                 editingProgramId = generatedProgramId,
-                showPersonalPlannerModal = false,
                 statusBannerMessage = tr(
                     "Profil és terv mentése…",
                     "Saving profile and plan…",
@@ -3229,7 +3249,8 @@ class TrainPilotViewModel : ViewModel() {
             .put("gear", JSONArray(equipmentHu.split(',').map(String::trim).filter(String::isNotBlank)))
             .put("daysPerWeek", daysPerWeek).put("minutes", durationMin)
             .put("avoidAreas", JSONArray(excludedMuscles.toList()))
-            .put("excluded", JSONArray(excludedExercises.toList())))
+            .put("excluded", JSONArray(excludedExercises.toList())),
+            completeOnboarding = completeOnboarding, onSaveResult = onSaveResult)
     }
 
     fun undoLastCompletedSet() {

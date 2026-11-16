@@ -1,3 +1,16 @@
+# #247 — első indítás profil/terv panel egységesítése, 2026-11-16
+
+Ág fix/first-run-profile, alap main17ecad0. A folytatott onboarding régi
+TrainingProfileDialog-ja helyett ugyanaz a StudioPersonalPlannerDialog nyílik,
+mint a Home Profil és új terv belépésénél. Közös natív profil/terv mentés;
+onboarding COMPLETE csak a tartós műveletek után. Hiba/bezárás nem fejezi be,
+mentés közben dupla indítás/bezárás tiltott. Új end-to-end gate/persistence
+regressziók és mentési panelteszt. Részletek FIRST_RUN_PROFILE_247.md.
+CI még folyamatban/elindítandó; új APK/AAB/verzióemelés és main-merge nincs kérve.
+Az új audit 14 állítása ettől külön ellenőrizendő, nem automatikusan igazolt.
+
+---
+
 # TrainPilot 2763 · 1.1-beta — ellenőrzött APK-páros átadva, 2026-11-15
 
 PR242 mainen, signed forrás8367634a78824d1955956ce90ec424ee92e891a3.

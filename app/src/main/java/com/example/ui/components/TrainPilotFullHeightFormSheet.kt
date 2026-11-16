@@ -13,8 +13,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -30,14 +33,17 @@ fun TrainPilotFullHeightFormSheet(
     title: String,
     onDismiss: () -> Unit,
     closeTestTag: String = "",
+    dismissEnabled: Boolean = true,
     content: @Composable () -> Unit,
     confirmButton: @Composable () -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val mayDismiss by rememberUpdatedState(dismissEnabled)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true,
+        confirmValueChange = { it != SheetValue.Hidden || mayDismiss })
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (mayDismiss) onDismiss() },
         modifier = Modifier.trainPilotSheetTopSafeArea().fillMaxHeight().testTag("full_height_form_sheet"),
         sheetState = sheetState,
         containerColor = palette.surface,
@@ -51,7 +57,7 @@ fun TrainPilotFullHeightFormSheet(
             ) {
                 Text(title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                TrainPilotRedCloseButton(onClick = onDismiss, testTag = closeTestTag)
+                TrainPilotRedCloseButton(onClick = onDismiss, testTag = closeTestTag, enabled = dismissEnabled)
             }
             Box(Modifier.weight(1f).fillMaxWidth().testTag("full_height_form_body").padding(horizontal = 16.dp)) {
                 content()
@@ -61,7 +67,7 @@ fun TrainPilotFullHeightFormSheet(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 confirmButton()
-                TrainPilotOutlinedButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                TrainPilotOutlinedButton(onClick = onDismiss, enabled = dismissEnabled, modifier = Modifier.fillMaxWidth()) {
                     Text(strings.cancelBtn, color = palette.textPrimary)
                 }
             }

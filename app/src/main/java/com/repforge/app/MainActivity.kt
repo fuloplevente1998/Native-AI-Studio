@@ -133,7 +133,7 @@ class MainActivity : ComponentActivity() {
                     LaunchedEffect(Unit) {
                         startupScreen.markNativeReady()
                     }
-                    com.repforge.app.ui.onboarding.NativeFirstLaunchGate {
+                    com.repforge.app.ui.onboarding.NativeFirstLaunchGate(viewModel) {
                         TrainPilotAppRoot(viewModel = viewModel)
                     }
                 } else if (migrationFailure) {

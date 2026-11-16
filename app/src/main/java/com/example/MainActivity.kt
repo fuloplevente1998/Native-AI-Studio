@@ -62,7 +62,6 @@ import com.example.ui.components.ExerciseYouTubeVideoModalDialog
 import com.example.ui.components.GoalsEditDialog
 import com.example.ui.components.LocalOpenExerciseVideo
 import com.example.ui.components.PalettePickerBottomSheet
-import com.example.ui.components.PersonalPlannerModalDialog
 import com.example.ui.components.QuickWorkoutSheet
 import com.example.ui.components.TrainPilotGlobalTopHeaderAndNav
 import com.example.ui.components.TrainPilotRedCloseButton
@@ -263,31 +262,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
 
         // 3. Personal Planner Modal Dialog (Kezdőprofil és egyéni terv A01)
         if (uiState.showPersonalPlannerModal) {
-            PersonalPlannerModalDialog(
-                initialHeightCm = uiState.userHeightCm,
-                initialWeightKg = uiState.userWeightKg,
-                initialGoalHu = uiState.userFitnessGoalHu,
-                initialExperienceHu = uiState.userExperienceLevelHu,
-                initialLocationHu = uiState.userWorkoutLocationHu,
-                initialEquipmentHu = uiState.userSelectedEquipmentHu,
-                initialDaysPerWeek = uiState.userScheduleDaysPerWeek,
-                initialDurationMin = uiState.userWorkoutDurationMin,
-                initialExcludedMuscles = uiState.userExcludedMusclesHu,
-                initialExcludedExercises = uiState.userExcludedExercisesHu,
-                onSaveAndOpenPlan = { h, w, goal, exp, loc, eq, days, dur, exMuscles, exIds ->
-                    viewModel.saveInitialProfileAndPlan(
-                        heightCm = h,
-                        weightKg = w,
-                        goalHu = goal,
-                        experienceHu = exp,
-                        locationHu = loc,
-                        equipmentHu = eq,
-                        daysPerWeek = days,
-                        durationMin = dur,
-                        excludedMuscles = exMuscles,
-                        excludedExercises = exIds
-                    )
-                },
+            com.example.ui.components.StudioPersonalPlannerDialog(
+                viewModel = viewModel,
                 onDismiss = { viewModel.togglePersonalPlannerModal(false) }
             )
         }
