@@ -36,6 +36,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import com.repforge.app.NativeDataReplacement
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -1976,8 +1978,10 @@ class TrainPilotViewModel : ViewModel() {
                         expandedEditorExerciseId = null,
                         statusBannerMessage = success))
                 }
-            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
-            catch (error: Exception) {
+            } catch (error: Exception) {
+                // A closed Room database cancels its own query scope. Report that failure while
+                // preserving cancellation of this screen's actual mutation/lifecycle scope.
+                if (error is CancellationException) currentCoroutineContext().ensureActive()
                 val detail = error.message.orEmpty()
                 val message = when {
                     detail.contains("Deactivate", true) -> "Törlés előtt válassz másik aktív programot."
@@ -2321,7 +2325,7 @@ class TrainPilotViewModel : ViewModel() {
                     backStack = (updated.backStack + origin.navigationRoute()).takeLast(16))
             }) { context, db, store ->
             com.repforge.app.NativeCustomLibraryMutation.createProgram(context, db, store,
-                name, description, origin.language.code, starterA, starterB,
+                name, description, origin.language.name.lowercase(Locale.ROOT), starterA, starterB,
                 com.repforge.app.NativeDataReplacement.continuationForCurrentData(context))
         }
     }
@@ -2461,7 +2465,7 @@ class TrainPilotViewModel : ViewModel() {
                 "Program day changed; reopen editor"
             }
             com.repforge.app.NativeCustomLibraryMutation.addExercise(context, db, entity,
-                targetProgram, targetDay, origin.language.code,
+                targetProgram, targetDay, origin.language.name.lowercase(Locale.ROOT),
                 com.repforge.app.NativeDataReplacement.continuationForCurrentData(context))
         }
     }

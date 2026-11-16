@@ -13,7 +13,7 @@ cáfolt állításait javítandó hibának.
 | #247 / PR248 | Az első profilbeállítás a Home-mal közös jóváhagyott tervezőt használja; az onboarding csak tartós siker után kész. A korábbi javítóág bekerült ebbe a csomagba. | Korábbi PR248 kapu: 710 teszt. Ebben a csomagban ismét a teljes közös kapu része. |
 | #250 | A telefon által vezérelt kétoldali órás készre jelölés natív mért eseménnyé válik; az eseményhez kötött visszavonás és a nyugta kezelése a meglévő tartós végrehajtási úton történik. | 16 új telefonos és 9 Wear regresszió a valós parancskészítővel, végrehajtóval, tartós állapottal, outboxszal és nyugtával. |
 | #251 | A következő/előző léptetés a meglévő natív exercise/set ID-kat választja ki. Órás vezérlés, átadás, felfüggesztés vagy mentés alatt nem írhat; az utolsó gyakorlatból az összesítésre lépés szünetelteti a futó mérést. | 7 ViewModel/natív folyamat- és 3 tényleges képernyő-interakciós teszt. |
-| #252 | Az egyedi gyakorlat és program csak tartós siker után jelenik meg késznek. A gyakorlat és a programnap kapcsolata közös Room-tranzakció, adatkészlet-generációs védelemmel; hiba nem zárja be sikeresen a szerkesztőt. | 5 natív tranzakciós és 5 ViewModel-regresszió; a korábbi quick-workout teszt immár valós Room-mentést és a mentett gyakorlatokat használja. |
+| #252 | Az egyedi gyakorlat és program csak tartós siker után jelenik meg késznek. A gyakorlat és a programnap kapcsolata közös Room-tranzakció, adatkészlet-generációs védelemmel; hiba nem zárja be sikeresen a szerkesztőt. | 5 natív tranzakciós és 6 ViewModel-regresszió; a korábbi quick-workout teszt immár valós Room-mentést és a mentett gyakorlatokat használja. |
 
 ## Lényeges működés
 
@@ -87,7 +87,20 @@ error/skipped0. Fordítás és R8 sikerült. ZIP-digest ellenőrizve;
 A pending teszt fixture valós átadási guardra javítva, a három mentési
 kimenetelhez célzott coroutine-diagnosztika került. Új közös kapu következik;
 alkalmazáskódot igazolatlan ok miatt nem módosítottunk.
-Összesen 45 új regresszió a korábbi 710 tesztes állapothoz képest.
+Második kapu `43937198481`, forrás `4d13f98f61a4fd77fc346032db5e4611bb5d9d55`:
+755 teszt, 3 telefonos failure, Wear198/198 zöld. A pending fixture javítása
+igazolt. A coroutine-diagnosztika és a nyelvszerződés ellenőrzése megadta a
+maradék okokat: az új VM-bekötés nagybetűs nyelvkódot adott a kisbetűset váró
+natív szerkesztőnek; a bezárt Room a saját scope-ját megszakítva aktív hívóhoz
+is CancellationException-t dob, ezért nem lett hibabanner.
+A két hívás most a meglévő ROOT-locale szerinti kisbetűs szerződést követi;
+a catch aktív hívónál látható hibát ad, a tényleges hívó-megszakítást az
+ensureActive továbbdobja. Új regresszió tényleges írási mutex mögött várakozó
+mentést szakít meg, és ellenőrzi a hiányzó írást és bannert.
+[Második CI bizonyíték](verification/PR253-second-ci-evidence.json).
+Harmadik teljes közös kapu következik.
+
+Összesen 46 új regresszió a korábbi 710 tesztes állapothoz képest.
 
 ## Elfogadás és további munka
 

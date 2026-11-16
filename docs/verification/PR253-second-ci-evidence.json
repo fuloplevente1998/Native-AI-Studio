@@ -1,0 +1,120 @@
+{
+  "source": "4d13f98f61a4fd77fc346032db5e4611bb5d9d55",
+  "run": 43937198481,
+  "url": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43937198481",
+  "artifactDigest": "sha256:96b8e5c419b8ef34bf424307ccbb6285963cd1ad09d0a79bd0c7a4ab3e42eb6c",
+  "artifactDigestVerified": true,
+  "rawXml": {
+    "phone": {
+      "files": 105,
+      "tests": 557,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0
+    },
+    "wear": {
+      "files": 36,
+      "tests": 198,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "files": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "total": {
+    "tests": 755,
+    "failures": 3,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sharedNoSource": true,
+  "newRegressionCases": {
+    "com.example.AuditActiveExerciseNavigationRegressionTest": [
+      "suspendedNativeCommandsRejectNavigationBeforeUiOwnershipChanges",
+      "pendingHandoffAndSavingRejectNextAndPrevious",
+      "noSessionOrEmptyWorkoutCannotFabricateSelectionFromCatalog",
+      "lastRunningBilateralMeasurementPausesBeforeSummary",
+      "watchOwnerRejectsNextAndPrevious",
+      "lastRunningTimedMeasurementPausesBeforeSummary",
+      "nextAndPreviousSelectExistingRowsAndPreserveRecordedValues"
+    ],
+    "com.example.AuditActiveExerciseNavigationUiTest": [
+      "timedNavigationRespectsOwnershipPendingAndSaving",
+      "strengthNavigationRespectsOwnershipPendingAndSaving",
+      "bilateralNavigationRespectsOwnershipPendingAndSaving"
+    ],
+    "com.example.AuditCustomLibraryMutationRegressionTest": [
+      "invalidExistingEntryRollsBackExerciseInsertedEarlierInTransaction",
+      "createdProgramPersistsBothDaysAndActivatesAfterSave",
+      "staleDatasetCannotWrite",
+      "addsRowAndLinkWithoutChangingInlinePrescription",
+      "missingProgramOrDayRollsBackExercise"
+    ],
+    "com.example.AuditCustomLibraryViewModelRegressionTest": [
+      "standaloneExerciseDoesNotChangeProgram",
+      "createProgramAppearsOnlyAfterCommitAndReload",
+      "exerciseIsCommittedToSelectedDayAndSurvivesReload",
+      "unavailableDatabaseDoesNotPublishSuccess",
+      "closedDatabaseKeepsDialogAndCatalogVisible"
+    ],
+    "com.example.AuditPhoneOwnedBilateralUndoRegressionTest": [
+      "legacyBilateralCompletionUsesTheSameJournalAndReplayRemainsStableAfterUndo",
+      "finalizationRejectsNewMeasuredEventsEvenWhenTheExecutionFrameIsStillActive",
+      "missingMeasuredInputAndStaleCompletionProduceErrorReceiptsThroughTheRealRouter",
+      "productionWearCommandRecordsMeasuredSidesAndDurableTargetedUndoInManualWorkout",
+      "undoCanArriveFirstAndDuplicatesCannotResurrectAnUndoneSet",
+      "undoRequiresTheRecordedIdentityUnchangedGuardAndMatchingPauseAndGeneration",
+      "ordinaryPhoneMeasuredCasStillRejectsDifferentMeasuredValues",
+      "pausedRestoreKeepsMeasuredCommandRetryable",
+      "revisionBridgeStillRejectsInvalidMeasurementsAnotherTargetAndAnotherSource",
+      "partialWatchEditThenUndoThenOkDefersUntilTheMatchingMeasuredEventIsDurable",
+      "fullWearOkCanOvertakeRemainingEditsInItsOwnUnbrokenRevisionChain",
+      "restoreIsRetryableAndRunningPhoneStopwatchCannotBeReplacedByWearValues",
+      "interveningPhoneValueEditInvalidatesTheEntireWatchRevisionBridge",
+      "rejectedCompletionAlsoTerminatesAnInverseDeliveredFirst",
+      "invalidSidesStaleTargetRevisionPauseGenerationAndEpochCannotRecord",
+      "earlierSameWatchEditsCanBridgeOnlyTheirOwnUnchangedMeasuredRevision"
+    ],
+    "com.repforge.app.wear.WearBilateralUndoCommandTest": [
+      "productionCompletionBuildsMeasuredTransportAndCaptureRoutesUndoToNativeEngine",
+      "lateFailureCannotReplaceANewerPhoneSelectionWithTheSameSetGuard",
+      "legacyFalseNativeMarkerStillUsesDurablePhoneUndoAndRejectedReceiptReconciles",
+      "actualWearUndoPersistsInverseAndRecoversItsCommandUntilAppliedReceipt",
+      "lateFailureCannotEraseALaterLocalSelectionEvenWhenExecutionRevisionIsUnchanged",
+      "measuredCompletionIsDurableTrackedAndOnlyItsMatchingReceiptSettlesIt",
+      "canonicalSideAliasesAndMissingPayloadUseTheMeasuredBoundaryWithoutThrowing",
+      "failedCompletionNeverErasesALaterLocalEdit",
+      "failedCompletionCorrectsUntouchedOptimismAndRecoveryReplaysItsDurableReceipt"
+    ]
+  },
+  "failedCases": [
+    {
+      "class": "com.example.AuditCustomLibraryViewModelRegressionTest",
+      "name": "createProgramAppearsOnlyAfterCommitAndReload",
+      "message": "java.util.NoSuchElementException: Collection contains no element matching the predicate.",
+      "stack": "java.util.NoSuchElementException: Collection contains no element matching the predicate.\n\tat com.example.AuditCustomLibraryViewModelRegressionTest.createProgramAppearsOnlyAfterCommitAndReload(AuditCustomLibraryViewModelRegressionTest.kt:283)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n\tat java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)\n\tat org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)\n\tat org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)\n\tat org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)\n\tat org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)\n\tat org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)\n\tat org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)\n\tat org.robolectric.RobolectricTestRunner$HelperTestRunner$1.evaluate(RobolectricTestRunner.java:524)\n\tat org.robolectric.internal.SandboxTestRunner.executeInSandbox(SandboxTestRunner.java:494)\n\tat org.robolectric.internal.SandboxTestRunner.access$900(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$7.evaluate(SandboxTestRunner.java:442)\n\tat org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)\n\tat org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)\n\tat org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)\n\tat org.robolectric.internal.SandboxTestRunner.access$600(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$6.evaluate(SandboxTestRunner.java:333)\n\tat org.robolectric.internal.SandboxTestRunner$3.evaluate(SandboxTestRunner.java:233)\n\tat org.robolectric.internal.SandboxTestRunner$5.lambda$evaluate$0(SandboxTestRunner.java:317)\n\tat org.robolectric.internal.bytecode.Sandbox.lambda$runOnMainThread$0(Sandbox.java:101)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)\n\tat java.base/java.lang.Thread.run(Thread.java:840)\n"
+    },
+    {
+      "class": "com.example.AuditCustomLibraryViewModelRegressionTest",
+      "name": "exerciseIsCommittedToSelectedDayAndSurvivesReload",
+      "message": "java.lang.AssertionError",
+      "stack": "java.lang.AssertionError\n\tat org.junit.Assert.fail(Assert.java:87)\n\tat org.junit.Assert.assertTrue(Assert.java:42)\n\tat org.junit.Assert.assertFalse(Assert.java:65)\n\tat org.junit.Assert.assertFalse(Assert.java:75)\n\tat com.example.AuditCustomLibraryViewModelRegressionTest.exerciseIsCommittedToSelectedDayAndSurvivesReload(AuditCustomLibraryViewModelRegressionTest.kt:144)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n\tat java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)\n\tat org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)\n\tat org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)\n\tat org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)\n\tat org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)\n\tat org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)\n\tat org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)\n\tat org.robolectric.RobolectricTestRunner$HelperTestRunner$1.evaluate(RobolectricTestRunner.java:524)\n\tat org.robolectric.internal.SandboxTestRunner.executeInSandbox(SandboxTestRunner.java:494)\n\tat org.robolectric.internal.SandboxTestRunner.access$900(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$7.evaluate(SandboxTestRunner.java:442)\n\tat org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)\n\tat org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)\n\tat org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)\n\tat org.robolectric.internal.SandboxTestRunner.access$600(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$6.evaluate(SandboxTestRunner.java:333)\n\tat org.robolectric.internal.SandboxTestRunner$3.evaluate(SandboxTestRunner.java:233)\n\tat org.robolectric.internal.SandboxTestRunner$5.lambda$evaluate$0(SandboxTestRunner.java:317)\n\tat org.robolectric.internal.bytecode.Sandbox.lambda$runOnMainThread$0(Sandbox.java:101)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)\n\tat java.base/java.lang.Thread.run(Thread.java:840)\n"
+    },
+    {
+      "class": "com.example.AuditCustomLibraryViewModelRegressionTest",
+      "name": "closedDatabaseKeepsDialogAndCatalogVisible",
+      "message": "java.lang.AssertionError: Mutation finished without an outcome; scopeActive=true, job causes=[kotlinx.coroutines.JobCancellationException: Job was cancelled; job=SupervisorJobImpl{Cancelled}@1d750811\n\tat _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)\n\tat com.example.ui.viewmodel.TrainPilotViewModel$mutateStudioLibrary$3.invokeSuspend(TrainPilotViewModel.kt:1954)\nCaused by: kotlinx.coroutines.JobCancellationException: Job was cancelled; job=SupervisorJobImpl{Cancelled}@1d750811\n\tat kotlinx.coroutines.JobSupport.cancel(JobSupport.kt:1685)\n\tat kotlinx.coroutines.CoroutineScopeKt.cancel(CoroutineScope.kt:309)\n\tat kotlinx.coroutines.CoroutineScopeKt.cancel$default(CoroutineScope.kt:307)\n\tat androidx.room.RoomDatabase.onClosed(RoomDatabase.android.kt:547)\n\tat androidx.room.RoomDatabase.access$onClosed(RoomDatabase.android.kt:95)\n\tat androidx.room.RoomDatabase$closeBarrier$1.invoke(RoomDatabase.android.kt:149)\n\tat androidx.room.RoomDatabase$closeBarrier$1.invoke(RoomDatabase.android.kt:149)\n\tat androidx.room.concurrent.CloseBarrier.close$room_runtime_release(CloseBarrier.kt:91)\n\tat androidx.room.RoomDatabase.close(RoomDatabase.android.kt:543)\n\tat com.example.AuditCustomLibraryViewModelRegressionTest.closedDatabaseKeepsDialogAndCatalogVisible(AuditCustomLibraryViewModelRegressionTest.kt:182)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n\tat java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)\n\tat org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)\n\tat org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)\n\tat org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)\n\tat org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)\n\tat org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)\n\tat org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)\n\tat org.robolectric.RobolectricTestRunner$HelperTestRunner$1.evaluate(RobolectricTestRunner.java:524)\n\tat org.robolectric.internal.SandboxTestRunner.executeInSandbox(SandboxTestRunner.java:494)\n\tat org.robolectric.internal.SandboxTestRunner.access$900(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$7.evaluate(SandboxTestRunner.java:442)\n\tat org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)\n\tat org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)\n\tat org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)\n\tat org.robolectric.internal.SandboxTestRunner.access$600(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$6.evaluate(SandboxTestRunner.java:333)\n\tat org.robolectric.internal.SandboxTestRunner$3.evaluate(SandboxTestRunner.java:233)\n\tat org.robolectric.internal.SandboxTestRunner$5.lambda$evaluate$0(SandboxTestRunner.java:317)\n\tat org.robolectric.internal.bytecode.Sandbox.lambda$runOnMainThread$0(Sandbox.java:101)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)\n\tat java.base/java.lang.Thread.run(Thread.java:840)\n]",
+      "stack": "java.lang.AssertionError: Mutation finished without an outcome; scopeActive=true, job causes=[kotlinx.coroutines.JobCancellationException: Job was cancelled; job=SupervisorJobImpl{Cancelled}@1d750811\n\tat _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)\n\tat com.example.ui.viewmodel.TrainPilotViewModel$mutateStudioLibrary$3.invokeSuspend(TrainPilotViewModel.kt:1954)\nCaused by: kotlinx.coroutines.JobCancellationException: Job was cancelled; job=SupervisorJobImpl{Cancelled}@1d750811\n\tat kotlinx.coroutines.JobSupport.cancel(JobSupport.kt:1685)\n\tat kotlinx.coroutines.CoroutineScopeKt.cancel(CoroutineScope.kt:309)\n\tat kotlinx.coroutines.CoroutineScopeKt.cancel$default(CoroutineScope.kt:307)\n\tat androidx.room.RoomDatabase.onClosed(RoomDatabase.android.kt:547)\n\tat androidx.room.RoomDatabase.access$onClosed(RoomDatabase.android.kt:95)\n\tat androidx.room.RoomDatabase$closeBarrier$1.invoke(RoomDatabase.android.kt:149)\n\tat androidx.room.RoomDatabase$closeBarrier$1.invoke(RoomDatabase.android.kt:149)\n\tat androidx.room.concurrent.CloseBarrier.close$room_runtime_release(CloseBarrier.kt:91)\n\tat androidx.room.RoomDatabase.close(RoomDatabase.android.kt:543)\n\tat com.example.AuditCustomLibraryViewModelRegressionTest.closedDatabaseKeepsDialogAndCatalogVisible(AuditCustomLibraryViewModelRegressionTest.kt:182)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n\tat java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)\n\tat org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)\n\tat org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)\n\tat org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)\n\tat org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)\n\tat org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)\n\tat org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)\n\tat org.robolectric.RobolectricTestRunner$HelperTestRunner$1.evaluate(RobolectricTestRunner.java:524)\n\tat org.robolectric.internal.SandboxTestRunner.executeInSandbox(SandboxTestRunner.java:494)\n\tat org.robolectric.internal.SandboxTestRunner.access$900(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$7.evaluate(SandboxTestRunner.java:442)\n\tat org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)\n\tat org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)\n\tat org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)\n\tat org.robolectric.internal.SandboxTestRunner.access$600(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$6.evaluate(SandboxTestRunner.java:333)\n\tat org.robolectric.internal.SandboxTestRunner$3.evaluate(SandboxTestRunner.java:233)\n\tat org.robolectric.internal.SandboxTestRunner$5.lambda$evaluate$0(SandboxTestRunner.java:317)\n\tat org.robolectric.internal.bytecode.Sandbox.lambda$runOnMainThread$0(Sandbox.java:101)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)\n\tat java.base/java.lang.Thread.run(Thread.java:840)\n]\n\tat org.junit.Assert.fail(Assert.java:89)\n\tat org.junit.Assert.assertTrue(Assert.java:42)\n\tat org.junit.Assert.assertNotNull(Assert.java:713)\n\tat com.example.AuditCustomLibraryViewModelRegressionTest.awaitMutation(AuditCustomLibraryViewModelRegressionTest.kt:131)\n\tat com.example.AuditCustomLibraryViewModelRegressionTest.closedDatabaseKeepsDialogAndCatalogVisible(AuditCustomLibraryViewModelRegressionTest.kt:184)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n\tat java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)\n\tat org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)\n\tat org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)\n\tat org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)\n\tat org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)\n\tat org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)\n\tat org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)\n\tat org.robolectric.RobolectricTestRunner$HelperTestRunner$1.evaluate(RobolectricTestRunner.java:524)\n\tat org.robolectric.internal.SandboxTestRunner.executeInSandbox(SandboxTestRunner.java:494)\n\tat org.robolectric.internal.SandboxTestRunner.access$900(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$7.evaluate(SandboxTestRunner.java:442)\n\tat org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)\n\tat org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)\n\tat org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)\n\tat org.robolectric.internal.SandboxTestRunner.access$600(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$6.evaluate(SandboxTestRunner.java:333)\n\tat org.robolectric.internal.SandboxTestRunner$3.evaluate(SandboxTestRunner.java:233)\n\tat org.robolectric.internal.SandboxTestRunner$5.lambda$evaluate$0(SandboxTestRunner.java:317)\n\tat org.robolectric.internal.bytecode.Sandbox.lambda$runOnMainThread$0(Sandbox.java:101)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)\n\tat java.base/java.lang.Thread.run(Thread.java:840)\n"
+    }
+  ],
+  "physicalAcceptance": false,
+  "newApkOrAab": false,
+  "conclusion": "failure",
+  "artifactId": 14261201335
+}

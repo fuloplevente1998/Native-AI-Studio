@@ -11,6 +11,7 @@ import com.repforge.app.PhoneWorkoutExecutionStore
 import com.repforge.app.data.db.*
 import com.repforge.app.data.store.TrainPilotSettingsStore
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.*
@@ -141,7 +142,7 @@ class AuditCustomLibraryViewModelRegressionTest {
         assertEquals(before, vm.uiState.value.exercises)
         assertTrue(vm.uiState.value.showAddCustomExerciseDialog)
         awaitMutation(vm, causes)
-        assertFalse(vm.uiState.value.showAddCustomExerciseDialog)
+        assertFalse("Expected committed exercise; banner=${vm.uiState.value.statusBannerMessage}", vm.uiState.value.showAddCustomExerciseDialog)
         val id = vm.uiState.value.exercises.single { it.nameHu == "Audit linked exercise" }.id
         assertEquals(id, vm.uiState.value.selectedExerciseId)
         val saved = native { db.programDao().getProgramWithDaysById("audit-program")!! }
@@ -168,7 +169,9 @@ class AuditCustomLibraryViewModelRegressionTest {
         val causes = startMutation(vm) { vm.createNewCustomProgram("Audit created program", "Description") }
         assertEquals(before, vm.uiState.value.programs)
         awaitMutation(vm, causes)
-        val created = vm.uiState.value.programs.single { it.nameHu == "Audit created program" }
+        val created = requireNotNull(vm.uiState.value.programs.singleOrNull { it.nameHu == "Audit created program" }) {
+            "Expected committed program; banner=${vm.uiState.value.statusBannerMessage}"
+        }
         val saved = native { db.programDao().getProgramWithDaysById(created.id)!! }
         assertEquals(listOf("A", "B"), saved.days.sortedBy { it.sortOrder }.map { it.dayId })
         assertEquals(created.id, native { settings.current().activeProgramId })
@@ -191,6 +194,31 @@ class AuditCustomLibraryViewModelRegressionTest {
         assertEquals(before.programs, vm.uiState.value.programs)
         assertEquals(before.editingProgramId, vm.uiState.value.editingProgramId)
         assertFailure(vm.uiState.value.statusBannerMessage)
+    }
+
+    @Test fun cancelledCallerCannotCommitAQueuedMutationOrPublishAnError() {
+        val vm = model()
+        vm.openProgramEditor("audit-program", 1)
+        vm.toggleAddCustomExerciseDialog(true)
+        val before = vm.uiState.value
+        val programBefore = native { db.programDao().getProgramWithDaysById("audit-program")!! }
+        val mutex = TrainPilotViewModel::class.java.getDeclaredField("programWriteMutex")
+            .apply { isAccessible = true }.get(vm) as Mutex
+        runBlocking { mutex.lock() }
+        try {
+            startMutation(vm) { add(vm, "Cancelled linked exercise", true) }
+            assertTrue(vm.uiState.value.libraryMutationBusy)
+            parent.cancel()
+            await { parent.isCompleted }
+            assertFalse(vm.uiState.value.libraryMutationBusy)
+            assertNull(vm.uiState.value.statusBannerMessage)
+            assertTrue(vm.uiState.value.showAddCustomExerciseDialog)
+            assertEquals(before.exercises, vm.uiState.value.exercises)
+            assertEquals(before.programs, vm.uiState.value.programs)
+            assertFalse(native { db.exerciseLibraryDao().getAllExercises() }
+                .any { it.nameHu == "Cancelled linked exercise" })
+            assertEquals(programBefore, native { db.programDao().getProgramWithDaysById("audit-program")!! })
+        } finally { mutex.unlock() }
     }
 
     @Test fun unavailableDatabaseDoesNotPublishSuccess() {
