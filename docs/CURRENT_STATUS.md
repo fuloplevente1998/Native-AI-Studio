@@ -1,3 +1,19 @@
+# #247 — első indítás jóváhagyott profil/terv panellel, 2026-11-16
+
+Ág fix/first-run-profile, draft PR248. A Folytatás út a Home-mal közös
+StudioPersonalPlannerDialog-ot használja, nem a régi TrainingProfileDialog-ot.
+Közös natív profil/terv mentés; onboarding COMPLETE csak tartós siker után.
+Bezárás/hiba nem léptet tovább, mentés alatt dupla indítás és bezárás tiltott.
+
+CI43814942285 SUCCESS, tesztelt forrás23db67c149a204dd9864cf386ce5b8d110a0165b.
+Ellenőrzött ZIP-digest és nyers XML: telefon100 fájl/521 teszt + Wear35/189 =710,
+0failure/error/skipped; shared NO-SOURCE. Részletek FIRST_RUN_PROFILE_247.md és
+verification/PR248-ci-evidence.json. A záró commit csak dokumentáció;
+main-merge, új APK/AAB és fizikai elfogadás nincs. Az új audit többi állítása
+külön forrás-/reprodukciós ellenőrzést igényel.
+
+---
+
 # TrainPilot 2763 · 1.1-beta — ellenőrzött APK-páros átadva, 2026-11-15
 
 PR242 mainen, signed forrás8367634a78824d1955956ce90ec424ee92e891a3.

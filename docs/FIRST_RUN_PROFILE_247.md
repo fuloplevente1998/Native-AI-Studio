@@ -29,8 +29,14 @@ hiányzó perzisztencia esetén helyben maradó hiba. A meglévő panelteszt új
 a mentés alatti dupla kattintást és bezárást ellenőrzi. A két korábbi gate-teszt
 a produkciós, közös ViewModel-paraméterre igazítva.
 
-Teljes meglévő Actions CI következik; sikeres futást még nem állítunk.
-Új build, verzióemelés, main-merge és fizikai elfogadás nincs ebben a körben.
+A teljes meglévő Actions CI43814942285 SUCCESS, tesztelt alkalmazás-/tesztforrás
+23db67c149a204dd9864cf386ce5b8d110a0165b. Artifact-ZIP SHA-256 digest és nyers XML
+helyben ellenőrizve: telefon100 fájl/521 teszt + Wear35/189 =710,
+0failure/error/skipped; shared NO-SOURCE. A négy új elsőindítás-teszt, a hat
+profil/egyedi-gyakorlat panelteszt és a két korábbi gate-teszt mind zöld.
+Bizonyíték: verification/PR248-ci-evidence.json. A záró commit csak dokumentáció,
+az alkalmazás- és tesztforrás változatlan.
+Új APK/AAB, verzióemelés, main-merge és fizikai elfogadás nincs ebben a körben.
 
 ## Kapcsolat az új audittal
 

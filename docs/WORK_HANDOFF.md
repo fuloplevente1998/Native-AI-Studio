@@ -6,8 +6,12 @@ mint a Home Profil és új terv belépésénél. Közös natív profil/terv ment
 onboarding COMPLETE csak a tartós műveletek után. Hiba/bezárás nem fejezi be,
 mentés közben dupla indítás/bezárás tiltott. Új end-to-end gate/persistence
 regressziók és mentési panelteszt. Részletek FIRST_RUN_PROFILE_247.md.
-CI még folyamatban/elindítandó; új APK/AAB/verzióemelés és main-merge nincs kérve.
-Az új audit 14 állítása ettől külön ellenőrizendő, nem automatikusan igazolt.
+Draft PR248, CI43814942285 SUCCESS, alkalmazás-/tesztforrás23db67c149a204dd9864cf386ce5b8d110a0165b.
+ZIP-digest és nyers XML ellenőrizve: telefon100 fájl/521 teszt + Wear35/189 =710,
+0failure/error/skipped; shared NO-SOURCE. Bizonyíték verification/PR248-ci-evidence.json.
+A záró commit csak dokumentáció. Új APK/AAB/verzióemelés és main-merge nincs kérve;
+fizikai elfogadás hátravan. Az új audit 14 állítása ettől külön ellenőrizendő,
+nem automatikusan igazolt.
 
 ---
 
