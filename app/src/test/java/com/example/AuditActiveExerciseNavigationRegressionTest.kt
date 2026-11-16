@@ -148,9 +148,13 @@ class AuditActiveExerciseNavigationRegressionTest {
         assertEquals(original.getLong("generation"), frame.getLong("generation"))
     }
 
-    @Test fun lastRunningTimedMeasurementPausesBeforeSummary() {
+    @Test fun lastRunningTimedMeasurementPausesBeforeSummary() = assertRunningMeasurementPausesBeforeSummary(false)
+
+    @Test fun lastRunningBilateralMeasurementPausesBeforeSummary() = assertRunningMeasurementPausesBeforeSummary(true)
+
+    private fun assertRunningMeasurementPausesBeforeSummary(bilateral: Boolean) {
         val vm = model()
-        val exercise = vm.uiState.value.exercises.first { it.measurementType == "time" && it.isTimed && !it.isBilateral }
+        val exercise = vm.uiState.value.exercises.first { if (bilateral) it.isBilateral else it.measurementType == "time" && it.isTimed && !it.isBilateral }
         vm.startQuickTimedWithExercise(exercise)
         await { ActiveWorkoutStore.current(context)?.let { it.optBoolean("active") &&
             vm.uiState.value.activeWorkoutId == it.optString("workoutId") && vm.uiState.value.isWorkoutSessionActive } == true }
@@ -166,7 +170,7 @@ class AuditActiveExerciseNavigationRegressionTest {
                 row.getString("id"), row.getJSONArray("sets").getJSONObject(0).getString("setId"))
             val measurement = ActiveWorkoutViewModel(ApplicationProvider.getApplicationContext<Application>())
             await { measurement.uiState.value.exercises.isNotEmpty() }
-            measurement.startSetStopwatch(target, "single")
+            measurement.startSetStopwatch(target, if (bilateral) "left" else "single")
             await { measurement.uiState.value.stopwatchRunning }
             vm.nextActiveExercise()
             await { vm.uiState.value.currentSubScreen == SubScreen.WORKOUT_SUMMARY }
