@@ -1,3 +1,17 @@
+# P1 auditjavítás közös ágon — 2026-11-16
+
+Ág `fix/audit-p1`, main alap `17ecad0`; #250 órás kétoldali kész/Undo,
+#251 védett natív léptetés és utolsó mérés szüneteltetése, #252 tartós egyedi
+könyvtármentés. Az ág tartalmazza PR248 elsőindítás-javítását és PR249
+helyesbített auditját is; az eredeti PR-ek külön nyitva maradnak.
+Részletek: AUDIT_P1_IMPLEMENTATION_2026-11-16.md.
+
+Állapot: implementáció/integráció és kódreview folyamatban; közös teljes CI
+még nem indult. Nincs új APK/AAB, verzióemelés, main-merge vagy készülékes
+elfogadás. A P2/P3 auditpontok következő külön csomagban kezelendők.
+
+---
+
 # Javított 2763-audit — 2026-11-16
 
 Felhasználói kérésre önálló, a korábbi auditprompt szerinti felülvizsgált jelentés:
