@@ -262,6 +262,20 @@ object WearSyncRepository {
                             }
                         }
 
+                        "undoSet" -> {
+                            withContext(Dispatchers.Main) {
+                                val result = executeWatchUndo(appContext, command)
+                                when (result.optString("status")) {
+                                    "applied", "duplicate" -> WearCommandReceipts.complete(appContext, command, "applied", uri)
+                                    "deferred" -> WearCommandQueueStore.enqueue(appContext, command, uri?.toString())
+                                    else -> {
+                                        PhoneWorkoutExecution.publish(appContext)
+                                        WearCommandReceipts.complete(appContext, command, "error", uri)
+                                    }
+                                }
+                            }
+                        }
+
                         "updateSet", "completeSet", "selectExercise", "nextExercise", "prevExercise", "skipRest", "toggleAutomatic" -> {
                             withContext(Dispatchers.Main) {
                                 val current = ActiveWorkoutStore.current(appContext)
@@ -483,6 +497,36 @@ object WearSyncRepository {
         }
     }
 
+    /** Both v2 and legacy completions can unblock an inverse that arrived first. */
+    internal fun drainNativeUndo188(context: Context) {
+        val pending = WearCommandQueueStore.pending(context)
+        for (i in 0 until pending.length()) {
+            try {
+                val command = pending.getJSONObject(i)
+                if (command.optString("action") != "undoSet" || !PhoneWorkoutExecution.compatible(command)) continue
+                val result = PhoneWorkoutExecution.execute(context, command)
+                if (result.optString("status") in setOf("applied", "duplicate", "rejected")) {
+                    PhoneWorkoutExecution.publish(context)
+                    WearCommandReceipts.complete(context, command,
+                        if (result.optString("status") == "rejected") "error" else "applied", null)
+                }
+            } catch (_: Exception) {
+                // The journal/pending receipt remains retryable after a persistence or transport failure.
+            }
+        }
+    }
+
+    /** Legacy Wear inverses still reach the native journal, and never receive a processed success. */
+    internal fun executeWatchUndo(context: Context, command: JSONObject): JSONObject {
+        val frame = PhoneWorkoutExecution.store(context).snapshot()
+        if (frame?.optInt("nativeEditorProjection") == 1 && frame.optString("timerOwner") == "phone" &&
+            frame.optString("workoutId") == command.optString("workoutId") && command.optLong("generation") > 0) {
+            command.put("nativeExecutionProtocol", 2)
+        }
+        if (!PhoneWorkoutExecution.compatible(command)) return JSONObject().put("status", "rejected").put("reason", "unsupportedUndo")
+        return PhoneWorkoutExecution.execute(context, command)
+    }
+
     /** Phone-owned native edits must reach its durable engine before acknowledging the watch. */
     internal fun commitWatchEditorMutation(context: Context, current: JSONObject, command: JSONObject): JSONObject {
         check(PhoneOwnership193.commandAllowed(context, command)) { "Workout ownership changed" }
@@ -496,6 +540,10 @@ object WearSyncRepository {
             !frame.optBoolean("workoutPaused") && frame.optLong("pauseRevision") == command.optLong("pauseRevision")) {
             "Workout pause or identity changed"
         }
+        // A completion (or inverse) can overtake its earlier rotary edits in the Data Layer.
+        // Their values were included in the measured event; they cannot edit an undone target later.
+        if (action == "updateSet" && command.optLong("sequence") > 0 &&
+            command.optLong("sequence") <= max(frame.optLong("watchSequence"), frame.optLong("localSequence"))) return frame
         val exercises = frame.getJSONArray("exercises")
         if (action in setOf("updateSet", "selectExercise", "completeSet")) {
             val exercise = exercises.getJSONObject(command.getInt("exerciseIndex"))
@@ -510,12 +558,34 @@ object WearSyncRepository {
                     check(command.optString("field") in setOf("weight", "reps", "leftSeconds", "rightSeconds")) {
                         "Unsupported set field"
                     }
-                } else if (set.optBoolean("done")) {
+                } else if (set.optBoolean("done") && !com.repforge.shared.WearMeasuredSetCommand.bilateral(
+                    exercise.optString("repUnit"), exercise.optString("measurementType"), exercise.optString("id"))) {
                     return frame
                 }
             }
         }
+        if (action == "completeSet") {
+            val measured = com.repforge.shared.WearMeasuredSetCommand.completion(frame, command)
+            if (measured.optString("action") == "completeMeasuredSet") {
+                measured.put("legacyBilateral250", JSONObject(command.toString()))
+                val result = PhoneWorkoutExecution.execute(context, measured)
+                check(result.optString("status") in setOf("applied", "duplicate")) { result.optString("reason", "Recording failed") }
+                drainNativeUndo188(context)
+                return NativeWorkoutEditing.project(context)
+            }
+        }
+        if (command.has("generation")) check(command.optLong("generation") == frame.optLong("generation")) { "Workout generation changed" }
         val next = applyWatchMutationToSnapshot(frame, command)
+        if (action == "updateSet" && command.has("executionRevision")) {
+            check(command.optLong("executionRevision") == frame.optLong("executionRevision") ||
+                PhoneWorkoutRecording.matchesWatchEditChain(frame, command)) { "Workout revision changed" }
+            val chain = JSONObject().put("throughExecutionRevision", PhoneWorkoutRecording.advance(frame.getLong("executionRevision")))
+                .put("fromExecutionRevision", command.getLong("executionRevision")).put("sequence", command.optLong("sequence"))
+                .put("source", android.net.Uri.parse(command.optString("_uri")).host.orEmpty())
+            for (key in listOf("workoutId", "exerciseId", "setId", "generation", "ownerEpoch193", "pauseRevision", "baseRevision"))
+                if (command.has(key)) chain.put(key, command.get(key))
+            next.put("wearEditRevision250", chain)
+        }
         if (next.optInt("currentExercise") != frame.optInt("currentExercise")) {
             NativeSetStopwatch.sealPause(next)
             NativeSetStopwatch.pause(next, trackPause = false)

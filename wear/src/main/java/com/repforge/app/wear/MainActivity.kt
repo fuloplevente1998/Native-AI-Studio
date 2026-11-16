@@ -752,7 +752,7 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         val setIndex = current.currentSetIndex
         val set = exercise.sets.getOrNull(setIndex) ?: return
         if (set.done) return
-        val perSide = normalizeUnit(exercise.repUnit) == "mp/oldal"
+        val perSide = com.repforge.shared.WearMeasuredSetCommand.bilateral(exercise.repUnit, exercise.measurementType, exercise.id)
         val valid = if (perSide) set.leftSeconds > 0 && set.rightSeconds > 0 else (set.reps.toIntOrNull() ?: 0) > 0
         if (!valid) return
         if(current.automation?.enabled==true&&current.automation.owner=="watch"){
@@ -828,6 +828,9 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         if (nativePhoneExecution(current, action, exercise, value)) {
             command.put("nativeExecutionProtocol", 2).put("generation", current.generation).put("executionRevision", current.executionRevision)
         }
+        if (action == "updateSet" && current.nativeExecutionProtocol == 2 && current.timerOwner == "phone") {
+            command.put("generation", current.generation).put("executionRevision", current.executionRevision)
+        }
         if (action == "automaticControl" && value == "start") {
             command.put("exerciseId", current.exercise?.id).put("setId", current.currentSet?.setId)
         }
@@ -845,7 +848,8 @@ class MainActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         if (weight != null) command.put("weight", weight)
         if (leftSeconds != null) command.put("leftSeconds", leftSeconds)
         if (rightSeconds != null) command.put("rightSeconds", rightSeconds)
-        val sequence = WearCommandOutbox.enqueue(this, command)
+        val outgoing = com.repforge.shared.WearMeasuredSetCommand.completion(WorkoutSnapshotStore.encode(current), command)
+        val sequence = WearCommandOutbox.enqueue(this, outgoing)
         workout.value?.let { workout.value = WorkoutSnapshotStore.saveWorkout(this, it.copy(localSequence = maxOf(it.localSequence,sequence))) }
     }
 

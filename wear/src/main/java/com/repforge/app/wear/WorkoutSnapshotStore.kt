@@ -352,11 +352,13 @@ internal fun preservePendingWearEdits(current: WearWorkout, incoming: WearWorkou
         )
     } else incoming
 
-/** Unsupported measurements keep their existing recorder; no phone-owned clock is created by the watch. */
+/** Bilateral results use the measured recorder; the watch never starts a phone-owned clock. */
 internal fun nativePhoneExecution(workout: WearWorkout, action: String, exercise: WearExercise?, value: Any?): Boolean =
     workout.nativeExecutionProtocol == 2 && workout.generation > 0 && workout.executionRevision > 0 && workout.timerOwner == "phone" &&
-        (action == "automaticControl" && (value == "start" || value == "resumeUndo") || action == "completeSet" && exercise != null &&
-            exercise.repUnit.replace("\\s+".toRegex(), "").lowercase() in listOf("", "ism.", "reps", "/kar", "/láb") && exercise.measurementType != "distance")
+        (action == "automaticControl" && (value == "start" || value == "resumeUndo") ||
+            action == "completeSet" && exercise != null && exercise.measurementType != "distance" &&
+            (exercise.repUnit.replace("\\s+".toRegex(), "").lowercase() in listOf("", "ism.", "reps", "/kar", "/láb") ||
+                com.repforge.shared.WearMeasuredSetCommand.bilateral(exercise.repUnit, exercise.measurementType, exercise.id)))
 
 /** A terminal phone snapshot is scoped to one workout and the acknowledged ownership epoch. */
 internal fun acceptsPhoneWorkoutClosure(current: WearWorkout, closed: JSONObject): Boolean {
