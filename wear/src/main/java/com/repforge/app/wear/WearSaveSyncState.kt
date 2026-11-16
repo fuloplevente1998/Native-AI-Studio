@@ -9,7 +9,7 @@ data class WearSaveSyncState(val workoutId: String, val phase: WearSavePhase, va
 
 /** Delivery metadata only: the existing outbox remains the sole command queue. */
 object WearSaveSyncModel {
-    val tracked=setOf("startWorkout","startQuickWorkout","addQuickExercise","updateSet","completeSet","undoSet",
+    val tracked=setOf("startWorkout","startQuickWorkout","addQuickExercise","updateSet","completeSet","completeMeasuredSet","undoSet",
         "finishWorkout","discardWorkout","saveWorkoutFeedback","healthSummary","selectExercise",
         "nextExercise","prevExercise","automaticControl","toggleAutomatic","skipRest","resumeWorkout","gpsRouteChunk193")
     fun tracked(command: JSONObject)=command.optString("action") in tracked &&

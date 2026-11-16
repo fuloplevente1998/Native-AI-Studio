@@ -73,12 +73,8 @@ object WearUndo188 {
             if(r.optString("recordId")!=expectedRecordId)return current
             val id=UUID.randomUUID().toString()
             val next=inverse(current,id,SystemClock.elapsedRealtime(),WearAutomaticService.boot(context)) ?: return current
-            val command=JSONObject(r.toString()).put("schema",1).put("commandId",id).put("action","undoSet")
-                .put("createdAt",System.currentTimeMillis()).put("watchSequence",current.localSequence)
-                .put("generation",current.generation).put("executionRevision",current.executionRevision)
-                .put("automation",next.automation?.json()).put("pauseRevision",current.pauseRevision)
-            marker(current)?.let { command.put("undoDependency188",it.optString("commandId")) }
-            if(r.optBoolean("native188")&&current.nativeExecutionProtocol==2&&current.timerOwner=="phone")command.put("nativeExecutionProtocol",2)
+            val command=com.repforge.shared.WearMeasuredSetCommand.undo(
+                WorkoutSnapshotStore.encode(current),r,id,System.currentTimeMillis(),next.automation?.json())
             // Persist inverse and its marker before transport; the outbox remains the only delivery queue.
             val durable=next.copy(localSequence=current.localSequence+1,undo188=JSONObject(next.undo188!!).put("command",command).toString())
             WorkoutSnapshotStore.saveWorkout(context,durable)
@@ -93,15 +89,38 @@ object WearUndo188 {
     }
     fun recover(context: Context) {
         val current=WorkoutSnapshotStore.load(context) ?: return
-        val m=marker(current) ?: return
-        if(m.optString("status")!="pending")return
         val prefs=context.getSharedPreferences("trainpilot_wear_outbox",Context.MODE_PRIVATE)
         val results=runCatching { JSONArray(prefs.getString("results191","[]")) }.getOrNull() ?: return
+        val last=record(current)
+        if(last!=null)for(i in 0 until results.length())results.optJSONObject(i)?.takeIf {
+            it.optString("commandId")==last.optString("recordId")&&it.optString("action")=="completeMeasuredSet"&&
+                it.optString("status") in setOf("error","superseded")
+        }?.let { receipt(context,it);return }
+        val m=marker(current) ?: return
+        if(m.optString("status")!="pending")return
         for(i in 0 until results.length())results.optJSONObject(i)?.takeIf { it.optString("commandId")==m.optString("commandId") }?.let { receipt(context,it);return }
         m.optJSONObject("command")?.let { WearCommandOutbox.enqueue(context,it) }
     }
     /** Receipt correction is identity matched and cannot erase edits made after an offline undo. */
     fun receipt(context: Context,receipt: JSONObject) {
+        if(receipt.optString("action")=="completeMeasuredSet") {
+            if(receipt.optString("status") !in setOf("error","superseded"))return
+            synchronized(WearAutomaticController) { synchronized(WorkoutSnapshotStore) {
+                val current=WorkoutSnapshotStore.load(context) ?: return
+                val r=record(current) ?: return
+                if(current.workoutId!=receipt.optString("workoutId")||r.optString("recordId")!=receipt.optString("commandId"))return
+                val authoritative=receipt.optJSONObject("recordFrame250")?.let { WorkoutSnapshotStore.parse(it.toString()) }
+                if(authoritative!=null&&authoritative.workoutId==current.workoutId&&authoritative.generation==current.generation&&
+                    authoritative.ownerEpoch193==current.ownerEpoch193&&authoritative.executionRevision>=current.executionRevision&&
+                    current.localSequence<=receipt.optLong("sequence")&&same(r.optJSONArray("expected"),guard(current))) {
+                    WorkoutSnapshotStore.saveWorkout(context,authoritative.copy(localSequence=maxOf(current.localSequence,receipt.optLong("sequence")),
+                        lastRecord188=null,undo188=null,automation=authoritative.automation?.copy(paused=true,deadlineAt=0,awaitingPhone=false)))
+                } else WorkoutSnapshotStore.saveWorkout(context,current.copy(lastRecord188=null,
+                    undo188=JSONObject().put("commandId",receipt.optString("commandId")).put("status","conflict").toString(),
+                    automation=current.automation?.copy(paused=true,deadlineAt=0,awaitingPhone=false)))
+            } }
+            return
+        }
         if(receipt.optString("action")!="undoSet")return
         synchronized(WearAutomaticController) { synchronized(WorkoutSnapshotStore) {
             val current=WorkoutSnapshotStore.load(context) ?: return
@@ -112,7 +131,9 @@ object WearUndo188 {
                 automation=current.automation?.copy(awaitingPhone=false)))
             else {
                 val authoritative=receipt.optJSONObject("undoFrame")?.let { WorkoutSnapshotStore.parse(it.toString()) }
-                if(authoritative!=null&&authoritative.workoutId==current.workoutId&&same(m.optJSONArray("after"),guard(current)))
+                if(authoritative!=null&&authoritative.workoutId==current.workoutId&&authoritative.generation==current.generation&&
+                    authoritative.ownerEpoch193==current.ownerEpoch193&&authoritative.executionRevision>=current.executionRevision&&
+                    current.localSequence<=receipt.optLong("sequence")&&same(m.optJSONArray("after"),guard(current)))
                     WorkoutSnapshotStore.saveWorkout(context,authoritative.copy(localSequence=maxOf(current.localSequence,receipt.optLong("sequence")),lastRecord188=null,
                         undo188=null,automation=authoritative.automation?.copy(paused=true,deadlineAt=0)))
                 else WorkoutSnapshotStore.saveWorkout(context,current.copy(lastRecord188=null,undo188=m.put("status","conflict").toString(),

@@ -1,3 +1,67 @@
+# P1 auditjavítás — ellenőrzött draft PR253, 2026-11-16
+
+Ág `fix/audit-p1`, main alap `17ecad0`; draft PR253. #250: telefon-tulajdonú
+kétoldali órás kész/Undo tartós natív eseményekkel és védett nyugtával;
+#251: natív léptetés ownership/admission védelemmel, utolsó mérés szüneteltetése;
+#252: tartós egyedi gyakorlat/program mentés és helyes hibajelzés.
+A csomag PR248 elsőindítás-javítását és PR249 helyesbített auditját is tartalmazza.
+Az eredeti PR-ek és issue-k nyitva maradtak; nem történt main-merge.
+
+Teljes CI43938232095 SUCCESS, forrás
+`2b4d968f953364d5fb0e21434230e08de92a8dee`. Ellenőrzött artifact ZIP-digest
+és nyers XML: telefon105 fájl/558 teszt + Wear36/198 =756,
+0failure/error/skipped; shared NO-SOURCE. 46 új P1 regresszió. Első két kapu
+hibáiból a pending fixture, nyelvkód-bekötés és belső Room cancellation kezelése
+javítva; a valódi caller-cancel továbbra sem ír vagy jelez téves eredményt.
+Bizonyíték: verification/PR253-ci-evidence.json. Részletek és fizikai próbamatrix:
+AUDIT_P1_IMPLEMENTATION_2026-11-16.md.
+
+A záró commit csak dokumentáció, a kód a fenti tesztelt forrásé. Új APK/AAB,
+verzióemelés és készülékes elfogadás nincs ebben a körben. Következő lépés:
+review/fizikai telefon–óra elfogadás, majd külön main-integráció és kiadás;
+a P2/P3 auditpontok későbbi külön csomagban maradnak.
+
+---
+
+# Javított 2763-audit — 2026-11-16
+
+Felhasználói kérésre önálló, a korábbi auditprompt szerinti felülvizsgált jelentés:
+AUDIT_2763_REVIEWED_2026-11-16.md. Ág docs/audit-2763-validation, main alap
+17ecad078a767162f0be303954a7b65e97caa38d; alkalmazáskód a 2763-as APK-forrással
+azonos. 14 eredeti állítás: 6 helytálló, 5 részben helytálló, 3 cáfolt; P0 nincs
+igazolva. Tényleges P1 teendők: kétoldali órás Undo, léptetés/admission és
+utolsó mérés szüneteltetése, egyedi gyakorlat védett tartós mentése.
+Az eredeti audit elején hivatkozás van a helyesbített változatra.
+
+Kiadási ZIP-digest és nyers XML újraellenőrizve: APK-run43675171894,
+AAB-run43721805883, mindkettő705 teszt, 0failure/error/skipped. Nincs új
+Android/JVM-futás, appkód-módosítás vagy build. Gépi melléklet:
+verification/AUDIT_2763_REVIEW_EVIDENCE_2026-11-16.json.
+#247/PR248 elsőindítás-javítás külön, nem mergelt ág; 710 tesztje nem a mainé.
+PR246 AAB-átadási dokumentációja szintén külön van. Jelentésben források,
+javítási sorrend, regressziós terv és fizikai telefon–óra mátrix szerepel.
+Következő lépés a konkrét P1 javítócsomag; ez a kör kizárólag audit/dokumentáció.
+
+
+---
+
+# #247 — első indítás profil/terv panel egységesítése, 2026-11-16
+
+Ág fix/first-run-profile, alap main17ecad0. A folytatott onboarding régi
+TrainingProfileDialog-ja helyett ugyanaz a StudioPersonalPlannerDialog nyílik,
+mint a Home Profil és új terv belépésénél. Közös natív profil/terv mentés;
+onboarding COMPLETE csak a tartós műveletek után. Hiba/bezárás nem fejezi be,
+mentés közben dupla indítás/bezárás tiltott. Új end-to-end gate/persistence
+regressziók és mentési panelteszt. Részletek FIRST_RUN_PROFILE_247.md.
+Draft PR248, CI43814942285 SUCCESS, alkalmazás-/tesztforrás23db67c149a204dd9864cf386ce5b8d110a0165b.
+ZIP-digest és nyers XML ellenőrizve: telefon100 fájl/521 teszt + Wear35/189 =710,
+0failure/error/skipped; shared NO-SOURCE. Bizonyíték verification/PR248-ci-evidence.json.
+A záró commit csak dokumentáció. Új APK/AAB/verzióemelés és main-merge nincs kérve;
+fizikai elfogadás hátravan. Az új audit 14 állítása ettől külön ellenőrizendő,
+nem automatikusan igazolt.
+
+---
+
 # TrainPilot 2763 · 1.1-beta — ellenőrzött APK-páros átadva, 2026-11-15
 
 PR242 mainen, signed forrás8367634a78824d1955956ce90ec424ee92e891a3.

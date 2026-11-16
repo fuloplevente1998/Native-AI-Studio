@@ -774,6 +774,7 @@ fun ActiveStrengthWorkoutScreen(
                 ) {
                     TrainPilotOutlinedButton(
                         onClick = onPreviousExercise,
+                        enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
                         colors = WorkoutControlAppearance.secondaryColors(),
                         border = WorkoutControlAppearance.secondaryBorder(),
                         shape = RoundedCornerShape(16.dp),
@@ -790,6 +791,7 @@ fun ActiveStrengthWorkoutScreen(
 
                     Button(
                         onClick = onNextExercise,
+                        enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = palette.primary,
@@ -1360,6 +1362,7 @@ fun ActiveTimedWorkoutScreen(
             ) {
                 TrainPilotOutlinedButton(
                     onClick = onPreviousExercise,
+                        enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
                     colors = WorkoutControlAppearance.secondaryColors(),
                     border = WorkoutControlAppearance.secondaryBorder(),
                     shape = RoundedCornerShape(16.dp),
@@ -1369,6 +1372,7 @@ fun ActiveTimedWorkoutScreen(
                 }
                 Button(
                     onClick = onNextExercise,
+                        enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = palette.primary,
@@ -2447,6 +2451,7 @@ fun ActiveBilateralWorkoutScreen(
                 ) {
                     TrainPilotOutlinedButton(
                         onClick = onPreviousExercise,
+                        enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
                         colors = WorkoutControlAppearance.secondaryColors(),
                         border = WorkoutControlAppearance.secondaryBorder(),
                         shape = RoundedCornerShape(16.dp),
@@ -2459,6 +2464,7 @@ fun ActiveBilateralWorkoutScreen(
                     }
                     Button(
                         onClick = onNextExercise,
+                        enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = palette.primary,

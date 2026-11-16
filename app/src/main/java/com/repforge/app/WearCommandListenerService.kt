@@ -18,6 +18,35 @@ import java.nio.charset.StandardCharsets
 class WearCommandListenerService : WearableListenerService() {
     companion object {
         const val COMMAND_PATH_PREFIX: String = WearDataLayerPaths.COMMAND_PATH_PREFIX
+
+        /** Testable Data Layer dispatch: terminal bilateral errors get a durable error receipt. */
+        internal fun dispatchNativeCommand(context: android.content.Context, command: JSONObject, uri: Uri?): JSONObject {
+            val result = PhoneWorkoutExecution.execute(context, command)
+            val status = result.optString("status")
+            val frame = PhoneWorkoutExecution.store(context).snapshot()
+            val unavailable = frame != null && (!frame.optBoolean("active") || frame.optBoolean("workoutPaused") ||
+                PhoneWorkoutExecution.store(context).commandsSuspended())
+            val measuredError = command.optString("action") == "completeMeasuredSet" && command.has("wearBilateralValues") &&
+                status == "rejected" && !PhoneWorkoutExecution.store(context).restoreBlocked() &&
+                (result.optString("reason") !in setOf("executionNotPrepared", "restoreInProgress",
+                    "controllerNotArmed", "timerStillActive", "timedResultsAwaitingReconciliation") ||
+                    result.optString("reason") == "executionNotPrepared" && unavailable)
+            val terminalError = status == "rejected" && (command.optString("action") == "undoSet" || measuredError)
+            if (terminalError) {
+                if (measuredError) runCatching { PhoneWorkoutExecution.publish(context) } else PhoneWorkoutExecution.publish(context)
+            }
+            if (terminalError || status in setOf("applied", "duplicate")) {
+                val receiptStatus = if (terminalError) "error" else "applied"
+                val committed = try { WearCommandReceipts.complete(context, command, receiptStatus, uri) } catch (transport: Exception) {
+                    // A synchronous transport failure cannot undo an already committed receipt.
+                    if (WearCommandQueueStore.receipt(context, command.optString("commandId")) == null) throw transport
+                    true
+                }
+                if (!committed) WearCommandQueueStore.enqueue(context, command, uri?.toString())
+            } else WearCommandQueueStore.enqueue(context, command, uri?.toString())
+            WearSyncRepository.drainNativeUndo188(context)
+            return result
+        }
     }
 
     override fun onPeerConnected(peer: com.google.android.gms.wearable.Node) {
@@ -61,31 +90,7 @@ class WearCommandListenerService : WearableListenerService() {
         }
     }
 
-    /** A reconnected watch can deliver its inverse before its completion; retry without waking any UI. */
-    private fun drainNativeUndo188() {
-        val pending = WearCommandQueueStore.pending(this)
-        for (i in 0 until pending.length()) {
-            try {
-                val command = pending.getJSONObject(i)
-                if ("undoSet" != command.optString("action") || !PhoneWorkoutExecution.compatible(command)) {
-                    continue
-                }
-                val result = PhoneWorkoutExecution.execute(this, command)
-                val status = result.optString("status")
-                if (status in listOf("applied", "duplicate", "rejected")) {
-                    PhoneWorkoutExecution.publish(this)
-                    WearCommandReceipts.complete(
-                        this,
-                        command,
-                        if ("rejected" == status) "error" else "applied",
-                        null
-                    )
-                }
-            } catch (_: Exception) {
-                // Durable pending command remains retryable.
-            }
-        }
-    }
+    private fun drainNativeUndo188() = WearSyncRepository.drainNativeUndo188(this)
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         for (event in dataEvents) {
@@ -142,19 +147,7 @@ class WearCommandListenerService : WearableListenerService() {
                 if (PhoneWorkoutExecution.compatible(command)) {
                     Handler(Looper.getMainLooper()).post {
                         try {
-                            val result = PhoneWorkoutExecution.execute(this, command)
-                            val status = result.optString("status")
-                            if ("undoSet" == command.optString("action") && "rejected" == status) {
-                                PhoneWorkoutExecution.publish(this)
-                                if (!WearCommandReceipts.complete(this, command, "error", uri)) {
-                                    queue(command, uri)
-                                }
-                            } else if (status !in listOf("applied", "duplicate") ||
-                                !WearCommandReceipts.complete(this, command, "applied", uri)
-                            ) {
-                                queue(command, uri)
-                            }
-                            drainNativeUndo188()
+                            dispatchNativeCommand(this, command, uri)
                         } catch (_: Exception) {
                             queue(command, uri)
                         }

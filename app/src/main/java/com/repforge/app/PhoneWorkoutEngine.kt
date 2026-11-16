@@ -88,6 +88,17 @@ internal object PhoneWorkoutRecording {
         @JvmField val exerciseIndex: Int
     )
 
+    /** Only a consecutive stream of this watch's earlier edits may bridge its own pending revision. */
+    fun matchesWatchEditChain(frame: JSONObject, command: JSONObject): Boolean {
+        val chain = frame.optJSONObject("wearEditRevision250") ?: return false
+        return command.has("baseRevision") && command.optLong("sequence") > chain.optLong("sequence") &&
+            chain.optLong("sequence") > 0 && chain.optLong("throughExecutionRevision") == frame.optLong("executionRevision") &&
+            chain.optLong("fromExecutionRevision") == command.optLong("executionRevision") &&
+            listOf("workoutId", "exerciseId", "setId").all { chain.optString(it) == command.optString(it) } &&
+            listOf("generation", "ownerEpoch193", "pauseRevision", "baseRevision").all { chain.optLong(it) == command.optLong(it) } &&
+            chain.optString("source") == android.net.Uri.parse(command.optString("_uri")).host.orEmpty()
+    }
+
     @JvmStatic
     @Throws(JSONException::class)
     fun target(frame: JSONObject, command: JSONObject): Target {
@@ -100,7 +111,9 @@ internal object PhoneWorkoutRecording {
         ) {
             throw IllegalArgumentException("executionIdentityChanged")
         }
-        if (version(frame, "executionRevision") != version(command, "executionRevision")) {
+        val sameRevision = version(frame, "executionRevision") == version(command, "executionRevision")
+        if (!sameRevision && !(command.optString("action") == "completeMeasuredSet" &&
+                command.has("wearBilateralValues") && matchesWatchEditChain(frame, command))) {
             throw IllegalArgumentException("revisionConflict")
         }
         val exerciseId = id(command, "exerciseId")
@@ -139,12 +152,39 @@ internal object PhoneWorkoutRecording {
         throw IllegalArgumentException("unknownTarget")
     }
 
+    /** An explicit Wear OK carries both real sides, independently of earlier updateSet delivery. */
+    fun recordingBase(frame: JSONObject, command: JSONObject): JSONObject {
+        if (!command.has("wearBilateralValues")) return frame
+        val values = command.getJSONObject("wearBilateralValues")
+        require(command.optString("action") == "completeMeasuredSet") { "unsupportedMeasurement" }
+        val resolved = target(frame, command)
+        require(com.repforge.shared.WearMeasuredSetCommand.bilateral(
+            resolved.exercise.optString("repUnit"), resolved.exercise.optString("measurementType"), resolved.exercise.optString("id"))) { "unsupportedMeasurement" }
+        require(command.optLong("ownerEpoch193") == frame.optLong("ownerEpoch193") &&
+            command.optLong("pauseRevision") == frame.optLong("pauseRevision") && !frame.optBoolean("workoutPaused")) { "executionIdentityChanged" }
+        val leftText = values.get("leftSeconds").toString()
+        val rightText = values.get("rightSeconds").toString()
+        require(DIGITS_REGEX.matches(leftText) && DIGITS_REGEX.matches(rightText)) { "invalidMeasuredTime" }
+        val left = leftText.toLongOrNull()
+        val right = rightText.toLongOrNull()
+        require(left != null && right != null && left in 1L..86_400L && right in 1L..86_400L) { "invalidMeasuredTime" }
+        val weight = values.get("weight").toString().replace(',', '.').toDoubleOrNull()
+        require(weight != null && weight.isFinite() && weight >= 0.0) { "invalidWeight" }
+        val base = JSONObject(frame.toString())
+        val set = target(base, command).set
+        set.put("leftSeconds", left).put("rightSeconds", right).put("reps", minOf(left, right).toString()).put("weight", weight)
+        return base
+    }
+
     @JvmStatic
     @Throws(JSONException::class)
     fun record(frame: JSONObject, command: JSONObject): JSONObject {
         if (command.optString("action") == "completeMeasuredSet") {
-            target(frame, command)
-            return NativeMeasuredSet.record(frame, command)
+            val base = recordingBase(frame, command)
+            target(base, command)
+            val measuredCommand = if (command.has("wearBilateralValues")) JSONObject(command.toString())
+                .put("measuredValues", PhoneWorkoutExecutionStore.recordedBase(target(base, command).set).toString()) else command
+            return NativeMeasuredSet.record(base, measuredCommand)
         }
         if (command.optString("action") == "completeGpsSet") {
             target(frame, command)
@@ -216,6 +256,15 @@ internal object PhoneWorkoutRecording {
     @JvmStatic
     @Throws(JSONException::class)
     fun fingerprint(command: JSONObject): String {
+        // A legacy Wear completion has no execution revision. Bind its original wire identity,
+        // not the revision supplied by the phone adapter, so a replay after Undo stays a replay.
+        command.optJSONObject("legacyBilateral250")?.let { original ->
+            val wire = JSONObject(original.toString()).apply { remove("legacyBilateral250") }
+            return JSONArray().put("legacyBilateral250").put(fingerprint(wire))
+                .put(command.getString("workoutId")).put(command.getString("exerciseId")).put(command.getString("setId"))
+                .put(original.opt("leftSeconds")).put(original.opt("rightSeconds"))
+                .put(original.opt("ownerEpoch193")).put(original.opt("pauseRevision")).put(original.opt("baseRevision")).toString()
+        }
         val values = JSONArray()
         for (key in arrayOf(
             "action", "workoutId", "generation", "executionRevision",
@@ -227,6 +276,13 @@ internal object PhoneWorkoutRecording {
         if (command.optString("action") == "completeTimedSet") values.put(JSONArray().put(command.has("clockId")).put(command.opt("clockId")))
         if (command.optString("action") == "completeGpsSet") values.put(JSONArray().put(command.has("measurementId")).put(command.opt("measurementId")))
         if (command.optString("action") == "completeMeasuredSet") values.put(JSONArray().put(command.has("measuredValues")).put(command.opt("measuredValues")))
+        if (command.has("wearBilateralValues")) {
+            val sides = command.optJSONObject("wearBilateralValues")
+            // Fixed field order: JSON object key ordering must not affect replay identity.
+            values.put(if (sides == null) JSONArray().put(false).put(command.opt("wearBilateralValues")) else
+                JSONArray().put(true).put(sides.opt("leftSeconds")).put(sides.opt("rightSeconds")).put(sides.opt("weight")))
+            values.put(JSONArray().put(command.opt("ownerEpoch193")).put(command.opt("pauseRevision")))
+        }
         return values.toString()
     }
 
@@ -485,6 +541,9 @@ internal object PhoneWorkoutExecution {
                 )
     }
 
+    private fun matchesPendingWatchUndo(frame: JSONObject, command: JSONObject) =
+        command.optString("recordId").isNotBlank() && PhoneWorkoutRecording.matchesWatchEditChain(frame, command)
+
     @JvmStatic
     @Throws(Exception::class)
     fun execute(context: Context, command: JSONObject): JSONObject {
@@ -520,7 +579,7 @@ internal object PhoneWorkoutExecution {
         // automaticEnabled controls plan generation, not recording an already
         // measured set. Ownership, arming and target checks still apply.
         val manualMeasuredResult = frame?.optInt("nativeEditorProjection") == 1 &&
-            command.optString("action") in setOf("completeSet", "completeTimedSet", "completeGpsSet", "completeMeasuredSet")
+            command.optString("action") in setOf("completeSet", "completeTimedSet", "completeGpsSet", "completeMeasuredSet", "undoSet")
         if (frame == null ||
             !frame.optBoolean("active") ||
             (!frame.optBoolean("automaticEnabled") && !manualMeasuredResult) ||
@@ -530,6 +589,11 @@ internal object PhoneWorkoutExecution {
             return JSONObject().put("status", "rejected").put("reason", "executionNotPrepared")
         }
         if (db.restoreBlocked()) return JSONObject().put("status", "rejected").put("reason", "restoreInProgress")
+        val active = ActiveWorkoutStore.current(context)
+        if (frame.optString("timerOwner") != "phone" || com.repforge.shared.WorkoutOwnership193.pending(frame) ||
+            frame.optBoolean("finalizationPending") || (active != null && active.optString("workoutId") == frame.optString("workoutId") && active.optBoolean("finalizationPending")) || command.has("pauseRevision") && command.optLong("pauseRevision") != frame.optLong("pauseRevision")) {
+            return JSONObject().put("status", "rejected").put("reason", "executionIdentityChanged")
+        }
         val dependency = command.optString("undoDependency188")
         if (dependency.isNotEmpty() &&
             (frame.optJSONObject("undo188") == null || dependency != frame.getJSONObject("undo188").optString("commandId"))
@@ -550,8 +614,14 @@ internal object PhoneWorkoutExecution {
                 return JSONObject().put("status", "rejected").put("reason", "undoConflict")
             }
             if (!db.recorded188(frame.getString("workoutId"), frame.getLong("generation"), command.optString("recordId"))) {
+                val failed = WearCommandQueueStore.receipt(context, command.optString("recordId"))
+                if (failed != null && failed.optString("workoutId") == frame.getString("workoutId") &&
+                    failed.optString("action") in setOf("completeSet", "completeMeasuredSet") &&
+                    failed.optString("status") in setOf("error", "superseded")) {
+                    return JSONObject().put("status", "rejected").put("reason", "recordingRejected")
+                }
                 return JSONObject()
-                    .put("status", if (frame.getLong("executionRevision") <= command.optLong("executionRevision")) "deferred" else "rejected")
+                    .put("status", if (frame.getLong("executionRevision") <= command.optLong("executionRevision") || matchesPendingWatchUndo(frame, command)) "deferred" else "rejected")
                     .put("reason", "recordingAwaitingDelivery")
             }
             val running = IntervalTimerService.snapshot(context)
@@ -759,7 +829,7 @@ internal object PhoneWorkoutExecution {
             value.put(
                 "automation",
                 JSONObject()
-                    .put("enabled", true)
+                    .put("enabled", frame.optBoolean("automaticEnabled"))
                     .put("owner", "phone")
                     .put("phase", if ("paused" == transition.optString("phase")) "ready" else transition.optString("phase", "ready"))
                     .put("remainingMs", 0)

@@ -36,6 +36,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import com.repforge.app.NativeDataReplacement
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -330,23 +332,35 @@ class TrainPilotViewModel : ViewModel() {
             }
     }
 
-    private fun persistProgramsToRoomAsync(profile: JSONObject? = null) {
-        val db = nativeDatabase ?: return
-        val scope = nativeScope ?: return
+    private fun persistProgramsToRoomAsync(
+        profile: JSONObject? = null,
+        completeOnboarding: Boolean = false,
+        onSaveResult: ((Boolean) -> Unit)? = null
+    ) {
+        val db = nativeDatabase
+        val scope = nativeScope
         val currentPrograms = _uiState.value.programs
-        if (currentPrograms.isEmpty()) return
+        if (db == null || scope == null || currentPrograms.isEmpty()) {
+            onSaveResult?.invoke(false)
+            return
+        }
         val nowMs = System.currentTimeMillis()
         val revision = ++programWriteRevision
         programWriteError = null
-        val context = nativeContext ?: return
+        val context = nativeContext ?: run { onSaveResult?.invoke(false); return }
         val ticket = try { com.repforge.app.NativeDataReplacement.continuationForCurrentData(context) }
             catch (error: Exception) {
                 programWriteError = error.message ?: "A terv nem menthető."
-                _uiState.update { it.copy(statusBannerMessage = programWriteError) }; return
+                _uiState.update { it.copy(statusBannerMessage = programWriteError) }
+                onSaveResult?.invoke(false)
+                return
             }
         programWriteJob = scope.launch(Dispatchers.IO) {
             programWriteMutex.withLock {
-            if (revision != programWriteRevision) return@withLock
+            if (revision != programWriteRevision) {
+                onSaveResult?.invoke(false)
+                return@withLock
+            }
             runCatching {
                 com.repforge.app.NativeDataReplacement.mutate(context) {
                 ticket.requireCurrent(context)
@@ -432,7 +446,12 @@ class TrainPilotViewModel : ViewModel() {
                     val active = currentPrograms.first { it.isActive }
                     check(db.programDao().getProgramWithDaysById(active.id)?.days?.isNotEmpty() == true)
                     store.setActiveProgramId(active.id)
-                    _uiState.update { it.copy(profileComplete = true,
+                    if (completeOnboarding) {
+                        check(store.completeOnboarding(merged.toString(), emptyMap(), ticket)) {
+                            "First-run profile changed before completion"
+                        }
+                    }
+                    _uiState.update { it.copy(profileComplete = true, showPersonalPlannerModal = false,
                         statusBannerMessage = tr(
                             "Profil és egyéni terv tartósan elmentve.",
                             "Profile and personalized plan saved.",
@@ -442,8 +461,10 @@ class TrainPilotViewModel : ViewModel() {
                         )) }
                 }
                 }
-            }.onFailure { failure ->
+            }.onSuccess { onSaveResult?.invoke(true) }
+            .onFailure { failure ->
                 if (failure is kotlinx.coroutines.CancellationException) throw failure
+                onSaveResult?.invoke(false)
                 val errMsg = tr(
                     "A terv/profil mentése nem sikerült. Próbáld újra.",
                     "Failed to save plan/profile. Please try again.",
@@ -1904,15 +1925,19 @@ class TrainPilotViewModel : ViewModel() {
         success: String,
         editor: Boolean = false,
         selectLastDay: Boolean = false,
+        onCommitted: (TrainPilotUiState) -> TrainPilotUiState = { it },
         action: suspend (Context, TrainPilotDatabase, TrainPilotSettingsStore) -> String?
     ) {
         if (_uiState.value.libraryMutationBusy) return
-        val context = nativeContext ?: return
-        val db = nativeDatabase ?: return
-        val store = nativeSettingsStore ?: return
-        val scope = nativeScope ?: return
+        fun unavailable() { _uiState.update { it.copy(statusBannerMessage = tr(
+            "A mentés nem sikerült. Próbáld újra.", "Could not save. Please try again.",
+            "Speichern fehlgeschlagen. Bitte erneut versuchen.", "Salvarea a eșuat. Încearcă din nou.")) } }
+        val context = nativeContext ?: run { unavailable(); return }
+        val db = nativeDatabase ?: run { unavailable(); return }
+        val store = nativeSettingsStore ?: run { unavailable(); return }
+        val scope = nativeScope ?: run { unavailable(); return }
         val ticket = try { com.repforge.app.NativeDataReplacement.continuationForCurrentData(context) }
-            catch (_: Exception) { return }
+            catch (_: Exception) { unavailable(); return }
         val editorTicket = if (editor) programEditorContinuation ?: ticket else null
         nativeReloadJob?.cancel()
         _uiState.update { it.copy(libraryMutationBusy = true) }
@@ -1929,17 +1954,19 @@ class TrainPilotViewModel : ViewModel() {
                     }
                 }
                 val loaded = withContext(Dispatchers.IO) {
-                    Triple(db.exerciseLibraryDao().getAllExercises(), db.programDao().getProgramsWithDays(),
+                    val rows = Triple(db.exerciseLibraryDao().getAllExercises(), db.programDao().getProgramsWithDays(),
                         com.repforge.app.NativeExerciseFavorites.load(db).toSet())
+                    rows to store.current().activeProgramId
                 }
                 ticket.requireCurrent(context)
-                val exercises = loaded.first.map(::mapExerciseEntity)
-                val programs = mapProgramRows(loaded.second.map { it.program }, loaded.second.flatMap { it.days },
-                    exercises.associateBy { it.id }, store.current().activeProgramId)
+                val rows = loaded.first
+                val exercises = rows.first.map(::mapExerciseEntity)
+                val programs = mapProgramRows(rows.second.map { it.program }, rows.second.flatMap { it.days },
+                    exercises.associateBy { it.id }, loaded.second)
                 _uiState.update { state ->
                     val editing = focus ?: state.editingProgramId
                     val missing = programs.none { it.id == editing }
-                    state.copy(exercises = exercises, programs = programs, favoriteExerciseIds = loaded.third,
+                    onCommitted(state.copy(exercises = exercises, programs = programs, favoriteExerciseIds = rows.third,
                         editingProgramId = if (missing) programs.firstOrNull()?.id.orEmpty() else editing,
                         programsTabCustomOnly = if (focus != null && focus != state.editingProgramId &&
                             programs.any { it.id == focus && it.isCustom }) true else state.programsTabCustomOnly,
@@ -1949,10 +1976,12 @@ class TrainPilotViewModel : ViewModel() {
                         currentSubScreen = if (missing && state.currentSubScreen == SubScreen.PROGRAM_EDITOR)
                             SubScreen.PROGRAMS_LIST else state.currentSubScreen,
                         expandedEditorExerciseId = null,
-                        statusBannerMessage = success)
+                        statusBannerMessage = success))
                 }
-            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
-            catch (error: Exception) {
+            } catch (error: Exception) {
+                // A closed Room database cancels its own query scope. Report that failure while
+                // preserving cancellation of this screen's actual mutation/lifecycle scope.
+                if (error is CancellationException) currentCoroutineContext().ensureActive()
                 val detail = error.message.orEmpty()
                 val message = when {
                     detail.contains("Deactivate", true) -> "Törlés előtt válassz másik aktív programot."
@@ -2281,59 +2310,24 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun createNewCustomProgram(nameHu: String, subtitleHu: String) {
-        if (_uiState.value.libraryMutationBusy) return
-        val cleanName = nameHu.trim().ifBlank { "Egyedi edzésterv" }
-        val cleanSub = subtitleHu.trim().ifBlank { "Saját összeállítású program" }
-        _uiState.update { state ->
-            val newId = "custom_prog_${System.currentTimeMillis()}"
-            val starterExercises = state.exercises.take(4)
-            val newProg = TrainingProgramModel(
-                id = newId,
-                nameHu = cleanName,
-                nameEn = cleanName,
-                subtitleHu = cleanSub,
-                subtitleEn = cleanSub,
-                tagsHu = listOf("Saját program", "Egyedi"),
-                isCustom = true,
-                isActive = true,
-                days = listOf(
-                    com.example.model.ProgramDayModel(
-                        id = "${newId}_dayA",
-                        dayCode = "A nap",
-                        titleHu = "A nap • $cleanName",
-                        titleEn = "Day A • $cleanName",
-                        durationMinutes = 45,
-                        exercises = starterExercises
-                    ),
-                    com.example.model.ProgramDayModel(
-                        id = "${newId}_dayB",
-                        dayCode = "B nap",
-                        titleHu = "B nap • $cleanName",
-                        titleEn = "Day B • $cleanName",
-                        durationMinutes = 45,
-                        exercises = state.exercises.drop(4).take(4)
-                    )
-                )
-            )
-            val updatedPrograms = listOf(newProg) + state.programs.map { it.copy(isActive = false) }
-            val back = (state.backStack + state.navigationRoute()).takeLast(16)
-            state.copy(
-                programs = updatedPrograms,
-                programsTabCustomOnly = true,
-                editingProgramId = newId,
-                editingDayIndex = 0,
-                currentSubScreen = SubScreen.PROGRAM_EDITOR,
-                backStack = back,
-                statusBannerMessage = tr(
-                    "Új egyedi program létrehozva: $cleanName",
-                    "New custom program created: $cleanName",
-                    "Neues eigenes Programm erstellt: $cleanName",
-                    "Program personalizat nou creat: $cleanName",
-                    state.language
-                )
-            )
+        val origin = _uiState.value
+        if (origin.libraryMutationBusy) return
+        val name = nameHu.trim().ifBlank { "Egyedi edzésterv" }
+        val description = subtitleHu.trim().ifBlank { "Saját összeállítású program" }
+        val starterA = origin.exercises.take(4).map { it.id }
+        val starterB = origin.exercises.drop(4).take(4).map { it.id }
+        mutateStudioLibrary(tr(
+            "Új egyedi program elmentve: $name", "Custom program saved: $name",
+            "Eigenes Programm gespeichert: $name", "Program personalizat salvat: $name"),
+            onCommitted = { updated ->
+                if (updated.currentTab != origin.currentTab || updated.currentSubScreen != origin.currentSubScreen) updated
+                else updated.copy(editingDayIndex = 0, currentSubScreen = SubScreen.PROGRAM_EDITOR,
+                    backStack = (updated.backStack + origin.navigationRoute()).takeLast(16))
+            }) { context, db, store ->
+            com.repforge.app.NativeCustomLibraryMutation.createProgram(context, db, store,
+                name, description, origin.language.name.lowercase(Locale.ROOT), starterA, starterB,
+                com.repforge.app.NativeDataReplacement.continuationForCurrentData(context))
         }
-        persistProgramsToRoomAsync()
     }
 
     fun toggleAddCustomExerciseDialog(show: Boolean) {
@@ -2413,98 +2407,66 @@ class TrainPilotViewModel : ViewModel() {
             targetRepsText = resolvedTargetRepsText
         )
 
-        _uiState.update { state ->
-            val updatedExercises = listOf(newExercise) + state.exercises
-            val updatedPrograms = if (addToCurrentProgramDay) {
-                state.programs.map { prog ->
-                    if (prog.id != state.editingProgramId) prog
-                    else {
-                        val updatedDays = prog.days.mapIndexed { idx, day ->
-                            if (idx != state.editingDayIndex) day
-                            else day.copy(exercises = day.exercises + newExercise)
-                        }
-                        prog.copy(days = updatedDays)
-                    }
-                }
-            } else {
-                state.programs
-            }
-            state.copy(
-                exercises = updatedExercises,
-                programs = updatedPrograms,
-                selectedExerciseId = newExercise.id,
-                showAddCustomExerciseDialog = false,
-                statusBannerMessage = if (addToCurrentProgramDay) {
-                    tr(
-                        "Új gyakorlat elmentve a Room adatbázisba és hozzáadva a programhoz: $cleanName",
-                        "New exercise saved to Room database and added to program: $cleanName",
-                        "Neue Übung in Room-Datenbank gespeichert und zum Programm hinzugefügt: $cleanName",
-                        "Exercițiu nou salvat în baza de date Room și adăugat în program: $cleanName",
-                        state.language
-                    )
-                } else {
-                    tr(
-                        "Új egyedi gyakorlat elmentve a Room adatbázisba: $cleanName",
-                        "New custom exercise saved to Room database: $cleanName",
-                        "Neue eigene Übung in Room-Datenbank gespeichert: $cleanName",
-                        "Exercițiu personalizat nou salvat în baza de date Room: $cleanName",
-                        state.language
-                    )
-                }
-            )
-        }
+        val origin = _uiState.value
+        val targetProgram = origin.editingProgramId.takeIf { addToCurrentProgramDay }
+        val targetDay = if (addToCurrentProgramDay) origin.programs.firstOrNull { it.id == targetProgram }
+            ?.days?.getOrNull(origin.editingDayIndex)?.id else null
 
-        // Persist custom exercise into Room ExerciseLibraryDao
-        val db = nativeDatabase
-        val scope = nativeScope
-        if (db != null && scope != null) {
-            val primaryKey = when (resolvedCategory) {
-                ExerciseCategory.CHEST -> "chest"
-                ExerciseCategory.BACK -> "back"
-                ExerciseCategory.SHOULDERS -> "shoulders"
-                ExerciseCategory.ARMS -> "arms"
-                ExerciseCategory.LEGS -> "legs"
-                ExerciseCategory.CORE, ExerciseCategory.ALL -> "core"
-            }
-            val rawJson = JSONObject().apply {
-                put("id", newExercise.id)
-                put("nameHu", cleanName)
-                put("equipment", cleanEquip)
-                put("target", resolvedCategory.labelHu)
-                put("videoUrl", cleanVideoUrl)
-                put("custom", true)
-            }
-            val entity = ExerciseLibraryEntity(
-                id = newExercise.id,
-                nameHu = cleanName,
-                nameEn = cleanName,
-                nameDe = cleanName,
-                nameRo = cleanName,
-                loadType = resolvedLoadType,
-                repUnit = resolvedRepUnit,
-                measurementType = resolvedMeasurementType,
-                defaultSets = newExercise.defaultSets,
-                defaultReps = resolvedTargetRepsText,
-                defaultWeight = newExercise.defaultWeightKg.toDouble(),
-                defaultRestSeconds = newExercise.defaultRestSec,
-                primaryMuscle = primaryKey,
-                muscleGroupsJson = JSONArray().put(primaryKey).toString(),
-                notesHu = cleanDesc,
-                notesEn = cleanDesc,
-                notesDe = cleanDesc,
-                notesRo = cleanDesc,
-                videoUrl = cleanVideoUrl.ifBlank { null },
-                videoProvider = if (cleanVideoUrl.isNotBlank()) "custom" else null,
-                custom = true,
-                setRir229 = true,
-                rawJson = rawJson.toString()
-            )
-            scope.launch(Dispatchers.IO) {
-                runCatching { db.exerciseLibraryDao().upsertExercise(entity) }
-            }
+        val primaryKey = when (resolvedCategory) {
+            ExerciseCategory.CHEST -> "chest"
+            ExerciseCategory.BACK -> "back"
+            ExerciseCategory.SHOULDERS -> "shoulders"
+            ExerciseCategory.ARMS -> "arms"
+            ExerciseCategory.LEGS -> "legs"
+            ExerciseCategory.CORE, ExerciseCategory.ALL -> "core"
         }
-        if (addToCurrentProgramDay) {
-            persistProgramsToRoomAsync()
+        val rawJson = JSONObject().apply {
+            put("id", newExercise.id)
+            put("nameHu", cleanName)
+            put("equipment", cleanEquip)
+            put("target", resolvedCategory.labelHu)
+            put("videoUrl", cleanVideoUrl)
+            put("custom", true)
+        }
+        val entity = ExerciseLibraryEntity(
+            id = newExercise.id,
+            nameHu = cleanName,
+            nameEn = cleanName,
+            nameDe = cleanName,
+            nameRo = cleanName,
+            loadType = resolvedLoadType,
+            repUnit = resolvedRepUnit,
+            measurementType = resolvedMeasurementType,
+            defaultSets = newExercise.defaultSets,
+            defaultReps = resolvedTargetRepsText,
+            defaultWeight = newExercise.defaultWeightKg.toDouble(),
+            defaultRestSeconds = newExercise.defaultRestSec,
+            primaryMuscle = primaryKey,
+            muscleGroupsJson = JSONArray().put(primaryKey).toString(),
+            notesHu = cleanDesc,
+            notesEn = cleanDesc,
+            notesDe = cleanDesc,
+            notesRo = cleanDesc,
+            videoUrl = cleanVideoUrl.ifBlank { null },
+            videoProvider = if (cleanVideoUrl.isNotBlank()) "custom" else null,
+            custom = true,
+            setRir229 = true,
+            rawJson = rawJson.toString()
+        )
+        mutateStudioLibrary(tr(
+            if (addToCurrentProgramDay) "Új gyakorlat elmentve és hozzáadva a programhoz: $cleanName" else "Új gyakorlat elmentve: $cleanName",
+            if (addToCurrentProgramDay) "Exercise saved and added to program: $cleanName" else "Exercise saved: $cleanName",
+            if (addToCurrentProgramDay) "Übung gespeichert und zum Programm hinzugefügt: $cleanName" else "Übung gespeichert: $cleanName",
+            if (addToCurrentProgramDay) "Exercițiu salvat și adăugat în program: $cleanName" else "Exercițiu salvat: $cleanName"),
+            onCommitted = { updated -> updated.copy(showAddCustomExerciseDialog = false,
+                selectedExerciseId = if (updated.isWorkoutSessionActive) updated.selectedExerciseId else entity.id) }
+        ) { context, db, _ ->
+            check(!addToCurrentProgramDay || (!targetProgram.isNullOrBlank() && targetDay != null)) {
+                "Program day changed; reopen editor"
+            }
+            com.repforge.app.NativeCustomLibraryMutation.addExercise(context, db, entity,
+                targetProgram, targetDay, origin.language.name.lowercase(Locale.ROOT),
+                com.repforge.app.NativeDataReplacement.continuationForCurrentData(context))
         }
     }
 
@@ -3080,7 +3042,9 @@ class TrainPilotViewModel : ViewModel() {
         daysPerWeek: Int,
         durationMin: Int,
         excludedMuscles: Set<String>,
-        excludedExercises: Set<String>
+        excludedExercises: Set<String>,
+        completeOnboarding: Boolean = false,
+        onSaveResult: ((Boolean) -> Unit)? = null
     ) {
         val (selectedGear, includeBodyweight) = parseEquipmentSelectionToGearKeys(equipmentHu)
         val perDayCapacity = com.repforge.app.NativePlannerPolicy.capacity(durationMin).coerceIn(4, 7)
@@ -3213,7 +3177,6 @@ class TrainPilotViewModel : ViewModel() {
                 userExcludedExercisesHu = excludedExercises,
                 programs = updatedPrograms,
                 editingProgramId = generatedProgramId,
-                showPersonalPlannerModal = false,
                 statusBannerMessage = tr(
                     "Profil és terv mentése…",
                     "Saving profile and plan…",
@@ -3229,7 +3192,8 @@ class TrainPilotViewModel : ViewModel() {
             .put("gear", JSONArray(equipmentHu.split(',').map(String::trim).filter(String::isNotBlank)))
             .put("daysPerWeek", daysPerWeek).put("minutes", durationMin)
             .put("avoidAreas", JSONArray(excludedMuscles.toList()))
-            .put("excluded", JSONArray(excludedExercises.toList())))
+            .put("excluded", JSONArray(excludedExercises.toList())),
+            completeOnboarding = completeOnboarding, onSaveResult = onSaveResult)
     }
 
     fun undoLastCompletedSet() {
@@ -3718,6 +3682,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun switchCurrentActiveExercise(exercise: ExerciseItem) {
+        if (!canEditActiveSets()) return
         try {
             val state = _uiState.value
             if (state.activeWorkoutExercises.any { it.id == exercise.id }) {
@@ -3763,75 +3728,38 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    fun nextActiveExercise() {
-        val state = _uiState.value
-        val workoutExs = state.activeWorkoutExercises.ifEmpty { state.exercises.take(6) }
-        val currentEx = workoutExs.getOrNull(state.activeExerciseIndex)
-        val updatedSetsMap = state.activeSetsByExerciseId.toMutableMap()
-        if (currentEx != null) {
-            updatedSetsMap[currentEx.id] = state.activeSets
-        }
+    fun nextActiveExercise() = stepActiveExercise(1)
 
-        if (state.activeExerciseIndex + 1 < workoutExs.size) {
-            val nextIdx = state.activeExerciseIndex + 1
-            val nextEx = workoutExs[nextIdx]
-            val nextSets = updatedSetsMap[nextEx.id] ?: buildDefaultSetsForExercise(nextEx)
-            updatedSetsMap[nextEx.id] = nextSets
-            val targetSub = targetSubScreenForExercise(nextEx)
-            _uiState.update {
-                it.copy(
-                    activeWorkoutExercises = workoutExs,
-                    activeExerciseIndex = nextIdx,
-                    selectedExerciseId = nextEx.id,
-                    activeSets = nextSets,
-                    activeSetsByExerciseId = updatedSetsMap,
-                    timedCurrentSec = 0,
-                    currentSubScreen = targetSub,
-                    activeWorkoutSubScreen = targetSub,
-                    statusBannerMessage = null
-                )
-            }
-            persistCanonicalActiveSessionAsync()
-        } else {
-            _uiState.update {
-                it.copy(
-                    activeSetsByExerciseId = updatedSetsMap,
-                    currentSubScreen = SubScreen.WORKOUT_SUMMARY,
-                    statusBannerMessage = "Minden gyakorlat áttekintve (${workoutExs.size}/${workoutExs.size})! Összegzés."
-                )
-            }
-            persistCanonicalActiveSessionAsync()
-        }
-    }
+    fun previousActiveExercise() = stepActiveExercise(-1)
 
-    fun previousActiveExercise() {
-        val state = _uiState.value
-        val workoutExs = state.activeWorkoutExercises.ifEmpty { state.exercises.take(6) }
-        val currentEx = workoutExs.getOrNull(state.activeExerciseIndex)
-        val updatedSetsMap = state.activeSetsByExerciseId.toMutableMap()
-        if (currentEx != null) {
-            updatedSetsMap[currentEx.id] = state.activeSets
-        }
-
-        if (state.activeExerciseIndex > 0) {
-            val prevIdx = state.activeExerciseIndex - 1
-            val prevEx = workoutExs[prevIdx]
-            val prevSets = updatedSetsMap[prevEx.id] ?: buildDefaultSetsForExercise(prevEx)
-            val targetSub = targetSubScreenForExercise(prevEx)
-            _uiState.update {
-                it.copy(
-                    activeExerciseIndex = prevIdx,
-                    selectedExerciseId = prevEx.id,
-                    activeSets = prevSets,
-                    activeSetsByExerciseId = updatedSetsMap,
-                    currentSubScreen = targetSub,
-                    activeWorkoutSubScreen = targetSub,
-                    statusBannerMessage = null
-                )
+    /** Navigation selects an existing durable row; it never rebuilds a workout from UI defaults. */
+    private fun stepActiveExercise(offset: Int) {
+        if (!canEditActiveSets() || _uiState.value.activeWorkoutExercises.isEmpty()) return
+        val context = nativeContext ?: return
+        try {
+            val state = _uiState.value
+            val frame = com.repforge.app.NativeWorkoutEditing.project(context)
+            check(frame.getString("workoutId") == state.activeWorkoutId &&
+                frame.getLong("generation") == state.activeWorkoutGeneration) { "Az edzés időközben megváltozott." }
+            val rows = frame.getJSONArray("exercises")
+            val currentIndex = frame.getInt("currentExercise")
+            check(currentIndex in 0 until rows.length()) { "Az aktuális gyakorlat nem található." }
+            val targetIndex = currentIndex + offset
+            if (targetIndex !in 0 until rows.length()) {
+                // The common navigation path pauses the native measurement before showing its summary.
+                if (offset > 0) navigateToSubScreen(SubScreen.WORKOUT_SUMMARY) else navigateBack()
+                return
             }
-            persistCanonicalActiveSessionAsync()
-        } else {
-            navigateBack()
+            val exercise = rows.getJSONObject(targetIndex)
+            val setId = exercise.getJSONArray("sets").getJSONObject(0).getString("setId")
+            com.repforge.app.NativeWorkoutEditing.selectExercise(context,
+                com.repforge.app.NativeWorkoutTarget(frame.getString("workoutId"), frame.getLong("generation"),
+                    exercise.getString("id"), setId))
+            // snapshotFlow projects the committed selection, preserving all recorded values and IDs.
+        } catch (error: Exception) {
+            _uiState.update { it.copy(statusBannerMessage = error.message ?: tr(
+                "A gyakorlat nem választható ki.", "Could not select the exercise.",
+                "Die Übung konnte nicht ausgewählt werden.", "Exercițiul nu a putut fi selectat.")) }
         }
     }
 

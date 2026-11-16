@@ -31,14 +31,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.repforge.app.R
 import com.repforge.app.data.store.TrainPilotUserSettings
-import com.repforge.app.ui.settings.TrainingProfileDialog
 import com.repforge.app.ui.text.nativeResources
 import com.repforge.app.ui.theme.LocalTrainPilotColors
 
 /**
- * The only first-launch surface. Existing Settings profile dialog performs field
- * editing and the canonical NativeTrainingProfile validator performs saving.
- * No training, program generation, backup or workout state is changed here.
+ * First-launch welcome and resume surface. Profile editing is supplied by the
+ * same Studio planner used from Home; this surface does not own a second editor.
  */
 @Composable
 internal fun NativeOnboardingScreen(
@@ -48,13 +46,13 @@ internal fun NativeOnboardingScreen(
     failed: Boolean,
     onBegin: () -> Unit,
     onSkip: () -> Unit,
-    onProfileSave: (Map<String, String>) -> Unit,
+    profileEditor: @Composable (onDismiss: () -> Unit) -> Unit,
     onBack: () -> Unit
 ) {
     val colors = LocalTrainPilotColors.current
     val context = LocalContext.current
     val strings = remember(context, settings.language) { nativeResources(context, settings.language) }
-    var profileOpen by remember(destination, settings.profileJson) { mutableStateOf(false) }
+    var profileOpen by remember(destination) { mutableStateOf(false) }
 
     BackHandler {
         when {
@@ -111,10 +109,6 @@ internal fun NativeOnboardingScreen(
     }
 
     if (profileOpen) {
-        TrainingProfileDialog(
-            profileJson = settings.profileJson, language = settings.language,
-            saving = saving, failed = failed,
-            onSave = onProfileSave, onDismiss = { if (!saving) profileOpen = false }
-        )
+        profileEditor { if (!saving) profileOpen = false }
     }
 }

@@ -331,6 +331,10 @@ internal object WearCommandReceipts {
                 }
             }
         }
+        if ("completeMeasuredSet" == command.optString("action") && receipt.optString("status") == "error") {
+            val active = ActiveWorkoutStore.current(context)
+            if (active != null && active.optString("workoutId") == receipt.optString("workoutId")) receipt.put("recordFrame250", active)
+        }
         val map = PutDataMapRequest.create(PREFIX + id)
         map.dataMap.putString("receipt", receipt.toString())
         Wearable.getDataClient(context).putDataItem(map.asPutDataRequest().setUrgent())

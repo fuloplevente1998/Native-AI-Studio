@@ -1,0 +1,61 @@
+{
+  "source": "23db67c149a204dd9864cf386ce5b8d110a0165b",
+  "run": 43814942285,
+  "url": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43814942285",
+  "conclusion": "success",
+  "artifactId": 14202467160,
+  "artifactDigest": "sha256:310b36475d7f3310c201e163ef88e2e3185e223e9205aa86db6536c71dbd4879",
+  "artifactDigestVerified": true,
+  "rawXml": {
+    "app": {
+      "files": 100,
+      "tests": 521,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "wear": {
+      "files": 35,
+      "tests": 189,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "files": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "total": {
+    "tests": 710,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sharedNoSource": true,
+  "profileCases": {
+    "com.example.FirstRunPlannerRegressionTest": [
+      "unavailablePersistenceShowsErrorAndKeepsFirstRunIncomplete",
+      "continueUsesApprovedPlannerAndCommitsProfileAndPlanBeforeHome",
+      "interruptedFirstRunResumesIntoTheSamePlannerWithPersistedProfileValues",
+      "closingPlannerDoesNotCompleteOnboardingOrPersistUnconfirmedFields"
+    ],
+    "com.example.FullHeightProfileCustomRegressionTest": [
+      "plannerCloseCancelsWithoutSaving",
+      "plannerKeepsFooterVisibleAndSavesSelectedValues",
+      "customExercisePassesEmptyNameToExistingSaveHandler",
+      "customExerciseCancelDoesNotSave",
+      "customExercisePreservesInputsAndDefaultsWhenSaved",
+      "plannerBlocksDuplicateSaveAndDismissOnlyWhileSaving"
+    ],
+    "com.example.NativeFirstLaunchGateRegressionTest": [
+      "migratedUserDoesNotReceiveFreshInstallOnboarding",
+      "firstRunShowsWelcomeAndOnlyACommittedSkipOpensHome"
+    ]
+  },
+  "physicalAcceptance": false,
+  "newApkOrAab": false
+}

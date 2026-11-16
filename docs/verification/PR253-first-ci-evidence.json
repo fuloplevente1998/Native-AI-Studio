@@ -1,0 +1,68 @@
+{
+  "source": "0b7a426312c72e7ad31da0e43349be15bc9d7a1b",
+  "run": 43881467244,
+  "url": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43881467244",
+  "conclusion": "failure",
+  "artifactId": 14233158298,
+  "artifactDigest": "sha256:819de67e2caa83be69d03145f742f2fde127b7fad8b850797b9a5c5435ca5c5b",
+  "artifactDigestVerified": true,
+  "rawReport": {
+    "commit": "0b7a426312c72e7ad31da0e43349be15bc9d7a1b",
+    "modules": {
+      "phone": {
+        "files": 105,
+        "tests": 557,
+        "failures": 4,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "wear": {
+        "files": 36,
+        "tests": 198,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "shared": {
+        "files": 0,
+        "tests": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": true
+      }
+    },
+    "total": {
+      "tests": 755,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "failedCases": [
+    {
+      "class": "com.example.AuditActiveExerciseNavigationRegressionTest",
+      "name": "pendingHandoffAndSavingRejectNextAndPrevious",
+      "message": "java.lang.AssertionError: expected:<0> but was:<1>"
+    },
+    {
+      "class": "com.example.AuditCustomLibraryViewModelRegressionTest",
+      "name": "createProgramAppearsOnlyAfterCommitAndReload",
+      "message": "java.util.NoSuchElementException: Collection contains no element matching the predicate."
+    },
+    {
+      "class": "com.example.AuditCustomLibraryViewModelRegressionTest",
+      "name": "exerciseIsCommittedToSelectedDayAndSurvivesReload",
+      "message": "java.lang.AssertionError"
+    },
+    {
+      "class": "com.example.AuditCustomLibraryViewModelRegressionTest",
+      "name": "closedDatabaseKeepsDialogAndCatalogVisible",
+      "message": "java.lang.AssertionError: Expected an error banner, got: null"
+    }
+  ],
+  "physicalAcceptance": false,
+  "newApkOrAab": false
+}

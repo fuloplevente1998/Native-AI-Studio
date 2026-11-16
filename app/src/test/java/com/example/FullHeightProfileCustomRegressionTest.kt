@@ -3,6 +3,7 @@ package com.example
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.mutableStateOf
 import com.example.model.ExerciseCategory
 import com.example.ui.components.PersonalPlannerModalDialog
 import com.example.ui.screens.AddCustomExerciseModalDialog
@@ -61,6 +62,25 @@ class FullHeightProfileCustomRegressionTest {
         } }
         compose.onNodeWithTag("planner_skip_btn").performClick()
         compose.runOnIdle { assertEquals(0, saves); assertEquals(1, dismissals) }
+    }
+
+    @Test fun plannerBlocksDuplicateSaveAndDismissOnlyWhileSaving() {
+        val saving = mutableStateOf(true)
+        var saves = 0
+        var dismissals = 0
+        compose.setContent { TrainPilotTheme {
+            PersonalPlannerModalDialog(saving = saving.value,
+                onSaveAndOpenPlan = { _, _, _, _, _, _, _, _, _, _ -> saves++ },
+                onDismiss = { dismissals++ })
+        } }
+        compose.onNodeWithTag("planner_save_button").assertIsNotEnabled().performClick()
+        compose.onNodeWithTag("planner_skip_btn").assertIsNotEnabled().performClick()
+        compose.onNodeWithText("Mégse").assertIsNotEnabled().performClick()
+        compose.runOnIdle { assertEquals(0, saves); assertEquals(0, dismissals); saving.value = false }
+        compose.onNodeWithTag("planner_save_button").assertIsEnabled().performClick()
+        compose.runOnIdle { assertEquals(1, saves) }
+        compose.onNodeWithTag("planner_skip_btn").assertIsEnabled().performClick()
+        compose.runOnIdle { assertEquals(1, dismissals) }
     }
 
     @Test fun customExercisePreservesInputsAndDefaultsWhenSaved() {

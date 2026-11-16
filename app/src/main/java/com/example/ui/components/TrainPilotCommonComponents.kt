@@ -444,7 +444,8 @@ fun TrainPilotRedCloseButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     size: androidx.compose.ui.unit.Dp = 38.dp,
-    testTag: String = ""
+    testTag: String = "",
+    enabled: Boolean = true
 ) {
     val strings = LocalTrainPilotStrings.current
     val palette = LocalTrainPilotPalette.current
@@ -453,7 +454,7 @@ fun TrainPilotRedCloseButton(
     val iconColor = com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeForeground
     // The painted control shrinks ~10%; its independent hit target remains 48 dp.
     Box(modifier = modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-        .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
+        .clickable(enabled = enabled, interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
         .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier), contentAlignment = Alignment.Center) {
         Surface(shape = RoundedCornerShape(11.dp), color = lerp(
             com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeBackground,
@@ -1222,7 +1223,9 @@ fun PersonalPlannerModalDialog(
         excludedMuscles: Set<String>,
         excludedExercises: Set<String>
     ) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    saving: Boolean = false,
+    failed: Boolean = false
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
@@ -1485,6 +1488,7 @@ fun PersonalPlannerModalDialog(
 
     TrainPilotFullHeightFormSheet(
         onDismiss = onDismiss,
+        dismissEnabled = !saving,
         title = tr(lang, "Profil és új terv", "Profile and new plan", "Profil und neuer Plan", "Profil și plan nou"),
         closeTestTag = "planner_skip_btn",
         content = {
@@ -2033,7 +2037,16 @@ fun PersonalPlannerModalDialog(
             }
         },
         confirmButton = {
+            if (failed) Text(
+                tr(lang, "A terv/profil mentése nem sikerült. Próbáld újra.",
+                    "Failed to save plan/profile. Please try again.",
+                    "Speichern von Plan/Profil fehlgeschlagen. Bitte erneut versuchen.",
+                    "Salvarea planului/profilului a eșuat. Încearcă din nou."),
+                color = com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeForeground,
+                modifier = Modifier.testTag("planner_save_error")
+            )
             com.repforge.app.ui.theme.TrainPilotSaveButton(
+                enabled = !saving,
                 onClick = {
                     onSaveAndOpenPlan(
                         heightCm,
@@ -2050,7 +2063,7 @@ fun PersonalPlannerModalDialog(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 48.dp),
+                    .heightIn(min = 48.dp).testTag("planner_save_button"),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(

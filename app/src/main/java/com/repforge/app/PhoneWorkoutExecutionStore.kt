@@ -373,8 +373,10 @@ internal class PhoneWorkoutExecutionStore(context: Context) :
             }
             val frame = current(db) ?: return rejected("noExecution")
             val next: JSONObject
+            val recordingBase: JSONObject
             try {
-                next = PhoneWorkoutRecording.record(frame, command)
+                recordingBase = PhoneWorkoutRecording.recordingBase(frame, command)
+                next = PhoneWorkoutRecording.record(recordingBase, command)
                 finishManual(next, command, SystemClock.elapsedRealtime())
                 val transition = PhoneWorkoutPlans.afterRecord(next, next.getInt("currentExercise"))
                 if (transition != null) next.put("transition", transition)
@@ -385,7 +387,8 @@ internal class PhoneWorkoutExecutionStore(context: Context) :
             } catch (invalid: Exception) {
                 return rejected(if (invalid is JSONException) "invalidCommand" else invalid.message ?: "invalidCommand")
             }
-            next.put("lastRecord188", WorkoutUndo188.capture(frame, next, command, id))
+            next.remove("wearEditRevision250")
+            next.put("lastRecord188", WorkoutUndo188.capture(recordingBase, next, command, id))
             val target = PhoneWorkoutRecording.target(frame, command)
             val values = PhoneWorkoutRecording.recordedValues(next, command)
             val result = JSONObject()

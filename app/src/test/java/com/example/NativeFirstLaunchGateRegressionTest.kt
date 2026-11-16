@@ -48,7 +48,7 @@ class NativeFirstLaunchGateRegressionTest {
             assertEquals("welcome", store.current().onboarding128)
         }
         compose.setContent { TrainPilotTheme {
-            NativeFirstLaunchGate { Text("Home",Modifier.testTag("gated_home")) }
+            NativeFirstLaunchGate(com.example.ui.viewmodel.TrainPilotViewModel()) { Text("Home",Modifier.testTag("gated_home")) }
         } }
         awaitTag("onboarding_welcome")
         compose.onNodeWithTag("gated_home").assertDoesNotExist()
@@ -66,7 +66,7 @@ class NativeFirstLaunchGateRegressionTest {
             assertEquals("complete", store.current().onboarding128)
         }
         compose.setContent { TrainPilotTheme {
-            NativeFirstLaunchGate { Text("Home",Modifier.testTag("gated_home")) }
+            NativeFirstLaunchGate(com.example.ui.viewmodel.TrainPilotViewModel()) { Text("Home",Modifier.testTag("gated_home")) }
         } }
         awaitTag("gated_home")
         compose.onNodeWithTag("onboarding_welcome").assertDoesNotExist()

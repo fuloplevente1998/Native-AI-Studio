@@ -1,0 +1,105 @@
+{
+  "source": "2b4d968f953364d5fb0e21434230e08de92a8dee",
+  "run": 43938232095,
+  "url": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/43938232095",
+  "artifactDigest": "sha256:087bb72c3b6799da2a6ef25a1c1d5f5b94f97b526e1bf5dcb6c80c6871fbfaaf",
+  "artifactDigestVerified": true,
+  "rawXml": {
+    "phone": {
+      "files": 105,
+      "tests": 558,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "wear": {
+      "files": 36,
+      "tests": 198,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "files": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "total": {
+    "tests": 756,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sharedNoSource": true,
+  "newRegressionCases": {
+    "com.example.AuditActiveExerciseNavigationRegressionTest": [
+      "suspendedNativeCommandsRejectNavigationBeforeUiOwnershipChanges",
+      "pendingHandoffAndSavingRejectNextAndPrevious",
+      "noSessionOrEmptyWorkoutCannotFabricateSelectionFromCatalog",
+      "lastRunningBilateralMeasurementPausesBeforeSummary",
+      "watchOwnerRejectsNextAndPrevious",
+      "lastRunningTimedMeasurementPausesBeforeSummary",
+      "nextAndPreviousSelectExistingRowsAndPreserveRecordedValues"
+    ],
+    "com.example.AuditActiveExerciseNavigationUiTest": [
+      "timedNavigationRespectsOwnershipPendingAndSaving",
+      "strengthNavigationRespectsOwnershipPendingAndSaving",
+      "bilateralNavigationRespectsOwnershipPendingAndSaving"
+    ],
+    "com.example.AuditCustomLibraryMutationRegressionTest": [
+      "invalidExistingEntryRollsBackExerciseInsertedEarlierInTransaction",
+      "createdProgramPersistsBothDaysAndActivatesAfterSave",
+      "staleDatasetCannotWrite",
+      "addsRowAndLinkWithoutChangingInlinePrescription",
+      "missingProgramOrDayRollsBackExercise"
+    ],
+    "com.example.AuditCustomLibraryViewModelRegressionTest": [
+      "standaloneExerciseDoesNotChangeProgram",
+      "createProgramAppearsOnlyAfterCommitAndReload",
+      "exerciseIsCommittedToSelectedDayAndSurvivesReload",
+      "unavailableDatabaseDoesNotPublishSuccess",
+      "cancelledCallerCannotCommitAQueuedMutationOrPublishAnError",
+      "closedDatabaseKeepsDialogAndCatalogVisible"
+    ],
+    "com.example.AuditPhoneOwnedBilateralUndoRegressionTest": [
+      "legacyBilateralCompletionUsesTheSameJournalAndReplayRemainsStableAfterUndo",
+      "finalizationRejectsNewMeasuredEventsEvenWhenTheExecutionFrameIsStillActive",
+      "missingMeasuredInputAndStaleCompletionProduceErrorReceiptsThroughTheRealRouter",
+      "productionWearCommandRecordsMeasuredSidesAndDurableTargetedUndoInManualWorkout",
+      "undoCanArriveFirstAndDuplicatesCannotResurrectAnUndoneSet",
+      "undoRequiresTheRecordedIdentityUnchangedGuardAndMatchingPauseAndGeneration",
+      "ordinaryPhoneMeasuredCasStillRejectsDifferentMeasuredValues",
+      "pausedRestoreKeepsMeasuredCommandRetryable",
+      "revisionBridgeStillRejectsInvalidMeasurementsAnotherTargetAndAnotherSource",
+      "partialWatchEditThenUndoThenOkDefersUntilTheMatchingMeasuredEventIsDurable",
+      "fullWearOkCanOvertakeRemainingEditsInItsOwnUnbrokenRevisionChain",
+      "restoreIsRetryableAndRunningPhoneStopwatchCannotBeReplacedByWearValues",
+      "interveningPhoneValueEditInvalidatesTheEntireWatchRevisionBridge",
+      "rejectedCompletionAlsoTerminatesAnInverseDeliveredFirst",
+      "invalidSidesStaleTargetRevisionPauseGenerationAndEpochCannotRecord",
+      "earlierSameWatchEditsCanBridgeOnlyTheirOwnUnchangedMeasuredRevision"
+    ],
+    "com.repforge.app.wear.WearBilateralUndoCommandTest": [
+      "productionCompletionBuildsMeasuredTransportAndCaptureRoutesUndoToNativeEngine",
+      "lateFailureCannotReplaceANewerPhoneSelectionWithTheSameSetGuard",
+      "legacyFalseNativeMarkerStillUsesDurablePhoneUndoAndRejectedReceiptReconciles",
+      "actualWearUndoPersistsInverseAndRecoversItsCommandUntilAppliedReceipt",
+      "lateFailureCannotEraseALaterLocalSelectionEvenWhenExecutionRevisionIsUnchanged",
+      "measuredCompletionIsDurableTrackedAndOnlyItsMatchingReceiptSettlesIt",
+      "canonicalSideAliasesAndMissingPayloadUseTheMeasuredBoundaryWithoutThrowing",
+      "failedCompletionNeverErasesALaterLocalEdit",
+      "failedCompletionCorrectsUntouchedOptimismAndRecoveryReplaysItsDurableReceipt"
+    ]
+  },
+  "failedCases": [],
+  "physicalAcceptance": false,
+  "newApkOrAab": false,
+  "conclusion": "success",
+  "artifactId": 14262493005,
+  "mainBase": "17ecad078a767162f0be303954a7b65e97caa38d",
+  "includesFirstRunPR": 248,
+  "includesReviewedAuditPR": 249
+}
