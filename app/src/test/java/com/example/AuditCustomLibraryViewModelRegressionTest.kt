@@ -87,6 +87,17 @@ class AuditCustomLibraryViewModelRegressionTest {
         assertTrue("Expected an error banner, got: $message",
             listOf("nem sikerült", "nem menthető", "hiba", "nem elérhető").any { it in text })
     }
+    private fun awaitMutation(vm: TrainPilotViewModel) {
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30)
+        while (vm.uiState.value.libraryMutationBusy || vm.uiState.value.statusBannerMessage == null) {
+            shadowOf(Looper.getMainLooper()).idle()
+            check(System.nanoTime() < deadline) {
+                "Mutation did not report an outcome: busy=${vm.uiState.value.libraryMutationBusy}, " +
+                    "banner=${vm.uiState.value.statusBannerMessage}, scopeActive=${parent.isActive}"
+            }
+            Thread.sleep(5)
+        }
+    }
 
     @Test fun exerciseIsCommittedToSelectedDayAndSurvivesReload() {
         val vm = model()
@@ -96,7 +107,7 @@ class AuditCustomLibraryViewModelRegressionTest {
         add(vm, "Audit linked exercise", true)
         assertEquals(before, vm.uiState.value.exercises)
         assertTrue(vm.uiState.value.showAddCustomExerciseDialog)
-        await { !vm.uiState.value.libraryMutationBusy }
+        awaitMutation(vm)
         assertFalse(vm.uiState.value.showAddCustomExerciseDialog)
         val id = vm.uiState.value.exercises.single { it.nameHu == "Audit linked exercise" }.id
         assertEquals(id, vm.uiState.value.selectedExerciseId)
@@ -113,7 +124,7 @@ class AuditCustomLibraryViewModelRegressionTest {
         vm.openProgramEditor("audit-program", 0)
         val before = native { db.programDao().getProgramWithDaysById("audit-program")!! }
         add(vm, "Audit standalone exercise", false)
-        await { !vm.uiState.value.libraryMutationBusy }
+        awaitMutation(vm)
         assertTrue(vm.uiState.value.exercises.any { it.nameHu == "Audit standalone exercise" })
         assertEquals(before, native { db.programDao().getProgramWithDaysById("audit-program")!! })
     }
@@ -123,7 +134,7 @@ class AuditCustomLibraryViewModelRegressionTest {
         val before = vm.uiState.value.programs
         vm.createNewCustomProgram("Audit created program", "Description")
         assertEquals(before, vm.uiState.value.programs)
-        await { !vm.uiState.value.libraryMutationBusy }
+        awaitMutation(vm)
         val created = vm.uiState.value.programs.single { it.nameHu == "Audit created program" }
         val saved = native { db.programDao().getProgramWithDaysById(created.id)!! }
         assertEquals(listOf("A", "B"), saved.days.sortedBy { it.sortOrder }.map { it.dayId })
@@ -137,13 +148,14 @@ class AuditCustomLibraryViewModelRegressionTest {
         val before = vm.uiState.value
         db.close()
         add(vm, "Cannot save exercise", false)
-        await { !vm.uiState.value.libraryMutationBusy }
+        awaitMutation(vm)
         assertTrue(vm.uiState.value.showAddCustomExerciseDialog)
         assertEquals(before.exercises, vm.uiState.value.exercises)
         assertEquals(before.programs, vm.uiState.value.programs)
         assertFailure(vm.uiState.value.statusBannerMessage)
+        vm.clearBannerMessage()
         vm.createNewCustomProgram("Cannot save program", "Description")
-        await { !vm.uiState.value.libraryMutationBusy }
+        awaitMutation(vm)
         assertEquals(before.programs, vm.uiState.value.programs)
         assertEquals(before.editingProgramId, vm.uiState.value.editingProgramId)
         assertFailure(vm.uiState.value.statusBannerMessage)
