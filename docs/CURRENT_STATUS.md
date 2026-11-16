@@ -1,25 +1,23 @@
-# P1 auditjavítás — ellenőrzött draft PR253, 2026-11-16
+# TrainPilot 2764 · 1.1-beta — main, APK+AAB páros átadva, 2026-11-16
 
-Ág `fix/audit-p1`, main alap `17ecad0`; draft PR253. #250: telefon-tulajdonú
-kétoldali órás kész/Undo tartós natív eseményekkel és védett nyugtával;
-#251: natív léptetés ownership/admission védelemmel, utolsó mérés szüneteltetése;
-#252: tartós egyedi gyakorlat/program mentés és helyes hibajelzés.
-A csomag PR248 elsőindítás-javítását és PR249 helyesbített auditját is tartalmazza.
-Az eredeti PR-ek és issue-k nyitva maradtak; nem történt main-merge.
+Felhasználói jóváhagyással PR253 mainen; a benne foglalt PR248/249 is mergelt.
+Signed forrás `80306fdf78802ecdbba3a38168a0b914607f693a`.
+CI43940583135 SUCCESS, build_aab=true; telefon276400/Wear276402, 1.1-beta.
+Teljes regresszió: telefon105 XML/558 teszt + Wear36/198 =756,
+0failure/error/skipped; shared NO-SOURCE. Három ZIP-digest, négy tényleges
+manifest/verzió/hash és tartós signer ellenőrizve; AAB JAR-aláírás helyben is
+igazolt. Telefon és Wear release R8/shrink. Részletek: releases/2764-changes.md,
+bizonyíték releases/2764-verified-artifacts.json.
 
-Teljes CI43938232095 SUCCESS, forrás
-`2b4d968f953364d5fb0e21434230e08de92a8dee`. Ellenőrzött artifact ZIP-digest
-és nyers XML: telefon105 fájl/558 teszt + Wear36/198 =756,
-0failure/error/skipped; shared NO-SOURCE. 46 új P1 regresszió. Első két kapu
-hibáiból a pending fixture, nyelvkód-bekötés és belső Room cancellation kezelése
-javítva; a valódi caller-cancel továbbra sem ír vagy jelez téves eredményt.
-Bizonyíték: verification/PR253-ci-evidence.json. Részletek és fizikai próbamatrix:
-AUDIT_P1_IMPLEMENTATION_2026-11-16.md.
+Benne: elsőindítás-profil egységesítése; natív léptetés és végső mérés-pause;
+tartós egyedi könyvtármentés/hibajelzés; telefon-tulajdonú kétoldali órás kész/Undo
+és kézbesítési/nyugtavédelem. P2/P3 auditpontok külön maradnak.
+Négy bináris, két részletes és két rövid külön phone/Wear leírás, plusz bizonyíték
+Drive-on; mind a kilenc fájl neve/mérete/parentje visszaellenőrizve, régiek megőrizve.
+Drive-átadás: releases/2764-drive-delivery.json. Mindkét app frissítendő.
 
-A záró commit csak dokumentáció, a kód a fenti tesztelt forrásé. Új APK/AAB,
-verzióemelés és készülékes elfogadás nincs ebben a körben. Következő lépés:
-review/fizikai telefon–óra elfogadás, majd külön main-integráció és kiadás;
-a P2/P3 auditpontok későbbi külön csomagban maradnak.
+Play Console-feltöltés és fizikai telefon–óra elfogadás még hátravan. Az issue-k
+nem zárultak automatikusan. A lezáró dokumentáció nem változtatja a fenti kódot.
 
 ---
 

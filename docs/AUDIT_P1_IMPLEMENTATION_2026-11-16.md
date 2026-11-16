@@ -1,5 +1,10 @@
 # 2763 audit — első P1 javítócsomag
 
+> Friss státusz: felhasználói jóváhagyással PR253 mainre került; a 2764-es
+> telefon/Wear APK+AAB páros elkészült és Drive-on átadva.
+> [Kiadási ellenőrzés és linkek](releases/2764-changes.md).
+> Az alábbi korábbi draft/CI állapot a javítócsomag saját történeti bizonyítéka.
+
 Alap: main `17ecad078a767162f0be303954a7b65e97caa38d`.
 Közös ág: `fix/audit-p1`. A jelentés a
 [AUDIT_2763_REVIEWED_2026-11-16.md](AUDIT_2763_REVIEWED_2026-11-16.md)

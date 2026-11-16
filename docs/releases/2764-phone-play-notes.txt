@@ -1,0 +1,5 @@
+• Egységes profil- és tervkészítő az első indításkor.
+• Egyedi gyakorlatok és programok megbízható mentése, egyértelmű hibajelzés.
+• Gyakorlatléptetés az edzésértékek megőrzésével és vezérlési védelemmel.
+• Az összesítésre lépés szünetelteti az utolsó futó időmérést.
+• Javított órás kétoldali készre jelölés és visszavonás telefonos vezérlésnél.

@@ -1,0 +1,12 @@
+TrainPilot telefon • 2764 • 1.1-beta
+Verziókód: 276400
+Változások a 2763-as kiadáshoz képest:
+
+• Első indításkor a Profil és új terv ugyanazt a jóváhagyott tervezőfelületet használja, mint a kezdőlap. A kezdőbeállítás csak sikeres mentés után lesz kész; bezárás vagy hiba esetén folytatható.
+• Az egyedi gyakorlat és az új program csak a tartós mentés után jelenik meg sikeresen elmentve. Programnaphoz adáskor a gyakorlat és a kapcsolata közös tranzakcióban kerül az adatbázisba.
+• Sikertelen mentésnél a szerkesztő nyitva marad és hibát jelez. Adat-visszaállítás közben elavult művelet nem írhatja felül az új adatokat.
+• A következő/előző gyakorlat kiválasztása a meglévő edzésadatait és sorozatértékeit őrzi meg. Órás vezérlés, függő átadás vagy mentés alatt a telefonos léptetés tiltott.
+• Az utolsó időalapú vagy kétoldali gyakorlatból az összesítésre lépés szünetelteti a futó mérést. A folytatás kifejezett felhasználói művelet.
+• Telefonos vezérlés mellett az óráról küldött kétoldali készre jelölés és visszavonás a natív, tartós eseménynaplón keresztül működik. A duplikált vagy felcserélt kézbesítés elleni védelem javult.
+
+A telefonos és a Wear alkalmazást is frissítsd. Az APK közvetlenül telepíthető; az AAB a Play Console-ba való. A készülékes telefon–óra elfogadási próba a kiadás után külön ellenőrzés.
