@@ -78,11 +78,13 @@ class AuditActiveExerciseNavigationRegressionTest {
         TrainPilotViewModel::class.java.getDeclaredField("_uiState").apply { isAccessible = true }
             .get(vm) as MutableStateFlow<TrainPilotUiState>
 
-    private fun assertNavigationRejected(vm: TrainPilotViewModel) {
+    private fun assertNavigationRejected(vm: TrainPilotViewModel, blocked: () -> Boolean = { true }) {
         val before = vm.uiState.value
         val durable = ActiveWorkoutStore.current(context)?.toString()
         listOf<() -> Unit>({ vm.nextActiveExercise() }, { vm.previousActiveExercise() }).forEach { action ->
+            assertTrue("Navigation must be attempted while the guard is active", blocked())
             action(); shadowOf(Looper.getMainLooper()).idle()
+            assertTrue("Guard must remain active through the observer update", blocked())
             val after = vm.uiState.value
             assertEquals(before.activeExerciseIndex, after.activeExerciseIndex)
             assertEquals(before.selectedExerciseId, after.selectedExerciseId)
@@ -105,10 +107,16 @@ class AuditActiveExerciseNavigationRegressionTest {
     @Test fun pendingHandoffAndSavingRejectNextAndPrevious() {
         val vm = started()
         val flow = stateFlow(vm)
-        flow.value = flow.value.copy(watchControlPending = true)
-        assertNavigationRejected(vm)
+        // The snapshot observer derives pending from this real handoff-in-progress flag.
+        // Merely setting the projected UI field is overwritten when current() emits a frame.
+        val handoff = TrainPilotViewModel::class.java.getDeclaredField("watchHandoffBusy").apply { isAccessible = true }
+        handoff.setBoolean(vm, true)
+        ActiveWorkoutStore.current(context)
+        await { vm.uiState.value.watchControlPending }
+        assertNavigationRejected(vm) { vm.uiState.value.watchControlPending }
+        handoff.setBoolean(vm, false)
         flow.value = flow.value.copy(watchControlPending = false, isSavingWorkout = true)
-        assertNavigationRejected(vm)
+        assertNavigationRejected(vm) { vm.uiState.value.isSavingWorkout }
     }
 
     @Test fun suspendedNativeCommandsRejectNavigationBeforeUiOwnershipChanges() {
