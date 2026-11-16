@@ -1,0 +1,11 @@
+TrainPilot Wear OS • 2764 • 1.1-beta
+Verziókód: 276402
+Változások a 2763-as kiadáshoz képest:
+
+• Telefonos vezérlés mellett a kétoldali gyakorlat készre jelölése a tényleges bal/jobb idővel és súllyal kerül a telefon natív eseménynaplójába.
+• A készre jelölés célzottan visszavonható kézi edzésben is. A mért értékek megmaradnak, az érintett pihenő megszűnik; a visszavonás nem igényli az automatikus edzés bekapcsolását.
+• Gyors értékmódosítás és készre jelölés eltérő sorrendű kézbesítése kezelve. Közbenső telefonos szerkesztést, más célpontot vagy elavult tulajdonosi állapotot régi órás parancs nem írhat felül.
+• A készre jelölést megelőzően beérkező visszavonás megvárhatja a hozzá tartozó rögzítést. Ismételt készre jelölés nem támaszthat fel visszavont sorozatot.
+• A kétoldali művelet bekerül a tartós outbox/nyugta kezelésbe. Hibás vagy elavult mért parancs megfelelő hibanyugtát kap; késői nyugta nem állíthat vissza korábbi órás állapotot.
+
+Ez a kiadás célzottan ezeket az edzésvezérlési hibákat javítja. A telefonos és a Wear alkalmazást is frissítsd. Az APK közvetlenül telepíthető; az AAB a Play Console Wear OS csatornájába való. A fizikai telefon–óra elfogadási próba külön ellenőrzés.

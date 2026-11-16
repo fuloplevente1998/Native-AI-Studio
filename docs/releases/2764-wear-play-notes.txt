@@ -1,0 +1,5 @@
+• Kétoldali mért értékek tartós rögzítése telefonos vezérlés mellett.
+• Működő, célzott visszavonás kézi edzésben is.
+• Gyors értékmódosítás és készre jelölés eltérő kézbesítési sorrendjének kezelése.
+• Védelem a duplikált parancsok és késői nyugták ellen.
+• A telefonos és az órás alkalmazást is frissítsd.

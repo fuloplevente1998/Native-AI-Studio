@@ -1,0 +1,100 @@
+{
+  "release": 2764,
+  "source": "80306fdf78802ecdbba3a38168a0b914607f693a",
+  "run": 43940583135,
+  "folderId": "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9",
+  "metadataReadbackVerified": true,
+  "previousFilesPreserved": true,
+  "files": [
+    {
+      "kind": "phoneApk",
+      "id": "1XsU5TCyK3WebVaNfEHHHdWye_0BjWBqD",
+      "name": "TrainPilot-2764-phone-release.apk",
+      "bytes": 5524687,
+      "url": "https://drive.google.com/file/d/1XsU5TCyK3WebVaNfEHHHdWye_0BjWBqD/view?usp=drivesdk",
+      "parentIds": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ]
+    },
+    {
+      "kind": "wearApk",
+      "id": "1XT6akzbPXwwv7C62toz7W5Xktr4tYHLv",
+      "name": "TrainPilot-2764-wear-release.apk",
+      "bytes": 4669627,
+      "url": "https://drive.google.com/file/d/1XT6akzbPXwwv7C62toz7W5Xktr4tYHLv/view?usp=drivesdk",
+      "parentIds": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ]
+    },
+    {
+      "kind": "phoneAab",
+      "id": "1k2YoibR8Blv9g3kTJ1EZTXr36ulLX3PR",
+      "name": "TrainPilot-2764-phone-release.aab",
+      "bytes": 10165700,
+      "url": "https://drive.google.com/file/d/1k2YoibR8Blv9g3kTJ1EZTXr36ulLX3PR/view?usp=drivesdk",
+      "parentIds": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ]
+    },
+    {
+      "kind": "wearAab",
+      "id": "12jtyd0I8LfIg4GZ9WK9yM_fuLLsIx15O",
+      "name": "TrainPilot-2764-wear-release.aab",
+      "bytes": 5584257,
+      "url": "https://drive.google.com/file/d/12jtyd0I8LfIg4GZ9WK9yM_fuLLsIx15O/view?usp=drivesdk",
+      "parentIds": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ]
+    },
+    {
+      "kind": "phoneChanges",
+      "id": "1xvXgzRrB5iaUyWUpo3Hlzzo0VGu9WPlS",
+      "name": "TrainPilot-2764-phone-changes.txt",
+      "bytes": 1480,
+      "url": "https://drive.google.com/file/d/1xvXgzRrB5iaUyWUpo3Hlzzo0VGu9WPlS/view?usp=drivesdk",
+      "parentIds": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ]
+    },
+    {
+      "kind": "wearChanges",
+      "id": "1BkWWPmSPqMavdY2MVHfOJT1G4IrKZItK",
+      "name": "TrainPilot-2764-wear-changes.txt",
+      "bytes": 1345,
+      "url": "https://drive.google.com/file/d/1BkWWPmSPqMavdY2MVHfOJT1G4IrKZItK/view?usp=drivesdk",
+      "parentIds": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ]
+    },
+    {
+      "kind": "phonePlayNotes",
+      "id": "1tw_NIDgo35-z3bGubCZDlTz1BEAS8o4o",
+      "name": "TrainPilot-2764-phone-play-notes.txt",
+      "bytes": 407,
+      "url": "https://drive.google.com/file/d/1tw_NIDgo35-z3bGubCZDlTz1BEAS8o4o/view?usp=drivesdk",
+      "parentIds": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ]
+    },
+    {
+      "kind": "wearPlayNotes",
+      "id": "1nh8ndgO8ZwREV5mNJUZIga5Bt-1q7Epp",
+      "name": "TrainPilot-2764-wear-play-notes.txt",
+      "bytes": 362,
+      "url": "https://drive.google.com/file/d/1nh8ndgO8ZwREV5mNJUZIga5Bt-1q7Epp/view?usp=drivesdk",
+      "parentIds": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ]
+    },
+    {
+      "kind": "evidence",
+      "id": "1pxcpMGwTAe6J5rG38BV-GfTL090ExRCQ",
+      "name": "TrainPilot-2764-verification.json",
+      "bytes": 4897,
+      "url": "https://drive.google.com/file/d/1pxcpMGwTAe6J5rG38BV-GfTL090ExRCQ/view?usp=drivesdk",
+      "parentIds": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ]
+    }
+  ]
+}
