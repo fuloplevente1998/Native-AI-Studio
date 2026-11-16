@@ -23,6 +23,7 @@ import org.robolectric.annotation.LooperMode
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import java.util.concurrent.ConcurrentLinkedQueue
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -87,16 +88,48 @@ class AuditCustomLibraryViewModelRegressionTest {
         assertTrue("Expected an error banner, got: $message",
             listOf("nem sikerült", "nem menthető", "hiba", "nem elérhető").any { it in text })
     }
-    private fun awaitMutation(vm: TrainPilotViewModel) {
+    private data class MutationJobs(val causes: ConcurrentLinkedQueue<String>, val count: Int)
+    private fun startMutation(vm: TrainPilotViewModel, action: () -> Unit): MutationJobs {
+        vm.clearBannerMessage()
+        assertTrue("Parent scope is inactive before mutation", parent.isActive)
+        val previous = parent.children.toSet()
+        val causes = ConcurrentLinkedQueue<String>()
+        action()
+        val jobs = parent.children.toSet() - previous
+        jobs.forEach { job ->
+            job.invokeOnCompletion { cause ->
+                causes.add(cause?.stackTraceToString() ?: "Completed normally")
+            }
+        }
+        if (!vm.uiState.value.libraryMutationBusy && vm.uiState.value.statusBannerMessage == null) {
+            val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
+            while (causes.size < jobs.size && System.nanoTime() < deadline) {
+                shadowOf(Looper.getMainLooper()).idle()
+                Thread.sleep(5)
+            }
+        }
+        assertTrue("Mutation was not admitted: busy=${vm.uiState.value.libraryMutationBusy}, " +
+            "banner=${vm.uiState.value.statusBannerMessage}, job causes=$causes",
+            vm.uiState.value.libraryMutationBusy || vm.uiState.value.statusBannerMessage != null)
+        return MutationJobs(causes, jobs.size)
+    }
+    private fun awaitMutation(vm: TrainPilotViewModel, captured: MutationJobs) {
+        val causes = captured.causes
         val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30)
-        while (vm.uiState.value.libraryMutationBusy || vm.uiState.value.statusBannerMessage == null) {
+        while (vm.uiState.value.libraryMutationBusy) {
             shadowOf(Looper.getMainLooper()).idle()
             check(System.nanoTime() < deadline) {
                 "Mutation did not report an outcome: busy=${vm.uiState.value.libraryMutationBusy}, " +
-                    "banner=${vm.uiState.value.statusBannerMessage}, scopeActive=${parent.isActive}"
+                    "banner=${vm.uiState.value.statusBannerMessage}, scopeActive=${parent.isActive}, job causes=$causes"
             }
             Thread.sleep(5)
         }
+        while (causes.size < captured.count && System.nanoTime() < deadline) {
+            shadowOf(Looper.getMainLooper()).idle()
+            Thread.sleep(5)
+        }
+        assertNotNull("Mutation finished without an outcome; scopeActive=${parent.isActive}, job causes=$causes",
+            vm.uiState.value.statusBannerMessage)
     }
 
     @Test fun exerciseIsCommittedToSelectedDayAndSurvivesReload() {
@@ -104,10 +137,10 @@ class AuditCustomLibraryViewModelRegressionTest {
         vm.openProgramEditor("audit-program", 1)
         vm.toggleAddCustomExerciseDialog(true)
         val before = vm.uiState.value.exercises
-        add(vm, "Audit linked exercise", true)
+        val causes = startMutation(vm) { add(vm, "Audit linked exercise", true) }
         assertEquals(before, vm.uiState.value.exercises)
         assertTrue(vm.uiState.value.showAddCustomExerciseDialog)
-        awaitMutation(vm)
+        awaitMutation(vm, causes)
         assertFalse(vm.uiState.value.showAddCustomExerciseDialog)
         val id = vm.uiState.value.exercises.single { it.nameHu == "Audit linked exercise" }.id
         assertEquals(id, vm.uiState.value.selectedExerciseId)
@@ -123,8 +156,8 @@ class AuditCustomLibraryViewModelRegressionTest {
         val vm = model()
         vm.openProgramEditor("audit-program", 0)
         val before = native { db.programDao().getProgramWithDaysById("audit-program")!! }
-        add(vm, "Audit standalone exercise", false)
-        awaitMutation(vm)
+        val causes = startMutation(vm) { add(vm, "Audit standalone exercise", false) }
+        awaitMutation(vm, causes)
         assertTrue(vm.uiState.value.exercises.any { it.nameHu == "Audit standalone exercise" })
         assertEquals(before, native { db.programDao().getProgramWithDaysById("audit-program")!! })
     }
@@ -132,9 +165,9 @@ class AuditCustomLibraryViewModelRegressionTest {
     @Test fun createProgramAppearsOnlyAfterCommitAndReload() {
         val vm = model()
         val before = vm.uiState.value.programs
-        vm.createNewCustomProgram("Audit created program", "Description")
+        val causes = startMutation(vm) { vm.createNewCustomProgram("Audit created program", "Description") }
         assertEquals(before, vm.uiState.value.programs)
-        awaitMutation(vm)
+        awaitMutation(vm, causes)
         val created = vm.uiState.value.programs.single { it.nameHu == "Audit created program" }
         val saved = native { db.programDao().getProgramWithDaysById(created.id)!! }
         assertEquals(listOf("A", "B"), saved.days.sortedBy { it.sortOrder }.map { it.dayId })
@@ -147,15 +180,14 @@ class AuditCustomLibraryViewModelRegressionTest {
         vm.toggleAddCustomExerciseDialog(true)
         val before = vm.uiState.value
         db.close()
-        add(vm, "Cannot save exercise", false)
-        awaitMutation(vm)
+        val exerciseCauses = startMutation(vm) { add(vm, "Cannot save exercise", false) }
+        awaitMutation(vm, exerciseCauses)
         assertTrue(vm.uiState.value.showAddCustomExerciseDialog)
         assertEquals(before.exercises, vm.uiState.value.exercises)
         assertEquals(before.programs, vm.uiState.value.programs)
         assertFailure(vm.uiState.value.statusBannerMessage)
-        vm.clearBannerMessage()
-        vm.createNewCustomProgram("Cannot save program", "Description")
-        awaitMutation(vm)
+        val programCauses = startMutation(vm) { vm.createNewCustomProgram("Cannot save program", "Description") }
+        awaitMutation(vm, programCauses)
         assertEquals(before.programs, vm.uiState.value.programs)
         assertEquals(before.editingProgramId, vm.uiState.value.editingProgramId)
         assertFailure(vm.uiState.value.statusBannerMessage)
@@ -165,11 +197,13 @@ class AuditCustomLibraryViewModelRegressionTest {
         val vm = TrainPilotViewModel()
         vm.toggleAddCustomExerciseDialog(true)
         val before = vm.uiState.value
-        add(vm, "Offline exercise", false)
+        val exerciseCauses = startMutation(vm) { add(vm, "Offline exercise", false) }
+        awaitMutation(vm, exerciseCauses)
         assertEquals(before.exercises, vm.uiState.value.exercises)
         assertTrue(vm.uiState.value.showAddCustomExerciseDialog)
         assertFailure(vm.uiState.value.statusBannerMessage)
-        vm.createNewCustomProgram("Offline program", "Description")
+        val programCauses = startMutation(vm) { vm.createNewCustomProgram("Offline program", "Description") }
+        awaitMutation(vm, programCauses)
         assertEquals(before.programs, vm.uiState.value.programs)
         assertEquals(before.editingProgramId, vm.uiState.value.editingProgramId)
         assertEquals(before.currentSubScreen, vm.uiState.value.currentSubScreen)
