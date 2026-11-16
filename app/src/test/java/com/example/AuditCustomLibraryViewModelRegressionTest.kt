@@ -82,6 +82,11 @@ class AuditCustomLibraryViewModelRegressionTest {
     private fun add(vm: TrainPilotViewModel, name: String, link: Boolean) {
         vm.addCustomExercise(name, ExerciseCategory.CORE, "bodyweight", "Instructions", addToCurrentProgramDay = link)
     }
+    private fun assertFailure(message: String?) {
+        val text = message.orEmpty().lowercase()
+        assertTrue("Expected an error banner, got: $message",
+            listOf("nem sikerült", "nem menthető", "hiba", "nem elérhető").any { it in text })
+    }
 
     @Test fun exerciseIsCommittedToSelectedDayAndSurvivesReload() {
         val vm = model()
@@ -136,10 +141,12 @@ class AuditCustomLibraryViewModelRegressionTest {
         assertTrue(vm.uiState.value.showAddCustomExerciseDialog)
         assertEquals(before.exercises, vm.uiState.value.exercises)
         assertEquals(before.programs, vm.uiState.value.programs)
+        assertFailure(vm.uiState.value.statusBannerMessage)
         vm.createNewCustomProgram("Cannot save program", "Description")
         await { !vm.uiState.value.libraryMutationBusy }
         assertEquals(before.programs, vm.uiState.value.programs)
         assertEquals(before.editingProgramId, vm.uiState.value.editingProgramId)
+        assertFailure(vm.uiState.value.statusBannerMessage)
     }
 
     @Test fun unavailableDatabaseDoesNotPublishSuccess() {
@@ -149,9 +156,11 @@ class AuditCustomLibraryViewModelRegressionTest {
         add(vm, "Offline exercise", false)
         assertEquals(before.exercises, vm.uiState.value.exercises)
         assertTrue(vm.uiState.value.showAddCustomExerciseDialog)
+        assertFailure(vm.uiState.value.statusBannerMessage)
         vm.createNewCustomProgram("Offline program", "Description")
         assertEquals(before.programs, vm.uiState.value.programs)
         assertEquals(before.editingProgramId, vm.uiState.value.editingProgramId)
         assertEquals(before.currentSubScreen, vm.uiState.value.currentSubScreen)
+        assertFailure(vm.uiState.value.statusBannerMessage)
     }
 }

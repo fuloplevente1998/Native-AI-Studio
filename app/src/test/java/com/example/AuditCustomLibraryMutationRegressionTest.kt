@@ -37,6 +37,7 @@ class AuditCustomLibraryMutationRegressionTest {
         settings = TrainPilotSettingsStore(context)
         exercise = TrainPilotDatabase.defaultExercises().first().copy(id = "custom-test", custom = true)
         native {
+            db.exerciseLibraryDao().upsertExercise(exercise.copy(id = "old"))
             val template = TrainPilotDatabase.defaultPrograms().first.first()
             val program = template.copy(id = "test-program", builtin = false,
                 rawJson = JSONObject().put("id", "test-program").put("prescriptions", JSONObject().put("old", JSONObject().put("sets", 4))).toString())
@@ -91,6 +92,21 @@ class AuditCustomLibraryMutationRegressionTest {
             fail("Expected stale continuation to fail")
         } catch (_: java.util.concurrent.ExecutionException) { }
         assertNull(native { db.exerciseLibraryDao().getExerciseById(exercise.id) })
+    }
+
+    @Test fun invalidExistingEntryRollsBackExerciseInsertedEarlierInTransaction() {
+        native {
+            val opened = db.programDao().getProgramWithDaysById("test-program")!!
+            val invalid = opened.days.single().copy(exercisesJson = JSONArray().put(JSONObject()).toString())
+            db.programDao().saveProgramWithDays(opened.program, listOf(invalid))
+        }
+        try {
+            native { NativeCustomLibraryMutation.addExercise(context, db, exercise, "test-program", "A", "hu", ticket()) }
+            fail("Expected invalid existing entry to fail")
+        } catch (_: java.util.concurrent.ExecutionException) { }
+        assertNull(native { db.exerciseLibraryDao().getExerciseById(exercise.id) })
+        val saved = native { db.programDao().getProgramWithDaysById("test-program")!! }
+        assertEquals("[{}]", saved.days.single().exercisesJson)
     }
 
     @Test fun createdProgramPersistsBothDaysAndActivatesAfterSave() {
