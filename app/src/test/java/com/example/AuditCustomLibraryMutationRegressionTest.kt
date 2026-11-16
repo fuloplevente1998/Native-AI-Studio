@@ -86,12 +86,16 @@ class AuditCustomLibraryMutationRegressionTest {
     }
 
     @Test fun staleDatasetCannotWrite() {
-        val stale = NativeDataReplacement.Continuation(-1)
+        val stale = ticket()
+        native { NativeDataReplacement.exclusively(context) { } }
+        val programsBefore = native { db.programDao().getProgramsWithDays() }
+        val exercisesBefore = native { db.exerciseLibraryDao().getAllExercises() }
         try {
-            native { NativeCustomLibraryMutation.addExercise(context, db, exercise, null, null, "hu", stale) }
+            native { NativeCustomLibraryMutation.addExercise(context, db, exercise, "test-program", "A", "hu", stale) }
             fail("Expected stale continuation to fail")
         } catch (_: java.util.concurrent.ExecutionException) { }
-        assertNull(native { db.exerciseLibraryDao().getExerciseById(exercise.id) })
+        assertEquals(programsBefore, native { db.programDao().getProgramsWithDays() })
+        assertEquals(exercisesBefore, native { db.exerciseLibraryDao().getAllExercises() })
     }
 
     @Test fun invalidExistingEntryRollsBackExerciseInsertedEarlierInTransaction() {
