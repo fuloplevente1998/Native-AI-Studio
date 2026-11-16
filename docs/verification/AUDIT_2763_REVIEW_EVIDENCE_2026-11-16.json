@@ -1,0 +1,148 @@
+{
+  "reviewDate": "2026-11-16",
+  "baseline": "17ecad078a767162f0be303954a7b65e97caa38d",
+  "originalAudit": "docs/AUDIT_2763_FULL_2026-11-15.md",
+  "originalAuditSha256": "491d80f1f6ea4dcbcd241495080c4ff6ec6edc9481f06b53ea89c566ffc8da8f",
+  "applicationCodeMatchesApkSource": "8367634a78824d1955956ce90ec424ee92e891a3",
+  "findings": [
+    {
+      "id": "AUDIT-01",
+      "verdict": "partial",
+      "priority": "P2",
+      "summary": "Helyi pending-újrajátszás hiányos; a végleges parancsvesztés és a P0 indoklása nem igazolt."
+    },
+    {
+      "id": "AUDIT-02",
+      "verdict": "partial",
+      "priority": "P1",
+      "summary": "Telefon-tulajdonú kétoldali órás Undo hiányos; a rest és addQuickExercise magyarázata részben téves."
+    },
+    {
+      "id": "AUDIT-03",
+      "verdict": "partial",
+      "priority": "P1",
+      "summary": "Léptetés előtt hiányzik a UI-admission; tartós ownership-védelem megmarad, utolsó lépés nem használja a szüneteltető útvonalat."
+    },
+    {
+      "id": "AUDIT-04",
+      "verdict": "refuted",
+      "priority": null,
+      "summary": "A tényleges UI a HealthDashboardViewModel.setProvider tartós útvonalát használja."
+    },
+    {
+      "id": "AUDIT-05",
+      "verdict": "refuted",
+      "priority": null,
+      "summary": "A startCanonicalWorkout a start lambda előtt várja a programírást; a naptárírás is bevárja."
+    },
+    {
+      "id": "AUDIT-06",
+      "verdict": "confirmed",
+      "priority": "P2",
+      "summary": "Órára küldött több név csak HU/EN, illetve csak HU feloldású."
+    },
+    {
+      "id": "AUDIT-07",
+      "verdict": "confirmed",
+      "priority": "P2",
+      "summary": "Kültéri előnézet újranyitása a UI aktív jelzőjét motorindítás nélkül igazra állíthatja."
+    },
+    {
+      "id": "AUDIT-08",
+      "verdict": "confirmed",
+      "priority": "P2",
+      "summary": "A produkciós Activity fix sötét rendszersáv-stílusa nincs összekötve a világos palettával."
+    },
+    {
+      "id": "AUDIT-09",
+      "verdict": "confirmed",
+      "priority": "P2",
+      "summary": "Betűméret és kompakt mód csak a ViewModel állapotában él."
+    },
+    {
+      "id": "AUDIT-10",
+      "verdict": "confirmed",
+      "priority": "P2",
+      "summary": "Studio intervallum-beállításból hiányzik a tartós mentés."
+    },
+    {
+      "id": "AUDIT-11",
+      "verdict": "partial",
+      "priority": "P1",
+      "summary": "Egyedi gyakorlat upsert védetlen és optimista sikerüzenetű; a programmentés maga már mutex/generation-védett."
+    },
+    {
+      "id": "AUDIT-12",
+      "verdict": "confirmed",
+      "priority": "P3",
+      "summary": "Naptári bannerek részben magyarra vannak beégetve."
+    },
+    {
+      "id": "AUDIT-13",
+      "verdict": "refuted",
+      "priority": null,
+      "summary": "Nincs oauth2redirect intent-filter és nincs handleGoogleFitRedirect a natív mainben."
+    },
+    {
+      "id": "AUDIT-14",
+      "verdict": "partial",
+      "priority": "P3",
+      "summary": "Konstruktorban van katalógusmunka, de lazy cache is van; mért indítási regresszió nem igazolt."
+    }
+  ],
+  "counts": {
+    "confirmed": 6,
+    "partial": 5,
+    "refuted": 3
+  },
+  "historicalCi": [
+    {
+      "run": 43675171894,
+      "source": "8367634a78824d1955956ce90ec424ee92e891a3",
+      "status": "success",
+      "tests": 705,
+      "phoneTests": 516,
+      "wearTests": 189,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testArtifactDigest": "sha256:5cda2a52a3dff5d0a490d1defe9181405702632e8f065551aae9dae355339193",
+      "localZipDigestRechecked": true,
+      "rawXmlRecounted": true,
+      "newRunDuringAudit": false
+    },
+    {
+      "run": 43721805883,
+      "source": "089a0917d3e71b75b44e9b62dc59b7efc030ad48",
+      "status": "success",
+      "tests": 705,
+      "phoneTests": 516,
+      "wearTests": 189,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testArtifactDigest": "sha256:67cf81cb30edbd6876519f304104fd60996980d46159031c20f41787f7d5856c",
+      "localZipDigestRechecked": true,
+      "rawXmlRecounted": true,
+      "newRunDuringAudit": false
+    }
+  ],
+  "onboarding": {
+    "issue": 247,
+    "pr": 248,
+    "state": "draft; not merged into audited main",
+    "ciRun": 43814942285,
+    "testedSource": "23db67c149a204dd9864cf386ce5b8d110a0165b",
+    "totalTests": 710,
+    "notMainBaseline": true
+  },
+  "newAndroidTestsRun": false,
+  "physicalTestsRun": false,
+  "newBuild": false,
+  "applicationCodeEdited": false,
+  "automatedDependencySecurityScan": false,
+  "reviewedReport": "docs/AUDIT_2763_REVIEWED_2026-11-16.md",
+  "reviewedReportSha256": "24da413809eb0160c13441109c6029fd8a98ccb23fb821528713b91385660361",
+  "originalAuditSha256Scope": "Original file at the audited baseline commit, before adding the review banner.",
+  "sourceReferenceCheck": "38 explicit file/line references resolve in the audited tree; abbreviated follow-on line numbers refer to the preceding file."
+}

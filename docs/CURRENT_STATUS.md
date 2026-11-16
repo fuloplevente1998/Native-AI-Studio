@@ -1,3 +1,17 @@
+# 2763 audit felülvizsgálva — 2026-11-16
+
+Új önálló jelentés AUDIT_2763_REVIEWED_2026-11-16.md; alap main17ecad0.
+Az eredeti14 állításból6 helytálló,5 részben helytálló,3 cáfolt. Az eredeti P0
+következtetése nem igazolt; P1 teendők és konkrét regressziós/device mátrix
+a jelentésben. A hibás kiadási hivatkozások helyesbítve; a valódi két kiadási
+kör705 tesztjének ZIP-digestje és nyers XML-je újraellenőrizve.
+#247/PR248 még nincs mainen, saját710 tesztje külön állapot. Appkód, verzió,
+build és külső szolgáltatás nem változott. Dokumentációs ág:
+docs/audit-2763-validation; gépi bizonyíték verification/AUDIT_2763_REVIEW_EVIDENCE_2026-11-16.json.
+
+
+---
+
 # #247 — első indítás jóváhagyott profil/terv panellel, 2026-11-16
 
 Ág fix/first-run-profile, draft PR248. A Folytatás út a Home-mal közös
