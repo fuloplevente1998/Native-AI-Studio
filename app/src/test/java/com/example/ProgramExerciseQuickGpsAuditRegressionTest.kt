@@ -21,6 +21,12 @@ import com.repforge.app.NativeWorkoutSession
 import com.repforge.app.data.db.NativeBuiltinCatalog
 import com.repforge.app.data.db.TrainPilotDatabase
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeout
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -320,7 +326,18 @@ class ProgramExerciseQuickGpsAuditRegressionTest {
         TrainPilotDatabase.ensureBuiltinCatalogSeeded(db, context)
         ActiveWorkoutStore.clear(context)
 
+        val parent = SupervisorJob()
+        val scope = CoroutineScope(parent + Dispatchers.Main.immediate)
+        suspend fun awaitSaved(condition: () -> Boolean) = withTimeout(30_000) {
+            while (!condition()) {
+                org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+                delay(5)
+            }
+        }
         val vm = TrainPilotViewModel()
+        vm.bindNativeEnvironment(context, com.repforge.app.data.store.TrainPilotSettingsStore(context), db, scope)
+        try {
+        awaitSaved { !vm.uiState.value.savedRecordsLoading }
         vm.addCustomExercise(
             nameHu = "Egyedi Plank Tartás",
             category = ExerciseCategory.CORE,
@@ -329,6 +346,7 @@ class ProgramExerciseQuickGpsAuditRegressionTest {
             isTimed = true,
             addToCurrentProgramDay = false
         )
+        awaitSaved { !vm.uiState.value.libraryMutationBusy }
         vm.addCustomExercise(
             nameHu = "Egyedi Kézisúlyzós Nyomás",
             category = ExerciseCategory.CHEST,
@@ -338,8 +356,10 @@ class ProgramExerciseQuickGpsAuditRegressionTest {
             addToCurrentProgramDay = false
         )
 
+        awaitSaved { !vm.uiState.value.libraryMutationBusy }
         val customExercises = vm.uiState.value.exercises.filter { it.isCustom }
         assertEquals(2, customExercises.size)
+        customExercises.forEach { assertNotNull(db.exerciseLibraryDao().getExerciseById(it.id)) }
         assertNotEquals(customExercises[0].id, customExercises[1].id)
 
         val timedCustom = customExercises.first { it.isTimed }
@@ -354,10 +374,10 @@ class ProgramExerciseQuickGpsAuditRegressionTest {
         assertEquals("reps", weightedCustom.measurementType)
         assertEquals(20f, weightedCustom.defaultWeightKg, 0.001f)
 
-        // Quick workout with catalog exercises (strength + timed + bilateral)
+        // The actual persisted custom rows can start a canonical mixed quick session.
         val frame = NativeWorkoutSession.startQuickExercises(
             context = context,
-            exerciseIds = listOf("goblet-squat", "plank", "side-plank"),
+            exerciseIds = listOf(weightedCustom.id, timedCustom.id, "side-plank"),
             title = "Gyors teszt edzés",
             automaticEnabled = true,
             database = db
@@ -365,6 +385,10 @@ class ProgramExerciseQuickGpsAuditRegressionTest {
         assertTrue(frame.optBoolean("active"))
         assertEquals(3, frame.getJSONArray("exercises").length())
         ActiveWorkoutStore.clear(context)
+        } finally {
+            scope.cancel()
+            awaitSaved { parent.isCompleted }
+        }
         Unit
     }
 }
