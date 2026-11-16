@@ -113,6 +113,19 @@ class AuditCustomLibraryViewModelRegressionTest {
         assertEquals(before, native { db.programDao().getProgramWithDaysById("audit-program")!! })
     }
 
+    @Test fun createProgramAppearsOnlyAfterCommitAndReload() {
+        val vm = model()
+        val before = vm.uiState.value.programs
+        vm.createNewCustomProgram("Audit created program", "Description")
+        assertEquals(before, vm.uiState.value.programs)
+        await { !vm.uiState.value.libraryMutationBusy }
+        val created = vm.uiState.value.programs.single { it.nameHu == "Audit created program" }
+        val saved = native { db.programDao().getProgramWithDaysById(created.id)!! }
+        assertEquals(listOf("A", "B"), saved.days.sortedBy { it.sortOrder }.map { it.dayId })
+        assertEquals(created.id, native { settings.current().activeProgramId })
+        assertTrue(model().uiState.value.programs.any { it.id == created.id })
+    }
+
     @Test fun closedDatabaseKeepsDialogAndCatalogVisible() {
         val vm = model()
         vm.toggleAddCustomExerciseDialog(true)
