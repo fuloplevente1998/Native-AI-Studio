@@ -17,6 +17,35 @@ cáfolt állításait javítandó hibának.
 
 ## Lényeges működés
 
+### Órás kétoldali készre jelölés és visszavonás
+
+A tényleges órás küldési út közös parancskészítője a kétoldali explicit OK
+esetén `completeMeasuredSet` parancsot készít a valós bal/jobb idővel és súllyal.
+A telefon a meglévő natív mért rögzítést, tartós eseményazonosságot és célzott
+Undo-t használja. A manuális edzés visszavonásának nem előfeltétele az
+automatikus időzítés bekapcsolása. A visszavonás után régi OK ismétlése nem
+jelölheti újra készre a sorozatot.
+
+A teljes OK-payload a korábbi órás mezőszerkesztések részleges kézbesítésekor
+is alkalmazható, kizárólag igazolt, megszakítatlan azonos órás forrás/célpont
+szerkesztési láncon. A workout/generáció/epoch/pause/base revision egyeztetés
+megmarad; közbenső telefonos vagy más célpontú írás megszakítja ezt a láncot.
+Az ilyen lánc alatt a készre jelölés előtt beérkező Undo halasztva várhat a
+rögzítésre. Hibás/elavult mért parancs tartós hibanyugtát kap; restore alatt
+újrapróbálható marad. A régi protokollból érkező kétoldali készre jelölés is
+ugyanezen naplózott úton halad.
+
+Az új mért hibanyugta csak egyező rekord, workout, generáció, epoch és
+változatlan érték-guard mellett korrigálhatja az optimista órás állapotot.
+Régebbi végrehajtási verzió vagy későbbi helyi parancs esetén nem telepít
+elavult snapshotot. A közös builder, valós telefonos dispatcher/végrehajtó,
+tartós adatbázis, Wear outbox és nyugtakezelő regressziói együtt vizsgálják a
+normál és fordított kézbesítést, duplikációt, hibás/stale értéket, idegen írást,
+restore-t és késői nyugtát.
+
+Két körben külön Sol/High read-only review történt; a talált négy konkrét
+ordering/dispatch/receipt hibát a végleges implementáció javította.
+
 ### Léptetés és mérés
 
 A ViewModel a natív frame workout ID-ját és generációját egyezteti a megnyitott
