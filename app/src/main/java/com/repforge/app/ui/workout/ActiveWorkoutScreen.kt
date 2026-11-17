@@ -868,7 +868,7 @@ private fun measuredTime(seconds: Long?): String = seconds?.let {
 } ?: "—"
 
 @Composable
-private fun IntervalOptions(
+internal fun IntervalOptions(
     state: ActiveWorkoutUiState,
     exercise: ActiveExerciseUiModel,
     active: Boolean,

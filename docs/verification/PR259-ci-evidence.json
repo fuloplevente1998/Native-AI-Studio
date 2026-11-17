@@ -1,0 +1,154 @@
+{
+  "source": "39965dc18fc33f9c7246f274dbe810630e9feddc",
+  "run": 44098205802,
+  "url": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/44098205802",
+  "artifactDigest": "sha256:542f13b0d45a53136c17b8b05bf83e35ab22e5d5449d6b4bf54dfd49e6cb9ebe",
+  "artifactDigestVerified": true,
+  "rawXml": {
+    "phone": {
+      "files": 120,
+      "tests": 627,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "wear": {
+      "files": 36,
+      "tests": 198,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "files": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "total": {
+    "tests": 825,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sharedNoSource": true,
+  "newRegressionCases": {
+    "com.example.AuditCatalogStartupProbeTest": [
+      "constructorProjectsSameCatalogBeforeAndAfterWarmup"
+    ],
+    "com.example.AuditOutdoorPreviewRegressionTest": [
+      "previewBackReopenCreatesNoNativeSessionOrClock",
+      "startTwiceAndReopenKeepThePausedNativeSession",
+      "anotherActiveModeRejectsOutdoorStart"
+    ],
+    "com.example.AuditPreferencesBackupRoundtripTest": [
+      "actualExportAndImportPreserveDistinctRestAndAppearance"
+    ],
+    "com.example.AuditRemainingCalendarViewModelTest": [
+      "calendarActionsPublishLocalizedFeedbackAndKeepEventData"
+    ],
+    "com.example.AuditRemainingPreferencesViewModelTest": [
+      "committedIntervalPresetFeedsQuickTimedStartAndPartialChangesPreserveIt",
+      "appearanceSurvivesNewBoundViewModel",
+      "invalidAndUnboundSavesNeverAcknowledge"
+    ],
+    "com.example.AuditSettingsDurabilityRegressionTest": [
+      "intervalPresetAndLegacyImportKeepBothRestDefaults",
+      "legacyAndInvalidImportsPreserveExistingValuesAndBoundsAreEnforced",
+      "settingsSurviveNewStoreAndPartialTimerEdits"
+    ],
+    "com.example.AuditWearPayloadLocalizationRegressionTest": [
+      "realHomeAndStartPayloadsUsePhoneLanguageAndPreserveHistoricalNames"
+    ],
+    "com.example.EditedProgramSaveRegressionTest": [
+      "explicitCopyStillRequiresExplicitActivation",
+      "customProgramRemovalAndRepeatedSaveUpdateSameId",
+      "editingInactiveTemplatePreservesUnrelatedActiveProgram",
+      "firstSaveWithoutExerciseRemovalActivatesOneCopyAndProgramCardReopensIt",
+      "removingLastThreeAndSavingKeepsOneActiveCustomCopyAcrossReopening",
+      "homeKeepsAnExistingCalendarTargetWhenAnotherProgramBecomesActive"
+    ],
+    "com.example.StudioLiveStopwatchRegressionTest": [
+      "bothSideReadoutsAdvanceBeforeRecordingWithoutTheHeaderConsumingTheirWidth",
+      "singleReadoutChangesWhileRunningThenPauseFreezesAndRecordStoresOnlyElapsedWork"
+    ],
+    "com.example.StudioIntervalStartRegressionTest": [
+      "selectedValidTimedExerciseWinsAndRequireNewCannotRecoverEvenTheSameExercise",
+      "noTimedCatalogCannotCreateAFallbackStrengthSession",
+      "failedPresetSaveCannotStartASessionOrLeaveTheForm",
+      "pauseWhileWaitingForArmConsumesStartAndCannotReplayAfterResume",
+      "existingStrengthOrWatchOwnerIsNeverReplacedOrResumedByFormStart",
+      "productionFormCommitsThenArmsAndStartsOnlyTheNativeIntervalClock"
+    ],
+    "com.example.StudioSummaryCaloriesRegressionTest": [
+      "providerSelectionNeverFallsBackToAnotherProviderOrDailyTotalsAndNeverAddsActiveToTotal",
+      "missingRemainsUnknownAndMeasuredZeroRemainsZero",
+      "foregroundReadUsesCanonicalProviderAndQueriesActualWindowsWithoutChangingTheFrame",
+      "staleOrWrongWorkoutEvidenceIsRejectedAndCannotHideValidSavedWear",
+      "savedWearWithoutRedundantWorkoutIdMatchesTheJournalAndPulseOnlyLiveCannotHideIt",
+      "inFlightReadRejectsProviderSessionForegroundAndReplacementChangesBeforePublishing",
+      "asyncSnapshotCannotCrossProviderGenerationPauseOrWorkoutChanges",
+      "mislabeledProviderAndForeignSnapshotAreRejectedAtCapture",
+      "samsungSessionEnergyPreservesItsDefinitionAndJournalProvenance",
+      "selectedProviderUsesOnlyItsExactActiveWindowsBeforeSavingWithJournalParity"
+    ],
+    "com.example.WearPendingRecoveryRegressionTest": [
+      "normalDeliveryAndWatchResendApplyOneDurableRecordingAndClearPending",
+      "staleNativeRevisionIsTerminalAndCannotSpinForeverInTheInbox",
+      "legacyBilateralCommitWithoutInboxAckReconcilesItsWireFingerprintAfterClosureAndReopen",
+      "legacyWireReachingRepositoryStalePauseAdmissionReconcilesItsCommittedProof",
+      "closedListenerRejectsNativeLegacyAndUnsupportedWiresWithoutInventingProof",
+      "legacyCompleteSetUsesTheSameEditorAndIsIdempotentAfterRecovery",
+      "automaticStartRemainsPendingUntilTheExistingControllerIsExplicitlyArmed",
+      "restoreFenceNeverAcknowledgesOrAppliesUntilRecoveryFinishes",
+      "legacyUpdateSetBlockedByTheRealEditorRecoversWithoutAWatchResend",
+      "startupAndRepeatedReconnectTriggersDrainThePersistedInboxWithoutResend",
+      "lateLegacyBilateralWireAfterCommitWithoutAckAndClosureUsesOriginalProof",
+      "pausedDraftCannotBeResumedByDrainingAndOldPauseRevisionRejectsAfterExplicitResume",
+      "lateNativeWireAfterCommitWithoutAckAndClosureUsesProofThenReplaysTheSameReceipt",
+      "finalizationFenceRejectsPendingCommandBeforeTheEngineFrameCloses",
+      "invalidLegacyBilateralResultGetsAnErrorReceiptAfterTheTransientBlockClears",
+      "legacyAutomaticPauseUsesActualIntervalDispatchAndPhaseFence",
+      "lateLegacyWireWithChangedMeasuredPayloadCannotClaimTheCommittedProof",
+      "watchResendCannotReplaceThePersistedLegacyGenerationWithTheCurrentOne",
+      "fastUndoDrainReconcilesCommittedInverseAcrossPauseChangeWithoutResuming",
+      "crashBetweenEngineCommitAndInboxAckReconcilesDurableProofAfterClosure",
+      "lateWireDuringRestoreRetainsPendingProofUntilTheRestoreFenceClears",
+      "closedDraftRejectsPendingCommandWithoutRecreatingTheWorkout",
+      "localRecoveryWithoutWatchResendingRecordsOnceAndReplaysAfterStoreReopen",
+      "changedGenerationPauseAndEpochRejectPendingCommands",
+      "fastUndoDrainReconcilesCommittedInverseAfterClosureAndReopen",
+      "legacyGenerationCapturedAtIngressCannotBeReboundAfterReplacementOrRestart"
+    ],
+    "com.repforge.app.PaletteSystemBarsTest": [
+      "productionActivityFollowsStoredPaletteLiveAndOnReturn",
+      "allPaletteBackgroundsChooseContrastingIcons"
+    ],
+    "com.repforge.app.localization.CalendarFeedbackTest": [
+      "feedbackRetainsDatesBadgesAndTimesInEveryLanguage"
+    ],
+    "com.repforge.app.localization.WearNameLocalizationTest": [
+      "resolvesFourLanguagesAndFallbacks",
+      "historicalBuiltinsTranslateOnlyWhenSavedNamesStillMatch",
+      "historicalDayNamesTranslateOnlyKnownBuiltins"
+    ]
+  },
+  "failedCases": [],
+  "physicalAcceptance": false,
+  "newApkOrAab": false,
+  "conclusion": "success",
+  "accepted": true,
+  "artifactId": 14334279725,
+  "newRegressionCount": 69,
+  "baselineTestCount": 756,
+  "catalogStartupProbe": {
+    "environment": "robolectric_jvm",
+    "firstConstructorNs": 35749072,
+    "warmConstructorNs": 12817616,
+    "exerciseCount": 140,
+    "programCount": 13,
+    "physicalStartupBenchmark": false
+  }
+}

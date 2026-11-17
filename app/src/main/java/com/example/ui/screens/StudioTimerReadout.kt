@@ -1,14 +1,18 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import java.util.Locale
 
@@ -22,11 +26,20 @@ internal fun studioTimerLabel(seconds: Int): String {
 internal fun StudioTimerReadout(seconds: Int, style: TextStyle = MaterialTheme.typography.displayLarge,
     fontWeight: FontWeight = FontWeight.Bold, color: Color, modifier: Modifier = Modifier) {
     val label = studioTimerLabel(seconds)
-    val scale = LocalDensity.current.fontScale
+    val density = LocalDensity.current
+    val measurer = rememberTextMeasurer()
     BoxWithConstraints(modifier) {
-        // Keep all digits visible, including hours, under system font scaling.
-        val size = (maxWidth.value / (label.length * .7f) / scale).coerceIn(1f, style.fontSize.value.takeIf { it.isFinite() && it > 0 } ?: 56f).sp
-        Text(label, style = style.copy(fontSize = size, fontFeatureSettings = "tnum"),
-            fontWeight = fontWeight, color = color, maxLines = 1, softWrap = false)
+        // Measure the actual bundled font instead of estimating digit widths. Preserve
+        // the requested large size whenever it fits; scale line height with the font.
+        val requested = style.copy(fontWeight = fontWeight, fontFeatureSettings = "tnum")
+        val measured = measurer.measure(AnnotatedString(label), style = requested,
+            maxLines = 1, softWrap = false)
+        val available = with(density) { maxWidth.toPx() }
+        val ratio = if (measured.size.width > 0) (available / measured.size.width).coerceIn(0f, 1f) else 1f
+        val fitted = requested.copy(fontSize = (requested.fontSize.value * ratio).coerceAtLeast(1f).sp,
+            lineHeight = if (requested.lineHeight.isSp) (requested.lineHeight.value * ratio).sp else requested.lineHeight)
+        Text(label, style = fitted, fontWeight = fontWeight, color = color,
+            maxLines = 1, softWrap = false, textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth())
     }
 }

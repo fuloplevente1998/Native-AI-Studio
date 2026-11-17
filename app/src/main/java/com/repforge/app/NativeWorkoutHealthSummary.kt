@@ -48,7 +48,11 @@ internal object NativeWorkoutHealthSummary {
             val measured = JSONObject().put("started", snapshot.optString("windowStart", snapshot.optString("start")))
                 .put("finished", snapshot.optString("windowEnd", snapshot.optString("end")))
             snapshot.optJSONArray("activeIntervals")?.let { measured.put("activeIntervals", it) }
-            val valid = same(measured.optString("started"), workout.optString("started")) &&
+            val aliases = listOf("id", "syncId", "workoutKey", "workoutId").map { workout.optString(it) }.filter(String::isNotBlank)
+            val snapshotId = snapshot.optString("workoutId")
+            val valid = snapshot.optString("provider", provider) == provider &&
+                (snapshotId.isBlank() || snapshotId in aliases) &&
+                same(measured.optString("started"), workout.optString("started")) &&
                 same(measured.optString("finished"), workout.optString("finished")) &&
                 runCatching { NativeWorkoutActiveWindows.read(measured) == active }.getOrDefault(false)
             if (!valid || active.isEmpty()) { rejected = true; continue }

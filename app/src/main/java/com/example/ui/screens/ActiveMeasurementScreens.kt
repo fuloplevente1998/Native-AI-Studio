@@ -34,6 +34,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -891,7 +893,8 @@ fun ActiveTimedWorkoutScreen(
     onNextExercise: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
     onSwitchExercise: (ExerciseItem) -> Unit = {},
     onOpenExerciseLibrary: () -> Unit = {},
-    exerciseFeedback: @Composable () -> Unit = {}
+    exerciseFeedback: @Composable () -> Unit = {},
+    consumeIntervalStart: (com.repforge.app.NativeWorkoutTarget) -> Boolean = { false }
 ) {
     val palette = LocalTrainPilotPalette.current
     val workoutExercises = remember(uiState.activeWorkoutExercises, uiState.exercises) {
@@ -912,7 +915,30 @@ fun ActiveTimedWorkoutScreen(
     val nativeSet = nativeExercise?.sets?.firstOrNull { !it.isCompleted }
     val target = nativeSet?.let { com.repforge.app.NativeWorkoutTarget(native.workoutId, native.generation,
         checkNotNull(nativeExercise).exerciseId, it.setId) }
-    DisposableEffect(target) { onDispose { nativeModel.cancelPendingStopwatchStart() } }
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(target, lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) nativeModel.cancelPendingStopwatchStart()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            nativeModel.cancelPendingStopwatchStart()
+        }
+    }
+    LaunchedEffect(uiState.pendingIntervalStart, target, native.workoutId, native.generation) {
+        val requested = uiState.pendingIntervalStart
+        if (requested != null && native.workoutId == requested.workoutId && native.generation == requested.generation &&
+            consumeIntervalStart(requested) && requested == target &&
+            lifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED))
+            nativeModel.startIntervalsWhenReady(requested, uiState.pendingIntervalOwnerEpoch, uiState.pendingIntervalPauseRevision)
+    }
+    val intervalActive = native.timerWorkoutId == native.workoutId && native.timerGeneration == native.generation &&
+        !native.timerRestOnly && native.timerKey.isNotEmpty() && !native.timerStopped &&
+        !native.timerInterrupted && native.timerPhase != "complete"
+    // Keep the live stopwatch in view; an active native interval opens its own controls.
+    var intervalsExpanded by remember(native.workoutId, native.generation) { mutableStateOf(false) }
+    LaunchedEffect(intervalActive) { if (intervalActive) intervalsExpanded = true }
     val currentSec = if (native.stopwatchSetId == nativeSet?.setId) native.stopwatchSeconds.toInt() else 0
     val isRunning = native.stopwatchSetId == nativeSet?.setId && native.stopwatchRunning
     var targetSec by remember(currentExercise?.id) { mutableIntStateOf(defaultTargetSec) }
@@ -1042,7 +1068,9 @@ fun ActiveTimedWorkoutScreen(
                                             )
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Text(
-                                                text = if (isRunning) {
+                                                text = if (intervalActive) {
+                                                    tr(lang, "Intervallummérés", "Interval measurement", "Intervallmessung", "Măsurare pe intervale")
+                                                } else if (isRunning) {
                                                     tr(lang, "Stopper fut ●", "Stopwatch running ●", "Stoppuhr läuft ●", "Cronometrul rulează ●")
                                                 } else {
                                                     tr(lang, "Stopper készenlétben", "Stopwatch ready", "Stoppuhr bereit", "Cronometru pregătit")
@@ -1107,6 +1135,22 @@ fun ActiveTimedWorkoutScreen(
                             )
                         }
 
+                    if (nativeExercise != null) {
+                        val intervalTarget = target ?: nativeExercise.sets.firstOrNull()?.let {
+                            com.repforge.app.NativeWorkoutTarget(native.workoutId, native.generation, nativeExercise.exerciseId, it.setId)
+                        }
+                        if (intervalTarget != null) {
+                            val timerTarget = com.repforge.app.NativeTimerTarget(native.workoutId, native.generation, native.timerKey)
+                            com.repforge.app.ui.workout.IntervalOptions(native, nativeExercise, intervalActive, lang.code,
+                                expanded = intervalsExpanded, onToggleExpanded = { intervalsExpanded = !intervalsExpanded },
+                                onSave = { work, rest, rounds, sound, vibration, advance, global ->
+                                    nativeModel.configureIntervals(intervalTarget, work, rest, rounds, sound, vibration, advance, global) },
+                                onStart = { nativeModel.startIntervalsWhenReady(intervalTarget) },
+                                onStop = { nativeModel.stopIntervals(timerTarget) },
+                                onSkip = { nativeModel.skipRestTimer(timerTarget) })
+                        }
+                    }
+                    if (!intervalActive) {
                     Spacer(modifier = Modifier.height(20.dp))
                     Box(
                         modifier = Modifier.fillMaxWidth(),
@@ -1136,7 +1180,9 @@ fun ActiveTimedWorkoutScreen(
                                 seconds = currentSec,
                                 style = MaterialTheme.typography.displayLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = palette.textPrimary
+                                color = palette.textPrimary,
+                                modifier = Modifier.widthIn(min = 150.dp, max = 190.dp)
+                                    .wrapContentWidth(Alignment.CenterHorizontally).testTag("timed_live_readout")
                             )
                             val remaining = (targetSec - currentSec).coerceAtLeast(0)
                             Text(
@@ -1200,7 +1246,7 @@ fun ActiveTimedWorkoutScreen(
                                 text = if (isRunning) {
                                     tr(lang, "Szünet", "Pause", "Pause", "Pauză")
                                 } else {
-                                    tr(lang, "Stopper indítása", "Start stopwatch", "Stoppuhr starten", "Pornește cronometrul")
+                                    tr(lang, "Indítás", "Start", "Starten", "Pornește")
                                 },
                                 fontWeight = FontWeight.Bold
                             )
@@ -1231,7 +1277,8 @@ fun ActiveTimedWorkoutScreen(
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(44.dp)
+                            .heightIn(min = 44.dp)
+                            .testTag("record_timed_stopper")
                     ) {
                         Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
@@ -1246,12 +1293,13 @@ fun ActiveTimedWorkoutScreen(
                             fontWeight = FontWeight.Bold
                         )
                     }
+                    }
                 }
             }
         }
 
         // Target Preset selector
-        item {
+        if (!intervalActive) item {
             val lang = uiState.language
             val secWord = tr(lang, "mp", "s", "Sek.", "sec")
             Surface(
@@ -1297,7 +1345,7 @@ fun ActiveTimedWorkoutScreen(
         }
 
         // Completed sets list
-        item {
+        if (!intervalActive) item {
             val lang = uiState.language
             Surface(
                 shape = RoundedCornerShape(18.dp),
@@ -1632,10 +1680,10 @@ fun ActiveBilateralWorkoutScreen(
                                 Text(
                                     text = tr(
                                         lang,
-                                        "2 külön stopper oldalanként • A „Leállítás és rögzítés” gomb a kiválasztott (${selectedTargetSetNumber}.) sorozatba menti az időt",
-                                        "2 separate stopwatches per side • \"Stop & record\" saves the time into the selected (#${selectedTargetSetNumber}) set",
-                                        "2 separate Stoppuhren pro Seite • „Stoppen & speichern“ sichert die Zeit im ausgewählten (${selectedTargetSetNumber}.) Satz",
-                                        "2 cronometre separate pe parte • „Oprește și înregistrează” salvează timpul în seria selectată (#${selectedTargetSetNumber})"
+                                        "Az oldalakat külön mérd. A rögzítés a(z) ${selectedTargetSetNumber}. sorozatba menti az időt.",
+                                        "Measure each side separately. Record saves the time to set #${selectedTargetSetNumber}.",
+                                        "Jede Seite einzeln messen. Speichern sichert die Zeit im ${selectedTargetSetNumber}. Satz.",
+                                        "Măsoară fiecare parte separat. Salvarea înregistrează timpul în seria #${selectedTargetSetNumber}."
                                     ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textSecondary
@@ -1758,7 +1806,7 @@ fun ActiveBilateralWorkoutScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                                 Surface(
                                     shape = CircleShape,
                                     color = if (leftRunning) palette.primary else palette.surfaceElevated,
@@ -1774,7 +1822,7 @@ fun ActiveBilateralWorkoutScreen(
                                     }
                                 }
                                 Spacer(modifier = Modifier.width(10.dp))
-                                Column {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = tr(lang, "Bal oldal stopper", "Left side stopwatch", "Stoppuhr linke Seite", "Cronometru partea stângă"),
                                         style = MaterialTheme.typography.titleMedium,
@@ -1785,10 +1833,10 @@ fun ActiveBilateralWorkoutScreen(
                                         text = when {
                                             leftRunning -> tr(
                                                 lang,
-                                                "Mérés folyamatban (${selectedTargetSetNumber}. sorozat - Bal) ●",
-                                                "Measuring (Set #${selectedTargetSetNumber} - Left) ●",
-                                                "Messung läuft (${selectedTargetSetNumber}. Satz - Links) ●",
-                                                "Măsurare în curs (Seria #${selectedTargetSetNumber} - Stânga) ●"
+                                                "Mérés folyamatban ●",
+                                                "Measuring ●",
+                                                "Messung läuft ●",
+                                                "Măsurare în curs ●"
                                             )
                                             isLeftRecordedInTarget -> tr(
                                                 lang,
@@ -1805,7 +1853,7 @@ fun ActiveBilateralWorkoutScreen(
                                                 "Țintă: Seria #${selectedTargetSetNumber} Partea stângă (${defaultTargetSec} sec)"
                                             )
                                         },
-                                        style = MaterialTheme.typography.labelSmall,
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = when {
                                             leftRunning -> palette.primary
                                             isLeftRecordedInTarget -> palette.success
@@ -1815,7 +1863,8 @@ fun ActiveBilateralWorkoutScreen(
                                 }
                             }
 
-                            // Digital display
+                            Spacer(modifier = Modifier.width(8.dp))
+                            // Reserve the readout before measuring the side description.
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
                                 color = palette.surfaceElevated,
@@ -1826,7 +1875,9 @@ fun ActiveBilateralWorkoutScreen(
                                     style = MaterialTheme.typography.headlineMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = if (leftRunning) palette.primary else palette.textPrimary,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    modifier = Modifier.widthIn(min = 98.dp, max = 112.dp)
+                                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                                        .wrapContentWidth(Alignment.CenterHorizontally).testTag("bilateral_left_live_readout")
                                 )
                             }
                         }
@@ -1923,7 +1974,7 @@ fun ActiveBilateralWorkoutScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                                 Surface(
                                     shape = CircleShape,
                                     color = if (rightRunning) palette.primary else palette.surfaceElevated,
@@ -1939,7 +1990,7 @@ fun ActiveBilateralWorkoutScreen(
                                     }
                                 }
                                 Spacer(modifier = Modifier.width(10.dp))
-                                Column {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = tr(lang, "Jobb oldal stopper", "Right side stopwatch", "Stoppuhr rechte Seite", "Cronometru partea dreaptă"),
                                         style = MaterialTheme.typography.titleMedium,
@@ -1950,10 +2001,10 @@ fun ActiveBilateralWorkoutScreen(
                                         text = when {
                                             rightRunning -> tr(
                                                 lang,
-                                                "Mérés folyamatban (${selectedTargetSetNumber}. sorozat - Jobb) ●",
-                                                "Measuring (Set #${selectedTargetSetNumber} - Right) ●",
-                                                "Messung läuft (${selectedTargetSetNumber}. Satz - Rechts) ●",
-                                                "Măsurare în curs (Seria #${selectedTargetSetNumber} - Dreapta) ●"
+                                                "Mérés folyamatban ●",
+                                                "Measuring ●",
+                                                "Messung läuft ●",
+                                                "Măsurare în curs ●"
                                             )
                                             isRightRecordedInTarget -> tr(
                                                 lang,
@@ -1970,7 +2021,7 @@ fun ActiveBilateralWorkoutScreen(
                                                 "Țintă: Seria #${selectedTargetSetNumber} Partea dreaptă (${defaultTargetSec} sec)"
                                             )
                                         },
-                                        style = MaterialTheme.typography.labelSmall,
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = when {
                                             rightRunning -> palette.primary
                                             isRightRecordedInTarget -> palette.success
@@ -1980,7 +2031,8 @@ fun ActiveBilateralWorkoutScreen(
                                 }
                             }
 
-                            // Digital display
+                            Spacer(modifier = Modifier.width(8.dp))
+                            // Reserve the readout before measuring the side description.
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
                                 color = palette.surfaceElevated,
@@ -1991,7 +2043,9 @@ fun ActiveBilateralWorkoutScreen(
                                     style = MaterialTheme.typography.headlineMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = if (rightRunning) palette.primary else palette.textPrimary,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    modifier = Modifier.widthIn(min = 98.dp, max = 112.dp)
+                                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                                        .wrapContentWidth(Alignment.CenterHorizontally).testTag("bilateral_right_live_readout")
                                 )
                             }
                         }
@@ -3046,6 +3100,7 @@ fun IntervalSettingsScreen(
         }
         item {
             IntervalStepperCard(
+                testTagPrefix = "studio_interval_work",
                 label = tr(lang, "Munkaidő", "Work time", "Arbeitszeit", "Timp de lucru"),
                 valueText = "$workSec $secWord",
                 onMinus = { workSec = (workSec - 5).coerceAtLeast(10) },
@@ -3054,6 +3109,7 @@ fun IntervalSettingsScreen(
         }
         item {
             IntervalStepperCard(
+                testTagPrefix = "studio_interval_rest",
                 label = tr(lang, "Pihenőidő", "Rest time", "Pausenzeit", "Timp de pauză"),
                 valueText = "$restSec $secWord",
                 onMinus = { restSec = (restSec - 5).coerceAtLeast(10) },
@@ -3062,6 +3118,7 @@ fun IntervalSettingsScreen(
         }
         item {
             IntervalStepperCard(
+                testTagPrefix = "studio_interval_rounds",
                 label = tr(lang, "Ismétlések (körök)", "Repetitions (rounds)", "Wiederholungen (Runden)", "Repetări (runde)"),
                 valueText = tr(lang, "$rounds kör", "$rounds rounds", "$rounds Runden", "$rounds runde"),
                 onMinus = { rounds = (rounds - 1).coerceAtLeast(1) },
@@ -3083,7 +3140,7 @@ fun IntervalSettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(tr(lang, "Hangjelzés", "Sound alert", "Tonhinweis", "Alertă sonoră"), color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
-                        Switch(checked = sound, onCheckedChange = { sound = it })
+                        Switch(checked = sound, onCheckedChange = { sound = it }, modifier = Modifier.testTag("studio_interval_sound"))
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -3093,6 +3150,12 @@ fun IntervalSettingsScreen(
                         Text(tr(lang, "Rezgés", "Vibration", "Vibration", "Vibrație"), color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
                         Switch(checked = vibration, onCheckedChange = { vibration = it })
                     }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Text(tr(lang, "Automatikus továbblépés", "Automatic advance", "Automatisch fortfahren", "Avansare automată"),
+                            color = palette.textPrimary, modifier = Modifier.weight(1f))
+                        Switch(checked = autoStep, onCheckedChange = { autoStep = it }, modifier = Modifier.testTag("studio_interval_auto_advance"))
+                    }
                 }
             }
         }
@@ -3100,11 +3163,11 @@ fun IntervalSettingsScreen(
             com.repforge.app.ui.theme.TrainPilotSaveButton(
                 onClick = {
                     onSaveAndStartIntervals(workSec, restSec, rounds, sound, vibration, autoStep)
-                    onSelectMeasurementMode(SubScreen.ACTIVE_TIMED)
                 },
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
                     .fillMaxWidth()
+                    .testTag("studio_interval_save_start")
                     .height(50.dp)
             ) {
                 Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
@@ -3118,6 +3181,7 @@ fun IntervalSettingsScreen(
 @Composable
 private fun IntervalStepperCard(
     label: String,
+    testTagPrefix: String,
     valueText: String,
     onMinus: () -> Unit,
     onPlus: () -> Unit
@@ -3147,6 +3211,7 @@ private fun IntervalStepperCard(
                     onClick = onMinus,
                     modifier = Modifier
                         .size(48.dp)
+                        .testTag("${testTagPrefix}_minus")
                         .clip(RoundedCornerShape(10.dp))
                         .background(palette.surfaceElevated)
                 ) {
@@ -3156,6 +3221,7 @@ private fun IntervalStepperCard(
                     onClick = onPlus,
                     modifier = Modifier
                         .size(48.dp)
+                        .testTag("${testTagPrefix}_plus")
                         .clip(RoundedCornerShape(10.dp))
                         .background(palette.primary)
                 ) {
@@ -3272,6 +3338,32 @@ fun WorkoutSummaryScreen(
     val activeSnapshotForSummary = com.repforge.app.StudioWorkoutSummaryPresentation.current(
         summaryFrame, uiState.activeWorkoutId, uiState.activeWorkoutGeneration)
     val summaryNow = java.time.Instant.now()
+    val summaryProvider = com.repforge.app.StudioWorkoutSummaryPresentation.selectedProvider(context)
+    val summaryWindowKey = activeSnapshotForSummary?.optJSONArray("activeIntervals")?.toString().orEmpty()
+    val summaryPauseRevision = activeSnapshotForSummary?.optLong("pauseRevision") ?: 0L
+    val summaryStarted = activeSnapshotForSummary?.optString("started").orEmpty()
+    val summaryEnd = remember(uiState.activeWorkoutId, uiState.activeWorkoutGeneration, summaryPauseRevision, summaryWindowKey, summaryStarted) {
+        java.time.Instant.now()
+    }
+    var summaryProviderHealth by remember(uiState.activeWorkoutId, uiState.activeWorkoutGeneration,
+        summaryProvider, summaryPauseRevision, summaryWindowKey, summaryStarted) {
+        mutableStateOf<com.repforge.app.StudioWorkoutSummaryPresentation.HealthSnapshot?>(null)
+    }
+    LaunchedEffect(uiState.activeWorkoutId, uiState.activeWorkoutGeneration, summaryProvider,
+        summaryPauseRevision, summaryWindowKey, summaryStarted) {
+        summaryProviderHealth = null
+        var host: android.content.Context = context
+        while (host is android.content.ContextWrapper && host !is android.app.Activity) host = host.baseContext
+        val activity = host as? android.app.Activity
+        val expected = activeSnapshotForSummary?.let { JSONObject(it.toString()) }
+        if (activity != null && expected != null) {
+            try {
+                summaryProviderHealth = com.repforge.app.StudioWorkoutSummaryPresentation.readHealth(
+                    context, activity, summaryProvider, expected, summaryEnd)
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (_: Exception) { /* Keep only existing workout-matched evidence when provider data is unavailable. */ }
+        }
+    }
     val persistedOutdoorDistKm = remember(uiState.activeWorkoutId, uiState.outdoorDistanceKm) {
         (com.repforge.app.StudioWorkoutBridge.readOutdoorEffectiveDistanceMeters(
             activeSnapshotForSummary,
@@ -3350,7 +3442,7 @@ fun WorkoutSummaryScreen(
         }
 
         val calories = com.repforge.app.StudioWorkoutSummaryPresentation.calories(
-            activeSnapshotForSummary, summaryLiveHealth, summaryNow)
+            activeSnapshotForSummary, summaryLiveHealth, summaryNow, summaryProvider, summaryProviderHealth)
         val caloriesLabel = calories?.let { "${it.toInt()} kcal" } ?: "— kcal"
 
         item {

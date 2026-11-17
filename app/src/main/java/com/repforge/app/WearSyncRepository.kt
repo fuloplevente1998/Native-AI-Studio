@@ -141,13 +141,22 @@ object WearSyncRepository {
      */
     fun processIncomingWatchCommandAsync(context: Context, command: JSONObject, uri: Uri?) {
         val appContext = context.applicationContext
-        syncScope.launch {
+        WearPendingCommandRecovery.capture(appContext, command, incoming = true)
+        syncScope.launch { processIncomingWatchCommand(appContext, command, uri) }
+    }
+
+    /** Shared by Data Layer delivery and the durable local retry; neither path bypasses admission. */
+    internal suspend fun processIncomingWatchCommand(appContext: Context, command: JSONObject, uri: Uri?) {
             try {
+                if (WearCommandQueueStore.seen(appContext, command.optString("commandId"))) {
+                    WearCommandReceipts.replay(appContext, command, uri)
+                    return
+                }
                 // Read-only refresh must not hold the dataset writer lock while awaiting Data Layer.
                 if (command.optString("action") == "requestHome") {
                     publishWatchHomeSnapshot(appContext)
                     withContext(Dispatchers.Main) { WearCommandReceipts.complete(appContext, command, "processed", uri) }
-                    return@launch
+                    return
                 }
                 // Explicit Unit bounds the K2 inference across the many command branches
                 // and nested Main dispatcher receipts; result is intentionally discarded.
@@ -270,7 +279,7 @@ object WearSyncRepository {
                                     "deferred" -> WearCommandQueueStore.enqueue(appContext, command, uri?.toString())
                                     else -> {
                                         PhoneWorkoutExecution.publish(appContext)
-                                        WearCommandReceipts.complete(appContext, command, "error", uri)
+                                        WearPendingCommandRecovery.completeRejected(appContext, command, uri, "error")
                                     }
                                 }
                             }
@@ -278,14 +287,39 @@ object WearSyncRepository {
 
                         "updateSet", "completeSet", "selectExercise", "nextExercise", "prevExercise", "skipRest", "toggleAutomatic" -> {
                             withContext(Dispatchers.Main) {
+                                val editor = ActiveWorkoutStore.current(appContext)
+                                if (action in setOf("updateSet", "completeSet") && editor?.optInt("nativeEditorProjection") == 1 &&
+                                    editor.optString("timerOwner") == "phone") {
+                                    when (WearPendingCommandRecovery.admission(appContext, command)) {
+                                        WearPendingCommandRecovery.Admission.WAIT -> {
+                                            WearCommandQueueStore.enqueue(appContext, command, uri?.toString())
+                                            return@withContext
+                                        }
+                                        WearPendingCommandRecovery.Admission.STALE -> {
+                                            WearPendingCommandRecovery.completeRejected(appContext, command, uri)
+                                            return@withContext
+                                        }
+                                        WearPendingCommandRecovery.Admission.READY -> Unit
+                                    }
+                                }
                                 val current = ActiveWorkoutStore.current(appContext)
                                 if (current == null || !current.optBoolean("active") ||
                                     current.optString("workoutId") != command.optString("workoutId")
                                 ) {
-                                    WearCommandReceipts.complete(appContext, command, "superseded", uri)
+                                    WearPendingCommandRecovery.completeRejected(appContext, command, uri)
                                     return@withContext
                                 }
-                                val saved = commitWatchEditorMutation(appContext, current, command)
+                                val saved = try {
+                                    commitWatchEditorMutation(appContext, current, command)
+                                } catch (rejected: WearPendingCommandRecovery.EditorRejected) {
+                                    if (WearPendingCommandRecovery.transient(rejected.result)) {
+                                        WearCommandQueueStore.enqueue(appContext, command, uri?.toString())
+                                    } else {
+                                        runCatching { PhoneWorkoutExecution.publish(appContext) }
+                                        WearCommandReceipts.complete(appContext, command, "error", uri)
+                                    }
+                                    return@withContext
+                                }
                                 publishActiveWorkoutSnapshot(appContext, saved)
                                 WearCommandReceipts.complete(appContext, command, "applied", uri)
                             }
@@ -457,15 +491,15 @@ object WearSyncRepository {
                 }
                 Unit // Keep the metadata lease operation's result invariant.
                 }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (_: Exception) {
-                if (uri != null) {
-                    try {
-                        WearCommandQueueStore.enqueue(appContext, command, uri.toString())
-                    } catch (_: Exception) {
-                    }
+                try {
+                    WearCommandQueueStore.enqueue(appContext, command, uri?.toString())
+                } catch (_: Exception) {
+                    // The source DataItem remains available when local persistence is unavailable.
                 }
             }
-        }
     }
 
     private fun attachWatchRouteBindings193(context: Context, workoutId: String, workoutJson: JSONObject) {
@@ -499,11 +533,22 @@ object WearSyncRepository {
 
     /** Both v2 and legacy completions can unblock an inverse that arrived first. */
     internal fun drainNativeUndo188(context: Context) {
+        val execution = PhoneWorkoutExecution.store(context)
+        if (NativeDataReplacement.blocked(context) || execution.restoreBlocked() || execution.commandsSuspended()) return
         val pending = WearCommandQueueStore.pending(context)
         for (i in 0 until pending.length()) {
             try {
                 val command = pending.getJSONObject(i)
                 if (command.optString("action") != "undoSet" || !PhoneWorkoutExecution.compatible(command)) continue
+                when (WearPendingCommandRecovery.admission(context, command)) {
+                    WearPendingCommandRecovery.Admission.WAIT -> continue
+                    WearPendingCommandRecovery.Admission.STALE -> {
+                        WearCommandReceipts.complete(context, command,
+                            WearPendingCommandRecovery.terminalReceiptStatus(context, command), null)
+                        continue
+                    }
+                    WearPendingCommandRecovery.Admission.READY -> Unit
+                }
                 val result = PhoneWorkoutExecution.execute(context, command)
                 if (result.optString("status") in setOf("applied", "duplicate", "rejected")) {
                     PhoneWorkoutExecution.publish(context)
@@ -569,7 +614,7 @@ object WearSyncRepository {
             if (measured.optString("action") == "completeMeasuredSet") {
                 measured.put("legacyBilateral250", JSONObject(command.toString()))
                 val result = PhoneWorkoutExecution.execute(context, measured)
-                check(result.optString("status") in setOf("applied", "duplicate")) { result.optString("reason", "Recording failed") }
+                if (result.optString("status") !in setOf("applied", "duplicate")) throw WearPendingCommandRecovery.EditorRejected(result)
                 drainNativeUndo188(context)
                 return NativeWorkoutEditing.project(context)
             }
@@ -679,6 +724,7 @@ object WearSyncRepository {
     }
 
     fun publishActiveWorkoutSnapshot(context: Context, snapshot: JSONObject) {
+        WearPendingCommandRecovery.schedule(context)
         val mapRequest = PutDataMapRequest.create(ACTIVE_WORKOUT_PATH)
         mapRequest.dataMap.putBoolean("active", snapshot.optBoolean("active", true))
         mapRequest.dataMap.putLong("revision", snapshot.optLong("revision", 0L))
@@ -713,7 +759,7 @@ object WearSyncRepository {
         }
         val exercise = JSONObject()
             .put("id", lib.id)
-            .put("name", if (settings.language == "en") lib.nameEn else lib.nameHu)
+            .put("name", com.repforge.app.localization.WearNameLocalization.name(settings.language, lib.nameHu, lib.nameEn, lib.nameDe, lib.nameRo))
             .put("loadType", lib.loadType)
             .put("repUnit", lib.repUnit)
             .put("measurementType", lib.measurementType)
@@ -792,9 +838,9 @@ object WearSyncRepository {
             val allCalendarDaysArray = JSONArray()
             for (pWithDays in programsWithDays) {
                 val p = pWithDays.program
-                val pName = if (settings.language == "en") p.nameEn else p.nameHu
+                val pName = com.repforge.app.localization.WearNameLocalization.name(settings.language, p.nameHu, p.nameEn, p.nameDe, p.nameRo)
                 for (d in pWithDays.days.sortedBy { it.sortOrder }) {
-                    val dName = if (settings.language == "en") d.nameEn else d.nameHu
+                    val dName = com.repforge.app.localization.WearNameLocalization.name(settings.language, d.nameHu, d.nameEn, d.nameDe, d.nameRo)
                     val built = buildWatchDayJson(p.id, pName, d.dayId, dName, d.exercisesJson) ?: continue
                     allCalendarDaysArray.put(built)
                     if (p.id == activeProgram?.program?.id) {
@@ -845,7 +891,7 @@ object WearSyncRepository {
 
             // Quick exercises catalog
             val quickArray = JSONArray()
-            for (ex in allExercises.values.sortedBy { it.nameHu }) {
+            for (ex in allExercises.values.sortedBy { com.repforge.app.localization.WearNameLocalization.name(settings.language, it.nameHu, it.nameEn, it.nameDe, it.nameRo) }) {
                 buildWatchExerciseJson(ex.id)?.let { quickArray.put(it) }
             }
 
@@ -869,16 +915,26 @@ object WearSyncRepository {
                     if (sArr.length() > 0) {
                         exArr.put(
                             JSONObject()
-                                .put("name", exWithSets.exercise.nameHu)
+                                .put("name", com.repforge.app.localization.WearNameLocalization.historicalExercise(settings.language,
+                                    exWithSets.exercise.nameHu, exWithSets.exercise.nameEn,
+                                    allExercises[exWithSets.exercise.exerciseId]))
                                 .put("sets", sArr)
                         )
                     }
                 }
+                val historicalProgram = programsWithDays.firstOrNull { it.program.id == h.workout.programId }
+                val historicalDay = historicalProgram?.days?.firstOrNull {
+                    it.dayId == h.workout.dayId || it.compositeId == h.workout.dayId
+                }
+                val dayName = com.repforge.app.localization.WearNameLocalization.historicalName(settings.language, h.workout.dayName,
+                    historicalDay?.nameHu.orEmpty(), historicalDay?.nameEn.orEmpty(),
+                    historicalDay?.nameDe.orEmpty(), historicalDay?.nameRo.orEmpty(),
+                    historicalProgram?.program?.builtin == true)
                 val itemObj = JSONObject()
                     .put("workoutId", h.workout.id)
                     .put("started", h.workout.started)
                     .put("finished", h.workout.finished)
-                    .put("dayName", h.workout.dayName.ifBlank { "Edzés" })
+                    .put("dayName", dayName.ifBlank { com.repforge.app.localization.WearNameLocalization.name(settings.language, "Edzés", "Workout", "Training", "Antrenament") })
                     .put("quickWorkout", h.workout.quickWorkout)
                     .put("exercises", exArr)
                 NativeSavedWearHealth.read(h.workout)?.let {
@@ -899,7 +955,9 @@ object WearSyncRepository {
             val homeSnapshot = JSONObject()
                 .put("schema", 1)
                 .put("activeProgramId", activeProgram?.program?.id.orEmpty())
-                .put("activeProgramName", activeProgram?.program?.nameHu ?: "TrainPilot")
+                .put("activeProgramName", activeProgram?.program?.let {
+                    com.repforge.app.localization.WearNameLocalization.name(settings.language, it.nameHu, it.nameEn, it.nameDe, it.nameRo)
+                } ?: "TrainPilot")
                 .put("restSeconds", settings.restSeconds)
                 .put("hasDraft", hasDraft)
                 .put("days", activeDaysArray)

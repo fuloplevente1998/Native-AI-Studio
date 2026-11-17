@@ -551,6 +551,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     SubScreen.ACTIVE_TIMED -> {
                         ActiveTimedWorkoutScreen(
                             uiState = uiState,
+                            consumeIntervalStart = viewModel::consumeIntervalStart,
                             strings = strings,
                             onBack = { viewModel.navigateBack() },
                             onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
@@ -612,18 +613,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         )
                     }
 
-                    SubScreen.INTERVAL_SETTINGS -> {
-                        IntervalSettingsScreen(
-                            uiState = uiState,
-                            strings = strings,
-                            onBack = { viewModel.navigateBack() },
-                            onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
-                            onSelectMeasurementMode = { mode -> viewModel.navigateToSubScreen(mode, MainTab.WORKOUT) },
-                            onSaveAndStartIntervals = { work, rest, rounds, sound, vib, auto ->
-                                viewModel.updateIntervalSettings(work, rest, rounds, sound, vib, auto)
-                            }
-                        )
-                    }
+                    SubScreen.INTERVAL_SETTINGS -> StudioIntervalSettingsRoute(viewModel, uiState, strings)
 
                     SubScreen.WORKOUT_SUMMARY -> {
                         WorkoutSummaryScreen(
@@ -1147,4 +1137,18 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
         }
     }
     }
+}
+
+/** Shared production route: the form's callback cannot bypass durable canonical Start. */
+@Composable
+internal fun StudioIntervalSettingsRoute(
+    viewModel: TrainPilotViewModel,
+    uiState: com.example.ui.viewmodel.TrainPilotUiState,
+    strings: com.example.localization.LocalizedStrings
+) {
+    IntervalSettingsScreen(uiState, strings,
+        onBack = { viewModel.navigateBack() },
+        onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
+        onSelectMeasurementMode = { viewModel.navigateToSubScreen(it, MainTab.WORKOUT) },
+        onSaveAndStartIntervals = viewModel::saveAndStartIntervals)
 }

@@ -496,25 +496,68 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
             try {
                 val data = com.repforge.app.NativeDataReplacement.continuationForCurrentData(context)
                 val frame = editableSnapshot() ?: error("A telefon jelenleg nem vezérli ezt az edzést.")
-                target.resolve(frame)
-                check(!frame.optBoolean("workoutPaused")) { "Az edzés szünetel. Folytasd az aktív edzést." }
-                onEditorVisible()
-                val ready = kotlinx.coroutines.withTimeoutOrNull(3_000) {
-                    while (!IntervalTimerService.armed(target.workoutId, target.generation)) {
-                        val current = editableSnapshot() ?: error("Az edzés vezérlése megváltozott.")
-                        check(target.resolve(current).exerciseIndex == current.optInt("currentExercise") &&
-                            !current.optBoolean("workoutPaused")) { "A stopper célpontja megváltozott." }
-                        delay(50)
-                    }
-                    true
-                } == true
-                check(ready) { "A háttéridőzítő még nem áll készen. Próbáld újra az indítást." }
+                awaitMeasurementController(target, frame.optLong("ownerEpoch193"), frame.optLong("pauseRevision"))
                 data.requireCurrent(context)
                 val saved = NativeWorkoutEditing.startStopwatch(context, target, side)
                 parseSnapshotToUi(saved)
                 refreshStopwatchUi()
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
             catch (error: Exception) { showStatus(error.message ?: "A stopper nem indítható.") }
+        }
+    }
+
+    private suspend fun awaitMeasurementController(target: NativeWorkoutTarget, ownerEpoch: Long, pauseRevision: Long) {
+        fun checkedFrame(): JSONObject {
+            val frame = editableSnapshot() ?: error("Az edzés vezérlése megváltozott.")
+            check(NativeWorkoutEditing.canEdit(context, target.workoutId, target.generation) &&
+                frame.optLong("ownerEpoch193") == ownerEpoch && frame.optLong("pauseRevision") == pauseRevision &&
+                !frame.optBoolean("workoutPaused")) {
+                "Az edzés vezérlése megváltozott. Folytasd az aktív edzést, majd indítsd újra a mérést."
+            }
+            val resolved = target.resolve(frame)
+            check(resolved.exerciseIndex == frame.optInt("currentExercise") && !resolved.set.optBoolean("done")) {
+                "A mérés célpontja megváltozott."
+            }
+            return frame
+        }
+        checkedFrame()
+        onEditorVisible()
+        val ready = kotlinx.coroutines.withTimeoutOrNull(3_000) {
+            while (true) {
+                checkedFrame()
+                if (IntervalTimerService.armed(target.workoutId, target.generation)) break
+                delay(50)
+            }
+            true
+        } == true
+        check(ready) { "A háttéridőzítő még nem áll készen. Próbáld újra az indítást." }
+        checkedFrame()
+    }
+
+    /** One explicit request, bounded by target/owner and editor disposal; never a resume hook. */
+    fun startIntervalsWhenReady(target: NativeWorkoutTarget, expectedOwnerEpoch: Long? = null, expectedPauseRevision: Long? = null) {
+        if (stopwatchStartJob?.isActive == true) return
+        stopwatchStartJob = viewModelScope.launch {
+            try {
+                val data = com.repforge.app.NativeDataReplacement.continuationForCurrentData(context)
+                val frame = editableSnapshot() ?: error("A telefon jelenleg nem vezérli ezt az edzést.")
+                check((expectedOwnerEpoch == null || frame.optLong("ownerEpoch193") == expectedOwnerEpoch) &&
+                    (expectedPauseRevision == null || frame.optLong("pauseRevision") == expectedPauseRevision)) { "Az edzés vezérlése megváltozott." }
+                val resolved = target.resolve(frame)
+                check(NativeSetStopwatch.timed(resolved.exercise) && !NativeSetStopwatch.bilateral(resolved.exercise)) {
+                    "Az intervallummérés egyoldali időalapú sorozathoz indítható."
+                }
+                check(frame.optJSONObject(NativeSetStopwatch.FIELD)?.let { NativeSetStopwatch.running(it) } != true &&
+                    !NativeGpsMeasurement.busy(frame)) { "Előbb állítsd le a másik mérést." }
+                awaitMeasurementController(target, frame.optLong("ownerEpoch193"), frame.optLong("pauseRevision"))
+                data.requireCurrent(context)
+                val current = NativeWorkoutEditing.project(context)
+                val timer = current.optJSONObject("latestTimer162")
+                check(timer == null || timer.optBoolean("restOnly") || timer.optBoolean("stopped") ||
+                    timer.optBoolean("interrupted") || timer.optString("phase") == "complete") { "Az intervallummérés már fut." }
+                parseSnapshotToUi(NativeWorkoutEditing.startIntervals(context, target))
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (error: Exception) { showStatus(error.message ?: "Az intervallum nem indítható.") }
         }
     }
 
@@ -666,7 +709,7 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
                     val config = JSONObject().put("work", work.toInt()).put("rest", rest.toInt()).put("rounds", rounds.toInt())
                         .put("sound", sound).put("vibration", vibration).put("autoAdvance", autoAdvance)
                     NativeWorkoutEditing.configureIntervals(context, target, config)
-                    if (saveGlobally) settingsStore.setTimerDefaults(config.getInt("work"), config.getInt("rest"),
+                    if (saveGlobally) settingsStore.setIntervalPreset(config.getInt("work"), config.getInt("rest"),
                         config.getInt("rounds"), sound, vibration, autoAdvance)
                 }
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
@@ -677,11 +720,7 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    fun startIntervals(target: NativeWorkoutTarget) {
-        if (editableSnapshot() == null) return
-        try { NativeWorkoutEditing.startIntervals(context, target) }
-        catch (error: Exception) { showStatus(error.message ?: "Az intervallum nem indítható.") }
-    }
+    fun startIntervals(target: NativeWorkoutTarget) = startIntervalsWhenReady(target)
 
     fun stopIntervals(target: NativeTimerTarget) {
         if (editableSnapshot() == null) return
