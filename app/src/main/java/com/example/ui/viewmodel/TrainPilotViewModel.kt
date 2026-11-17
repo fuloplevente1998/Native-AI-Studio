@@ -2030,6 +2030,8 @@ class TrainPilotViewModel : ViewModel() {
                     detail.contains("Deactivate", true) -> "Törlés előtt válassz másik aktív programot."
                     detail.contains("active", true) || detail.contains("transferring", true) ->
                         "Előbb fejezd be az aktív vagy átadás alatt lévő edzést. Törlés előtt válassz másik aktív programot."
+                    detail.contains("planned calendar workouts", true) ->
+                        com.example.localization.CalendarFeedback.plannedProgram(_uiState.value.language)
                     detail.contains("history", true) || detail.contains("calendar", true) ->
                         "A naplóban vagy a naptárban használt program/nap nem törölhető."
                     detail.contains("Built-in", true) -> "A beépített sablon nem törölhető; készíts saját másolatot."
@@ -2513,6 +2515,73 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
+    private var calendarClearPreview: com.repforge.app.NativeCalendarClear.Preview? = null
+    private var calendarClearTicket: NativeDataReplacement.Continuation? = null
+    private var calendarClearRevision = 0L
+
+    fun requestCalendarClear() {
+        val context = nativeContext ?: return
+        val db = nativeDatabase ?: return
+        val scope = nativeScope ?: return
+        if (_uiState.value.calendarClearBusy) return
+        val ticket = runCatching { NativeDataReplacement.continuationForCurrentData(context) }.getOrElse {
+            showBannerMessage(com.example.localization.CalendarFeedback.clearFailed(_uiState.value.language)); return
+        }
+        val origin = _uiState.value.navigationRoute()
+        _uiState.update { it.copy(calendarClearBusy = true) }
+        scope.launch {
+            try {
+                calendarWriteJob?.join()
+                check(calendarWriteError == null)
+                com.repforge.app.NativeProgramEditor.assertNoActiveWorkout(context)
+                val revision = calendarWriteRevision
+                val preview = withContext(Dispatchers.IO) { com.repforge.app.NativeCalendarClear.preview(db) }
+                ticket.requireCurrent(context)
+                check(revision == calendarWriteRevision)
+                if (origin != _uiState.value.navigationRoute()) return@launch
+                calendarClearPreview = preview; calendarClearTicket = ticket; calendarClearRevision = revision
+                _uiState.update { it.copy(showCalendarClearDialog = true) }
+            } catch (error: Exception) {
+                if (error is CancellationException) currentCoroutineContext().ensureActive()
+                showBannerMessage(com.example.localization.CalendarFeedback.clearFailed(_uiState.value.language))
+            } finally { _uiState.update { it.copy(calendarClearBusy = false) } }
+        }
+    }
+
+    fun cancelCalendarClear() {
+        calendarClearPreview = null; calendarClearTicket = null
+        _uiState.update { it.copy(showCalendarClearDialog = false) }
+    }
+
+    fun clearCalendarPlans() {
+        val context = nativeContext ?: return
+        val db = nativeDatabase ?: return
+        val scope = nativeScope ?: return
+        if (_uiState.value.calendarClearBusy) return
+        val preview = calendarClearPreview ?: return
+        val ticket = calendarClearTicket ?: return
+        val revision = calendarClearRevision
+        cancelCalendarClear()
+        _uiState.update { it.copy(calendarClearBusy = true) }
+        scope.launch {
+            try {
+                calendarWriteJob?.join()
+                val removed = withContext(Dispatchers.IO) { calendarWriteMutex.withLock {
+                    check(revision == calendarWriteRevision && calendarWriteError == null)
+                    com.repforge.app.NativeCalendarClear.commit(context, db, preview, ticket)
+                } }
+                ticket.requireCurrent(context)
+                ++calendarWriteRevision
+                _uiState.update { it.copy(calendarEvents = it.calendarEvents.filterNot { row -> row.id in removed.ids },
+                    calendarUndoStack = emptyList(), statusBannerMessage =
+                        com.example.localization.CalendarFeedback.cleared(it.language, removed.count)) }
+            } catch (error: Exception) {
+                if (error is CancellationException) currentCoroutineContext().ensureActive()
+                showBannerMessage(com.example.localization.CalendarFeedback.clearFailed(_uiState.value.language))
+            } finally { _uiState.update { it.copy(calendarClearBusy = false) } }
+        }
+    }
+
     // Calendar & Replan Actions
     fun selectCalendarDay(day: Int) {
         _uiState.update { it.copy(selectedCalendarDay = day) }
@@ -2551,11 +2620,13 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun planMonthlyWorkouts() {
+        if (_uiState.value.calendarClearBusy) return
         _uiState.update { com.example.model.StudioCalendarPlanning.plan(it) }
         persistCalendarStateToRoomAsync()
     }
 
     fun applyCalendarReplan(newStartDate: String, firstDayHu: String, programId: String? = null) {
+        if (_uiState.value.calendarClearBusy) return
         val current = _uiState.value
         if (current.libraryMutationBusy || (programId != null && current.programs.none { it.id == programId })) return
         if (programId != null) activateProgram(programId)
@@ -2575,6 +2646,7 @@ class TrainPilotViewModel : ViewModel() {
         newTimeLabel: String,
         newDurationMin: Int
     ) {
+        if (_uiState.value.calendarClearBusy) return
         _uiState.update { state ->
             val updated = state.calendarEvents.map { ev ->
                 if (ev.id == eventId) {
@@ -2599,6 +2671,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun moveCalendarEvent(eventId: String, targetDay: Int, shiftFollowingPlanned: Boolean = true) {
+        if (_uiState.value.calendarClearBusy) return
         _uiState.update { state ->
             val target = state.calendarEvents.firstOrNull { it.id == eventId } ?: return@update state
             val month = YearMonth.from(LocalDate.parse(target.dateIso))
@@ -2626,6 +2699,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun deleteCalendarEvent(eventId: String) {
+        if (_uiState.value.calendarClearBusy) return
         val db = nativeDatabase
         val scope = nativeScope
         _uiState.update { state ->
@@ -2640,6 +2714,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun addPlannedWorkoutOnDay(day: Int, splitBadge: String, timeLabel: String, durationMin: Int) {
+        if (_uiState.value.calendarClearBusy) return
         _uiState.update { state ->
             val program = state.programs.firstOrNull { it.isActive }
             val selectedDay = program?.days?.firstOrNull { it.dayCode.substringBefore(' ').equals(splitBadge, true) }
@@ -2666,6 +2741,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun undoCalendarAction() {
+        if (_uiState.value.calendarClearBusy) return
         _uiState.update { state ->
             val previous = state.calendarUndoStack.lastOrNull() ?: return@update state.copy(
                 statusBannerMessage = com.example.localization.CalendarFeedback.undoEmpty(state.language)

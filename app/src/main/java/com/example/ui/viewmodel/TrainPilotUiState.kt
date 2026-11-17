@@ -275,6 +275,8 @@ data class TrainPilotUiState(
     val calendarEvents: List<CalendarDayEvent> = emptyList(),
     val calendarUndoStack: List<List<CalendarDayEvent>> = emptyList(),
     val showReplanModal: Boolean = false,
+    val showCalendarClearDialog: Boolean = false,
+    val calendarClearBusy: Boolean = false,
     val planningCadenceHu: String = "Minden második nap",
     val planningFirstDayHu: String = "Alap A",
     val planningStartDate: String = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy. MM. dd.")),

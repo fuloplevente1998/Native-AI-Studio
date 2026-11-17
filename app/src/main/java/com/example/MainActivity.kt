@@ -453,6 +453,9 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 viewModel.updatePlanningParameters(rhythm, firstDay, startDate, time, dur, weeks)
                             },
                             onPlanMonthlyWorkouts = { viewModel.planMonthlyWorkouts() },
+                            onRequestClearCalendar = viewModel::requestCalendarClear,
+                            onConfirmClearCalendar = viewModel::clearCalendarPlans,
+                            onCancelClearCalendar = viewModel::cancelCalendarClear,
                             onModifyCalendarEvent = { id, title, split, time, dur ->
                                 viewModel.modifyCalendarEvent(id, title, split, time, dur)
                             },
@@ -860,6 +863,9 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                         viewModel.updatePlanningParameters(rhythm, firstDay, startDate, time, dur, weeks)
                                     },
                                     onPlanMonthlyWorkouts = { viewModel.planMonthlyWorkouts() },
+                            onRequestClearCalendar = viewModel::requestCalendarClear,
+                            onConfirmClearCalendar = viewModel::clearCalendarPlans,
+                            onCancelClearCalendar = viewModel::cancelCalendarClear,
                                     onModifyCalendarEvent = { id, title, split, time, dur ->
                                         viewModel.modifyCalendarEvent(id, title, split, time, dur)
                                     },

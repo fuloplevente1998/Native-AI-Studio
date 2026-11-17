@@ -81,6 +81,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.example.ui.components.StudioAdaptiveControlRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -1532,6 +1533,7 @@ private fun EditorStepperBox(
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun CalendarPlannerScreen(
     state: TrainPilotUiState,
@@ -1549,7 +1551,10 @@ fun CalendarPlannerScreen(
     onAddPlannedWorkoutOnDay: (Int, String, String, Int) -> Unit = { _, _, _, _ -> },
     onUndoCalendarAction: () -> Unit = {},
     onSelectMonth: (String) -> Unit = {},
-    onActivateProgram: (String) -> Unit = {}
+    onActivateProgram: (String) -> Unit = {},
+    onRequestClearCalendar: () -> Unit = {},
+    onConfirmClearCalendar: () -> Unit = {},
+    onCancelClearCalendar: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
@@ -2163,25 +2168,40 @@ fun CalendarPlannerScreen(
                         )
                     }
 
-                    Button(
-                        onClick = onPlanMonthlyWorkouts,
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = palette.primary,
-                            contentColor = palette.onPrimary
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 48.dp).testTag("calendar_plan_action")
-                    ) {
-                        Text(
-                            text = trW(state.language, "Edzések megtervezése", "Plan workouts", "Trainings planen", "Planifică antrenamentele"),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
-                        )
+                    StudioAdaptiveControlRow(minimumWidth = 88.dp) {
+                        com.repforge.app.ui.theme.TrainPilotNegativeButton(
+                            onClick = onRequestClearCalendar, enabled = !state.calendarClearBusy,
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp).semantics { contentDescription = trW(state.language, "Naptár ürítése", "Clear calendar", "Kalender leeren", "Șterge calendarul") }.testTag("calendar_clear_action")) {
+                            Text(trW(state.language, "Ürítés", "Clear", "Leeren", "Șterge"), maxLines = 1)
+                        }
+                        Button(onClick = onPlanMonthlyWorkouts, enabled = !state.calendarClearBusy,
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("calendar_plan_action")) {
+                            Text(trW(state.language, "Tervezés", "Plan workouts", "Trainings planen", "Planifică"), fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
         }
+    }
+    if (state.showCalendarClearDialog) {
+        AlertDialog(onDismissRequest = onCancelClearCalendar,
+            title = { Text(trW(state.language, "Naptár ürítése?", "Clear calendar?", "Kalender leeren?", "Ștergi calendarul?")) },
+            text = { Text(trW(state.language,
+                "Az összes tervezett és kihagyott edzés törlődik a naptárból. A befejezett edzések és a napló megmaradnak. Ez nem vonható vissza.",
+                "All planned and skipped workouts will be removed from the calendar. Completed workouts and your log will be kept. This cannot be undone.",
+                "Alle geplanten und ausgelassenen Trainings werden aus dem Kalender entfernt. Abgeschlossene Trainings und das Protokoll bleiben erhalten. Dies kann nicht rückgängig gemacht werden.",
+                "Toate antrenamentele planificate și omise vor fi șterse din calendar. Antrenamentele finalizate și jurnalul rămân. Acțiunea nu poate fi anulată.")) },
+            confirmButton = { com.repforge.app.ui.theme.TrainPilotNegativeButton(
+                onClick = onConfirmClearCalendar, enabled = !state.calendarClearBusy,
+                modifier = Modifier.testTag("calendar_clear_confirm")) {
+                Text(trW(state.language, "Ürítés", "Clear", "Leeren", "Șterge"))
+            } },
+            dismissButton = { com.repforge.app.ui.theme.TrainPilotTextButton(
+                onClick = onCancelClearCalendar, modifier = Modifier.testTag("calendar_clear_cancel")) {
+                Text(trW(state.language, "Mégse", "Cancel", "Abbrechen", "Anulează"))
+            } })
     }
     if (openedDay != null) {
         com.example.ui.components.CompactCalendarDialog(

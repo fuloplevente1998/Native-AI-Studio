@@ -70,16 +70,16 @@ internal fun StudioProgramManagementControls(
                 modifier = Modifier.testTag("studio_program_day_name"))
             else Text(if (operation == "delete-day")
                 word(
-                    "Az aktuális edzésnap törlődik a programból. A naplóban vagy naptárban használt napot az app megőrzi.",
-                    "The current workout day will be removed from the program. Days referenced in the log or calendar are preserved.",
-                    "Der aktuelle Trainingstag wird aus dem Programm entfernt. Im Protokoll oder Kalender verwendete Tage bleiben erhalten.",
-                    "Ziua curentă de antrenament va fi eliminată din program. Zilele utilizate în jurnal sau calendar sunt păstrate."
+                    "Az edzésnap törlődik a programból. A korábbi edzések megmaradnak. Tervezett alkalmait előbb töröld a naptárból.",
+                    "The workout day will be removed. Past workouts are kept. Clear its planned calendar entries first.",
+                    "Der Trainingstag wird entfernt. Frühere Trainings bleiben erhalten. Entferne zuerst seine geplanten Kalendereinträge.",
+                    "Ziua de antrenament va fi eliminată. Antrenamentele anterioare se păstrează. Șterge mai întâi planurile sale din calendar."
                 )
                 else word(
-                    "A saját program végleg törlődik a tárból. Aktív, naplóban vagy naptárban használt program nem törölhető.",
-                    "The custom program will be permanently deleted. Active programs or programs used in the log or calendar cannot be deleted.",
-                    "Das eigene Programm wird dauerhaft gelöscht. Aktive oder im Protokoll/Kalender verwendete Programme können nicht gelöscht werden.",
-                    "Programul personalizat va fi șters definitiv. Programele active sau utilizate în jurnal/calendar nu pot fi șterse."
+                    "A saját program törlődik a tárból. A korábbi edzések megmaradnak. Törlés előtt válassz másik aktív programot, és ürítsd a program terveit a naptárból.",
+                    "The custom program will be deleted. Your workout history is kept. Select another active program and clear this program’s calendar plans first.",
+                    "Das eigene Programm wird gelöscht. Das Trainingsprotokoll bleibt erhalten. Wähle zuerst ein anderes aktives Programm und entferne die Kalenderpläne.",
+                    "Programul personalizat va fi șters. Jurnalul se păstrează. Selectează alt program activ și șterge mai întâi planurile sale din calendar."
                 ))
         }, confirmButton = { com.repforge.app.ui.theme.TrainPilotActionButton(positive = operation == "add-day",
             enabled = !busy && (operation != "add-day" || dayName.isNotBlank()),

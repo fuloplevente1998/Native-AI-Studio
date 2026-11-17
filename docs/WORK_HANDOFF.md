@@ -1,3 +1,24 @@
+# #264 — Programtörlés és naptárürítés, draft PR265, 2026-11-17
+
+Ág fix/program-calendar-removal, PR263 ágára épülő stacked draft PR265.
+Az inaktív saját program/nap már törölhető pusztán történeti hivatkozások
+mellett; napló és lezárt naptári snapshot megmarad. Aktív program, builtin,
+futó/átadás alatti edzés és élő tervezett bejegyzés védelme megmarad.
+Naptári sor balra Ürítés, jobbra Tervezés; megerősített tömeges tervtörlés,
+Room preview/CAS/adatcsere-védelem, cancellation/timestamp/managed Google-delete,
+Undo/planner receipt lezárása, teljes rollback és commit utáni UI-siker.
+Részletek PROGRAM_CALENDAR_REMOVAL_264.md.
+
+CI44150814973 SUCCESS, forrás8d18b7680640ecf101c5923f9563d1dcb49bc776.
+Nyers XML: telefon123/637 + Wear36/198 =835,0failure/error/skipped;
+shared NO-SOURCE. Hét új native/VM/UI eset, a PR263 teljes javításával együtt.
+ZIP-digest és XML-egyezés ellenőrizve: verification/PR265-ci-evidence.json.
+A lezáró commit dokumentáció; app-/teszt-/buildforrás változatlan.
+PR263 és PR265 még nem main, új installer/verzió nincs; a kiadott2765
+nem tartalmazza őket. Fizikai vizuális/szinkron elfogadás külön hátravan.
+
+---
+
 # #262 — Kompakt/reszponzív vezérlők, draft PR263, 2026-11-17
 
 Ág fix/compact-responsive-controls, alap main7bcc1f9/kiadott2765.
