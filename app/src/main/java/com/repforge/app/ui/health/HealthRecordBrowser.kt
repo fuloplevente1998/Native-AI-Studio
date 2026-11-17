@@ -1,5 +1,6 @@
 package com.repforge.app.ui.health
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -445,7 +446,7 @@ private fun DateBoundBox(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick)
+            .trainPilotClickable(RoundedCornerShape(14.dp), onClick = onClick)
             .padding(vertical = 4.dp, horizontal = 4.dp)
             .heightIn(min = 52.dp)
             .testTag(testTag),
@@ -621,7 +622,7 @@ internal fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(10.dp))
-                        .clickable { expanded = !expanded }
+                        .trainPilotClickable(RoundedCornerShape(10.dp)) { expanded = !expanded }
                         .padding(vertical = 4.dp)
                         .testTag("health_record_expand_${row.id}"),
                     horizontalArrangement = Arrangement.SpaceBetween,

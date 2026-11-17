@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.layout.sizeIn
 import com.example.ui.components.WorkoutControlAppearance
 import com.example.ui.components.StudioCompactAction
@@ -125,8 +126,6 @@ import android.location.LocationListener
 import android.location.LocationManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.DropdownMenu
@@ -204,8 +203,7 @@ fun MeasurementModeSwitcherRow(
                 color = if (selected) palette.primary else palette.surfaceElevated,
                 modifier = Modifier
                     .height(48.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .clickable { onSelectMode(mode) }
+                    .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectMode(mode) }
                     .testTag("measurement_mode_${mode.name.lowercase()}")
             ) {
                 Box(
@@ -390,8 +388,7 @@ fun ActiveStrengthWorkoutScreen(
                     Box(modifier = Modifier.weight(1f)) {
                         Column(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { exerciseDropdownExpanded = true }
+                                .trainPilotClickable(RoundedCornerShape(12.dp)) { exerciseDropdownExpanded = true }
                                 .padding(vertical = 2.dp)
                         ) {
                             Row(
@@ -499,8 +496,7 @@ fun ActiveStrengthWorkoutScreen(
                             shape = RoundedCornerShape(10.dp),
                             color = palette.surfaceElevated,
                             modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable { onOpenExerciseDetail(currentExerciseId) }
+                                .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenExerciseDetail(currentExerciseId) }
                         ) {
                             Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                                 Icon(Icons.Default.FitnessCenter,
@@ -603,8 +599,7 @@ fun ActiveStrengthWorkoutScreen(
                                 color = if (uiState.restTimerRunning) palette.primary else palette.cardBorder,
                                 shape = RoundedCornerShape(14.dp)
                             )
-                            .clip(RoundedCornerShape(14.dp))
-                            .clickable { restTimerManualOverride = true }
+                            .trainPilotClickable(RoundedCornerShape(14.dp)) { restTimerManualOverride = true }
                             .testTag("sticky_rest_timer_compact")
                     ) {
                         com.example.ui.components.StudioCompactRestControls(
@@ -652,8 +647,7 @@ fun ActiveStrengthWorkoutScreen(
                                             shape = RoundedCornerShape(8.dp),
                                             color = palette.surfaceElevated,
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .clickable { restTimerManualOverride = false }
+                                                .trainPilotClickable(RoundedCornerShape(8.dp)) { restTimerManualOverride = false }
                                         ) {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
@@ -696,8 +690,7 @@ fun ActiveStrengthWorkoutScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(58.dp)
-                                        .clip(CircleShape)
-                                        .clickable(enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onToggleRestRunning() },
+                                        .trainPilotClickable(CircleShape, enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onToggleRestRunning() },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     val ringColor = palette.primary
@@ -844,7 +837,7 @@ private fun SetValuePill(
                 color = if (highlighted) palette.primary else palette.cardBorder,
                 shape = RoundedCornerShape(10.dp)
             )
-            .clickable { onClick() }
+            .trainPilotClickable(RoundedCornerShape(10.dp)) { onClick() }
     ) {
         Text(
             text = valueText,
@@ -998,8 +991,7 @@ fun ActiveTimedWorkoutScreen(
                             Box(modifier = Modifier.weight(1f)) {
                                 Column(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .clickable { timedDropdownExpanded = true }
+                                        .trainPilotClickable(RoundedCornerShape(10.dp)) { timedDropdownExpanded = true }
                                         .padding(vertical = 2.dp)
                                 ) {
                                     Row(
@@ -1299,8 +1291,7 @@ fun ActiveTimedWorkoutScreen(
                                 color = if (targetSec == sec) palette.primary else palette.surfaceElevated,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .clickable { targetSec = sec }
+                                    .trainPilotClickable(RoundedCornerShape(10.dp)) { targetSec = sec }
                             ) {
                                 Text(
                                     text = "$sec $secWord",
@@ -1678,8 +1669,7 @@ fun ActiveBilateralWorkoutScreen(
                                     color = palette.surfaceElevated,
                                     modifier = Modifier
                                         .fillMaxWidth().heightIn(min = 40.dp).testTag("bilateral_exercise_switch")
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .clickable { showExerciseDropdown = true }
+                                        .trainPilotClickable(RoundedCornerShape(8.dp)) { showExerciseDropdown = true }
                                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                 ) {
                                     Text(
@@ -2104,8 +2094,7 @@ fun ActiveBilateralWorkoutScreen(
                                 shape = RoundedCornerShape(10.dp),
                                 color = palette.primary.copy(alpha = 0.16f),
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .clickable { onAddSet() }
+                                    .trainPilotClickable(RoundedCornerShape(10.dp)) { onAddSet() }
                             ) {
                                 Text(
                                     text = tr(lang, "+ Sorozat", "+ Set", "+ Satz", "+ Serie"),
@@ -2128,8 +2117,7 @@ fun ActiveBilateralWorkoutScreen(
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .clickable { selectedTargetSetNumber = setItem.setNumber }
+                                    .trainPilotClickable(RoundedCornerShape(14.dp)) { selectedTargetSetNumber = setItem.setNumber }
                                     .trainPilotBorder(
                                         width = if (isSelectedTarget) 1.5.dp else 1.dp,
                                         color = when {
@@ -2270,7 +2258,7 @@ fun ActiveBilateralWorkoutScreen(
                                 else if (dragAmount < -12f) restTimerLargeMode = false
                             }
                         }
-                        .clickable { restTimerLargeMode = !restTimerLargeMode }
+                        .trainPilotClickable(RoundedCornerShape(12.dp)) { restTimerLargeMode = !restTimerLargeMode }
                 ) {
                     Column(modifier = Modifier.padding(start = 8.dp, end = 0.dp, top = 2.dp, bottom = 2.dp)) {
                         com.example.ui.components.StudioCompactRestControls(
@@ -3390,7 +3378,7 @@ fun WorkoutSummaryScreen(
                                 color = if (isSelected) palette.primary else palette.surfaceElevated,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clickable { selectedPhotoCategory = catKey }
+                                    .trainPilotClickable(RoundedCornerShape(10.dp)) { selectedPhotoCategory = catKey }
                                     .testTag("summary_photo_cat_$catKey")
                             ) {
                                 Box(
@@ -3563,8 +3551,7 @@ fun WorkoutSummaryScreen(
                                                 .padding(4.dp)
                                                 .size(48.dp)
                                                 .border(1.dp, com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline, CircleShape)
-                                                .clip(CircleShape)
-                                                .clickable(enabled = !uiState.isSavingWorkout && !photoBusy) {
+                                                .trainPilotClickable(CircleShape, enabled = !uiState.isSavingWorkout && !photoBusy) {
                                                     scope.launch {
                                                         photoBusy = true
                                                         try {

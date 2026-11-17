@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -60,7 +61,7 @@ private fun ModeOption(label: String, selected: Boolean, tag: String, onClick: (
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = if (selected) p.primary else p.surfaceElevated,
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick).testTag(tag)
+        modifier = Modifier.fillMaxWidth().trainPilotClickable(RoundedCornerShape(12.dp), onClick = onClick).testTag(tag)
     ) {
         Text(label, fontWeight = FontWeight.SemiBold,
             color = if (selected) p.onPrimary else p.textPrimary,
@@ -184,7 +185,7 @@ internal fun StudioWorkoutModesDialog(
                         Text(workoutModeText(lang, "Alapértelmezett pihenőidő", "Default rest timer",
                             "Standard-Pausenzeit", "Timp implicit de pauză"), color = p.textPrimary)
                         Surface(shape = RoundedCornerShape(10.dp), color = p.surfaceElevated,
-                            modifier = Modifier.clickable(onClick = onCycleRest).testTag("studio_modes_rest")) {
+                            modifier = Modifier.trainPilotClickable(RoundedCornerShape(10.dp), onClick = onCycleRest).testTag("studio_modes_rest")) {
                             Text("${state.defaultRestSec} $unit ↻", color = p.primary,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                                 fontWeight = FontWeight.Bold)

@@ -1,5 +1,7 @@
 package com.repforge.app.ui.home
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.repforge.app.ui.theme.trainPilotClickable
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
@@ -149,7 +151,7 @@ internal fun QuickWorkoutScreen(outdoorOnly: Boolean, starting: Boolean,
                     if (demoOpenFailed) Text(demoWords[3], color = colors.danger)
                 }
                 if (NativeOutdoorStart.eligible(ex.id, ex.measurementType, ex.repUnit)) {
-                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(enabled = !starting) { recordRoute = !recordRoute },
+                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).trainPilotClickable(RoundedCornerShape(12.dp), enabled = !starting) { recordRoute = !recordRoute },
                         verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = recordRoute, onCheckedChange = { recordRoute = it }, enabled = !starting)
                         Text(text[7])

@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -177,7 +178,7 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                                         color = if (isSelected) palette.primary else palette.surfaceElevated,
                                         modifier = Modifier
                                             .weight(1f)
-                                            .clickable { selectedCategory = catKey }
+                                            .trainPilotClickable(RoundedCornerShape(10.dp)) { selectedCategory = catKey }
                                             .testTag("photo_cat_chip_$catKey")
                                     ) {
                                         Box(

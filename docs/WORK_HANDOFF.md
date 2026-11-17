@@ -1,3 +1,14 @@
+# Lenyomásjelzés — PR268 gyűjtő, CI továbbra is SZÜNETEL
+
+Témacsoport-fejléc teljes íves kártyaszélességen reagál, a margó a kattintható
+felületen belül van. Telefonos külön clickable műveletek közös alakot követő
+jelzésre átvezetve; kisebb ikonoknál nagyobb érintési célpont megőrizve.
+Valódi Settings pixelregresszió, kompakt törlés regresszió és teljes telefonos
+forráshasználat-őr hozzáadva. Még NEM futottak; nincs CI/build/main/verzió.
+Statikus diff --check és forrásaudit rendben. PHONE_PRESS_FEEDBACK_COVERAGE.md.
+
+---
+
 # Health Connect szinkron — PR268 gyűjtő, CI továbbra is SZÜNETEL
 
 A készülékes row_offset / change_log_request_table hiba felismerése után HC

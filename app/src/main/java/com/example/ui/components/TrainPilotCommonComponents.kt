@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.material.icons.filled.Flag
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
@@ -118,10 +119,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.ListAlt
-import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.ui.semantics.Role
@@ -199,8 +198,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = 48.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable { onSelectTab(MainTab.HOME) }
+                        .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectTab(MainTab.HOME) }
                         .padding(vertical = 2.dp, horizontal = 4.dp)
                         .testTag("top_bar_brand_home")
                 ) {
@@ -234,8 +232,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         color = if (isCalendarActive) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable { onSelectTab(MainTab.CALENDAR) }
+                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectTab(MainTab.CALENDAR) }
                             .testTag("top_bar_calendar_button")
                             .trainPilotBorder(1.dp, if (isCalendarActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
@@ -259,8 +256,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         color = if (isCoachActive) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable { onSelectTab(MainTab.COACH) }
+                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectTab(MainTab.COACH) }
                             .testTag("top_bar_coach_button")
                             .trainPilotBorder(1.dp, if (isCoachActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
@@ -284,8 +280,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         color = if (isSettingsActive) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable { onOpenSettings() }
+                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenSettings() }
                             .testTag("top_bar_settings_button")
                             .trainPilotBorder(1.dp, if (isSettingsActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
@@ -552,8 +547,7 @@ fun TrainPilotBottomNavigationBar(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onSelectTab(tab) }
+                        .trainPilotClickable(RoundedCornerShape(12.dp)) { onSelectTab(tab) }
                         .padding(vertical = 6.dp)
                         .testTag("bottom_nav_${tab.name.lowercase()}"),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -670,7 +664,7 @@ fun PalettePickerBottomSheet(
                         color = if (active) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
                             .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                            .clickable { onSelectLanguage(lang) }
+                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectLanguage(lang) }
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -702,7 +696,7 @@ fun PalettePickerBottomSheet(
                                 color = if (active) palette.primary else palette.cardBorder,
                                 shape = RoundedCornerShape(10.dp)
                             )
-                            .clickable { onSelectFontScale(scale) }
+                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectFontScale(scale) }
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -727,7 +721,7 @@ fun PalettePickerBottomSheet(
                             color = if (compactPhoneMode) palette.primary else palette.cardBorder,
                             shape = RoundedCornerShape(10.dp)
                         )
-                        .clickable { onToggleCompactMode(!compactPhoneMode) }
+                        .trainPilotClickable(RoundedCornerShape(10.dp)) { onToggleCompactMode(!compactPhoneMode) }
                 ) {
                     Box(
                         contentAlignment = Alignment.Center,
@@ -769,7 +763,7 @@ fun PalettePickerBottomSheet(
                                 color = if (active) palette.primary else palette.cardBorder,
                                 shape = RoundedCornerShape(20.dp)
                             )
-                            .clickable { onSelectCategory(cat) }
+                            .trainPilotClickable(RoundedCornerShape(20.dp)) { onSelectCategory(cat) }
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -845,7 +839,7 @@ private fun PaletteRowCard(
                 color = if (isSelected) item.primary else if (item.hasGlow) item.primary.copy(alpha = 0.7f) else item.cardBorder,
                 shape = RoundedCornerShape(14.dp)
             )
-            .clickable { onClick() }
+            .trainPilotClickable(RoundedCornerShape(14.dp)) { onClick() }
             .testTag("palette_option_${item.id}")
     ) {
         Row(
@@ -983,7 +977,7 @@ fun GoalsEditDialog(
                             .weight(1f)
                             .heightIn(min = 44.dp)
                             .trainPilotBorder(1.dp, if (isWeekly) palette.primary else palette.cardBorder, RoundedCornerShape(12.dp))
-                            .clickable { period = com.example.model.WorkoutGoalPeriod.WEEKLY }
+                            .trainPilotClickable(RoundedCornerShape(12.dp)) { period = com.example.model.WorkoutGoalPeriod.WEEKLY }
                             .testTag("goal_period_weekly_btn")
                     ) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp)) {
@@ -1009,7 +1003,7 @@ fun GoalsEditDialog(
                             .weight(1f)
                             .heightIn(min = 44.dp)
                             .trainPilotBorder(1.dp, if (isMonthly) palette.primary else palette.cardBorder, RoundedCornerShape(12.dp))
-                            .clickable { period = com.example.model.WorkoutGoalPeriod.MONTHLY }
+                            .trainPilotClickable(RoundedCornerShape(12.dp)) { period = com.example.model.WorkoutGoalPeriod.MONTHLY }
                             .testTag("goal_period_monthly_btn")
                     ) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp)) {
@@ -1396,8 +1390,7 @@ fun PersonalPlannerModalDialog(
                         if (isOpen) palette.primary else palette.cardBorder,
                         RoundedCornerShape(12.dp)
                     )
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable {
+                    .trainPilotClickable(RoundedCornerShape(12.dp)) {
                         openDropdownKey = if (isOpen) null else dropdownKey
                     }
                     .let { if (testTag.isNotEmpty()) it.testTag(testTag) else it }
@@ -1621,8 +1614,7 @@ fun PersonalPlannerModalDialog(
                                         if (isEquipmentOpen) palette.primary else palette.cardBorder,
                                         RoundedCornerShape(12.dp)
                                     )
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {
+                                    .trainPilotClickable(RoundedCornerShape(12.dp)) {
                                         openDropdownKey = if (isEquipmentOpen) null else "equipment"
                                     }
                                     .testTag("profile_equipment_box")
@@ -1831,8 +1823,7 @@ fun PersonalPlannerModalDialog(
                                         if (isMusclesOpen) Color(0xFFFF6E6E) else Color(0xFF7A1B28),
                                         RoundedCornerShape(12.dp)
                                     )
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {
+                                    .trainPilotClickable(RoundedCornerShape(12.dp)) {
                                         openDropdownKey = if (isMusclesOpen) null else "excluded_muscles"
                                     }
                                     .testTag("profile_excluded_muscles_box")
@@ -1934,8 +1925,7 @@ fun PersonalPlannerModalDialog(
                                         if (isExercisesOpen) Color(0xFFFF6E6E) else Color(0xFF7A1B28),
                                         RoundedCornerShape(12.dp)
                                     )
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {
+                                    .trainPilotClickable(RoundedCornerShape(12.dp)) {
                                         openDropdownKey = if (isExercisesOpen) null else "excluded_exercises"
                                     }
                                     .testTag("profile_excluded_exercises_box")
@@ -2292,8 +2282,7 @@ fun QuickWorkoutSheet(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(12.dp))
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { strengthDropdownOpen = true }
+                                .trainPilotClickable(RoundedCornerShape(12.dp)) { strengthDropdownOpen = true }
                                 .testTag("quick_strength_picker")
                         ) {
                             Row(
@@ -2437,8 +2426,7 @@ fun QuickWorkoutSheet(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(12.dp))
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { timedDropdownOpen = true }
+                                .trainPilotClickable(RoundedCornerShape(12.dp)) { timedDropdownOpen = true }
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -2549,8 +2537,7 @@ private fun QuickOptionRow(
             .fillMaxWidth()
             .heightIn(min = 48.dp)
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
-            .clip(RoundedCornerShape(14.dp))
-            .clickable { onClick() }
+            .trainPilotClickable(RoundedCornerShape(14.dp)) { onClick() }
     ) {
         Row(
             modifier = Modifier

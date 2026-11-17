@@ -1,5 +1,6 @@
 package com.repforge.app.ui.workout
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import com.example.ui.components.WorkoutControlAppearance
 import androidx.compose.foundation.layout.heightIn
 
@@ -564,7 +565,7 @@ fun ActiveWorkoutScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { viewModel.addExerciseToWorkout(libEx) }
+                                .trainPilotClickable(RoundedCornerShape(12.dp)) { viewModel.addExerciseToWorkout(libEx) }
                                 .padding(vertical = 10.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -727,7 +728,7 @@ fun ActiveWorkoutHeader(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .background(colors.card2)
-                        .clickable(onClick = onOwnershipAction)
+                        .trainPilotClickable(RoundedCornerShape(8.dp), onClick = onOwnershipAction)
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {

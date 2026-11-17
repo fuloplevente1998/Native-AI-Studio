@@ -1,5 +1,7 @@
 package com.repforge.app.ui.programs
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import android.content.Intent
@@ -232,7 +234,7 @@ internal fun ExerciseLibraryScreen(language: String, model: ExerciseLibraryViewM
                 items(visible, key = { it.id }) { ex ->
                     Card(colors = CardDefaults.cardColors(containerColor = colors.card)) {
                         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f).clickable { selectedId = ex.id; openingError = false }
+                            Column(Modifier.weight(1f).trainPilotClickable(RoundedCornerShape(12.dp)) { selectedId = ex.id; openingError = false }
                                 .padding(8.dp).testTag("exercise_library_row_${ex.id}")) {
                                 Text(localized(ex, language), color = colors.text)
                                 Text(muscleName(ex.primaryMuscle, strings), color = colors.muted)

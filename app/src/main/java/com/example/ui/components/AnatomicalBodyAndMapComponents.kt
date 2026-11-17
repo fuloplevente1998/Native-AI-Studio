@@ -1,5 +1,9 @@
 package com.example.ui.components
 
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.repforge.app.ui.theme.trainPilotPressIndication
+import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotSoftGlow
 
 import com.repforge.app.ui.theme.trainPilotBorder
@@ -46,7 +50,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -273,10 +276,11 @@ fun AnatomicalMuscleHeatmapCard(
                     color = palette.textPrimary
                 )
                 if (onPeriodSelected != null && periodDays != null) {
+                    val periodInteraction = remember { MutableInteractionSource() }
                     Box(
                         modifier = Modifier.size(48.dp)
                             .testTag("muscle_heatmap_period_pill")
-                            .clickable {
+                            .clickable(interactionSource = periodInteraction, indication = null) {
                                 onPeriodSelected(periodDayOptions[(selectedPeriodIdx + 1) % periodOptions.size])
                             },
                         contentAlignment = Alignment.Center
@@ -285,6 +289,7 @@ fun AnatomicalMuscleHeatmapCard(
                             shape = RoundedCornerShape(10.dp),
                             color = palette.surfaceElevated,
                             modifier = Modifier.size(41.dp)
+                                .trainPilotPressIndication(RoundedCornerShape(10.dp), periodInteraction)
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
                                 .testTag("muscle_heatmap_period_visual")
                         ) {
@@ -363,8 +368,7 @@ fun AnatomicalMuscleHeatmapCard(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(6.dp))
-                                .clickable {
+                                .trainPilotClickable(RoundedCornerShape(6.dp)) {
                                     selectedMuscleId = if (selectedMuscleId == m.id) "all" else m.id
                                 }
                                 .padding(vertical = 1.dp)
@@ -455,7 +459,7 @@ fun AnatomicalMuscleHeatmapCard(
             // Keep the safety caveat visible; put the longer explanation behind a tap.
             Text(
                 text = explanationToggleLabel,
-                modifier = Modifier.clickable { showExplanation = !showExplanation }
+                modifier = Modifier.trainPilotClickable(RoundedCornerShape(8.dp)) { showExplanation = !showExplanation }
                     .testTag("muscle_explanation_toggle"),
                 style = MaterialTheme.typography.labelSmall,
                 color = palette.textSecondary,
@@ -490,7 +494,7 @@ fun AnatomicalMuscleHeatmapCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
-                        .clickable { selectedMuscleId = "all" }
+                        .trainPilotClickable(RoundedCornerShape(14.dp)) { selectedMuscleId = "all" }
                 ) {
                     Column(
                         modifier = Modifier.padding(10.dp),
@@ -513,7 +517,7 @@ fun AnatomicalMuscleHeatmapCard(
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.primary,
-                                    modifier = Modifier.clickable {
+                                    modifier = Modifier.trainPilotClickable(RoundedCornerShape(8.dp)) {
                                         onOpenExerciseDetail(selectedMuscleObj.exerciseIdToOpen)
                                     }
                                 )

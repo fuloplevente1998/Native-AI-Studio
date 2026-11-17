@@ -87,7 +87,6 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.Watch
 import androidx.compose.foundation.BorderStroke
 import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.ButtonDefaults
@@ -338,8 +337,7 @@ fun HealthTabScreen(
                                 shape = RoundedCornerShape(8.dp),
                                 color = palette.surfaceElevated,
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable { dateText = presetDate.format(dotFormatter) }
+                                    .trainPilotClickable(RoundedCornerShape(8.dp)) { dateText = presetDate.format(dotFormatter) }
                             ) {
                                 Text(
                                     text = presetTitle,
@@ -660,7 +658,7 @@ fun HealthTabScreen(
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                        modifier = Modifier.clickable { expandedTodayTileKey = null }
+                                        modifier = Modifier.trainPilotClickable(RoundedCornerShape(12.dp)) { expandedTodayTileKey = null }
                                     ) {
                                         Text(
                                             text = strings.closeAction,
@@ -697,7 +695,7 @@ fun HealthTabScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .clickable { onToggleHealthSection("pulse") }
+                                                    .trainPilotClickable(RoundedCornerShape(14.dp)) { onToggleHealthSection("pulse") }
                                                     .testTag("health_pulse_trend_header"),
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -769,7 +767,7 @@ fun HealthTabScreen(
                                                     .fillMaxWidth()
                                                     .height(54.dp)
                                                     .trainPilotBorder(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
-                                                    .clickable { onToggleHealthSection("pulse") }
+                                                    .trainPilotClickable(RoundedCornerShape(14.dp)) { onToggleHealthSection("pulse") }
                                             ) {
                                                 if (uiState.dailyPulseHistory.size < 2) {
                                                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -870,7 +868,7 @@ fun HealthTabScreen(
                                                 Row(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .clickable { onNavigateToSubScreen(SubScreen.COACH_DETAIL) }
+                                                        .trainPilotClickable(RoundedCornerShape(12.dp)) { onNavigateToSubScreen(SubScreen.COACH_DETAIL) }
                                                         .padding(vertical = 4.dp),
                                                     horizontalArrangement = Arrangement.SpaceBetween,
                                                     verticalAlignment = Alignment.CenterVertically
@@ -898,8 +896,7 @@ fun HealthTabScreen(
                                         .fillMaxWidth()
                                         .heightIn(min = 48.dp)
                                         .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .clickable { onActionClick() }
+                                        .trainPilotClickable(RoundedCornerShape(10.dp)) { onActionClick() }
                                         .testTag("health_expanded_action_button")
                                 ) {
                                     Row(
@@ -969,8 +966,7 @@ fun HealthTabScreen(
                         Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable { onToggleHealthSection("weekly") }
+                                .trainPilotClickable(RoundedCornerShape(10.dp)) { onToggleHealthSection("weekly") }
                         ) {
                             Text(
                                 text = if (uiState.workoutGoalPeriod == com.example.model.WorkoutGoalPeriod.MONTHLY) {
@@ -1004,8 +1000,7 @@ fun HealthTabScreen(
                             color = palette.background.copy(alpha = 0.65f),
                             modifier = Modifier
                                 .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                                .clip(RoundedCornerShape(18.dp))
-                                .clickable { onOpenGoalsDialog() }
+                                .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenGoalsDialog() }
                                 .testTag("health_weekly_goals_button")
                         ) {
                             Row(
@@ -1031,8 +1026,7 @@ fun HealthTabScreen(
                             val tag = if (steps) "steps" else "minutes"
                             Surface(shape = RoundedCornerShape(18.dp), color = palette.background.copy(alpha = 0.55f),
                                 modifier = Modifier.weight(1f).trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                                    .clip(RoundedCornerShape(18.dp))
-                                    .clickable { onToggleHealthSection(if (steps) "weekly_steps" else "weekly_workouts") }
+                                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onToggleHealthSection(if (steps) "weekly_steps" else "weekly_workouts") }
                                     .testTag("health_weekly_${tag}_card")) {
                                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1134,7 +1128,7 @@ fun HealthTabScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { onToggleHealthSection("weight") }
+                                    .trainPilotClickable(RoundedCornerShape(14.dp)) { onToggleHealthSection("weight") }
                                     .testTag("health_weight_log_header"),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -1213,7 +1207,7 @@ fun HealthTabScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .trainPilotBorder(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
-                                    .clickable { onToggleHealthSection("weight") }
+                                    .trainPilotClickable(RoundedCornerShape(14.dp)) { onToggleHealthSection("weight") }
                             ) {
                                 Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                                     val lineColor = palette.primary
@@ -1384,7 +1378,7 @@ fun HealthTabScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
-                                        .clickable { onToggleAddWeightDialog(true) }
+                                        .trainPilotClickable(RoundedCornerShape(14.dp)) { onToggleAddWeightDialog(true) }
                                         .testTag("health_add_weight_button")
                                 ) {
                                     Row(
@@ -1421,8 +1415,7 @@ fun HealthTabScreen(
                                                     color = if (sel) palette.primary else palette.cardBorder,
                                                     shape = RoundedCornerShape(12.dp)
                                                 )
-                                                .clip(RoundedCornerShape(12.dp))
-                                                .clickable { onSelectWeightRange(idx) }
+                                                .trainPilotClickable(RoundedCornerShape(12.dp)) { onSelectWeightRange(idx) }
                                         ) {
                                             Text(
                                                 text = r,
@@ -1485,8 +1478,7 @@ fun HealthTabScreen(
                                                             color = palette.primary.copy(alpha = 0.12f),
                                                             modifier = Modifier
                                                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(10.dp))
-                                                                .clip(RoundedCornerShape(10.dp))
-                                                                .clickable { editingMeasurement = entry }
+                                                                .trainPilotClickable(RoundedCornerShape(10.dp)) { editingMeasurement = entry }
                                                         ) {
                                                             Text(
                                                                 text = strings.editAction,
@@ -1501,8 +1493,7 @@ fun HealthTabScreen(
                                                             color = Color(0xFFEF4444).copy(alpha = 0.14f),
                                                             modifier = Modifier
                                                                 .border(1.dp, Color(0xFFEF4444).copy(alpha = 0.55f), RoundedCornerShape(10.dp))
-                                                                .clip(RoundedCornerShape(10.dp))
-                                                                .clickable {
+                                                                .trainPilotClickable(RoundedCornerShape(10.dp)) {
                                                                     recentMeasurements = recentMeasurements.filterNot { it.id == entry.id }
                                                                     onDeleteWeightLog(entry.id)
                                                                 }
@@ -1574,7 +1565,7 @@ fun HealthTabScreen(
                                 color = if (uiState.primaryHealthSourceSamsung) palette.primary else palette.cardBorder,
                                 shape = RoundedCornerShape(14.dp)
                             )
-                            .clickable { onSelectHealthSource(true) }
+                            .trainPilotClickable(RoundedCornerShape(14.dp)) { onSelectHealthSource(true) }
                             .testTag("health_provider_samsung")
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
@@ -1597,7 +1588,7 @@ fun HealthTabScreen(
                                 color = if (!uiState.primaryHealthSourceSamsung) palette.primary else palette.cardBorder,
                                 shape = RoundedCornerShape(14.dp)
                             )
-                            .clickable { onSelectHealthSource(false) }
+                            .trainPilotClickable(RoundedCornerShape(14.dp)) { onSelectHealthSource(false) }
                             .testTag("health_provider_connect")
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
@@ -1621,8 +1612,7 @@ fun HealthTabScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
-                    .clip(RoundedCornerShape(20.dp))
-                    .clickable { onNavigateToSubScreen(SubScreen.WATCH_AND_SYNC) }
+                    .trainPilotClickable(RoundedCornerShape(20.dp)) { onNavigateToSubScreen(SubScreen.WATCH_AND_SYNC) }
                     .testTag("health_open_watch_sync_card")
             ) {
                 Row(
@@ -1674,8 +1664,7 @@ fun HealthTabScreen(
                             .weight(1f)
                             .height(52.dp)
                             .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(16.dp))
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable(enabled = !uiState.healthSyncBusy) { onTriggerHealthSync() }
+                            .trainPilotClickable(RoundedCornerShape(16.dp), enabled = !uiState.healthSyncBusy) { onTriggerHealthSync() }
                             .testTag("health_sync_button")
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -1694,8 +1683,7 @@ fun HealthTabScreen(
                             .weight(1f)
                             .height(52.dp)
                             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable { onRequestHealthPermissions() }
+                            .trainPilotClickable(RoundedCornerShape(16.dp)) { onRequestHealthPermissions() }
                             .testTag("health_open_permissions_button")
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -1777,8 +1765,7 @@ internal fun MainTodayStatusTile(
         color = palette.background.copy(alpha = 0.55f),
         modifier = modifier
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-            .clip(RoundedCornerShape(16.dp))
-            .clickable { onClick() }
+            .trainPilotClickable(RoundedCornerShape(16.dp)) { onClick() }
     ) {
         Column(
             modifier = Modifier.padding(horizontal = if (compact) 8.dp else 10.dp, vertical = if (compact) 5.dp else 10.dp),
@@ -1871,7 +1858,7 @@ private fun ExpandableHealthSectionCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onToggle() },
+                    .trainPilotClickable(RoundedCornerShape(20.dp)) { onToggle() },
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -2254,8 +2241,7 @@ private fun CoachExerciseAdviceRow(
         color = palette.surfaceElevated,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable { onClick() }
+            .trainPilotClickable(RoundedCornerShape(12.dp)) { onClick() }
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -2395,7 +2381,7 @@ fun SettingsMainScreen(
                     Surface(
                         shape = RoundedCornerShape(14.dp),
                         color = Color.Transparent,
-                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).clickable {
+                        modifier = Modifier.fillMaxWidth().trainPilotClickable(RoundedCornerShape(14.dp)) {
                             expandedMainThemesSection = !expandedMainThemesSection
                         }.testTag("settings_open_palettes_row")
                     ) {
@@ -2442,13 +2428,14 @@ fun SettingsMainScreen(
                             .trainPilotBorder(TrainPilotFrames.panelWidth, palette.cardBorder, RoundedCornerShape(18.dp))
                             .testTag("settings_theme_category_$categoryIndex")
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
+                        Column {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .heightIn(min = 48.dp)
-                                    .clickable { onToggleCat() }
-                                    .testTag("settings_theme_category_toggle_$categoryIndex"),
+                                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onToggleCat() }
+                                    .testTag("settings_theme_category_toggle_$categoryIndex")
+                                    .padding(12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -2486,9 +2473,9 @@ fun SettingsMainScreen(
                             }
 
                             if (isExpanded) {
-                                Spacer(modifier = Modifier.height(10.dp))
-                                // 2-column grid of themes in this category
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                // Keep choices outside the header's click/feedback area.
+                                Column(modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     catPalettes.chunked(2).forEach { pair ->
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
@@ -2506,8 +2493,8 @@ fun SettingsMainScreen(
                                                             color = if (isSel) itemPal.primary else itemPal.cardBorder,
                                                             shape = RoundedCornerShape(14.dp)
                                                         )
-                                                        .clip(RoundedCornerShape(14.dp))
-                                                        .clickable {
+                                                        .testTag("settings_palette_choice_${itemPal.id}")
+                                                        .trainPilotClickable(RoundedCornerShape(14.dp)) {
                                                             onSelectPalette(itemPal.id)
                                                             onShowBanner("${tr(uiState.language, "Téma aktiválva", "Theme activated", "Thema aktiviert", "Temă activată")}: ${itemPal.localizedName(uiState.language)}")
                                                         }
@@ -2579,8 +2566,7 @@ fun SettingsMainScreen(
                                 color = if (selected) palette.primary else palette.surfaceElevated,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .clickable { onSelectLanguage(lang) }
+                                    .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectLanguage(lang) }
                             ) {
                                 Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 8.dp)) {
                                     Text(
@@ -2605,8 +2591,7 @@ fun SettingsMainScreen(
             ) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                            .clickable(enabled = !uiState.progressionModeBusy, role = androidx.compose.ui.semantics.Role.Button) {
+                        Modifier.fillMaxWidth().trainPilotClickable(RoundedCornerShape(12.dp), enabled = !uiState.progressionModeBusy) {
                                 onToggleProgressionModal(!uiState.showProgressionModal)
                             }.testTag("settings_workout_toggle").padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -2849,8 +2834,7 @@ fun WatchAndSyncScreen(
                                     color = if (phoneSelected) palette.primary else palette.cardBorder,
                                     shape = RoundedCornerShape(16.dp)
                                 )
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable {
+                                .trainPilotClickable(RoundedCornerShape(16.dp)) {
                                     if (!phoneSelected && !uiState.watchControlPending) onToggleControlMode()
                                 }
                                 .testTag("watch_mode_phone_card")
@@ -2898,8 +2882,7 @@ fun WatchAndSyncScreen(
                                     color = if (watchSelected) palette.primary else palette.cardBorder,
                                     shape = RoundedCornerShape(16.dp)
                                 )
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable {
+                                .trainPilotClickable(RoundedCornerShape(16.dp)) {
                                     if (!watchSelected && !uiState.watchControlPending) onToggleControlMode()
                                 }
                                 .testTag("watch_mode_watch_card")
@@ -3017,8 +3000,7 @@ fun WatchAndSyncScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                    .clip(RoundedCornerShape(18.dp))
-                    .clickable { onRequestPermission("hc") }
+                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onRequestPermission("hc") }
             ) {
                 Row(
                     modifier = Modifier.padding(14.dp),
@@ -3068,8 +3050,7 @@ fun WatchAndSyncScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                    .clip(RoundedCornerShape(18.dp))
-                    .clickable { onRequestPermission("samsung") }
+                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onRequestPermission("samsung") }
             ) {
                 Row(
                     modifier = Modifier.padding(14.dp),
@@ -3190,7 +3171,7 @@ fun StudioGoogleCloudSyncCard(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                    .testTag("settings_google_expand").clip(RoundedCornerShape(10.dp)).clickable { cloudExpanded = !cloudExpanded },
+                    .testTag("settings_google_expand").trainPilotClickable(RoundedCornerShape(10.dp)) { cloudExpanded = !cloudExpanded },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -3285,8 +3266,7 @@ fun StudioGoogleCloudSyncCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable { settingsViewModel.setRecoverEarlierBackups(!settingsState.recoverEarlierBackupsChecked) }
+                        .trainPilotClickable(RoundedCornerShape(10.dp)) { settingsViewModel.setRecoverEarlierBackups(!settingsState.recoverEarlierBackupsChecked) }
                         .padding(vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {

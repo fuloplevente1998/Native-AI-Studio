@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -55,8 +56,7 @@ internal fun StudioExerciseSequenceStrip(
                     shape = shape,
                     color = when { current -> palette.primary; done -> palette.success.copy(alpha = .18f); else -> palette.surfaceElevated },
                     modifier = Modifier.widthIn(min = 48.dp)
-                        .trainPilotBorder(1.dp, border, shape).clip(shape)
-                        .clickable { onSelect(exercise) }.testTag("active_exercise_chip_$index")
+                        .trainPilotBorder(1.dp, border, shape).trainPilotClickable(shape) { onSelect(exercise) }.testTag("active_exercise_chip_$index")
                 ) {
                     Text("${index + 1}. ${exercise.localizedName(state.language)}" + if (done && !current) " ✓" else "",
                         style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold,
