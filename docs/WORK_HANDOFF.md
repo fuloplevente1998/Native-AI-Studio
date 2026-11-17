@@ -1,3 +1,27 @@
+# 2765-r2 · 1.2-beta — main, telefonos APK átadva, 2026-11-17
+
+Felhasználó jóváhagyta PR263/PR265 teljes main-integrációját és telefonos APK-t
+kért; mindkét PR mainen. Signed forrás `89dbad963160093d35a8c34e3d7a02c1c1e0dfc7`,
+run44153314270 SUCCESS, build_aab=false. Telefon276500/Wear276502,1.2-beta;
+verziókód nem nőtt, a2765-r2 fájljelölés különíti el az APK-only javítást.
+
+Nyers XML: telefon123/637 + Wear36/198 =835,0failure/error/skipped;
+shared NO-SOURCE. Két ZIP digestje, manifest/hash/tartós signer/Maps/páros
+identitás ellenőrizve. Új telefonos DEX és három konkrét UI-kódjelölő igazolt;
+Wear DEX a korábbi2765-tel egyezik, órás frissítés nem szükséges.
+A meglévő kapu mindkét release APK-t ellenőrizte, csak a telefonosat adtuk át.
+
+Benne: közös reszponzív vezérlők, program/nap történetmegőrző törlése,
+megerősített naptári tervürítés, cancellation és rollback védelem.
+Drive-on telefon APK, változáslista és bizonyíték; három név/méret/parent
+visszaellenőrizve, régi APK/AAB fájlok megőrizve. Részletek:
+releases/2765-r2-changes.md,2765-r2-verified-apks.json,2765-r2-drive-delivery.json.
+Első túl korai44153159433/a68f17e futás leállítva; onnan nincs átadott APK.
+Fizikai elfogadás még hátravan; nincs új AAB/Play-feltöltés vagy issue-autozárás.
+A lezáró commit kizárólag dokumentáció, a signed kód változatlan.
+
+---
+
 # #264 — Programtörlés és naptárürítés, draft PR265, 2026-11-17
 
 Ág fix/program-calendar-removal, PR263 ágára épülő stacked draft PR265.

@@ -50,3 +50,7 @@ futott a teljes regresszió, release R8-val. Letöltött artifact SHA-256 egyezi
 a nyers XML önálló újraszámolása egyezik a CI-verifier eredményével.
 [Bizonyíték](verification/PR265-ci-evidence.json). A lezáró commit csak dokumentáció.
 Fizikai készülékes elfogadás és Play-feltöltés külön marad.
+
+Későbbi felhasználói jóváhagyás: PR263 és PR265 mainen,835 zöld tesztes
+signed kapu és ellenőrzött2765-r2 telefonos APK átadva.
+[Kiadási átadás](releases/2765-r2-changes.md). Fizikai elfogadás külön marad.

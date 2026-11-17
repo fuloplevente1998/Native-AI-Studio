@@ -1,0 +1,142 @@
+{
+  "label": "2765-r2",
+  "release": 2765,
+  "versionName": "1.2-beta",
+  "source": "89dbad963160093d35a8c34e3d7a02c1c1e0dfc7",
+  "run": 44153314270,
+  "runUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/44153314270",
+  "mainMergePrs": [
+    263,
+    265
+  ],
+  "apkOnly": true,
+  "aabBuilt": false,
+  "phoneDelivered": true,
+  "wearUpdateRequired": false,
+  "wearDexUnchanged": true,
+  "phoneDexChanged": true,
+  "artifactDigests": {
+    "apk": "sha256:ef27b425ffcad2e5714e7e4b149f425673fc4c65ca3b1c1b3fc5e543eb34fa90",
+    "tests": "sha256:fa9de9ee7d66974a54742af8867830207f1210ceae4ef2e19d28afddc8327d64"
+  },
+  "artifactDigestsVerified": true,
+  "files": {
+    "app-release.apk": {
+      "file": "/workspace/TrainPilot-build-2765-r2/app-release.apk",
+      "bytes": 5562155,
+      "sha256": "44ed336e5a5d388399a574ba073a3d11a7f1de73305bced02facdf70df3b4f1d",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "manifest": {
+        "versionCode": 276500,
+        "versionName": "1.2-beta",
+        "package": "com.TrainPilot.com"
+      },
+      "dexSha256": {
+        "classes.dex": "2b5cbf028ef59fb97ddf9b3f698fde84f37a37295206e38f71b62b9a800a4aa1"
+      }
+    },
+    "wear-release.apk": {
+      "file": "/workspace/TrainPilot-build-2765-r2/wear-release.apk",
+      "bytes": 4669631,
+      "sha256": "480f2595e3fc6e7ff896a6980c45502b7e31fcbd1566639e977d81222e462413",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "manifest": {
+        "versionCode": 276502,
+        "versionName": "1.2-beta",
+        "package": "com.TrainPilot.com"
+      },
+      "dexSha256": {
+        "classes.dex": "004fb8abc90203f67502276025ea420bec2441d7057ae3fbf2a357f903654158"
+      }
+    }
+  },
+  "rawXml": {
+    "app": {
+      "files": 123,
+      "tests": 637,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "wear": {
+      "files": 36,
+      "tests": 198,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "files": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "junitVerification": {
+    "commit": "89dbad963160093d35a8c34e3d7a02c1c1e0dfc7",
+    "modules": {
+      "phone": {
+        "files": 123,
+        "tests": 637,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "wear": {
+        "files": 36,
+        "tests": 198,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "shared": {
+        "files": 0,
+        "tests": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": true
+      }
+    },
+    "total": {
+      "tests": 835,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "apkVerification": {
+    "applicationId": "com.TrainPilot.com",
+    "versionCode": "276500",
+    "versionName": "1.2-beta",
+    "apkSha256": "44ed336e5a5d388399a574ba073a3d11a7f1de73305bced02facdf70df3b4f1d",
+    "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+    "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+    "mapsApiKeyConfigured": true,
+    "ciCheckout": "89dbad963160093d35a8c34e3d7a02c1c1e0dfc7",
+    "wear": {
+      "applicationId": "com.TrainPilot.com",
+      "versionCode": "276502",
+      "versionName": "1.2-beta",
+      "apkSha256": "480f2595e3fc6e7ff896a6980c45502b7e31fcbd1566639e977d81222e462413",
+      "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "variant": "release",
+      "bytes": 4669631
+    },
+    "wearCompanionCapabilityRetained": true,
+    "dataLayerPairIdentityVerified": true,
+    "wearHardwareRequired": true
+  },
+  "physicalAcceptance": false,
+  "previousVersionCodesPreserved": true,
+  "cancelledIncompleteSourceRun": 44153159433,
+  "compiledControlMarkersVerified": [
+    "calendar_clear_action",
+    "calendar_clear_confirm",
+    "bilateral_exercise_switch"
+  ]
+}
