@@ -31,6 +31,8 @@ class AuditSettingsDurabilityRegressionTest {
         assertTrue(saved.healthBackupConsent)
         assertEquals(45, saved.workSeconds)
         assertEquals(35, saved.restSeconds)
+        assertEquals(20, saved.intervalRestSeconds)
+        assertEquals(20, saved.timerConfiguration().getInt("rest"))
         assertEquals(8, saved.rounds)
         assertFalse(saved.soundEnabled)
         assertTrue(saved.vibrationEnabled)
@@ -60,4 +62,25 @@ class AuditSettingsDurabilityRegressionTest {
         store.setFontScaleMultiplier(Float.NaN)
         assertEquals(1f, this@AuditSettingsDurabilityRegressionTest.store().current().fontScaleMultiplier, 0f)
     }
+    @Test fun intervalPresetAndLegacyImportKeepBothRestDefaults() = runBlocking {
+        val store = store()
+        store.resetAllSettingsForEraseLocal()
+        store.setTimerDefaults(30, 70, 3, true, true)
+        store.updateTimerPreferences(restSeconds = 100)
+        store.setIntervalPreset(40, 15, 6, false, true, false)
+        var saved = this@AuditSettingsDurabilityRegressionTest.store().current()
+        assertEquals(100, saved.restSeconds)
+        assertEquals(15, saved.intervalRestSeconds)
+        store.importPortableSettings(JSONObject().put("settings", JSONObject()
+            .put("restSeconds", 120).put("intervalPreset110", JSONObject()
+                .put("work", 45).put("rest", 25).put("rounds", 5))))
+        saved = this@AuditSettingsDurabilityRegressionTest.store().current()
+        assertEquals(120, saved.restSeconds)
+        assertEquals(25, saved.intervalRestSeconds)
+        store.importPortableSettings(JSONObject().put("settings", JSONObject().put("restSeconds", 80)))
+        saved = this@AuditSettingsDurabilityRegressionTest.store().current()
+        assertEquals(80, saved.restSeconds)
+        assertEquals(80, saved.intervalRestSeconds)
+    }
+
 }

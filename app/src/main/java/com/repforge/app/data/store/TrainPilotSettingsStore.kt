@@ -54,6 +54,7 @@ data class TrainPilotUserSettings(
     val themeAccent2: String = "#7cb4d6",
     val themeFamily: String = "basic",
     val restSeconds: Int = 90,
+    val intervalRestSeconds: Int = restSeconds,
     val workSeconds: Int = 30,
     val rounds: Int = 1,
     val soundEnabled: Boolean = true,
@@ -75,7 +76,7 @@ data class TrainPilotUserSettings(
     val trainingModes197Json: String? = null
 ) {
     fun timerConfiguration(): JSONObject = com.repforge.app.NativeIntervalPreset.normalized(JSONObject()
-        .put("work", workSeconds).put("rest", restSeconds).put("rounds", rounds)
+        .put("work", workSeconds).put("rest", intervalRestSeconds).put("rounds", rounds)
         .put("sound", soundEnabled).put("vibration", vibrationEnabled).put("autoAdvance", intervalAutoAdvance))
 
     fun themeJson(): JSONObject {
@@ -114,6 +115,7 @@ class TrainPilotSettingsStore(private val context: Context,
         val KEY_THEME_ACCENT2 = stringPreferencesKey("themeAccent2")
         val KEY_THEME_FAMILY = stringPreferencesKey("themeFamily")
         val KEY_REST_SECONDS = intPreferencesKey("restSeconds")
+        val KEY_INTERVAL_REST_SECONDS = intPreferencesKey("intervalRestSeconds")
         val KEY_WORK_SECONDS = intPreferencesKey("workSeconds")
         val KEY_ROUNDS = intPreferencesKey("rounds")
         val KEY_INTERVAL_AUTO_ADVANCE = booleanPreferencesKey("intervalAutoAdvance")
@@ -195,6 +197,7 @@ class TrainPilotSettingsStore(private val context: Context,
             themeAccent2 = prefs[KEY_THEME_ACCENT2] ?: "#7cb4d6",
             themeFamily = prefs[KEY_THEME_FAMILY] ?: "basic",
             restSeconds = (prefs[KEY_REST_SECONDS] ?: 90).coerceIn(0, 3600),
+            intervalRestSeconds = (prefs[KEY_INTERVAL_REST_SECONDS] ?: prefs[KEY_REST_SECONDS] ?: 90).coerceIn(0, 3600),
             workSeconds = (prefs[KEY_WORK_SECONDS] ?: 30).coerceIn(1, 3600),
             rounds = (prefs[KEY_ROUNDS] ?: 1).coerceIn(1, 100),
             intervalAutoAdvance = prefs[KEY_INTERVAL_AUTO_ADVANCE] ?: true,
@@ -311,6 +314,7 @@ class TrainPilotSettingsStore(private val context: Context,
             context.trainPilotDataStore.edit { prefs ->
             prefs[KEY_WORK_SECONDS] = workSeconds.coerceIn(1, 3600)
             prefs[KEY_REST_SECONDS] = restSeconds.coerceIn(0, 3600)
+            prefs[KEY_INTERVAL_REST_SECONDS] = restSeconds.coerceIn(0, 3600)
             prefs[KEY_ROUNDS] = rounds.coerceIn(1, 100)
             prefs[KEY_SOUND_ENABLED] = sound
             prefs[KEY_VIBRATION_ENABLED] = vibration
@@ -319,21 +323,38 @@ class TrainPilotSettingsStore(private val context: Context,
         }
     }
 
-    /** Update only the controls supplied by the caller, retaining the current preset. */
-    suspend fun updateTimerPreferences(restSeconds: Int? = null, sound: Boolean? = null,
-        vibration: Boolean? = null) {
+    /** Save an interval preset without changing the strength workout rest default. */
+    suspend fun setIntervalPreset(workSeconds: Int, restSeconds: Int, rounds: Int,
+        sound: Boolean, vibration: Boolean, autoAdvance: Boolean) {
+        val config = com.repforge.app.NativeIntervalPreset.normalized(JSONObject()
+            .put("work", workSeconds).put("rest", restSeconds).put("rounds", rounds)
+            .put("sound", sound).put("vibration", vibration).put("autoAdvance", autoAdvance))
         NativeDataReplacement.mutate(context) {
             context.trainPilotDataStore.edit { prefs ->
-                val config = com.repforge.app.NativeIntervalPreset.normalized(JSONObject()
-                    .put("work", prefs[KEY_WORK_SECONDS] ?: 30)
-                    .put("rest", restSeconds ?: (prefs[KEY_REST_SECONDS] ?: 90))
-                    .put("rounds", prefs[KEY_ROUNDS] ?: 1)
-                    .put("sound", sound ?: (prefs[KEY_SOUND_ENABLED] ?: true))
-                    .put("vibration", vibration ?: (prefs[KEY_VIBRATION_ENABLED] ?: true))
-                    .put("autoAdvance", prefs[KEY_INTERVAL_AUTO_ADVANCE] ?: true))
-                if (restSeconds != null) prefs[KEY_REST_SECONDS] = config.getInt("rest")
-                if (sound != null) prefs[KEY_SOUND_ENABLED] = config.getBoolean("sound")
-                if (vibration != null) prefs[KEY_VIBRATION_ENABLED] = config.getBoolean("vibration")
+                prefs[KEY_WORK_SECONDS] = config.getInt("work")
+                prefs[KEY_INTERVAL_REST_SECONDS] = config.getInt("rest")
+                prefs[KEY_ROUNDS] = config.getInt("rounds")
+                prefs[KEY_SOUND_ENABLED] = config.getBoolean("sound")
+                prefs[KEY_VIBRATION_ENABLED] = config.getBoolean("vibration")
+                prefs[KEY_INTERVAL_AUTO_ADVANCE] = config.getBoolean("autoAdvance")
+            }
+        }
+    }
+
+    /** Update supplied shared controls and the strength rest default only. */
+    suspend fun updateTimerPreferences(restSeconds: Int? = null, sound: Boolean? = null,
+        vibration: Boolean? = null) {
+        require(restSeconds == null || restSeconds in 0..3600)
+        NativeDataReplacement.mutate(context) {
+            context.trainPilotDataStore.edit { prefs ->
+                if (restSeconds != null) {
+                    // Freeze the legacy fallback before changing the strength default.
+                    if (prefs[KEY_INTERVAL_REST_SECONDS] == null)
+                        prefs[KEY_INTERVAL_REST_SECONDS] = (prefs[KEY_REST_SECONDS] ?: 90).coerceIn(0, 3600)
+                    prefs[KEY_REST_SECONDS] = restSeconds
+                }
+                if (sound != null) prefs[KEY_SOUND_ENABLED] = sound
+                if (vibration != null) prefs[KEY_VIBRATION_ENABLED] = vibration
             }
         }
     }
@@ -345,7 +366,7 @@ class TrainPilotSettingsStore(private val context: Context,
         NativeDataReplacement.mutate(context) {
             ticket.requireCurrent(context)
             check(current().timerConfiguration().toString() == expected) { "Timer defaults changed; reopen editor" }
-            setTimerDefaults(config.getInt("work"), config.getInt("rest"), config.getInt("rounds"),
+            setIntervalPreset(config.getInt("work"), config.getInt("rest"), config.getInt("rounds"),
                 config.getBoolean("sound"), config.getBoolean("vibration"), config.getBoolean("autoAdvance"))
         }
     }
@@ -532,18 +553,24 @@ class TrainPilotSettingsStore(private val context: Context,
             }
             if (source.has("restSeconds")) {
                 prefs[KEY_REST_SECONDS] = source.optInt("restSeconds", 90).coerceIn(0, 3600)
+                // Legacy backups used one rest value for both purposes.
+                prefs[KEY_INTERVAL_REST_SECONDS] = prefs[KEY_REST_SECONDS]!!
                 prefs[KEY_WORK_SECONDS] = source.optInt("workSeconds", 30).coerceIn(1, 3600)
                 prefs[KEY_ROUNDS] = source.optInt("rounds", 1).coerceIn(1, 100)
                 prefs[KEY_SOUND_ENABLED] = source.optBoolean("sound", true)
                 prefs[KEY_VIBRATION_ENABLED] = source.optBoolean("vibration", true)
             }
             if (preset != null) {
-                prefs[KEY_WORK_SECONDS] = preset.getInt("work"); prefs[KEY_REST_SECONDS] = preset.getInt("rest")
+                prefs[KEY_WORK_SECONDS] = preset.getInt("work"); prefs[KEY_INTERVAL_REST_SECONDS] = preset.getInt("rest")
+                if (!source.has("restSeconds")) prefs[KEY_REST_SECONDS] = preset.getInt("rest")
                 prefs[KEY_ROUNDS] = preset.getInt("rounds"); prefs[KEY_SOUND_ENABLED] = preset.getBoolean("sound")
                 prefs[KEY_VIBRATION_ENABLED] = preset.getBoolean("vibration")
                 prefs[KEY_INTERVAL_AUTO_ADVANCE] = preset.getBoolean("autoAdvance")
             } else if (source.opt("intervalAutoAdvance") is Boolean) {
                 prefs[KEY_INTERVAL_AUTO_ADVANCE] = source.getBoolean("intervalAutoAdvance")
+            }
+            if (preset == null && source.opt("intervalRestSeconds") is Number) {
+                prefs[KEY_INTERVAL_REST_SECONDS] = source.optInt("intervalRestSeconds", 90).coerceIn(0, 3600)
             }
             source.optJSONObject("progressionSteps")?.let { steps ->
                 val portable = JSONObject()
