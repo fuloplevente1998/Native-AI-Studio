@@ -16,6 +16,12 @@ internal object WearNameLocalization {
         return listOf(preferred, en, hu, de, ro).firstOrNull { it.isNotBlank() }.orEmpty()
     }
 
+    /** Translate a historical day only if its saved name still identifies a built-in catalog name. */
+    fun historicalName(language: String, saved: String, hu: String, en: String, de: String, ro: String, isBuiltin: Boolean): String =
+        if (isBuiltin && saved.isNotBlank() && listOf(hu, en, de, ro).any { it.isNotBlank() && it == saved })
+            name(language, hu, en, de, ro)
+        else saved
+
     /** Only translate an unchanged saved built-in name; preserve renamed and deleted history. */
     fun historicalExercise(language: String, savedHu: String, savedEn: String, catalog: ExerciseLibraryEntity?): String {
         val matches = catalog != null && !catalog.custom &&

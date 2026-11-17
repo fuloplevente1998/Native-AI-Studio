@@ -24,6 +24,16 @@ class WearNameLocalizationTest {
         assertEquals("HU", resolve("unknown"))
     }
 
+    @Test fun historicalDayNamesTranslateOnlyKnownBuiltins() {
+        fun resolve(saved: String, builtin: Boolean) = WearNameLocalization.historicalName(
+            "de", saved, "Nap", "Day", "Tag", "Zi", builtin)
+        assertEquals("Tag", resolve("Nap", true))
+        assertEquals("Tag", resolve("Day", true))
+        assertEquals("My day", resolve("My day", true))
+        assertEquals("Nap", resolve("Nap", false))
+        assertEquals("", resolve("", true))
+    }
+
     @Test fun historicalBuiltinsTranslateOnlyWhenSavedNamesStillMatch() {
         assertEquals("Kniebeuge", WearNameLocalization.historicalExercise("de", "Guggolás", "Squat", catalog))
         assertEquals("Genuflexiune", WearNameLocalization.historicalExercise("ro", "Guggolás", "Squat", catalog))
