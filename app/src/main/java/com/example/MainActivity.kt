@@ -620,7 +620,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                             onSelectMeasurementMode = { mode -> viewModel.navigateToSubScreen(mode, MainTab.WORKOUT) },
                             onSaveAndStartIntervals = { work, rest, rounds, sound, vib, auto ->
-                                viewModel.updateIntervalSettings(work, rest, rounds, sound, vib, auto)
+                                viewModel.updateIntervalSettings(work, rest, rounds, sound, vib, auto) {
+                                    if (viewModel.uiState.value.currentSubScreen == SubScreen.INTERVAL_SETTINGS)
+                                        viewModel.navigateToSubScreen(SubScreen.ACTIVE_TIMED, MainTab.WORKOUT)
+                                }
                             }
                         )
                     }

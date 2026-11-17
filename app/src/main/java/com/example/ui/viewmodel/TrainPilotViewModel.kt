@@ -44,6 +44,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
@@ -960,6 +961,7 @@ class TrainPilotViewModel : ViewModel() {
             pauseActiveWorkout() else true
 
     init {
+        android.os.Trace.beginSection("TrainPilot.catalogProjection")
         try {
             val allExs = TrainPilotDatabase.defaultExercises().map { mapExerciseEntity(it) }
             val exMap = allExs.associateBy { it.id }
@@ -983,6 +985,7 @@ class TrainPilotViewModel : ViewModel() {
                 }
             }
         } catch (_: Throwable) {}
+        finally { android.os.Trace.endSection() }
     }
 
     fun bindNativeEnvironment(
@@ -1017,6 +1020,19 @@ class TrainPilotViewModel : ViewModel() {
                 catch (_: Exception) { /* Keep last valid target while a dataset is being replaced. */ }
             }
         }
+        observersScope.launch {
+            settingsStore.settingsFlow.distinctUntilChangedBy { listOf(it.fontScaleMultiplier,
+                it.compactPhoneMode, it.workSeconds, it.intervalRestSeconds, it.rounds,
+                it.intervalAutoAdvance, it.soundEnabled, it.vibrationEnabled, it.restSeconds) }
+                .collect { saved ->
+                    _uiState.update { it.copy(fontScaleMultiplier = saved.fontScaleMultiplier,
+                        compactPhoneMode = saved.compactPhoneMode, intervalWorkSec = saved.workSeconds,
+                        intervalRestSec = saved.intervalRestSeconds, intervalRounds = saved.rounds,
+                        autoStepIntervals = saved.intervalAutoAdvance, defaultRestSec = saved.restSeconds,
+                        soundAlertEnabled = saved.soundEnabled, vibrationEnabled = saved.vibrationEnabled) }
+                }
+        }
+
         observersScope.launch {
             settingsStore.settingsFlow.map { it.healthBackupConsent }.distinctUntilChanged().collect { consent ->
                 _uiState.update { it.copy(includeHealthInBackup = consent) }
@@ -1189,6 +1205,7 @@ class TrainPilotViewModel : ViewModel() {
         }
 
         reloadNativeEnvironment(context, settingsStore, database, scope)
+        com.repforge.app.WearPendingCommandRecovery.schedule(context.applicationContext)
     }
 
     /** Closure only needs a Room read; catalog seeding here would contend with restore admission. */
@@ -1658,7 +1675,8 @@ class TrainPilotViewModel : ViewModel() {
                 currentTab = targetTab ?: state.currentTab,
                 currentSubScreen = subScreen,
                 privatePhotoWorkoutId = if (subScreen == SubScreen.PRIVATE_PHOTOS) null else state.privatePhotoWorkoutId,
-                isWorkoutSessionActive = if (isActiveMeasurement) true else state.isWorkoutSessionActive,
+                // A route is a preview until the native engine has committed a session.
+                isWorkoutSessionActive = state.isWorkoutSessionActive,
                 activeWorkoutSubScreen = if (isActiveMeasurement) subScreen else state.activeWorkoutSubScreen,
                 backStack = updatedStack
             )
@@ -1832,12 +1850,34 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
+    private var appearanceWriteJob: Job? = null
+    private fun persistAppearance(write: suspend (TrainPilotSettingsStore) -> Unit) {
+        val store = nativeSettingsStore ?: return
+        val context = nativeContext ?: return
+        val scope = nativeScope ?: return
+        val ticket = runCatching { NativeDataReplacement.continuationForCurrentData(context) }.getOrNull() ?: return
+        val previous = appearanceWriteJob
+        appearanceWriteJob = scope.launch(Dispatchers.IO) {
+            try {
+                previous?.join()
+                NativeDataReplacement.mutate(context) { ticket.requireCurrent(context); write(store) }
+            } catch (error: Exception) {
+                if (error is CancellationException) currentCoroutineContext().ensureActive()
+                _uiState.update { it.copy(statusBannerMessage = tr("A megjelenés nem menthető.",
+                    "Could not save appearance.", "Darstellung konnte nicht gespeichert werden.", "Aspectul nu a putut fi salvat.")) }
+            }
+        }
+    }
+
     fun setFontScaleMultiplier(scale: Float) {
-        _uiState.update { it.copy(fontScaleMultiplier = scale) }
+        val normalized = TrainPilotSettingsStore.normalizeFontScale(scale)
+        _uiState.update { it.copy(fontScaleMultiplier = normalized) }
+        persistAppearance { it.setFontScaleMultiplier(normalized) }
     }
 
     fun toggleCompactPhoneMode(compact: Boolean) {
         _uiState.update { it.copy(compactPhoneMode = compact) }
+        persistAppearance { it.setCompactPhoneMode(compact) }
     }
 
     fun cycleHomeDemoMode(mode: HomeDemoMode) {
@@ -2549,7 +2589,7 @@ class TrainPilotViewModel : ViewModel() {
             state.copy(
                 calendarUndoStack = (state.calendarUndoStack + listOf(state.calendarEvents)).takeLast(12),
                 calendarEvents = updated,
-                statusBannerMessage = "Edzésnap módosítva ($newSplitBadge nap • $newTimeLabel)"
+                statusBannerMessage = com.example.localization.CalendarFeedback.modified(state.language, newSplitBadge, newTimeLabel)
             )
         }
         persistCalendarStateToRoomAsync()
@@ -2576,7 +2616,7 @@ class TrainPilotViewModel : ViewModel() {
                 calendarUndoStack = (state.calendarUndoStack + listOf(state.calendarEvents)).takeLast(12),
                 calendarEvents = updated,
                 selectedCalendarDay = clampedDay,
-                statusBannerMessage = "Edzés áthelyezve: ${month.atDay(clampedDay)}."
+                statusBannerMessage = com.example.localization.CalendarFeedback.moved(state.language, month.atDay(clampedDay).toString())
             )
         }
         persistCalendarStateToRoomAsync()
@@ -2590,7 +2630,7 @@ class TrainPilotViewModel : ViewModel() {
             state.copy(
                 calendarUndoStack = (state.calendarUndoStack + listOf(state.calendarEvents)).takeLast(12),
                 calendarEvents = updated,
-                statusBannerMessage = "Tervezett edzés törölve (Visszavonható)"
+                statusBannerMessage = com.example.localization.CalendarFeedback.deleted(state.language)
             )
         }
         persistCalendarStateToRoomAsync()
@@ -2616,7 +2656,7 @@ class TrainPilotViewModel : ViewModel() {
             state.copy(
                 calendarUndoStack = (state.calendarUndoStack + listOf(state.calendarEvents)).takeLast(12),
                 calendarEvents = (state.calendarEvents + newEv).sortedBy { it.dayOfMonth },
-                statusBannerMessage = "Edzés hozzáadva: ${state.calendarYearMonth}-$day. (Alap $splitBadge)"
+                statusBannerMessage = com.example.localization.CalendarFeedback.added(state.language, newEv.dateIso, splitBadge)
             )
         }
         persistCalendarStateToRoomAsync()
@@ -2625,12 +2665,12 @@ class TrainPilotViewModel : ViewModel() {
     fun undoCalendarAction() {
         _uiState.update { state ->
             val previous = state.calendarUndoStack.lastOrNull() ?: return@update state.copy(
-                statusBannerMessage = "Nincs visszavonható naptárművelet"
+                statusBannerMessage = com.example.localization.CalendarFeedback.undoEmpty(state.language)
             )
             state.copy(
                 calendarEvents = previous,
                 calendarUndoStack = state.calendarUndoStack.dropLast(1),
-                statusBannerMessage = "Utolsó naptárművelet visszavonva"
+                statusBannerMessage = com.example.localization.CalendarFeedback.undone(state.language)
             )
         }
         persistCalendarStateToRoomAsync()
@@ -3248,23 +3288,49 @@ class TrainPilotViewModel : ViewModel() {
         persistCanonicalActiveSessionAsync()
     }
 
-    fun updateIntervalSettings(workSec: Int, restSec: Int, rounds: Int, sound: Boolean, vibration: Boolean, autoStep: Boolean) {
-        _uiState.update {
-            it.copy(
-                intervalWorkSec = workSec.coerceIn(10, 300),
-                intervalRestSec = restSec.coerceIn(10, 300),
-                intervalRounds = rounds.coerceIn(1, 20),
-                soundAlertEnabled = sound,
-                vibrationEnabled = vibration,
-                autoStepIntervals = autoStep,
-                statusBannerMessage = tr(
-                    "Intervallumok: ${workSec}mp munka / ${restSec}mp pihenő × $rounds",
-                    "Intervals: ${workSec}s work / ${restSec}s rest × $rounds",
-                    "Intervalle: ${workSec}s Arbeit / ${restSec}s Pause × $rounds",
-                    "Intervale: ${workSec}s lucru / ${restSec}s pauză × $rounds",
-                    it.language
-                )
-            )
+    private var studioIntervalWriteJob: Job? = null
+    private var studioIntervalWriteError: String? = null
+
+    fun updateIntervalSettings(workSec: Int, restSec: Int, rounds: Int, sound: Boolean,
+        vibration: Boolean, autoStep: Boolean, onCommitted: () -> Unit = {}) {
+        val store = nativeSettingsStore
+        val context = nativeContext
+        val scope = nativeScope
+        if (store == null || context == null || scope == null) {
+            showBannerMessage(tr("Az időzítő beállítása nem menthető.", "Could not save timer settings.",
+                "Timereinstellungen konnten nicht gespeichert werden.", "Setările temporizatorului nu au putut fi salvate."))
+            return
+        }
+        if (studioIntervalWriteJob?.isActive == true) return
+        val ticket = runCatching { NativeDataReplacement.continuationForCurrentData(context) }.getOrElse {
+            showBannerMessage(it.message ?: "Could not save timer settings."); return
+        }
+        studioIntervalWriteError = null
+        studioIntervalWriteJob = scope.launch {
+            try {
+                val config = com.repforge.app.NativeIntervalPreset.normalized(JSONObject().put("work", workSec)
+                    .put("rest", restSec).put("rounds", rounds).put("sound", sound)
+                    .put("vibration", vibration).put("autoAdvance", autoStep))
+                withContext(Dispatchers.IO) { studioTimerWriteMutex.withLock {
+                    NativeDataReplacement.mutate(context) {
+                        ticket.requireCurrent(context)
+                        store.setIntervalPreset(config.getInt("work"), config.getInt("rest"), config.getInt("rounds"),
+                            sound, vibration, autoStep)
+                    }
+                } }
+                ticket.requireCurrent(context)
+                _uiState.update { it.copy(intervalWorkSec = config.getInt("work"),
+                    intervalRestSec = config.getInt("rest"), intervalRounds = config.getInt("rounds"),
+                    soundAlertEnabled = sound, vibrationEnabled = vibration, autoStepIntervals = autoStep,
+                    statusBannerMessage = tr("Intervallumok elmentve", "Intervals saved",
+                        "Intervalle gespeichert", "Intervale salvate")) }
+                onCommitted()
+            } catch (error: Exception) {
+                if (error is CancellationException) currentCoroutineContext().ensureActive()
+                studioIntervalWriteError = tr("Az időzítő beállítása nem menthető.", "Could not save timer settings.",
+                    "Timereinstellungen konnten nicht gespeichert werden.", "Setările temporizatorului nu au putut fi salvate.")
+                showBannerMessage(requireNotNull(studioIntervalWriteError))
+            }
         }
     }
 
@@ -3401,6 +3467,8 @@ class TrainPilotViewModel : ViewModel() {
             try {
                 programWriteJob?.join()
                 check(programWriteError == null) { requireNotNull(programWriteError) }
+                studioIntervalWriteJob?.join()
+                check(studioIntervalWriteError == null) { requireNotNull(studioIntervalWriteError) }
                 val frame = start() // Canonical engine commits before the UI advertises a workout.
                 presentCanonicalWorkout(frame)
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
@@ -3477,8 +3545,14 @@ class TrainPilotViewModel : ViewModel() {
 
     fun startOutdoorWorkout(titleHu: String = "Kültéri futás") {
         val currentSub = _uiState.value.activeWorkoutSubScreen
-        if (_uiState.value.isWorkoutSessionActive && currentSub != SubScreen.ACTIVE_OUTDOOR_GPS) {
-            _uiState.update { it.copy(statusBannerMessage = "Előbb fejezd be vagy vesd el az aktív edzést.") }
+        val durable = nativeContext?.let { ActiveWorkoutStore.current(it) }?.takeIf { it.optBoolean("active") }
+        if (_uiState.value.isWorkoutSessionActive || durable != null) {
+            if (currentSub == SubScreen.ACTIVE_OUTDOOR_GPS &&
+                (durable == null || durable.optString("workoutId") == _uiState.value.activeWorkoutId)) {
+                navigateToSubScreen(SubScreen.ACTIVE_OUTDOOR_GPS, MainTab.WORKOUT)
+            } else _uiState.update { it.copy(statusBannerMessage = tr(
+                "Előbb fejezd be vagy vesd el az aktív edzést.", "Finish or discard the active workout first.",
+                "Beende oder verwerfe zuerst das aktive Training.", "Încheie sau renunță mai întâi la antrenamentul activ.")) }
             return
         }
 
@@ -3499,6 +3573,7 @@ class TrainPilotViewModel : ViewModel() {
             state.copy(
                 isWorkoutSessionActive = false,
                 activeWorkoutId = newWorkoutId,
+                activeWorkoutGeneration = 0L,
                 workoutStartedEpochMs = 0L,
                 activeWorkoutSubScreen = SubScreen.ACTIVE_OUTDOOR_GPS,
                 activeWorkoutTitleHu = titleHu,
@@ -4755,36 +4830,29 @@ class TrainPilotViewModel : ViewModel() {
     // Serialize writes and preserve the user's interval work/round defaults.
     private val studioTimerWriteMutex = Mutex()
 
-    private fun persistStudioTimerSettings() {
+    private fun persistStudioTimerSettings(rest: Int? = null, sound: Boolean? = null, vibration: Boolean? = null) {
         val store = nativeSettingsStore ?: return
+        val context = nativeContext ?: return
         val scope = nativeScope ?: return
+        val ticket = runCatching { NativeDataReplacement.continuationForCurrentData(context) }.getOrNull() ?: return
         scope.launch(Dispatchers.IO) {
             try {
-                studioTimerWriteMutex.withLock {
-                    val saved = store.current()
-                    val ui = _uiState.value
-                    store.setTimerDefaults(
-                        workSeconds = saved.workSeconds,
-                        restSeconds = ui.defaultRestSec,
-                        rounds = saved.rounds,
-                        sound = ui.soundAlertEnabled,
-                        vibration = ui.vibrationEnabled,
-                        autoAdvance = saved.intervalAutoAdvance
-                    )
-                }
-            } catch (error: kotlinx.coroutines.CancellationException) { throw error }
-            catch (error: Exception) {
+                studioTimerWriteMutex.withLock { NativeDataReplacement.mutate(context) {
+                    ticket.requireCurrent(context)
+                    store.updateTimerPreferences(restSeconds = rest, sound = sound, vibration = vibration)
+                } }
+            } catch (error: Exception) {
+                if (error is CancellationException) currentCoroutineContext().ensureActive()
                 _uiState.update { it.copy(statusBannerMessage = studioModesText(
                     "Az időzítő beállítása nem menthető.", "Could not save timer settings.",
-                    "Timereinstellungen konnten nicht gespeichert werden.",
-                    "Setările temporizatorului nu au putut fi salvate.")) }
+                    "Timereinstellungen konnten nicht gespeichert werden.", "Setările temporizatorului nu au putut fi salvate.")) }
             }
         }
     }
 
     fun toggleSoundAlert(enabled: Boolean) {
         _uiState.update { it.copy(soundAlertEnabled = enabled) }
-        persistStudioTimerSettings()
+        persistStudioTimerSettings(sound = enabled)
     }
 
     fun cycleDefaultRestTimer() {
@@ -4799,7 +4867,7 @@ class TrainPilotViewModel : ViewModel() {
                 "Alapértelmezett pihenőidő: $next mp", "Default rest time: $next sec",
                 "Standard-Pausenzeit: $next Sek.", "Timp implicit de pauză: $next sec"))
         }
-        persistStudioTimerSettings()
+        persistStudioTimerSettings(rest = _uiState.value.defaultRestSec)
     }
 
     private var pendingStudioMode: com.repforge.app.data.store.NativeTrainingModeChange.Preview? = null
@@ -4962,7 +5030,7 @@ class TrainPilotViewModel : ViewModel() {
 
     fun toggleVibrationAlert(enabled: Boolean) {
         _uiState.update { it.copy(vibrationEnabled = enabled) }
-        persistStudioTimerSettings()
+        persistStudioTimerSettings(vibration = enabled)
     }
 
     fun selectBackupFormat(format: String) {

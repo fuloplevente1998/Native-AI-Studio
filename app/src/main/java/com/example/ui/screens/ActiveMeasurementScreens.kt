@@ -3100,7 +3100,6 @@ fun IntervalSettingsScreen(
             com.repforge.app.ui.theme.TrainPilotSaveButton(
                 onClick = {
                     onSaveAndStartIntervals(workSec, restSec, rounds, sound, vibration, autoStep)
-                    onSelectMeasurementMode(SubScreen.ACTIVE_TIMED)
                 },
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier

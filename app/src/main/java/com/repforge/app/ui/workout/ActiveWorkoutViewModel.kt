@@ -666,7 +666,7 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
                     val config = JSONObject().put("work", work.toInt()).put("rest", rest.toInt()).put("rounds", rounds.toInt())
                         .put("sound", sound).put("vibration", vibration).put("autoAdvance", autoAdvance)
                     NativeWorkoutEditing.configureIntervals(context, target, config)
-                    if (saveGlobally) settingsStore.setTimerDefaults(config.getInt("work"), config.getInt("rest"),
+                    if (saveGlobally) settingsStore.setIntervalPreset(config.getInt("work"), config.getInt("rest"),
                         config.getInt("rounds"), sound, vibration, autoAdvance)
                 }
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
