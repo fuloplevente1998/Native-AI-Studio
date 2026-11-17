@@ -26,5 +26,14 @@ Három új UI-regresszió: betűlayout és callback, egyenlő oldalgeometria és
 szerkesztés/RIR/pipa, valódi kétoldali képernyő gyakorlatváltója és gombjai.
 HU/EN/DE/RO,1×/1,5×/2× betű,260/320dp komponens és360dp képernyő.
 Korábbi élő futás/pause/rögzítés tesztjei változatlanul futnak.
-Teljes közös CI és nyers XML eredménye a futás után kerül ide.
+Teljes közös CI44130988511 SUCCESS, forrás
+ef84382db4b5553f432a22f90ace74b8f08f9c60. Telefon121 XML/630 teszt,
+Wear36 XML/198 teszt, összes828,0failure/error/skipped; shared NO-SOURCE.
+A letöltött artifact SHA-256 egyezik a GitHub-metaadattal; a nyers XML
+önálló újraszámolása egyezik a CI-verifier eredményével. Produkciós telefon/
+Wear fordítás és release R8 sikeres. [Bizonyíték](verification/PR263-ci-evidence.json).
+
+A három új teszt60 nyelv/betű/szélesség elrendezési kombinációt ellenőriz.
+A korábbi élő stopper/pause/rögzítés két regressziója is zöld. A készülékes
+vizuális elfogadás ettől külön marad. A lezáró dokumentáció nem változtatja a kódot.
 Új APK/AAB, main-merge és verzióemelés ebben a körben nincs kérve.

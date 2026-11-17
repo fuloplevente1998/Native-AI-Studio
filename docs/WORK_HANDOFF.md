@@ -1,3 +1,22 @@
+# #262 — Kompakt/reszponzív vezérlők, draft PR263, 2026-11-17
+
+Ág fix/compact-responsive-controls, alap main7bcc1f9/kiadott2765.
+Közös filled/outlined/text/save/negative alap padding, széles és betűmért
+kompakt műveletcsoport, adaptív stopwatch/Home/program műveletsorok.
+Kétoldali gyakorlatváltó teljes szélességű, oldalmezők azonos geometriájúak,
+nagy betűnél átrendeződnek. Natív callback/ownership/mentés változatlan.
+Részletek RESPONSIVE_CONTROLS_262.md.
+
+CI44130988511 SUCCESS, tesztelt forrás ef84382db4b5553f432a22f90ace74b8f08f9c60.
+Nyers XML: telefon121/630 + Wear36/198 =828,0failure/error/skipped,
+shared NO-SOURCE. Három új UI-teszt60 nyelv/betű/szélesség kombinációval;
+régi élő futás/pause/rögzítés regressziók is zöldek. ZIP-digest és XML-egyezés
+ellenőrizve, bizonyíték verification/PR263-ci-evidence.json. A lezáró commit
+csak dokumentáció. Fizikai vizuális elfogadás, main-merge és új installer
+még nincs; a2765 APK/AAB nem tartalmazza ezt a külön utólagos javítást.
+
+---
+
 # TrainPilot 2765 · 1.2-beta — APK+AAB páros átadva, 2026-11-17
 
 PR259 teljes auditjavítás és PR260 kiadási metaadat mainen. Signed forrás
