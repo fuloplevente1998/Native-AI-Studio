@@ -96,7 +96,7 @@ internal object NativeProgramEditor {
         return draft.copy(name = name)
     }
 
-    private suspend fun assertNoActiveWorkout(context: Context) = withContext(Dispatchers.Main.immediate) {
+    internal suspend fun assertNoActiveWorkout(context: Context) = withContext(Dispatchers.Main.immediate) {
         // Admission is checked again at commit, not merely when a preview is displayed.
         synchronized(PhoneOwnership193.journal(context)) {
             synchronized(ActiveWorkoutStore) {
@@ -233,10 +233,7 @@ internal object NativeProgramEditor {
             val oldDays = if (fork) opened?.days.orEmpty() else original?.days.orEmpty()
             val originalRows = oldDays.associateBy { it.dayId }
             if (!fork) for (removed in oldDays.filter { it.dayId !in d.days.map(DayDraft::id) }) {
-                check(!db.programDao().hasDayHistory(id, removed.dayId) &&
-                    !db.programDao().hasDaySchedule(id, removed.dayId)) {
-                    "Cannot delete a day referenced in history or calendar"
-                }
+                assertNoPlannedSchedules(db, id, removed.dayId)
             }
             // A newly inserted exercise must have a valid library row. Imported legacy
             // references remain untouched as long as they are unchanged in that day.
@@ -359,6 +356,15 @@ internal object NativeProgramEditor {
         }
     }
 
+    private suspend fun assertNoPlannedSchedules(db: TrainPilotDatabase, programId: String, dayId: String? = null) {
+        val referenced = db.calendarScheduleDao().getAllEntries().any { row ->
+            row.programId == programId && (dayId == null || row.dayId == dayId) && row.status == "planned" &&
+                !com.repforge.app.ui.calendar.NativeCalendarRepository.cancelled(row) &&
+                !db.workoutHistoryDao().hasScheduleHistory(row.id)
+        }
+        check(!referenced) { "Program/day has planned calendar workouts; clear the calendar plans first" }
+    }
+
     suspend fun delete(context: Context, db: TrainPilotDatabase, opened: ProgramWithDays,
         settings: TrainPilotSettingsStore) = NativeDataReplacement.mutate(context) {
         assertNoActiveWorkout(context)
@@ -367,9 +373,7 @@ internal object NativeProgramEditor {
             check(!opened.program.builtin) { "Built-in template cannot be deleted" }
             val id = opened.program.id
             check(settings.current().activeProgramId != id) { "Deactivate the program before deleting" }
-            check(!db.programDao().hasWorkoutHistory(id) && !db.programDao().hasScheduledEntries(id)) {
-                "Program is referenced in history or calendar"
-            }
+            assertNoPlannedSchedules(db, id)
             assertNoActiveWorkout(context)
             db.programDao().deleteCustomProgram(id)
         }
