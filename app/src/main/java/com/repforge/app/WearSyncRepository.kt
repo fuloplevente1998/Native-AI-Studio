@@ -279,7 +279,7 @@ object WearSyncRepository {
                                     "deferred" -> WearCommandQueueStore.enqueue(appContext, command, uri?.toString())
                                     else -> {
                                         PhoneWorkoutExecution.publish(appContext)
-                                        WearCommandReceipts.complete(appContext, command, "error", uri)
+                                        WearPendingCommandRecovery.completeRejected(appContext, command, uri, "error")
                                     }
                                 }
                             }
@@ -296,7 +296,7 @@ object WearSyncRepository {
                                             return@withContext
                                         }
                                         WearPendingCommandRecovery.Admission.STALE -> {
-                                            WearCommandReceipts.complete(appContext, command, "superseded", uri)
+                                            WearPendingCommandRecovery.completeRejected(appContext, command, uri)
                                             return@withContext
                                         }
                                         WearPendingCommandRecovery.Admission.READY -> Unit
@@ -306,7 +306,7 @@ object WearSyncRepository {
                                 if (current == null || !current.optBoolean("active") ||
                                     current.optString("workoutId") != command.optString("workoutId")
                                 ) {
-                                    WearCommandReceipts.complete(appContext, command, "superseded", uri)
+                                    WearPendingCommandRecovery.completeRejected(appContext, command, uri)
                                     return@withContext
                                 }
                                 val saved = try {

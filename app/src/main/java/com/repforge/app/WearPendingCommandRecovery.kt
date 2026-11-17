@@ -29,23 +29,43 @@ internal object WearPendingCommandRecovery {
         "executionNotPrepared", "restoreInProgress", "controllerNotArmed", "timerStillActive",
         "timedResultsAwaitingReconciliation", "gpsMeasurementStillActive", "setStopwatchStillActive")
 
+    private fun journalCommand(command: JSONObject): JSONObject? = when {
+        PhoneWorkoutExecution.compatible(command) -> command
+        command.optString("action") == "completeSet" &&
+            listOf("workoutId", "exerciseId", "setId").all { command.optString(it).isNotEmpty() } ->
+            JSONObject(command.toString()).put("action", "completeMeasuredSet")
+                .put("legacyBilateral250", JSONObject(command.toString()))
+        else -> null
+    }
+
     /** Read only committed journal proof; legacy adaptation uses the original wire fingerprint,
      * so this lookup needs no live frame, generation, revision, or newly inferred measurements. */
-    internal fun terminalReceiptStatus(context: Context, command: JSONObject): String {
-        val journalCommand = when {
-            PhoneWorkoutExecution.compatible(command) -> command
-            command.optString("action") == "completeSet" &&
-                listOf("workoutId", "exerciseId", "setId").all { command.optString(it).isNotEmpty() } ->
-                JSONObject(command.toString()).put("action", "completeMeasuredSet")
-                    .put("legacyBilateral250", JSONObject(command.toString()))
-            else -> null
-        }
-        val proof = journalCommand?.let { PhoneWorkoutExecution.store(context).receipt(it) }
+    internal fun terminalReceiptStatus(context: Context, command: JSONObject, fallback: String = "superseded"): String {
+        WearCommandQueueStore.receipt(context, command.optString("commandId"))?.let { return it.getString("status") }
+        val proof = journalCommand(command)?.let { PhoneWorkoutExecution.store(context).receipt(it) }
         return when (proof?.optString("status")) {
             "duplicate" -> "applied"
             "rejected" -> "error"
-            else -> "superseded"
+            else -> fallback
         }
+    }
+
+    /** Main-only rejection reconciliation: replay existing ACK, retain unfinished restore, otherwise
+     * acknowledge a proven application or the caller's terminal rejection without applying anything. */
+    internal fun completeRejected(context: Context, command: JSONObject, uri: Uri?, fallback: String = "superseded") {
+        if (WearCommandQueueStore.seen(context, command.optString("commandId"))) {
+            WearCommandReceipts.replay(context, command, uri)
+            return
+        }
+        if (journalCommand(command) != null) {
+            val store = PhoneWorkoutExecution.store(context)
+            if (NativeDataReplacement.blocked(context) || store.restoreBlocked() || store.commandsSuspended()) {
+                WearCommandQueueStore.enqueue(context, command, uri?.toString())
+                return
+            }
+        }
+        if (!WearCommandReceipts.complete(context, command, terminalReceiptStatus(context, command, fallback), uri))
+            WearCommandQueueStore.enqueue(context, command, uri?.toString())
     }
 
     private fun supported(command: JSONObject): Boolean = PhoneWorkoutExecution.compatible(command) ||
@@ -168,7 +188,7 @@ internal object WearPendingCommandRecovery {
                             Admission.STALE -> {
                                 // A crash after the engine transaction but before inbox ACK must still
                                 // acknowledge that durable application, even if the workout has since closed.
-                                WearCommandReceipts.complete(context, command, terminalReceiptStatus(context, command), uri)
+                                completeRejected(context, command, uri)
                                 false
                             }
                             Admission.READY -> true

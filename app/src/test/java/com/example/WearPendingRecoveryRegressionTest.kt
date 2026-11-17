@@ -2,6 +2,7 @@ package com.example
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Looper
 import android.os.SystemClock
 import androidx.room.Room
@@ -434,6 +435,132 @@ class WearPendingRecoveryRegressionTest {
         assertTrue(store.snapshot()!!.getBoolean("workoutPaused")); assertFalse(first().getBoolean("done"))
         WearSyncRepository.drainNativeUndo188(context); drain()
         assertTrue(store.snapshot()!!.getBoolean("workoutPaused")); assertEquals(2, count())
+    }
+
+    private fun closeCurrent() {
+        val frame = store.snapshot()!!
+        assertTrue(store.closeExecution(frame.getString("workoutId"), frame.getLong("generation"), frame.getLong("executionRevision")))
+        ActiveWorkoutStore.clear(context)
+    }
+
+    private fun wire(listener: WearCommandListenerService, command: JSONObject) {
+        val uri = Uri.parse("wear://watch-node" + WearCommandListenerService.COMMAND_PATH_PREFIX + command.getString("commandId"))
+        // This is the same production dispatcher called by onDataChanged immediately after DataMap parsing.
+        listener.dispatchReceivedCommand(JSONObject(command.toString()), uri)
+        shadowOf(Looper.getMainLooper()).idle()
+    }
+
+    private fun awaitReceipt(id: String = "record") {
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30)
+        while (receipt(id) == null) {
+            shadowOf(Looper.getMainLooper()).idle()
+            check(System.nanoTime() < deadline) { "Listener wire receipt did not complete" }
+            Thread.yield()
+        }
+    }
+
+    private fun committedLegacyBilateralWithoutAck(): JSONObject {
+        val frame = store.snapshot()!!
+        frame.getJSONArray("exercises").getJSONObject(0).put("repUnit", "mp/oldal").put("measurementType", "time")
+        install(frame)
+        val command = command().put("leftSeconds", 37).put("rightSeconds", 43).apply {
+            remove("nativeExecutionProtocol"); remove("generation"); remove("executionRevision")
+        }
+        WearPendingCommandRecovery.capture(context, command)
+        WearSyncRepository.commitWatchEditorMutation(context, ActiveWorkoutStore.current(context)!!, command)
+        assertTrue(first().getBoolean("done")); assertEquals(1, count()); assertNull(receipt())
+        WearCommandQueueStore.enqueue(context, command, null)
+        return command
+    }
+
+    @Test fun lateNativeWireAfterCommitWithoutAckAndClosureUsesProofThenReplaysTheSameReceipt() {
+        val command = command()
+        assertEquals("applied", PhoneWorkoutExecution.execute(context, command).getString("status"))
+        WearCommandQueueStore.enqueue(context, command, null)
+        closeCurrent(); reopenExecution()
+        val listener = Robolectric.buildService(WearCommandListenerService::class.java).create()
+        try {
+            wire(listener.get(), command); wire(listener.get(), command)
+            awaitReceipt(); completed()
+            val committedReceipt = receipt()!!.toString()
+            wire(listener.get(), JSONObject(command.toString()).put("ownerEpoch193", 8L))
+            assertEquals(committedReceipt, receipt()!!.toString()); assertEquals(1, count())
+            assertFalse(store.snapshot()!!.getBoolean("active")); assertFalse(ActiveWorkoutStore.current(context)!!.getBoolean("active"))
+        } finally { listener.destroy() }
+    }
+
+    @Test fun lateLegacyBilateralWireAfterCommitWithoutAckAndClosureUsesOriginalProof() {
+        val command = committedLegacyBilateralWithoutAck()
+        closeCurrent(); reopenExecution()
+        val listener = Robolectric.buildService(WearCommandListenerService::class.java).create()
+        try {
+            wire(listener.get(), command); wire(listener.get(), command)
+            awaitReceipt(); completed()
+            val committedReceipt = receipt()!!.toString()
+            wire(listener.get(), command)
+            assertEquals(committedReceipt, receipt()!!.toString()); assertEquals(1, count())
+            assertEquals(43, first().getInt("rightSeconds")); assertEquals("completeSet", receipt()!!.getString("action"))
+            assertFalse(store.snapshot()!!.getBoolean("active")); assertFalse(ActiveWorkoutStore.current(context)!!.getBoolean("active"))
+        } finally { listener.destroy() }
+    }
+
+    @Test fun legacyWireReachingRepositoryStalePauseAdmissionReconcilesItsCommittedProof() {
+        val command = committedLegacyBilateralWithoutAck()
+        val paused = store.setWorkoutPause(store.snapshot()!!.put("workoutPaused", true).put("pauseRevision", 5L), SystemClock.elapsedRealtime(), false)!!
+        ActiveWorkoutStore.save(context, paused)
+        val listener = Robolectric.buildService(WearCommandListenerService::class.java).create()
+        try {
+            wire(listener.get(), command)
+            awaitReceipt(); completed()
+            assertTrue(store.snapshot()!!.getBoolean("workoutPaused")); assertEquals(1, count())
+            wire(listener.get(), command)
+            assertEquals("applied", receipt()!!.getString("status")); assertEquals(1, count())
+        } finally { listener.destroy() }
+    }
+
+    @Test fun closedListenerRejectsNativeLegacyAndUnsupportedWiresWithoutInventingProof() {
+        val native = command()
+        val legacy = command(id = "legacy").apply { remove("nativeExecutionProtocol"); remove("generation"); remove("executionRevision") }
+        val unsupported = command("selectExercise", "unsupported")
+        closeCurrent()
+        val listener = Robolectric.buildService(WearCommandListenerService::class.java).create()
+        try {
+            for (command in listOf(native, legacy, unsupported)) {
+                wire(listener.get(), command)
+                awaitReceipt(command.getString("commandId"))
+                assertEquals("superseded", receipt(command.getString("commandId"))!!.getString("status"))
+            }
+            assertEquals(0, pending()); assertEquals(0, count()); assertFalse(store.snapshot()!!.getBoolean("active"))
+        } finally { listener.destroy() }
+    }
+
+    @Test fun lateWireDuringRestoreRetainsPendingProofUntilTheRestoreFenceClears() {
+        val command = command()
+        assertEquals("applied", PhoneWorkoutExecution.execute(context, command).getString("status"))
+        WearCommandQueueStore.enqueue(context, command, null)
+        closeCurrent(); store.setRestoreBlocked(true)
+        val listener = Robolectric.buildService(WearCommandListenerService::class.java).create()
+        try {
+            wire(listener.get(), command)
+            assertNull(receipt()); assertEquals(1, pending()); assertEquals(1, count())
+            store.setRestoreBlocked(false)
+            wire(listener.get(), command)
+            awaitReceipt(); completed()
+            assertEquals(1, count()); assertFalse(store.snapshot()!!.getBoolean("active"))
+        } finally { listener.destroy() }
+    }
+
+    @Test fun lateLegacyWireWithChangedMeasuredPayloadCannotClaimTheCommittedProof() {
+        val command = committedLegacyBilateralWithoutAck()
+        closeCurrent()
+        val listener = Robolectric.buildService(WearCommandListenerService::class.java).create()
+        try {
+            wire(listener.get(), JSONObject(command.toString()).put("rightSeconds", 55))
+            awaitReceipt()
+            assertEquals("error", receipt()!!.getString("status")); assertEquals(0, pending())
+            assertEquals(43, first().getInt("rightSeconds")); assertEquals(1, count())
+            assertFalse(store.snapshot()!!.getBoolean("active"))
+        } finally { listener.destroy() }
     }
 
     @Test fun staleNativeRevisionIsTerminalAndCannotSpinForeverInTheInbox() {

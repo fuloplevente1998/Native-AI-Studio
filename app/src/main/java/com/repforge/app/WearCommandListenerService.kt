@@ -34,7 +34,7 @@ class WearCommandListenerService : WearableListenerService() {
                 if (measuredError) runCatching { PhoneWorkoutExecution.publish(context) } else PhoneWorkoutExecution.publish(context)
             }
             if (terminalError || status in setOf("applied", "duplicate")) {
-                val receiptStatus = if (terminalError) "error" else "applied"
+                val receiptStatus = if (terminalError) WearPendingCommandRecovery.terminalReceiptStatus(context, command, "error") else "applied"
                 val committed = try { WearCommandReceipts.complete(context, command, receiptStatus, uri) } catch (transport: Exception) {
                     // A synchronous transport failure cannot undo an already committed receipt.
                     if (WearCommandQueueStore.receipt(context, command.optString("commandId")) == null) throw transport
@@ -59,7 +59,7 @@ class WearCommandListenerService : WearableListenerService() {
                     return
                 }
                 WearPendingCommandRecovery.Admission.STALE -> {
-                    WearCommandReceipts.complete(context, command, "superseded", uri)
+                    WearPendingCommandRecovery.completeRejected(context, command, uri)
                     return
                 }
                 WearPendingCommandRecovery.Admission.READY -> Unit
@@ -159,62 +159,74 @@ class WearCommandListenerService : WearableListenerService() {
             try {
                 val raw = DataMapItem.fromDataItem(item).dataMap.getString("command")
                 if (raw.isNullOrEmpty()) continue
-                val command = JSONObject(raw)
-                command.put("_uri", uri.toString())
-                WearPendingCommandRecovery.capture(this, command, incoming = true)
-
-                // 1. Private GPS route chunks (#193)
-                if (PhoneGpsRoute193.receive(this, command, uri)) continue
-
-                // 2. Ownership Epoch Fencing (#193)
-                if (!PhoneOwnership193.commandAllowed(this, command)) {
-                    if (command.optString("action") in setOf("discardWorkout", "finishWorkout")) {
-                        // A closed workout may already have a durable deletion marker.
-                        // Reconcile terminal Room proof on IO; never relax the fence for edits.
-                        WearSyncRepository.processIncomingWatchCommandAsync(this, command, uri)
-                    } else WearCommandReceipts.complete(this, command, "superseded", uri)
-                    continue
-                }
-
-                // 3. Deduplication Replay
-                if (WearCommandQueueStore.seen(this, command.optString("commandId"))) {
-                    WearCommandReceipts.replay(this, command, uri)
-                    Handler(Looper.getMainLooper()).post(::drainNativeUndo188)
-                    continue
-                }
-
-                // 4. Native Execution Protocol v2 (phone-owned sets, undoSet, timeline start)
-                if (PhoneWorkoutExecution.compatible(command)) {
-                    Handler(Looper.getMainLooper()).post {
-                        try {
-                            dispatchNativeCommand(this, command, uri)
-                        } catch (_: Exception) {
-                            queue(command, uri)
-                        }
-                    }
-                    continue
-                }
-
-                // 5. Phone Interval Timer control (pause / resume / skipRest)
-                if ("automaticControl" == command.optString("action")) {
-                    Handler(Looper.getMainLooper()).post {
-                        if (WearCommandQueueStore.seen(this, command.optString("commandId"))) {
-                            WearCommandReceipts.replay(this, command, uri)
-                            return@post
-                        }
-                        try { dispatchAutomaticCommand(this, command, uri) }
-                        catch (_: Exception) { queue(command, uri) }
-                    }
-                    continue
-                }
-
-                // 6. All other watch commands (startWorkout, finishWorkout, discardWorkout,
-                //    saveWorkoutFeedback, healthSummary, updateSet, completeSet, requestHome, etc.)
-                //    are now processed 100% natively in the background by WearSyncRepository!
-                WearSyncRepository.processIncomingWatchCommandAsync(this, command, uri)
+                dispatchReceivedCommand(JSONObject(raw), uri)
             } catch (_: Exception) {
                 // Invalid or malformed watch commands must never affect the phone workout.
             }
         }
     }
+
+    /** Production command router after DataMap parsing; lifecycle regressions enter through this boundary. */
+    internal fun dispatchReceivedCommand(command: JSONObject, uri: Uri) {
+        try {
+            command.put("_uri", uri.toString())
+            WearPendingCommandRecovery.capture(this, command, incoming = true)
+
+            // 1. Private GPS route chunks (#193)
+            if (PhoneGpsRoute193.receive(this, command, uri)) return
+
+            // 2. Replay an already committed receipt, including after ownership/closure changed.
+            if (WearCommandQueueStore.seen(this, command.optString("commandId"))) {
+                WearCommandReceipts.replay(this, command, uri)
+                Handler(Looper.getMainLooper()).post(::drainNativeUndo188)
+                return
+            }
+
+            // 3. Ownership Epoch Fencing (#193)
+            if (!PhoneOwnership193.commandAllowed(this, command)) {
+                if (command.optString("action") in setOf("discardWorkout", "finishWorkout")) {
+                    // A closed workout may already have a durable deletion marker.
+                    // Reconcile terminal Room proof on IO; never relax the fence for edits.
+                    WearSyncRepository.processIncomingWatchCommandAsync(this, command, uri)
+                } else Handler(Looper.getMainLooper()).post {
+                    try { WearPendingCommandRecovery.completeRejected(this, command, uri) }
+                    catch (_: Exception) { queue(command, uri) }
+                }
+                return
+            }
+
+            // 4. Native Execution Protocol v2 (phone-owned sets, undoSet, timeline start)
+            if (PhoneWorkoutExecution.compatible(command)) {
+                Handler(Looper.getMainLooper()).post {
+                    try {
+                        dispatchNativeCommand(this, command, uri)
+                    } catch (_: Exception) {
+                        queue(command, uri)
+                    }
+                }
+                return
+            }
+
+            // 5. Phone Interval Timer control (pause / resume / skipRest)
+            if ("automaticControl" == command.optString("action")) {
+                Handler(Looper.getMainLooper()).post {
+                    if (WearCommandQueueStore.seen(this, command.optString("commandId"))) {
+                        WearCommandReceipts.replay(this, command, uri)
+                        return@post
+                    }
+                    try { dispatchAutomaticCommand(this, command, uri) }
+                    catch (_: Exception) { queue(command, uri) }
+                }
+                return
+            }
+
+            // 6. All other watch commands (startWorkout, finishWorkout, discardWorkout,
+            //    saveWorkoutFeedback, healthSummary, updateSet, completeSet, requestHome, etc.)
+            //    are now processed 100% natively in the background by WearSyncRepository!
+            WearSyncRepository.processIncomingWatchCommandAsync(this, command, uri)
+        } catch (_: Exception) {
+            // Invalid commands stay isolated; a committed receipt can retry its transport on replay.
+        }
+    }
+
 }
