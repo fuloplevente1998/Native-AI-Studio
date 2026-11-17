@@ -42,5 +42,11 @@ history/lezárt naptár megőrzése, program/nap törlés, aktív/builtin/élő 
 védelme, nyilvános ürítés→törlés út, tartós cancellation, managed Google-delete,
 régi felhőterv merge, változott preview/restore/futó edzés elutasítása,
 DB-hiba utáni rollback, bal/jobb gomb és megerősítés/Mégse négy nyelven.
-Közös teljes CI és nyers XML eredménye a futás után kerül ide.
+Közös teljes CI44150814973 SUCCESS, forrás
+8d18b7680640ecf101c5923f9563d1dcb49bc776. Telefon123 XML/637 teszt és
+Wear36 XML/198, összes835,0failure/error/skipped; shared NO-SOURCE.
+A PR263 reszponzív javításaival együtt fordult a produkciós telefon/Wear és
+futott a teljes regresszió, release R8-val. Letöltött artifact SHA-256 egyezik,
+a nyers XML önálló újraszámolása egyezik a CI-verifier eredményével.
+[Bizonyíték](verification/PR265-ci-evidence.json). A lezáró commit csak dokumentáció.
 Fizikai készülékes elfogadás és Play-feltöltés külön marad.

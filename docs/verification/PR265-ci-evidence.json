@@ -1,0 +1,58 @@
+{
+  "source": "8d18b7680640ecf101c5923f9563d1dcb49bc776",
+  "run": 44150814973,
+  "url": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/44150814973",
+  "artifactDigest": "sha256:159a41f1dbec4a7ec4bb8a9442806f1a3bef4469809daf28a388ddfea389b52b",
+  "artifactDigestVerified": true,
+  "rawXml": {
+    "phone": {
+      "files": 123,
+      "tests": 637,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "wear": {
+      "files": 36,
+      "tests": 198,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "files": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "total": {
+    "tests": 835,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sharedNoSource": true,
+  "newRegressionCases": {
+    "com.example.CalendarClearControlsRegressionTest": [
+      "clearIsLeftOfPlanningAndOnlyConfirmationDispatchesAcrossFourLanguages"
+    ],
+    "com.example.ProgramCalendarRemovalRegressionTest": [
+      "publicEditorCanRemoveAHistoricalDayWhileTheSavedWorkoutKeepsItsDayName",
+      "changedPreviewReplacementAndRunningWorkoutRejectClearWithoutPartialWrites",
+      "activeBuiltinAndLivePlansStayProtectedThenPublicCalendarClearAllowsDeletion",
+      "publicEditorDeletesInactiveProgramWithoutLosingHistoryOrCompletedCalendar",
+      "documentWriteFailureRollsBackEveryCancellationRow",
+      "bulkClearIsDurablePreservesHistoryAndProducesCloudDeletesWithoutStaleResurrection"
+    ]
+  },
+  "failedCases": [],
+  "physicalAcceptance": false,
+  "newApkOrAab": false,
+  "conclusion": "success",
+  "artifactId": 14358887927,
+  "baselineTests": 828,
+  "addedTests": 7,
+  "includesResponsiveControlsPr": 263
+}
