@@ -39,10 +39,14 @@ nem olvadt össze hallgatólagosan.
   szerkesztése nem vált át más aktív programról, az explicit Másolás továbbra is
   külön művelet. Home naptári céljának elsőbbsége és a történeti hivatkozások
   megmaradnak. Három utolsó gyakorlat törlése és újranyitás regresszióval védett.
-- #257: plank/sorozat élő kijelzés és olvashatóság vizsgálata/javítása folyamatban;
-  natív elapsedRealtime → állapot → tényleges Compose kijelzés lánc szükséges.
-- #258: összesítő és napló valós kalóriaforrásának egyeztetése folyamatban;
-  kiválasztott provider, munkamenet és aktív időablak védelem kötelező.
+- #257: olvasható stopperméret, rövid feliratok, kétoldali tördelés, összecsukott
+  intervallumbeállítások. Futás közbeni natív elapsedRealtime → állapot → tényleges
+  Compose kijelzés regresszió; az eredeti kiadott no-live tünetet fizikai eszközön
+  még nem reprodukáltuk, motorhibát nem jelentünk bizonyíték nélkül javítottnak.
+- #258: ugyanazon provider és aktív ablak olvasása mentés előtt is; pulse-only
+  live adat nem fedheti el a mentett Wear-kalóriát, idegen edzés elutasítva.
+  A lekérés olvasási művelet, lifecycle/session/provider/restore guarddal;
+  eltérő időablak, napi kcal és hiányzó értékből kitalált nulla nem használható.
 
 ## Közös CI
 

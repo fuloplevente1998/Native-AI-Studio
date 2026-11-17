@@ -3341,15 +3341,16 @@ fun WorkoutSummaryScreen(
     val summaryProvider = com.repforge.app.StudioWorkoutSummaryPresentation.selectedProvider(context)
     val summaryWindowKey = activeSnapshotForSummary?.optJSONArray("activeIntervals")?.toString().orEmpty()
     val summaryPauseRevision = activeSnapshotForSummary?.optLong("pauseRevision") ?: 0L
-    val summaryEnd = remember(uiState.activeWorkoutId, uiState.activeWorkoutGeneration, summaryPauseRevision, summaryWindowKey) {
+    val summaryStarted = activeSnapshotForSummary?.optString("started").orEmpty()
+    val summaryEnd = remember(uiState.activeWorkoutId, uiState.activeWorkoutGeneration, summaryPauseRevision, summaryWindowKey, summaryStarted) {
         java.time.Instant.now()
     }
     var summaryProviderHealth by remember(uiState.activeWorkoutId, uiState.activeWorkoutGeneration,
-        summaryProvider, summaryPauseRevision, summaryWindowKey) {
+        summaryProvider, summaryPauseRevision, summaryWindowKey, summaryStarted) {
         mutableStateOf<com.repforge.app.StudioWorkoutSummaryPresentation.HealthSnapshot?>(null)
     }
     LaunchedEffect(uiState.activeWorkoutId, uiState.activeWorkoutGeneration, summaryProvider,
-        summaryPauseRevision, summaryWindowKey) {
+        summaryPauseRevision, summaryWindowKey, summaryStarted) {
         summaryProviderHealth = null
         var host: android.content.Context = context
         while (host is android.content.ContextWrapper && host !is android.app.Activity) host = host.baseContext
