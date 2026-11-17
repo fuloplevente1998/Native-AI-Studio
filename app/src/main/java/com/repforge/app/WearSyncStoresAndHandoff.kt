@@ -160,6 +160,7 @@ internal object WearCommandQueueStore {
         if (!prefs(context).edit().putString(PENDING, pending.toString()).commit()) {
             throw IllegalStateException("Unable to persist watch command")
         }
+        WearPendingCommandRecovery.schedule(context)
     }
 
     @JvmStatic

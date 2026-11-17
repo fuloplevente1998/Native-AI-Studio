@@ -141,13 +141,22 @@ object WearSyncRepository {
      */
     fun processIncomingWatchCommandAsync(context: Context, command: JSONObject, uri: Uri?) {
         val appContext = context.applicationContext
-        syncScope.launch {
+        WearPendingCommandRecovery.capture(appContext, command, incoming = true)
+        syncScope.launch { processIncomingWatchCommand(appContext, command, uri) }
+    }
+
+    /** Shared by Data Layer delivery and the durable local retry; neither path bypasses admission. */
+    internal suspend fun processIncomingWatchCommand(appContext: Context, command: JSONObject, uri: Uri?) {
             try {
+                if (WearCommandQueueStore.seen(appContext, command.optString("commandId"))) {
+                    WearCommandReceipts.replay(appContext, command, uri)
+                    return
+                }
                 // Read-only refresh must not hold the dataset writer lock while awaiting Data Layer.
                 if (command.optString("action") == "requestHome") {
                     publishWatchHomeSnapshot(appContext)
                     withContext(Dispatchers.Main) { WearCommandReceipts.complete(appContext, command, "processed", uri) }
-                    return@launch
+                    return
                 }
                 // Explicit Unit bounds the K2 inference across the many command branches
                 // and nested Main dispatcher receipts; result is intentionally discarded.
@@ -278,6 +287,21 @@ object WearSyncRepository {
 
                         "updateSet", "completeSet", "selectExercise", "nextExercise", "prevExercise", "skipRest", "toggleAutomatic" -> {
                             withContext(Dispatchers.Main) {
+                                val editor = ActiveWorkoutStore.current(appContext)
+                                if (action in setOf("updateSet", "completeSet") && editor?.optInt("nativeEditorProjection") == 1 &&
+                                    editor.optString("timerOwner") == "phone") {
+                                    when (WearPendingCommandRecovery.admission(appContext, command)) {
+                                        WearPendingCommandRecovery.Admission.WAIT -> {
+                                            WearCommandQueueStore.enqueue(appContext, command, uri?.toString())
+                                            return@withContext
+                                        }
+                                        WearPendingCommandRecovery.Admission.STALE -> {
+                                            WearCommandReceipts.complete(appContext, command, "superseded", uri)
+                                            return@withContext
+                                        }
+                                        WearPendingCommandRecovery.Admission.READY -> Unit
+                                    }
+                                }
                                 val current = ActiveWorkoutStore.current(appContext)
                                 if (current == null || !current.optBoolean("active") ||
                                     current.optString("workoutId") != command.optString("workoutId")
@@ -285,7 +309,17 @@ object WearSyncRepository {
                                     WearCommandReceipts.complete(appContext, command, "superseded", uri)
                                     return@withContext
                                 }
-                                val saved = commitWatchEditorMutation(appContext, current, command)
+                                val saved = try {
+                                    commitWatchEditorMutation(appContext, current, command)
+                                } catch (rejected: WearPendingCommandRecovery.EditorRejected) {
+                                    if (WearPendingCommandRecovery.transient(rejected.result)) {
+                                        WearCommandQueueStore.enqueue(appContext, command, uri?.toString())
+                                    } else {
+                                        runCatching { PhoneWorkoutExecution.publish(appContext) }
+                                        WearCommandReceipts.complete(appContext, command, "error", uri)
+                                    }
+                                    return@withContext
+                                }
                                 publishActiveWorkoutSnapshot(appContext, saved)
                                 WearCommandReceipts.complete(appContext, command, "applied", uri)
                             }
@@ -457,15 +491,15 @@ object WearSyncRepository {
                 }
                 Unit // Keep the metadata lease operation's result invariant.
                 }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (_: Exception) {
-                if (uri != null) {
-                    try {
-                        WearCommandQueueStore.enqueue(appContext, command, uri.toString())
-                    } catch (_: Exception) {
-                    }
+                try {
+                    WearCommandQueueStore.enqueue(appContext, command, uri?.toString())
+                } catch (_: Exception) {
+                    // The source DataItem remains available when local persistence is unavailable.
                 }
             }
-        }
     }
 
     private fun attachWatchRouteBindings193(context: Context, workoutId: String, workoutJson: JSONObject) {
@@ -499,11 +533,21 @@ object WearSyncRepository {
 
     /** Both v2 and legacy completions can unblock an inverse that arrived first. */
     internal fun drainNativeUndo188(context: Context) {
+        val execution = PhoneWorkoutExecution.store(context)
+        if (NativeDataReplacement.blocked(context) || execution.restoreBlocked() || execution.commandsSuspended()) return
         val pending = WearCommandQueueStore.pending(context)
         for (i in 0 until pending.length()) {
             try {
                 val command = pending.getJSONObject(i)
                 if (command.optString("action") != "undoSet" || !PhoneWorkoutExecution.compatible(command)) continue
+                when (WearPendingCommandRecovery.admission(context, command)) {
+                    WearPendingCommandRecovery.Admission.WAIT -> continue
+                    WearPendingCommandRecovery.Admission.STALE -> {
+                        WearCommandReceipts.complete(context, command, "superseded", null)
+                        continue
+                    }
+                    WearPendingCommandRecovery.Admission.READY -> Unit
+                }
                 val result = PhoneWorkoutExecution.execute(context, command)
                 if (result.optString("status") in setOf("applied", "duplicate", "rejected")) {
                     PhoneWorkoutExecution.publish(context)
@@ -569,7 +613,7 @@ object WearSyncRepository {
             if (measured.optString("action") == "completeMeasuredSet") {
                 measured.put("legacyBilateral250", JSONObject(command.toString()))
                 val result = PhoneWorkoutExecution.execute(context, measured)
-                check(result.optString("status") in setOf("applied", "duplicate")) { result.optString("reason", "Recording failed") }
+                if (result.optString("status") !in setOf("applied", "duplicate")) throw WearPendingCommandRecovery.EditorRejected(result)
                 drainNativeUndo188(context)
                 return NativeWorkoutEditing.project(context)
             }
@@ -679,6 +723,7 @@ object WearSyncRepository {
     }
 
     fun publishActiveWorkoutSnapshot(context: Context, snapshot: JSONObject) {
+        WearPendingCommandRecovery.schedule(context)
         val mapRequest = PutDataMapRequest.create(ACTIVE_WORKOUT_PATH)
         mapRequest.dataMap.putBoolean("active", snapshot.optBoolean("active", true))
         mapRequest.dataMap.putLong("revision", snapshot.optLong("revision", 0L))

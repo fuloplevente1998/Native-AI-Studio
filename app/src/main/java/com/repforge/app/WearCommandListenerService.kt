@@ -21,17 +21,15 @@ class WearCommandListenerService : WearableListenerService() {
 
         /** Testable Data Layer dispatch: terminal bilateral errors get a durable error receipt. */
         internal fun dispatchNativeCommand(context: android.content.Context, command: JSONObject, uri: Uri?): JSONObject {
+            WearPendingCommandRecovery.capture(context, command)
             val result = PhoneWorkoutExecution.execute(context, command)
             val status = result.optString("status")
-            val frame = PhoneWorkoutExecution.store(context).snapshot()
-            val unavailable = frame != null && (!frame.optBoolean("active") || frame.optBoolean("workoutPaused") ||
-                PhoneWorkoutExecution.store(context).commandsSuspended())
+            val blocked = PhoneWorkoutExecution.store(context).restoreBlocked() ||
+                PhoneWorkoutExecution.store(context).commandsSuspended() || NativeDataReplacement.blocked(context)
             val measuredError = command.optString("action") == "completeMeasuredSet" && command.has("wearBilateralValues") &&
-                status == "rejected" && !PhoneWorkoutExecution.store(context).restoreBlocked() &&
-                (result.optString("reason") !in setOf("executionNotPrepared", "restoreInProgress",
-                    "controllerNotArmed", "timerStillActive", "timedResultsAwaitingReconciliation") ||
-                    result.optString("reason") == "executionNotPrepared" && unavailable)
-            val terminalError = status == "rejected" && (command.optString("action") == "undoSet" || measuredError)
+                status == "rejected" && !blocked &&
+                !WearPendingCommandRecovery.transient(result)
+            val terminalError = status == "rejected" && !blocked && (command.optString("action") == "undoSet" || measuredError)
             if (terminalError) {
                 if (measuredError) runCatching { PhoneWorkoutExecution.publish(context) } else PhoneWorkoutExecution.publish(context)
             }
@@ -47,9 +45,50 @@ class WearCommandListenerService : WearableListenerService() {
             WearSyncRepository.drainNativeUndo188(context)
             return result
         }
+
+        /** Legacy interval controls retain their phase/key fence during local recovery. */
+        internal fun dispatchAutomaticCommand(context: android.content.Context, command: JSONObject, uri: Uri?) {
+            if (WearCommandQueueStore.seen(context, command.optString("commandId"))) {
+                WearCommandReceipts.replay(context, command, uri)
+                return
+            }
+            WearPendingCommandRecovery.capture(context, command)
+            when (WearPendingCommandRecovery.admission(context, command)) {
+                WearPendingCommandRecovery.Admission.WAIT -> {
+                    WearCommandQueueStore.enqueue(context, command, uri?.toString())
+                    return
+                }
+                WearPendingCommandRecovery.Admission.STALE -> {
+                    WearCommandReceipts.complete(context, command, "superseded", uri)
+                    return
+                }
+                WearPendingCommandRecovery.Admission.READY -> Unit
+            }
+            val timer = IntervalTimerService.snapshot(context)
+            val active = ActiveWorkoutStore.current(context)
+            val action = command.optString("value")
+            val automation = command.optJSONObject("automation")
+            if (active != null && automation != null && active.optBoolean("active") &&
+                !active.optBoolean("workoutPaused") && !active.optBoolean("finalizationPending") &&
+                PhoneOwnership193.commandAllowed(context, command) &&
+                (!command.has("pauseRevision") || command.optLong("pauseRevision") == active.optLong("pauseRevision")) &&
+                active.optString("workoutId") == command.optString("workoutId") &&
+                timer.optString("key") == automation.optString("key") && action in setOf("pause", "resume", "skipRest")) {
+                val matches = automation.optLong("phaseNumber") == timer.optLong("phaseNumber")
+                IntervalTimerService.command(context, timer.optString("key"), if (matches) action else "status")
+                if (WearCommandReceipts.complete(context, command, if (matches) "applied" else "superseded", uri)) return
+            }
+            WearCommandQueueStore.enqueue(context, command, uri?.toString())
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        WearPendingCommandRecovery.schedule(this)
     }
 
     override fun onPeerConnected(peer: com.google.android.gms.wearable.Node) {
+        WearPendingCommandRecovery.schedule(this)
         // Settings are independent of an active workout: reconnect also republishes the latest palette.
         WearSyncRepository.refreshWatchHomeAsync(this)
         // Retry the durable terminal projection when a previous Data Layer write failed.
@@ -122,6 +161,7 @@ class WearCommandListenerService : WearableListenerService() {
                 if (raw.isNullOrEmpty()) continue
                 val command = JSONObject(raw)
                 command.put("_uri", uri.toString())
+                WearPendingCommandRecovery.capture(this, command, incoming = true)
 
                 // 1. Private GPS route chunks (#193)
                 if (PhoneGpsRoute193.receive(this, command, uri)) continue
@@ -162,35 +202,8 @@ class WearCommandListenerService : WearableListenerService() {
                             WearCommandReceipts.replay(this, command, uri)
                             return@post
                         }
-                        val timer = IntervalTimerService.snapshot(this)
-                        val active = ActiveWorkoutStore.current(this)
-                        val action = command.optString("value")
-                        val autoObj = command.optJSONObject("automation")
-                        if (active != null &&
-                            autoObj != null &&
-                            active.optString("workoutId") == command.optString("workoutId") &&
-                            timer.optString("key") == autoObj.optString("key") &&
-                            action in listOf("pause", "resume", "skipRest")
-                        ) {
-                            try {
-                                val expectedPhase = autoObj.optLong("phaseNumber")
-                                val phaseMatches = expectedPhase == timer.optLong("phaseNumber")
-                                IntervalTimerService.command(
-                                    this,
-                                    timer.optString("key"),
-                                    if (phaseMatches) action else "status"
-                                )
-                                WearCommandReceipts.complete(
-                                    this,
-                                    command,
-                                    if (phaseMatches) "applied" else "superseded",
-                                    uri
-                                )
-                                return@post
-                            } catch (_: Exception) {
-                            }
-                        }
-                        queue(command, uri)
+                        try { dispatchAutomaticCommand(this, command, uri) }
+                        catch (_: Exception) { queue(command, uri) }
                     }
                     continue
                 }
