@@ -30,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -75,8 +76,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         startupScreen = StartupScreen.install(this)
         super.onCreate(savedInstanceState)
-        // All native palettes use dark surfaces, independently of Android's day/night mode.
-        // Auto system-bar styling otherwise puts dark clock/icons on the dark app background.
+        // Establish transparent edge-to-edge bars before the selected palette is loaded.
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
@@ -113,6 +113,7 @@ class MainActivity : ComponentActivity() {
 
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             val currentPalette = TrainPilotPalettes.getById(uiState.selectedPaletteId)
+            SideEffect { PaletteSystemBars.apply(window, currentPalette) }
 
             com.example.ui.theme.TrainPilotTheme(
                 palette = currentPalette,
@@ -240,6 +241,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        PaletteSystemBars.apply(window, TrainPilotPalettes.getById(viewModel.uiState.value.selectedPaletteId))
         if (!migrationReady) return
         HealthBackgroundService.stop(this)
         lifecycleScope.launch(Dispatchers.IO) {
