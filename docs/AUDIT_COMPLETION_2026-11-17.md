@@ -50,9 +50,57 @@ nem olvadt össze hallgatólagosan.
 
 ## Közös CI
 
-Állapot: integráció alatt. Új teljes kapu még nem futott erre a csomagra.
+Első teljes kapu: [44093701711](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/44093701711),
+source `dfd24439ceb59190fb193679c9f8f8f28dc1eb00`: 825 eset (telefon627,
+Wear198), 5 sikertelen új UI-regresszió. A produkciós fordítás és release R8 sikerült.
+Az első futás nem elfogadott eredmény. A nyers XML és az artifact SHA-256 ellenőrizve.
+
+A javított tesztfeltételek valódi kétoldali időméréses gyakorlatot választanak,
+a hiányzó időalapú katalógus ágát külön állapotprojekcióval vizsgálják, mert a
+rendes újratöltés szándékosan visszaállítja a builtin katalógust; az Activity-teszt látható ablakon ellenőrzi a rendszersávokat.
+A stopper szélessége a tényleges betűmérésből számolódik, nem becsült karakterarányból.
+A nagy élő idő, futás közbeni változás, pause és rögzített eredmény feltétele megmaradt.
+
+Ismételt teljes kapu: [44096539287](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/44096539287),
+source `5b38b64e8acaf5204543043db524179aea671e5b`: 825 eset, 3 sikertelen
+új stopper/intervallum UI-eset; a rendszersáv és a katalógusprojekció tesztje már sikeres.
+Ezt a futást sem tekintjük elfogadottnak. A további diagnosztika a tesztek között
+megmaradó AndroidViewModelFactory singleton Application-jét és a zsugorított
+szövegszélesség kerekítési túlcsordulását választotta le. Az explicit aktuális
+Application-factory és a középre igazított teljes kijelzőszélesség megőrzi az eredeti
+futás/pause/rögzítés elvárásokat.
+
+Harmadik teljes kapu: [44098205802](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/44098205802),
+source `39965dc18fc33f9c7246f274dbe810630e9feddc`: **sikeres**.
+
+- Telefon: **627/627**, Wear: **198/198**, összesen **825/825**; nincs failure,
+  error vagy skipped eset. Shared: NO-SOURCE, nem számoltunk hozzá fiktív tesztet.
+- **69 új regresszió**, 15 osztályban; a main2764 756 esetét is újrafuttattuk.
+- A telefonos és órás produkciós fordítás, a telefonos release R8, a font- és
+  videós ellenőrzések is sikeresek.
+- Nyers XML-ek független újraszámolása és CI-jelentés-egyezés ellenőrizve;
+  tesztartifact `14334279725`, SHA-256
+  `542f13b0d45a53136c17b8b05bf83e35ab22e5d5449d6b4bf54dfd49e6cb9ebe`.
+  [Géppel ellenőrzött bizonyíték](verification/PR259-ci-evidence.json).
+- Diagnosztikai JVM-katalógusmérés: első konstruktor 35,749072 ms, meleg
+  12,817616 ms; 140 gyakorlat/13 program. Ezek Robolectric-adatok, nem
+  készülékes hideg/meleg indulási benchmarkok.
+
+## Lezárt kód- és regresszióellenőrzések
+
+- [x] AUDIT01: tartós helyi recovery és valódi dispatcher/commit/ACK bizonyíték — 26 új eset.
+- [x] AUDIT02–03, EXTRA01: már mainen lévő javítások teljes újrafuttatása.
+- [x] AUDIT04–05, 13: cáfolt hibaleírások szerződésének megőrzése.
+- [x] AUDIT06, 12: valódi órás payloadok és naptári üzenetek négy nyelven.
+- [x] AUDIT07: biztonságos kültéri előnézet és GPS nélküli natív session.
+- [x] AUDIT08: mind a 32 paletta, tárolt téma, látható Activity és visszatérés.
+- [x] AUDIT09–10: tartós megjelenítés/intervallum, backup roundtrip és valódi natív indítás.
+- [x] AUDIT11: korábbi tartós könyvtárjavítás regressziói változatlanul sikeresek.
+- [x] AUDIT14: trace/JVM-mérőpont és katalógusazonosság; fizikai javulást nem állítunk.
+- [x] #256: három gyakorlat törlése, aktív saját példány, ismételt mentés — 6 eset.
+- [x] #257: tényleges Compose élő kijelzés stop előtt, pause/resume, egy- és kétoldali rögzítés — 2 eset.
+- [x] #258: mentés előtti kalória és naplóforrás/időablak egyezése, lifecycle/adatcsere védelmek — 10 eset.
 A 2764 kiadási alap756 tesztje történeti eredmény; nem az új csomag igazolása.
-A végleges sourceSHA, futás, artifact-digest és nyers XML az integráció után kerül ide.
 Helyi Gradle/Android SDK/emulátor futtatás nem történt.
 
 ## Készülékes ellenőrzőlista — még nem végrehajtott esetek

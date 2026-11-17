@@ -1,0 +1,175 @@
+{
+  "source": "dfd24439ceb59190fb193679c9f8f8f28dc1eb00",
+  "run": 44093701711,
+  "url": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/44093701711",
+  "artifactDigest": "sha256:3fcf3806ad619fc0ac328622cf6278079b000e4ca6fc5979a112e14b0f205af1",
+  "artifactDigestVerified": true,
+  "rawXml": {
+    "phone": {
+      "files": 120,
+      "tests": 627,
+      "failures": 5,
+      "errors": 0,
+      "skipped": 0
+    },
+    "wear": {
+      "files": 36,
+      "tests": 198,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "files": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "total": {
+    "tests": 825,
+    "failures": 5,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sharedNoSource": true,
+  "newRegressionCases": {
+    "com.example.AuditCatalogStartupProbeTest": [
+      "constructorProjectsSameCatalogBeforeAndAfterWarmup"
+    ],
+    "com.example.AuditOutdoorPreviewRegressionTest": [
+      "previewBackReopenCreatesNoNativeSessionOrClock",
+      "startTwiceAndReopenKeepThePausedNativeSession",
+      "anotherActiveModeRejectsOutdoorStart"
+    ],
+    "com.example.AuditPreferencesBackupRoundtripTest": [
+      "actualExportAndImportPreserveDistinctRestAndAppearance"
+    ],
+    "com.example.AuditRemainingCalendarViewModelTest": [
+      "calendarActionsPublishLocalizedFeedbackAndKeepEventData"
+    ],
+    "com.example.AuditRemainingPreferencesViewModelTest": [
+      "committedIntervalPresetFeedsQuickTimedStartAndPartialChangesPreserveIt",
+      "appearanceSurvivesNewBoundViewModel",
+      "invalidAndUnboundSavesNeverAcknowledge"
+    ],
+    "com.example.AuditSettingsDurabilityRegressionTest": [
+      "intervalPresetAndLegacyImportKeepBothRestDefaults",
+      "legacyAndInvalidImportsPreserveExistingValuesAndBoundsAreEnforced",
+      "settingsSurviveNewStoreAndPartialTimerEdits"
+    ],
+    "com.example.AuditWearPayloadLocalizationRegressionTest": [
+      "realHomeAndStartPayloadsUsePhoneLanguageAndPreserveHistoricalNames"
+    ],
+    "com.example.EditedProgramSaveRegressionTest": [
+      "explicitCopyStillRequiresExplicitActivation",
+      "customProgramRemovalAndRepeatedSaveUpdateSameId",
+      "editingInactiveTemplatePreservesUnrelatedActiveProgram",
+      "firstSaveWithoutExerciseRemovalActivatesOneCopyAndProgramCardReopensIt",
+      "removingLastThreeAndSavingKeepsOneActiveCustomCopyAcrossReopening",
+      "homeKeepsAnExistingCalendarTargetWhenAnotherProgramBecomesActive"
+    ],
+    "com.example.StudioIntervalStartRegressionTest": [
+      "selectedValidTimedExerciseWinsAndRequireNewCannotRecoverEvenTheSameExercise",
+      "noTimedCatalogCannotCreateAFallbackStrengthSession",
+      "failedPresetSaveCannotStartASessionOrLeaveTheForm",
+      "pauseWhileWaitingForArmConsumesStartAndCannotReplayAfterResume",
+      "existingStrengthOrWatchOwnerIsNeverReplacedOrResumedByFormStart",
+      "productionFormCommitsThenArmsAndStartsOnlyTheNativeIntervalClock"
+    ],
+    "com.example.StudioLiveStopwatchRegressionTest": [
+      "bothSideReadoutsAdvanceBeforeRecordingWithoutTheHeaderConsumingTheirWidth",
+      "singleReadoutChangesWhileRunningThenPauseFreezesAndRecordStoresOnlyElapsedWork"
+    ],
+    "com.example.StudioSummaryCaloriesRegressionTest": [
+      "providerSelectionNeverFallsBackToAnotherProviderOrDailyTotalsAndNeverAddsActiveToTotal",
+      "missingRemainsUnknownAndMeasuredZeroRemainsZero",
+      "foregroundReadUsesCanonicalProviderAndQueriesActualWindowsWithoutChangingTheFrame",
+      "staleOrWrongWorkoutEvidenceIsRejectedAndCannotHideValidSavedWear",
+      "savedWearWithoutRedundantWorkoutIdMatchesTheJournalAndPulseOnlyLiveCannotHideIt",
+      "inFlightReadRejectsProviderSessionForegroundAndReplacementChangesBeforePublishing",
+      "asyncSnapshotCannotCrossProviderGenerationPauseOrWorkoutChanges",
+      "mislabeledProviderAndForeignSnapshotAreRejectedAtCapture",
+      "samsungSessionEnergyPreservesItsDefinitionAndJournalProvenance",
+      "selectedProviderUsesOnlyItsExactActiveWindowsBeforeSavingWithJournalParity"
+    ],
+    "com.example.WearPendingRecoveryRegressionTest": [
+      "normalDeliveryAndWatchResendApplyOneDurableRecordingAndClearPending",
+      "staleNativeRevisionIsTerminalAndCannotSpinForeverInTheInbox",
+      "legacyBilateralCommitWithoutInboxAckReconcilesItsWireFingerprintAfterClosureAndReopen",
+      "legacyWireReachingRepositoryStalePauseAdmissionReconcilesItsCommittedProof",
+      "closedListenerRejectsNativeLegacyAndUnsupportedWiresWithoutInventingProof",
+      "legacyCompleteSetUsesTheSameEditorAndIsIdempotentAfterRecovery",
+      "automaticStartRemainsPendingUntilTheExistingControllerIsExplicitlyArmed",
+      "restoreFenceNeverAcknowledgesOrAppliesUntilRecoveryFinishes",
+      "legacyUpdateSetBlockedByTheRealEditorRecoversWithoutAWatchResend",
+      "startupAndRepeatedReconnectTriggersDrainThePersistedInboxWithoutResend",
+      "lateLegacyBilateralWireAfterCommitWithoutAckAndClosureUsesOriginalProof",
+      "pausedDraftCannotBeResumedByDrainingAndOldPauseRevisionRejectsAfterExplicitResume",
+      "lateNativeWireAfterCommitWithoutAckAndClosureUsesProofThenReplaysTheSameReceipt",
+      "finalizationFenceRejectsPendingCommandBeforeTheEngineFrameCloses",
+      "invalidLegacyBilateralResultGetsAnErrorReceiptAfterTheTransientBlockClears",
+      "legacyAutomaticPauseUsesActualIntervalDispatchAndPhaseFence",
+      "lateLegacyWireWithChangedMeasuredPayloadCannotClaimTheCommittedProof",
+      "watchResendCannotReplaceThePersistedLegacyGenerationWithTheCurrentOne",
+      "fastUndoDrainReconcilesCommittedInverseAcrossPauseChangeWithoutResuming",
+      "crashBetweenEngineCommitAndInboxAckReconcilesDurableProofAfterClosure",
+      "lateWireDuringRestoreRetainsPendingProofUntilTheRestoreFenceClears",
+      "closedDraftRejectsPendingCommandWithoutRecreatingTheWorkout",
+      "localRecoveryWithoutWatchResendingRecordsOnceAndReplaysAfterStoreReopen",
+      "changedGenerationPauseAndEpochRejectPendingCommands",
+      "fastUndoDrainReconcilesCommittedInverseAfterClosureAndReopen",
+      "legacyGenerationCapturedAtIngressCannotBeReboundAfterReplacementOrRestart"
+    ],
+    "com.repforge.app.PaletteSystemBarsTest": [
+      "productionActivityFollowsStoredPaletteLiveAndOnReturn",
+      "allPaletteBackgroundsChooseContrastingIcons"
+    ],
+    "com.repforge.app.localization.CalendarFeedbackTest": [
+      "feedbackRetainsDatesBadgesAndTimesInEveryLanguage"
+    ],
+    "com.repforge.app.localization.WearNameLocalizationTest": [
+      "resolvesFourLanguagesAndFallbacks",
+      "historicalBuiltinsTranslateOnlyWhenSavedNamesStillMatch",
+      "historicalDayNamesTranslateOnlyKnownBuiltins"
+    ]
+  },
+  "failedCases": [
+    {
+      "class": "com.example.StudioIntervalStartRegressionTest",
+      "name": "noTimedCatalogCannotCreateAFallbackStrengthSession",
+      "message": "java.lang.IllegalStateException: Interval start timed out",
+      "stack": "java.lang.IllegalStateException: Interval start timed out\n\tat com.example.StudioIntervalStartRegressionTest.await(StudioIntervalStartRegressionTest.kt:259)\n\tat com.example.StudioIntervalStartRegressionTest.noTimedCatalogCannotCreateAFallbackStrengthSession(StudioIntervalStartRegressionTest.kt:186)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n\tat java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)\n\tat org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)\n\tat org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)\n\tat org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)\n\tat org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)\n\tat org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)\n\tat org.junit.rules.ExternalResource$1.evaluate(ExternalResource.java:54)\n\tat androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1$evaluate$1.invoke(AndroidComposeTestRule.android.kt:272)\n\tat androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1$evaluate$1.invoke(AndroidComposeTestRule.android.kt:271)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.withDisposableContent(ComposeUiTest.android.kt:505)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1$1$1.invoke(ComposeUiTest.android.kt:333)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withComposeIdlingResource(ComposeUiTest.android.kt:385)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withComposeIdlingResource(ComposeUiTest.android.kt:219)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1$1.invoke(ComposeUiTest.android.kt:332)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withWindowRecomposer(ComposeUiTest.android.kt:359)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withWindowRecomposer(ComposeUiTest.android.kt:219)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1.invoke(ComposeUiTest.android.kt:331)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withTestCoroutines(ComposeUiTest.android.kt:372)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withTestCoroutines(ComposeUiTest.android.kt:219)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1.invoke(ComposeUiTest.android.kt:330)\n\tat androidx.compose.ui.test.IdlingStrategy.withStrategy(IdlingStrategy.android.kt:52)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1.invoke(ComposeUiTest.android.kt:329)\n\tat androidx.compose.ui.test.IdlingResourceRegistry.withRegistry(IdlingResourceRegistry.jvm.kt:155)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1.invoke(ComposeUiTest.android.kt:328)\n\tat androidx.compose.ui.test.ComposeRootRegistry.withRegistry(ComposeRootRegistry.android.kt:146)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.runTest(ComposeUiTest.android.kt:327)\n\tat androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1.evaluate(AndroidComposeTestRule.android.kt:271)\n\tat org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)\n\tat org.robolectric.RobolectricTestRunner$HelperTestRunner$1.evaluate(RobolectricTestRunner.java:524)\n\tat org.robolectric.internal.SandboxTestRunner.executeInSandbox(SandboxTestRunner.java:494)\n\tat org.robolectric.internal.SandboxTestRunner.access$900(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$7.evaluate(SandboxTestRunner.java:442)\n\tat org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)\n\tat org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)\n\tat org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)\n\tat org.robolectric.internal.SandboxTestRunner.access$600(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$6.evaluate(SandboxTestRunner.java:333)\n\tat org.robolectric.internal.SandboxTestRunner$3.evaluate(SandboxTestRunner.java:233)\n\tat org.robolectric.internal.SandboxTestRunner$5.lambda$evaluate$0(SandboxTestRunner.java:317)\n\tat org.robolectric.internal.bytecode.Sandbox.lambda$runOnMainThread$0(Sandbox.java:101)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)\n\tat java.base/java.lang.Thread.run(Thread.java:840)\n"
+    },
+    {
+      "class": "com.example.StudioIntervalStartRegressionTest",
+      "name": "productionFormCommitsThenArmsAndStartsOnlyTheNativeIntervalClock",
+      "message": "androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 30000 ms",
+      "stack": "androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 30000 ms\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:441)\n\tat androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:306)\n\tat com.example.StudioIntervalStartRegressionTest.productionFormCommitsThenArmsAndStartsOnlyTheNativeIntervalClock(StudioIntervalStartRegressionTest.kt:118)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n\tat java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)\n\tat org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)\n\tat org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)\n\tat org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)\n\tat org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)\n\tat org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)\n\tat org.junit.rules.ExternalResource$1.evaluate(ExternalResource.java:54)\n\tat androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1$evaluate$1.invoke(AndroidComposeTestRule.android.kt:272)\n\tat androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1$evaluate$1.invoke(AndroidComposeTestRule.android.kt:271)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.withDisposableContent(ComposeUiTest.android.kt:505)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1$1$1.invoke(ComposeUiTest.android.kt:333)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withComposeIdlingResource(ComposeUiTest.android.kt:385)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withComposeIdlingResource(ComposeUiTest.android.kt:219)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1$1.invoke(ComposeUiTest.android.kt:332)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withWindowRecomposer(ComposeUiTest.android.kt:359)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withWindowRecomposer(ComposeUiTest.android.kt:219)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1.invoke(ComposeUiTest.android.kt:331)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withTestCoroutines(ComposeUiTest.android.kt:372)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withTestCoroutines(ComposeUiTest.android.kt:219)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1.invoke(ComposeUiTest.android.kt:330)\n\tat androidx.compose.ui.test.IdlingStrategy.withStrategy(IdlingStrategy.android.kt:52)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1.invoke(ComposeUiTest.android.kt:329)\n\tat androidx.compose.ui.test.IdlingResourceRegistry.withRegistry(IdlingResourceRegistry.jvm.kt:155)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1.invoke(ComposeUiTest.android.kt:328)\n\tat androidx.compose.ui.test.ComposeRootRegistry.withRegistry(ComposeRootRegistry.android.kt:146)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.runTest(ComposeUiTest.android.kt:327)\n\tat androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1.evaluate(AndroidComposeTestRule.android.kt:271)\n\tat org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)\n\tat org.robolectric.RobolectricTestRunner$HelperTestRunner$1.evaluate(RobolectricTestRunner.java:524)\n\tat org.robolectric.internal.SandboxTestRunner.executeInSandbox(SandboxTestRunner.java:494)\n\tat org.robolectric.internal.SandboxTestRunner.access$900(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$7.evaluate(SandboxTestRunner.java:442)\n\tat org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)\n\tat org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)\n\tat org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)\n\tat org.robolectric.internal.SandboxTestRunner.access$600(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$6.evaluate(SandboxTestRunner.java:333)\n\tat org.robolectric.internal.SandboxTestRunner$3.evaluate(SandboxTestRunner.java:233)\n\tat org.robolectric.internal.SandboxTestRunner$5.lambda$evaluate$0(SandboxTestRunner.java:317)\n\tat org.robolectric.internal.bytecode.Sandbox.lambda$runOnMainThread$0(Sandbox.java:101)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)\n\tat java.base/java.lang.Thread.run(Thread.java:840)\n"
+    },
+    {
+      "class": "com.example.StudioLiveStopwatchRegressionTest",
+      "name": "bothSideReadoutsAdvanceBeforeRecordingWithoutTheHeaderConsumingTheirWidth",
+      "message": "java.lang.IllegalStateException: Live stopwatch timed out",
+      "stack": "java.lang.IllegalStateException: Live stopwatch timed out\n\tat com.example.StudioLiveStopwatchRegressionTest.await(StudioLiveStopwatchRegressionTest.kt:242)\n\tat com.example.StudioLiveStopwatchRegressionTest.bothSideReadoutsAdvanceBeforeRecordingWithoutTheHeaderConsumingTheirWidth(StudioLiveStopwatchRegressionTest.kt:149)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n\tat java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)\n\tat org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)\n\tat org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)\n\tat org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)\n\tat org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)\n\tat org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)\n\tat org.junit.rules.ExternalResource$1.evaluate(ExternalResource.java:54)\n\tat androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1$evaluate$1.invoke(AndroidComposeTestRule.android.kt:272)\n\tat androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1$evaluate$1.invoke(AndroidComposeTestRule.android.kt:271)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.withDisposableContent(ComposeUiTest.android.kt:505)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1$1$1.invoke(ComposeUiTest.android.kt:333)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withComposeIdlingResource(ComposeUiTest.android.kt:385)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withComposeIdlingResource(ComposeUiTest.android.kt:219)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1$1.invoke(ComposeUiTest.android.kt:332)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withWindowRecomposer(ComposeUiTest.android.kt:359)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withWindowRecomposer(ComposeUiTest.android.kt:219)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1.invoke(ComposeUiTest.android.kt:331)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withTestCoroutines(ComposeUiTest.android.kt:372)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withTestCoroutines(ComposeUiTest.android.kt:219)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1.invoke(ComposeUiTest.android.kt:330)\n\tat androidx.compose.ui.test.IdlingStrategy.withStrategy(IdlingStrategy.android.kt:52)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1.invoke(ComposeUiTest.android.kt:329)\n\tat androidx.compose.ui.test.IdlingResourceRegistry.withRegistry(IdlingResourceRegistry.jvm.kt:155)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1.invoke(ComposeUiTest.android.kt:328)\n\tat androidx.compose.ui.test.ComposeRootRegistry.withRegistry(ComposeRootRegistry.android.kt:146)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.runTest(ComposeUiTest.android.kt:327)\n\tat androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1.evaluate(AndroidComposeTestRule.android.kt:271)\n\tat org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)\n\tat org.robolectric.RobolectricTestRunner$HelperTestRunner$1.evaluate(RobolectricTestRunner.java:524)\n\tat org.robolectric.internal.SandboxTestRunner.executeInSandbox(SandboxTestRunner.java:494)\n\tat org.robolectric.internal.SandboxTestRunner.access$900(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$7.evaluate(SandboxTestRunner.java:442)\n\tat org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)\n\tat org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)\n\tat org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)\n\tat org.robolectric.internal.SandboxTestRunner.access$600(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$6.evaluate(SandboxTestRunner.java:333)\n\tat org.robolectric.internal.SandboxTestRunner$3.evaluate(SandboxTestRunner.java:233)\n\tat org.robolectric.internal.SandboxTestRunner$5.lambda$evaluate$0(SandboxTestRunner.java:317)\n\tat org.robolectric.internal.bytecode.Sandbox.lambda$runOnMainThread$0(Sandbox.java:101)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)\n\tat java.base/java.lang.Thread.run(Thread.java:840)\n"
+    },
+    {
+      "class": "com.example.StudioLiveStopwatchRegressionTest",
+      "name": "singleReadoutChangesWhileRunningThenPauseFreezesAndRecordStoresOnlyElapsedWork",
+      "message": "java.lang.AssertionError: Counter digits must fit on one line",
+      "stack": "java.lang.AssertionError: Counter digits must fit on one line\n\tat org.junit.Assert.fail(Assert.java:89)\n\tat org.junit.Assert.assertTrue(Assert.java:42)\n\tat org.junit.Assert.assertFalse(Assert.java:65)\n\tat com.example.StudioLiveStopwatchRegressionTest.assertReadable(StudioLiveStopwatchRegressionTest.kt:196)\n\tat com.example.StudioLiveStopwatchRegressionTest.singleReadoutChangesWhileRunningThenPauseFreezesAndRecordStoresOnlyElapsedWork(StudioLiveStopwatchRegressionTest.kt:101)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n\tat java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)\n\tat org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)\n\tat org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)\n\tat org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)\n\tat org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)\n\tat org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)\n\tat org.junit.rules.ExternalResource$1.evaluate(ExternalResource.java:54)\n\tat androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1$evaluate$1.invoke(AndroidComposeTestRule.android.kt:272)\n\tat androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1$evaluate$1.invoke(AndroidComposeTestRule.android.kt:271)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.withDisposableContent(ComposeUiTest.android.kt:505)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1$1$1.invoke(ComposeUiTest.android.kt:333)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withComposeIdlingResource(ComposeUiTest.android.kt:385)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withComposeIdlingResource(ComposeUiTest.android.kt:219)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1$1.invoke(ComposeUiTest.android.kt:332)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withWindowRecomposer(ComposeUiTest.android.kt:359)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withWindowRecomposer(ComposeUiTest.android.kt:219)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1.invoke(ComposeUiTest.android.kt:331)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withTestCoroutines(ComposeUiTest.android.kt:372)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withTestCoroutines(ComposeUiTest.android.kt:219)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1.invoke(ComposeUiTest.android.kt:330)\n\tat androidx.compose.ui.test.IdlingStrategy.withStrategy(IdlingStrategy.android.kt:52)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1.invoke(ComposeUiTest.android.kt:329)\n\tat androidx.compose.ui.test.IdlingResourceRegistry.withRegistry(IdlingResourceRegistry.jvm.kt:155)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1.invoke(ComposeUiTest.android.kt:328)\n\tat androidx.compose.ui.test.ComposeRootRegistry.withRegistry(ComposeRootRegistry.android.kt:146)\n\tat androidx.compose.ui.test.AndroidComposeUiTestEnvironment.runTest(ComposeUiTest.android.kt:327)\n\tat androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1.evaluate(AndroidComposeTestRule.android.kt:271)\n\tat org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)\n\tat org.robolectric.RobolectricTestRunner$HelperTestRunner$1.evaluate(RobolectricTestRunner.java:524)\n\tat org.robolectric.internal.SandboxTestRunner.executeInSandbox(SandboxTestRunner.java:494)\n\tat org.robolectric.internal.SandboxTestRunner.access$900(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$7.evaluate(SandboxTestRunner.java:442)\n\tat org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)\n\tat org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)\n\tat org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)\n\tat org.robolectric.internal.SandboxTestRunner.access$600(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$6.evaluate(SandboxTestRunner.java:333)\n\tat org.robolectric.internal.SandboxTestRunner$3.evaluate(SandboxTestRunner.java:233)\n\tat org.robolectric.internal.SandboxTestRunner$5.lambda$evaluate$0(SandboxTestRunner.java:317)\n\tat org.robolectric.internal.bytecode.Sandbox.lambda$runOnMainThread$0(Sandbox.java:101)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)\n\tat java.base/java.lang.Thread.run(Thread.java:840)\n"
+    },
+    {
+      "class": "com.repforge.app.PaletteSystemBarsTest",
+      "name": "productionActivityFollowsStoredPaletteLiveAndOnReturn",
+      "message": "java.lang.IllegalStateException: Timed out waiting for palette and system bars",
+      "stack": "java.lang.IllegalStateException: Timed out waiting for palette and system bars\n\tat com.repforge.app.PaletteSystemBarsTest.await(PaletteSystemBarsTest.kt:84)\n\tat com.repforge.app.PaletteSystemBarsTest.productionActivityFollowsStoredPaletteLiveAndOnReturn$awaitPalette(PaletteSystemBarsTest.kt:55)\n\tat com.repforge.app.PaletteSystemBarsTest.productionActivityFollowsStoredPaletteLiveAndOnReturn(PaletteSystemBarsTest.kt:62)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n\tat java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:569)\n\tat org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)\n\tat org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)\n\tat org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)\n\tat org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)\n\tat org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)\n\tat org.robolectric.RobolectricTestRunner$HelperTestRunner$1.evaluate(RobolectricTestRunner.java:524)\n\tat org.robolectric.internal.SandboxTestRunner.executeInSandbox(SandboxTestRunner.java:494)\n\tat org.robolectric.internal.SandboxTestRunner.access$900(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$7.evaluate(SandboxTestRunner.java:442)\n\tat org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)\n\tat org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)\n\tat org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)\n\tat org.robolectric.internal.SandboxTestRunner.access$600(SandboxTestRunner.java:67)\n\tat org.robolectric.internal.SandboxTestRunner$6.evaluate(SandboxTestRunner.java:333)\n\tat org.robolectric.internal.SandboxTestRunner$3.evaluate(SandboxTestRunner.java:233)\n\tat org.robolectric.internal.SandboxTestRunner$5.lambda$evaluate$0(SandboxTestRunner.java:317)\n\tat org.robolectric.internal.bytecode.Sandbox.lambda$runOnMainThread$0(Sandbox.java:101)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)\n\tat java.base/java.lang.Thread.run(Thread.java:840)\n"
+    }
+  ],
+  "physicalAcceptance": false,
+  "newApkOrAab": false,
+  "conclusion": "failure",
+  "accepted": false,
+  "artifactId": 14332804234
+}
