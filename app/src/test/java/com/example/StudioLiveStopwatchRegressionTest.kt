@@ -135,7 +135,7 @@ class StudioLiveStopwatchRegressionTest {
 
     @Test fun bothSideReadoutsAdvanceBeforeRecordingWithoutTheHeaderConsumingTheirWidth() {
         val studio = model()
-        studio.startQuickTimedWithExercise(studio.uiState.value.exercises.first { it.isBilateral })
+        studio.startQuickTimedWithExercise(studio.uiState.value.exercises.first { it.id == "side-plank" })
         awaitStarted(studio)
         val frame = ActiveWorkoutStore.current(context)!!
         val target = target(frame)
@@ -146,7 +146,9 @@ class StudioLiveStopwatchRegressionTest {
             render(studio, bilateral = true)
             for ((side, seconds) in listOf("left" to 2, "right" to 3)) {
                 compose.onNodeWithTag("bilateral_${side}_start_pause_btn").performScrollTo().performClick()
-                await { measurement.uiState.value.stopwatchRunning && measurement.uiState.value.stopwatchSide == side }
+                await { measurement.uiState.value.stopwatchRunning && measurement.uiState.value.stopwatchSide == side ||
+                    measurement.uiState.value.statusMessage != null }
+                assertTrue("Start $side: ${measurement.uiState.value.statusMessage}", measurement.uiState.value.stopwatchRunning)
                 val clockId = clock().getString("id")
                 advance(1)
                 assertEquals(1L, measurement.uiState.value.stopwatchSeconds)
@@ -193,7 +195,7 @@ class StudioLiveStopwatchRegressionTest {
         readout(tag).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
         val layout = layouts.single()
         assertTrue("Counter must retain the existing large typography", layout.layoutInput.style.fontSize.value >= minimumFontSp)
-        assertFalse("Counter digits must fit on one line", layout.hasVisualOverflow)
+        assertFalse("Counter digits must fit on one line: size=${layout.size}, input=${layout.layoutInput.constraints}, width=${layout.didOverflowWidth}, height=${layout.didOverflowHeight}", layout.hasVisualOverflow)
         assertEquals(1, layout.lineCount)
     }
 

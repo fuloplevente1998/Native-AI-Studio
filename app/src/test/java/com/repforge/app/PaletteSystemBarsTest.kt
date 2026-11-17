@@ -19,6 +19,7 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
+import org.robolectric.annotation.GraphicsMode
 import org.robolectric.Shadows.shadowOf
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -27,6 +28,7 @@ import java.util.concurrent.TimeoutException
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 @LooperMode(LooperMode.Mode.PAUSED)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class PaletteSystemBarsTest {
     @Test fun allPaletteBackgroundsChooseContrastingIcons() {
         assertEquals(32, TrainPilotPalettes.allPalettes.size)
@@ -52,13 +54,15 @@ class PaletteSystemBarsTest {
             val activity = activityController.get()
             val viewModel = ViewModelProvider(activity)[TrainPilotViewModel::class.java]
             val bars = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
-            fun awaitPalette(id: Int, darkIcons: Boolean) = await {
+            fun awaitPalette(id: Int, darkIcons: Boolean) = await("palette $id", {
+                "actual=${viewModel.uiState.value.selectedPaletteId}, status=${bars.isAppearanceLightStatusBars}, nav=${bars.isAppearanceLightNavigationBars}"
+            }) {
                 viewModel.uiState.value.selectedPaletteId == id &&
                     bars.isAppearanceLightStatusBars == darkIcons &&
                     bars.isAppearanceLightNavigationBars == darkIcons
             }
 
-            activityController.start().resume()
+            activityController.start().resume().visible()
             awaitPalette(25, true)
             writePalette(1)
             awaitPalette(1, false)
@@ -77,11 +81,11 @@ class PaletteSystemBarsTest {
         }
     }
 
-    private fun await(condition: () -> Boolean) {
+    private fun await(label: String = "palette", details: () -> String = { "" }, condition: () -> Boolean) {
         val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30)
         while (!condition()) {
             shadowOf(Looper.getMainLooper()).idleFor(50, TimeUnit.MILLISECONDS)
-            check(System.nanoTime() < deadline) { "Timed out waiting for palette and system bars" }
+            check(System.nanoTime() < deadline) { "Timed out waiting for $label and system bars: ${details()}" }
             Thread.sleep(10)
         }
     }

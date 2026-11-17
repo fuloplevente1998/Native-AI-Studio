@@ -115,7 +115,10 @@ class StudioIntervalStartRegressionTest {
             compose.onNodeWithTag("studio_interval_sound").performClick()
             compose.onNodeWithTag("studio_interval_auto_advance").performClick()
             compose.onNodeWithTag("studio_interval_save_start").performScrollTo().performClick()
-            compose.waitUntil(30_000) { vm.uiState.value.isWorkoutSessionActive && vm.uiState.value.pendingIntervalStart == null }
+            await(details = { "route=${vm.uiState.value.currentSubScreen}, active=${vm.uiState.value.isWorkoutSessionActive}, pending=${vm.uiState.value.pendingIntervalStart}, banner=${vm.uiState.value.statusBannerMessage}, frame=${ActiveWorkoutStore.current(context)}" }) {
+                compose.waitForIdle()
+                vm.uiState.value.isWorkoutSessionActive && vm.uiState.value.pendingIntervalStart == null
+            }
             val frame = requireNotNull(ActiveWorkoutStore.current(context))
             assertEquals(SubScreen.ACTIVE_TIMED, vm.uiState.value.currentSubScreen)
             assertEquals(expected.id, vm.uiState.value.selectedExerciseId)
@@ -177,13 +180,10 @@ class StudioIntervalStartRegressionTest {
 
     @Test fun noTimedCatalogCannotCreateAFallbackStrengthSession() {
         val vm = model()
-        val strengthId = vm.uiState.value.exercises.first { !it.isTimed && !it.isBilateral }.id
-        native {
-            db.clearAllTables()
-            db.exerciseLibraryDao().upsertExercises(TrainPilotDatabase.defaultExercises().filter { it.id == strengthId })
-        }
-        vm.refreshAfterCloudSync(context)
-        await { vm.uiState.value.exercises.none { it.isTimed } }
+        // A regular catalog reload deliberately restores missing builtins. Exercise
+        // the unavailable-catalog projection without asking the seeder to undo it.
+        val strength = vm.uiState.value.exercises.first { !it.isTimed && !it.isBilateral }
+        stateFlow(vm).value = vm.uiState.value.copy(exercises = listOf(strength), selectedExerciseId = strength.id)
         vm.navigateToSubScreen(SubScreen.INTERVAL_SETTINGS)
         vm.saveAndStartIntervals(73, 17, 4, false, true, false)
         assertNull(ActiveWorkoutStore.current(context))
@@ -252,11 +252,11 @@ class StudioIntervalStartRegressionTest {
     private fun stateFlow(vm: TrainPilotViewModel) = TrainPilotViewModel::class.java.getDeclaredField("_uiState")
         .apply { isAccessible = true }.get(vm) as MutableStateFlow<TrainPilotUiState>
 
-    private fun await(condition: () -> Boolean) {
+    private fun await(details: () -> String = { "" }, condition: () -> Boolean) {
         val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30)
         while (!condition()) {
             shadowOf(Looper.getMainLooper()).idle()
-            check(System.nanoTime() < deadline) { "Interval start timed out" }
+            check(System.nanoTime() < deadline) { "Interval start timed out: ${details()}" }
             Thread.sleep(5)
         }
     }
