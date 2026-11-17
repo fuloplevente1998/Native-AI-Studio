@@ -1,18 +1,23 @@
-# TrainPilot 2765 · 1.2-beta — signed APK+AAB páros kérve, 2026-11-17
+# TrainPilot 2765 · 1.2-beta — APK+AAB páros átadva, 2026-11-17
 
-A felhasználó a PR259 teljes auditjavításához telefonos és Wear APK+AAB párost
-kért, a verziónév legyen1.2, beta jelölés megmarad. Jóváhagyott kódok:
-telefon276500/Wear276502. PR259 mainen: `5eb3f5dae372d82c576acee75e42f81a6a999f4d`.
-A kiadási ág csak verziómetaadatot és dokumentációt módosít; alkalmazás-/tesztkód
-azonos a CI44098205802 sikeres825 tesztjének forrásával.
+PR259 teljes auditjavítás és PR260 kiadási metaadat mainen. Signed forrás
+`bf0bfde5b79972d7dd56e5b7852aa3e41a4f1787`, run44121032371 SUCCESS, build_aab=true.
+Telefon276500/Wear276502, mindkettő1.2-beta. Nyers XML: telefon120/627 +
+Wear36/198 =825 teszt, 0failure/error/skipped; shared NO-SOURCE.
+Három ZIP-digest, négy tényleges manifest/verzió/hash/tartós signer és AAB
+JAR-aláírás ellenőrizve. Telefon és Wear release R8/shrink.
 
-Következő: kiadási metaadat mainre, meglévő android-signing workflow
-`build_aab=true`, egy közös teljes regresszió és signed pár. Utána nyers XML,
-ZIP-digest, tényleges manifest/verzió/package/hash/tartós signer ellenőrzése,
-négy bináris és külön phone/Wear változáslisták átadása Drive-on.
-Célmappa: `1ywHgrManynjV9uNvZfVncOmCr3SbHIb9` (TrainPilot Native),
-korábbi fájlok megőrzendők. Előkészítés: `/workspace/TrainPilot-build-2765/`.
-Fizikai elfogadás még hátravan; új binárist csak a signed kapu után állítunk késznek.
+Benne: teljes fennmaradt auditjavítás, programmentés, élő stopperfelület,
+mentés előtti kalóriaegyezés, tartós megjelenítés/intervallum és valódi indítás,
+helyi órás recovery, négy nyelv, kültéri előnézet és rendszersáv. A Wear saját
+képernyőkódja változatlan, PR220 teljes témaszinkron-/dizájnterve ettől külön.
+
+Mind a négy bináris, külön phone/Wear részletes és Play-leírás, plusz bizonyíték
+Drive-on: kilenc fájl neve/mérete/parentje visszaolvasva, régiek megőrizve.
+Részletek: releases/2765-changes.md, releases/2765-verified-artifacts.json,
+releases/2765-drive-delivery.json. Mindkét app frissítendő. Play Console-feltöltés
+és fizikai készülékes elfogadás külön hátravan; issue-k nem záródtak automatikusan.
+A lezáró dokumentáció nem változtat alkalmazás-/teszt-/buildforrást.
 
 ---
 

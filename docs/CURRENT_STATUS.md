@@ -1,3 +1,26 @@
+# TrainPilot 2765 · 1.2-beta — APK+AAB páros átadva, 2026-11-17
+
+PR259 teljes auditjavítás és PR260 kiadási metaadat mainen. Signed forrás
+`bf0bfde5b79972d7dd56e5b7852aa3e41a4f1787`, run44121032371 SUCCESS, build_aab=true.
+Telefon276500/Wear276502, mindkettő1.2-beta. Nyers XML: telefon120/627 +
+Wear36/198 =825 teszt, 0failure/error/skipped; shared NO-SOURCE.
+Három ZIP-digest, négy tényleges manifest/verzió/hash/tartós signer és AAB
+JAR-aláírás ellenőrizve. Telefon és Wear release R8/shrink.
+
+Benne: teljes fennmaradt auditjavítás, programmentés, élő stopperfelület,
+mentés előtti kalóriaegyezés, tartós megjelenítés/intervallum és valódi indítás,
+helyi órás recovery, négy nyelv, kültéri előnézet és rendszersáv. A Wear saját
+képernyőkódja változatlan, PR220 teljes témaszinkron-/dizájnterve ettől külön.
+
+Mind a négy bináris, külön phone/Wear részletes és Play-leírás, plusz bizonyíték
+Drive-on: kilenc fájl neve/mérete/parentje visszaolvasva, régiek megőrizve.
+Részletek: releases/2765-changes.md, releases/2765-verified-artifacts.json,
+releases/2765-drive-delivery.json. Mindkét app frissítendő. Play Console-feltöltés
+és fizikai készülékes elfogadás külön hátravan; issue-k nem záródtak automatikusan.
+A lezáró dokumentáció nem változtat alkalmazás-/teszt-/buildforrást.
+
+---
+
 # TrainPilot 2764 · 1.1-beta — main, APK+AAB páros átadva, 2026-11-16
 
 Felhasználói jóváhagyással PR253 mainen; a benne foglalt PR248/249 is mergelt.
