@@ -82,7 +82,14 @@ class FirstRunPlannerRegressionTest {
         awaitTag("onboarding_welcome")
         compose.onNodeWithTag("onboarding_begin").performClick()
         awaitTag("onboarding_profile")
-        compose.onNodeWithTag("onboarding_edit_profile").performClick()
+        // DataStore can publish PROFILE before the saving coroutine's finally
+        // re-enables its action. A disabled click is intentionally ignored.
+        await {
+            compose.onAllNodesWithTag("onboarding_edit_profile").fetchSemanticsNodes().singleOrNull()?.let {
+                !it.config.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled)
+            } == true
+        }
+        compose.onNodeWithTag("onboarding_edit_profile").assertIsEnabled().performClick()
         awaitTag("profile_height_box")
         compose.onNodeWithTag("full_height_form_footer").assertIsDisplayed()
         compose.onNodeWithTag("profile_field_height").assertDoesNotExist()

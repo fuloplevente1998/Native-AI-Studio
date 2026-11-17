@@ -16,6 +16,18 @@ Alap main0a0beb9 / kiadott2765-r2.
 Új renderelt regresszió: látható fehér súlyzó, átlátszó sarkok és szabad háttér;
 az igazi foreground ARM-teszt a kibocsátott Notification smallIcon erőforrását
 is ellenőrzi. A meglévő UI/élőmérés/835 regresszió változatlanul fut.
-Teljes CI és nyers XML bizonyíték az eredmény után kerül ide.
+Első teljes CI44157967188, forrásd98a7dc36c5ba71824164e60dedcf624cbe1d020:
+836 esetből835 sikeres,1 hiba. Az új renderelt ikon és a tényleges értesítés
+ellenőrzése sikeres. A régi FirstRunPlannerRegressionTest closingPlanner esete
+az edit-profile kattintás után timeoutolt: a PROFILE panel már megjelent,
+de a DataStore-írás finally ága még nem engedélyezte a gombot, a túl korai
+kattintás így jogszerűen hatástalan volt. A teszt most a valóban engedélyezett
+gombot várja meg, és ugyanúgy ellenőrzi a valódi panelt/mentetlenséget.
+Produkciós onboarding kódot nem módosítottunk.
+
+2026-11-17: felhasználó további kisebb javítások gyűjtését és a CI halasztását
+kérte. Nincs újrafuttatás vagy új build; a teszt-szinkronizálás javítása még
+nem ellenőrzött CI-ben. A további commitok [skip ci] jelölésűek; a teljes kapu
+csak új, kifejezett felhasználói kérésre indul.
 Nincs még új main-integráció, APK/AAB vagy verzióemelés; fizikai SystemUI
 megjelenítés a következő készülékes ellenőrzés.

@@ -1,3 +1,21 @@
+# #267 / draft PR268 — javításgyűjtés, CI SZÜNETEL, 2026-11-17
+
+Felhasználó további kisebb javításokat jelez, és kifejezetten kéri: CI ne
+induljon. Ne indíts automatikus/manuális CI-t, signed/APK/AAB buildet;
+commitok [skip ci] jelöléssel. Egy közös kapu majd külön felhasználói kérésre.
+
+Ág fix/program-header-notification-icon, main0a0beb9 alapján. Programok fejléc
+ScreenGutter margóval, felesleges+ eltávolítva; négy telefonos értesítési út
+külön fehér/átlátszó TrainPilot súlyzómaszkot használ. Launcher/vezérlés változatlan.
+Első CI44157967188/d98a7dc:836 eset,1 régi first-run UI timeout; az ikon új
+renderelt és valódi ARM-ellenőrzései sikeresek. A korábbi teszt egy még
+letiltott edit-profile gombra kattintott; most engedélyezést vár, feltételeit
+nem gyengíti. E tesztmódosítás még nincs CI-ben ellenőrizve, a csomag nem
+tekinthető teljesen zöldnek. Részletek PROGRAM_HEADER_STATUS_ICON_267.md.
+PR268 draft, nincs main-merge/új installer/verzió. Legutóbbi átadott APK2765-r2.
+
+---
+
 # 2765-r2 · 1.2-beta — main, telefonos APK átadva, 2026-11-17
 
 Felhasználó jóváhagyta PR263/PR265 teljes main-integrációját és telefonos APK-t
