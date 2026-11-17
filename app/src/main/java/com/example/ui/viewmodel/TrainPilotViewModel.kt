@@ -2051,11 +2051,11 @@ class TrainPilotViewModel : ViewModel() {
         val programId = state.editingProgramId
         val dayKey = state.programs.firstOrNull { it.id == programId }?.days?.getOrNull(state.editingDayIndex)?.id
         val language = state.language.name.lowercase(java.util.Locale.ROOT)
-        mutateStudioLibrary(success, editor = true, selectLastDay = selectLastDay) { context, db, _ ->
+        mutateStudioLibrary(success, editor = true, selectLastDay = selectLastDay) { context, db, store ->
             val opened = requireNotNull(db.programDao().getProgramWithDaysById(programId))
             val rawDayId = opened.days.firstOrNull { it.compositeId == dayKey || it.dayId == dayKey }?.dayId
             val draft = change(com.repforge.app.NativeProgramEditor.from(opened, language), rawDayId)
-            com.repforge.app.NativeProgramEditor.save(context, db, opened, draft, language)
+            com.repforge.app.NativeEditedProgramSave.save(context, db, store, opened, draft, language)
         }
     }
 
@@ -2070,9 +2070,9 @@ class TrainPilotViewModel : ViewModel() {
         val programId = state.editingProgramId
         val language = state.language.name.lowercase(java.util.Locale.ROOT)
         mutateStudioLibrary(tr("Program elmentve.", "Program saved.", "Programm gespeichert.", "Program salvat."),
-            editor = true) { context, db, _ ->
+            editor = true) { context, db, store ->
             val opened = requireNotNull(db.programDao().getProgramWithDaysById(programId))
-            com.repforge.app.NativeProgramEditor.save(context, db, opened,
+            com.repforge.app.NativeEditedProgramSave.save(context, db, store, opened,
                 com.repforge.app.StudioProgramSave.draft(opened, language, name, changes), language)
         }
     }
