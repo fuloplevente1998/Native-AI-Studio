@@ -759,7 +759,7 @@ object WearSyncRepository {
         }
         val exercise = JSONObject()
             .put("id", lib.id)
-            .put("name", if (settings.language == "en") lib.nameEn else lib.nameHu)
+            .put("name", com.repforge.app.localization.WearNameLocalization.name(settings.language, lib.nameHu, lib.nameEn, lib.nameDe, lib.nameRo))
             .put("loadType", lib.loadType)
             .put("repUnit", lib.repUnit)
             .put("measurementType", lib.measurementType)
@@ -838,9 +838,9 @@ object WearSyncRepository {
             val allCalendarDaysArray = JSONArray()
             for (pWithDays in programsWithDays) {
                 val p = pWithDays.program
-                val pName = if (settings.language == "en") p.nameEn else p.nameHu
+                val pName = com.repforge.app.localization.WearNameLocalization.name(settings.language, p.nameHu, p.nameEn, p.nameDe, p.nameRo)
                 for (d in pWithDays.days.sortedBy { it.sortOrder }) {
-                    val dName = if (settings.language == "en") d.nameEn else d.nameHu
+                    val dName = com.repforge.app.localization.WearNameLocalization.name(settings.language, d.nameHu, d.nameEn, d.nameDe, d.nameRo)
                     val built = buildWatchDayJson(p.id, pName, d.dayId, dName, d.exercisesJson) ?: continue
                     allCalendarDaysArray.put(built)
                     if (p.id == activeProgram?.program?.id) {
@@ -891,7 +891,7 @@ object WearSyncRepository {
 
             // Quick exercises catalog
             val quickArray = JSONArray()
-            for (ex in allExercises.values.sortedBy { it.nameHu }) {
+            for (ex in allExercises.values.sortedBy { com.repforge.app.localization.WearNameLocalization.name(settings.language, it.nameHu, it.nameEn, it.nameDe, it.nameRo) }) {
                 buildWatchExerciseJson(ex.id)?.let { quickArray.put(it) }
             }
 
@@ -915,16 +915,26 @@ object WearSyncRepository {
                     if (sArr.length() > 0) {
                         exArr.put(
                             JSONObject()
-                                .put("name", exWithSets.exercise.nameHu)
+                                .put("name", com.repforge.app.localization.WearNameLocalization.historicalExercise(settings.language,
+                                    exWithSets.exercise.nameHu, exWithSets.exercise.nameEn,
+                                    allExercises[exWithSets.exercise.exerciseId]))
                                 .put("sets", sArr)
                         )
                     }
                 }
+                val historicalProgram = programsWithDays.firstOrNull { it.program.id == h.workout.programId }
+                val historicalDay = historicalProgram?.days?.firstOrNull {
+                    it.dayId == h.workout.dayId || it.compositeId == h.workout.dayId
+                }
+                val dayName = com.repforge.app.localization.WearNameLocalization.historicalName(settings.language, h.workout.dayName,
+                    historicalDay?.nameHu.orEmpty(), historicalDay?.nameEn.orEmpty(),
+                    historicalDay?.nameDe.orEmpty(), historicalDay?.nameRo.orEmpty(),
+                    historicalProgram?.program?.builtin == true)
                 val itemObj = JSONObject()
                     .put("workoutId", h.workout.id)
                     .put("started", h.workout.started)
                     .put("finished", h.workout.finished)
-                    .put("dayName", h.workout.dayName.ifBlank { "Edzés" })
+                    .put("dayName", dayName.ifBlank { com.repforge.app.localization.WearNameLocalization.name(settings.language, "Edzés", "Workout", "Training", "Antrenament") })
                     .put("quickWorkout", h.workout.quickWorkout)
                     .put("exercises", exArr)
                 NativeSavedWearHealth.read(h.workout)?.let {
@@ -945,7 +955,9 @@ object WearSyncRepository {
             val homeSnapshot = JSONObject()
                 .put("schema", 1)
                 .put("activeProgramId", activeProgram?.program?.id.orEmpty())
-                .put("activeProgramName", activeProgram?.program?.nameHu ?: "TrainPilot")
+                .put("activeProgramName", activeProgram?.program?.let {
+                    com.repforge.app.localization.WearNameLocalization.name(settings.language, it.nameHu, it.nameEn, it.nameDe, it.nameRo)
+                } ?: "TrainPilot")
                 .put("restSeconds", settings.restSeconds)
                 .put("hasDraft", hasDraft)
                 .put("days", activeDaysArray)
