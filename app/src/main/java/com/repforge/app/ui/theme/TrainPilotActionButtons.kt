@@ -33,7 +33,7 @@ object TrainPilotActionAppearance {
 @Composable
 fun TrainPilotActionButton(positive: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier,
     enabled: Boolean = true, shape: Shape = RoundedCornerShape(12.dp),
-    contentPadding: PaddingValues = ButtonDefaults.ContentPadding, content: @Composable RowScope.() -> Unit) {
+    contentPadding: PaddingValues = TrainPilotButtonLayout.ContentPadding, content: @Composable RowScope.() -> Unit) {
     val colors = if (positive) TrainPilotActionAppearance.saveColors() else TrainPilotActionAppearance.negativeColors()
     TrainPilotPressFeedback(colors, enabled, null) { feedbackColors, source ->
     OutlinedButton(onClick, modifier.heightIn(min = 48.dp), enabled, shape,
@@ -45,7 +45,7 @@ fun TrainPilotActionButton(positive: Boolean, onClick: () -> Unit, modifier: Mod
 
 @Composable
 fun TrainPilotSaveButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
-    shape: Shape = RoundedCornerShape(12.dp), contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
+    shape: Shape = RoundedCornerShape(12.dp), contentPadding: PaddingValues = TrainPilotButtonLayout.ContentPadding,
     interactionSource: MutableInteractionSource? = null, content: @Composable RowScope.() -> Unit) {
     TrainPilotPressFeedback(TrainPilotActionAppearance.saveColors(), enabled, interactionSource) { feedbackColors, source ->
     OutlinedButton(onClick, modifier.heightIn(min = 48.dp), enabled, shape,
@@ -56,7 +56,7 @@ fun TrainPilotSaveButton(onClick: () -> Unit, modifier: Modifier = Modifier, ena
 
 @Composable
 fun TrainPilotNegativeButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
-    shape: Shape = RoundedCornerShape(12.dp), contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
+    shape: Shape = RoundedCornerShape(12.dp), contentPadding: PaddingValues = TrainPilotButtonLayout.ContentPadding,
     interactionSource: MutableInteractionSource? = null, content: @Composable RowScope.() -> Unit) {
     TrainPilotPressFeedback(TrainPilotActionAppearance.negativeColors(), enabled, interactionSource) { feedbackColors, source ->
     OutlinedButton(onClick, modifier.heightIn(min = 48.dp), enabled, shape,

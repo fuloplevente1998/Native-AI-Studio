@@ -12,6 +12,13 @@ import androidx.compose.material3.ButtonElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.dp
+
+/** Shared compact insets leave more space for translated labels without changing touch targets. */
+object TrainPilotButtonLayout {
+    val ContentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+    val TextContentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+}
 
 /** Material filled button with feedback spanning its painted surface. */
 @Composable
@@ -23,7 +30,7 @@ fun TrainPilotButton(
     colors: ButtonColors = ButtonDefaults.buttonColors(),
     elevation: ButtonElevation? = ButtonDefaults.buttonElevation(),
     border: BorderStroke? = null,
-    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
+    contentPadding: PaddingValues = TrainPilotButtonLayout.ContentPadding,
     interactionSource: MutableInteractionSource? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
@@ -42,7 +49,7 @@ fun TrainPilotTextButton(
     colors: ButtonColors = ButtonDefaults.textButtonColors(),
     elevation: ButtonElevation? = null,
     border: BorderStroke? = null,
-    contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding,
+    contentPadding: PaddingValues = TrainPilotButtonLayout.TextContentPadding,
     interactionSource: MutableInteractionSource? = null,
     content: @Composable RowScope.() -> Unit,
 ) {

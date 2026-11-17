@@ -13,6 +13,7 @@ import com.example.model.TrainingProgramModel
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 /** Same native editor, explicit actions; only confirm invokes a destructive command. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun StudioProgramManagementControls(
     program: TrainingProgramModel, busy: Boolean, hasDay: Boolean,
@@ -33,7 +34,7 @@ internal fun StudioProgramManagementControls(
             modifier = Modifier.fillMaxWidth().testTag("studio_program_copy")) {
             Text(word("Program másolása saját tervként", "Copy program as custom plan", "Programm als eigenen Plan kopieren", "Copiază programul ca plan propriu"))
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        StudioAdaptiveControlRow {
             TrainPilotOutlinedButton(onClick = { pending = "add-day" }, enabled = !busy && program.days.size < 31,
                 modifier = Modifier.weight(1f).testTag("studio_program_add_day")) {
                 Text(word("+ Edzésnap", "+ Workout day", "+ Trainingstag", "+ Zi de antrenament"))
@@ -42,7 +43,7 @@ internal fun StudioProgramManagementControls(
                 enabled = !busy && program.days.size > 1, modifier = Modifier.weight(1f).testTag("studio_program_delete_day"),
                 label = word("Nap törlése", "Delete day", "Tag löschen", "Șterge ziua"))
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        StudioAdaptiveControlRow {
             com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = onSave, enabled = !busy,
                 modifier = Modifier.weight(1f).testTag("studio_program_save")) {
                 Text(word("Mentés", "Save", "Speichern", "Salvează"))

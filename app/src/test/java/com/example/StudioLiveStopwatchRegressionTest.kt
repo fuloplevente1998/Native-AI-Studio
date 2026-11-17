@@ -7,6 +7,9 @@ import android.os.Looper
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.example.model.AppLanguage
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
@@ -170,6 +173,50 @@ class StudioLiveStopwatchRegressionTest {
             assertEquals("2", target.resolve(recorded).set.getString("reps"))
             assertEquals(5L, NativeMeasuredTime.summary(recorded).workMs / 1000L)
         } finally { controller.destroy() }
+    }
+
+    @Test fun realBilateralPageKeepsSwitchAndTimeFieldsReadableInAllLanguages() {
+        val studio = model()
+        studio.startQuickTimedWithExercise(studio.uiState.value.exercises.first { it.id == "side-plank" })
+        awaitStarted(studio)
+        measurement() // Explicit current-Application factory, same model the real screen consumes.
+        var language by mutableStateOf(AppLanguage.HU)
+        var fontScale by mutableStateOf(1f)
+        compose.setContent {
+            CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
+                val state by studio.uiState.collectAsState()
+                TrainPilotTheme(fontScaleMultiplier = fontScale) {
+                    ActiveBilateralWorkoutScreen(state.copy(language = language), TrainPilotStrings.forLanguage(language),
+                        onBack = {}, onOpenSettings = {}, onSelectMeasurementMode = {})
+                }
+            }
+        }
+        fun inspect(tag: String) {
+            compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag(tag))
+            compose.onNodeWithTag(tag).assertIsDisplayed()
+            val texts = compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text) and
+                hasAnyAncestor(hasTestTag(tag)), useUnmergedTree = true)
+            for (i in 0 until texts.fetchSemanticsNodes().size) {
+                val layouts = mutableListOf<TextLayoutResult>()
+                texts[i].performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+                for (layout in layouts) {
+                    assertEquals("$language/$fontScale $tag must stay on one line",1,layout.lineCount)
+                    assertTrue("$language/$fontScale $tag clips its text",
+                        layout.getLineRight(0)-layout.getLineLeft(0)<=layout.size.width+1f)
+                    assertFalse(layout.didOverflowHeight)
+                }
+            }
+        }
+        for (scale in listOf(1f,1.5f,2f)) for (lang in AppLanguage.entries) {
+            compose.runOnIdle { language=lang;fontScale=scale }
+            inspect("bilateral_exercise_switch")
+            inspect("bilateral_left_start_pause_btn")
+            inspect("bilateral_left_stop_record_btn")
+            inspect("bilateral_set_1_left_value")
+            val left=compose.onNodeWithTag("bilateral_set_1_left_value").fetchSemanticsNode().boundsInRoot
+            val right=compose.onNodeWithTag("bilateral_set_1_right_value").fetchSemanticsNode().boundsInRoot
+            assertEquals(left.height,right.height,1f);assertEquals(left.width,right.width,1f)
+        }
     }
 
     private fun render(studio: TrainPilotViewModel, bilateral: Boolean) {

@@ -1,0 +1,60 @@
+{
+  "source": "ef84382db4b5553f432a22f90ace74b8f08f9c60",
+  "run": 44130988511,
+  "url": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/44130988511",
+  "artifactDigest": "sha256:102fe2543b5f8e47d198a4d70dd07cced5967645d3f5af7a004de5916b67f668",
+  "artifactDigestVerified": true,
+  "rawXml": {
+    "phone": {
+      "files": 121,
+      "tests": 630,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "wear": {
+      "files": 36,
+      "tests": 198,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "files": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "total": {
+    "tests": 828,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sharedNoSource": true,
+  "failedCases": [],
+  "physicalAcceptance": false,
+  "newApkOrAab": false,
+  "regressionCases": {
+    "com.example.ResponsiveControlsRegressionTest": [
+      "adjustmentGroupsReflowWithoutSplittingWordsAndDispatchEachAction",
+      "sideFieldsStayEqualAndKeepEditRirAndCompletionActionsAcrossLocales"
+    ],
+    "com.example.StudioLiveStopwatchRegressionTest": [
+      "bothSideReadoutsAdvanceBeforeRecordingWithoutTheHeaderConsumingTheirWidth",
+      "realBilateralPageKeepsSwitchAndTimeFieldsReadableInAllLanguages",
+      "singleReadoutChangesWhileRunningThenPauseFreezesAndRecordStoresOnlyElapsedWork"
+    ]
+  },
+  "conclusion": "success",
+  "artifactId": 14350462990,
+  "baselineTests": 825,
+  "addedTests": 3,
+  "addedRegressionCases": [
+    "ResponsiveControlsRegressionTest.adjustmentGroupsReflowWithoutSplittingWordsAndDispatchEachAction",
+    "ResponsiveControlsRegressionTest.sideFieldsStayEqualAndKeepEditRirAndCompletionActionsAcrossLocales",
+    "StudioLiveStopwatchRegressionTest.realBilateralPageKeepsSwitchAndTimeFieldsReadableInAllLanguages"
+  ]
+}
