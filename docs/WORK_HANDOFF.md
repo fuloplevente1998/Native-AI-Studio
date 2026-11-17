@@ -1,3 +1,13 @@
+# Health Connect szinkron — PR268 gyűjtő, CI továbbra is SZÜNETEL
+
+A készülékes row_offset / change_log_request_table hiba felismerése után HC
+változáskövetés helyett a meglévő korlátos napi olvasás folytatódhat. Checkpoint
+és sikeridő érintetlen; eredmény kifejezetten részleges. SQL helyett HU/EN/DE/RO
+érthető jelzés. Regressziók hozzáadva, még NEM futtatva; diff --check tiszta.
+Részletek: HEALTH_CONNECT_SCHEMA_FALLBACK.md. Nincs új CI/build/main/verzió.
+
+---
+
 # #267 / draft PR268 — javításgyűjtés, CI SZÜNETEL, 2026-11-17
 
 Felhasználó további kisebb javításokat jelez, és kifejezetten kéri: CI ne

@@ -584,11 +584,12 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                 val providerLabel = com.repforge.app.NativeWorkoutHealthSource.label(snapshot.provider)
                 val detail = failure?.let {
                     if (snapshot.provider == HealthJournalStore.SAMSUNG) "${SamsungHealthRepository.errorCode(it)} • ${it.message.orEmpty().take(180)}"
-                    else it.message.orEmpty().take(180)
+                    else com.repforge.app.HealthConnectSyncRecovery.failureMessage(it, _uiState.value.language)
                 }
                 _uiState.update { it.copy(syncFailed = failed, syncPartial = partial,
                     syncOutcome = if (failed) "FAILED" else if (partial) "PARTIAL" else "SUCCESS",
                     syncMessage = if (allProviders && result.isSuccess) result.getOrThrow().getString("message") else "$providerLabel: " + if (failure != null) "sikertelen • $detail"
+                        else if (result.getOrNull()?.optBoolean("changeTrackingUnavailable") == true) com.repforge.app.HealthConnectSyncRecovery.limitedMessage(_uiState.value.language)
                         else if (partial) "részleges szinkron; ellenőrizd az engedélyeket és a forrás hibáit"
                         else "sikeres szinkron") }
                 if (sceneCurrent()) {
@@ -602,7 +603,7 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) {
-                _uiState.update { it.copy(syncFailed = true, syncOutcome = "FAILED", syncMessage = "${com.repforge.app.NativeWorkoutHealthSource.label(it.provider)}: ${if (it.provider == HealthJournalStore.SAMSUNG) SamsungHealthRepository.errorCode(failure) else "READ_FAILED"} • ${failure.message.orEmpty().take(180)}") }
+                _uiState.update { it.copy(syncFailed = true, syncOutcome = "FAILED", syncMessage = "${com.repforge.app.NativeWorkoutHealthSource.label(it.provider)}: ${if (it.provider == HealthJournalStore.SAMSUNG) SamsungHealthRepository.errorCode(failure) else "READ_FAILED"} • ${com.repforge.app.HealthConnectSyncRecovery.failureMessage(failure, it.language)}") }
                 if (trigger == NativeHealthAutoRefreshGate.Trigger.MANUAL && screenVisible) {
                     val text = com.repforge.app.ui.text.nativeResources(context, _uiState.value.language)
                     _uiState.update { it.copy(statusMessage = text.getString(com.repforge.app.R.string.coach_refresh_failed)) }

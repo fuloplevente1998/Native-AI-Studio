@@ -192,6 +192,8 @@ internal object NativeHealthRefresh {
                     override suspend fun pollPage(token: String) = HealthConnectRepository.pollChangePageSuspend(
                         context, token, prepared.journalGeneration, guard, commitRead)
                     override fun invalidToken(error: Throwable) = changesSupported && HealthConnectRepository.invalidChangeToken(error)
+                    override fun changeLogUnavailable(error: Throwable) = changesSupported &&
+                        HealthConnectSyncRecovery.schemaFailure(error)
                     override suspend fun requireIdentity() {
                         withContext(Dispatchers.IO) { requirePermissionIdentity(); requireCommitIdentity() }
                         if (changesSupported) check(HealthConnectRepository.isSupported(context)) { "Health provider unavailable" }
@@ -231,6 +233,7 @@ internal object NativeHealthRefresh {
                 val report = NativeHealthSync.run(provider, journal, scope, prepared.localDay, fullSync, guard,
                     { value -> withContext(Dispatchers.Main.immediate) { screenGuard(); progress(value) } })
                 JSONObject().put("partial", !report.successful).put("full", report.full).put("retryable", report.retryable)
+                    .put("changeTrackingUnavailable", report.changeTrackingUnavailable)
                     .put("completedDays", report.completedDays).put("failedDays", org.json.JSONArray(report.failedDays.map { it.toString() }))
             }
             withContext(Dispatchers.IO) { requirePermissionIdentity(); requireCommitIdentity() }

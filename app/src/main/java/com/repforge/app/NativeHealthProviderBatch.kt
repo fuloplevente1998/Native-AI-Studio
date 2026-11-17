@@ -7,7 +7,7 @@ import org.json.JSONObject
 internal object NativeHealthProviderBatch {
     val providers = listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC)
     enum class Status { SUCCESS, PARTIAL, UNAVAILABLE, FAILED }
-    data class Outcome(val provider: String, val status: Status, val message: String = "", val retryable: Boolean = false)
+    data class Outcome(val provider: String, val status: Status, val message: String = "", val retryable: Boolean = false, val changeTrackingUnavailable: Boolean = false)
     data class Report(val outcomes: List<Outcome>) {
         val successful get() = outcomes.all { it.status == Status.SUCCESS }
         val failed get() = outcomes.none { it.status == Status.SUCCESS || it.status == Status.PARTIAL }
@@ -21,9 +21,9 @@ internal object NativeHealthProviderBatch {
             .put("failed", failed).put("message", outcomes.joinToString(" • ") { row ->
                 NativeWorkoutHealthSource.label(row.provider) + ": " + when (row.status) {
                     Status.SUCCESS -> tr("sikeres szinkron", "sync completed", "Synchronisierung abgeschlossen", "sincronizare finalizată")
-                    Status.PARTIAL -> tr("részleges szinkron; ellenőrizd az engedélyeket és a forrás hibáit", "partial sync; check permissions and source errors", "teilweise synchronisiert; Berechtigungen und Quellfehler prüfen", "sincronizare parțială; verifică permisiunile și erorile sursei")
+                    Status.PARTIAL -> if (row.changeTrackingUnavailable) HealthConnectSyncRecovery.limitedMessage(language) else tr("részleges szinkron; ellenőrizd az engedélyeket és a forrás hibáit", "partial sync; check permissions and source errors", "teilweise synchronisiert; Berechtigungen und Quellfehler prüfen", "sincronizare parțială; verifică permisiunile și erorile sursei")
                     Status.UNAVAILABLE -> tr("nem elérhető vagy hiányzó olvasási engedély", "unavailable or missing read permission", "nicht verfügbar oder Leseberechtigung fehlt", "indisponibil sau fără permisiune de citire")
-                    Status.FAILED -> tr("sikertelen", "failed", "fehlgeschlagen", "eșuat") + " • ${row.message.take(180)}"
+                    Status.FAILED -> tr("sikertelen", "failed", "fehlgeschlagen", "eșuat")
                 }
             })
         }
@@ -49,7 +49,8 @@ internal object NativeHealthProviderBatch {
                 else -> Status.SUCCESS
             }, result.exceptionOrNull()?.message.orEmpty(),
                 com.repforge.app.ui.health.NativeHealthAppRefreshPolicy.transient(result.exceptionOrNull()) ||
-                    result.getOrNull()?.optBoolean("retryable") == true))
+                    result.getOrNull()?.optBoolean("retryable") == true,
+                result.getOrNull()?.optBoolean("changeTrackingUnavailable") == true))
         }
         return Report(results)
     }
