@@ -1,0 +1,44 @@
+{
+  "label": "2765-r2",
+  "release": 2765,
+  "versionName": "1.2-beta",
+  "source": "89dbad963160093d35a8c34e3d7a02c1c1e0dfc7",
+  "run": 44153314270,
+  "folderId": "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9",
+  "metadataReadbackVerified": true,
+  "previousFilesPreserved": true,
+  "phoneOnly": true,
+  "wearUpdateRequired": false,
+  "files": [
+    {
+      "kind": "phoneApk",
+      "id": "10ZTjNsbngUlMb6roiq7CYl0WCNrVMUn5",
+      "name": "TrainPilot-2765-r2-phone-release.apk",
+      "bytes": 5562155,
+      "url": "https://drive.google.com/file/d/10ZTjNsbngUlMb6roiq7CYl0WCNrVMUn5/view?usp=drivesdk",
+      "parentIds": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ]
+    },
+    {
+      "kind": "phoneChanges",
+      "id": "1YpaIyBG1nXPU4o2uPZhu8lJFEG70d0Xu",
+      "name": "TrainPilot-2765-r2-phone-changes.txt",
+      "bytes": 1418,
+      "url": "https://drive.google.com/file/d/1YpaIyBG1nXPU4o2uPZhu8lJFEG70d0Xu/view?usp=drivesdk",
+      "parentIds": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ]
+    },
+    {
+      "kind": "evidence",
+      "id": "1sg5yJZxmwt81bclmtEqDSelA4_WXd7Gz",
+      "name": "TrainPilot-2765-r2-verification.json",
+      "bytes": 4122,
+      "url": "https://drive.google.com/file/d/1sg5yJZxmwt81bclmtEqDSelA4_WXd7Gz/view?usp=drivesdk",
+      "parentIds": [
+        "1ywHgrManynjV9uNvZfVncOmCr3SbHIb9"
+      ]
+    }
+  ]
+}

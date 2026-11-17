@@ -37,3 +37,7 @@ A három új teszt60 nyelv/betű/szélesség elrendezési kombinációt ellenőr
 A korábbi élő stopper/pause/rögzítés két regressziója is zöld. A készülékes
 vizuális elfogadás ettől külön marad. A lezáró dokumentáció nem változtatja a kódot.
 Új APK/AAB, main-merge és verzióemelés ebben a körben nincs kérve.
+
+Későbbi felhasználói jóváhagyás: PR263 és PR265 mainen,835 zöld tesztes
+signed kapu és ellenőrzött2765-r2 telefonos APK átadva.
+[Kiadási átadás](releases/2765-r2-changes.md). Fizikai elfogadás külön marad.

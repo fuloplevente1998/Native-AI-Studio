@@ -1,0 +1,12 @@
+TrainPilot 2765-r2 · 1.2-beta — telefonos APK
+
+A 2765 első kiadásához képest:
+• Szélesebb, kompakt közös gombok; a zsúfolt műveletsorok nagy betűnél átrendeződnek. Teljes szélességű gyakorlatváltó, egységes bal/jobb időmezők, rövid lokalizált stoppergombok.
+• A közös vezérlőjavítás az edzés, programkezelés és a félbehagyott edzés műveleteit is érinti. HU/EN/DE/RO, kis nézet és nagy betűméret regressziókkal ellenőrizve.
+• Az inaktív saját program/edzésnap már törölhető pusztán korábbi napló- vagy lezárt naptárhivatkozás mellett. A mentett edzések és korábbi neveik megmaradnak. Az aktív program, beépített sablon és még élő tervek védelme megmarad.
+• Naptárban balra Ürítés, jobbra Tervezés. Megerősített tömeges tervtörlés: a befejezett edzések és a napló megmaradnak, a régi Undo nem állítja vissza a törölt terveket.
+• Tartós naptári törlési jelzés, felhő-merge védelem, változott előnézet/adatcsere elutasítása és teljes tranzakciós visszagörgetés írási hibánál.
+
+Az órás és közös protokollkód változatlan; Wear-frissítés nem szükséges.
+Verzió:1.2-beta, telefon276500 (változatlan), új fájlnév2765-r2 és külön source/hash azonosítja ezt az APK-javítást. Ez nem új Play Console-verzió; AAB nem készült hozzá.
+Fizikai készülékes kipróbálás külön szükséges.
