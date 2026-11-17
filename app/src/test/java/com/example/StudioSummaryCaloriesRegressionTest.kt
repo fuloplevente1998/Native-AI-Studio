@@ -1,5 +1,9 @@
 package com.example
 
+import android.content.Context
+import androidx.activity.ComponentActivity
+import androidx.test.core.app.ApplicationProvider
+import com.repforge.app.ActiveWorkoutStore
 import com.repforge.app.HealthJournalStore
 import com.repforge.app.NativeSavedWearHealth
 import com.repforge.app.NativeWorkoutActiveWindows
@@ -13,6 +17,7 @@ import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.Instant
@@ -154,6 +159,72 @@ class StudioSummaryCaloriesRegressionTest {
         val mislabeled = JSONObject().put("providers", JSONObject().put(HealthJournalStore.HC,
             JSONObject(response.toString()).put("provider", HealthJournalStore.SAMSUNG)))
         assertNull(calorie(frame.put("health240", mislabeled)))
+    }
+
+    @Test fun foregroundReadUsesCanonicalProviderAndQueriesActualWindowsWithoutChangingTheFrame() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val controller = Robolectric.buildActivity(ComponentActivity::class.java).setup()
+        try {
+            val store = HealthJournalStore.get(context)
+            store.setPreferences(JSONObject().put("provider", HealthJournalStore.SAMSUNG))
+            assertEquals(HealthJournalStore.SAMSUNG, StudioWorkoutSummaryPresentation.selectedProvider(context))
+            val expected = ActiveWorkoutStore.saveOwned(context, frame())
+            val before = ActiveWorkoutStore.current(context)!!.toString()
+            val windows = mutableListOf<NativeWorkoutActiveWindows.Window>()
+            val health = runBlocking {
+                StudioWorkoutSummaryPresentation.readHealthWithReader(context, controller.get(),
+                    StudioWorkoutSummaryPresentation.selectedProvider(context), expected, end) { window ->
+                    windows.add(window)
+                    row(window, 40.0)
+                }
+            }
+            assertEquals(2, windows.size)
+            assertEquals(NativeWorkoutActiveWindows.read(frame()), windows)
+            assertEquals(80.0, calorie(expected, provider = HealthJournalStore.SAMSUNG, health = health)!!, 0.0)
+            assertEquals(before, ActiveWorkoutStore.current(context)!!.toString())
+        } finally {
+            controller.pause().stop().destroy()
+            context.getSharedPreferences("trainpilot_wear_sync", Context.MODE_PRIVATE).edit().clear().commit()
+            HealthJournalStore.get(context).setPreferences(JSONObject().put("provider", HealthJournalStore.HC))
+        }
+    }
+
+    @Test fun inFlightReadRejectsProviderSessionForegroundAndReplacementChangesBeforePublishing() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val controller = Robolectric.buildActivity(ComponentActivity::class.java).setup()
+        var paused = false
+        try {
+            for (change in listOf("provider", "session", "replacement", "foreground")) {
+                HealthJournalStore.get(context).setPreferences(JSONObject().put("provider", HealthJournalStore.SAMSUNG))
+                val expected = ActiveWorkoutStore.saveOwned(context, frame())
+                var reads = 0
+                val failure = runCatching {
+                    runBlocking {
+                        StudioWorkoutSummaryPresentation.readHealthWithReader(context, controller.get(), HealthJournalStore.SAMSUNG,
+                            expected, end) { window ->
+                            reads++
+                            when (change) {
+                                "provider" -> HealthJournalStore.get(context).setPreferences(JSONObject().put("provider", HealthJournalStore.HC))
+                                "session" -> ActiveWorkoutStore.saveOwned(context, JSONObject(expected.toString()).put("generation", 8))
+                                "replacement" -> context.getSharedPreferences("trainpilot_data_replacement", Context.MODE_PRIVATE)
+                                    .edit().putBoolean("blocked", true).commit()
+                                "foreground" -> { controller.pause(); paused = true }
+                            }
+                            row(window, 40.0)
+                        }
+                    }
+                }.exceptionOrNull()
+                assertTrue("Accepted $change change: $failure", failure is IllegalStateException)
+                assertEquals("Continued SDK windows after $change", 1, reads)
+                context.getSharedPreferences("trainpilot_data_replacement", Context.MODE_PRIVATE).edit().clear().commit()
+            }
+        } finally {
+            if (!paused) controller.pause()
+            controller.stop().destroy()
+            context.getSharedPreferences("trainpilot_data_replacement", Context.MODE_PRIVATE).edit().clear().commit()
+            context.getSharedPreferences("trainpilot_wear_sync", Context.MODE_PRIVATE).edit().clear().commit()
+            HealthJournalStore.get(context).setPreferences(JSONObject().put("provider", HealthJournalStore.HC))
+        }
     }
 
     private fun journal(frame: JSONObject) = WorkoutHistoryEntity(id = "session", workoutKey = "session", syncId = "session",

@@ -45,7 +45,13 @@ internal object StudioWorkoutSummaryPresentation {
 
     /** Same foreground SDK adapters as the journal, without persisting or altering the workout. */
     suspend fun readHealth(context: Context, activity: Activity, provider: String,
-        expectedFrame: JSONObject, end: Instant): HealthSnapshot = withContext(Dispatchers.Main.immediate) {
+        expectedFrame: JSONObject, end: Instant): HealthSnapshot =
+        readHealthWithReader(context, activity, provider, expectedFrame, end, null)
+
+    /** Adapter seam retains every production admission and completion fence. */
+    internal suspend fun readHealthWithReader(context: Context, activity: Activity, provider: String,
+        expectedFrame: JSONObject, end: Instant,
+        readWindow: (suspend (NativeWorkoutActiveWindows.Window) -> JSONObject)?): HealthSnapshot = withContext(Dispatchers.Main.immediate) {
         NativeWorkoutHealthSource.requireProvider(provider)
         val expected = JSONObject(expectedFrame.toString())
         val query = NativeLiveWorkoutHealth.window(expected, end)
@@ -72,9 +78,16 @@ internal object StudioWorkoutSummaryPresentation {
                 check(Build.VERSION.SDK_INT >= 34 && HealthConnectRepository.isSupported(context)) { "Health Connect unavailable" }
                 if (!HealthConnectRepository.anyReadAllowed(context)) throw SecurityException("Health Connect read permission required")
             }
-            val response = NativeWorkoutHealthSource.read(query, provider,
-                healthConnect = { w -> HealthConnectRepository.readTrainingWindowSuspend(context, w.start.toString(), w.end.toString(), guard) },
-                samsung = { w -> SamsungHealthRepository.readTrainingWindowSuspend(context, w.start.toString(), w.end.toString(), guard) })
+            val reader: suspend (NativeWorkoutActiveWindows.Window) -> JSONObject = { window ->
+                guard()
+                val result = if (readWindow != null) readWindow(window)
+                    else if (provider == HealthJournalStore.HC) HealthConnectRepository.readTrainingWindowSuspend(
+                        context, window.start.toString(), window.end.toString(), guard)
+                    else SamsungHealthRepository.readTrainingWindowSuspend(context, window.start.toString(), window.end.toString(), guard)
+                guard()
+                result
+            }
+            val response = NativeWorkoutHealthSource.read(query, provider, healthConnect = reader, samsung = reader)
             guard()
             healthSnapshot(expected, provider, response, end)
         } finally { owner.lifecycle.removeObserver(observer) }
