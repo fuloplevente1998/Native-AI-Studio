@@ -121,3 +121,7 @@ Helyi Gradle/Android SDK/emulátor futtatás nem történt.
 
 Main-integráció, új APK/AAB és verzióemelés nem része ennek az új javítási körnek.
 A végén átadott CI-eredmény és ez a fizikai lista külön bizonyíték.
+
+Későbbi külön felhasználói APK+AAB-kérés: PR259 mainen, 2765 · 1.2-beta
+kiadva, teljes825 tesztes signed kapu és négy ellenőrzött bináris.
+[Kiadási átadás](releases/2765-changes.md); a fizikai lista továbbra is külön állapot.

@@ -1,0 +1,155 @@
+{
+  "apkOnly": false,
+  "aabBuilt": true,
+  "physicalAcceptance": false,
+  "source": "bf0bfde5b79972d7dd56e5b7852aa3e41a4f1787",
+  "run": 44121032371,
+  "artifactDigests": {
+    "apk": "sha256:79bffed34141a42aba11f9650fa203d7f35893c7d488ec30c3fed9a4023dadd6",
+    "aab": "sha256:d4afbf3fb09e3213d661cbfbae43ff9c402709b1dbb7ca8ffb2f98056db26c7b",
+    "tests": "sha256:7d069b36efad2f96bf010bef485dcc8b5540eef6879c3f9a495f098c657ba286"
+  },
+  "files": {
+    "app-release.apk": {
+      "bytes": 5562155,
+      "sha256": "36856294c13faa4a221ba368156b2b10c13143529bf5c6e72c44a67b728c7bed",
+      "file": "/workspace/TrainPilot-build-2765/app-release.apk",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "manifest": {
+        "versionCode": 276500,
+        "versionName": "1.2-beta",
+        "package": "com.TrainPilot.com"
+      }
+    },
+    "wear-release.apk": {
+      "bytes": 4669631,
+      "sha256": "f2ee1721211c5516ff8bf99431236f8fe13b03d4a6c332aa22f51d85449602e0",
+      "file": "/workspace/TrainPilot-build-2765/wear-release.apk",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "manifest": {
+        "versionCode": 276502,
+        "versionName": "1.2-beta",
+        "package": "com.TrainPilot.com"
+      }
+    },
+    "app-release.aab": {
+      "bytes": 10240100,
+      "sha256": "fe772df084eeb0179977a6ae724f66b29d3b411c1c91145f71ec5d99b55bca2a",
+      "manifest": {
+        "package": "com.TrainPilot.com",
+        "versionCode": 276500,
+        "versionName": "1.2-beta"
+      },
+      "jarSignatureVerified": true,
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6"
+    },
+    "wear-release.aab": {
+      "bytes": 5584255,
+      "sha256": "b8e6891ddec96ad9d267c115c30ab853fa31ca4b167919c966dc5679058dea21",
+      "manifest": {
+        "package": "com.TrainPilot.com",
+        "versionCode": 276502,
+        "versionName": "1.2-beta"
+      },
+      "jarSignatureVerified": true,
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6"
+    }
+  },
+  "rawJUnit": {
+    "app": [
+      120,
+      627,
+      0,
+      0,
+      0
+    ],
+    "wear": [
+      36,
+      198,
+      0,
+      0,
+      0
+    ],
+    "shared": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "apkVerification": {
+    "applicationId": "com.TrainPilot.com",
+    "versionCode": "276500",
+    "versionName": "1.2-beta",
+    "apkSha256": "36856294c13faa4a221ba368156b2b10c13143529bf5c6e72c44a67b728c7bed",
+    "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+    "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+    "mapsApiKeyConfigured": true,
+    "ciCheckout": "bf0bfde5b79972d7dd56e5b7852aa3e41a4f1787",
+    "wear": {
+      "applicationId": "com.TrainPilot.com",
+      "versionCode": "276502",
+      "versionName": "1.2-beta",
+      "apkSha256": "f2ee1721211c5516ff8bf99431236f8fe13b03d4a6c332aa22f51d85449602e0",
+      "signerSha1": "cd2da9ea35233f7a68d8f5ce074a9a216895193c",
+      "signerSha256": "a72fd016d94e9d94e2b2282032f8c3820d4f09cba9ff1db05c3fd1de6ffa7dd6",
+      "variant": "release",
+      "bytes": 4669631
+    },
+    "wearCompanionCapabilityRetained": true,
+    "dataLayerPairIdentityVerified": true,
+    "wearHardwareRequired": true
+  },
+  "playMetadata": {
+    "commit": "bf0bfde5b79972d7dd56e5b7852aa3e41a4f1787",
+    "applicationId": "com.TrainPilot.com",
+    "versionName": "1.2-beta",
+    "mobileVersionCode": 276500,
+    "wearVersionCode": 276502,
+    "mobileAabSha256": "fe772df084eeb0179977a6ae724f66b29d3b411c1c91145f71ec5d99b55bca2a",
+    "wearAabSha256": "b8e6891ddec96ad9d267c115c30ab853fa31ca4b167919c966dc5679058dea21",
+    "mobileBytes": 10240100,
+    "wearBytes": 5584255
+  },
+  "junitVerification": {
+    "commit": "bf0bfde5b79972d7dd56e5b7852aa3e41a4f1787",
+    "modules": {
+      "phone": {
+        "files": 120,
+        "tests": 627,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "wear": {
+        "files": 36,
+        "tests": 198,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": false
+      },
+      "shared": {
+        "files": 0,
+        "tests": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "noSource": true
+      }
+    },
+    "total": {
+      "tests": 825,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "mainMergePr": 259,
+  "releaseMetadataPr": 260,
+  "versionName": "1.2-beta",
+  "release": 2765,
+  "runUrl": "https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/44121032371"
+}
