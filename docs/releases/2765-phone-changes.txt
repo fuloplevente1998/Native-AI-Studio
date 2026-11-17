@@ -1,0 +1,14 @@
+TrainPilot 2765 · 1.2-beta
+TrainPilot — telefon — változások a 2764-hez képest
+
+• A/B program szerkesztése: az aktív beépített program első mentése aktiválja a saját példányt; további mentéseknél ugyanaz a program frissül. Az utolsó három gyakorlat törlése újranyitás után is megmarad. Másik aktív programot egy inaktív sablon szerkesztése nem vált le.
+• Időalapú gyakorlatok: stabil szélességű, nagy élő stopper, rövidebb indítási feliratok, olvasható kétoldali kijelzés. Az intervallumbeállítások alapból csukottak, futó intervallumnál megnyílnak. A futás közbeni kijelzés, szünet/folytatás és a rögzített idő automatizált UI-teszttel védett; az eredetileg jelzett készülékes tünet fizikai visszaellenőrzése még szükséges.
+• Edzésösszesítő: mentés előtt is a naplóval egyező egészségforrásból és aktív időablakokból olvassa a kalóriát. A csak pulzust tartalmazó élő csomag nem takarja el az edzéshez tartozó Wear-energiát. Hiányzó adatból nem képez nullát, idegen edzés adatait elutasítja.
+• Megjelenítés: a betűméret és a kompakt mód tartósan mentődik; a rendszersáv ikonjai a világos/sötét témát követik.
+• Intervallum: külön tartós munka/pihenő/kör/automatikus léptetés beállítás; a mentés után ténylegesen az egyetlen natív intervallummotor indul. A globális pihenő/hang/rezgés módosítása megőrzi a többi presetmezőt. Futó edzést nem cserél le és nem folytat automatikusan.
+• Kültéri előnézet: az oldal megnyitása még nem indít aktív edzést; explicit indítás és GPS nélküli natív edzéskezelés.
+• Órás parancsok: tartós, soros helyi újrapróba újrakapcsolódás vagy telefonos újraindítás után, változatlan tulajdonos-, generáció-, szünet- és lezárási védelmekkel. A motorban már tartósan alkalmazott parancs nyugtája összeegyeztethető késői/ismételt kézbesítéskor.
+• Fordítás: órára küldött gyakorlat/program/nap/nevek és naptári visszajelzések HU/EN/DE/RO nyelven. Az egyedi és történeti átnevezett nevek megmaradnak.
+• Biztonsági mentés: új megjelenítés- és intervallummezők megőrzése; régi/hiányos mentések kompatibilitása.
+
+A 2764-ben kiadott elsőindítás-, könyvtármentés-, léptetés- és kétoldali Undo-javítások is megmaradnak. A katalógusindulás új JVM-mérőpontot kapott; készülékes gyorsulást ez nem igazol.

@@ -1,3 +1,21 @@
+# TrainPilot 2765 · 1.2-beta — signed APK+AAB páros kérve, 2026-11-17
+
+A felhasználó a PR259 teljes auditjavításához telefonos és Wear APK+AAB párost
+kért, a verziónév legyen1.2, beta jelölés megmarad. Jóváhagyott kódok:
+telefon276500/Wear276502. PR259 mainen: `5eb3f5dae372d82c576acee75e42f81a6a999f4d`.
+A kiadási ág csak verziómetaadatot és dokumentációt módosít; alkalmazás-/tesztkód
+azonos a CI44098205802 sikeres825 tesztjének forrásával.
+
+Következő: kiadási metaadat mainre, meglévő android-signing workflow
+`build_aab=true`, egy közös teljes regresszió és signed pár. Utána nyers XML,
+ZIP-digest, tényleges manifest/verzió/package/hash/tartós signer ellenőrzése,
+négy bináris és külön phone/Wear változáslisták átadása Drive-on.
+Célmappa: `1ywHgrManynjV9uNvZfVncOmCr3SbHIb9` (TrainPilot Native),
+korábbi fájlok megőrzendők. Előkészítés: `/workspace/TrainPilot-build-2765/`.
+Fizikai elfogadás még hátravan; új binárist csak a signed kapu után állítunk késznek.
+
+---
+
 # TrainPilot 2764 · 1.1-beta — main, APK+AAB páros átadva, 2026-11-16
 
 Felhasználói jóváhagyással PR253 mainen; a benne foglalt PR248/249 is mergelt.
