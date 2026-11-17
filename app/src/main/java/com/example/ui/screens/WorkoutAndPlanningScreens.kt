@@ -761,18 +761,7 @@ fun ProgramsListScreen(
                 title = strings.programsShortcutTitle,
                 onBack = onBack,
                 onOpenSettings = onOpenSettings,
-                rightExtraContent = {
-                    IconButton(
-                        onClick = { onOpenProgramEditor(activeProgram?.id ?: "") },
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = strings.createOrEditProgramAction,
-                            tint = palette.textPrimary
-                        )
-                    }
-                }
+                modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
             )
         } else {
             Spacer(modifier = Modifier.height(8.dp))

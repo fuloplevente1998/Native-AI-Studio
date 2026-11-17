@@ -268,6 +268,8 @@ class StudioLiveStopwatchRegressionTest {
             putExtra("workoutId", frame.getString("workoutId")); putExtra("generation", frame.getLong("generation"))
         }, 0, 1)
         assertTrue(IntervalTimerService.armed(frame.getString("workoutId"), frame.getLong("generation")))
+        assertEquals(com.repforge.app.R.drawable.ic_stat_trainpilot,
+            requireNotNull(shadowOf(service).lastForegroundNotification).smallIcon.resId)
     }
 
     private fun advance(seconds: Int) {

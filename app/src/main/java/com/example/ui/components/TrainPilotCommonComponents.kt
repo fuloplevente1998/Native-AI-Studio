@@ -476,13 +476,12 @@ fun SubScreenTopBar(
     title: String,
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
-    rightExtraContent: (@Composable () -> Unit)? = null
+    rightExtraContent: (@Composable () -> Unit)? = null,
+    modifier: Modifier = Modifier
 ) {
     val palette = LocalTrainPilotPalette.current
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 0.dp, vertical = 0.dp),
+        modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
