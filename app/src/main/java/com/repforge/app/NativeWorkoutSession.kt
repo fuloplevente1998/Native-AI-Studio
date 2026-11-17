@@ -105,9 +105,13 @@ internal object NativeWorkoutSession {
 
     /** Multi-exercise Studio quick start uses the same durable engine and accepted #228 prefill. */
     suspend fun startQuickExercises(context: Context, exerciseIds: List<String>, title: String,
-        automaticEnabled: Boolean, database: TrainPilotDatabase = TrainPilotDatabase.getInstance(context)): JSONObject = startLock.withLock {
+        automaticEnabled: Boolean, database: TrainPilotDatabase = TrainPilotDatabase.getInstance(context),
+        requireNew: Boolean = false): JSONObject = startLock.withLock {
         val app = context.applicationContext
-        withContext(Dispatchers.Main.immediate) { recoverActive(app) }?.let { return@withLock it }
+        withContext(Dispatchers.Main.immediate) { recoverActive(app) }?.let {
+            check(!requireNew) { "Finish or discard the active workout first." }
+            return@withLock it
+        }
         require(exerciseIds.isNotEmpty() && exerciseIds.size == exerciseIds.distinct().size)
         val candidate = withContext(Dispatchers.IO) {
             check(database.keyValueDocumentDao().getDocument("draft") == null) {
@@ -123,7 +127,13 @@ internal object NativeWorkoutSession {
                 .put("exercises", exercises).put("automaticEnabled", automaticEnabled)
                 .put("programName", title).put("dayName", title)
         }
-        withContext(NonCancellable + Dispatchers.Main.immediate) { installPrepared(app, candidate) }
+        withContext(NonCancellable + Dispatchers.Main.immediate) {
+            val saved = installPrepared(app, candidate)
+            check(!requireNew || saved.optString("workoutId") == candidate.getString("workoutId")) {
+                "Finish or discard the active workout first."
+            }
+            saved
+        }
     }
 
     internal suspend fun prefillFromHistory(db: TrainPilotDatabase, exercise: JSONObject, sets: JSONArray) {

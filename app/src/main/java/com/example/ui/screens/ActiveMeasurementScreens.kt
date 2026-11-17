@@ -891,7 +891,8 @@ fun ActiveTimedWorkoutScreen(
     onNextExercise: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
     onSwitchExercise: (ExerciseItem) -> Unit = {},
     onOpenExerciseLibrary: () -> Unit = {},
-    exerciseFeedback: @Composable () -> Unit = {}
+    exerciseFeedback: @Composable () -> Unit = {},
+    consumeIntervalStart: (com.repforge.app.NativeWorkoutTarget) -> Boolean = { false }
 ) {
     val palette = LocalTrainPilotPalette.current
     val workoutExercises = remember(uiState.activeWorkoutExercises, uiState.exercises) {
@@ -912,7 +913,28 @@ fun ActiveTimedWorkoutScreen(
     val nativeSet = nativeExercise?.sets?.firstOrNull { !it.isCompleted }
     val target = nativeSet?.let { com.repforge.app.NativeWorkoutTarget(native.workoutId, native.generation,
         checkNotNull(nativeExercise).exerciseId, it.setId) }
-    DisposableEffect(target) { onDispose { nativeModel.cancelPendingStopwatchStart() } }
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(target, lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) nativeModel.cancelPendingStopwatchStart()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            nativeModel.cancelPendingStopwatchStart()
+        }
+    }
+    LaunchedEffect(uiState.pendingIntervalStart, target, native.workoutId, native.generation) {
+        val requested = uiState.pendingIntervalStart
+        if (requested != null && native.workoutId == requested.workoutId && native.generation == requested.generation &&
+            consumeIntervalStart(requested) && requested == target &&
+            lifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED))
+            nativeModel.startIntervalsWhenReady(requested, uiState.pendingIntervalOwnerEpoch, uiState.pendingIntervalPauseRevision)
+    }
+    val intervalActive = native.timerWorkoutId == native.workoutId && native.timerGeneration == native.generation &&
+        !native.timerRestOnly && native.timerKey.isNotEmpty() && !native.timerStopped &&
+        !native.timerInterrupted && native.timerPhase != "complete"
+    var intervalsExpanded by remember(native.workoutId, native.generation) { mutableStateOf(true) }
     val currentSec = if (native.stopwatchSetId == nativeSet?.setId) native.stopwatchSeconds.toInt() else 0
     val isRunning = native.stopwatchSetId == nativeSet?.setId && native.stopwatchRunning
     var targetSec by remember(currentExercise?.id) { mutableIntStateOf(defaultTargetSec) }
@@ -1042,7 +1064,9 @@ fun ActiveTimedWorkoutScreen(
                                             )
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Text(
-                                                text = if (isRunning) {
+                                                text = if (intervalActive) {
+                                                    tr(lang, "Intervallummérés", "Interval measurement", "Intervallmessung", "Măsurare pe intervale")
+                                                } else if (isRunning) {
                                                     tr(lang, "Stopper fut ●", "Stopwatch running ●", "Stoppuhr läuft ●", "Cronometrul rulează ●")
                                                 } else {
                                                     tr(lang, "Stopper készenlétben", "Stopwatch ready", "Stoppuhr bereit", "Cronometru pregătit")
@@ -1107,6 +1131,22 @@ fun ActiveTimedWorkoutScreen(
                             )
                         }
 
+                    if (nativeExercise != null) {
+                        val intervalTarget = target ?: nativeExercise.sets.firstOrNull()?.let {
+                            com.repforge.app.NativeWorkoutTarget(native.workoutId, native.generation, nativeExercise.exerciseId, it.setId)
+                        }
+                        if (intervalTarget != null) {
+                            val timerTarget = com.repforge.app.NativeTimerTarget(native.workoutId, native.generation, native.timerKey)
+                            com.repforge.app.ui.workout.IntervalOptions(native, nativeExercise, intervalActive, lang.code,
+                                expanded = intervalsExpanded, onToggleExpanded = { intervalsExpanded = !intervalsExpanded },
+                                onSave = { work, rest, rounds, sound, vibration, advance, global ->
+                                    nativeModel.configureIntervals(intervalTarget, work, rest, rounds, sound, vibration, advance, global) },
+                                onStart = { nativeModel.startIntervalsWhenReady(intervalTarget) },
+                                onStop = { nativeModel.stopIntervals(timerTarget) },
+                                onSkip = { nativeModel.skipRestTimer(timerTarget) })
+                        }
+                    }
+                    if (!intervalActive) {
                     Spacer(modifier = Modifier.height(20.dp))
                     Box(
                         modifier = Modifier.fillMaxWidth(),
@@ -1246,12 +1286,13 @@ fun ActiveTimedWorkoutScreen(
                             fontWeight = FontWeight.Bold
                         )
                     }
+                    }
                 }
             }
         }
 
         // Target Preset selector
-        item {
+        if (!intervalActive) item {
             val lang = uiState.language
             val secWord = tr(lang, "mp", "s", "Sek.", "sec")
             Surface(
@@ -1297,7 +1338,7 @@ fun ActiveTimedWorkoutScreen(
         }
 
         // Completed sets list
-        item {
+        if (!intervalActive) item {
             val lang = uiState.language
             Surface(
                 shape = RoundedCornerShape(18.dp),
@@ -3046,6 +3087,7 @@ fun IntervalSettingsScreen(
         }
         item {
             IntervalStepperCard(
+                testTagPrefix = "studio_interval_work",
                 label = tr(lang, "Munkaidő", "Work time", "Arbeitszeit", "Timp de lucru"),
                 valueText = "$workSec $secWord",
                 onMinus = { workSec = (workSec - 5).coerceAtLeast(10) },
@@ -3054,6 +3096,7 @@ fun IntervalSettingsScreen(
         }
         item {
             IntervalStepperCard(
+                testTagPrefix = "studio_interval_rest",
                 label = tr(lang, "Pihenőidő", "Rest time", "Pausenzeit", "Timp de pauză"),
                 valueText = "$restSec $secWord",
                 onMinus = { restSec = (restSec - 5).coerceAtLeast(10) },
@@ -3062,6 +3105,7 @@ fun IntervalSettingsScreen(
         }
         item {
             IntervalStepperCard(
+                testTagPrefix = "studio_interval_rounds",
                 label = tr(lang, "Ismétlések (körök)", "Repetitions (rounds)", "Wiederholungen (Runden)", "Repetări (runde)"),
                 valueText = tr(lang, "$rounds kör", "$rounds rounds", "$rounds Runden", "$rounds runde"),
                 onMinus = { rounds = (rounds - 1).coerceAtLeast(1) },
@@ -3083,7 +3127,7 @@ fun IntervalSettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(tr(lang, "Hangjelzés", "Sound alert", "Tonhinweis", "Alertă sonoră"), color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
-                        Switch(checked = sound, onCheckedChange = { sound = it })
+                        Switch(checked = sound, onCheckedChange = { sound = it }, modifier = Modifier.testTag("studio_interval_sound"))
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -3092,6 +3136,12 @@ fun IntervalSettingsScreen(
                     ) {
                         Text(tr(lang, "Rezgés", "Vibration", "Vibration", "Vibrație"), color = palette.textPrimary, fontWeight = FontWeight.SemiBold)
                         Switch(checked = vibration, onCheckedChange = { vibration = it })
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Text(tr(lang, "Automatikus továbblépés", "Automatic advance", "Automatisch fortfahren", "Avansare automată"),
+                            color = palette.textPrimary, modifier = Modifier.weight(1f))
+                        Switch(checked = autoStep, onCheckedChange = { autoStep = it }, modifier = Modifier.testTag("studio_interval_auto_advance"))
                     }
                 }
             }
@@ -3104,6 +3154,7 @@ fun IntervalSettingsScreen(
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
                     .fillMaxWidth()
+                    .testTag("studio_interval_save_start")
                     .height(50.dp)
             ) {
                 Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
@@ -3117,6 +3168,7 @@ fun IntervalSettingsScreen(
 @Composable
 private fun IntervalStepperCard(
     label: String,
+    testTagPrefix: String,
     valueText: String,
     onMinus: () -> Unit,
     onPlus: () -> Unit
@@ -3146,6 +3198,7 @@ private fun IntervalStepperCard(
                     onClick = onMinus,
                     modifier = Modifier
                         .size(48.dp)
+                        .testTag("${testTagPrefix}_minus")
                         .clip(RoundedCornerShape(10.dp))
                         .background(palette.surfaceElevated)
                 ) {
@@ -3155,6 +3208,7 @@ private fun IntervalStepperCard(
                     onClick = onPlus,
                     modifier = Modifier
                         .size(48.dp)
+                        .testTag("${testTagPrefix}_plus")
                         .clip(RoundedCornerShape(10.dp))
                         .background(palette.primary)
                 ) {

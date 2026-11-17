@@ -961,7 +961,7 @@ class TrainPilotViewModel : ViewModel() {
             pauseActiveWorkout() else true
 
     init {
-        android.os.Trace.beginSection("TrainPilot.catalogProjection")
+        val catalogTraceStarted = runCatching { android.os.Trace.beginSection("TrainPilot.catalogProjection"); true }.getOrDefault(false)
         try {
             val allExs = TrainPilotDatabase.defaultExercises().map { mapExerciseEntity(it) }
             val exMap = allExs.associateBy { it.id }
@@ -985,7 +985,7 @@ class TrainPilotViewModel : ViewModel() {
                 }
             }
         } catch (_: Throwable) {}
-        finally { android.os.Trace.endSection() }
+        finally { if (catalogTraceStarted) runCatching { android.os.Trace.endSection() } }
     }
 
     fun bindNativeEnvironment(
@@ -1077,7 +1077,7 @@ class TrainPilotViewModel : ViewModel() {
                         before.activeWorkoutId == frame.optString("workoutId")
                     if (frame != null) _uiState.update { state ->
                         if (state.activeWorkoutId != frame.optString("workoutId")) state
-                        else state.copy(isWorkoutSessionActive = false, activeWorkoutId = "", activeWorkoutGeneration = 0L, workoutStartedEpochMs = 0L,
+                        else state.copy(isWorkoutSessionActive = false, pendingIntervalStart = null, activeWorkoutId = "", activeWorkoutGeneration = 0L, workoutStartedEpochMs = 0L,
                             activeWorkoutExercises = emptyList(), activeSets = emptyList(), activeSetsByExerciseId = emptyMap(),
                             timedCurrentSec = 0, restTimerRunning = false, restTimerEndRealtimeMs = 0L, restTimerEndEpochMs = 0L, restTimerLastTickRealtimeMs = 0L,
                             homeDemoMode = HomeDemoMode.PLANNED_NEXT,
@@ -1635,6 +1635,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun selectTab(tab: MainTab) {
+        _uiState.update { it.copy(pendingIntervalStart = null) }
         if (!pauseWhenLeavingMeasurement()) return
         _uiState.update { state ->
             if (state.currentTab == tab && state.currentSubScreen == SubScreen.NONE) {
@@ -1651,6 +1652,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun navigateToSubScreen(subScreen: SubScreen, targetTab: MainTab? = null) {
+        if (subScreen != SubScreen.ACTIVE_TIMED) _uiState.update { it.copy(pendingIntervalStart = null) }
         if (subScreen == SubScreen.PROGRAMS_LIST) {
             selectTab(MainTab.PROGRAMS)
             return
@@ -1746,6 +1748,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun navigateBack(): Boolean {
+        _uiState.update { it.copy(pendingIntervalStart = null) }
         if (_uiState.value.currentSubScreen == SubScreen.EXERCISE_LIBRARY) exerciseSelection = null
         if (!pauseWhenLeavingMeasurement()) return true
         val current = _uiState.value
@@ -3334,6 +3337,71 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
+    /** The form's explicit Start persists first, then prepares the existing canonical engine. */
+    fun saveAndStartIntervals(work: Int, rest: Int, rounds: Int, sound: Boolean,
+        vibration: Boolean, autoAdvance: Boolean) {
+        if (nativeStartJob?.isActive == true || studioIntervalWriteJob?.isActive == true) return
+        val context = nativeContext ?: run {
+            updateIntervalSettings(work, rest, rounds, sound, vibration, autoAdvance)
+            return
+        }
+        fun noActiveWorkout() = !_uiState.value.isWorkoutSessionActive &&
+            ActiveWorkoutStore.current(context)?.optBoolean("active") != true &&
+            PhoneWorkoutExecution.store(context).snapshot()?.optBoolean("active") != true
+        val state = _uiState.value
+        val exercise = state.exercises.firstOrNull { it.id == state.selectedExerciseId && intervalEligible(it) }
+            ?: state.exercises.firstOrNull(::intervalEligible)
+        if (exercise == null || !runCatching { noActiveWorkout() }.getOrDefault(false)) {
+            showBannerMessage(if (exercise == null) tr("Nincs elérhető egyoldali időalapú gyakorlat.",
+                "No single-sided timed exercise is available.", "Keine einseitige zeitbasierte Übung verfügbar.",
+                "Nu există un exercițiu cronometrat unilateral disponibil.") else tr(
+                "Előbb fejezd be vagy vesd el az aktív edzést.", "Finish or discard the active workout first.",
+                "Beende oder verwerfe zuerst das aktive Training.", "Încheie sau renunță mai întâi la antrenamentul activ."))
+            return
+        }
+        val ticket = runCatching { NativeDataReplacement.continuationForCurrentData(context) }.getOrElse {
+            showBannerMessage(it.message ?: "Could not start intervals."); return
+        }
+        val route = state.navigationRoute()
+        val stack = state.backStack
+        updateIntervalSettings(work, rest, rounds, sound, vibration, autoAdvance) {
+            if (_uiState.value.navigationRoute() != route || _uiState.value.backStack != stack) return@updateIntervalSettings
+            startCanonicalWorkout(allowExisting = false, stillRequested = {
+                _uiState.value.currentTab == state.currentTab && _uiState.value.currentSubScreen == state.currentSubScreen &&
+                    _uiState.value.backStack == stack
+            }, onPresented = { frame ->
+                val raw = frame.getJSONArray("exercises").getJSONObject(frame.optInt("currentExercise"))
+                val rows = raw.getJSONArray("sets")
+                val set = (0 until rows.length()).map { rows.getJSONObject(it) }.first { !it.optBoolean("done") }
+                _uiState.update { it.copy(pendingIntervalStart = com.repforge.app.NativeWorkoutTarget(
+                    frame.getString("workoutId"), frame.getLong("generation"), raw.getString("id"), set.getString("setId")),
+                    pendingIntervalOwnerEpoch = frame.optLong("ownerEpoch193"), pendingIntervalPauseRevision = frame.optLong("pauseRevision")) }
+            }) {
+                ticket.requireCurrent(context)
+                check(noActiveWorkout()) { "Finish or discard the active workout first." }
+                val frame = com.repforge.app.NativeWorkoutSession.startQuickExercises(context,
+                    listOf(exercise.id), tr("Intervallum edzés", "Interval workout", "Intervalltraining", "Antrenament pe intervale"),
+                    automaticEnabled = true, database = requireNotNull(nativeDatabase), requireNew = true)
+                // A concurrent native start may recover a different session. Never control that session.
+                val raw = frame.getJSONArray("exercises").getJSONObject(frame.optInt("currentExercise"))
+                check(frame.optString("timerOwner", "phone") == "phone" && !frame.optBoolean("workoutPaused") &&
+                    raw.optString("id") == exercise.id && com.repforge.app.NativeSetStopwatch.timed(raw) &&
+                    !com.repforge.app.NativeSetStopwatch.bilateral(raw)) { "The active workout changed; start intervals explicitly." }
+                frame
+            }
+        }
+    }
+
+    private fun intervalEligible(exercise: ExerciseItem): Boolean = exercise.isTimed && !exercise.isBilateral &&
+        exercise.measurementType !in setOf("gps", "distance") && exercise.repUnit.trim().lowercase() !in setOf("m", "km")
+
+    /** Consume before requesting ARM. Recomposition/recovery must never replay Start. */
+    fun consumeIntervalStart(target: com.repforge.app.NativeWorkoutTarget): Boolean {
+        if (_uiState.value.pendingIntervalStart != target || _uiState.value.currentSubScreen != SubScreen.ACTIVE_TIMED) return false
+        _uiState.update { it.copy(pendingIntervalStart = null) }
+        return true
+    }
+
     private var summaryFeedbackTicket: NativeDataReplacement.Continuation? = null
     private var summaryFeedbackOwnerId = ""
 
@@ -3456,9 +3524,15 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    private fun startCanonicalWorkout(start: suspend () -> JSONObject) {
+    private fun startCanonicalWorkout(allowExisting: Boolean = true, stillRequested: () -> Boolean = { true },
+        onPresented: (JSONObject) -> Unit = {}, start: suspend () -> JSONObject) {
         if (nativeStartJob?.isActive == true || _uiState.value.isSavingWorkout) return
         if (_uiState.value.isWorkoutSessionActive && _uiState.value.workoutStartedEpochMs > 0) {
+            if (!allowExisting) {
+                showBannerMessage(tr("Előbb fejezd be vagy vesd el az aktív edzést.", "Finish or discard the active workout first.",
+                    "Beende oder verwerfe zuerst das aktive Training.", "Încheie sau renunță mai întâi la antrenamentul activ."))
+                return
+            }
             returnToActiveWorkout()
             return
         }
@@ -3469,8 +3543,9 @@ class TrainPilotViewModel : ViewModel() {
                 check(programWriteError == null) { requireNotNull(programWriteError) }
                 studioIntervalWriteJob?.join()
                 check(studioIntervalWriteError == null) { requireNotNull(studioIntervalWriteError) }
+                if (!stillRequested()) return@launch
                 val frame = start() // Canonical engine commits before the UI advertises a workout.
-                presentCanonicalWorkout(frame)
+                if (presentCanonicalWorkout(frame, stillRequested)) onPresented(frame)
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
             catch (error: Exception) {
                 _uiState.update { it.copy(statusBannerMessage = error.message ?: "Az edzés nem indítható.") }
@@ -3478,13 +3553,18 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    private suspend fun presentCanonicalWorkout(requested: JSONObject) {
+    private suspend fun presentCanonicalWorkout(requested: JSONObject, stillRequested: () -> Boolean = { true }): Boolean {
         val library = withContext(Dispatchers.IO) {
             requireNotNull(nativeDatabase).exerciseLibraryDao().getAllExercises().associateBy { it.id }
         }
         val frame = requireNotNull(ActiveWorkoutStore.current(requireNotNull(nativeContext)))
         check(frame.optBoolean("active") && frame.optString("workoutId") == requested.optString("workoutId") &&
             frame.optLong("generation") == requested.optLong("generation")) { "Az edzés időközben megváltozott." }
+        if (!stillRequested()) {
+            // The requested frame is durable, but leaving during preparation cancels measurement launch.
+            runCatching { com.repforge.app.StudioWorkoutBridge.pause(requireNotNull(nativeContext), true) }
+            return false
+        }
         val ids = frame.getJSONArray("exercises")
         val exercises = (0 until ids.length()).map { index ->
             val raw = ids.getJSONObject(index)
@@ -3525,6 +3605,7 @@ class TrainPilotViewModel : ViewModel() {
             currentSubScreen = target, showQuickWorkoutSheet = false, timedCurrentSec = 0,
             backStack = (state.backStack + state.navigationRoute()).takeLast(16),
             statusBannerMessage = null) }
+        return true
     }
 
     fun startQuickStrengthWithExercise(exercise: ExerciseItem) {
