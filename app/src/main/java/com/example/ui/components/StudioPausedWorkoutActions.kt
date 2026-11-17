@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 /** Deletion is explicit, confirmed, and bound to the workout shown when the dialog opened. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun StudioPausedWorkoutActions(workoutId: String, phoneControls: Boolean, busy: Boolean,
     continueLabel: String, onContinue: () -> Unit, onDiscard: (String) -> Unit) {
@@ -26,12 +27,12 @@ internal fun StudioPausedWorkoutActions(workoutId: String, phoneControls: Boolea
     }
     var pendingId by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(workoutId) { if (pendingId != workoutId) pendingId = null }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(onClick = onContinue, enabled = !busy, shape = RoundedCornerShape(14.dp), modifier = Modifier.weight(1f).heightIn(min = 50.dp)
+    StudioAdaptiveControlRow(minimumWidth = 148.dp) {
+        Button(onClick = onContinue, enabled = !busy, shape = RoundedCornerShape(14.dp), modifier = Modifier.weight(1f).heightIn(min = 48.dp)
             .testTag("home_continue_workout_button")) { Text(continueLabel) }
         com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = { pendingId = workoutId },
             enabled = !busy && phoneControls && workoutId.isNotBlank(), shape = RoundedCornerShape(14.dp),
-            modifier = Modifier.heightIn(min = 50.dp).testTag("home_discard_workout_button")) {
+            modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("home_discard_workout_button")) {
             Text(word("Elvetés", "Discard", "Verwerfen", "Renunță"))
         }
     }

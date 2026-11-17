@@ -2,6 +2,12 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.layout.sizeIn
 import com.example.ui.components.WorkoutControlAppearance
+import com.example.ui.components.StudioCompactAction
+import com.example.ui.components.StudioCompactActionRow
+import com.example.ui.components.StudioAdaptiveControlRow
+import com.example.ui.components.StudioBilateralSetControls
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
@@ -851,37 +857,10 @@ private fun SetValuePill(
     }
 }
 
-@Composable
-private fun SmallAdjustChip(
-    label: String,
-    enabled: Boolean = true,
-    onClick: () -> Unit
-) {
-    val palette = LocalTrainPilotPalette.current
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = palette.surfaceElevated,
-        modifier = Modifier
-            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .clickable(enabled = enabled) { onClick() }
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-            color = palette.textPrimary.copy(alpha = if (enabled) 1f else .38f),
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            softWrap = false,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
-        )
-    }
-}
-
 /**
  * 2. IDŐALAPÚ EDZÉS (Mockup 2/4 #2 - Plank)
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ActiveTimedWorkoutScreen(
     uiState: TrainPilotUiState,
@@ -1207,23 +1186,17 @@ fun ActiveTimedWorkoutScreen(
                     Spacer(modifier = Modifier.height(18.dp))
 
                     // Quick adjustment chips
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        SmallAdjustChip("-5 $secWord") { target?.let { nativeModel.adjustSetStopwatch(it, "single", -5) } }
-                        SmallAdjustChip("+5 $secWord") { target?.let { nativeModel.adjustSetStopwatch(it, "single", 5) } }
-                        SmallAdjustChip("+15 $secWord") { target?.let { nativeModel.adjustSetStopwatch(it, "single", 15) } }
-                        SmallAdjustChip("+30 $secWord") { target?.let { nativeModel.adjustSetStopwatch(it, "single", 30) } }
-                    }
+                    StudioCompactActionRow(listOf(
+                            StudioCompactAction("-5 $secWord", target != null) { target?.let { nativeModel.adjustSetStopwatch(it, "single", -5) } },
+                            StudioCompactAction("+5 $secWord", target != null) { target?.let { nativeModel.adjustSetStopwatch(it, "single", 5) } },
+                            StudioCompactAction("+15 $secWord", target != null) { target?.let { nativeModel.adjustSetStopwatch(it, "single", 15) } },
+                            StudioCompactAction("+30 $secWord", target != null) { target?.let { nativeModel.adjustSetStopwatch(it, "single", 30) } }
+                        ))
 
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Stopwatch Controls: Start/Pause + Reset
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
+                    StudioAdaptiveControlRow {
                         Button(
                             onClick = { target?.let { if (isRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.startSetStopwatch(it, "single") } },
                             enabled = target != null,
@@ -1233,8 +1206,8 @@ fun ActiveTimedWorkoutScreen(
                                 contentColor = palette.onPrimary
                             ),
                             modifier = Modifier
-                                .weight(1.4f)
-                                .height(48.dp)
+                                .weight(1f)
+                                .heightIn(min = 44.dp)
                                 .testTag("toggle_timed_stopper")
                         ) {
                             Icon(
@@ -1258,7 +1231,7 @@ fun ActiveTimedWorkoutScreen(
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier
                                 .weight(1f)
-                                .height(48.dp)
+                                .heightIn(min = 44.dp)
                         ) {
                             Icon(imageVector = Icons.Default.Refresh, contentDescription = null, tint = palette.textPrimary)
                             Spacer(modifier = Modifier.width(4.dp))
@@ -1451,6 +1424,7 @@ fun ActiveTimedWorkoutScreen(
 /**
  * 3. KÉTOLDALI MÉRÉS (2 STOPPER OLDALANKÉNT: Bal és Jobb oldal külön-külön stopperrel + oldalankénti sorozat-adatrögzítő)
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ActiveBilateralWorkoutScreen(
     uiState: TrainPilotUiState,
@@ -1565,29 +1539,12 @@ fun ActiveBilateralWorkoutScreen(
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        val leftShort = tr(lang, "Bal", "Left", "Links", "Stg.")
-                        val rightShort = tr(lang, "Jobb", "Right", "Rechts", "Dr.")
-                        SmallAdjustChip("$leftShort -5$secWord") {
-                            val v = (editLeftText.toIntOrNull() ?: 30) - 5
-                            editLeftText = v.coerceAtLeast(1).toString()
-                        }
-                        SmallAdjustChip("$leftShort +5$secWord") {
-                            val v = (editLeftText.toIntOrNull() ?: 30) + 5
-                            editLeftText = v.coerceAtMost(600).toString()
-                        }
-                        SmallAdjustChip("$rightShort -5$secWord") {
-                            val v = (editRightText.toIntOrNull() ?: 30) - 5
-                            editRightText = v.coerceAtLeast(1).toString()
-                        }
-                        SmallAdjustChip("$rightShort +5$secWord") {
-                            val v = (editRightText.toIntOrNull() ?: 30) + 5
-                            editRightText = v.coerceAtMost(600).toString()
-                        }
-                    }
+                    StudioCompactActionRow(listOf(
+                        StudioCompactAction(tr(lang, "Bal −5 $secWord", "Left −5 $secWord", "Links −5 $secWord", "Stg. −5 $secWord")) { editLeftText = ((editLeftText.toIntOrNull() ?: 30) - 5).coerceAtLeast(1).toString() },
+                        StudioCompactAction(tr(lang, "Bal +5 $secWord", "Left +5 $secWord", "Links +5 $secWord", "Stg. +5 $secWord")) { editLeftText = ((editLeftText.toIntOrNull() ?: 30) + 5).coerceAtMost(600).toString() },
+                        StudioCompactAction(tr(lang, "Jobb −5 $secWord", "Right −5 $secWord", "Rechts −5 $secWord", "Dr. −5 $secWord")) { editRightText = ((editRightText.toIntOrNull() ?: 30) - 5).coerceAtLeast(1).toString() },
+                        StudioCompactAction(tr(lang, "Jobb +5 $secWord", "Right +5 $secWord", "Rechts +5 $secWord", "Dr. +5 $secWord")) { editRightText = ((editRightText.toIntOrNull() ?: 30) + 5).coerceAtMost(600).toString() }
+                    ))
                     androidx.compose.material3.OutlinedTextField(
                         value = editRirText,
                         onValueChange = { editRirText = it.filter { ch -> ch.isDigit() } },
@@ -1695,11 +1652,7 @@ fun ActiveBilateralWorkoutScreen(
                             )
                         }
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
                                 color = palette.primary.copy(alpha = 0.16f)
@@ -1719,16 +1672,18 @@ fun ActiveBilateralWorkoutScreen(
                                 )
                             }
 
-                            Box {
+                            Box(Modifier.fillMaxWidth()) {
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
                                     color = palette.surfaceElevated,
                                     modifier = Modifier
+                                        .fillMaxWidth().heightIn(min = 40.dp).testTag("bilateral_exercise_switch")
                                         .clip(RoundedCornerShape(8.dp))
                                         .clickable { showExerciseDropdown = true }
                                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                 ) {
                                     Text(
+                                        maxLines = 1, softWrap = false,
                                         text = tr(lang, "Gyakorlat váltása ▾", "Switch exercise ▾", "Übung wechseln ▾", "Schimbă exercițiul ▾"),
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold,
@@ -1885,10 +1840,7 @@ fun ActiveBilateralWorkoutScreen(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         // Left stopwatch controls
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
+                        StudioAdaptiveControlRow {
                             Button(
                                 onClick = { target?.let { if (leftRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.startSetStopwatch(it, "left") } },
                             enabled = target != null,
@@ -1899,7 +1851,7 @@ fun ActiveBilateralWorkoutScreen(
                                 ),
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(44.dp)
+                                    .heightIn(min = 44.dp)
                                     .testTag("bilateral_left_start_pause_btn")
                             ) {
                                 Icon(
@@ -1919,8 +1871,9 @@ fun ActiveBilateralWorkoutScreen(
                                 enabled = target != null && native.stopwatchSetId == nativeSet?.setId && native.stopwatchSide == "left" && native.stopwatchSeconds > 0 && nativeSet?.isCompleted == false,
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier
-                                    .weight(1.45f)
-                                    .height(44.dp)
+                                    .weight(1f)
+                                    .heightIn(min = 44.dp)
+                                    .semantics { contentDescription = tr(lang, "Leállítás és rögzítés", "Stop and record", "Stoppen & speichern", "Oprește și înregistrează") }
                                     .testTag("bilateral_left_stop_record_btn")
                             ) {
                                 Icon(
@@ -1930,7 +1883,7 @@ fun ActiveBilateralWorkoutScreen(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = tr(lang, "Leállítás és rögzítés", "Stop and record", "Stoppen & speichern", "Oprește și înregistrează"),
+                                    text = tr(lang, "Rögzítés", "Record", "Speichern", "Salvează"),
                                     fontWeight = FontWeight.Bold,
                                     style = MaterialTheme.typography.labelMedium,
                                     maxLines = 1
@@ -1939,16 +1892,11 @@ fun ActiveBilateralWorkoutScreen(
                         }
 
                         Spacer(modifier = Modifier.height(6.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            SmallAdjustChip(tr(lang, "Nulláz", "Reset", "Reset", "Reset")) {
-                                target?.let(nativeModel::resetSetStopwatch)
-                            }
-                            SmallAdjustChip("+5 $secWord") { target?.let { nativeModel.adjustSetStopwatch(it, "left", 5) } }
-                            SmallAdjustChip("+15 $secWord") { target?.let { nativeModel.adjustSetStopwatch(it, "left", 15) } }
-                        }
+                        StudioCompactActionRow(listOf(
+                            StudioCompactAction(tr(lang, "Nulláz", "Reset", "Reset", "Reset"), target != null) { target?.let(nativeModel::resetSetStopwatch) },
+                            StudioCompactAction("+5 $secWord", target != null) { target?.let { nativeModel.adjustSetStopwatch(it, "left", 5) } },
+                            StudioCompactAction("+15 $secWord", target != null) { target?.let { nativeModel.adjustSetStopwatch(it, "left", 15) } }
+                        ))
                     }
                 }
             }
@@ -2053,10 +2001,7 @@ fun ActiveBilateralWorkoutScreen(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         // Right stopwatch controls
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
+                        StudioAdaptiveControlRow {
                             Button(
                                 onClick = { target?.let { if (rightRunning) nativeModel.pauseSetStopwatch(it) else nativeModel.startSetStopwatch(it, "right") } },
                             enabled = target != null,
@@ -2067,7 +2012,7 @@ fun ActiveBilateralWorkoutScreen(
                                 ),
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(44.dp)
+                                    .heightIn(min = 44.dp)
                                     .testTag("bilateral_right_start_pause_btn")
                             ) {
                                 Icon(
@@ -2087,8 +2032,9 @@ fun ActiveBilateralWorkoutScreen(
                                 enabled = target != null && native.stopwatchSetId == nativeSet?.setId && native.stopwatchSide == "right" && native.stopwatchSeconds > 0 && nativeSet?.isCompleted == false,
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier
-                                    .weight(1.45f)
-                                    .height(44.dp)
+                                    .weight(1f)
+                                    .heightIn(min = 44.dp)
+                                    .semantics { contentDescription = tr(lang, "Leállítás és rögzítés", "Stop and record", "Stoppen & speichern", "Oprește și înregistrează") }
                                     .testTag("bilateral_right_stop_record_btn")
                             ) {
                                 Icon(
@@ -2098,7 +2044,7 @@ fun ActiveBilateralWorkoutScreen(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = tr(lang, "Leállítás és rögzítés", "Stop and record", "Stoppen & speichern", "Oprește și înregistrează"),
+                                    text = tr(lang, "Rögzítés", "Record", "Speichern", "Salvează"),
                                     fontWeight = FontWeight.Bold,
                                     style = MaterialTheme.typography.labelMedium,
                                     maxLines = 1
@@ -2107,16 +2053,11 @@ fun ActiveBilateralWorkoutScreen(
                         }
 
                         Spacer(modifier = Modifier.height(6.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            SmallAdjustChip(tr(lang, "Nulláz", "Reset", "Reset", "Reset")) {
-                                target?.let(nativeModel::resetSetStopwatch)
-                            }
-                            SmallAdjustChip("+5 $secWord") { target?.let { nativeModel.adjustSetStopwatch(it, "right", 5) } }
-                            SmallAdjustChip("+15 $secWord") { target?.let { nativeModel.adjustSetStopwatch(it, "right", 15) } }
-                        }
+                        StudioCompactActionRow(listOf(
+                            StudioCompactAction(tr(lang, "Nulláz", "Reset", "Reset", "Reset"), target != null) { target?.let(nativeModel::resetSetStopwatch) },
+                            StudioCompactAction("+5 $secWord", target != null) { target?.let { nativeModel.adjustSetStopwatch(it, "right", 5) } },
+                            StudioCompactAction("+15 $secWord", target != null) { target?.let { nativeModel.adjustSetStopwatch(it, "right", 15) } }
+                        ))
                     }
                 }
             }
@@ -2199,149 +2140,10 @@ fun ActiveBilateralWorkoutScreen(
                                         shape = RoundedCornerShape(14.dp)
                                     )
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 10.dp, vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    // Set number + Target indicator
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        modifier = Modifier.width(44.dp)
-                                    ) {
-                                        Text(
-                                            text = "${setItem.setNumber}.",
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            color = if (isSelectedTarget) palette.primary else palette.textPrimary
-                                        )
-                                        if (isSelectedTarget && !setItem.completed) {
-                                            Text(
-                                                text = tr(lang, "CÉL", "TARGET", "ZIEL", "ȚINTĂ"),
-                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                                                fontWeight = FontWeight.Bold,
-                                                color = palette.primary
-                                            )
-                                        }
-                                    }
-
-                                    // BAL OLDAL RÖGZÍTŐ ABLAK
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = if (setItem.leftRecorded || setItem.completed) palette.success.copy(alpha = 0.16f) else palette.surfaceCard,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .clickable {
-                                                selectedTargetSetNumber = setItem.setNumber
-                                                editingBilateralSet = setItem
-                                            }
-                                            .trainPilotBorder(
-                                                1.dp,
-                                                if (setItem.leftRecorded || setItem.completed) palette.success else palette.cardBorder,
-                                                RoundedCornerShape(10.dp)
-                                            )
-                                    ) {
-                                        Column(
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
-                                            val leftTitle = tr(lang, "Bal oldal", "Left side", "Linke Seite", "Partea stângă")
-                                            Text(
-                                                text = if (setItem.leftRecorded || setItem.completed) "$leftTitle ✓" else leftTitle,
-                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                                color = if (setItem.leftRecorded || setItem.completed) palette.success else palette.textSecondary,
-                                                fontWeight = FontWeight.SemiBold
-                                            )
-                                            Text(
-                                                text = "${setItem.leftSec} $secWord",
-                                                style = MaterialTheme.typography.titleSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = palette.textPrimary
-                                            )
-                                        }
-                                    }
-
-                                    // JOBB OLDAL RÖGZÍTŐ ABLAK
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = if (setItem.rightRecorded || setItem.completed) palette.success.copy(alpha = 0.16f) else palette.surfaceCard,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .clickable {
-                                                selectedTargetSetNumber = setItem.setNumber
-                                                editingBilateralSet = setItem
-                                            }
-                                            .trainPilotBorder(
-                                                1.dp,
-                                                if (setItem.rightRecorded || setItem.completed) palette.success else palette.cardBorder,
-                                                RoundedCornerShape(10.dp)
-                                            )
-                                    ) {
-                                        Column(
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
-                                            val rightTitle = tr(lang, "Jobb oldal", "Right side", "Rechte Seite", "Partea dreaptă")
-                                            Text(
-                                                text = if (setItem.rightRecorded || setItem.completed) "$rightTitle ✓" else rightTitle,
-                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                                color = if (setItem.rightRecorded || setItem.completed) palette.success else palette.textSecondary,
-                                                fontWeight = FontWeight.SemiBold
-                                            )
-                                            Text(
-                                                text = "${setItem.rightSec} $secWord",
-                                                style = MaterialTheme.typography.titleSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = palette.textPrimary
-                                            )
-                                        }
-                                    }
-
-                                    // RIR badge (tap to edit)
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = palette.surfaceCard,
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .clickable { editingBilateralSet = setItem }
-                                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
-                                    ) {
-                                        Text(
-                                            text = if (setItem.actualRirProvided) "RIR ${setItem.rir}" else "RIR —",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = palette.textSecondary,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp)
-                                        )
-                                    }
-
-                                    // Complete toggle button
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = if (setItem.completed) palette.success else palette.surfaceCard,
-                                        modifier = Modifier
-                                            .size(38.dp)
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .clickable { onToggleSetCompleted(setItem.setNumber) }
-                                            .trainPilotBorder(
-                                                1.dp,
-                                                if (setItem.completed) palette.success else palette.cardBorder,
-                                                RoundedCornerShape(10.dp)
-                                            )
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = tr(lang, "Sorozat kész", "Set complete", "Satz fertig", "Serie completă"),
-                                                tint = if (setItem.completed) palette.onPrimary else palette.textSecondary,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    }
-                                }
+                                StudioBilateralSetControls(setItem, isSelectedTarget, lang,
+                                    onEdit = { selectedTargetSetNumber = setItem.setNumber; editingBilateralSet = setItem },
+                                    onRir = { editingBilateralSet = setItem },
+                                    onToggle = { onToggleSetCompleted(setItem.setNumber) })
                             }
                         }
                     }

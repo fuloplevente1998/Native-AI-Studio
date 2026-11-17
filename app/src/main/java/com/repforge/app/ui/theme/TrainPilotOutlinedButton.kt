@@ -24,7 +24,7 @@ fun TrainPilotOutlinedButton(
         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
     elevation: ButtonElevation? = null,
     border: BorderStroke? = TrainPilotFrames.control(MaterialTheme.colorScheme.outline),
-    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
+    contentPadding: PaddingValues = TrainPilotButtonLayout.ContentPadding,
     interactionSource: MutableInteractionSource? = null,
     content: @Composable RowScope.() -> Unit
 ) {
