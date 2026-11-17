@@ -1,0 +1,1 @@
+A telefonos társalkalmazással együtt javított órás parancshelyreállítás, ismételt/késői kézbesítés kezelése és négynyelvű program-, nap- és gyakorlatnevek. Egyedi nevek megőrzése, változatlan tulajdonosi és lezárási védelem. A 2764 kétoldali kész/Undo javítása megmarad. Frissítsd a telefonos appot is.

@@ -1,0 +1,9 @@
+TrainPilot 2765 · 1.2-beta
+TrainPilot — Wear OS — változások a 2764-hez képest
+
+• A telefonról küldött tényleges Home-, indítási, naptári és Mini napló-payloadok gyakorlat/program/nap nevei a kiválasztott HU/EN/DE/RO nyelven érkeznek. Nyelvi fallback: kiválasztott → angol → magyar → elérhető további fordítás. Egyedi és átnevezett történeti nevek megmaradnak.
+• A telefonon megmaradt órás parancsok tartós helyi újrapróbát kapnak szolgáltatásindítás, újrakapcsolódás és snapshotközzététel után. Az ismételt vagy későn érkező parancs a már végrehajtott művelet tartós bizonyítékával egyeztethető; ettől nem készülhet dupla sorozat vagy edzés.
+• A tulajdonos/generáció/szünet/adat-visszaállítás és a befejezett/elvetett edzés védelmei megmaradnak. Újrapróba vagy újrakapcsolódás nem indít automatikus folytatást.
+
+E változások órán látható részét a telefonos integráció szállítja; a Wear saját képernyőkódja ebben a javítási körben nem változott. A 2764 kétoldali kész/Undo javítása megmarad. Ez a kiadás önmagában nem jelenti a külön PR220 teljes témaszinkron-/dizájntervének lezárását.
+Mindkét appot frissíteni kell. A fizikai telefon–óra kapcsolat, háttér/újraindítás, offline műveletek és nyelvváltás ellenőrzése külön szükséges.
