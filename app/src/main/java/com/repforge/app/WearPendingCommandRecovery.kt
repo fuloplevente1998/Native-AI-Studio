@@ -29,6 +29,25 @@ internal object WearPendingCommandRecovery {
         "executionNotPrepared", "restoreInProgress", "controllerNotArmed", "timerStillActive",
         "timedResultsAwaitingReconciliation", "gpsMeasurementStillActive", "setStopwatchStillActive")
 
+    /** Read only committed journal proof; legacy adaptation uses the original wire fingerprint,
+     * so this lookup needs no live frame, generation, revision, or newly inferred measurements. */
+    internal fun terminalReceiptStatus(context: Context, command: JSONObject): String {
+        val journalCommand = when {
+            PhoneWorkoutExecution.compatible(command) -> command
+            command.optString("action") == "completeSet" &&
+                listOf("workoutId", "exerciseId", "setId").all { command.optString(it).isNotEmpty() } ->
+                JSONObject(command.toString()).put("action", "completeMeasuredSet")
+                    .put("legacyBilateral250", JSONObject(command.toString()))
+            else -> null
+        }
+        val proof = journalCommand?.let { PhoneWorkoutExecution.store(context).receipt(it) }
+        return when (proof?.optString("status")) {
+            "duplicate" -> "applied"
+            "rejected" -> "error"
+            else -> "superseded"
+        }
+    }
+
     private fun supported(command: JSONObject): Boolean = PhoneWorkoutExecution.compatible(command) ||
         command.optString("action") in setOf("completeSet", "updateSet", "automaticControl")
 
@@ -149,14 +168,7 @@ internal object WearPendingCommandRecovery {
                             Admission.STALE -> {
                                 // A crash after the engine transaction but before inbox ACK must still
                                 // acknowledge that durable application, even if the workout has since closed.
-                                val proof = if (PhoneWorkoutExecution.compatible(command))
-                                    PhoneWorkoutExecution.store(context).receipt(command) else null
-                                val status = when (proof?.optString("status")) {
-                                    "duplicate" -> "applied"
-                                    "rejected" -> "error"
-                                    else -> "superseded"
-                                }
-                                WearCommandReceipts.complete(context, command, status, uri)
+                                WearCommandReceipts.complete(context, command, terminalReceiptStatus(context, command), uri)
                                 false
                             }
                             Admission.READY -> true

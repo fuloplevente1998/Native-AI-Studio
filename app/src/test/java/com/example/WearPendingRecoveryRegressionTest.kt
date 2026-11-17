@@ -379,6 +379,63 @@ class WearPendingRecoveryRegressionTest {
         drain(); assertEquals(1, count())
     }
 
+    @Test fun legacyBilateralCommitWithoutInboxAckReconcilesItsWireFingerprintAfterClosureAndReopen() {
+        val frame = store.snapshot()!!
+        frame.getJSONArray("exercises").getJSONObject(0).put("repUnit", "mp/oldal").put("measurementType", "time")
+        install(frame)
+        val legacy = command().put("leftSeconds", 37).put("rightSeconds", 43).apply {
+            remove("nativeExecutionProtocol"); remove("generation"); remove("executionRevision")
+        }
+        WearPendingCommandRecovery.capture(context, legacy)
+        WearSyncRepository.commitWatchEditorMutation(context, ActiveWorkoutStore.current(context)!!, legacy)
+        assertTrue(first().getBoolean("done")); assertEquals(1, count()); assertNull(receipt())
+        WearCommandQueueStore.enqueue(context, legacy, null)
+        val committed = store.snapshot()!!
+        assertTrue(store.closeExecution(committed.getString("workoutId"), committed.getLong("generation"), committed.getLong("executionRevision")))
+        ActiveWorkoutStore.clear(context)
+        reopenExecution(); drain()
+        completed(); assertEquals("completeSet", receipt()!!.getString("action")); assertEquals(1, count())
+        assertFalse(store.snapshot()!!.getBoolean("active")); assertFalse(ActiveWorkoutStore.current(context)!!.getBoolean("active"))
+        drain(); assertEquals(1, count())
+    }
+
+    private fun committedUndoWithoutInboxAck(): JSONObject {
+        assertEquals("applied", PhoneWorkoutExecution.execute(context, command()).getString("status"))
+        val frame = store.snapshot()!!
+        val inverse = com.repforge.shared.WearMeasuredSetCommand.undo(frame, frame.getJSONObject("lastRecord188"), "inverse", 1000L, null)
+            .put("sequence", 12L)
+        WearPendingCommandRecovery.capture(context, inverse)
+        assertEquals("applied", PhoneWorkoutExecution.execute(context, inverse).getString("status"))
+        assertFalse(first().getBoolean("done")); assertEquals(2, count()); assertNull(receipt("inverse"))
+        WearCommandQueueStore.enqueue(context, inverse, null)
+        return inverse
+    }
+
+    @Test fun fastUndoDrainReconcilesCommittedInverseAfterClosureAndReopen() {
+        committedUndoWithoutInboxAck()
+        val frame = store.snapshot()!!
+        assertTrue(store.closeExecution(frame.getString("workoutId"), frame.getLong("generation"), frame.getLong("executionRevision")))
+        ActiveWorkoutStore.clear(context)
+        reopenExecution()
+        WearSyncRepository.drainNativeUndo188(context)
+        completed("inverse"); assertEquals("undoSet", receipt("inverse")!!.getString("action"))
+        assertFalse(store.snapshot()!!.getBoolean("active")); assertFalse(ActiveWorkoutStore.current(context)!!.getBoolean("active"))
+        WearSyncRepository.drainNativeUndo188(context); drain()
+        assertFalse(first().getBoolean("done")); assertEquals(2, count())
+    }
+
+    @Test fun fastUndoDrainReconcilesCommittedInverseAcrossPauseChangeWithoutResuming() {
+        committedUndoWithoutInboxAck()
+        val paused = store.setWorkoutPause(store.snapshot()!!.put("workoutPaused", true).put("pauseRevision", 5L), SystemClock.elapsedRealtime(), false)!!
+        ActiveWorkoutStore.save(context, paused)
+        reopenExecution()
+        WearSyncRepository.drainNativeUndo188(context)
+        completed("inverse")
+        assertTrue(store.snapshot()!!.getBoolean("workoutPaused")); assertFalse(first().getBoolean("done"))
+        WearSyncRepository.drainNativeUndo188(context); drain()
+        assertTrue(store.snapshot()!!.getBoolean("workoutPaused")); assertEquals(2, count())
+    }
+
     @Test fun staleNativeRevisionIsTerminalAndCannotSpinForeverInTheInbox() {
         val command = command().put("executionRevision", 0L)
         hold(command)

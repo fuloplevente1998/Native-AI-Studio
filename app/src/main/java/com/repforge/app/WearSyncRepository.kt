@@ -543,7 +543,8 @@ object WearSyncRepository {
                 when (WearPendingCommandRecovery.admission(context, command)) {
                     WearPendingCommandRecovery.Admission.WAIT -> continue
                     WearPendingCommandRecovery.Admission.STALE -> {
-                        WearCommandReceipts.complete(context, command, "superseded", null)
+                        WearCommandReceipts.complete(context, command,
+                            WearPendingCommandRecovery.terminalReceiptStatus(context, command), null)
                         continue
                     }
                     WearPendingCommandRecovery.Admission.READY -> Unit
