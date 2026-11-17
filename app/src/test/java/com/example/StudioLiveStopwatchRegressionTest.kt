@@ -148,7 +148,7 @@ class StudioLiveStopwatchRegressionTest {
                 compose.onNodeWithTag("bilateral_${side}_start_pause_btn").performScrollTo().performClick()
                 await { measurement.uiState.value.stopwatchRunning && measurement.uiState.value.stopwatchSide == side ||
                     measurement.uiState.value.statusMessage != null }
-                assertTrue("Start $side: ${measurement.uiState.value.statusMessage}", measurement.uiState.value.stopwatchRunning)
+                assertTrue("Start $side: ${measurement.uiState.value.statusMessage}, frame=${ActiveWorkoutStore.current(context)}, modelApplication=${measurement.getApplication<Application>() === app}", measurement.uiState.value.stopwatchRunning)
                 val clockId = clock().getString("id")
                 advance(1)
                 assertEquals(1L, measurement.uiState.value.stopwatchSeconds)
@@ -204,7 +204,7 @@ class StudioLiveStopwatchRegressionTest {
         await { !it.uiState.value.savedRecordsLoading && it.uiState.value.exercises.isNotEmpty() }
     }
 
-    private fun measurement() = ViewModelProvider(owner, ViewModelProvider.AndroidViewModelFactory.getInstance(app))[ActiveWorkoutViewModel::class.java]
+    private fun measurement() = ViewModelProvider(owner, ViewModelProvider.AndroidViewModelFactory(app))[ActiveWorkoutViewModel::class.java]
         .also { model -> await { model.uiState.value.exercises.isNotEmpty() } }
 
     private fun target(frame: JSONObject): NativeWorkoutTarget {

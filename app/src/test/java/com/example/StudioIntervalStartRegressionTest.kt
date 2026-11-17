@@ -3,10 +3,14 @@ package com.example
 import android.app.Application
 import android.content.Context
 import android.os.Looper
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.ViewModelStore
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -51,6 +55,7 @@ class StudioIntervalStartRegressionTest {
     private val parent = SupervisorJob()
     private val scope = CoroutineScope(parent + Dispatchers.Main.immediate)
     private val models = ViewModelStore()
+    private val owner = object : ViewModelStoreOwner { override val viewModelStore = models }
 
     @Before fun prepare() {
         val execution = PhoneWorkoutExecution::class.java.getDeclaredField("store").apply { isAccessible = true }
@@ -78,22 +83,24 @@ class StudioIntervalStartRegressionTest {
         await { !it.uiState.value.savedRecordsLoading && it.uiState.value.exercises.isNotEmpty() }
     }
 
-    private fun measurement() = ActiveWorkoutViewModel(app).also {
-        models.put("measurement", it)
-        await { it.uiState.value.exercises.isNotEmpty() }
-    }
+    private fun measurement() = ViewModelProvider(owner, ViewModelProvider.AndroidViewModelFactory(app))[ActiveWorkoutViewModel::class.java]
 
     private fun render(vm: TrainPilotViewModel) {
+        // An explicit current-Application factory avoids AndroidViewModelFactory's
+        // process singleton retaining another Robolectric test's Application.
+        measurement()
         compose.setContent {
-            val state by vm.uiState.collectAsState()
-            val strings = TrainPilotStrings.forLanguage(state.language)
-            TrainPilotTheme {
-                when (state.currentSubScreen) {
-                    SubScreen.INTERVAL_SETTINGS -> StudioIntervalSettingsRoute(vm, state, strings)
-                    SubScreen.ACTIVE_TIMED -> ActiveTimedWorkoutScreen(state, strings,
-                        onBack = { vm.navigateBack() }, onOpenSettings = {}, onSelectMeasurementMode = {},
-                        consumeIntervalStart = vm::consumeIntervalStart)
-                    else -> Unit
+            CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
+                val state by vm.uiState.collectAsState()
+                val strings = TrainPilotStrings.forLanguage(state.language)
+                TrainPilotTheme {
+                    when (state.currentSubScreen) {
+                        SubScreen.INTERVAL_SETTINGS -> StudioIntervalSettingsRoute(vm, state, strings)
+                        SubScreen.ACTIVE_TIMED -> ActiveTimedWorkoutScreen(state, strings,
+                            onBack = { vm.navigateBack() }, onOpenSettings = {}, onSelectMeasurementMode = {},
+                            consumeIntervalStart = vm::consumeIntervalStart)
+                        else -> Unit
+                    }
                 }
             }
         }
@@ -136,7 +143,7 @@ class StudioIntervalStartRegressionTest {
                     service.get().onStartCommand(intent, 0, 1); delivered = true
                 }
             }
-            assertTrue("The production editor must request ARM", delivered)
+            assertTrue("The production editor must request ARM: status=${measurement().uiState.value.statusMessage}, nativeWorkout=${measurement().uiState.value.workoutId}, frame=${ActiveWorkoutStore.current(context)}", delivered)
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(60))
             compose.waitUntil(10_000) { IntervalTimerService.snapshot(context).optBoolean("running") }
             val timer = IntervalTimerService.snapshot(context)

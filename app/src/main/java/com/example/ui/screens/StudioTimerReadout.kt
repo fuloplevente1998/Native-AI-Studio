@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -11,6 +12,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import java.util.Locale
 
@@ -37,6 +39,7 @@ internal fun StudioTimerReadout(seconds: Int, style: TextStyle = MaterialTheme.t
         val fitted = requested.copy(fontSize = (requested.fontSize.value * ratio).coerceAtLeast(1f).sp,
             lineHeight = if (requested.lineHeight.isSp) (requested.lineHeight.value * ratio).sp else requested.lineHeight)
         Text(label, style = fitted, fontWeight = fontWeight, color = color,
-            maxLines = 1, softWrap = false)
+            maxLines = 1, softWrap = false, textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth())
     }
 }
