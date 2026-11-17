@@ -8,6 +8,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -44,6 +45,8 @@ data class ThemePaletteOption(
 }
 
 data class TrainPilotUserSettings(
+    val fontScaleMultiplier: Float = 1.0f,
+    val compactPhoneMode: Boolean = false,
     val language: String = "hu",
     val activeProgramId: String = "home-basic",
     val themeKey: String = "classicBlue",
@@ -102,6 +105,8 @@ data class TrainPilotUserSettings(
 class TrainPilotSettingsStore(private val context: Context,
     private val publishTheme: suspend (Context) -> Unit = { com.repforge.app.WearSyncRepository.publishWatchHomeSnapshot(it) }) {
     companion object {
+        val KEY_FONT_SCALE_MULTIPLIER = floatPreferencesKey("fontScaleMultiplier")
+        val KEY_COMPACT_PHONE_MODE = booleanPreferencesKey("compactPhoneMode")
         val KEY_LANGUAGE = stringPreferencesKey("language")
         val KEY_ACTIVE_PROGRAM_ID = stringPreferencesKey("activeProgramId")
         val KEY_THEME_KEY = stringPreferencesKey("themeKey")
@@ -167,6 +172,9 @@ class TrainPilotSettingsStore(private val context: Context,
             ThemePaletteOption("vividEmerald", "Élénk smaragd (natív)", "Vivid emerald (native)", "#2dd48f", "#7bf1b8", "vivid", "Leuchtender Smaragd (nativ)", "Smarald intens (nativ)")
         )
 
+        internal fun normalizeFontScale(scale: Float): Float =
+            if (scale.isFinite()) scale.coerceIn(1.0f, 2.0f) else 1.0f
+
         /** Native backup keys take precedence; legacy WebView themeAccent is a KEY, not hex. */
         fun importedTheme(data: JSONObject): ThemePaletteOption? {
             val candidates = listOf(data.optJSONObject("settings")?.optString("themeKey").orEmpty(),
@@ -178,6 +186,8 @@ class TrainPilotSettingsStore(private val context: Context,
 
     val settingsFlow: Flow<TrainPilotUserSettings> = context.trainPilotDataStore.data.map { prefs ->
         TrainPilotUserSettings(
+            fontScaleMultiplier = normalizeFontScale(prefs[KEY_FONT_SCALE_MULTIPLIER] ?: 1.0f),
+            compactPhoneMode = prefs[KEY_COMPACT_PHONE_MODE] ?: false,
             language = prefs[KEY_LANGUAGE] ?: "hu",
             activeProgramId = prefs[KEY_ACTIVE_PROGRAM_ID] ?: "home-basic",
             themeKey = prefs[KEY_THEME_KEY] ?: "classicBlue",
@@ -240,6 +250,18 @@ class TrainPilotSettingsStore(private val context: Context,
         generated
     }
 
+    suspend fun setFontScaleMultiplier(scale: Float) {
+        NativeDataReplacement.mutate(context) {
+            context.trainPilotDataStore.edit { it[KEY_FONT_SCALE_MULTIPLIER] = normalizeFontScale(scale) }
+        }
+    }
+
+    suspend fun setCompactPhoneMode(enabled: Boolean) {
+        NativeDataReplacement.mutate(context) {
+            context.trainPilotDataStore.edit { it[KEY_COMPACT_PHONE_MODE] = enabled }
+        }
+    }
+
     suspend fun setLanguage(language: String) {
         NativeDataReplacement.mutate(context) {
             if (language !in listOf("hu", "en", "de", "ro")) return@mutate
@@ -294,6 +316,25 @@ class TrainPilotSettingsStore(private val context: Context,
             prefs[KEY_VIBRATION_ENABLED] = vibration
             if (autoAdvance != null) prefs[KEY_INTERVAL_AUTO_ADVANCE] = autoAdvance
         }
+        }
+    }
+
+    /** Update only the controls supplied by the caller, retaining the current preset. */
+    suspend fun updateTimerPreferences(restSeconds: Int? = null, sound: Boolean? = null,
+        vibration: Boolean? = null) {
+        NativeDataReplacement.mutate(context) {
+            context.trainPilotDataStore.edit { prefs ->
+                val config = com.repforge.app.NativeIntervalPreset.normalized(JSONObject()
+                    .put("work", prefs[KEY_WORK_SECONDS] ?: 30)
+                    .put("rest", restSeconds ?: (prefs[KEY_REST_SECONDS] ?: 90))
+                    .put("rounds", prefs[KEY_ROUNDS] ?: 1)
+                    .put("sound", sound ?: (prefs[KEY_SOUND_ENABLED] ?: true))
+                    .put("vibration", vibration ?: (prefs[KEY_VIBRATION_ENABLED] ?: true))
+                    .put("autoAdvance", prefs[KEY_INTERVAL_AUTO_ADVANCE] ?: true))
+                if (restSeconds != null) prefs[KEY_REST_SECONDS] = config.getInt("rest")
+                if (sound != null) prefs[KEY_SOUND_ENABLED] = config.getBoolean("sound")
+                if (vibration != null) prefs[KEY_VIBRATION_ENABLED] = config.getBoolean("vibration")
+            }
         }
     }
 
@@ -476,6 +517,13 @@ class TrainPilotSettingsStore(private val context: Context,
             com.repforge.app.NativeIntervalPreset.normalized(it, defaultAutoAdvance = false)
         }
         context.trainPilotDataStore.edit { prefs ->
+            val importedScale = source.opt("fontScaleMultiplier")
+            if (importedScale is Number && importedScale.toDouble().isFinite()) {
+                prefs[KEY_FONT_SCALE_MULTIPLIER] = normalizeFontScale(importedScale.toDouble().coerceIn(1.0, 2.0).toFloat())
+            }
+            if (source.opt("compactPhoneMode") is Boolean) {
+                prefs[KEY_COMPACT_PHONE_MODE] = source.getBoolean("compactPhoneMode")
+            }
             if (language in listOf("hu", "en", "de", "ro")) prefs[KEY_LANGUAGE] = language
             if (data.optString("activeProgramId").isNotBlank()) prefs[KEY_ACTIVE_PROGRAM_ID] = data.getString("activeProgramId")
             if (theme != null) {
