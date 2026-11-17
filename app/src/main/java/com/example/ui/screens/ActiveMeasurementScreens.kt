@@ -34,6 +34,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -934,7 +936,9 @@ fun ActiveTimedWorkoutScreen(
     val intervalActive = native.timerWorkoutId == native.workoutId && native.timerGeneration == native.generation &&
         !native.timerRestOnly && native.timerKey.isNotEmpty() && !native.timerStopped &&
         !native.timerInterrupted && native.timerPhase != "complete"
-    var intervalsExpanded by remember(native.workoutId, native.generation) { mutableStateOf(true) }
+    // Keep the live stopwatch in view; an active native interval opens its own controls.
+    var intervalsExpanded by remember(native.workoutId, native.generation) { mutableStateOf(false) }
+    LaunchedEffect(intervalActive) { if (intervalActive) intervalsExpanded = true }
     val currentSec = if (native.stopwatchSetId == nativeSet?.setId) native.stopwatchSeconds.toInt() else 0
     val isRunning = native.stopwatchSetId == nativeSet?.setId && native.stopwatchRunning
     var targetSec by remember(currentExercise?.id) { mutableIntStateOf(defaultTargetSec) }
@@ -1176,7 +1180,9 @@ fun ActiveTimedWorkoutScreen(
                                 seconds = currentSec,
                                 style = MaterialTheme.typography.displayLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = palette.textPrimary
+                                color = palette.textPrimary,
+                                modifier = Modifier.widthIn(min = 150.dp, max = 190.dp)
+                                    .wrapContentWidth(Alignment.CenterHorizontally).testTag("timed_live_readout")
                             )
                             val remaining = (targetSec - currentSec).coerceAtLeast(0)
                             Text(
@@ -1240,7 +1246,7 @@ fun ActiveTimedWorkoutScreen(
                                 text = if (isRunning) {
                                     tr(lang, "Szünet", "Pause", "Pause", "Pauză")
                                 } else {
-                                    tr(lang, "Stopper indítása", "Start stopwatch", "Stoppuhr starten", "Pornește cronometrul")
+                                    tr(lang, "Indítás", "Start", "Starten", "Pornește")
                                 },
                                 fontWeight = FontWeight.Bold
                             )
@@ -1271,7 +1277,8 @@ fun ActiveTimedWorkoutScreen(
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(44.dp)
+                            .heightIn(min = 44.dp)
+                            .testTag("record_timed_stopper")
                     ) {
                         Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
@@ -1673,10 +1680,10 @@ fun ActiveBilateralWorkoutScreen(
                                 Text(
                                     text = tr(
                                         lang,
-                                        "2 külön stopper oldalanként • A „Leállítás és rögzítés” gomb a kiválasztott (${selectedTargetSetNumber}.) sorozatba menti az időt",
-                                        "2 separate stopwatches per side • \"Stop & record\" saves the time into the selected (#${selectedTargetSetNumber}) set",
-                                        "2 separate Stoppuhren pro Seite • „Stoppen & speichern“ sichert die Zeit im ausgewählten (${selectedTargetSetNumber}.) Satz",
-                                        "2 cronometre separate pe parte • „Oprește și înregistrează” salvează timpul în seria selectată (#${selectedTargetSetNumber})"
+                                        "Az oldalakat külön mérd. A rögzítés a(z) ${selectedTargetSetNumber}. sorozatba menti az időt.",
+                                        "Measure each side separately. Record saves the time to set #${selectedTargetSetNumber}.",
+                                        "Jede Seite einzeln messen. Speichern sichert die Zeit im ${selectedTargetSetNumber}. Satz.",
+                                        "Măsoară fiecare parte separat. Salvarea înregistrează timpul în seria #${selectedTargetSetNumber}."
                                     ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textSecondary
@@ -1799,7 +1806,7 @@ fun ActiveBilateralWorkoutScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                                 Surface(
                                     shape = CircleShape,
                                     color = if (leftRunning) palette.primary else palette.surfaceElevated,
@@ -1815,7 +1822,7 @@ fun ActiveBilateralWorkoutScreen(
                                     }
                                 }
                                 Spacer(modifier = Modifier.width(10.dp))
-                                Column {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = tr(lang, "Bal oldal stopper", "Left side stopwatch", "Stoppuhr linke Seite", "Cronometru partea stângă"),
                                         style = MaterialTheme.typography.titleMedium,
@@ -1826,10 +1833,10 @@ fun ActiveBilateralWorkoutScreen(
                                         text = when {
                                             leftRunning -> tr(
                                                 lang,
-                                                "Mérés folyamatban (${selectedTargetSetNumber}. sorozat - Bal) ●",
-                                                "Measuring (Set #${selectedTargetSetNumber} - Left) ●",
-                                                "Messung läuft (${selectedTargetSetNumber}. Satz - Links) ●",
-                                                "Măsurare în curs (Seria #${selectedTargetSetNumber} - Stânga) ●"
+                                                "Mérés folyamatban ●",
+                                                "Measuring ●",
+                                                "Messung läuft ●",
+                                                "Măsurare în curs ●"
                                             )
                                             isLeftRecordedInTarget -> tr(
                                                 lang,
@@ -1846,7 +1853,7 @@ fun ActiveBilateralWorkoutScreen(
                                                 "Țintă: Seria #${selectedTargetSetNumber} Partea stângă (${defaultTargetSec} sec)"
                                             )
                                         },
-                                        style = MaterialTheme.typography.labelSmall,
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = when {
                                             leftRunning -> palette.primary
                                             isLeftRecordedInTarget -> palette.success
@@ -1856,7 +1863,8 @@ fun ActiveBilateralWorkoutScreen(
                                 }
                             }
 
-                            // Digital display
+                            Spacer(modifier = Modifier.width(8.dp))
+                            // Reserve the readout before measuring the side description.
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
                                 color = palette.surfaceElevated,
@@ -1867,7 +1875,9 @@ fun ActiveBilateralWorkoutScreen(
                                     style = MaterialTheme.typography.headlineMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = if (leftRunning) palette.primary else palette.textPrimary,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    modifier = Modifier.widthIn(min = 98.dp, max = 112.dp)
+                                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                                        .wrapContentWidth(Alignment.CenterHorizontally).testTag("bilateral_left_live_readout")
                                 )
                             }
                         }
@@ -1964,7 +1974,7 @@ fun ActiveBilateralWorkoutScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                                 Surface(
                                     shape = CircleShape,
                                     color = if (rightRunning) palette.primary else palette.surfaceElevated,
@@ -1980,7 +1990,7 @@ fun ActiveBilateralWorkoutScreen(
                                     }
                                 }
                                 Spacer(modifier = Modifier.width(10.dp))
-                                Column {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = tr(lang, "Jobb oldal stopper", "Right side stopwatch", "Stoppuhr rechte Seite", "Cronometru partea dreaptă"),
                                         style = MaterialTheme.typography.titleMedium,
@@ -1991,10 +2001,10 @@ fun ActiveBilateralWorkoutScreen(
                                         text = when {
                                             rightRunning -> tr(
                                                 lang,
-                                                "Mérés folyamatban (${selectedTargetSetNumber}. sorozat - Jobb) ●",
-                                                "Measuring (Set #${selectedTargetSetNumber} - Right) ●",
-                                                "Messung läuft (${selectedTargetSetNumber}. Satz - Rechts) ●",
-                                                "Măsurare în curs (Seria #${selectedTargetSetNumber} - Dreapta) ●"
+                                                "Mérés folyamatban ●",
+                                                "Measuring ●",
+                                                "Messung läuft ●",
+                                                "Măsurare în curs ●"
                                             )
                                             isRightRecordedInTarget -> tr(
                                                 lang,
@@ -2011,7 +2021,7 @@ fun ActiveBilateralWorkoutScreen(
                                                 "Țintă: Seria #${selectedTargetSetNumber} Partea dreaptă (${defaultTargetSec} sec)"
                                             )
                                         },
-                                        style = MaterialTheme.typography.labelSmall,
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = when {
                                             rightRunning -> palette.primary
                                             isRightRecordedInTarget -> palette.success
@@ -2021,7 +2031,8 @@ fun ActiveBilateralWorkoutScreen(
                                 }
                             }
 
-                            // Digital display
+                            Spacer(modifier = Modifier.width(8.dp))
+                            // Reserve the readout before measuring the side description.
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
                                 color = palette.surfaceElevated,
@@ -2032,7 +2043,9 @@ fun ActiveBilateralWorkoutScreen(
                                     style = MaterialTheme.typography.headlineMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = if (rightRunning) palette.primary else palette.textPrimary,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    modifier = Modifier.widthIn(min = 98.dp, max = 112.dp)
+                                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                                        .wrapContentWidth(Alignment.CenterHorizontally).testTag("bilateral_right_live_readout")
                                 )
                             }
                         }
