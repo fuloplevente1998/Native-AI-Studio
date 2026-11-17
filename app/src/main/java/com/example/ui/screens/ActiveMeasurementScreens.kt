@@ -3338,6 +3338,31 @@ fun WorkoutSummaryScreen(
     val activeSnapshotForSummary = com.repforge.app.StudioWorkoutSummaryPresentation.current(
         summaryFrame, uiState.activeWorkoutId, uiState.activeWorkoutGeneration)
     val summaryNow = java.time.Instant.now()
+    val summaryProvider = com.repforge.app.StudioWorkoutSummaryPresentation.selectedProvider(context)
+    val summaryWindowKey = activeSnapshotForSummary?.optJSONArray("activeIntervals")?.toString().orEmpty()
+    val summaryPauseRevision = activeSnapshotForSummary?.optLong("pauseRevision") ?: 0L
+    val summaryEnd = remember(uiState.activeWorkoutId, uiState.activeWorkoutGeneration, summaryPauseRevision, summaryWindowKey) {
+        java.time.Instant.now()
+    }
+    var summaryProviderHealth by remember(uiState.activeWorkoutId, uiState.activeWorkoutGeneration,
+        summaryProvider, summaryPauseRevision, summaryWindowKey) {
+        mutableStateOf<com.repforge.app.StudioWorkoutSummaryPresentation.HealthSnapshot?>(null)
+    }
+    LaunchedEffect(uiState.activeWorkoutId, uiState.activeWorkoutGeneration, summaryProvider,
+        summaryPauseRevision, summaryWindowKey) {
+        summaryProviderHealth = null
+        var host: android.content.Context = context
+        while (host is android.content.ContextWrapper && host !is android.app.Activity) host = host.baseContext
+        val activity = host as? android.app.Activity
+        val expected = activeSnapshotForSummary?.let { JSONObject(it.toString()) }
+        if (activity != null && expected != null) {
+            try {
+                summaryProviderHealth = com.repforge.app.StudioWorkoutSummaryPresentation.readHealth(
+                    context, activity, summaryProvider, expected, summaryEnd)
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (_: Exception) { /* Keep only existing workout-matched evidence when provider data is unavailable. */ }
+        }
+    }
     val persistedOutdoorDistKm = remember(uiState.activeWorkoutId, uiState.outdoorDistanceKm) {
         (com.repforge.app.StudioWorkoutBridge.readOutdoorEffectiveDistanceMeters(
             activeSnapshotForSummary,
@@ -3416,7 +3441,7 @@ fun WorkoutSummaryScreen(
         }
 
         val calories = com.repforge.app.StudioWorkoutSummaryPresentation.calories(
-            activeSnapshotForSummary, summaryLiveHealth, summaryNow)
+            activeSnapshotForSummary, summaryLiveHealth, summaryNow, summaryProvider, summaryProviderHealth)
         val caloriesLabel = calories?.let { "${it.toInt()} kcal" } ?: "— kcal"
 
         item {
