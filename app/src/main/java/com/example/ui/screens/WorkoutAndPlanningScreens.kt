@@ -78,6 +78,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ButtonDefaults
@@ -2433,6 +2434,28 @@ fun CalendarPlannerScreen(
                 modifier = Modifier
                     .fillMaxWidth().testTag("calendar_month_panel")
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(22.dp))
+                    // Horizontal swipe changes month (left = next, right = previous); the arrows stay.
+                    // Only horizontal drags past the touch slop are consumed: day taps and vertical
+                    // page scrolling keep working.
+                    .pointerInput(displayedYearMonth) {
+                        val threshold = 56.dp.toPx()
+                        var dragX = 0f
+                        detectHorizontalDragGestures(
+                            onDragStart = { dragX = 0f },
+                            onDragCancel = { dragX = 0f },
+                            onDragEnd = {
+                                when {
+                                    dragX <= -threshold -> { openedDay = null; onSelectMonth(displayedYearMonth.plusMonths(1).toString()) }
+                                    dragX >= threshold -> { openedDay = null; onSelectMonth(displayedYearMonth.minusMonths(1).toString()) }
+                                }
+                                dragX = 0f
+                            },
+                            onHorizontalDrag = { change, amount ->
+                                change.consume()
+                                dragX += amount
+                            }
+                        )
+                    }
             ) {
                 Column(
                     modifier = Modifier.padding(8.dp),
@@ -3542,7 +3565,7 @@ fun ExerciseDetailScreen(
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .then(com.example.ui.components.sheetAwareFillMaxSize())
     ) {
         // Matches Mockup 1/4 #6 "Gyakorlat részletei"
         Box(Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 8.dp)) {
@@ -3554,7 +3577,7 @@ fun ExerciseDetailScreen(
         }
 
         Column(
-            modifier = Modifier.weight(1f).testTag("exercise_detail_body").verticalScroll(rememberScrollState())
+            modifier = Modifier.weight(1f, fill = !com.example.ui.components.LocalTrainPilotInSheet.current).testTag("exercise_detail_body").verticalScroll(rememberScrollState())
                 .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
@@ -3587,16 +3610,29 @@ fun ExerciseDetailScreen(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                         )
                     }
+                    // Compact favourite toggle in the title row (was a full-width button row).
+                    val isFavorite = exercise.id in state.favoriteExerciseIds
+                    val favoriteLabel = if (isFavorite)
+                        trW(state.language, "Eltávolítás a kedvencekből", "Remove from favorites", "Aus Favoriten entfernen", "Elimină din favorite")
+                    else
+                        trW(state.language, "Hozzáadás a kedvencekhez", "Add to favorites", "Zu Favoriten hinzufügen", "Adaugă la favorite")
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .trainPilotClickable(RoundedCornerShape(12.dp), enabled = !state.libraryMutationBusy) { onToggleFavorite(exercise.id) }
+                            .semantics { contentDescription = favoriteLabel }
+                            .testTag("studio_exercise_favorite")
+                    ) {
+                        Text(
+                            text = if (isFavorite) "★" else "☆",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = palette.primary
+                        )
+                    }
                 }
             }
 
-            TrainPilotOutlinedButton(onClick = { onToggleFavorite(exercise.id) },
-                enabled = !state.libraryMutationBusy, modifier = Modifier.fillMaxWidth().testTag("studio_exercise_favorite")) {
-                Text(if (exercise.id in state.favoriteExerciseIds)
-                    trW(state.language, "★ Eltávolítás a kedvencekből", "★ Remove from favorites", "★ Aus Favoriten entfernen", "★ Elimină din favorite")
-                else
-                    trW(state.language, "☆ Hozzáadás a kedvencekhez", "☆ Add to favorites", "☆ Zu Favoriten hinzufügen", "☆ Adaugă la favorite"))
-            }
             customExerciseActions()
 
             // Metadata table: Eszköz, Fő izmok, Másodlagos izmok

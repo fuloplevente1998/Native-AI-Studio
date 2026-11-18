@@ -11,6 +11,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import com.example.ui.components.TrainPilotRouteSheet
 import com.example.ui.theme.TrainPilotTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import androidx.compose.ui.unit.dp
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -62,5 +64,22 @@ class RouteSheetDismissRegressionTest {
         compose.waitForIdle()
         assertEquals(1, dismissals)
         compose.onNodeWithTag("content_backup").assertIsDisplayed()
+    }
+
+    @Test fun shortScreenOpensOnlyAsHighAsItsContentWithSlimHandle() {
+        compose.setContent {
+            TrainPilotTheme {
+                com.example.ui.components.TrainPilotScreenSheet(onDismiss = {}, testTag = "short_sheet") {
+                    androidx.compose.foundation.layout.Column(
+                        Modifier.then(com.example.ui.components.sheetAwareFillMaxSize()).testTag("short_body")
+                    ) { repeat(4) { Text("row $it") } }
+                }
+            }
+        }
+        compose.onNodeWithTag("short_body").assertIsDisplayed()
+        val body = compose.onNodeWithTag("short_body").getUnclippedBoundsInRoot()
+        val handle = compose.onNodeWithTag("short_sheet_handle", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertTrue("Short content must not fill the screen (was ${body.bottom - body.top})", body.bottom - body.top < 300.dp)
+        assertTrue("Drag handle area must stay slim", body.top - handle.top < 24.dp)
     }
 }

@@ -905,7 +905,7 @@ fun LogWorkoutDetailScreen(
 
     LazyColumn(
         modifier = Modifier
-            .fillMaxSize()
+            .then(com.example.ui.components.sheetAwareFillMaxSize())
             .background(palette.background)
             .testTag("log_workout_detail_screen"),
         contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 8.dp),

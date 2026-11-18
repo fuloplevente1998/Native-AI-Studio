@@ -2767,7 +2767,7 @@ fun WatchAndSyncScreen(
     val palette = LocalTrainPilotPalette.current
     LazyColumn(
         modifier = Modifier
-            .fillMaxSize()
+            .then(com.example.ui.components.sheetAwareFillMaxSize())
             .background(palette.background)
             .testTag("watch_and_sync_screen"),
         contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 8.dp),
@@ -3565,7 +3565,7 @@ fun BackupRestoreScreen(
 
     LazyColumn(
         modifier = Modifier
-            .fillMaxSize()
+            .then(com.example.ui.components.sheetAwareFillMaxSize())
             .background(palette.background)
             .testTag("backup_restore_screen"),
         contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
@@ -3722,7 +3722,7 @@ fun PermissionsScreen(
     val palette = LocalTrainPilotPalette.current
     LazyColumn(
         modifier = Modifier
-            .fillMaxSize()
+            .then(com.example.ui.components.sheetAwareFillMaxSize())
             .background(palette.background)
             .testTag("permissions_screen"),
         contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),

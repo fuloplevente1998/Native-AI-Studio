@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.*
@@ -42,6 +43,7 @@ class CalendarCompactViewportRegressionTest {
     private var undos = 0
     private val adds = mutableListOf<List<Any>>()
     private val updates = mutableListOf<List<Any>>()
+    private val months = mutableListOf<String>()
 
     private fun render(height: Int = 720, fontScale: Float = 1f) {
         compose.setContent {
@@ -64,7 +66,8 @@ class CalendarCompactViewportRegressionTest {
                             onPlanMonthlyWorkouts = { plans++ }, onUndoCalendarAction = { undos++ },
                             onAddPlannedWorkoutOnDay = { day, split, time, duration ->
                                 adds += listOf(day, split, time, duration)
-                            })
+                            },
+                            onSelectMonth = { months += it; state = state.copy(calendarYearMonth = it) })
                     }
                 }
             }
@@ -159,5 +162,22 @@ class CalendarCompactViewportRegressionTest {
         assertInsideViewport("calendar_plan_action")
         compose.onNodeWithTag("calendar_plan_action").performClick()
         assertEquals(1, plans)
+    }
+
+    @Test fun horizontalSwipeChangesMonthButTapAndShortDragDoNot() {
+        render()
+        val panel = compose.onNodeWithTag("calendar_month_panel")
+        panel.performTouchInput { swipeLeft() }
+        compose.waitForIdle()
+        assertEquals(listOf("2026-04"), months)
+        panel.performTouchInput { swipeRight() }
+        compose.waitForIdle()
+        assertEquals(listOf("2026-04", "2026-03"), months)
+        // A tiny horizontal drag (below the threshold) and a day tap never change the month.
+        panel.performTouchInput { swipe(center, center + Offset(20f, 0f), 200) }
+        compose.onNodeWithTag("calendar_day_10").performClick()
+        compose.waitForIdle()
+        assertEquals(listOf("2026-04", "2026-03"), months)
+        assertEquals(10, state.selectedCalendarDay)
     }
 }
