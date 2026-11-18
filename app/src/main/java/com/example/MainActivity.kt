@@ -1051,7 +1051,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                 }
                 com.example.ui.components.TrainPilotRouteContent(routeHostState) { renderRoute(routeHostState) }
                 if (sheetRouteActive) {
-                    com.example.ui.components.TrainPilotScreenSheet(
+                    com.example.ui.components.TrainPilotRouteSheet(
+                        routeKey = uiState.currentSubScreen to uiState.backStack.size,
                         onDismiss = { viewModel.navigateBack() },
                         testTag = "route_sheet_${uiState.currentSubScreen.name.lowercase()}"
                     ) { renderRoute(uiState) } // retained browsing route content
