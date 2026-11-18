@@ -96,7 +96,8 @@ fun HomeScreen(
     onOpenGoalsDialog: () -> Unit,
     onOpenPersonalPlanner: () -> Unit,
     onDiscardWorkout: (String) -> Unit = {},
-    onOpenHealthToday: () -> Unit = onOpenHealthSteps
+    onOpenHealthToday: () -> Unit = onOpenHealthSteps,
+    inlineProgramEditor: (@Composable () -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     val target = state.homeWorkoutTarget
@@ -216,12 +217,15 @@ fun HomeScreen(
                     ),
                     shape = RoundedCornerShape(20.dp)
                 )
-                .trainPilotClickable(RoundedCornerShape(20.dp)) { onOpenProgramDayDetails() }
                 .testTag("home_hero_workout_card")
         ) {
+          Column(modifier = Modifier.fillMaxWidth()) {
+            // Header tap expands the active program's editor inside this card (or returns to a live workout).
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .trainPilotClickable(RoundedCornerShape(20.dp)) { onOpenProgramDayDetails() }
+                    .testTag("home_hero_workout_header")
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
@@ -374,6 +378,21 @@ fun HomeScreen(
                     )
                 }
             }
+            if (inlineProgramEditor != null && !state.isWorkoutSessionActive &&
+                state.inlineEditorHost == com.example.ui.viewmodel.INLINE_EDITOR_HOST_HOME && state.inlineEditorProgramId != null
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 10.dp)
+                        .testTag("home_inline_program_editor"),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    androidx.compose.material3.HorizontalDivider(color = palette.cardBorder.copy(alpha = 0.65f))
+                    inlineProgramEditor()
+                }
+            }
+          }
         }
 
         com.example.ui.components.HomeCoachAdviceCard(state, strings, onOpenCoachReadiness)

@@ -73,6 +73,7 @@ import com.example.ui.screens.ActiveTimedWorkoutScreen
 import com.example.ui.screens.AddCustomExerciseModalDialog
 import com.example.ui.screens.BackupRestoreScreen
 import com.example.ui.screens.CalendarPlannerScreen
+import com.example.ui.screens.ProgramEditorContent
 import com.example.ui.screens.CoachDetailScreen
 import com.example.ui.screens.ExerciseDetailScreen
 import com.example.ui.screens.ExerciseLibraryScreen
@@ -404,6 +405,34 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         onEffort = { id, index -> viewModel.updateExerciseFeedback(id, index = index) },
                         onNote = { id, note -> viewModel.updateExerciseFeedback(id, note = note) })
                     else ({})
+                // Inline program editor shared by the Programs list and the Home card: same
+                // callbacks, drafts and persistence path as the retired separate editor page.
+                val inlineProgramEditor: @Composable (
+                    com.example.model.TrainingProgramModel,
+                    androidx.compose.runtime.snapshots.SnapshotStateMap<Pair<String, String>, com.example.model.StudioProgramPrescriptionDraft>
+                ) -> Unit = { program, pending ->
+                    ProgramEditorContent(
+                        state = uiState,
+                        program = program,
+                        pendingPrescriptions = pending,
+                        showNameField = false,
+                        onSelectDayIndex = { viewModel.selectEditingDayIndex(it) },
+                        onToggleExpandExercise = { viewModel.toggleExpandedEditorExercise(it) },
+                        onSaveExercisePrescription = { exId, sets, reps, kg, rest ->
+                            viewModel.updateProgramExercisePrescription(exId, sets, reps, kg, rest)
+                        },
+                        onOpenExerciseDetail = { exId -> viewModel.openExerciseDetail(exId) },
+                        onOpenExerciseLibrary = { viewModel.navigateToSubScreen(SubScreen.EXERCISE_LIBRARY) },
+                        onMoveExercise = { fromIdx, toIdx -> viewModel.moveEditorExercise(fromIdx, toIdx) },
+                        onCopyProgram = viewModel::copyEditorProgram,
+                        onDeleteProgram = viewModel::deleteEditorProgram,
+                        onAddDay = viewModel::addEditorDay,
+                        onDeleteDay = viewModel::deleteEditorDay,
+                        onRemoveExercise = viewModel::removeEditorExercise,
+                        onRenameProgram = viewModel::renameEditorProgram,
+                        onSaveProgram = viewModel::saveEditorProgram
+                    )
+                }
                 com.example.ui.components.TrainPilotRouteContent(uiState) {
                 when (uiState.currentSubScreen) {
                     SubScreen.PROGRAMS_LIST -> {
@@ -420,7 +449,11 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onOpenPersonalPlanner = { viewModel.togglePersonalPlannerModal(true) },
                             onMoveProgramOrder = { fromIdx, toIdx -> viewModel.moveProgramOrder(fromIdx, toIdx) },
                             onCreateCustomProgram = { name, sub -> viewModel.createNewCustomProgram(name, sub) },
-                            onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true) }
+                            onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true) },
+                            onToggleInlineEditor = { id, host -> viewModel.toggleInlineProgramEditor(id, 0, host) },
+                            onSaveInlineDrafts = viewModel::saveEditorProgram,
+                            onRenameProgram = viewModel::renameProgram,
+                            inlineEditor = inlineProgramEditor
                         )
                     }
 
@@ -804,6 +837,15 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                             viewModel.openPlannedProgramDetails()
                                         }
                                     },
+                                    inlineProgramEditor = {
+                                        val program = uiState.programs.firstOrNull { it.id == uiState.inlineEditorProgramId }
+                                        if (program != null) {
+                                            val pending = androidx.compose.runtime.remember(program.id) {
+                                                androidx.compose.runtime.mutableStateMapOf<Pair<String, String>, com.example.model.StudioProgramPrescriptionDraft>()
+                                            }
+                                            inlineProgramEditor(program, pending)
+                                        }
+                                    },
                                     onOpenQuickWorkout = { viewModel.toggleQuickWorkoutSheet(true) },
                                     onOpenHealthToday = { viewModel.selectTab(MainTab.HEALTH) },
                                     onOpenWatchAndSync = { viewModel.requestWatchDeviceInfo(); viewModel.navigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
@@ -838,7 +880,11 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onOpenPersonalPlanner = { viewModel.togglePersonalPlannerModal(true) },
                                     onMoveProgramOrder = { fromIdx, toIdx -> viewModel.moveProgramOrder(fromIdx, toIdx) },
                                     onCreateCustomProgram = { name, sub -> viewModel.createNewCustomProgram(name, sub) },
-                                    onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true) }
+                                    onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true) },
+                                    onToggleInlineEditor = { id, host -> viewModel.toggleInlineProgramEditor(id, 0, host) },
+                                    onSaveInlineDrafts = viewModel::saveEditorProgram,
+                                    onRenameProgram = viewModel::renameProgram,
+                                    inlineEditor = inlineProgramEditor
                                 )
                             }
 
