@@ -699,6 +699,15 @@ fun ProgramsListScreen(
     var actionSheetProgramId by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
     var actionSheetSnapshot by remember { mutableStateOf<com.example.model.TrainingProgramModel?>(null) }
     var deleteConfirmProgram by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var expandedProgramDetailsIds by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(emptyList<String>()) }
+
+    val toggleProgramDetails: (String) -> Unit = { programId ->
+        expandedProgramDetailsIds = if (programId in expandedProgramDetailsIds) {
+            expandedProgramDetailsIds - programId
+        } else {
+            expandedProgramDetailsIds + programId
+        }
+    }
 
     actionSheetProgramId?.let { targetId ->
         val liveProgram = state.programs.firstOrNull { it.id == targetId }
@@ -1047,7 +1056,10 @@ fun ProgramsListScreen(
                     color = palette.textPrimary
                 )
 
+                val activeAlsoInList = state.programsTabCustomOnly && activeProgram.isCustom
+                val activeTagPrefix = if (activeAlsoInList) "active_hero_" else ""
                 val activeName = activeProgram.localizedName(state.language)
+                val isActiveDetailsExpanded = activeProgram.id in expandedProgramDetailsIds
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = palette.surface,
@@ -1065,87 +1077,19 @@ fun ProgramsListScreen(
                         )
                         .testTag("programs_active_program_card")
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        ProgramTypeEmblemIcon(
-                            programTitle = activeProgram.nameHu,
-                            isHighlighted = true,
-                            size = 44.dp
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = activeName,
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = palette.textPrimary,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = palette.primary
-                                ) {
-                                    Text(
-                                        text = strings.activeBadgeLabel,
-                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                        color = palette.onPrimary,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "${activeProgram.localizedSubtitle(state.language)} • ${trW(state.language, "${activeProgram.days.size} edzésnap", "${activeProgram.days.size} workout days", "${activeProgram.days.size} Trainingstage", "${activeProgram.days.size} zile de antrenament")}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = palette.textSecondary
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = palette.primary.copy(alpha = 0.14f)
-                            ) {
-                                Text(
-                                    text = programEquipmentSummary(activeProgram, state.language),
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp, lineHeight = 14.sp),
-                                    color = palette.primary,
-                                    fontWeight = FontWeight.SemiBold,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
-                            }
+                    ProgramCardContent(
+                        program = activeProgram,
+                        language = state.language,
+                        isDetailsExpanded = isActiveDetailsExpanded,
+                        tagPrefix = activeTagPrefix,
+                        emblemSize = 42.dp,
+                        onActivateProgram = { onActivateProgram(activeProgram.id) },
+                        onToggleDetails = { toggleProgramDetails(activeProgram.id) },
+                        onOpenMoreActions = {
+                            actionSheetSnapshot = activeProgram
+                            actionSheetProgramId = activeProgram.id
                         }
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(48.dp)
-                                .trainPilotClickable(RoundedCornerShape(10.dp)) {
-                                    actionSheetSnapshot = activeProgram
-                                    actionSheetProgramId = activeProgram.id
-                                }
-                                .semantics {
-                                    contentDescription = trW(
-                                        state.language,
-                                        "További műveletek: $activeName",
-                                        "More actions: $activeName",
-                                        "Weitere Aktionen: $activeName",
-                                        "Mai multe acțiuni: $activeName"
-                                    )
-                                }
-                                .testTag("program_more_button_${activeProgram.id}")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = null,
-                                tint = palette.textSecondary
-                            )
-                        }
-                    }
+                    )
                 }
             }
 
@@ -1199,12 +1143,17 @@ fun ProgramsListScreen(
             filteredPrograms.forEachIndexed { index, program ->
                 var dragAccumY by remember(program.id, index) { mutableFloatStateOf(0f) }
                 val progName = program.localizedName(state.language)
+                val isDetailsExpanded = program.id in expandedProgramDetailsIds
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = palette.surface,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                        .trainPilotBorder(
+                            if (program.isActive) 1.5.dp else 1.dp,
+                            if (program.isActive) palette.primary else palette.cardBorder,
+                            RoundedCornerShape(14.dp)
+                        )
                         .trainPilotCombinedClickable(
                             shape = RoundedCornerShape(14.dp),
                             onLongClickLabel = trW(state.language, "Program műveletek: $progName", "Program actions: $progName", "Programmaktionen: $progName", "Acțiuni program: $progName"),
@@ -1216,141 +1165,69 @@ fun ProgramsListScreen(
                         )
                         .testTag("program_card_${program.id}")
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Working Reorder Handle (= + ▲ / ▼)
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(0.dp),
-                            modifier = Modifier
-                                .padding(end = 4.dp)
-                                .pointerInput(index, filteredPrograms.size) {
-                                    detectVerticalDragGestures(
-                                        onDragStart = { dragAccumY = 0f },
-                                        onVerticalDrag = { change, dragAmount ->
-                                            change.consume()
-                                            dragAccumY += dragAmount
-                                            if (dragAccumY < -44f && index > 0) {
-                                                dragAccumY = 0f
-                                                onMoveProgramOrder(index, index - 1)
-                                            } else if (dragAccumY > 44f && index < filteredPrograms.lastIndex) {
-                                                dragAccumY = 0f
-                                                onMoveProgramOrder(index, index + 1)
+                    ProgramCardContent(
+                        program = program,
+                        language = state.language,
+                        isDetailsExpanded = isDetailsExpanded,
+                        tagPrefix = "",
+                        emblemSize = 38.dp,
+                        onActivateProgram = { onActivateProgram(program.id) },
+                        onToggleDetails = { toggleProgramDetails(program.id) },
+                        onOpenMoreActions = {
+                            actionSheetSnapshot = program
+                            actionSheetProgramId = program.id
+                        },
+                        reorderSlot = {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(0.dp),
+                                modifier = Modifier
+                                    .padding(end = 4.dp)
+                                    .pointerInput(index, filteredPrograms.size) {
+                                        detectVerticalDragGestures(
+                                            onDragStart = { dragAccumY = 0f },
+                                            onVerticalDrag = { change, dragAmount ->
+                                                change.consume()
+                                                dragAccumY += dragAmount
+                                                if (dragAccumY < -44f && index > 0) {
+                                                    dragAccumY = 0f
+                                                    onMoveProgramOrder(index, index - 1)
+                                                } else if (dragAccumY > 44f && index < filteredPrograms.lastIndex) {
+                                                    dragAccumY = 0f
+                                                    onMoveProgramOrder(index, index + 1)
+                                                }
                                             }
-                                        }
-                                    )
-                                }
-                                .testTag("program_drag_handle_${program.id}")
-                        ) {
-                            Text(
-                                text = "▲",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (index > 0) palette.primary else palette.textMuted.copy(alpha = 0.35f),
-                                modifier = Modifier
-                                    .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index > 0) { onMoveProgramOrder(index, index - 1) }
-                                    .padding(horizontal = 3.dp, vertical = 0.dp)
-                                    .testTag("program_move_up_${program.id}")
-                            )
-                            Icon(
-                                imageVector = Icons.Default.DragHandle,
-                                contentDescription = trW(state.language, "Sorrend módosítása", "Change order", "Reihenfolge ändern", "Schimbă ordinea"),
-                                tint = palette.textSecondary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = "▼",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (index < filteredPrograms.lastIndex) palette.primary else palette.textMuted.copy(alpha = 0.35f),
-                                modifier = Modifier
-                                    .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index < filteredPrograms.lastIndex) { onMoveProgramOrder(index, index + 1) }
-                                    .padding(horizontal = 3.dp, vertical = 0.dp)
-                                    .testTag("program_move_down_${program.id}")
-                            )
-                        }
-
-                        ProgramTypeEmblemIcon(
-                            programTitle = program.nameHu,
-                            isHighlighted = program.isActive,
-                            size = 38.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = progName,
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, lineHeight = 18.sp),
-                                color = palette.textPrimary
-                            )
-                            Text(
-                                text = program.localizedSubtitle(state.language),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = palette.textSecondary
-                            )
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = palette.surfaceElevated
+                                        )
+                                    }
+                                    .testTag("program_drag_handle_${program.id}")
                             ) {
                                 Text(
-                                    text = programEquipmentSummary(program, state.language),
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, lineHeight = 13.sp),
-                                    color = palette.primary,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    text = "▲",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (index > 0) palette.primary else palette.textMuted.copy(alpha = 0.35f),
+                                    modifier = Modifier
+                                        .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index > 0) { onMoveProgramOrder(index, index - 1) }
+                                        .padding(horizontal = 3.dp, vertical = 0.dp)
+                                        .testTag("program_move_up_${program.id}")
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.DragHandle,
+                                    contentDescription = trW(state.language, "Sorrend módosítása", "Change order", "Reihenfolge ändern", "Schimbă ordinea"),
+                                    tint = palette.textSecondary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "▼",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (index < filteredPrograms.lastIndex) palette.primary else palette.textMuted.copy(alpha = 0.35f),
+                                    modifier = Modifier
+                                        .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index < filteredPrograms.lastIndex) { onMoveProgramOrder(index, index + 1) }
+                                        .padding(horizontal = 3.dp, vertical = 0.dp)
+                                        .testTag("program_move_down_${program.id}")
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.width(4.dp))
-                        if (!program.isActive) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                                    .trainPilotClickable(RoundedCornerShape(10.dp)) { onActivateProgram(program.id) }
-                                    .testTag("program_activate_button_${program.id}")
-                            ) {
-                                Surface(
-                                    shape = RoundedCornerShape(9.dp),
-                                    color = palette.primary,
-                                    modifier = Modifier.testTag("program_activate_visual_${program.id}")
-                                ) {
-                                    Text(
-                                        text = strings.activateAction,
-                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                        color = palette.onPrimary,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                    )
-                                }
-                            }
-                        }
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(48.dp)
-                                .trainPilotClickable(RoundedCornerShape(10.dp)) {
-                                    actionSheetSnapshot = program
-                                    actionSheetProgramId = program.id
-                                }
-                                .semantics {
-                                    contentDescription = trW(
-                                        state.language,
-                                        "További műveletek: $progName",
-                                        "More actions: $progName",
-                                        "Weitere Aktionen: $progName",
-                                        "Mai multe acțiuni: $progName"
-                                    )
-                                }
-                                .testTag("program_more_button_${program.id}")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = null,
-                                tint = palette.textSecondary
-                            )
-                        }
-                    }
+                    )
                 }
             }
 
@@ -1424,6 +1301,280 @@ fun ProgramsListScreen(
             }
         }
     }
+}
+
+@Composable
+private fun ProgramCardContent(
+    program: com.example.model.TrainingProgramModel,
+    language: com.example.model.AppLanguage,
+    isDetailsExpanded: Boolean,
+    tagPrefix: String,
+    emblemSize: androidx.compose.ui.unit.Dp,
+    onActivateProgram: () -> Unit,
+    onToggleDetails: () -> Unit,
+    onOpenMoreActions: () -> Unit,
+    reorderSlot: (@Composable () -> Unit)? = null
+) {
+    val palette = LocalTrainPilotPalette.current
+    val strings = LocalTrainPilotStrings.current
+    val progName = program.localizedName(language)
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 10.dp, end = 2.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            reorderSlot?.invoke()
+
+            ProgramTypeEmblemIcon(
+                programTitle = program.nameHu,
+                isHighlighted = program.isActive,
+                size = emblemSize
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = progName,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 18.sp
+                    ),
+                    color = palette.textPrimary,
+                    modifier = Modifier.testTag("${tagPrefix}program_title_${program.id}")
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = programCardShortSubtitle(program, language),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = palette.textSecondary,
+                    modifier = Modifier.testTag("${tagPrefix}program_subtitle_${program.id}")
+                )
+            }
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(start = 4.dp)
+            ) {
+                if (!program.isActive) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                            .trainPilotClickable(RoundedCornerShape(12.dp)) { onActivateProgram() }
+                            .testTag("${tagPrefix}program_activate_button_${program.id}")
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = palette.primary,
+                            modifier = Modifier.testTag("${tagPrefix}program_activate_visual_${program.id}")
+                        ) {
+                            Text(
+                                text = strings.activateAction,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = palette.onPrimary,
+                                maxLines = 1,
+                                softWrap = false,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                } else {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = palette.primary,
+                        modifier = Modifier
+                            .padding(vertical = 4.dp)
+                            .testTag("${tagPrefix}program_active_badge_${program.id}")
+                    ) {
+                        Text(
+                            text = strings.activeBadgeLabel,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = palette.onPrimary,
+                            maxLines = 1,
+                            softWrap = false,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                val detailsWord = trW(language, "Részletek", "Details", "Details", "Detalii")
+                val arrowChar = if (isDetailsExpanded) "▲" else "▼"
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .sizeIn(minWidth = 48.dp, minHeight = 26.dp)
+                        .trainPilotClickable(RoundedCornerShape(8.dp)) { onToggleDetails() }
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                        .testTag("${tagPrefix}program_details_toggle_${program.id}")
+                ) {
+                    Text(
+                        text = "$detailsWord $arrowChar",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = if (isDetailsExpanded) palette.primary else palette.textPrimary,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
+            }
+
+            Box(
+                contentAlignment = Alignment.CenterEnd,
+                modifier = Modifier
+                    .size(48.dp)
+                    .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenMoreActions() }
+                    .semantics {
+                        contentDescription = trW(
+                            language,
+                            "További műveletek: $progName",
+                            "More actions: $progName",
+                            "Weitere Aktionen: $progName",
+                            "Mai multe acțiuni: $progName"
+                        )
+                    }
+                    .testTag("${tagPrefix}program_more_button_${program.id}")
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = null,
+                    tint = palette.textSecondary,
+                    modifier = Modifier.padding(end = 2.dp)
+                )
+            }
+        }
+
+        if (isDetailsExpanded) {
+            val (locationValue, equipmentValue) = remember(program, language) {
+                programDetailsLocationAndEquipment(program, language)
+            }
+            val locationLabel = trW(language, "Helyszín", "Location", "Ort", "Locație")
+            val equipmentLabel = trW(language, "Felszerelések", "Equipment", "Ausrüstung", "Echipament")
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 12.dp, end = 12.dp, bottom = 10.dp)
+                    .testTag("${tagPrefix}program_details_panel_${program.id}"),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                HorizontalDivider(color = palette.cardBorder.copy(alpha = 0.65f))
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = palette.surfaceElevated,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .trainPilotBorder(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "$locationLabel: $locationValue",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                            color = palette.textPrimary,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("${tagPrefix}program_details_location_${program.id}")
+                        )
+                        Text(
+                            text = "$equipmentLabel: $equipmentValue",
+                            style = MaterialTheme.typography.bodySmall.copy(lineHeight = 17.sp),
+                            color = palette.textSecondary,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("${tagPrefix}program_details_equipment_${program.id}")
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+internal fun programCardShortSubtitle(
+    program: com.example.model.TrainingProgramModel,
+    lang: com.example.model.AppLanguage
+): String {
+    val sub = program.localizedSubtitle(lang).trim()
+    val hasDayCount = Regex("\\b\\d+\\s*(?:edzésnap|nap|workout days|days|Trainingstage|Tage|zile)", RegexOption.IGNORE_CASE)
+        .containsMatchIn(sub)
+    return if (hasDayCount || program.days.isEmpty()) {
+        sub
+    } else {
+        val daySuffix = trW(
+            lang,
+            "${program.days.size} edzésnap",
+            "${program.days.size} workout days",
+            "${program.days.size} Trainingstage",
+            "${program.days.size} zile de antrenament"
+        )
+        if (sub.isNotBlank()) "$sub • $daySuffix" else daySuffix
+    }
+}
+
+internal fun programDetailsLocationAndEquipment(
+    program: com.example.model.TrainingProgramModel,
+    lang: com.example.model.AppLanguage
+): Pair<String, String> {
+    val candidateTokens = buildList {
+        addAll(program.tagsHu)
+        addAll(program.localizedTags(lang))
+        addAll(program.subtitleHu.split('•', '·').map { it.trim() })
+        addAll(program.localizedSubtitle(lang).split('•', '·').map { it.trim() })
+        add(program.nameHu)
+        add(program.id)
+    }.filter { it.isNotBlank() }
+
+    val locationValue = candidateTokens.firstNotNullOfOrNull { token ->
+        val low = token.lowercase()
+        when {
+            low in setOf("otthon", "otthoni", "home", "zuhause", "acasă", "acasa") ||
+                low.startsWith("home-") || low.contains("otthon") ->
+                trW(lang, "Otthoni", "Home", "Zuhause", "Acasă")
+            low in setOf("edzőterem", "konditerem", "konditermi", "terem", "gym", "fitnessstudio", "sală", "sala") ||
+                low.startsWith("gym-") || low.contains("konditerm") || low.contains("edzőterm") ->
+                trW(lang, "Konditermi", "Gym", "Fitnessstudio", "Sală")
+            low in setOf("szabadtér", "szabadtéri", "kültéri", "outdoor", "exterior") ||
+                low.contains("szabadtér") || low.contains("street workout") || low == "calisthenics-ab" ->
+                trW(lang, "Szabadtéri", "Outdoor", "Outdoor", "Exterior")
+            low in setOf("vegyes", "hibrid", "mixed", "hybrid", "gemischt", "mixt") ||
+                low.contains("vegyes") ->
+                trW(lang, "Vegyes", "Mixed", "Gemischt", "Mixt")
+            else -> null
+        }
+    } ?: if (program.isCustom) {
+        trW(lang, "Saját program", "Custom program", "Eigenes Programm", "Program propriu")
+    } else {
+        trW(lang, "Otthoni", "Home", "Zuhause", "Acasă")
+    }
+
+    val allExercises = program.days.flatMap { it.exercises }
+    val rawEquipment = if (allExercises.isNotEmpty()) {
+        programEquipmentSummary(allExercises, "", lang)
+    } else {
+        programEquipmentCategoryLabel(program.id.ifBlank { program.nameHu }, lang)
+    }
+    val knownPrefixes = setOf(
+        "otthoni", "home", "zuhause", "acasă", "acasa",
+        "konditermi", "gym", "fitnessstudio", "sală", "sala",
+        "szabadtéri", "outdoor", "exterior",
+        "saját program", "custom", "eigenes", "personalizat"
+    )
+    val equipmentValue = if (rawEquipment.contains("•")) {
+        val prefix = rawEquipment.substringBefore("•").trim()
+        if (prefix.lowercase() in knownPrefixes) {
+            rawEquipment.substringAfter("•").trim().replaceFirstChar { it.uppercase() }
+        } else {
+            rawEquipment
+        }
+    } else {
+        rawEquipment
+    }
+    return locationValue to equipmentValue
 }
 
 @Composable
