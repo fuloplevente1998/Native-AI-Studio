@@ -84,16 +84,6 @@ jobs:
           # persist project configuration (which may contain signing credentials).
           cache-read-only: false
 
-      - name: Cache Robolectric Android SDK dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository/org/robolectric
-          key: robolectric-api34-i7-v1-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
-
-      - name: Fetch checksum-verified Robolectric SDK with retries
-        shell: bash
-        run: python3 scripts/prefetch_robolectric_sdk.py
-
       - name: Restore private signing file into runner temporary directory
         env:
           KEYSTORE_BASE64: ${{ secrets.TRAINPILOT_RELEASE_KEYSTORE_BASE64 }}
@@ -115,7 +105,7 @@ jobs:
               output.write('KEYSTORE_PATH=' + str(target) + '\n')
           PY
 
-      - name: Build signed phone and Wear pair and run all JVM tests
+      - name: Build signed phone and Wear pair
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
@@ -126,13 +116,7 @@ jobs:
           if [[ "$BUILD_AAB" == "true" ]]; then
             tasks+=(:app:bundleRelease :wear:bundleRelease)
           fi
-          gradle --no-daemon --stacktrace --profile --continue "${tasks[@]}" :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest
-
-      - name: Verify raw phone, Wear and shared JUnit XML test results
-        if: always()
-        env:
-          TRAINPILOT_SOURCE_SHA: ${{ github.sha }}
-        run: python3 scripts/verify_junit_xml.py
+          gradle --no-daemon --stacktrace --profile --continue "${tasks[@]}"
 
       - name: Verify package, embedded Maps configuration and pinned signer
         run: python3 scripts/verify_android_apk_metadata.py
@@ -195,29 +179,102 @@ jobs:
         shell: bash
         run: rm -f -- "${RUNNER_TEMP}/trainpilot-release.jks"
 
-      - name: Upload verified signed APKs and public metadata
+      - name: Stage verified signed APKs and public metadata
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: trainpilot-persistent-signed-apk-pair
+          name: staged-signed-apk-pair
           path: |
             app/build/outputs/apk/release/app-release.apk
             wear/build/outputs/apk/release/wear-release.apk
             app/build/outputs/apk-verification.json
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 1
 
-      - name: Upload signed Play Console AAB pair
+      - name: Stage signed Play Console AAB pair
         if: ${{ success() && (github.event_name != 'workflow_dispatch' || inputs.build_aab) }}
         uses: actions/upload-artifact@v4
         with:
-          name: trainpilot-play-internal-aab-pair
+          name: staged-play-aab-pair
           path: |
             app/build/outputs/bundle/release/app-release.aab
             wear/build/outputs/bundle/release/wear-release.aab
             app/build/outputs/play-aab-metadata.json
           if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Gradle task timing profile
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trainpilot-build-profile
+          path: build/reports/profile/
+          if-no-files-found: ignore
           retention-days: 7
+
+  jvm-tests:
+    # Full JVM regression on its own runner, in parallel with the signed build.
+    # Signed outputs are published only after both jobs succeed.
+    name: Full JVM regressions
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TRAINPILOT_MAPS_API_KEY: ${{ secrets.TRAINPILOT_MAPS_API_KEY || secrets.MAPS_API_KEY }}
+    steps:
+      - name: Checkout trusted main
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android API 36 SDK from hosted runner
+        shell: bash
+        run: |
+          echo "ANDROID_HOME=${ANDROID_HOME}"
+          SDKMANAGER=$(find "${ANDROID_HOME}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
+          test -n "${SDKMANAGER}"
+          echo "Using ${SDKMANAGER}"
+          "${SDKMANAGER}" --version
+          yes | "${SDKMANAGER}" --licenses > /dev/null || true
+          "${SDKMANAGER}" --install 'platforms;android-36' 'build-tools;36.0.0'
+          # AGP 9.1 requests compileSdk 36.1; install it when listed.
+          "${SDKMANAGER}" --install 'platforms;android-36.1' || true
+
+      - name: Set up Gradle 9.3.1 (repo has no gradlew launcher)
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+          # Signed main builds seed the default-branch cache for future main/PR builds.
+          # No configuration-cache encryption key is supplied: setup-gradle will not
+          # persist project configuration (which may contain signing credentials).
+          cache-read-only: false
+
+      - name: Cache Robolectric Android SDK dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-api34-i7-v1-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+
+      - name: Fetch checksum-verified Robolectric SDK with retries
+        shell: bash
+        run: python3 scripts/prefetch_robolectric_sdk.py
+
+      - name: Run all phone, Wear and shared JVM tests
+        shell: bash
+        run: gradle --no-daemon --stacktrace --profile --continue :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest
+
+      - name: Verify raw phone, Wear and shared JUnit XML test results
+        if: always()
+        env:
+          TRAINPILOT_SOURCE_SHA: ${{ github.sha }}
+        run: python3 scripts/verify_junit_xml.py
 
       - name: Upload JVM test results
         if: always()
@@ -232,11 +289,48 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      - name: Upload Gradle task timing profile
+      - name: Upload test Gradle task timing profile
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: trainpilot-build-profile
+          name: trainpilot-test-build-profile
           path: build/reports/profile/
           if-no-files-found: ignore
+          retention-days: 7
+
+  publish:
+    name: Publish verified signed pair
+    needs: [jvm-tests, signed-pair]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Download staged signed APK pair
+        uses: actions/download-artifact@v4
+        with:
+          name: staged-signed-apk-pair
+          path: dist/apk
+
+      - name: Upload verified signed APKs and public metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: trainpilot-persistent-signed-apk-pair
+          path: dist/apk/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Download staged Play Console AAB pair
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.build_aab }}
+        uses: actions/download-artifact@v4
+        with:
+          name: staged-play-aab-pair
+          path: dist/aab
+
+      - name: Upload signed Play Console AAB pair
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.build_aab }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: trainpilot-play-internal-aab-pair
+          path: dist/aab/
+          if-no-files-found: error
           retention-days: 7
