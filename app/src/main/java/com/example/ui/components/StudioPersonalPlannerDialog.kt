@@ -24,6 +24,15 @@ internal fun StudioPersonalPlannerDialog(
     val scope = rememberCoroutineScope()
     var saving by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
+    fun save(recommended: Boolean): PersonalPlannerSave = { h, w, goal, exp, loc, eq, days, dur, muscles, exercises ->
+        if (!saving) {
+            saving = true
+            failed = false
+            viewModel.saveInitialProfileAndPlan(h, w, goal, exp, loc, eq, days, dur, muscles, exercises,
+                completeOnboarding = completeOnboarding, useRecommendedProgram = recommended,
+                onSaveResult = { success -> scope.launch { saving = false; failed = !success } })
+        }
+    }
     CompositionLocalProvider(LocalTrainPilotStrings provides TrainPilotStrings.forLanguage(state.language)) {
         PersonalPlannerModalDialog(
             initialHeightCm = state.userHeightCm,
@@ -38,14 +47,12 @@ internal fun StudioPersonalPlannerDialog(
             initialExcludedExercises = state.userExcludedExercisesHu,
             saving = saving,
             failed = failed,
-            onSaveAndOpenPlan = { h, w, goal, exp, loc, eq, days, dur, muscles, exercises ->
-                if (!saving) {
-                    saving = true
-                    failed = false
-                    viewModel.saveInitialProfileAndPlan(h, w, goal, exp, loc, eq, days, dur, muscles, exercises,
-                        completeOnboarding = completeOnboarding,
-                        onSaveResult = { success -> scope.launch { saving = false; failed = !success } })
-                }
+            onSaveAndOpenPlan = save(false),
+            onUseRecommendedPlan = save(true),
+            recommendProgram = { equipment, location, experience, duration, muscles, exercises ->
+                // Keep the recommendation current while the Room catalog is loading.
+                if (state.programs.isEmpty()) null
+                else viewModel.recommendStarterProgram(equipment, location, experience, duration, muscles, exercises)
             },
             onDismiss = { if (!saving) onDismiss() }
         )

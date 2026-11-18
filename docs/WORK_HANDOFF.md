@@ -1,3 +1,13 @@
+# Kezdőprofil és A/B terv — PR268 gyűjtő
+
+Közös első indítási és Kezdőlap profil, kompatibilis kész program ajánlása vagy
+új terv. A/B mozgássorrend, szint és felszerelés szerinti gyakorlatok, új
+tervben kezdősúly nélkül. A meglévő program aktiválása nem készít másolatot.
+Forrás, döntések és tesztállapot a STARTER_PROFILE_PLAN_REVIEW.md fájlban.
+Statikus ellenőrzés megvolt. CI, fordítás és tesztfuttatás szünetel.
+
+---
+
 # Lenyomásjelzés — PR268 gyűjtő, CI továbbra is SZÜNETEL
 
 Témacsoport-fejléc teljes íves kártyaszélességen reagál, a margó a kattintható

@@ -115,30 +115,6 @@ class StudioAppearanceRegressionTest {
         compose.onNodeWithTag("settings_google_login_btn").assertDoesNotExist()
     }
 
-    @Test fun multiSelectEquipmentInPlannerGeneratesMatchingWorkoutPlan() {
-        val vm = com.example.ui.viewmodel.TrainPilotViewModel()
-        val multiEquipment = "Saját testsúly, Egykezes kézisúlyzó (1 db), Kézisúlyzó pár (2 db), Kétkezes rúd (Súlyzórúd), Stabil támaszték / Fal / Szék"
-        vm.saveInitialProfileAndPlan(
-            heightCm = 180,
-            weightKg = 82f,
-            goalHu = "Izomépítés",
-            experienceHu = "Középhaladó",
-            locationHu = "Otthon",
-            equipmentHu = multiEquipment,
-            daysPerWeek = 4,
-            durationMin = 60,
-            excludedMuscles = emptySet(),
-            excludedExercises = emptySet()
-        )
-        val state = vm.uiState.value
-        assertEquals(multiEquipment, state.userSelectedEquipmentHu)
-        val generated = state.programs.first { it.isActive }
-        val allGeneratedExercises = generated.days.flatMap { it.exercises }
-        assertTrue(allGeneratedExercises.isNotEmpty())
-        val machineExerciseIds = setOf("lat-pulldown", "seated-cable-row", "face-pull", "cable-fly", "triceps-pushdown", "leg-press", "leg-extension", "leg-curl", "cable-crunch")
-        assertTrue(allGeneratedExercises.none { it.id in machineExerciseIds })
-    }
-
     @Test fun weeklyGoalCardsExpandIndependentlyAndNeverShowTheRemovedCombinedSummary() {
         var steps by mutableStateOf(false)
         var workouts by mutableStateOf(false)

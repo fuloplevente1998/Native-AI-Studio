@@ -15,6 +15,12 @@ internal object NativePlannerPolicy {
     }
     private fun strings(array: org.json.JSONArray?): List<String> =
         (0 until (array?.length() ?: 0)).map { array!!.getString(it) }
+    fun equipmentNeeds(id: String): List<String>? =
+        policy.getJSONObject("needs").optJSONArray(id)?.let(::strings)
+
+    fun exerciseMetadata(id: String): JSONObject =
+        JSONObject(policy.getJSONObject("meta").optJSONObject(id)?.toString() ?: "{}")
+
     fun metadata(exercise: ExerciseLibraryEntity): JSONObject {
         val raw = JSONObject(exercise.rawJson)
         val defaults = policy.getJSONObject("meta").optJSONObject(exercise.id)

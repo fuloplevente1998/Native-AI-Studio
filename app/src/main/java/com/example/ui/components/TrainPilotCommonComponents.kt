@@ -1192,6 +1192,19 @@ fun GoalsEditDialog(
     )
 }
 
+typealias PersonalPlannerSave = (
+        heightCm: Int,
+        weightKg: Float,
+        goalHu: String,
+        experienceHu: String,
+        locationHu: String,
+        equipmentHu: String,
+        daysPerWeek: Int,
+        durationMin: Int,
+        excludedMuscles: Set<String>,
+        excludedExercises: Set<String>
+    ) -> Unit
+
 @Composable
 fun PersonalPlannerModalDialog(
     initialHeightCm: Int = 179,
@@ -1204,21 +1217,12 @@ fun PersonalPlannerModalDialog(
     initialDurationMin: Int = 45,
     initialExcludedMuscles: Set<String> = emptySet(),
     initialExcludedExercises: Set<String> = emptySet(),
-    onSaveAndOpenPlan: (
-        heightCm: Int,
-        weightKg: Float,
-        goalHu: String,
-        experienceHu: String,
-        locationHu: String,
-        equipmentHu: String,
-        daysPerWeek: Int,
-        durationMin: Int,
-        excludedMuscles: Set<String>,
-        excludedExercises: Set<String>
-    ) -> Unit,
+    onSaveAndOpenPlan: PersonalPlannerSave,
     onDismiss: () -> Unit,
     saving: Boolean = false,
-    failed: Boolean = false
+    failed: Boolean = false,
+    recommendProgram: ((String, String, String, Int, Set<String>, Set<String>) -> String?)? = null,
+    onUseRecommendedPlan: PersonalPlannerSave? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
@@ -1235,7 +1239,10 @@ fun PersonalPlannerModalDialog(
         "Egykezes kézisúlyzó (1 db)" to "1 db kézisúlyzós gyakorlatok (pl. goblet guggolás, egykezes evezés)",
         "Kézisúlyzó pár (2 db)" to "Páros egykezes súlyzós gyakorlatok (nyomások, kitörések, kar)",
         "Kétkezes rúd (Súlyzórúd)" to "Kétkezes rudas alapgyakorlatok (guggolás, felhúzás, evezés, nyomás)",
-        "Pad / Szék / Kanapé" to "Támasz pl. bolgár guggoláshoz, fekvenyomáshoz vagy csípőemeléshez",
+        "Pad / Szék / Kanapé" to "Támasz például bolgár guggoláshoz vagy csípőemeléshez",
+        "Fekvenyomó pad" to "Stabil, súlyzós edzésre tervezett fekvenyomó pad",
+        "Állítható fekvenyomó pad" to "Súlyzós edzésre tervezett, dönthető pad",
+        "Biztonsági állvány" to "Rúdtartó állvány állítható biztonsági támaszokkal",
         "Stabil támaszték / Fal / Szék" to "Kéztámasz pl. egykezes evezéshez vagy vádliemeléshez",
         "Fellépő / Doboz / Lépcső" to "Magasítás fellépéshez (step-up) és felugráshoz",
         "Húzódzkodó rúd" to "Húzódzkodás, függeszkedés és lábemelések",
@@ -1291,12 +1298,14 @@ fun PersonalPlannerModalDialog(
                 lower == "barbell" || lower.contains("kétkezes") || lower.contains("súlyzórúd") -> {
                     result.add("Kétkezes rúd (Súlyzórúd)")
                 }
+                lower == "lifting-bench" -> result.add("Fekvenyomó pad")
+                lower == "incline-bench" -> result.add("Állítható fekvenyomó pad")
+                lower == "rack" -> result.add("Biztonsági állvány")
                 lower == "bench" || lower.contains("pad") || lower.contains("kanapé") -> {
                     result.add("Pad / Szék / Kanapé")
                 }
                 lower == "support" || lower.contains("támasz") || lower.contains("szék") -> {
                     result.add("Stabil támaszték / Fal / Szék")
-                    result.add("Pad / Szék / Kanapé")
                 }
                 lower == "step" || lower.contains("fellépő") || lower.contains("lépcső") -> {
                     result.add("Fellépő / Doboz / Lépcső")
@@ -2026,6 +2035,26 @@ fun PersonalPlannerModalDialog(
             }
         },
         confirmButton = {
+            val recommendation = remember(recommendProgram, selectedEquipment, selectedLocation, selectedExperience,
+                selectedDuration, excludedMuscles, excludedExercises) {
+                recommendProgram?.invoke(selectedEquipment, selectedLocation, selectedExperience,
+                    selectedDuration, excludedMuscles, excludedExercises)
+            }
+            if (onUseRecommendedPlan != null && recommendation != null) {
+                com.repforge.app.ui.theme.TrainPilotOutlinedButton(
+                    enabled = !saving,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("planner_recommended_button"),
+                    onClick = { onUseRecommendedPlan(heightCm, weightKg, selectedGoal, selectedExperience,
+                        selectedLocation, selectedEquipment, selectedDays, selectedDuration, excludedMuscles, excludedExercises) }
+                ) {
+                    Text(tr(lang, "Ajánlott program: $recommendation", "Recommended program: $recommendation",
+                        "Empfohlenes Programm: $recommendation", "Program recomandat: $recommendation"))
+                }
+            } else if (recommendProgram != null) {
+                Text(tr(lang, "A beállításokhoz nincs megfelelő kész program.", "No existing program matches these settings.",
+                    "Kein vorhandenes Programm passt zu diesen Einstellungen.", "Niciun program existent nu corespunde acestor setări."),
+                    style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+            }
             if (failed) Text(
                 tr(lang, "A terv/profil mentése nem sikerült. Próbáld újra.",
                     "Failed to save plan/profile. Please try again.",
@@ -2058,10 +2087,10 @@ fun PersonalPlannerModalDialog(
                 Text(
                     tr(
                         lang,
-                        "Terv összeállítása és mentése",
-                        "Build and save plan",
-                        "Plan erstellen und speichern",
-                        "Construiește și salvează planul"
+                        "Új terv készítése",
+                        "Create a new plan",
+                        "Neuen Plan erstellen",
+                        "Creează un plan nou"
                     ),
                     fontWeight = FontWeight.Bold
                 )

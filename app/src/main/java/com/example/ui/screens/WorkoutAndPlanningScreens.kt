@@ -1314,9 +1314,14 @@ fun ProgramEditorScreen(
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                     color = palette.textPrimary
                                 )
-                                val weightLabel = if (ex.defaultWeightKg > 0f) "${ex.defaultWeightKg.toInt()} kg" else "BW"
+                                val weightLabel = when {
+                                    ex.defaultWeightKg > 0f -> "${ex.defaultWeightKg.toString().removeSuffix(".0")} kg"
+                                    ex.loadType == "bodyweight" -> trW(state.language, "Testsúly", "Bodyweight", "Körpergewicht", "Greutatea corpului")
+                                    else -> trW(state.language, "Súly nincs megadva", "Load not set", "Gewicht offen", "Greutate nesetată")
+                                }
+                                val reps = ex.targetRepsText.ifBlank { ex.defaultReps.toString() }
                                 Text(
-                                    text = "${ex.defaultSets} × ${ex.defaultReps}  •  $weightLabel  •  ${ex.defaultRestSec} s",
+                                    text = "${ex.defaultSets} × $reps  •  $weightLabel  •  ${ex.defaultRestSec} s",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textSecondary
                                 )

@@ -131,7 +131,7 @@ class ProfileAndRecordLayoutRegressionTest {
         compose.onNodeWithText("Strength gain").performScrollTo().performClick()
         compose.onNodeWithTag("profile_equipment_box").performScrollTo()
         compose.onNodeWithText("Body weight").assertExists()
-        compose.onNodeWithText("Build and save plan").performClick()
+        compose.onNodeWithTag("planner_save_button").performClick()
         compose.runOnIdle {
             org.junit.Assert.assertEquals("Erőnövelés", savedGoal)
             org.junit.Assert.assertEquals("Saját testsúly", savedEquipment)
