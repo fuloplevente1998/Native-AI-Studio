@@ -1405,7 +1405,7 @@ private fun ProgramCardContent(
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .sizeIn(minWidth = 48.dp, minHeight = 26.dp)
+                        .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                         .trainPilotClickable(RoundedCornerShape(8.dp)) { onToggleDetails() }
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                         .testTag("${tagPrefix}program_details_toggle_${program.id}")
