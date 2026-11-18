@@ -73,6 +73,7 @@ import com.example.ui.screens.ActiveTimedWorkoutScreen
 import com.example.ui.screens.AddCustomExerciseModalDialog
 import com.example.ui.screens.BackupRestoreScreen
 import com.example.ui.screens.CalendarPlannerScreen
+import com.example.ui.components.sheetHostState
 import com.example.ui.screens.ProgramEditorContent
 import com.example.ui.screens.CoachDetailScreen
 import com.example.ui.screens.ExerciseDetailScreen
@@ -364,7 +365,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                 Column {
                 TrainPilotGlobalTopHeaderAndNav(
                     currentTab = uiState.currentTab,
-                    currentSubScreen = uiState.currentSubScreen,
+                    currentSubScreen = uiState.sheetHostState().currentSubScreen,
                     currentLanguage = uiState.language,
                     selectedPaletteId = uiState.selectedPaletteId,
                     strings = strings,
@@ -433,7 +434,11 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         onSaveProgram = viewModel::saveEditorProgram
                     )
                 }
-                com.example.ui.components.TrainPilotRouteContent(uiState) {
+                // Sheet routes (#269) render over the screen they were opened from; the host keeps
+                // its call site, saved state and scroll position while the sheet is open.
+                val sheetRouteActive = uiState.currentSubScreen in com.example.ui.components.TrainPilotSheetRoutes
+                val routeHostState = uiState.sheetHostState()
+                val renderRoute: @Composable (com.example.ui.viewmodel.TrainPilotUiState) -> Unit = { uiState ->
                 when (uiState.currentSubScreen) {
                     SubScreen.PROGRAMS_LIST -> {
                         ProgramsListScreen(
@@ -760,33 +765,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             },
                             onApproveProgression = { viewModel.approveProgressionSettings() },
                             onEditProgressionPreview = { viewModel.discardProgressionPreview() },
-                            onUndoProgression = { viewModel.undoProgressionSettings("global") },
-                            // Devices & data screens open 1:1 as bottom sheets over Settings (#269).
-                            sheetScreen = { target, close ->
-                                when (target) {
-                                    SubScreen.WATCH_AND_SYNC -> {
-                                        androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.requestWatchDeviceInfo() }
-                                        WatchAndSyncScreen(
-                                            uiState = uiState,
-                                            strings = strings,
-                                            onBack = close,
-                                            onOpenSettings = close,
-                                            onRefreshWatchInfo = viewModel::requestWatchDeviceInfo,
-                                            onToggleControlMode = { viewModel.toggleWatchControlMode(context as? android.app.Activity) },
-                                            onRequestPermission = requestPlatformPermission,
-                                            onShowBanner = { viewModel.showBannerMessage(it) }
-                                        )
-                                    }
-                                    SubScreen.PERMISSIONS_SCREEN -> PermissionsScreen(
-                                        uiState = uiState,
-                                        strings = strings,
-                                        onBack = close,
-                                        onOpenSettings = close,
-                                        onTogglePermission = requestPlatformPermission
-                                    )
-                                    else -> Unit
-                                }
-                            }
+                            onUndoProgression = { viewModel.undoProgressionSettings("global") }
                         )
                     }
 
@@ -1069,7 +1048,14 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         }
                     }
                 }
-                } // retained browsing route content
+                }
+                com.example.ui.components.TrainPilotRouteContent(routeHostState) { renderRoute(routeHostState) }
+                if (sheetRouteActive) {
+                    com.example.ui.components.TrainPilotScreenSheet(
+                        onDismiss = { viewModel.navigateBack() },
+                        testTag = "route_sheet_${uiState.currentSubScreen.name.lowercase()}"
+                    ) { renderRoute(uiState) } // retained browsing route content
+                }
             }
 
             // Compact Flat Floating Active Workout Return Button/Bar (visible from ANY other screen/tab/settings while a workout is active)
