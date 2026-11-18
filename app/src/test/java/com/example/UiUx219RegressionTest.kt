@@ -208,6 +208,8 @@ class UiUx219RegressionTest {
 
         assertTrue("Title must not overlap activation column", titleBounds.right <= activateBounds.left + 1.dp)
         assertTrue("Details toggle must be directly below activation button", detailsToggleBounds.top >= activateBounds.bottom - 2.dp)
+        assertTrue("Details toggle must have >= 48dp touch height", detailsToggleBounds.bottom - detailsToggleBounds.top >= 48.dp)
+        assertTrue("Details toggle must have >= 48dp touch width", detailsToggleBounds.right - detailsToggleBounds.left >= 48.dp)
         assertTrue("Three-dot menu must have >= 48dp width", moreBounds.right - moreBounds.left >= 48.dp)
         assertTrue("Three-dot menu must have >= 48dp height", moreBounds.bottom - moreBounds.top >= 48.dp)
         assertTrue("Three-dot menu must not overlap activation button or details toggle",

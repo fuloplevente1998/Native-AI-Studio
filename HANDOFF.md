@@ -3,23 +3,22 @@
 Frissítve: 2026-11-18. Rövid, felülírandó pillanatkép (≤40 sor). Előzmény: git log / PR-ek.
 
 ## Main
-- `ad835c2` = PR #273 merge, **2767 · 1.2-beta** (telefon 276700, Wear 276702).
-- Signed run #75 (44327419072) SUCCESS ezen a SHA-n. Tesztszám (865/0) a felhasználó
-  szerint; nyers XML-ből ebben a munkamenetben nincs újraellenőrizve.
-- `docs/CURRENT_STATUS.md` legfelső bejegyzése 2765-r2, `docs/WORK_HANDOFF.md`
-  PR268-ig tart → mindkettő elavult a 2766/2767 kiadásokhoz képest.
+- `9368ff9` AI Studio: Programok kártya 3 zóna + lenyitható Részletek (közvetlen push).
+  Main CI run 347 (44381881703) kézzel indítva (push nem triggereli az android-ci-t).
+- Előző kiadás: `ad835c2` = 2767 · 1.2-beta, signed run #75 SUCCESS.
+- `docs/CURRENT_STATUS.md` / `docs/WORK_HANDOFF.md` 2765-r2/PR268-nál megállt (elavult).
 
-## Nyitott PR-ek (mind draft)
-| PR | Ág | Tartalom | Állapot |
-| --- | --- | --- | --- |
-| #274 | `fix/program-equipment-collapse-menu-edge-2767` | Programkártya: felszerelés lenyitható, ⋮ jobb szélre; 1 fájl (+86/−43) | `[skip ci]`, **CI még nem futott**, mergeable |
-| #272 | `audit/ai-studio-269-20261118` | #269 AI Studio audit | draft |
-| #271 | `docs/handoff-workflow-20261118` | munkafolyamat-doksi | draft |
+## Folyamatban: 2768 kiadás – PR #275 (`claude/trainpilot-native-handoff-g28fst`)
+- Verzió 276800 / 276802, 1.2-beta. Részletek gomb érintési cél 26→48 dp + teszt.
+- Felhasználó jóváhagyta: zöld PR CI után merge → signed APK+AAB (#76) → Drive.
 
-## Nyitott issue
-- #269 telefonos navigáció + alsó lapok (Programok elsőként), friss telepítésű
-  profiltervező egyesítése, A/B terv közvetlen bicepsz/tricepsz. Elfogadás: 0/7 pipa.
+## Nyitott PR-ek
+| PR | Állapot |
+| --- | --- |
+| #274 | CI 346 FAIL, ütközik a mainnel (9368ff9 felülírta) → lezárás javasolt |
+| #272, #271 | draft (AI Studio audit, munkafolyamat-doksi) |
 
-## Következő lépés
-- #274: CI futtatása (felhasználói jóváhagyással) → zöld után review/merge döntés.
-- #271 vs. CLAUDE.md/HANDOFF.md átfedés tisztázása.
+## Nyitott / megjegyzés
+- #269 navigáció + alsó lapok; elfogadás 0/7.
+- `public/assets/aistudio/Screenshot_…_ChatGPT….jpg` a 9368ff9-ben – kell-e a repóban?
+- TODO: Actions futásidő optimalizálása (felhasználói kérés).
