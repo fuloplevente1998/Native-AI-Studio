@@ -156,17 +156,28 @@ internal class StudioStarterPlan(
         .put("experience", if (beginner) "beginner" else "intermediate")
         .put("minutes", minutes)
 
+    private fun isMuscleGoal(goal: String) = goal in setOf("Izomépítés", "muscle")
+
+    private fun homeCapacity(goal: String): Int = when {
+        returning -> capacity
+        gentlerStart -> NativePlannerPolicy.capacity(minutes).coerceAtMost(6)
+        isMuscleGoal(goal) && minutes >= 60 -> 7
+        else -> capacity
+    }
+
     private fun prescribe(exercise: ExerciseItem, profile: JSONObject): ExerciseItem {
         val metadata = NativePlannerPolicy.exerciseMetadata(exercise.id).put("id", exercise.id)
             .put("loadType", exercise.loadType).put("repUnit", exercise.repUnit)
         val recipe = NativeTrainingPrescription.create(metadata, profile)
         val reps = if (exercise.isTimed) exercise.targetSeconds.toString() else recipe.getString("reps")
-        val sets = when {
+        val baseSets = when {
             gentlerStart -> 2
             advanced && minutes >= 45 && metadata.optBoolean("compound") -> 3
             else -> recipe.getInt("sets")
         }
-        return exercise.copy(defaultSets = sets, defaultRestSec = recipe.getInt("rest"),
+        val sets = if (!gentlerStart && !returning && exercise.defaultSets > 3) maxOf(baseSets, exercise.defaultSets) else baseSets
+        val rest = if (!gentlerStart && !returning && exercise.defaultRestSec > 120) maxOf(recipe.getInt("rest"), exercise.defaultRestSec) else recipe.getInt("rest")
+        return exercise.copy(defaultSets = sets, defaultRestSec = rest,
             defaultReps = reps.takeWhile(Char::isDigit).toIntOrNull() ?: exercise.defaultReps,
             targetRepsText = reps, defaultWeightKg = 0f)
     }
@@ -174,21 +185,59 @@ internal class StudioStarterPlan(
     fun build(catalog: List<ExerciseItem>, goal: String): List<List<ExerciseItem>> {
         val available = sortedEligible(catalog).associateBy { it.id }
         val profile = recipeProfile(goal)
-        return daySlots.map { slots ->
+        val dayCapacity = homeCapacity(goal)
+        return slotsFor(goal, dayCapacity).map { slots ->
             val picked = mutableListOf<ExerciseItem>()
             for ((preferences, patterns) in slots) {
-                if (picked.size == capacity) break
+                if (picked.size == dayCapacity) break
                 val ordered = if (returning && preferences.first() == "pushup") {
                     listOf("incline-pushup", "modified-pushup") + preferences
                 } else preferences
-                val candidate = ordered.firstNotNullOfOrNull { id -> available[id]?.takeIf { it !in picked } }
-                    ?: available.values.firstOrNull { it !in picked && pattern(it) in patterns }
+                val candidates = (ordered.asSequence().mapNotNull { available[it] } +
+                    available.values.asSequence().filter { pattern(it) in patterns })
+                    .distinctBy { it.id }
+                    .filter { candidate -> picked.none { it.id == candidate.id } }
+                val chosen = candidates.map { prescribe(it, profile) }
+                    .firstOrNull { minutesFor(picked + it) <= minutes }
                     ?: continue
-                picked += candidate
+                picked += chosen
             }
-            val prescribed = picked.map { prescribe(it, profile) }
-            prescribed.take(prescribed.indices.firstOrNull { minutesFor(prescribed.take(it + 1)) > minutes } ?: prescribed.size)
+            orderForFatigue(picked)
         }
+    }
+
+    private fun slotsFor(goal: String, dayCapacity: Int): List<List<Pair<List<String>, Set<String>>>> {
+        if (!returning && isMuscleGoal(goal) && dayCapacity >= 6) {
+            return muscleDaySlots
+        }
+        return daySlots
+    }
+
+    private fun orderForFatigue(exercises: List<ExerciseItem>): List<ExerciseItem> {
+        val ordered = exercises.sortedBy(::fatigueRank).toMutableList()
+        if (ordered.size >= 2 && pattern(ordered[0]) == "horizontal-push") {
+            val leadIdx = ordered.indexOfFirst {
+                pattern(it) in setOf("squat", "lunge", "knee-extension", "horizontal-pull", "vertical-pull", "hinge", "knee-flexion")
+            }
+            if (leadIdx == 1) {
+                val lead = ordered[1]
+                ordered[1] = ordered[0]
+                ordered[0] = lead
+            }
+        }
+        return ordered
+    }
+
+    private fun fatigueRank(exercise: ExerciseItem): Int = when (pattern(exercise)) {
+        "squat", "lunge", "knee-extension" -> 0
+        "horizontal-push" -> 1
+        "horizontal-pull", "vertical-pull" -> 2
+        "hinge", "knee-flexion" -> 3
+        "vertical-push" -> 4
+        "shoulder-isolation", "rear-delt", "chest-isolation" -> 5
+        "elbow-flexion", "elbow-extension" -> 6
+        "core-bracing", "core-stability", "core-flexion" -> 7
+        else -> 8
     }
 
     private fun pattern(exercise: ExerciseItem) =
@@ -215,17 +264,37 @@ internal class StudioStarterPlan(
                 listOf("one-arm-row", "band-row", "chest-supported-db-row") to setOf("horizontal-pull", "vertical-pull"),
                 listOf("db-rdl", "glute-bridge") to setOf("hinge"),
                 listOf("side-plank", "dead-bug") to setOf("core-bracing", "core-stability"),
-                listOf("db-ohp") to setOf("vertical-push", "shoulder-isolation"),
-                listOf("db-curl") to setOf("elbow-flexion")
+                listOf("db-ohp", "single-arm-db-ohp", "band-overhead-press") to setOf("vertical-push", "shoulder-isolation"),
+                listOf("db-curl", "hammer-curl", "concentration-curl", "band-biceps-curl", "barbell-curl") to setOf("elbow-flexion")
             ),
             listOf(
                 listOf("bulgarian-split-squat", "reverse-lunge", "goblet-squat", "bodyweight-squat") to setOf("lunge", "squat"),
-                listOf("pushup", "modified-pushup", "db-floor-press") to setOf("horizontal-push"),
+                listOf("pushup", "modified-pushup", "incline-pushup", "db-floor-press") to setOf("horizontal-push"),
                 listOf("barbell-row", "one-arm-row", "band-row", "chest-supported-db-row") to setOf("horizontal-pull", "vertical-pull"),
                 listOf("db-rdl", "single-leg-glute-bridge", "glute-bridge") to setOf("hinge"),
                 listOf("bird-dog", "crunch") to setOf("core-stability", "core-flexion"),
-                listOf("lateral-raise", "db-ohp") to setOf("shoulder-isolation", "vertical-push"),
-                listOf("oh-triceps") to setOf("elbow-extension")
+                listOf("lateral-raise", "db-ohp", "single-arm-db-ohp", "band-overhead-press") to setOf("shoulder-isolation", "vertical-push"),
+                listOf("oh-triceps", "db-triceps-kickback", "band-triceps-pushdown", "lying-barbell-triceps-extension") to setOf("elbow-extension")
+            )
+        )
+        val muscleDaySlots = listOf(
+            listOf(
+                listOf("goblet-squat", "bodyweight-squat") to setOf("squat"),
+                listOf("db-floor-press", "barbell-floor-press", "pushup") to setOf("horizontal-push"),
+                listOf("one-arm-row", "band-row", "chest-supported-db-row") to setOf("horizontal-pull", "vertical-pull"),
+                listOf("db-rdl", "glute-bridge") to setOf("hinge"),
+                listOf("db-curl", "hammer-curl", "concentration-curl", "band-biceps-curl", "barbell-curl") to setOf("elbow-flexion"),
+                listOf("side-plank", "dead-bug") to setOf("core-bracing", "core-stability"),
+                listOf("db-ohp", "single-arm-db-ohp", "band-overhead-press") to setOf("vertical-push", "shoulder-isolation")
+            ),
+            listOf(
+                listOf("bulgarian-split-squat", "reverse-lunge", "goblet-squat", "bodyweight-squat") to setOf("lunge", "squat"),
+                listOf("pushup", "modified-pushup", "incline-pushup", "db-floor-press") to setOf("horizontal-push"),
+                listOf("barbell-row", "one-arm-row", "band-row", "chest-supported-db-row") to setOf("horizontal-pull", "vertical-pull"),
+                listOf("db-rdl", "single-leg-glute-bridge", "glute-bridge") to setOf("hinge"),
+                listOf("oh-triceps", "db-triceps-kickback", "band-triceps-pushdown", "lying-barbell-triceps-extension") to setOf("elbow-extension"),
+                listOf("bird-dog", "crunch") to setOf("core-stability", "core-flexion"),
+                listOf("lateral-raise", "db-ohp", "single-arm-db-ohp", "band-overhead-press") to setOf("shoulder-isolation", "vertical-push")
             )
         )
     }

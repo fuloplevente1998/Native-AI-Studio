@@ -1,8 +1,12 @@
 package com.example.ui.screens
 
 import com.repforge.app.ui.theme.trainPilotClickable
+import com.repforge.app.ui.theme.trainPilotCombinedClickable
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 import com.example.ui.components.TrainPilotFullHeightFormSheet
+import com.example.ui.components.TrainPilotDeleteButton
+import com.example.ui.components.TrainPilotRedCloseButton
+import com.example.ui.components.trainPilotSheetTopSafeArea
 
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
@@ -48,14 +52,17 @@ import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.OndemandVideo
@@ -65,7 +72,11 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconToggleButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.FilterChip
@@ -657,6 +668,7 @@ private fun ShortcutSquareCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProgramsListScreen(
     state: TrainPilotUiState,
@@ -669,7 +681,9 @@ fun ProgramsListScreen(
     onOpenPersonalPlanner: () -> Unit = {},
     onMoveProgramOrder: (Int, Int) -> Unit = { _, _ -> },
     onCreateCustomProgram: (String, String) -> Unit = { _, _ -> },
-    onOpenAddCustomExercise: () -> Unit = {}
+    onOpenAddCustomExercise: () -> Unit = {},
+    onCopyProgram: (String) -> Unit = {},
+    onDeleteProgram: (String) -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
@@ -682,6 +696,225 @@ fun ProgramsListScreen(
         }
     }
     var showCreateCustomProgramDialog by remember { mutableStateOf(false) }
+    var actionSheetProgramId by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
+    var actionSheetSnapshot by remember { mutableStateOf<com.example.model.TrainingProgramModel?>(null) }
+    var deleteConfirmProgram by remember { mutableStateOf<Pair<String, String>?>(null) }
+
+    actionSheetProgramId?.let { targetId ->
+        val liveProgram = state.programs.firstOrNull { it.id == targetId }
+        val targetProgram = liveProgram ?: actionSheetSnapshot?.takeIf { it.id == targetId }
+        val targetName = targetProgram?.localizedName(state.language) ?: targetId
+        val sheetState = rememberModalBottomSheetState(
+            skipPartiallyExpanded = true,
+            confirmValueChange = { it != SheetValue.Hidden || !state.libraryMutationBusy }
+        )
+        ModalBottomSheet(
+            onDismissRequest = { if (!state.libraryMutationBusy) actionSheetProgramId = null },
+            sheetState = sheetState,
+            containerColor = palette.surface,
+            contentColor = palette.textPrimary,
+            dragHandle = null,
+            modifier = Modifier
+                .trainPilotSheetTopSafeArea()
+                .testTag("program_action_sheet")
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = targetName,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = palette.textPrimary,
+                            modifier = Modifier.testTag("program_action_sheet_title")
+                        )
+                        val typeLabel = when {
+                            targetProgram == null -> trW(state.language, "A kiválasztott program már nem található", "Selected program was not found", "Ausgewähltes Programm nicht gefunden", "Programul selectat nu a mai fost găsit")
+                            targetProgram.isActive && targetProgram.isCustom -> trW(state.language, "Jelenleg aktív • Saját program", "Currently active • Custom program", "Aktuell aktiv • Eigenes Programm", "Activ acum • Program propriu")
+                            targetProgram.isActive -> trW(state.language, "Jelenleg aktív • Alap program", "Currently active • Built-in program", "Aktuell aktiv • Standardprogramm", "Activ acum • Program de bază")
+                            targetProgram.isCustom -> trW(state.language, "Saját program", "Custom program", "Eigenes Programm", "Program propriu")
+                            else -> trW(state.language, "Alap program", "Built-in program", "Standardprogramm", "Program de bază")
+                        }
+                        Text(
+                            text = typeLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = palette.textSecondary
+                        )
+                    }
+                    TrainPilotRedCloseButton(
+                        onClick = { if (!state.libraryMutationBusy) actionSheetProgramId = null },
+                        testTag = "program_action_sheet_close",
+                        enabled = !state.libraryMutationBusy
+                    )
+                }
+
+                HorizontalDivider(color = palette.cardBorder)
+
+                val canActivate = targetProgram == null || !targetProgram.isActive
+                Button(
+                    onClick = {
+                        actionSheetProgramId = null
+                        onActivateProgram(targetId)
+                    },
+                    enabled = canActivate && !state.libraryMutationBusy,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = palette.primary,
+                        contentColor = palette.onPrimary
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                        .testTag("program_action_activate")
+                ) {
+                    Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (targetProgram?.isActive == true)
+                            trW(state.language, "Jelenleg aktív program", "Currently active program", "Aktuell aktives Programm", "Program activ în prezent")
+                        else strings.activateAction,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                TrainPilotOutlinedButton(
+                    onClick = {
+                        actionSheetProgramId = null
+                        onOpenProgramEditor(targetId)
+                    },
+                    enabled = !state.libraryMutationBusy,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                        .testTag("program_action_edit")
+                ) {
+                    Icon(imageVector = Icons.Default.Edit, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = trW(state.language, "Szerkesztés", "Edit", "Bearbeiten", "Editează"),
+                        color = palette.textPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                TrainPilotOutlinedButton(
+                    onClick = {
+                        actionSheetProgramId = null
+                        onCopyProgram(targetId)
+                    },
+                    enabled = !state.libraryMutationBusy,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                        .testTag("program_action_copy")
+                ) {
+                    Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = trW(state.language, "Másolás saját tervként", "Copy as custom plan", "Als eigenen Plan kopieren", "Copiază ca plan propriu"),
+                        color = palette.textPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                if (targetProgram == null || (targetProgram.isCustom && !targetProgram.isActive)) {
+                    TrainPilotDeleteButton(
+                        onClick = {
+                            actionSheetProgramId = null
+                            deleteConfirmProgram = targetId to targetName
+                        },
+                        enabled = !state.libraryMutationBusy,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .testTag("program_action_delete"),
+                        label = trW(state.language, "Törlés", "Delete", "Löschen", "Șterge")
+                    )
+                } else {
+                    Text(
+                        text = if (!targetProgram.isCustom)
+                            trW(state.language, "A beépített sablon nem törölhető; készíts saját másolatot.", "Built-in templates cannot be deleted; create a custom copy.", "Standardvorlagen können nicht gelöscht werden; erstelle eine eigene Kopie.", "Șabloanele predefinite nu pot fi șterse; creează o copie proprie.")
+                        else
+                            trW(state.language, "Törlés előtt válassz másik aktív programot.", "Select another active program before deleting.", "Wähle vor dem Löschen ein anderes aktives Programm.", "Selectează alt program activ înainte de ștergere."),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = palette.textSecondary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .testTag("program_action_delete_unavailable_hint")
+                    )
+                }
+            }
+        }
+    }
+
+    deleteConfirmProgram?.let { (confirmId, confirmName) ->
+        AlertDialog(
+            onDismissRequest = { if (!state.libraryMutationBusy) deleteConfirmProgram = null },
+            modifier = Modifier.testTag("program_delete_confirm_dialog"),
+            containerColor = palette.surfaceCard,
+            titleContentColor = palette.textPrimary,
+            textContentColor = palette.textSecondary,
+            title = {
+                Text(
+                    text = trW(
+                        state.language,
+                        "Program törlése: $confirmName?",
+                        "Delete program: $confirmName?",
+                        "Programm löschen: $confirmName?",
+                        "Ștergi programul: $confirmName?"
+                    ),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.testTag("program_delete_confirm_title")
+                )
+            },
+            text = {
+                Text(
+                    text = trW(
+                        state.language,
+                        "A(z) „$confirmName” saját program végleg törlődik a tárból. A korábbi naplózott edzések megmaradnak. Ha a programhoz tartoznak tervezett naptári alkalmak, előbb ürítsd őket a naptárból.",
+                        "The custom program “$confirmName” will be permanently deleted. Your logged workout history is kept. Clear any planned calendar entries for this program first.",
+                        "Das eigene Programm „$confirmName“ wird dauerhaft gelöscht. Das Trainingsprotokoll bleibt erhalten. Entferne zuerst geplante Kalendereinträge dieses Programms.",
+                        "Programul personalizat „$confirmName” va fi șters definitiv. Jurnalul antrenamentelor anterioare se păstrează. Șterge mai întâi planurile din calendar ale acestui program."
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = palette.textSecondary
+                )
+            },
+            confirmButton = {
+                com.repforge.app.ui.theme.TrainPilotNegativeButton(
+                    onClick = {
+                        deleteConfirmProgram = null
+                        onDeleteProgram(confirmId)
+                    },
+                    enabled = !state.libraryMutationBusy,
+                    modifier = Modifier.testTag("program_delete_confirm_button")
+                ) {
+                    Text(trW(state.language, "Törlés", "Delete", "Löschen", "Șterge"), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TrainPilotOutlinedButton(
+                    onClick = { deleteConfirmProgram = null },
+                    enabled = !state.libraryMutationBusy,
+                    modifier = Modifier.testTag("program_delete_cancel_button")
+                ) {
+                    Text(strings.cancelBtn, color = palette.textPrimary)
+                }
+            }
+        )
+    }
 
     if (showCreateCustomProgramDialog) {
         var customProgName by remember { mutableStateOf("") }
@@ -789,6 +1022,7 @@ fun ProgramsListScreen(
                                 .weight(1f)
                                 .heightIn(min = 48.dp)
                                 .trainPilotClickable(RoundedCornerShape(20.dp)) { onToggleCustomTab(isCustom) }
+                                .testTag(if (isCustom) "programs_tab_custom" else "programs_tab_builtin")
                         ) {
                             Box(
                                 contentAlignment = Alignment.Center,
@@ -813,13 +1047,22 @@ fun ProgramsListScreen(
                     color = palette.textPrimary
                 )
 
+                val activeName = activeProgram.localizedName(state.language)
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = palette.surface,
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
-                        .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenProgramEditor(activeProgram.id) }
+                        .trainPilotCombinedClickable(
+                            shape = RoundedCornerShape(16.dp),
+                            onLongClickLabel = trW(state.language, "Program műveletek: $activeName", "Program actions: $activeName", "Programmaktionen: $activeName", "Acțiuni program: $activeName"),
+                            onLongClick = {
+                                actionSheetSnapshot = activeProgram
+                                actionSheetProgramId = activeProgram.id
+                            },
+                            onClick = { onOpenProgramEditor(activeProgram.id) }
+                        )
                         .testTag("programs_active_program_card")
                 ) {
                     Row(
@@ -839,7 +1082,7 @@ fun ProgramsListScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = activeProgram.localizedName(state.language),
+                                    text = activeName,
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                     color = palette.textPrimary,
                                     modifier = Modifier.weight(1f)
@@ -876,12 +1119,32 @@ fun ProgramsListScreen(
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = palette.textSecondary
-                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .trainPilotClickable(RoundedCornerShape(10.dp)) {
+                                    actionSheetSnapshot = activeProgram
+                                    actionSheetProgramId = activeProgram.id
+                                }
+                                .semantics {
+                                    contentDescription = trW(
+                                        state.language,
+                                        "További műveletek: $activeName",
+                                        "More actions: $activeName",
+                                        "Weitere Aktionen: $activeName",
+                                        "Mai multe acțiuni: $activeName"
+                                    )
+                                }
+                                .testTag("program_more_button_${activeProgram.id}")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = null,
+                                tint = palette.textSecondary
+                            )
+                        }
                     }
                 }
             }
@@ -935,13 +1198,22 @@ fun ProgramsListScreen(
 
             filteredPrograms.forEachIndexed { index, program ->
                 var dragAccumY by remember(program.id, index) { mutableFloatStateOf(0f) }
+                val progName = program.localizedName(state.language)
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = palette.surface,
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
-                        .trainPilotClickable(RoundedCornerShape(14.dp)) { onOpenProgramEditor(program.id) }
+                        .trainPilotCombinedClickable(
+                            shape = RoundedCornerShape(14.dp),
+                            onLongClickLabel = trW(state.language, "Program műveletek: $progName", "Program actions: $progName", "Programmaktionen: $progName", "Acțiuni program: $progName"),
+                            onLongClick = {
+                                actionSheetSnapshot = program
+                                actionSheetProgramId = program.id
+                            },
+                            onClick = { onOpenProgramEditor(program.id) }
+                        )
                         .testTag("program_card_${program.id}")
                 ) {
                     Row(
@@ -970,6 +1242,7 @@ fun ProgramsListScreen(
                                         }
                                     )
                                 }
+                                .testTag("program_drag_handle_${program.id}")
                         ) {
                             Text(
                                 text = "▲",
@@ -978,6 +1251,7 @@ fun ProgramsListScreen(
                                 modifier = Modifier
                                     .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index > 0) { onMoveProgramOrder(index, index - 1) }
                                     .padding(horizontal = 3.dp, vertical = 0.dp)
+                                    .testTag("program_move_up_${program.id}")
                             )
                             Icon(
                                 imageVector = Icons.Default.DragHandle,
@@ -992,6 +1266,7 @@ fun ProgramsListScreen(
                                 modifier = Modifier
                                     .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index < filteredPrograms.lastIndex) { onMoveProgramOrder(index, index + 1) }
                                     .padding(horizontal = 3.dp, vertical = 0.dp)
+                                    .testTag("program_move_down_${program.id}")
                             )
                         }
 
@@ -1003,7 +1278,7 @@ fun ProgramsListScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = program.localizedName(state.language),
+                                text = progName,
                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, lineHeight = 18.sp),
                                 color = palette.textPrimary
                             )
@@ -1025,7 +1300,7 @@ fun ProgramsListScreen(
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         if (!program.isActive) {
                             Box(
                                 contentAlignment = Alignment.Center,
@@ -1049,6 +1324,31 @@ fun ProgramsListScreen(
                                     )
                                 }
                             }
+                        }
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .trainPilotClickable(RoundedCornerShape(10.dp)) {
+                                    actionSheetSnapshot = program
+                                    actionSheetProgramId = program.id
+                                }
+                                .semantics {
+                                    contentDescription = trW(
+                                        state.language,
+                                        "További műveletek: $progName",
+                                        "More actions: $progName",
+                                        "Weitere Aktionen: $progName",
+                                        "Mai multe acțiuni: $progName"
+                                    )
+                                }
+                                .testTag("program_more_button_${program.id}")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = null,
+                                tint = palette.textSecondary
+                            )
                         }
                     }
                 }
@@ -1519,7 +1819,7 @@ fun CalendarPlannerScreen(
     onSelectDay: (Int) -> Unit,
     onOpenReplanModal: (Boolean) -> Unit,
     onApplyReplan: (String, String, String) -> Unit,
-    onOpenWorkoutDetail: () -> Unit,
+    onOpenWorkoutDetail: (String) -> Unit = {},
     onUpdatePlanningParams: (String, String, String, String, Int, Int) -> Unit = { _, _, _, _, _, _ -> },
     onPlanMonthlyWorkouts: () -> Unit = {},
     onModifyCalendarEvent: (String, String, String, String, Int) -> Unit = { _, _, _, _, _ -> },
@@ -2233,7 +2533,13 @@ fun CalendarPlannerScreen(
                                         Surface(
                                             shape = RoundedCornerShape(8.dp),
                                             color = palette.primary.copy(alpha = 0.16f),
-                                            modifier = Modifier.heightIn(min = 48.dp).trainPilotClickable(RoundedCornerShape(8.dp)) { openedDay = null; onOpenWorkoutDetail() }
+                                            modifier = Modifier
+                                                .heightIn(min = 48.dp)
+                                                .trainPilotClickable(RoundedCornerShape(8.dp)) {
+                                                    openedDay = null
+                                                    onOpenWorkoutDetail(ev.id)
+                                                }
+                                                .testTag("calendar_open_workout_detail_${ev.id}")
                                         ) {
                                             Text(
                                                 text = "${strings.navLog} >",

@@ -100,17 +100,23 @@ data class NavViewState(
     val selectedExerciseId: String,
     val privatePhotoWorkoutId: String?,
     val editingProgramId: String,
-    val editingDayIndex: Int
+    val editingDayIndex: Int,
+    val programsTabCustomOnly: Boolean = false,
+    val calendarYearMonth: String = "",
+    val selectedCalendarDay: Int = 0
 )
 
 internal fun TrainPilotUiState.navigationRoute() = NavRoute(currentTab, currentSubScreen,
     NavViewState(progressMainSection, selectedLogWorkoutId, logDetailTabIndex,
-        expandedLogExerciseIndex, selectedExerciseId, privatePhotoWorkoutId, editingProgramId, editingDayIndex))
+        expandedLogExerciseIndex, selectedExerciseId, privatePhotoWorkoutId, editingProgramId, editingDayIndex,
+        programsTabCustomOnly, calendarYearMonth, selectedCalendarDay))
 
 internal fun TrainPilotUiState.restoreNavigation(route: NavRoute): TrainPilotUiState {
     val origin = route.view
     val measurement = route.subScreen in setOf(SubScreen.ACTIVE_STRENGTH, SubScreen.ACTIVE_TIMED,
         SubScreen.ACTIVE_BILATERAL, SubScreen.ACTIVE_OUTDOOR_GPS)
+    val keepCustomTabFromNewCopy = origin != null && editingProgramId != origin.editingProgramId &&
+        programsTabCustomOnly && programs.any { it.id == editingProgramId && it.isCustom }
     return copy(currentTab = route.tab, currentSubScreen = route.subScreen,
         progressMainSection = origin?.progressMainSection ?: progressMainSection,
         selectedLogWorkoutId = origin?.selectedLogWorkoutId ?: selectedLogWorkoutId,
@@ -119,7 +125,10 @@ internal fun TrainPilotUiState.restoreNavigation(route: NavRoute): TrainPilotUiS
         selectedExerciseId = if (measurement) selectedExerciseId else origin?.selectedExerciseId ?: selectedExerciseId,
         privatePhotoWorkoutId = if (origin != null) origin.privatePhotoWorkoutId else privatePhotoWorkoutId,
         editingProgramId = origin?.editingProgramId ?: editingProgramId,
-        editingDayIndex = origin?.editingDayIndex ?: editingDayIndex)
+        editingDayIndex = origin?.editingDayIndex ?: editingDayIndex,
+        programsTabCustomOnly = if (keepCustomTabFromNewCopy) true else origin?.programsTabCustomOnly ?: programsTabCustomOnly,
+        calendarYearMonth = origin?.calendarYearMonth?.takeIf { it.isNotBlank() } ?: calendarYearMonth,
+        selectedCalendarDay = origin?.selectedCalendarDay?.takeIf { it > 0 } ?: selectedCalendarDay)
 }
 
 data class WeeklyHealthDaySummary(

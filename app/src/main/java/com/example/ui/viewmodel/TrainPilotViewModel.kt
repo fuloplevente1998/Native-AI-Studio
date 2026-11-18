@@ -339,6 +339,7 @@ class TrainPilotViewModel : ViewModel() {
         proposedPrograms: List<TrainingProgramModel>? = null,
         profileProgramToWrite: String? = null,
         profileSourceTemplateId: String? = null,
+        activatedProgramId: String? = null,
         onSaveResult: ((Boolean) -> Unit)? = null
     ) {
         val db = nativeDatabase
@@ -368,6 +369,27 @@ class TrainPilotViewModel : ViewModel() {
             runCatching {
                 com.repforge.app.NativeDataReplacement.mutate(context) {
                 ticket.requireCurrent(context)
+                if (activatedProgramId != null && db.programDao().getProgramWithDaysById(activatedProgramId) == null) {
+                    val rows = db.programDao().getProgramsWithDays()
+                    val activeId = nativeSettingsStore?.current()?.activeProgramId.orEmpty()
+                    val exercisesMap = _uiState.value.exercises.associateBy { it.id }
+                    val reloaded = mapProgramRows(rows.map { it.program }, rows.flatMap { it.days }, exercisesMap, activeId)
+                    _uiState.update { st ->
+                        st.copy(
+                            programs = reloaded,
+                            editingProgramId = reloaded.firstOrNull { it.isActive }?.id ?: reloaded.firstOrNull()?.id.orEmpty(),
+                            statusBannerMessage = tr(
+                                "A kiválasztott program már nem található.",
+                                "Selected program was not found.",
+                                "Das ausgewählte Programm wurde nicht gefunden.",
+                                "Programul selectat nu a mai fost găsit.",
+                                st.language
+                            )
+                        )
+                    }
+                    onSaveResult?.invoke(false)
+                    return@mutate
+                }
                 currentPrograms.forEachIndexed { pIdx, prog ->
                     if (proposedPrograms != null && prog.id != profileProgramToWrite) return@forEachIndexed
                     val existing = db.programDao().getProgramWithDaysById(prog.id)?.program
@@ -1279,6 +1301,7 @@ class TrainPilotViewModel : ViewModel() {
                 titleHu = w.programName.ifBlank { w.dayName }.ifBlank { "Edzés" },
                 programId = w.programId, dayId = if (w.quickWorkout) "" else w.dayId,
                 dayName = if (w.quickWorkout) "" else w.dayName,
+                scheduleId = w.scheduleId.orEmpty(),
                 durationMinutes = realDurationMin,
                 workTimeLabel = realWorkLabel,
                 restTimeLabel = "—",
@@ -2029,18 +2052,59 @@ class TrainPilotViewModel : ViewModel() {
                 // preserving cancellation of this screen's actual mutation/lifecycle scope.
                 if (error is CancellationException) currentCoroutineContext().ensureActive()
                 val detail = error.message.orEmpty()
+                val lang = _uiState.value.language
                 val message = when {
-                    detail.contains("Deactivate", true) -> "Törlés előtt válassz másik aktív programot."
-                    detail.contains("active", true) || detail.contains("transferring", true) ->
-                        "Előbb fejezd be az aktív vagy átadás alatt lévő edzést. Törlés előtt válassz másik aktív programot."
+                    detail.contains("Program missing", true) -> tr(
+                        "A kiválasztott program már nem található.",
+                        "Selected program was not found.",
+                        "Das ausgewählte Programm wurde nicht gefunden.",
+                        "Programul selectat nu a mai fost găsit.",
+                        lang
+                    )
+                    detail.contains("Deactivate", true) -> tr(
+                        "Törlés előtt válassz másik aktív programot.",
+                        "Select another active program before deleting.",
+                        "Wähle vor dem Löschen ein anderes aktives Programm.",
+                        "Selectează alt program activ înainte de ștergere.",
+                        lang
+                    )
+                    detail.contains("active", true) || detail.contains("transferring", true) -> tr(
+                        "Előbb fejezd be az aktív vagy átadás alatt lévő edzést. Törlés előtt válassz másik aktív programot.",
+                        "Finish the active or transferring workout first. Select another active program before deleting.",
+                        "Beende zuerst das aktive oder in Übergabe befindliche Training. Wähle vor dem Löschen ein anderes aktives Programm.",
+                        "Finalizează mai întâi antrenamentul activ sau în curs de predare. Selectează alt program activ înainte de ștergere.",
+                        lang
+                    )
                     detail.contains("planned calendar workouts", true) ->
-                        com.example.localization.CalendarFeedback.plannedProgram(_uiState.value.language)
-                    detail.contains("history", true) || detail.contains("calendar", true) ->
-                        "A naplóban vagy a naptárban használt program/nap nem törölhető."
-                    detail.contains("Built-in", true) -> "A beépített sablon nem törölhető; készíts saját másolatot."
-                    detail.contains("changed", true) || detail.contains("replacement", true) ->
-                        "Az adatok megváltoztak. Nyisd meg újra a szerkesztőt."
-                    else -> "A művelet nem sikerült. Ellenőrizd a megadott adatokat és nyisd meg újra."
+                        com.example.localization.CalendarFeedback.plannedProgram(lang)
+                    detail.contains("history", true) || detail.contains("calendar", true) -> tr(
+                        "A naplóban vagy a naptárban használt program/nap nem törölhető.",
+                        "A program/day used in history or calendar cannot be deleted.",
+                        "Ein im Protokoll oder Kalender verwendetes Programm bzw. ein Tag kann nicht gelöscht werden.",
+                        "Un program sau o zi utilizată în jurnal sau calendar nu poate fi ștearsă.",
+                        lang
+                    )
+                    detail.contains("Built-in", true) -> tr(
+                        "A beépített sablon nem törölhető; készíts saját másolatot.",
+                        "Built-in templates cannot be deleted; create a custom copy.",
+                        "Standardvorlagen können nicht gelöscht werden; erstelle eine eigene Kopie.",
+                        "Șabloanele predefinite nu pot fi șterse; creează o copie personalizată.",
+                        lang
+                    )
+                    detail.contains("changed", true) || detail.contains("replacement", true) -> tr(
+                        "Az adatok megváltoztak. Nyisd meg újra a szerkesztőt.",
+                        "Data changed. Reopen the editor.",
+                        "Die Daten haben sich geändert. Öffne den Editor erneut.",
+                        "Datele s-au modificat. Redeschide editorul.",
+                        lang
+                    )
+                    else -> tr(
+                        "A művelet nem sikerült. Ellenőrizd a megadott adatokat és nyisd meg újra.",
+                        "Operation failed. Check your input and reopen.",
+                        "Vorgang fehlgeschlagen. Prüfe die Eingaben und öffne erneut.",
+                        "Operațiunea a eșuat. Verifică datele și redeschide.",
+                        lang
+                    )
                 }
                 _uiState.update { it.copy(statusBannerMessage = message) }
             } finally { _uiState.update { it.copy(libraryMutationBusy = false) } }
@@ -2057,7 +2121,8 @@ class TrainPilotViewModel : ViewModel() {
         val dayKey = state.programs.firstOrNull { it.id == programId }?.days?.getOrNull(state.editingDayIndex)?.id
         val language = state.language.name.lowercase(java.util.Locale.ROOT)
         mutateStudioLibrary(success, editor = true, selectLastDay = selectLastDay) { context, db, store ->
-            val opened = requireNotNull(db.programDao().getProgramWithDaysById(programId))
+            val opened = db.programDao().getProgramWithDaysById(programId)
+                ?: throw IllegalStateException("Program missing: $programId")
             val rawDayId = opened.days.firstOrNull { it.compositeId == dayKey || it.dayId == dayKey }?.dayId
             val draft = change(com.repforge.app.NativeProgramEditor.from(opened, language), rawDayId)
             com.repforge.app.NativeEditedProgramSave.save(context, db, store, opened, draft, language)
@@ -2076,13 +2141,14 @@ class TrainPilotViewModel : ViewModel() {
         val language = state.language.name.lowercase(java.util.Locale.ROOT)
         mutateStudioLibrary(tr("Program elmentve.", "Program saved.", "Programm gespeichert.", "Program salvat."),
             editor = true) { context, db, store ->
-            val opened = requireNotNull(db.programDao().getProgramWithDaysById(programId))
+            val opened = db.programDao().getProgramWithDaysById(programId)
+                ?: throw IllegalStateException("Program missing: $programId")
             com.repforge.app.NativeEditedProgramSave.save(context, db, store, opened,
                 com.repforge.app.StudioProgramSave.draft(opened, language, name, changes), language)
         }
     }
 
-    fun copyEditorProgram() {
+    fun copyProgram(programId: String, fromEditor: Boolean = false) {
         val state = _uiState.value
         val copySuffix = tr(" – másolat", " – copy", " – Kopie", " – copie", state.language)
         mutateStudioLibrary(
@@ -2093,9 +2159,10 @@ class TrainPilotViewModel : ViewModel() {
                 "Copia personalizată a programului a fost creată. Activeaz-o în listă.",
                 state.language
             ),
-            editor = true
+            editor = fromEditor
         ) { context, db, _ ->
-            val opened = requireNotNull(db.programDao().getProgramWithDaysById(state.editingProgramId))
+            val opened = db.programDao().getProgramWithDaysById(programId)
+                ?: throw IllegalStateException("Program missing: $programId")
             val language = state.language.name.lowercase(java.util.Locale.ROOT)
             val draft = com.repforge.app.NativeProgramEditor.from(opened, language)
             com.repforge.app.NativeProgramEditor.save(context, db, opened,
@@ -2103,8 +2170,9 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    fun deleteEditorProgram() {
-        val id = _uiState.value.editingProgramId
+    fun copyEditorProgram() = copyProgram(_uiState.value.editingProgramId, fromEditor = true)
+
+    fun deleteProgram(programId: String, fromEditor: Boolean = false) {
         mutateStudioLibrary(
             tr(
                 "Program végleg törölve a tárból.",
@@ -2112,13 +2180,16 @@ class TrainPilotViewModel : ViewModel() {
                 "Programm dauerhaft gelöscht.",
                 "Program șters definitiv."
             ),
-            editor = true
+            editor = fromEditor
         ) { context, db, store ->
-            com.repforge.app.NativeProgramEditor.delete(context, db,
-                requireNotNull(db.programDao().getProgramWithDaysById(id)), store)
+            val opened = db.programDao().getProgramWithDaysById(programId)
+                ?: throw IllegalStateException("Program missing: $programId")
+            com.repforge.app.NativeProgramEditor.delete(context, db, opened, store)
             null
         }
     }
+
+    fun deleteEditorProgram() = deleteProgram(_uiState.value.editingProgramId, fromEditor = true)
 
     fun addEditorDay(name: String) = editStudioProgram(
         tr("Edzésnap hozzáadva.", "Workout day added.", "Trainingstag hinzugefügt.", "Zi de antrenament adăugată."),
@@ -2164,6 +2235,20 @@ class TrainPilotViewModel : ViewModel() {
 
     fun activateProgram(programId: String) {
         if (_uiState.value.libraryMutationBusy) return
+        if (_uiState.value.programs.none { it.id == programId }) {
+            _uiState.update { state ->
+                state.copy(
+                    statusBannerMessage = tr(
+                        "A kiválasztott program már nem található.",
+                        "Selected program was not found.",
+                        "Das ausgewählte Programm wurde nicht gefunden.",
+                        "Programul selectat nu a mai fost găsit.",
+                        state.language
+                    )
+                )
+            }
+            return
+        }
         _uiState.update { state ->
             val updated = state.programs.map { prog ->
                 prog.copy(isActive = prog.id == programId)
@@ -2180,17 +2265,33 @@ class TrainPilotViewModel : ViewModel() {
                 )
             )
         }
-        persistProgramsToRoomAsync()
+        persistProgramsToRoomAsync(activatedProgramId = programId)
     }
 
     fun openProgramEditor(programId: String, dayIndex: Int = 0) {
+        val currentPrograms = _uiState.value.programs
+        if (programId.isNotBlank() && currentPrograms.isNotEmpty() && currentPrograms.none { it.id == programId }) {
+            _uiState.update { state ->
+                state.copy(
+                    statusBannerMessage = tr(
+                        "A kiválasztott program már nem található.",
+                        "Selected program was not found.",
+                        "Das ausgewählte Programm wurde nicht gefunden.",
+                        "Programul selectat nu a mai fost găsit.",
+                        state.language
+                    )
+                )
+            }
+            return
+        }
+        val resolvedId = programId.ifBlank { currentPrograms.firstOrNull { it.isActive }?.id ?: currentPrograms.firstOrNull()?.id.orEmpty() }
         programEditorContinuation = nativeContext?.let {
             runCatching { com.repforge.app.NativeDataReplacement.continuationForCurrentData(it) }.getOrNull()
         }
         _uiState.update {
             val back = (it.backStack + it.navigationRoute()).takeLast(16)
             it.copy(
-                editingProgramId = programId,
+                editingProgramId = resolvedId,
                 editingDayIndex = dayIndex,
                 currentSubScreen = SubScreen.PROGRAM_EDITOR,
                 backStack = back
@@ -4010,6 +4111,7 @@ class TrainPilotViewModel : ViewModel() {
                         titleHu = dbW.programName.ifBlank { workoutTitle },
                         programId = dbW.programId, dayId = if (dbW.quickWorkout) "" else dbW.dayId,
                         dayName = if (dbW.quickWorkout) "" else dbW.dayName,
+                        scheduleId = dbW.scheduleId.orEmpty(),
                         durationMinutes = realDurationMins,
                         workTimeLabel = realWorkTimeLabel,
                         restTimeLabel = "—",
@@ -4094,6 +4196,58 @@ class TrainPilotViewModel : ViewModel() {
             )
         }
         loadWorkoutMuscleSummary(workoutId)
+    }
+
+    fun openCalendarEventWorkoutDetail(eventId: String) {
+        val state = _uiState.value
+        val event = state.calendarEvents.firstOrNull { it.id == eventId }
+        val targetEventDate = event?.dateIso?.trim().orEmpty()
+        fun normalizeDayToken(raw: String): String =
+            raw.substringAfterLast(':').trim().removePrefix("day_").removeSuffix(" nap").trim().lowercase(Locale.ROOT)
+        val matched = state.loggedWorkouts.firstOrNull { it.id == eventId }
+            ?: state.loggedWorkouts.firstOrNull { it.scheduleId.isNotBlank() && it.scheduleId == eventId }
+            ?: if (event != null && targetEventDate.isNotBlank()) {
+                val sameDateUnboundWorkouts = state.loggedWorkouts.filter { entry ->
+                    if (entry.scheduleId.isNotBlank() && entry.scheduleId != eventId) return@filter false
+                    val entryDate = entry.savedStartIso.take(10).ifBlank {
+                        entry.dateLabelHu.take(10).replace(". ", "-").replace('.', '-').trim('-')
+                    }
+                    entryDate == targetEventDate
+                }
+                val eventTitlePrefix = event.titleHu.substringBefore("•").trim()
+                sameDateUnboundWorkouts.firstOrNull { entry ->
+                    val progMatches = if (event.programId.isNotBlank() && entry.programId.isNotBlank()) {
+                        entry.programId == event.programId
+                    } else if (event.programId.isNotBlank()) {
+                        eventTitlePrefix.isNotBlank() && entry.titleHu.contains(eventTitlePrefix, ignoreCase = true)
+                    } else true
+                    val dayMatches = if (event.dayId.isNotBlank() && entry.dayId.isNotBlank()) {
+                        normalizeDayToken(entry.dayId) == normalizeDayToken(event.dayId) ||
+                            normalizeDayToken(entry.dayId) == normalizeDayToken(event.splitBadge)
+                    } else true
+                    progMatches && dayMatches
+                } ?: sameDateUnboundWorkouts.singleOrNull { entry ->
+                    (event.programId.isBlank() && entry.programId.isBlank()) ||
+                        (event.programId.isNotBlank() && entry.programId == event.programId) ||
+                        (eventTitlePrefix.isNotBlank() && entry.titleHu.contains(eventTitlePrefix, ignoreCase = true))
+                }
+            } else null
+
+        if (matched != null) {
+            openLogWorkoutDetail(matched.id)
+        } else {
+            _uiState.update {
+                it.copy(
+                    statusBannerMessage = tr(
+                        "Ehhez a naptári eseményhez nem található naplózott edzés.",
+                        "No logged workout found for this calendar event.",
+                        "Für diesen Kalendereintrag wurde kein protokolliertes Training gefunden.",
+                        "Nu s-a găsit niciun antrenament salvat pentru acest eveniment din calendar.",
+                        it.language
+                    )
+                )
+            }
+        }
     }
 
     fun onLoggedWorkoutDeleted(id: String) {

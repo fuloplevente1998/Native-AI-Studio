@@ -955,7 +955,8 @@ data class LoggedWorkoutEntry(
     val savedFinishIso: String = "",
     val programId: String = "",
     val dayId: String = "",
-    val dayName: String = ""
+    val dayName: String = "",
+    val scheduleId: String = ""
 ) {
     fun localizedTitle(
         lang: AppLanguage,

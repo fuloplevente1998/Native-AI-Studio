@@ -142,4 +142,299 @@ class NavigationOriginUiRegressionTest {
         compose.runOnIdle { model.navigateToSubScreen(SubScreen.BACKUP_RESTORE) }
         compose.onNodeWithTag("local_draft").assertTextEquals("0")
     }
+
+    @Test fun programsLongPressAndMoreButtonOpenActionSheetAndEditReturnsDirectlyWithTabAndScroll() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        val store = com.repforge.app.data.store.TrainPilotSettingsStore(context)
+        val dbField = com.repforge.app.data.db.TrainPilotDatabase::class.java.getDeclaredField("INSTANCE").apply { isAccessible = true }
+        (dbField.get(null) as? com.repforge.app.data.db.TrainPilotDatabase)?.close()
+        val db = androidx.room.Room.inMemoryDatabaseBuilder(context, com.repforge.app.data.db.TrainPilotDatabase::class.java)
+            .allowMainThreadQueries().build()
+        dbField.set(null, db)
+        val job = kotlinx.coroutines.SupervisorJob()
+        val scope = kotlinx.coroutines.CoroutineScope(job + kotlinx.coroutines.Dispatchers.Main.immediate)
+        try {
+            val model = TrainPilotViewModel()
+            model.bindNativeEnvironment(context, store, db, scope)
+            compose.waitUntil(20_000) {
+                androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
+                org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+                !model.uiState.value.savedRecordsLoading && model.uiState.value.programs.isNotEmpty()
+            }
+            // Create two custom programs so Custom tab has multiple items
+            model.createNewCustomProgram("Alpha Egyéni", "Teszt 1")
+            compose.waitUntil(10_000) {
+                org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+                model.uiState.value.programs.any { it.nameHu == "Alpha Egyéni" }
+            }
+            model.navigateBack()
+            model.createNewCustomProgram("Beta Egyéni", "Teszt 2")
+            compose.waitUntil(10_000) {
+                org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+                model.uiState.value.programs.any { it.nameHu == "Beta Egyéni" }
+            }
+            model.navigateBack()
+            model.selectTab(MainTab.PROGRAMS)
+            model.setProgramsTabCustomOnly(true)
+
+            val alpha = model.uiState.value.programs.first { it.nameHu == "Alpha Egyéni" }
+            val beta = model.uiState.value.programs.first { it.nameHu == "Beta Egyéni" }
+
+            compose.setContent {
+                TrainPilotTheme {
+                    val state by model.uiState.collectAsState()
+                    BackHandler(state.currentSubScreen != SubScreen.NONE) { model.navigateBack() }
+                    Box(Modifier.size(400.dp, 640.dp)) {
+                        TrainPilotRouteContent(state) {
+                            if (state.currentSubScreen == SubScreen.PROGRAM_EDITOR) {
+                                com.example.ui.screens.ProgramEditorScreen(
+                                    state = state,
+                                    onBack = { model.navigateBack() },
+                                    onOpenSettings = {},
+                                    onSelectDayIndex = model::selectEditingDayIndex,
+                                    onToggleExpandExercise = model::toggleExpandedEditorExercise,
+                                    onSaveExercisePrescription = model::updateProgramExercisePrescription,
+                                    onOpenExerciseDetail = model::openExerciseDetail,
+                                    onOpenExerciseLibrary = {},
+                                    onMoveExercise = model::moveEditorExercise,
+                                    onCopyProgram = model::copyEditorProgram,
+                                    onDeleteProgram = model::deleteEditorProgram,
+                                    onAddDay = model::addEditorDay,
+                                    onDeleteDay = model::deleteEditorDay,
+                                    onRemoveExercise = model::removeEditorExercise,
+                                    onRenameProgram = model::renameEditorProgram,
+                                    onSaveProgram = model::saveEditorProgram
+                                )
+                            } else {
+                                com.example.ui.screens.ProgramsListScreen(
+                                    state = state,
+                                    onBack = { model.navigateBack() },
+                                    onOpenSettings = {},
+                                    onToggleCustomTab = model::setProgramsTabCustomOnly,
+                                    onActivateProgram = model::activateProgram,
+                                    onOpenProgramEditor = { id -> model.openProgramEditor(id, 0) },
+                                    onCopyProgram = model::copyProgram,
+                                    onDeleteProgram = model::deleteProgram,
+                                    onOpenExerciseLibrary = {},
+                                    onOpenPersonalPlanner = {},
+                                    onMoveProgramOrder = model::moveProgramOrder,
+                                    onCreateCustomProgram = model::createNewCustomProgram
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 1. Long-press on card opens Program Action Sheet
+            compose.onNodeWithTag("program_card_${alpha.id}").performScrollTo()
+                .performTouchInput { longClick() }
+            compose.onNodeWithTag("program_action_sheet").assertIsDisplayed()
+            compose.onNodeWithTag("program_action_sheet_title").assertTextEquals("Alpha Egyéni")
+
+            // Closing via X dismisses sheet and stays on Custom tab
+            compose.onNodeWithTag("program_action_sheet_close").performClick()
+            compose.onNodeWithTag("program_action_sheet").assertDoesNotExist()
+            assertTrue(model.uiState.value.programsTabCustomOnly)
+
+            // 2. Dedicated 48dp more button has TalkBack contentDescription and opens same sheet
+            val moreBtn = compose.onNodeWithTag("program_more_button_${alpha.id}").performScrollTo()
+            val cd = moreBtn.fetchSemanticsNode().config.getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
+            assertTrue("More button must expose program-identifying TalkBack description",
+                cd.any { it.contains("Alpha Egyéni") })
+            moreBtn.performClick()
+            compose.onNodeWithTag("program_action_sheet").assertIsDisplayed()
+
+            // 3. Single logical transition: Action Sheet -> Edit -> Back returns directly to Programs Custom tab without reopening sheet
+            compose.onNodeWithTag("program_action_edit").performClick()
+            compose.onNodeWithTag("program_action_sheet").assertDoesNotExist()
+            assertEquals(SubScreen.PROGRAM_EDITOR, model.uiState.value.currentSubScreen)
+            assertEquals(alpha.id, model.uiState.value.editingProgramId)
+
+            compose.runOnIdle { model.navigateBack() }
+            assertEquals(SubScreen.NONE, model.uiState.value.currentSubScreen)
+            assertEquals(MainTab.PROGRAMS, model.uiState.value.currentTab)
+            assertTrue("Custom tab selection must be preserved on return", model.uiState.value.programsTabCustomOnly)
+            compose.onNodeWithTag("program_action_sheet").assertDoesNotExist()
+
+            // 4. Delete confirmation identifies program by name; cancel keeps program; missing-record guard protects next item
+            compose.onNodeWithTag("program_more_button_${alpha.id}").performScrollTo().performClick()
+            compose.onNodeWithTag("program_action_delete").performClick()
+            compose.onNodeWithTag("program_delete_confirm_dialog").assertIsDisplayed()
+            compose.onNodeWithTag("program_delete_confirm_title").assertTextContains("Alpha Egyéni", substring = true)
+            compose.onNodeWithTag("program_delete_cancel_button").performClick()
+            compose.onNodeWithTag("program_delete_confirm_dialog").assertDoesNotExist()
+            assertTrue(model.uiState.value.programs.any { it.id == alpha.id })
+
+            // Simulate concurrent disappearance of alpha in Room before delete confirm
+            compose.onNodeWithTag("program_more_button_${alpha.id}").performScrollTo().performClick()
+            compose.onNodeWithTag("program_action_delete").performClick()
+            compose.onNodeWithTag("program_delete_confirm_dialog").assertIsDisplayed()
+            kotlinx.coroutines.runBlocking {
+                db.programDao().deleteDaysForProgram(alpha.id)
+                db.programDao().deleteCustomProgram(alpha.id)
+            }
+            compose.onNodeWithTag("program_delete_confirm_button").performClick()
+            compose.waitUntil(10_000) {
+                org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+                model.uiState.value.statusBannerMessage.orEmpty().contains("nem található")
+            }
+            // Beta must remain untouched in Room and UI
+            assertNotNull(kotlinx.coroutines.runBlocking { db.programDao().getProgramWithDaysById(beta.id) })
+            assertTrue(model.uiState.value.programs.any { it.id == beta.id })
+        } finally {
+            job.cancel()
+            db.close()
+            dbField.set(null, null)
+        }
+    }
+
+    @Test fun calendarCompletedWorkoutOpensMatchingLoggedWorkoutAndPreservesMonthAndDayOnBack() {
+        val model = TrainPilotViewModel()
+        val firstDifferentWorkout = LoggedWorkoutEntry(
+            id = "older_unrelated_workout",
+            scheduleId = "ev_unrelated",
+            titleHu = "Másik edzés",
+            dateLabelHu = "2026-11-01 10:00",
+            savedStartIso = "2026-11-01T10:00:00Z",
+            durationMinutes = 30,
+            totalVolumeKg = 800
+        )
+        val matchingWorkout = LoggedWorkoutEntry(
+            id = "target_calendar_workout",
+            scheduleId = "ev_completed_target",
+            titleHu = "Célzott Naptári Edzés",
+            dateLabelHu = "2026-11-15 18:00",
+            savedStartIso = "2026-11-15T18:00:00Z",
+            durationMinutes = 55,
+            totalVolumeKg = 2450
+        )
+        val completedWithLog = com.example.model.CalendarDayEvent(
+            id = "ev_completed_target",
+            dayOfMonth = 15,
+            timeLabel = "18:00",
+            titleHu = "Célzott Naptári Edzés",
+            exerciseCount = 5,
+            durationMinutes = 55,
+            status = com.example.model.CalendarEventStatus.COMPLETED,
+            splitBadge = "A",
+            dateIso = "2026-11-15",
+            programId = "prog_1",
+            dayId = "day_a"
+        )
+        val completedWithoutLog = com.example.model.CalendarDayEvent(
+            id = "ev_completed_missing_log",
+            dayOfMonth = 15,
+            timeLabel = "19:30",
+            titleHu = "Napló nélküli esemény",
+            exerciseCount = 4,
+            durationMinutes = 45,
+            status = com.example.model.CalendarEventStatus.COMPLETED,
+            splitBadge = "B",
+            dateIso = "2026-11-15",
+            programId = "prog_missing",
+            dayId = "day_missing"
+        )
+        val field = TrainPilotViewModel::class.java.getDeclaredField("_uiState").apply { isAccessible = true }
+        @Suppress("UNCHECKED_CAST")
+        val flow = field.get(model) as MutableStateFlow<TrainPilotUiState>
+        flow.value = model.uiState.value.copy(
+            currentTab = MainTab.CALENDAR,
+            calendarYearMonth = "2026-11",
+            selectedCalendarDay = 15,
+            loggedWorkouts = listOf(firstDifferentWorkout, matchingWorkout),
+            calendarEvents = listOf(completedWithLog, completedWithoutLog)
+        )
+
+        compose.setContent {
+            TrainPilotTheme {
+                val state by model.uiState.collectAsState()
+                val strings = TrainPilotStrings.forLanguage(state.language)
+                BackHandler(state.currentSubScreen != SubScreen.NONE) { model.navigateBack() }
+                Box(Modifier.size(400.dp, 700.dp)) {
+                    TrainPilotRouteContent(state) {
+                        if (state.currentSubScreen == SubScreen.LOG_WORKOUT_DETAIL) {
+                            LogWorkoutDetailScreen(
+                                state,
+                                strings,
+                                onBack = { model.navigateBack() },
+                                onOpenSettings = {},
+                                onSelectDetailTab = model::selectLogDetailTab,
+                                onToggleExpandedExercise = {},
+                                onOpenPhotos = {},
+                                onOpenRouteMap = {},
+                                onOpenWatchSync = {},
+                                onOpenHealthTab = {}
+                            )
+                        } else {
+                            com.example.ui.screens.CalendarPlannerScreen(
+                                state = state,
+                                onBack = { model.navigateBack() },
+                                onOpenSettings = {},
+                                onSelectDay = model::selectCalendarDay,
+                                onSelectMonth = model::selectCalendarMonth,
+                                onOpenReplanModal = model::toggleReplanModal,
+                                onApplyReplan = model::applyCalendarReplan,
+                                onOpenWorkoutDetail = model::openCalendarEventWorkoutDetail,
+                                onUpdatePlanningParams = model::updatePlanningParameters,
+                                onPlanMonthlyWorkouts = model::planMonthlyWorkouts,
+                                onRequestClearCalendar = model::requestCalendarClear,
+                                onConfirmClearCalendar = model::clearCalendarPlans,
+                                onCancelClearCalendar = model::cancelCalendarClear,
+                                onModifyCalendarEvent = model::modifyCalendarEvent,
+                                onMoveCalendarEvent = model::moveCalendarEvent,
+                                onDeleteCalendarEvent = model::deleteCalendarEvent,
+                                onAddPlannedWorkoutOnDay = model::addPlannedWorkoutOnDay,
+                                onUndoCalendarAction = model::undoCalendarAction
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // 1. Missing-log event must NOT open firstOrNull() workout; stays on Calendar with status message
+        compose.onNodeWithTag("calendar_day_15").performScrollTo().performClick()
+        compose.onNodeWithTag("calendar_open_workout_detail_ev_completed_missing_log")
+            .performScrollTo().performClick()
+        assertEquals(SubScreen.NONE, model.uiState.value.currentSubScreen)
+        assertTrue(model.uiState.value.statusBannerMessage.orEmpty().contains("nem található naplózott edzés"))
+
+        // 2. Event with matching log opens target_calendar_workout (not older_unrelated_workout)
+        compose.onNodeWithTag("calendar_day_15").performScrollTo().performClick()
+        compose.onNodeWithTag("calendar_open_workout_detail_ev_completed_target")
+            .performScrollTo().performClick()
+        assertEquals(SubScreen.LOG_WORKOUT_DETAIL, model.uiState.value.currentSubScreen)
+        assertEquals("target_calendar_workout", model.uiState.value.selectedLogWorkoutId)
+
+        // 3. Back restores exact calendarYearMonth and selectedCalendarDay
+        compose.runOnIdle { model.navigateBack() }
+        assertEquals(SubScreen.NONE, model.uiState.value.currentSubScreen)
+        assertEquals("2026-11", model.uiState.value.calendarYearMonth)
+        assertEquals(15, model.uiState.value.selectedCalendarDay)
+    }
+
+    @Test fun settingsTrainingProfileDialogUsesUnifiedPersonalPlannerDropdowns() {
+        var savedFields: Map<String, String>? = null
+        compose.setContent {
+            TrainPilotTheme {
+                com.repforge.app.ui.settings.TrainingProfileDialog(
+                    profileJson = """{"height":182,"weight":76.5,"daysPerWeek":4,"minutes":60,"goal":"Erőnövelés"}""",
+                    language = "hu",
+                    saving = false,
+                    failed = false,
+                    onSave = { savedFields = it },
+                    onDismiss = {}
+                )
+            }
+        }
+        compose.onNodeWithTag("profile_height_box").assertIsDisplayed().assertTextContains("182 cm")
+        compose.onNodeWithTag("profile_field_height").assertDoesNotExist()
+        compose.onNodeWithTag("planner_save_button").performClick()
+        assertNotNull(savedFields)
+        assertEquals("182", savedFields?.get("height"))
+        assertEquals("4", savedFields?.get("daysPerWeek"))
+        assertEquals("60", savedFields?.get("minutes"))
+    }
 }
+

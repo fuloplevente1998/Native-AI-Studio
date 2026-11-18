@@ -9,6 +9,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.semantics.Role
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -70,6 +71,30 @@ fun Modifier.trainPilotClickable(shape: Shape, enabled: Boolean = true, onClick:
     return trainPilotPressIndication(shape, source, enabled)
         .clickable(interactionSource = source, indication = null, enabled = enabled,
             role = Role.Button, onClick = onClick)
+}
+
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+fun Modifier.trainPilotCombinedClickable(
+    shape: Shape,
+    enabled: Boolean = true,
+    onClickLabel: String? = null,
+    onLongClickLabel: String? = null,
+    onLongClick: (() -> Unit)? = null,
+    onClick: () -> Unit
+): Modifier {
+    val source = remember { MutableInteractionSource() }
+    return trainPilotPressIndication(shape, source, enabled)
+        .combinedClickable(
+            interactionSource = source,
+            indication = null,
+            enabled = enabled,
+            role = Role.Button,
+            onClickLabel = onClickLabel,
+            onLongClickLabel = onLongClickLabel,
+            onLongClick = onLongClick,
+            onClick = onClick
+        )
 }
 
 /** Paint on the visual child while the accessible parent retains the larger hit area. */

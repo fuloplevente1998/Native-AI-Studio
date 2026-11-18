@@ -10,6 +10,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -108,6 +109,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val settingsStore = com.repforge.app.data.store.TrainPilotSettingsStore(this)
+        val database = com.repforge.app.data.db.TrainPilotDatabase.getInstance(this)
+        viewModel.bindNativeEnvironment(
+            context = applicationContext,
+            settingsStore = settingsStore,
+            database = database,
+            scope = lifecycleScope
+        )
         setContent {
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             val currentPalette = TrainPilotPalettes.getById(uiState.selectedPaletteId)
@@ -116,7 +125,9 @@ class MainActivity : ComponentActivity() {
                 palette = currentPalette,
                 fontScaleMultiplier = uiState.fontScaleMultiplier
             ) {
-                TrainPilotAppRoot(viewModel = viewModel)
+                com.repforge.app.ui.onboarding.NativeFirstLaunchGate(viewModel) {
+                    TrainPilotAppRoot(viewModel = viewModel)
+                }
             }
         }
     }
@@ -403,6 +414,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onToggleCustomTab = { viewModel.setProgramsTabCustomOnly(it) },
                             onActivateProgram = { viewModel.activateProgram(it) },
                             onOpenProgramEditor = { progId -> viewModel.openProgramEditor(progId, 0) },
+                            onCopyProgram = { progId -> viewModel.copyProgram(progId) },
+                            onDeleteProgram = { progId -> viewModel.deleteProgram(progId) },
                             onOpenExerciseLibrary = { viewModel.navigateToSubScreen(SubScreen.EXERCISE_LIBRARY) },
                             onOpenPersonalPlanner = { viewModel.togglePersonalPlannerModal(true) },
                             onMoveProgramOrder = { fromIdx, toIdx -> viewModel.moveProgramOrder(fromIdx, toIdx) },
@@ -446,8 +459,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onApplyReplan = { dateStr, firstDay, programId ->
                                 viewModel.applyCalendarReplan(dateStr, firstDay, programId)
                             },
-                            onOpenWorkoutDetail = {
-                                uiState.loggedWorkouts.firstOrNull()?.id?.let(viewModel::openLogWorkoutDetail)
+                            onOpenWorkoutDetail = { eventId ->
+                                viewModel.openCalendarEventWorkoutDetail(eventId)
                             },
                             onUpdatePlanningParams = { rhythm, firstDay, startDate, time, dur, weeks ->
                                 viewModel.updatePlanningParameters(rhythm, firstDay, startDate, time, dur, weeks)
@@ -819,6 +832,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onToggleCustomTab = { viewModel.setProgramsTabCustomOnly(it) },
                                     onActivateProgram = { viewModel.activateProgram(it) },
                                     onOpenProgramEditor = { progId -> viewModel.openProgramEditor(progId, 0) },
+                                    onCopyProgram = { progId -> viewModel.copyProgram(progId) },
+                                    onDeleteProgram = { progId -> viewModel.deleteProgram(progId) },
                                     onOpenExerciseLibrary = { viewModel.navigateToSubScreen(SubScreen.EXERCISE_LIBRARY) },
                                     onOpenPersonalPlanner = { viewModel.togglePersonalPlannerModal(true) },
                                     onMoveProgramOrder = { fromIdx, toIdx -> viewModel.moveProgramOrder(fromIdx, toIdx) },
@@ -856,8 +871,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onApplyReplan = { dateStr, firstDay, programId ->
                                         viewModel.applyCalendarReplan(dateStr, firstDay, programId)
                                     },
-                                    onOpenWorkoutDetail = {
-                                        uiState.loggedWorkouts.firstOrNull()?.id?.let(viewModel::openLogWorkoutDetail)
+                                    onOpenWorkoutDetail = { eventId ->
+                                        viewModel.openCalendarEventWorkoutDetail(eventId)
                                     },
                                     onUpdatePlanningParams = { rhythm, firstDay, startDate, time, dur, weeks ->
                                         viewModel.updatePlanningParameters(rhythm, firstDay, startDate, time, dur, weeks)

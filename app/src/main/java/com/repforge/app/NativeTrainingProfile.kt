@@ -9,7 +9,7 @@ import org.json.JSONObject
 internal object NativeTrainingProfile {
     private const val MAX_BYTES = 16_384
     private val numeric = mapOf("age" to 1.0..120.0, "height" to 60.0..260.0,
-        "weight" to 10.0..500.0, "minutes" to 5.0..300.0)
+        "weight" to 10.0..500.0, "minutes" to 5.0..300.0, "daysPerWeek" to 1.0..7.0)
     private val simple = setOf("goal", "experience", "activity", "location", "cadence", "split", "focus")
 
     fun verified(input: JSONObject): JSONObject {
@@ -55,7 +55,7 @@ internal object NativeTrainingProfile {
                 val n = trimmed.replace(',', '.').toDoubleOrNull()
                     ?: throw IllegalArgumentException("Invalid number: $key")
                 require(n.isFinite() && n in numeric.getValue(key))
-                if (key == "age" || key == "minutes") {
+                if (key == "age" || key == "minutes" || key == "daysPerWeek") {
                     require(n % 1.0 == 0.0)
                     updated.put(key, n.toInt())
                 } else updated.put(key, n)
