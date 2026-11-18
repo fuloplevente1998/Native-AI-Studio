@@ -338,6 +338,7 @@ class TrainPilotViewModel : ViewModel() {
         completeOnboarding: Boolean = false,
         proposedPrograms: List<TrainingProgramModel>? = null,
         profileProgramToWrite: String? = null,
+        profileSourceTemplateId: String? = null,
         onSaveResult: ((Boolean) -> Unit)? = null
     ) {
         val db = nativeDatabase
@@ -389,13 +390,15 @@ class TrainPilotViewModel : ViewModel() {
                         nameEn = prog.nameEn,
                         nameDe = prog.nameDe.ifBlank { prog.nameEn.ifBlank { prog.nameHu } },
                         nameRo = prog.nameRo.ifBlank { prog.nameEn.ifBlank { prog.nameHu } },
-                        location = prog.tagsHu.firstOrNull() ?: "Otthon / Edzőterem",
-                        level = prog.tagsHu.getOrNull(1) ?: "Kezdő",
+                        location = profile?.optString("location")?.takeIf(String::isNotBlank)
+                            ?: prog.tagsHu.firstOrNull() ?: "Otthon / Edzőterem",
+                        level = profile?.optString("experience")?.takeIf(String::isNotBlank)
+                            ?: prog.tagsHu.getOrNull(1) ?: "Kezdő",
                         description = persistedDesc,
                         builtin = !prog.isCustom,
                         generated = prog.id.startsWith("custom_plan_"),
                         sourceType = if (prog.isCustom) "user" else "builtin",
-                        sourceTemplateId = null,
+                        sourceTemplateId = profileSourceTemplateId,
                         templateVersion = 1,
                         accentHex = "#D8B36A",
                         sortOrder = pIdx,
@@ -423,6 +426,8 @@ class TrainPilotViewModel : ViewModel() {
                                     put("sets", ex.defaultSets)
                                     put("reps", ex.targetRepsText.ifBlank { ex.defaultReps.toString() })
                                     put("weight", ex.defaultWeightKg.toDouble())
+                                    if (proposedPrograms != null && ex.defaultWeightKg == 0f &&
+                                        com.repforge.app.NativeProgramPrescription.allowsTrial(ex.loadType)) put("trial", true)
                                     put("rest", ex.defaultRestSec)
                                 }
                             )
@@ -678,6 +683,7 @@ class TrainPilotViewModel : ViewModel() {
                             val source = exercisesMap[id] ?: return@mapNotNull null
                             val rx = JSONObject(recipes.optJSONObject(id)?.toString() ?: "{}")
                             if (item is JSONObject) item.keys().forEach { key -> if (key != "id") rx.put(key, item.get(key)) }
+                            com.repforge.app.NativeProgramPrescription.applyBuiltinTrial(prog.builtin, rx, source.loadType)
                             val target = rx.optString("reps", source.targetRepsText.ifBlank { source.defaultReps.toString() })
                             source.copy(defaultSets = rx.optInt("sets", source.defaultSets),
                                 defaultReps = Regex("[0-9]+").find(target)?.value?.toIntOrNull() ?: source.defaultReps,
@@ -3066,6 +3072,8 @@ class TrainPilotViewModel : ViewModel() {
                 gear.addAll(listOf("bench", "lifting-bench", "incline-bench"))
             }
             if (t == "biztonsági állvány" || t == "rack") gear.add("rack")
+            if (t == "alacsony, stabil rúd" || t == "low-bar") gear.add("low-bar")
+            if (t == "biztonságos szalagrögzítő" || t == "band-anchor") gear.add("band-anchor")
             if (t.contains("fellépő") || t.contains("doboz") || t.contains("lépcső") || t == "step") {
                 gear.add("step")
             }
@@ -3097,16 +3105,16 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     private fun starterPlan(equipment: String, location: String, experience: String, duration: Int,
-        muscles: Set<String>, exercises: Set<String>): com.example.model.StudioStarterPlan {
+        muscles: Set<String>, exercises: Set<String>, gentlerStart: Boolean = false): com.example.model.StudioStarterPlan {
         val (gear, bodyweight) = parseEquipmentSelectionToGearKeys(equipment)
-        return com.example.model.StudioStarterPlan(gear, bodyweight, location, experience, duration, muscles, exercises)
+        return com.example.model.StudioStarterPlan(gear, bodyweight, location, experience, duration, muscles, exercises, gentlerStart)
     }
 
     internal fun recommendStarterProgram(equipment: String, location: String, experience: String,
-        duration: Int, muscles: Set<String>, exercises: Set<String>): String? {
+        goal: String, daysPerWeek: Int, duration: Int, muscles: Set<String>, exercises: Set<String>): String? {
         val state = _uiState.value
         return starterPlan(equipment, location, experience, duration, muscles, exercises)
-            .recommend(state.programs)?.localizedName(state.language)
+            .recommend(state.programs, goal, daysPerWeek)?.localizedName(state.language)
     }
 
     fun saveInitialProfileAndPlan(
@@ -3125,16 +3133,16 @@ class TrainPilotViewModel : ViewModel() {
         onSaveResult: ((Boolean) -> Unit)? = null
     ) {
         val state = _uiState.value
-        val planner = starterPlan(equipmentHu, locationHu, experienceHu, durationMin, excludedMuscles, excludedExercises)
-        val recommended = if (useRecommendedProgram) planner.recommend(state.programs) else null
+        val planner = starterPlan(equipmentHu, locationHu, experienceHu, durationMin, excludedMuscles, excludedExercises,
+            gentlerStart = com.example.model.suggestGentlerStarterPlan(state.todayRecoveryReading))
+        val recommended = if (useRecommendedProgram) planner.recommend(state.programs, goalHu, daysPerWeek) else null
+        val draft = if (useRecommendedProgram) null
+            else planner.buildFromTemplates(state.exercises, state.programs, goalHu, daysPerWeek)
         val newProgram = if (useRecommendedProgram) {
             recommended ?: run { onSaveResult?.invoke(false); return }
         } else {
-            val (finalDayA, finalDayB) = planner.build(state.exercises, goalHu)
-            if (finalDayA.isEmpty() || finalDayB.isEmpty()) {
-                onSaveResult?.invoke(false)
-                return
-            }
+            val planned = draft ?: run { onSaveResult?.invoke(false); return }
+            val source = state.programs.firstOrNull { it.id == planned.sourceId }
             val generatedProgramId = "custom_plan_" + java.util.UUID.randomUUID()
             val gearSummaryTokens = equipmentHu.split(',').map { it.trim() }.filter { it.isNotBlank() }
             val shortGearTag = when {
@@ -3162,28 +3170,20 @@ class TrainPilotViewModel : ViewModel() {
                 tagsHu = listOf(goalHu, locationHu, shortGearTag, "Egyéni").distinct(),
                 isCustom = true,
                 isActive = true,
-                days = listOf(
+                days = planned.days.mapIndexed { index, exercises ->
+                    val letter = 'A' + index
+                    val templateDay = source?.days?.getOrNull(index)
                     com.example.model.ProgramDayModel(
-                        id = "${generatedProgramId}_dayA",
-                        dayCode = "A nap",
-                        titleHu = "A nap • Fő fókusz",
-                        titleEn = "Day A • Primary Focus",
+                        id = "${generatedProgramId}_day$letter",
+                        dayCode = "$letter nap",
+                        titleHu = templateDay?.titleHu ?: "$letter nap",
+                        titleEn = templateDay?.titleEn ?: "Day $letter",
                         durationMinutes = durationMin,
-                        exercises = finalDayA,
-                        titleDe = "Tag A • Hauptfokus",
-                        titleRo = "Ziua A • Focus principal"
-                    ),
-                    com.example.model.ProgramDayModel(
-                        id = "${generatedProgramId}_dayB",
-                        dayCode = "B nap",
-                        titleHu = "B nap • Kiegészítő fókusz",
-                        titleEn = "Day B • Secondary Focus",
-                        durationMinutes = durationMin,
-                        exercises = finalDayB,
-                        titleDe = "Tag B • Zusatzfokus",
-                        titleRo = "Ziua B • Focus secundar"
+                        exercises = exercises,
+                        titleDe = templateDay?.titleDe ?: "Tag $letter",
+                        titleRo = templateDay?.titleRo ?: "Ziua $letter"
                     )
-                ),
+                },
                 nameDe = "Individueller $goalDe-Plan ($locDe)",
                 nameRo = "Plan personalizat $goalRo ($locRo)",
                 subtitleDe = "$expDe • $daysPerWeek Tage/Woche • $durationMin Min.",
@@ -3209,6 +3209,7 @@ class TrainPilotViewModel : ViewModel() {
             completeOnboarding = completeOnboarding,
             proposedPrograms = updatedPrograms,
             profileProgramToWrite = newProgram.id.takeIf { recommended == null },
+            profileSourceTemplateId = draft?.sourceId,
             onSaveResult = { success ->
                 if (success) _uiState.update {
                     it.copy(userHeightCm = heightCm, userWeightKg = weightKg, userFitnessGoalHu = goalHu,

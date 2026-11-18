@@ -88,7 +88,10 @@ abstract class TrainPilotDatabase : RoomDatabase() {
                     homeBasicWithDays.program.builtin &&
                     !homeBasicWithDays.program.generated &&
                     homeBasicWithDays.days.any { it.dayId == "A" && it.exercisesJson == legacyHomeBasicDayA }
-                if (!needsHomeBasicDayAMigration &&
+                val needsCatalogReview = NativeBuiltinCatalog.reviewedProgramIds.any { id ->
+                    db.programDao().getProgramWithDaysById(id)?.let(NativeBuiltinCatalog::reviewUpdate) != null
+                }
+                if (!needsHomeBasicDayAMigration && !needsCatalogReview &&
                     defaultExercises().all { it.id in exercises } &&
                     defaultPrograms().first.all { it.id in programs }
                 ) {
@@ -113,12 +116,17 @@ abstract class TrainPilotDatabase : RoomDatabase() {
                         !existingHomeBasic.program.generated &&
                         existingHomeBasic.days.any { it.dayId == "A" && it.exercisesJson == legacyHomeBasicDayA }
                     ) {
-                        val defaultHomeBasicProg = programs.firstOrNull { it.id == "home-basic" }
-                        val defaultHomeBasicDayA = days.firstOrNull { it.programId == "home-basic" && it.dayId == "A" }
-                        if (defaultHomeBasicProg != null && defaultHomeBasicDayA != null) {
-                            db.programDao().upsertProgram(defaultHomeBasicProg.copy(updatedAt = existingHomeBasic.program.updatedAt))
-                            db.programDao().upsertProgramDays(listOf(defaultHomeBasicDayA))
+                        val oldDay = existingHomeBasic.days.first { it.dayId == "A" }
+                        val updatedDay = days.firstOrNull { it.programId == "home-basic" && it.dayId == "A" }
+                        if (updatedDay != null) {
+                            db.programDao().updateProgramDays(listOf(oldDay.copy(exercisesJson = updatedDay.exercisesJson)))
                         }
+                    }
+                    for (id in NativeBuiltinCatalog.reviewedProgramIds) {
+                        val current = db.programDao().getProgramWithDaysById(id) ?: continue
+                        val review = NativeBuiltinCatalog.reviewUpdate(current) ?: continue
+                        db.programDao().updateProgram(review.program)
+                        db.programDao().updateProgramDays(review.days)
                     }
                 }
             }

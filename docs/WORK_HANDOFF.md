@@ -1,3 +1,15 @@
+# Kész programok felülvizsgálata és személyre szabás — PR268
+
+13 kész program és 29 nap ellenőrizve. Négy gyári programban hat naplista
+javítva, meglévő szerkesztések és azonosítók megőrzésével. Edzőtermi, vegyes
+és szabadtéri profilhoz helyszínfüggő sablonválasztás és kizárásos adaptáció.
+Példasúly helyett csak kompatibilis, friss mérésből átvehető próbasúly,
+új tervnél elérhető alacsony mai készenlét esetén két sorozat.
+Részletek és korlátok: BUILTIN_PROGRAM_REVIEW.md. Statikus ellenőrzés zöld.
+A regressziók, Android-fordítás és CI futtatása továbbra is függőben.
+
+---
+
 # Kezdőprofil és A/B terv — PR268 gyűjtő
 
 Közös első indítási és Kezdőlap profil, kompatibilis kész program ajánlása vagy

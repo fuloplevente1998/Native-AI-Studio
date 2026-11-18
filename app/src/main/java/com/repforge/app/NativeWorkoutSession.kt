@@ -64,6 +64,7 @@ internal object NativeWorkoutSession {
                 if (item is JSONObject) for (key in item.keys()) if (key != "id") rx.put(key, item.get(key))
                 if (!rx.has("weight") && rx.has("weightKg")) rx.put("weight", rx.get("weightKg"))
                 if (!rx.has("rest") && rx.has("restSec")) rx.put("rest", rx.get("restSec"))
+                NativeProgramPrescription.applyBuiltinTrial(program.program.builtin, rx, source.loadType)
                 val exercise = buildExercise(db, source, settings, rx)
                 exercises.put(exercise)
             }
@@ -210,10 +211,22 @@ internal object NativeWorkoutSession {
             .put("targetReps", rx.optString("reps", source.defaultReps)).put("setRir229", source.setRir229)
             .put("prescription", JSONObject(rx.toString()))
             .put("restSeconds162", rx.optInt("rest", settings.restSeconds).coerceIn(0, 3600))
-        val weight = if (exercise.optString("loadType") == "bodyweight") 0.0
+        val loadType = exercise.optString("loadType")
+        val configuredWeight = if (loadType == "bodyweight") 0.0
             else rx.optDouble("weight", source.defaultWeight).also { require(it.isFinite() && it >= 0) }
-        val sets = NativeWorkoutStartValues.blankSets(rx.optInt("sets", source.defaultSets), weight)
-        prefillFromHistory(db, exercise, sets)
+        val trial = rx.optBoolean("trial") && configuredWeight == 0.0 &&
+            NativeProgramPrescription.allowsTrial(loadType) && NativeWorkoutStartValues.strength(exercise)
+        val count = rx.optInt("sets", source.defaultSets)
+        val prior = if (trial) {
+            val now = Instant.now()
+            val latest = db.workoutHistoryDao().getCoachExerciseCandidates(source.id,
+                now.minus(java.time.Duration.ofDays(90)).toEpochMilli(), now.toEpochMilli(), null, "", 1)
+                .firstOrNull()
+            latest?.let { NativeProfileHistory128.startingLoad(it, source.id, loadType,
+                exercise.optString("repUnit"), rx.optString("variation"), exercise.optString("targetReps"), count) }
+        } else null
+        val sets = NativeWorkoutStartValues.blankSets(count, prior ?: configuredWeight)
+        if (!trial) prefillFromHistory(db, exercise, sets)
         exercise.remove("actualRir")
         return exercise.put("sets", sets)
     }

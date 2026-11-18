@@ -50,7 +50,50 @@ internal object NativeBuiltinCatalog {
                 false, raw.optBoolean("setRir229"), raw.toString())
         }.also { rows -> check(rows.size == 140 && rows.map { it.id }.distinct().size == rows.size) }
     }
-    val programs: Pair<List<ProgramEntity>, List<ProgramDayEntity>> by lazy {
+    private val reviewedDays = mapOf(
+        "home-basic" to mapOf("B" to listOf("reverse-lunge", "one-arm-row", "pushup",
+            "db-rdl", "lateral-raise", "oh-triceps", "dead-bug")),
+        "calisthenics-ab" to mapOf(
+            "A" to listOf("bodyweight-squat", "pullup", "pushup", "glute-bridge", "inverted-row", "hollow-hold"),
+            "B" to listOf("single-leg-glute-bridge", "chinup", "pike-pushup", "prisoner-squat",
+                "hanging-knee-raise", "superman-hold")),
+        "bands-ab" to mapOf(
+            "A" to listOf("bodyweight-squat", "band-chest-press", "band-row", "glute-bridge",
+                "band-overhead-press", "band-pallof-press"),
+            "B" to listOf("prisoner-squat", "band-lat-pulldown", "band-chest-press", "single-leg-glute-bridge",
+                "band-face-pull", "band-pallof-press")),
+        "gym-ppl" to mapOf("C" to listOf("barbell-back-squat", "db-rdl", "leg-curl", "leg-press",
+            "standing-calf-raise", "plank"))
+    )
+    val reviewedProgramIds: Set<String> get() = reviewedDays.keys
+
+    /** Only exact old stock exercise lists are eligible. An edited day protects the entire program. */
+    fun reviewUpdate(current: ProgramWithDays): ProgramWithDays? {
+        val old = current.program
+        if (!old.builtin || old.generated || old.id !in reviewedDays) return null
+        val raw = runCatching { JSONObject(old.rawJson) }.getOrNull() ?: return null
+        if (raw.optJSONObject("prescriptions")?.length()?.let { it > 0 } == true) return null
+        val previous = originalPrograms.second.filter { it.programId == old.id }.associateBy { it.dayId }
+        val updated = programs.second.filter { it.programId == old.id }.associateBy { it.dayId }
+        if (current.days.size != previous.size || current.days.any { day ->
+                val before = previous[day.dayId] ?: return@any true
+                day.exercisesJson != before.exercisesJson && day.exercisesJson != updated.getValue(day.dayId).exercisesJson
+            }) return null
+        val days = current.days.map { day -> day.copy(exercisesJson = updated.getValue(day.dayId).exercisesJson) }
+        if (days == current.days) return null
+        val byDay = days.associateBy { it.dayId }
+        raw.optJSONArray("days")?.let { rawDays ->
+            for (i in 0 until rawDays.length()) rawDays.optJSONObject(i)?.let { row ->
+                byDay[row.optString("id")]?.let { row.put("exercises", JSONArray(it.exercisesJson)) }
+            }
+        }
+        return ProgramWithDays(old.copy(rawJson = raw.toString()), days)
+    }
+
+    private val originalPrograms by lazy { readPrograms(reviewed = false) }
+    val programs by lazy { readPrograms(reviewed = true) }
+
+    private fun readPrograms(reviewed: Boolean): Pair<List<ProgramEntity>, List<ProgramDayEntity>> {
         val rows = catalog.getJSONArray("programs")
         val days = ArrayList<ProgramDayEntity>()
         val programs = (0 until rows.length()).map { index ->
@@ -63,7 +106,9 @@ internal object NativeBuiltinCatalog {
                 val sourceDay = sourceDays.getJSONObject(dayIndex)
                 val day = JSONObject(sourceDay.getJSONObject("raw").toString()); val labels = sourceDay.getJSONObject("names")
                 for (language in listOf("hu", "en", "de", "ro")) day.put(language, labels.getString(language))
-                val dayId = day.getString("id"); rawDays.put(day)
+                val dayId = day.getString("id")
+                if (reviewed) reviewedDays[id]?.get(dayId)?.let { day.put("exercises", JSONArray(it)) }
+                rawDays.put(day)
                 days.add(ProgramDayEntity("$id:$dayId", id, dayId, labels.getString("hu"), labels.getString("en"),
                     labels.getString("de"), labels.getString("ro"), dayIndex, day.getJSONArray("exercises").toString()))
             }
@@ -79,6 +124,6 @@ internal object NativeBuiltinCatalog {
             val rows = JSONArray(day.exercisesJson)
             for (index in 0 until rows.length()) check((rows.optJSONObject(index)?.getString("id") ?: rows.getString(index)) in ids)
         }
-        programs to days
+        return programs to days
     }
 }

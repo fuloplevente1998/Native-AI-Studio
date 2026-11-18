@@ -36,16 +36,36 @@ internal object NativePlannerPolicy {
         }
         return raw
     }
+    private val anchoredBands = setOf("band-row", "band-lat-pulldown", "band-chest-press", "band-face-pull",
+        "band-triceps-pushdown", "band-pallof-press")
+    private val rackPresses = setOf("bench-press", "incline-bench-press", "close-grip-bench")
+
+    fun hasEquipment(id: String, needs: List<String>, gear: Set<String>): Boolean {
+        if (id in anchoredBands && "band-anchor" !in gear) return false
+        if (id == "inverted-row") return "low-bar" in gear
+        if (id == "barbell-back-squat" && "rack" !in gear) return false
+        if (id in setOf("db-bench-press", "single-arm-db-press", "chest-supported-db-row") &&
+            "lifting-bench" !in gear) return false
+        if (id in rackPresses && ("rack" !in gear || "lifting-bench" !in gear)) return false
+        if (id == "incline-bench-press" && "incline-bench" !in gear) return false
+        if (id == "incline-pushup" && "support" !in gear) return false
+        return needs.all { it in gear || (it == "dumbbell" && "dumbbells" in gear) ||
+            (id == "decline-pushup" && it == "bench" && "step" in gear) }
+    }
+
     fun available(exercise: ExerciseLibraryEntity, gear: Set<String>): Boolean {
         if (exercise.measurementType == "distance") return false
         val raw = metadata(exercise)
         val needs = if (exercise.custom) raw.optJSONArray("gearNeeds") ?: org.json.JSONArray()
             else policy.getJSONObject("needs").optJSONArray(exercise.id) ?: return false
-        return strings(needs).all { it in gear || (it == "dumbbell" && "dumbbells" in gear) }
+        return hasEquipment(exercise.id, strings(needs), gear)
     }
+    fun isExcludedPattern(pattern: String, area: String): Boolean =
+        pattern in strings(policy.getJSONObject("areas").optJSONArray(area))
+
     fun avoided(exercise: ExerciseLibraryEntity, areas: Set<String>): Boolean {
         val pattern = metadata(exercise).optString("movementPattern")
-        return areas.any { pattern in strings(policy.getJSONObject("areas").optJSONArray(it)) } ||
+        return areas.any { isExcludedPattern(pattern, it) } ||
             ((pattern.isBlank() || pattern == "other") && exercise.primaryMuscle in areas)
     }
     fun slots(templateId: String): List<Pair<String, List<String>>> {

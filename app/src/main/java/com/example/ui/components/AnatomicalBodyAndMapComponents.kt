@@ -1370,9 +1370,15 @@ fun programEquipmentSummary(
     locationHu: String = "",
     lang: AppLanguage = AppLanguage.HU
 ): String {
-    val pairs = exercises.map { it.equipmentHu to it.loadType }
+    val pairs = exercises.map { equipmentWithSafetyRequirements(it.id, it.equipmentHu) to it.loadType }
     return buildEquipmentSummaryFromPairs(pairs, locationHu, lang)
 }
+
+private fun equipmentWithSafetyRequirements(exerciseId: String, equipment: String): String =
+    when (exerciseId) {
+        "bench-press", "incline-bench-press", "close-grip-bench" -> "$equipment + biztonságos állvány"
+        else -> equipment
+    }
 
 internal fun buildEquipmentSummaryFromPairs(
     equipmentAndLoadPairs: List<Pair<String, String>>,
@@ -1415,6 +1421,7 @@ internal fun buildEquipmentSummaryFromPairs(
     var hasMachine = false
     var hasCable = false
     var hasPullupBar = false
+    var hasLowBar = false
     var hasDipBars = false
     var hasBenchSupport = false
     var hasSafetyRack = false
@@ -1448,7 +1455,8 @@ internal fun buildEquipmentSummaryFromPairs(
                 low.contains("gép") || low.contains("lábtoló") || low.contains("lábnyújtó") || low.contains("lábhajlító") ||
                     low.contains("mellnyomó") || low.contains("pec-deck") || low.contains("vállnyomó") ||
                     low.contains("hack guggoló") || low.contains("vádligép") || low == "machine" -> hasMachine = true
-                low.contains("húzódzkodórúd") || low.contains("alacsony rúd") || low.contains("heveder") -> hasPullupBar = true
+                low.contains("alacsony rúd") -> hasLowBar = true
+                low.contains("húzódzkodórúd") || low.contains("heveder") -> hasPullupBar = true
                 low.contains("tolódzkodó") || low.contains("korlát") -> hasDipBars = true
                 low.contains("állvány") -> hasSafetyRack = true
                 low.contains("fellépő") || low.contains("doboz") -> hasStep = true
@@ -1482,6 +1490,7 @@ internal fun buildEquipmentSummaryFromPairs(
     if (hasMachine) addLabel("edzőtermi gépek", "gym machines", "Fitnessgeräte", "aparate sală")
     if (hasCable) addLabel("csigás gép", "cable machine", "Kabelzug", "aparat cu cablu")
     if (hasPullupBar) addLabel("húzódzkodórúd", "pull-up bar", "Klimmzugstange", "bară de tracțiuni")
+    if (hasLowBar) addLabel("stabil alacsony rúd", "stable low bar", "feste niedrige Stange", "bară joasă stabilă")
     if (hasDipBars) addLabel("tolódzkodó korlát", "dip bars", "Dip-Barren", "bare paralele")
     if (hasBenchSupport) addLabel("pad/támasz", "bench/support", "Bank/Stütze", "bancă/sprijin")
     if (hasStep) addLabel("fellépő", "step/box", "Step/Kasten", "platformă/cutie")
@@ -1539,7 +1548,7 @@ fun programEquipmentCategoryLabel(programNameOrId: String, lang: AppLanguage = A
                     val exId = if (item is org.json.JSONObject) item.optString("id") else item.toString()
                     val ex = exById[exId] ?: return@mapNotNull null
                     val rawEq = runCatching { org.json.JSONObject(ex.rawJson).optString("equipment") }.getOrDefault("")
-                    rawEq to ex.loadType
+                    equipmentWithSafetyRequirements(exId, rawEq) to ex.loadType
                 }
             }
             if (pairs.isNotEmpty()) {

@@ -16,12 +16,20 @@ internal object NativeProgramPrescription {
     private val keys = setOf("sets", "reps", "weight", "rest", "trial")
     fun allowsTrial(loadType: String) = loadType in setOf("total", "per_hand", "single_dumbbell")
 
+    /** A catalog example is not a starting weight for a bundled program. Explicit prescriptions win. */
+    fun applyBuiltinTrial(builtin: Boolean, recipe: JSONObject, loadType: String) {
+        if (builtin && allowsTrial(recipe.optString("loadType", loadType)) &&
+            !recipe.has("weight") && !recipe.has("weightKg")) {
+            recipe.put("weight", 0).put("trial", true)
+        }
+    }
+
     fun effective(program: ProgramEntity?, entry: String, source: ExerciseLibraryEntity,
         edits: Map<String, Edit>, defaultRest: Int, parsedPrescriptions: JSONObject? = null): JSONObject {
         val id = NativeProgramEditor.exerciseId(entry)
         require(id == source.id)
         val result = JSONObject().put("sets", source.defaultSets).put("reps", source.defaultReps)
-            .put("weight", source.defaultWeight).put("rest", defaultRest).put("loadType", source.loadType)
+            .put("rest", defaultRest).put("loadType", source.loadType)
             .put("repUnit", source.repUnit).put("measurementType", source.measurementType)
         fun overlay(value: JSONObject?) {
             if (value != null) for (key in value.keys()) if (key != "id") result.put(key, value.get(key))
@@ -30,6 +38,8 @@ internal object NativeProgramPrescription {
         overlay(prescriptions?.optJSONObject(id))
         overlay(JSONTokener(entry).nextValue() as? JSONObject)
         overlay(edits[id]?.patch?.let(::JSONObject))
+        applyBuiltinTrial(program?.builtin == true, result, source.loadType)
+        if (!result.has("weight")) result.put("weight", result.optDouble("weightKg", source.defaultWeight))
         return result
     }
 

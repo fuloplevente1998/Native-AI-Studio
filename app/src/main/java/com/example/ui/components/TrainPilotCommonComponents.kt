@@ -1221,7 +1221,8 @@ fun PersonalPlannerModalDialog(
     onDismiss: () -> Unit,
     saving: Boolean = false,
     failed: Boolean = false,
-    recommendProgram: ((String, String, String, Int, Set<String>, Set<String>) -> String?)? = null,
+    gentlerStart: Boolean = false,
+    recommendProgram: ((String, String, String, String, Int, Int, Set<String>, Set<String>) -> String?)? = null,
     onUseRecommendedPlan: PersonalPlannerSave? = null
 ) {
     val palette = LocalTrainPilotPalette.current
@@ -1249,7 +1250,9 @@ fun PersonalPlannerModalDialog(
         "Tolódzkodó korlát" to "Tolódzkodás mellre és tricepszre",
         "Gumiszalag / Ellenállás-szalag" to "Gumiszalagos evezések, lehúzások és izolációk",
         "Kettlebell" to "Kettlebell swing, goblet guggolás és nyomás",
-        "Edzőtermi gépek / Csigás gépek" to "Lábtoló, hátlehúzó, csigás és vezetett gépek"
+        "Edzőtermi gépek / Csigás gépek" to "Lábtoló, hátlehúzó, csigás és vezetett gépek",
+        "Alacsony, stabil rúd" to "Fordított evezéshez használható fix rúd",
+        "Biztonságos szalagrögzítő" to "Stabil pont a gumiszalagos húzó és nyomó gyakorlatokhoz"
     )
     val equipments = equipmentCatalog.map { it.first }
 
@@ -1301,6 +1304,8 @@ fun PersonalPlannerModalDialog(
                 lower == "lifting-bench" -> result.add("Fekvenyomó pad")
                 lower == "incline-bench" -> result.add("Állítható fekvenyomó pad")
                 lower == "rack" -> result.add("Biztonsági állvány")
+                lower == "low-bar" -> result.add("Alacsony, stabil rúd")
+                lower == "band-anchor" -> result.add("Biztonságos szalagrögzítő")
                 lower == "bench" || lower.contains("pad") || lower.contains("kanapé") -> {
                     result.add("Pad / Szék / Kanapé")
                 }
@@ -2036,9 +2041,9 @@ fun PersonalPlannerModalDialog(
         },
         confirmButton = {
             val recommendation = remember(recommendProgram, selectedEquipment, selectedLocation, selectedExperience,
-                selectedDuration, excludedMuscles, excludedExercises) {
+                selectedGoal, selectedDays, selectedDuration, excludedMuscles, excludedExercises) {
                 recommendProgram?.invoke(selectedEquipment, selectedLocation, selectedExperience,
-                    selectedDuration, excludedMuscles, excludedExercises)
+                    selectedGoal, selectedDays, selectedDuration, excludedMuscles, excludedExercises)
             }
             if (onUseRecommendedPlan != null && recommendation != null) {
                 com.repforge.app.ui.theme.TrainPilotOutlinedButton(
@@ -2055,6 +2060,13 @@ fun PersonalPlannerModalDialog(
                     "Kein vorhandenes Programm passt zu diesen Einstellungen.", "Niciun program existent nu corespunde acestor setări."),
                     style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
             }
+            if (gentlerStart) Text(
+                tr(lang, "A mai készenléti adat alapján az új terv két sorozattal indít.",
+                    "Today's readiness suggests starting the new plan with two sets.",
+                    "Auf Basis der heutigen Trainingsbereitschaft beginnt der neue Plan mit zwei Sätzen.",
+                    "Pe baza recuperării de astăzi, planul nou începe cu două serii."),
+                style = MaterialTheme.typography.bodySmall, color = palette.textSecondary
+            )
             if (failed) Text(
                 tr(lang, "A terv/profil mentése nem sikerült. Próbáld újra.",
                     "Failed to save plan/profile. Please try again.",

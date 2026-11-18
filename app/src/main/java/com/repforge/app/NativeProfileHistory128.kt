@@ -98,13 +98,14 @@ internal object NativeProfileHistory128 {
             .joinToString("") { "%02x".format(it) }
 
     internal data class Evidence(val programId: String, val key: String, val load: Double,
-        val sets: Int, val topReps: Int, val raw: String)
+        val sets: Int, val topReps: Int, val minReps: Int, val raw: String)
 
     /** Full valid working sets only. Unknown/partial/pain/changed unit or variation fails closed. */
     internal fun evidence(row: WorkoutHistoryEntity, exerciseId: String,
         loadType: String, repUnit: String, variation: String): Evidence? {
         val raw = runCatching { JSONObject(row.rawJson) }.getOrNull() ?: return null
-        if (raw.optString("programId") != row.programId ||
+        if (raw.optBoolean("deleted") || raw.optBoolean("cancelled") || raw.optString("status") == "cancelled" ||
+            raw.optString("programId") != row.programId ||
             raw.optString("id").isBlank() || row.finishedEpochMs <= row.startedEpochMs) return null
         if (raw.optJSONObject("feedback")?.optString("rating") == "pain" ||
             raw.optJSONObject("feedback")?.optString("effort") == "pain") return null
@@ -120,7 +121,7 @@ internal object NativeProfileHistory128 {
             if (!NativeCoachAdviceRepository.compatible(exercise, expectedLib, expectedRx)) return null
             val sets = exercise.optJSONArray("sets") ?: return null
             if (sets.length() == 0 || sets.length() > 20 ||
-                exercise.optString("effort") in setOf("pain", "hard", "challenging")) return null
+                StudioWorkoutFeedback.readExerciseEffort(exercise, raw) in setOf("pain", "hard", "challenging")) return null
             val observedLoadType = exercise.optString("loadType")
             if (observedLoadType != loadType && observedLoadType.isNotBlank()) return null
             val observedUnit = exercise.optString("repUnit").ifBlank { repUnit }
@@ -141,9 +142,17 @@ internal object NativeProfileHistory128 {
             }
             if (loadType != "bodyweight" && loads.any { abs(it - loads[0]) >= .01 }) return null
             val key = raw.getString("id")
-            return Evidence(row.programId, key, loads.first(), sets.length(), reps.max(), raw.toString())
+            return Evidence(row.programId, key, loads.first(), sets.length(), reps.max(), reps.min(), raw.toString())
         }
         return null
+    }
+
+    internal fun startingLoad(latest: WorkoutHistoryEntity, exerciseId: String,
+        loadType: String, repUnit: String, variation: String, target: String, sets: Int): Double? {
+        val minimumReps = Regex("^\\d+").find(target.trim())?.value?.toIntOrNull() ?: return null
+        if (minimumReps <= 0) return null
+        return evidence(latest, exerciseId, loadType, repUnit, variation)
+            ?.takeIf { it.minReps >= minimumReps && it.sets >= sets }?.load
     }
 
     private fun ceiling(original: String, newReps: Int): String {

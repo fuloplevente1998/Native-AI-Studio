@@ -181,10 +181,11 @@ class ProgramExerciseQuickGpsAuditRegressionTest {
         assertTrue("bands-ab EN: $bandsEn", bandsEn.contains("resistance band"))
         assertTrue("bands-ab EN anchor: $bandsEn", bandsEn.contains("secure anchor"))
 
-        // 3. calisthenics-ab MUST include pull-up bar and dip bars
+        // 3. Reviewed calisthenics uses a high pull-up bar and a low bar for rows.
         val caliHu = programEquipmentCategoryLabel("calisthenics-ab", AppLanguage.HU).lowercase()
         assertTrue("calisthenics-ab HU: $caliHu", caliHu.contains("húzódzkodórúd"))
-        assertTrue("calisthenics-ab HU: $caliHu", caliHu.contains("tolódzkodó korlát"))
+        assertTrue("calisthenics-ab HU: $caliHu", caliHu.contains("alacsony rúd"))
+        assertFalse("calisthenics-ab HU: $caliHu", caliHu.contains("tolódzkodó korlát"))
 
         // 4. kettlebell-ab MUST include kettlebell
         val kbHu = programEquipmentCategoryLabel("kettlebell-ab", AppLanguage.HU).lowercase()

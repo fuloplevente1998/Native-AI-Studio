@@ -47,12 +47,13 @@ internal fun StudioPersonalPlannerDialog(
             initialExcludedExercises = state.userExcludedExercisesHu,
             saving = saving,
             failed = failed,
+            gentlerStart = com.example.model.suggestGentlerStarterPlan(state.todayRecoveryReading),
             onSaveAndOpenPlan = save(false),
             onUseRecommendedPlan = save(true),
-            recommendProgram = { equipment, location, experience, duration, muscles, exercises ->
+            recommendProgram = { equipment, location, experience, goal, days, duration, muscles, exercises ->
                 // Keep the recommendation current while the Room catalog is loading.
                 if (state.programs.isEmpty()) null
-                else viewModel.recommendStarterProgram(equipment, location, experience, duration, muscles, exercises)
+                else viewModel.recommendStarterProgram(equipment, location, experience, goal, days, duration, muscles, exercises)
             },
             onDismiss = { if (!saving) onDismiss() }
         )
