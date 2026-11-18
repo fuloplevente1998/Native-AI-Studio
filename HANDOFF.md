@@ -24,8 +24,13 @@ Frissítve: 2026-11-18. Rövid, felülírandó pillanatkép (≤40 sor). Előzm�
 - Signed #78 (APK only) 7m29s, 869/0 teszt; telefon APK chatben átadva, verzió nem nőtt.
   Wear forrás változatlan → órás frissítés nem kell. Készülékes elfogadás hátravan.
 
+## 2768-r3 (main `524f865`, #281, #269 1–3. lépés)
+- Lapként nyílik (tartalom 1:1): Kapcsolt eszközök, Engedélyek, Mentés, Gyakorlat részletei,
+  Napló edzésrészlet; Naptár napja alulról. Adatvédelem marad ablak (felhasználói kérés).
+- Signed #79 APK only ~7 perc, 872/0 teszt; telefon APK chatben átadva; Wear változatlan.
+
 ## Nyitott
-- #269 navigáció + alsó lapok; #208 Wear HRV (funkció). #271/#272 draft doksi/audit PR.
+- #269: lapok 1–3. lépés kész; maradék elfogadási pontok (útvonalmátrix, gesztus-regressziók). #208 Wear HRV. #271/#272 draft doksi/audit PR.
 - `public/assets/aistudio/Screenshot_…jpg` = Programok-kártya mockup (megtartva).
 
 ## Következő lépés
