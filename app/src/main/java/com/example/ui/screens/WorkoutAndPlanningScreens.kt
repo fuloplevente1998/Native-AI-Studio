@@ -2777,7 +2777,7 @@ fun CalendarPlannerScreen(
     if (openedDay != null) {
         com.example.ui.components.CompactCalendarDialog(
             title = "${displayedYearMonth.year}. ${displayedYearMonth.monthValue.toString().padStart(2, '0')}. ${selectedDay.toString().padStart(2, '0')}.",
-            tag = "calendar_day_dialog", onClose = { openedDay = null }
+            tag = "calendar_day_dialog", onClose = { openedDay = null }, asSheet = true
         ) {
             // 2. INTERACTIVE DAY ACTIONS CARD (Módosítás, Áthelyezés, Törlés, Visszavonás)
             Surface(
