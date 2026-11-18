@@ -1307,63 +1307,65 @@ fun ProgramsListScreen(
                                 style = MaterialTheme.typography.labelSmall,
                                 color = palette.textSecondary
                             )
-                            Spacer(modifier = Modifier.height(3.dp))
-                            var equipmentExpanded by androidx.compose.runtime.saveable.rememberSaveable(program.id) { mutableStateOf(false) }
-                            Column {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .trainPilotClickable(RoundedCornerShape(8.dp)) { equipmentExpanded = !equipmentExpanded }
-                                        .testTag("program_equipment_toggle_${program.id}")
-                                        .padding(vertical = 4.dp)
-                                ) {
-                                    Text(
-                                        text = trW(state.language, "Felszerelés", "Equipment", "Ausrüstung", "Echipament"),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = palette.primary,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Icon(
-                                        imageVector = if (equipmentExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                        contentDescription = null,
-                                        tint = palette.primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                                if (equipmentExpanded) {
-                                    Text(
-                                        text = programEquipmentSummary(program, state.language),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = palette.primary,
-                                        modifier = Modifier.testTag("program_equipment_details_${program.id}")
-                                    )
-                                }
-                            }
                         }
                         Spacer(modifier = Modifier.width(4.dp))
-                        if (!program.isActive) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                                    .trainPilotClickable(RoundedCornerShape(10.dp)) { onActivateProgram(program.id) }
-                                    .testTag("program_activate_button_${program.id}")
-                            ) {
-                                Surface(
-                                    shape = RoundedCornerShape(9.dp),
-                                    color = palette.primary,
-                                    modifier = Modifier.testTag("program_activate_visual_${program.id}")
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                            modifier = Modifier.widthIn(min = 88.dp, max = 136.dp)
+                        ) {
+                            if (!program.isActive) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .sizeIn(minWidth = 48.dp, minHeight = 40.dp)
+                                        .trainPilotClickable(RoundedCornerShape(10.dp)) { onActivateProgram(program.id) }
+                                        .testTag("program_activate_button_${program.id}")
                                 ) {
-                                    Text(
-                                        text = strings.activateAction,
-                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                        color = palette.onPrimary,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(9.dp),
+                                        color = palette.primary,
+                                        modifier = Modifier.testTag("program_activate_visual_${program.id}")
+                                    ) {
+                                        Text(
+                                            text = strings.activateAction,
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = palette.onPrimary,
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                                        )
+                                    }
                                 }
+                            }
+                            var equipmentExpanded by androidx.compose.runtime.saveable.rememberSaveable(program.id) { mutableStateOf(false) }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .trainPilotClickable(RoundedCornerShape(8.dp)) { equipmentExpanded = !equipmentExpanded }
+                                    .testTag("program_equipment_toggle_${program.id}")
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = trW(state.language, "Részletek", "Details", "Details", "Detalii"),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = palette.primary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Icon(
+                                    imageVector = if (equipmentExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = null,
+                                    tint = palette.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            if (equipmentExpanded) {
+                                Text(
+                                    text = programEquipmentSummary(program, state.language),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = palette.primary,
+                                    modifier = Modifier.testTag("program_equipment_details_${program.id}")
+                                )
                             }
                         }
                         Box(
