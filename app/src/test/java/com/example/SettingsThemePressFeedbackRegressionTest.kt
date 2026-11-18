@@ -2,7 +2,9 @@ package com.example
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.os.Looper
 import android.view.View
+import android.view.ViewConfiguration
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
@@ -21,7 +23,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.*
+import java.time.Duration
 import kotlin.math.roundToInt
 
 @RunWith(RobolectricTestRunner::class)
@@ -66,7 +70,14 @@ class SettingsThemePressFeedbackRegressionTest {
             compose.mainClock.autoAdvance = false
             try {
                 node.performTouchInput { down(center) }
+                // Clickable delays press delivery in a LazyColumn while it waits to see
+                // whether the gesture becomes a scroll. Drain Android's delayed callback
+                // before advancing the separate Compose animation clock.
+                compose.runOnIdle {
+                    shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(ViewConfiguration.getTapTimeout() + 32L))
+                }
                 compose.mainClock.advanceTimeBy(160)
+                compose.runOnIdle { shadowOf(Looper.getMainLooper()).idle() }
                 val held = pixels()
                 val y = bounds.center.y.roundToInt()
                 for (x in listOf((bounds.left + 4).roundToInt(), (bounds.right - 4).roundToInt()))
