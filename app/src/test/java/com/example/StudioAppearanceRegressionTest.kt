@@ -190,4 +190,53 @@ class StudioAppearanceRegressionTest {
         compose.onNodeWithTag("settings_privacy_dialog").assertExists()
         compose.onNodeWithText("Samsung Health SDK", substring = true).assertExists()
     }
+
+    @Test
+    fun devicesAndDataEntriesOpenAsBottomSheetsWithoutLeavingSettings() {
+        val navigated = mutableListOf<com.example.model.SubScreen>()
+        compose.setContent {
+            TrainPilotTheme {
+                SettingsMainScreen(
+                    uiState = TrainPilotUiState(language = AppLanguage.HU),
+                    strings = TrainPilotStrings.forLanguage(AppLanguage.HU),
+                    onBack = {},
+                    onOpenPalettePicker = {},
+                    onSelectLanguage = {},
+                    onCycleRestTimer = {},
+                    onToggleSoundAlert = {},
+                    onToggleProgressionModal = {},
+                    onToggleVibration = {},
+                    onNavigateToSubScreen = { navigated += it },
+                    onShowBanner = {},
+                    sheetScreen = { target, close ->
+                        Column {
+                            androidx.compose.material3.Text("screen ${target.name}")
+                            TrainPilotRedCloseButton(onClick = close, testTag = "fake_sheet_close_${target.name}")
+                        }
+                    }
+                )
+            }
+        }
+        val list = compose.onNodeWithTag("settings_main_screen")
+        for ((row, target) in listOf(
+            "settings_open_watch_row" to com.example.model.SubScreen.WATCH_AND_SYNC,
+            "settings_open_permissions_row" to com.example.model.SubScreen.PERMISSIONS_SCREEN
+        )) {
+            list.performScrollToNode(hasTestTag(row))
+            compose.onNodeWithTag(row).performClick()
+            compose.onNodeWithTag("settings_sheet_${target.name.lowercase()}").assertExists()
+            compose.onNodeWithText("screen ${target.name}").assertExists()
+            assertTrue("Sheet entries must not navigate to a separate page", navigated.isEmpty())
+            compose.onNodeWithTag("fake_sheet_close_${target.name}").performClick()
+            compose.waitForIdle()
+            compose.onNodeWithTag("settings_sheet_${target.name.lowercase()}").assertDoesNotExist()
+            // Settings stays where it was underneath.
+            compose.onNodeWithTag(row).assertExists()
+        }
+        list.performScrollToNode(hasTestTag("settings_open_privacy_row"))
+        compose.onNodeWithTag("settings_open_privacy_row").performClick()
+        compose.onNodeWithTag("settings_privacy_sheet").assertExists()
+        compose.onNodeWithTag("settings_privacy_dialog").assertExists()
+        assertTrue(navigated.isEmpty())
+    }
 }

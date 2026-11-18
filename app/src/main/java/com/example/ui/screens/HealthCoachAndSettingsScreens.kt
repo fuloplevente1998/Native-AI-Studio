@@ -2280,10 +2280,25 @@ fun SettingsMainScreen(
     onPreviewProgression: (String, String, Boolean) -> Unit = { _, _, _ -> },
     onApproveProgression: () -> Unit = {},
     onEditProgressionPreview: () -> Unit = {},
-    onUndoProgression: () -> Unit = {}
+    onUndoProgression: () -> Unit = {},
+    /** Hosts a device/data screen 1:1 in a bottom sheet over Settings; null keeps page navigation. */
+    sheetScreen: (@Composable (SubScreen, () -> Unit) -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     val currentPaletteObj = TrainPilotPalettes.getById(uiState.selectedPaletteId)
+    var openSheetScreen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
+    val openDeviceScreen: (SubScreen) -> Unit = { target ->
+        if (sheetScreen != null) openSheetScreen = target.name else onNavigateToSubScreen(target)
+    }
+    openSheetScreen?.let { name ->
+        val target = runCatching { SubScreen.valueOf(name) }.getOrNull()
+        if (target != null && sheetScreen != null) {
+            com.example.ui.components.TrainPilotScreenSheet(
+                onDismiss = { openSheetScreen = null },
+                testTag = "settings_sheet_${name.lowercase()}"
+            ) { sheetScreen(target) { openSheetScreen = null } }
+        }
+    }
 
     var expandedMainThemesSection by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var expandedMatteThemes by remember { mutableStateOf(false) }
@@ -2294,22 +2309,34 @@ fun SettingsMainScreen(
     val secUnit = tr(uiState.language, "mp", "sec", "Sek.", "sec")
 
     if (showPrivacyPolicyDialog) {
-        AlertDialog(
-            onDismissRequest = { showPrivacyPolicyDialog = false },
-            containerColor = palette.surfaceCard,
-            titleContentColor = palette.textPrimary,
-            textContentColor = palette.textSecondary,
-            title = {
-                Text(
-                    text = tr(uiState.language, "Adatvédelmi tájékoztató", "Privacy Policy", "Datenschutzhinweise", "Informare privind confidențialitatea"),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
+        com.example.ui.components.TrainPilotScreenSheet(
+            onDismiss = { showPrivacyPolicyDialog = false },
+            testTag = "settings_privacy_sheet"
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
+                    .padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = tr(uiState.language, "Adatvédelmi tájékoztató", "Privacy Policy", "Datenschutzhinweise", "Informare privind confidențialitatea"),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = palette.textPrimary,
+                        modifier = Modifier.weight(1f)
+                    )
+                    com.example.ui.components.TrainPilotRedCloseButton(onClick = { showPrivacyPolicyDialog = false })
+                }
                 Column(
                     modifier = Modifier
-                        .heightIn(max = 420.dp)
+                        .fillMaxWidth()
+                        .weight(1f, fill = false)
                         .verticalScroll(rememberScrollState())
                         .testTag("settings_privacy_dialog"),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -2320,16 +2347,8 @@ fun SettingsMainScreen(
                         color = palette.textPrimary
                     )
                 }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { showPrivacyPolicyDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary)
-                ) {
-                    Text(strings.closeAction, fontWeight = FontWeight.Bold)
-                }
             }
-        )
+        }
     }
 
     val settingsListState = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -2638,7 +2657,7 @@ fun SettingsMainScreen(
                     else -> tr(uiState.language, "Nincs csatlakoztatott óra", "No watch connected", "Keine Uhr verbunden", "Niciun ceas conectat")
                 },
                 badgeText = if (uiState.watchAppAvailable) tr(uiState.language, "Adatkapcsolat", "Data link", "Datenlink", "Conexiune") else tr(uiState.language, "Nincs kapcsolat", "Disconnected", "Getrennt", "Deconectat"),
-                onClick = { onNavigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
+                onClick = { openDeviceScreen(SubScreen.WATCH_AND_SYNC) },
                 testTag = "settings_open_watch_row"
             )
         }
@@ -2658,7 +2677,7 @@ fun SettingsMainScreen(
                 title = strings.permissionsTitle,
                 subtitle = tr(uiState.language, "GPS, Értesítések, Health Connect, Samsung Health", "GPS, Notifications, Health Connect, Samsung Health", "GPS, Benachrichtigungen, Health Connect, Samsung Health", "GPS, Notificări, Health Connect, Samsung Health"),
                 badgeText = tr(uiState.language, "Kezelés", "Manage", "Verwalten", "Gestionează"),
-                onClick = { onNavigateToSubScreen(SubScreen.PERMISSIONS_SCREEN) },
+                onClick = { openDeviceScreen(SubScreen.PERMISSIONS_SCREEN) },
                 testTag = "settings_open_permissions_row"
             )
         }

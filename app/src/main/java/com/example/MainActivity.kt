@@ -760,7 +760,33 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             },
                             onApproveProgression = { viewModel.approveProgressionSettings() },
                             onEditProgressionPreview = { viewModel.discardProgressionPreview() },
-                            onUndoProgression = { viewModel.undoProgressionSettings("global") }
+                            onUndoProgression = { viewModel.undoProgressionSettings("global") },
+                            // Devices & data screens open 1:1 as bottom sheets over Settings (#269).
+                            sheetScreen = { target, close ->
+                                when (target) {
+                                    SubScreen.WATCH_AND_SYNC -> {
+                                        androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.requestWatchDeviceInfo() }
+                                        WatchAndSyncScreen(
+                                            uiState = uiState,
+                                            strings = strings,
+                                            onBack = close,
+                                            onOpenSettings = close,
+                                            onRefreshWatchInfo = viewModel::requestWatchDeviceInfo,
+                                            onToggleControlMode = { viewModel.toggleWatchControlMode(context as? android.app.Activity) },
+                                            onRequestPermission = requestPlatformPermission,
+                                            onShowBanner = { viewModel.showBannerMessage(it) }
+                                        )
+                                    }
+                                    SubScreen.PERMISSIONS_SCREEN -> PermissionsScreen(
+                                        uiState = uiState,
+                                        strings = strings,
+                                        onBack = close,
+                                        onOpenSettings = close,
+                                        onTogglePermission = requestPlatformPermission
+                                    )
+                                    else -> Unit
+                                }
+                            }
                         )
                     }
 
