@@ -263,6 +263,10 @@ data class TrainPilotUiState(
     val editingProgramId: String = "",
     val editingDayIndex: Int = 0,
     val expandedEditorExerciseId: String? = null,
+    /** Program whose editor is expanded inside its card (null = none); only one at a time. */
+    val inlineEditorProgramId: String? = null,
+    /** Card host of the inline editor: [INLINE_EDITOR_HOST_PROGRAMS] or [INLINE_EDITOR_HOST_HOME]. */
+    val inlineEditorHost: String = "",
     val showProgressionModal: Boolean = false,
     val trainingStyleHu: String = "Normál hipertrófia",
     val progressionRuleHu: String = "Dupla progresszió",
@@ -429,3 +433,5 @@ data class TrainPilotUiState(
     val statusBannerMessage: String? = null
 )
 
+const val INLINE_EDITOR_HOST_PROGRAMS = "programs"
+const val INLINE_EDITOR_HOST_HOME = "home"

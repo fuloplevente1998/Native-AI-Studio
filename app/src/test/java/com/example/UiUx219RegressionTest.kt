@@ -164,12 +164,14 @@ class UiUx219RegressionTest {
         var activatedId: String? = null
         var editorOpenedId: String? = null
         var movedPair: Pair<Int, Int>? = null
+        var inlineOpenId by mutableStateOf<String?>(null)
+        val toggles = mutableListOf<String>()
         var currentLang by mutableStateOf(AppLanguage.HU)
         val darkPalette = com.example.ui.theme.TrainPilotPalettes.allPalettes.first { it.isDark }
         val lightPalette = com.example.ui.theme.TrainPilotPalettes.allPalettes.first { !it.isDark }
         val altDarkPalette = com.example.ui.theme.TrainPilotPalettes.allPalettes.filter { it.isDark }.getOrElse(2) { darkPalette }
         var currentPalette by mutableStateOf(darkPalette)
-        var viewportWidth by mutableStateOf(320.dp)
+        val viewportWidth = 320.dp
 
         compose.setContent {
             TrainPilotTheme(palette = currentPalette) {
@@ -178,7 +180,9 @@ class UiUx219RegressionTest {
                         state = TrainPilotUiState(
                             language = currentLang,
                             selectedPaletteId = currentPalette.id,
-                            programs = listOf(activeProg, gymProg, thirdProg)
+                            programs = listOf(activeProg, gymProg, thirdProg),
+                            inlineEditorProgramId = inlineOpenId,
+                            inlineEditorHost = if (inlineOpenId != null) com.example.ui.viewmodel.INLINE_EDITOR_HOST_PROGRAMS else ""
                         ),
                         onBack = {},
                         onOpenSettings = {},
@@ -186,108 +190,82 @@ class UiUx219RegressionTest {
                         onActivateProgram = { activatedId = it },
                         onOpenProgramEditor = { editorOpenedId = it },
                         onOpenExerciseLibrary = {},
-                        onMoveProgramOrder = { from, to -> movedPair = from to to }
+                        onMoveProgramOrder = { from, to -> movedPair = from to to },
+                        onToggleInlineEditor = { id, _ ->
+                            toggles += id
+                            inlineOpenId = if (inlineOpenId == id) null else id
+                        },
+                        inlineEditor = { program, _ ->
+                            androidx.compose.material3.Text("editor ${program.id}", Modifier.testTag("fake_inline_editor_${program.id}"))
+                        }
                     )
                 }
             }
         }
 
-        // 1. Collapsed state by default: details panels are hidden, active program has badge (no activate button), inactive has activate button
-        compose.onNodeWithTag("program_details_panel_gym-strength-abc", useUnmergedTree = true).assertDoesNotExist()
-        compose.onNodeWithTag("program_details_panel_home-basic", useUnmergedTree = true).assertDoesNotExist()
+        // 1. Collapsed by default: no separate details toggle any more, no inline editor; badge vs activate unchanged
+        compose.onNodeWithTag("program_details_toggle_gym-strength-abc", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("program_inline_editor_gym-strength-abc", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("program_inline_editor_home-basic", useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag("program_active_badge_home-basic", useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithTag("program_activate_button_home-basic").assertDoesNotExist()
         compose.onNodeWithTag("program_activate_button_gym-strength-abc").assertIsDisplayed()
 
-        // 2. Small screen (320dp) + long title: 3 zones do not overlap, 3-dot menu is at right edge with >= 48x48dp hit target
+        // 2. 320dp + long title: compact single-row card, no overlap, 48dp hit targets, menu at right edge
         val cardBoundsCollapsed = compose.onNodeWithTag("program_card_gym-strength-abc").getUnclippedBoundsInRoot()
         val titleBounds = compose.onNodeWithTag("program_title_gym-strength-abc", useUnmergedTree = true).getUnclippedBoundsInRoot()
         val activateBounds = compose.onNodeWithTag("program_activate_button_gym-strength-abc").getUnclippedBoundsInRoot()
-        val detailsToggleBounds = compose.onNodeWithTag("program_details_toggle_gym-strength-abc").getUnclippedBoundsInRoot()
         val moreBounds = compose.onNodeWithTag("program_more_button_gym-strength-abc").getUnclippedBoundsInRoot()
 
-        assertTrue("Title must not overlap activation column", titleBounds.right <= activateBounds.left + 1.dp)
-        assertTrue("Details toggle must be directly below activation button", detailsToggleBounds.top >= activateBounds.bottom - 2.dp)
-        assertTrue("Details toggle must have >= 48dp touch height", detailsToggleBounds.bottom - detailsToggleBounds.top >= 48.dp)
-        assertTrue("Details toggle must have >= 48dp touch width", detailsToggleBounds.right - detailsToggleBounds.left >= 48.dp)
+        assertTrue("Collapsed card must stay compact (< 90dp), was ${cardBoundsCollapsed.bottom - cardBoundsCollapsed.top}",
+            cardBoundsCollapsed.bottom - cardBoundsCollapsed.top < 90.dp)
+        assertTrue("Title must not overlap activation button", titleBounds.right <= activateBounds.left + 1.dp)
+        assertTrue("Activation must keep a >= 48dp touch height", activateBounds.bottom - activateBounds.top >= 48.dp)
         assertTrue("Three-dot menu must have >= 48dp width", moreBounds.right - moreBounds.left >= 48.dp)
         assertTrue("Three-dot menu must have >= 48dp height", moreBounds.bottom - moreBounds.top >= 48.dp)
-        assertTrue("Three-dot menu must not overlap activation button or details toggle",
-            moreBounds.left >= activateBounds.right - 1.dp && moreBounds.left >= detailsToggleBounds.right - 1.dp)
+        assertTrue("Three-dot menu must not overlap activation button", moreBounds.left >= activateBounds.right - 1.dp)
         assertTrue("Three-dot menu must align to the right edge of the card (2-4dp inner margin)",
             cardBoundsCollapsed.right - moreBounds.right <= 6.dp)
 
-        // 3. Opening Details expands full-width panel below main row without activating or opening editor
-        compose.onNodeWithTag("program_details_toggle_gym-strength-abc")
-            .assertTextEquals("Részletek ▼")
-        compose.onNodeWithTag("program_details_toggle_gym-strength-abc").performClick()
-        assertNull("Opening details must not activate the program", activatedId)
-        assertNull("Opening details must not open the program editor", editorOpenedId)
-
-        compose.onNodeWithTag("program_details_toggle_gym-strength-abc")
-            .assertTextEquals("Részletek ▲")
-        compose.onNodeWithTag("program_details_panel_gym-strength-abc", useUnmergedTree = true).assertIsDisplayed()
-        // Bound to program ID: other cards remain collapsed
-        compose.onNodeWithTag("program_details_panel_home-quick-30", useUnmergedTree = true).assertDoesNotExist()
-
-        val cardBoundsExpanded = compose.onNodeWithTag("program_card_gym-strength-abc").getUnclippedBoundsInRoot()
-        val panelBounds = compose.onNodeWithTag("program_details_panel_gym-strength-abc", useUnmergedTree = true).getUnclippedBoundsInRoot()
-        assertTrue("Card height must grow naturally when long equipment details expand",
-            cardBoundsExpanded.bottom - cardBoundsExpanded.top > cardBoundsCollapsed.bottom - cardBoundsCollapsed.top)
-        assertTrue("Details panel must span full card width below the main row",
-            panelBounds.right - panelBounds.left >= (cardBoundsExpanded.right - cardBoundsExpanded.left) - 30.dp &&
-                panelBounds.top >= detailsToggleBounds.bottom)
-
-        compose.onNodeWithTag("program_details_location_gym-strength-abc", useUnmergedTree = true)
-            .assertTextContains("Helyszín: Konditermi", substring = true)
+        // 3. Tapping the card header expands the inline editor for this program only; it neither activates
+        //    the program nor opens a separate editor page
+        compose.onNodeWithTag("program_header_gym-strength-abc").performClick()
+        assertEquals(listOf("gym-strength-abc"), toggles)
+        assertNull("Expanding must not activate the program", activatedId)
+        assertNull("Expanding must not open a separate editor page", editorOpenedId)
+        compose.onNodeWithTag("program_inline_editor_gym-strength-abc", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithTag("fake_inline_editor_gym-strength-abc", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithTag("program_inline_editor_home-quick-30", useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag("program_details_equipment_gym-strength-abc", useUnmergedTree = true)
-            .assertTextContains("Felszerelések:", substring = true)
+            .assertTextContains("Felszerelés:", substring = true)
             .assertTextContains("biztonságos állvány", substring = true)
             .assertTextContains("csigás gép", substring = true)
+        val cardBoundsExpanded = compose.onNodeWithTag("program_card_gym-strength-abc").getUnclippedBoundsInRoot()
+        assertTrue("Card grows to host the inline editor",
+            cardBoundsExpanded.bottom - cardBoundsExpanded.top > cardBoundsCollapsed.bottom - cardBoundsCollapsed.top)
 
-        // 4. Localization (EN, DE, RO) and theme switches (Light / Dark palettes) preserve expanded state
-        compose.runOnIdle {
-            currentLang = AppLanguage.EN
-            currentPalette = lightPalette
-        }
-        compose.onNodeWithTag("program_details_toggle_gym-strength-abc")
-            .assertTextEquals("Details ▲")
-        compose.onNodeWithTag("program_details_location_gym-strength-abc", useUnmergedTree = true)
-            .assertTextContains("Location: Gym", substring = true)
+        // 4. Localization and theme switches keep the open card
+        compose.runOnIdle { currentLang = AppLanguage.EN; currentPalette = lightPalette }
         compose.onNodeWithTag("program_details_equipment_gym-strength-abc", useUnmergedTree = true)
             .assertTextContains("Equipment:", substring = true)
-
-        compose.runOnIdle {
-            currentLang = AppLanguage.DE
-            currentPalette = altDarkPalette
-        }
-        compose.onNodeWithTag("program_details_location_gym-strength-abc", useUnmergedTree = true)
-            .assertTextContains("Ort: Fitnessstudio", substring = true)
+        compose.runOnIdle { currentLang = AppLanguage.DE; currentPalette = altDarkPalette }
         compose.onNodeWithTag("program_details_equipment_gym-strength-abc", useUnmergedTree = true)
             .assertTextContains("Ausrüstung:", substring = true)
-
         compose.runOnIdle { currentLang = AppLanguage.RO }
-        compose.onNodeWithTag("program_details_toggle_gym-strength-abc")
-            .assertTextEquals("Detalii ▲")
-        compose.onNodeWithTag("program_details_location_gym-strength-abc", useUnmergedTree = true)
-            .assertTextContains("Locație: Sală", substring = true)
         compose.onNodeWithTag("program_details_equipment_gym-strength-abc", useUnmergedTree = true)
             .assertTextContains("Echipament:", substring = true)
-
-        // 5. Closing Details collapses the panel back to Részletek ▼
         compose.runOnIdle { currentLang = AppLanguage.HU }
-        compose.onNodeWithTag("program_details_toggle_gym-strength-abc").performClick()
-        compose.onNodeWithTag("program_details_panel_gym-strength-abc", useUnmergedTree = true).assertDoesNotExist()
-        compose.onNodeWithTag("program_details_toggle_gym-strength-abc")
-            .assertTextEquals("Részletek ▼")
 
-        // 6. Active program card also has working Részletek toggle
-        compose.onNodeWithTag("program_details_toggle_home-basic").performClick()
-        compose.onNodeWithTag("program_details_panel_home-basic", useUnmergedTree = true).assertIsDisplayed()
-        compose.onNodeWithTag("program_details_location_home-basic", useUnmergedTree = true)
-            .assertTextContains("Helyszín: Otthoni", substring = true)
+        // 5. Only one card open: opening the active card closes the other; tapping it again collapses it
+        compose.onNodeWithTag("program_header_home-basic").performClick()
+        compose.onNodeWithTag("program_inline_editor_home-basic", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithTag("program_inline_editor_gym-strength-abc", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("program_header_home-basic").performClick()
+        compose.onNodeWithTag("program_inline_editor_home-basic", useUnmergedTree = true).assertDoesNotExist()
+        assertEquals(listOf("gym-strength-abc", "home-basic", "home-basic"), toggles)
+        assertNull(activatedId)
 
-        // 7. Reorder controls, 3-dot menu, and long-press continue to work for the exact program ID
+        // 6. Reorder controls, 3-dot menu, and long-press continue to work for the exact program ID
         compose.onNodeWithTag("program_move_down_gym-strength-abc").performClick()
         assertEquals(0 to 1, movedPair)
 
@@ -295,6 +273,7 @@ class UiUx219RegressionTest {
         compose.onNodeWithTag("program_action_sheet").assertIsDisplayed()
         compose.onNodeWithTag("program_action_sheet_title")
             .assertTextContains("Konditermi erő A/B/C", substring = true)
+        compose.onNodeWithTag("program_action_rename").assertIsDisplayed()
         compose.onNodeWithTag("program_action_sheet_close").performClick()
         compose.onNodeWithTag("program_action_sheet").assertDoesNotExist()
 
@@ -302,6 +281,7 @@ class UiUx219RegressionTest {
         compose.onNodeWithTag("program_action_sheet").assertIsDisplayed()
         compose.onNodeWithTag("program_action_sheet_title").assertTextEquals("Gyors 30 perces")
         compose.onNodeWithTag("program_action_sheet_close").performClick()
+        assertNull("Long press must not toggle the inline editor", inlineOpenId)
     }
 
     @Test

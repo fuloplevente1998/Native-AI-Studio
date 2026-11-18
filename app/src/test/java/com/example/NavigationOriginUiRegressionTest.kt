@@ -218,7 +218,31 @@ class NavigationOriginUiRegressionTest {
                                     onOpenExerciseLibrary = {},
                                     onOpenPersonalPlanner = {},
                                     onMoveProgramOrder = model::moveProgramOrder,
-                                    onCreateCustomProgram = model::createNewCustomProgram
+                                    onCreateCustomProgram = model::createNewCustomProgram,
+                                    onToggleInlineEditor = { id, host -> model.toggleInlineProgramEditor(id, 0, host) },
+                                    onSaveInlineDrafts = model::saveEditorProgram,
+                                    onRenameProgram = model::renameProgram,
+                                    inlineEditor = { program, pending ->
+                                        com.example.ui.screens.ProgramEditorContent(
+                                            state = state,
+                                            program = program,
+                                            pendingPrescriptions = pending,
+                                            showNameField = false,
+                                            onSelectDayIndex = model::selectEditingDayIndex,
+                                            onToggleExpandExercise = model::toggleExpandedEditorExercise,
+                                            onSaveExercisePrescription = model::updateProgramExercisePrescription,
+                                            onOpenExerciseDetail = model::openExerciseDetail,
+                                            onOpenExerciseLibrary = {},
+                                            onMoveExercise = model::moveEditorExercise,
+                                            onCopyProgram = model::copyEditorProgram,
+                                            onDeleteProgram = model::deleteEditorProgram,
+                                            onAddDay = model::addEditorDay,
+                                            onDeleteDay = model::deleteEditorDay,
+                                            onRemoveExercise = model::removeEditorExercise,
+                                            onRenameProgram = model::renameEditorProgram,
+                                            onSaveProgram = model::saveEditorProgram
+                                        )
+                                    }
                                 )
                             }
                         }
@@ -245,16 +269,27 @@ class NavigationOriginUiRegressionTest {
             moreBtn.performClick()
             compose.onNodeWithTag("program_action_sheet").assertIsDisplayed()
 
-            // 3. Single logical transition: Action Sheet -> Edit -> Back returns directly to Programs Custom tab without reopening sheet
+            // 3. Action Sheet -> Edit expands the editor inside this card: no separate page, tab and list stay.
             compose.onNodeWithTag("program_action_edit").performClick()
             compose.onNodeWithTag("program_action_sheet").assertDoesNotExist()
-            assertEquals(SubScreen.PROGRAM_EDITOR, model.uiState.value.currentSubScreen)
-            assertEquals(alpha.id, model.uiState.value.editingProgramId)
-
-            compose.runOnIdle { model.navigateBack() }
             assertEquals(SubScreen.NONE, model.uiState.value.currentSubScreen)
             assertEquals(MainTab.PROGRAMS, model.uiState.value.currentTab)
-            assertTrue("Custom tab selection must be preserved on return", model.uiState.value.programsTabCustomOnly)
+            assertEquals(alpha.id, model.uiState.value.editingProgramId)
+            assertEquals(alpha.id, model.uiState.value.inlineEditorProgramId)
+            assertTrue("Custom tab selection must be preserved", model.uiState.value.programsTabCustomOnly)
+            compose.onNodeWithTag("program_inline_editor_${alpha.id}", useUnmergedTree = true).assertExists()
+
+            // Only one card is open: tapping another card's header moves the editor there.
+            compose.onNodeWithTag("program_header_${beta.id}").performScrollTo().performClick()
+            assertEquals(beta.id, model.uiState.value.inlineEditorProgramId)
+            assertEquals(beta.id, model.uiState.value.editingProgramId)
+            compose.onNodeWithTag("program_inline_editor_${alpha.id}", useUnmergedTree = true).assertDoesNotExist()
+            compose.onNodeWithTag("program_inline_editor_${beta.id}", useUnmergedTree = true).assertExists()
+            // Tapping the open card again collapses it; nothing else changes.
+            compose.onNodeWithTag("program_header_${beta.id}").performScrollTo().performClick()
+            assertEquals(null, model.uiState.value.inlineEditorProgramId)
+            assertEquals(SubScreen.NONE, model.uiState.value.currentSubScreen)
+            assertTrue(model.uiState.value.programs.any { it.id == alpha.id } && model.uiState.value.programs.any { it.id == beta.id })
             compose.onNodeWithTag("program_action_sheet").assertDoesNotExist()
 
             // 4. Delete confirmation identifies program by name; cancel keeps program; missing-record guard protects next item

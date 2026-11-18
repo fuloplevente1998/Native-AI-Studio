@@ -106,6 +106,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -133,6 +134,7 @@ import com.example.ui.components.programEquipmentCategoryLabel
 import com.example.localization.LocalTrainPilotStrings
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.viewmodel.TrainPilotUiState
+import com.example.ui.viewmodel.INLINE_EDITOR_HOST_PROGRAMS
 
 private val calendarDurationOptions = (15..240 step 15).map(Int::toString)
 
@@ -683,7 +685,14 @@ fun ProgramsListScreen(
     onCreateCustomProgram: (String, String) -> Unit = { _, _ -> },
     onOpenAddCustomExercise: () -> Unit = {},
     onCopyProgram: (String) -> Unit = {},
-    onDeleteProgram: (String) -> Unit = {}
+    onDeleteProgram: (String) -> Unit = {},
+    onToggleInlineEditor: (String, String) -> Unit = { id, _ -> onOpenProgramEditor(id) },
+    onSaveInlineDrafts: (String, List<com.example.model.StudioProgramPrescriptionDraft>) -> Unit = { _, _ -> },
+    onRenameProgram: (String, String) -> Unit = { _, _ -> },
+    inlineEditor: @Composable (
+        com.example.model.TrainingProgramModel,
+        androidx.compose.runtime.snapshots.SnapshotStateMap<Pair<String, String>, com.example.model.StudioProgramPrescriptionDraft>
+    ) -> Unit = { _, _ -> }
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
@@ -699,14 +708,97 @@ fun ProgramsListScreen(
     var actionSheetProgramId by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
     var actionSheetSnapshot by remember { mutableStateOf<com.example.model.TrainingProgramModel?>(null) }
     var deleteConfirmProgram by remember { mutableStateOf<Pair<String, String>?>(null) }
-    var expandedProgramDetailsIds by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(emptyList<String>()) }
+    // Inline editor: one open card at a time; unsaved exercise drafts are guarded before switching.
+    val inlinePending = remember(state.inlineEditorProgramId, state.inlineEditorHost) {
+        mutableStateMapOf<Pair<String, String>, com.example.model.StudioProgramPrescriptionDraft>()
+    }
+    var pendingInlineSwitch by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var renameTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
+    fun isInlineOpen(programId: String, host: String) =
+        state.inlineEditorProgramId == programId && state.inlineEditorHost == host
+    // toggle = card tap; otherwise (menu "Edit") only opens the requested card.
+    fun requestInlineEditor(programId: String, host: String, toggle: Boolean = true) {
+        if (!toggle && isInlineOpen(programId, host)) return
+        val openProgram = state.programs.firstOrNull { it.id == state.inlineEditorProgramId }
+        if (openProgram != null && hasUnsavedPrescriptionDrafts(openProgram, inlinePending)) pendingInlineSwitch = programId to host
+        else onToggleInlineEditor(programId, host)
+    }
 
-    val toggleProgramDetails: (String) -> Unit = { programId ->
-        expandedProgramDetailsIds = if (programId in expandedProgramDetailsIds) {
-            expandedProgramDetailsIds - programId
-        } else {
-            expandedProgramDetailsIds + programId
-        }
+    pendingInlineSwitch?.let { (targetId, targetHost) ->
+        val openProgram = state.programs.firstOrNull { it.id == state.inlineEditorProgramId }
+        AlertDialog(
+            onDismissRequest = { pendingInlineSwitch = null },
+            containerColor = palette.surface,
+            title = { Text(trW(state.language, "Mentetlen módosítások", "Unsaved changes", "Ungespeicherte Änderungen", "Modificări nesalvate"), color = palette.textPrimary) },
+            text = {
+                Text(
+                    trW(state.language,
+                        "A nyitott program gyakorlatértékei még nincsenek mentve.",
+                        "Exercise values in the open program are not saved yet.",
+                        "Die Übungswerte des geöffneten Programms sind noch nicht gespeichert.",
+                        "Valorile exercițiilor din programul deschis nu sunt încă salvate."),
+                    color = palette.textSecondary
+                )
+            },
+            confirmButton = {
+                com.repforge.app.ui.theme.TrainPilotSaveButton(
+                    onClick = {
+                        // Save stays on the open card; switching is a separate tap once the write committed.
+                        if (openProgram != null) onSaveInlineDrafts(openProgram.localizedName(state.language), inlinePending.values.toList())
+                        pendingInlineSwitch = null
+                    },
+                    enabled = openProgram != null && !state.libraryMutationBusy,
+                    modifier = Modifier.testTag("program_inline_unsaved_save")
+                ) { Text(strings.saveBtn, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TrainPilotOutlinedButton(
+                        onClick = { pendingInlineSwitch = null },
+                        modifier = Modifier.testTag("program_inline_unsaved_cancel")
+                    ) { Text(strings.cancelBtn, color = palette.textPrimary) }
+                    TrainPilotOutlinedButton(
+                        onClick = {
+                            inlinePending.clear()
+                            pendingInlineSwitch = null
+                            onToggleInlineEditor(targetId, targetHost)
+                        },
+                        modifier = Modifier.testTag("program_inline_unsaved_discard")
+                    ) { Text(trW(state.language, "Elvetés", "Discard", "Verwerfen", "Renunță"), color = palette.textPrimary) }
+                }
+            }
+        )
+    }
+
+    renameTarget?.let { (targetId, currentName) ->
+        var newName by remember(targetId) { mutableStateOf(currentName) }
+        AlertDialog(
+            onDismissRequest = { renameTarget = null },
+            containerColor = palette.surface,
+            title = { Text(trW(state.language, "Program átnevezése", "Rename program", "Programm umbenennen", "Redenumește programul"), color = palette.textPrimary) },
+            text = {
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth().testTag("program_rename_field")
+                )
+            },
+            confirmButton = {
+                com.repforge.app.ui.theme.TrainPilotSaveButton(
+                    onClick = {
+                        onRenameProgram(targetId, newName.trim())
+                        renameTarget = null
+                    },
+                    enabled = newName.isNotBlank() && newName.trim() != currentName && !state.libraryMutationBusy,
+                    modifier = Modifier.testTag("program_rename_save")
+                ) { Text(strings.saveBtn, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TrainPilotOutlinedButton(onClick = { renameTarget = null }) { Text(strings.cancelBtn, color = palette.textPrimary) }
+            }
+        )
     }
 
     actionSheetProgramId?.let { targetId ->
@@ -797,7 +889,7 @@ fun ProgramsListScreen(
                 TrainPilotOutlinedButton(
                     onClick = {
                         actionSheetProgramId = null
-                        onOpenProgramEditor(targetId)
+                        requestInlineEditor(targetId, INLINE_EDITOR_HOST_PROGRAMS, toggle = false)
                     },
                     enabled = !state.libraryMutationBusy,
                     shape = RoundedCornerShape(12.dp),
@@ -810,6 +902,27 @@ fun ProgramsListScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = trW(state.language, "Szerkesztés", "Edit", "Bearbeiten", "Editează"),
+                        color = palette.textPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                TrainPilotOutlinedButton(
+                    onClick = {
+                        actionSheetProgramId = null
+                        renameTarget = targetId to targetName
+                    },
+                    enabled = !state.libraryMutationBusy && liveProgram != null,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                        .testTag("program_action_rename")
+                ) {
+                    Icon(imageVector = Icons.Default.Edit, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = trW(state.language, "Átnevezés", "Rename", "Umbenennen", "Redenumește"),
                         color = palette.textPrimary,
                         fontWeight = FontWeight.Bold
                     )
@@ -1059,36 +1172,37 @@ fun ProgramsListScreen(
                 val activeAlsoInList = state.programsTabCustomOnly && activeProgram.isCustom
                 val activeTagPrefix = if (activeAlsoInList) "active_hero_" else ""
                 val activeName = activeProgram.localizedName(state.language)
-                val isActiveDetailsExpanded = activeProgram.id in expandedProgramDetailsIds
+                val activeHost = if (activeAlsoInList) "${INLINE_EDITOR_HOST_PROGRAMS}_hero" else INLINE_EDITOR_HOST_PROGRAMS
+                val activeExpanded = isInlineOpen(activeProgram.id, activeHost)
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = palette.surface,
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
-                        .trainPilotCombinedClickable(
+                        .testTag("programs_active_program_card")
+                ) {
+                    ProgramCardContent(
+                        program = activeProgram,
+                        language = state.language,
+                        isExpanded = activeExpanded,
+                        tagPrefix = activeTagPrefix,
+                        emblemSize = 40.dp,
+                        onActivateProgram = { onActivateProgram(activeProgram.id) },
+                        onOpenMoreActions = {
+                            actionSheetSnapshot = activeProgram
+                            actionSheetProgramId = activeProgram.id
+                        },
+                        headerModifier = Modifier.trainPilotCombinedClickable(
                             shape = RoundedCornerShape(16.dp),
                             onLongClickLabel = trW(state.language, "Program műveletek: $activeName", "Program actions: $activeName", "Programmaktionen: $activeName", "Acțiuni program: $activeName"),
                             onLongClick = {
                                 actionSheetSnapshot = activeProgram
                                 actionSheetProgramId = activeProgram.id
                             },
-                            onClick = { onOpenProgramEditor(activeProgram.id) }
-                        )
-                        .testTag("programs_active_program_card")
-                ) {
-                    ProgramCardContent(
-                        program = activeProgram,
-                        language = state.language,
-                        isDetailsExpanded = isActiveDetailsExpanded,
-                        tagPrefix = activeTagPrefix,
-                        emblemSize = 42.dp,
-                        onActivateProgram = { onActivateProgram(activeProgram.id) },
-                        onToggleDetails = { toggleProgramDetails(activeProgram.id) },
-                        onOpenMoreActions = {
-                            actionSheetSnapshot = activeProgram
-                            actionSheetProgramId = activeProgram.id
-                        }
+                            onClick = { requestInlineEditor(activeProgram.id, activeHost) }
+                        ),
+                        expandedContent = { inlineEditor(activeProgram, inlinePending) }
                     )
                 }
             }
@@ -1143,40 +1257,40 @@ fun ProgramsListScreen(
             filteredPrograms.forEachIndexed { index, program ->
                 var dragAccumY by remember(program.id, index) { mutableFloatStateOf(0f) }
                 val progName = program.localizedName(state.language)
-                val isDetailsExpanded = program.id in expandedProgramDetailsIds
+                val isExpanded = isInlineOpen(program.id, INLINE_EDITOR_HOST_PROGRAMS)
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = palette.surface,
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(
-                            if (program.isActive) 1.5.dp else 1.dp,
-                            if (program.isActive) palette.primary else palette.cardBorder,
+                            if (program.isActive || isExpanded) 1.5.dp else 1.dp,
+                            if (program.isActive || isExpanded) palette.primary else palette.cardBorder,
                             RoundedCornerShape(14.dp)
-                        )
-                        .trainPilotCombinedClickable(
-                            shape = RoundedCornerShape(14.dp),
-                            onLongClickLabel = trW(state.language, "Program műveletek: $progName", "Program actions: $progName", "Programmaktionen: $progName", "Acțiuni program: $progName"),
-                            onLongClick = {
-                                actionSheetSnapshot = program
-                                actionSheetProgramId = program.id
-                            },
-                            onClick = { onOpenProgramEditor(program.id) }
                         )
                         .testTag("program_card_${program.id}")
                 ) {
                     ProgramCardContent(
                         program = program,
                         language = state.language,
-                        isDetailsExpanded = isDetailsExpanded,
+                        isExpanded = isExpanded,
                         tagPrefix = "",
-                        emblemSize = 38.dp,
+                        emblemSize = 36.dp,
                         onActivateProgram = { onActivateProgram(program.id) },
-                        onToggleDetails = { toggleProgramDetails(program.id) },
                         onOpenMoreActions = {
                             actionSheetSnapshot = program
                             actionSheetProgramId = program.id
                         },
+                        headerModifier = Modifier.trainPilotCombinedClickable(
+                            shape = RoundedCornerShape(14.dp),
+                            onLongClickLabel = trW(state.language, "Program műveletek: $progName", "Program actions: $progName", "Programmaktionen: $progName", "Acțiuni program: $progName"),
+                            onLongClick = {
+                                actionSheetSnapshot = program
+                                actionSheetProgramId = program.id
+                            },
+                            onClick = { requestInlineEditor(program.id, INLINE_EDITOR_HOST_PROGRAMS) }
+                        ),
+                        expandedContent = { inlineEditor(program, inlinePending) },
                         reorderSlot = {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -1267,7 +1381,7 @@ fun ProgramsListScreen(
             }
 
             TrainPilotOutlinedButton(
-                onClick = { onOpenProgramEditor(activeProgram?.id ?: "") },
+                onClick = { activeProgram?.let { requestInlineEditor(it.id, INLINE_EDITOR_HOST_PROGRAMS, toggle = false) } },
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1307,23 +1421,37 @@ fun ProgramsListScreen(
 private fun ProgramCardContent(
     program: com.example.model.TrainingProgramModel,
     language: com.example.model.AppLanguage,
-    isDetailsExpanded: Boolean,
+    isExpanded: Boolean,
     tagPrefix: String,
     emblemSize: androidx.compose.ui.unit.Dp,
     onActivateProgram: () -> Unit,
-    onToggleDetails: () -> Unit,
     onOpenMoreActions: () -> Unit,
-    reorderSlot: (@Composable () -> Unit)? = null
+    headerModifier: Modifier = Modifier,
+    reorderSlot: (@Composable () -> Unit)? = null,
+    expandedContent: (@Composable () -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
     val progName = program.localizedName(language)
 
     Column(modifier = Modifier.fillMaxWidth()) {
+        // Header row: tap expands/collapses the inline editor (no separate toggle control);
+        // long press and the trailing more button open the quick-action sheet.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 10.dp, end = 2.dp, top = 8.dp, bottom = 8.dp),
+                .then(headerModifier)
+                .semantics {
+                    stateDescription = trW(
+                        language,
+                        if (isExpanded) "Kinyitva" else "Összecsukva",
+                        if (isExpanded) "Expanded" else "Collapsed",
+                        if (isExpanded) "Ausgeklappt" else "Eingeklappt",
+                        if (isExpanded) "Extins" else "Restrâns"
+                    )
+                }
+                .testTag("${tagPrefix}program_header_${program.id}")
+                .padding(start = 8.dp, end = 2.dp, top = 4.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             reorderSlot?.invoke()
@@ -1342,20 +1470,22 @@ private fun ProgramCardContent(
                         lineHeight = 18.sp
                     ),
                     color = palette.textPrimary,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     modifier = Modifier.testTag("${tagPrefix}program_title_${program.id}")
                 )
-                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = programCardShortSubtitle(program, language),
                     style = MaterialTheme.typography.labelSmall,
                     color = palette.textSecondary,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     modifier = Modifier.testTag("${tagPrefix}program_subtitle_${program.id}")
                 )
             }
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
+            Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier.padding(start = 4.dp)
             ) {
                 if (!program.isActive) {
@@ -1399,25 +1529,6 @@ private fun ProgramCardContent(
                         )
                     }
                 }
-
-                val detailsWord = trW(language, "Részletek", "Details", "Details", "Detalii")
-                val arrowChar = if (isDetailsExpanded) "▲" else "▼"
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                        .trainPilotClickable(RoundedCornerShape(8.dp)) { onToggleDetails() }
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                        .testTag("${tagPrefix}program_details_toggle_${program.id}")
-                ) {
-                    Text(
-                        text = "$detailsWord $arrowChar",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = if (isDetailsExpanded) palette.primary else palette.textPrimary,
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                }
             }
 
             Box(
@@ -1445,54 +1556,41 @@ private fun ProgramCardContent(
             }
         }
 
-        if (isDetailsExpanded) {
-            val (locationValue, equipmentValue) = remember(program, language) {
-                programDetailsLocationAndEquipment(program, language)
+        if (isExpanded && expandedContent != null) {
+            val equipmentValue = remember(program, language) {
+                programDetailsLocationAndEquipment(program, language).second
             }
-            val locationLabel = trW(language, "Helyszín", "Location", "Ort", "Locație")
-            val equipmentLabel = trW(language, "Felszerelések", "Equipment", "Ausrüstung", "Echipament")
+            val equipmentLabel = trW(language, "Felszerelés", "Equipment", "Ausrüstung", "Echipament")
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 12.dp, end = 12.dp, bottom = 10.dp)
-                    .testTag("${tagPrefix}program_details_panel_${program.id}"),
+                    .padding(start = 8.dp, end = 8.dp, bottom = 10.dp)
+                    .testTag("${tagPrefix}program_inline_editor_${program.id}"),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 HorizontalDivider(color = palette.cardBorder.copy(alpha = 0.65f))
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = palette.surfaceElevated,
+                Text(
+                    text = "$equipmentLabel: $equipmentValue",
+                    style = MaterialTheme.typography.bodySmall.copy(lineHeight = 17.sp),
+                    color = palette.textSecondary,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .trainPilotBorder(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = "$locationLabel: $locationValue",
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                            color = palette.textPrimary,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("${tagPrefix}program_details_location_${program.id}")
-                        )
-                        Text(
-                            text = "$equipmentLabel: $equipmentValue",
-                            style = MaterialTheme.typography.bodySmall.copy(lineHeight = 17.sp),
-                            color = palette.textSecondary,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("${tagPrefix}program_details_equipment_${program.id}")
-                        )
-                    }
-                }
+                        .testTag("${tagPrefix}program_details_equipment_${program.id}")
+                )
+                expandedContent()
             }
         }
     }
+}
+
+/** True when an exercise draft differs from the program's stored prescription. */
+internal fun hasUnsavedPrescriptionDrafts(
+    program: com.example.model.TrainingProgramModel,
+    drafts: Map<Pair<String, String>, com.example.model.StudioProgramPrescriptionDraft>
+): Boolean = drafts.any { (key, draft) ->
+    val exercise = program.days.firstOrNull { it.id == key.first }?.exercises?.firstOrNull { it.id == key.second }
+    exercise == null || exercise.defaultSets != draft.sets || exercise.defaultReps != draft.reps ||
+        exercise.defaultWeightKg != draft.weightKg || exercise.defaultRestSec != draft.restSec
 }
 
 internal fun programCardShortSubtitle(
@@ -1602,10 +1700,6 @@ fun ProgramEditorScreen(
     val program = state.programs.firstOrNull { it.id == state.editingProgramId }
         ?: state.programs.firstOrNull()
         ?: com.example.model.TrainingProgramModel(id = "custom_program", nameHu = "Egyéni program", nameEn = "Custom Program", subtitleHu = "Saját program", subtitleEn = "Custom Program", tagsHu = emptyList(), isCustom = true, isActive = false, days = emptyList())
-    val dayIndex = state.editingDayIndex.coerceIn(0, (program.days.size - 1).coerceAtLeast(0))
-    val currentDay = program.days.getOrNull(dayIndex)
-    val initialProgramName = program.localizedName(state.language)
-    var programName by remember(program.id, initialProgramName) { mutableStateOf(initialProgramName) }
     val pendingPrescriptions = remember(program.id) {
         mutableStateMapOf<Pair<String, String>, com.example.model.StudioProgramPrescriptionDraft>()
     }
@@ -1626,286 +1720,343 @@ fun ProgramEditorScreen(
         Column(
             modifier = Modifier.weight(1f).testTag("program_editor_body").verticalScroll(rememberScrollState())
                 .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+                .padding(bottom = 24.dp)
         ) {
-            OutlinedTextField(
-                value = programName,
-                onValueChange = { programName = it },
-                modifier = Modifier.fillMaxWidth().testTag("studio_program_name"),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true
-            )
-
-            if (programName.trim() != initialProgramName) com.repforge.app.ui.theme.TrainPilotSaveButton(
-                onClick = { onRenameProgram(programName) }, enabled = !state.libraryMutationBusy && programName.isNotBlank(),
-                modifier = Modifier.fillMaxWidth().testTag("studio_program_save_name")) {
-                Text(trW(state.language, "Programnév mentése", "Save program name", "Programmname speichern", "Salvează numele programului"))
-            }
-
-            // Segmented A nap | B nap selector (Mockup 4/4 #6)
-            Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                program.days.forEachIndexed { idx, d ->
-                    val selected = idx == dayIndex
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (selected) palette.primary else palette.surface,
-                        modifier = Modifier
-                            .widthIn(min = 76.dp)
-                            .heightIn(min = 48.dp)
-                            .trainPilotBorder(
-                                1.dp,
-                                if (selected) palette.primary else palette.cardBorder,
-                                RoundedCornerShape(12.dp)
-                            )
-                            .trainPilotClickable(RoundedCornerShape(12.dp)) { onSelectDayIndex(idx) }
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.padding(vertical = 10.dp, horizontal = 6.dp)
-                        ) {
-                            Text(
-                                text = d.localizedDayCode(state.language),
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = if (selected) palette.onPrimary else palette.textPrimary,
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
-                        }
-                    }
-                }
-            }
-
-            val totalExercisesInDay = currentDay?.exercises?.size ?: 0
-            currentDay?.exercises?.forEachIndexed { index, ex ->
-                val isExpanded = state.expandedEditorExerciseId == ex.id
-                val draftKey = currentDay.id to ex.id
-                val fields = pendingPrescriptions[draftKey] ?: com.example.model.StudioProgramPrescriptionDraft(
-                    currentDay.id, ex.id, ex.defaultSets, ex.defaultReps, ex.defaultWeightKg, ex.defaultRestSec)
-                val sets = fields.sets
-                val reps = fields.reps
-                val weight = fields.weightKg
-                val restSec = fields.restSec
-                fun editPrescription(change: (com.example.model.StudioProgramPrescriptionDraft) -> com.example.model.StudioProgramPrescriptionDraft) {
-                    pendingPrescriptions[draftKey] = change(pendingPrescriptions[draftKey] ?: fields)
-                }
-                var dragAccumY by remember(ex.id, index) { mutableFloatStateOf(0f) }
-
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = palette.surface,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .trainPilotBorder(
-                            width = if (isExpanded) 1.5.dp else 1.dp,
-                            color = if (isExpanded) palette.primary else palette.cardBorder,
-                            shape = RoundedCornerShape(16.dp)
-                        )
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 48.dp)
-                                .trainPilotClickable(RoundedCornerShape(16.dp)) { onToggleExpandExercise(ex.id) },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Working Reorder Handle (= with vertical drag + ▲ / ▼ buttons)
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(2.dp),
-                                modifier = Modifier
-                                    .padding(end = 8.dp)
-                                    .pointerInput(index, totalExercisesInDay) {
-                                        detectVerticalDragGestures(
-                                            onDragStart = { dragAccumY = 0f },
-                                            onVerticalDrag = { change, dragAmount ->
-                                                change.consume()
-                                                dragAccumY += dragAmount
-                                                if (dragAccumY < -40f && index > 0) {
-                                                    dragAccumY = 0f
-                                                    onMoveExercise(index, index - 1)
-                                                } else if (dragAccumY > 40f && index < totalExercisesInDay - 1) {
-                                                    dragAccumY = 0f
-                                                    onMoveExercise(index, index + 1)
-                                                }
-                                            }
-                                        )
-                                    }
-                                    .testTag("editor_exercise_drag_handle_$index")
-                            ) {
-                                Text(
-                                    text = "▲",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (index > 0) palette.primary else palette.textMuted.copy(alpha = 0.35f),
-                                    modifier = Modifier
-                                        .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index > 0) { onMoveExercise(index, index - 1) }
-                                        .padding(horizontal = 4.dp, vertical = 1.dp)
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.DragHandle,
-                                    contentDescription = "Sorrend mozgatása",
-                                    tint = palette.textSecondary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Text(
-                                    text = "▼",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (index < totalExercisesInDay - 1) palette.primary else palette.textMuted.copy(alpha = 0.35f),
-                                    modifier = Modifier
-                                        .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index < totalExercisesInDay - 1) { onMoveExercise(index, index + 1) }
-                                        .padding(horizontal = 4.dp, vertical = 1.dp)
-                                )
-                            }
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "${index + 1}.  ${ex.localizedName(state.language)}",
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = palette.textPrimary
-                                )
-                                val weightLabel = when {
-                                    ex.defaultWeightKg > 0f -> "${ex.defaultWeightKg.toString().removeSuffix(".0")} kg"
-                                    ex.loadType == "bodyweight" -> trW(state.language, "Testsúly", "Bodyweight", "Körpergewicht", "Greutatea corpului")
-                                    else -> trW(state.language, "Súly nincs megadva", "Load not set", "Gewicht offen", "Greutate nesetată")
-                                }
-                                val reps = ex.targetRepsText.ifBlank { ex.defaultReps.toString() }
-                                Text(
-                                    text = "${ex.defaultSets} × $reps  •  $weightLabel  •  ${ex.defaultRestSec} s",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = palette.textSecondary
-                                )
-                            }
-                            SmallExerciseVideoButton(exerciseName = ex.localizedName(state.language), exerciseId = ex.id)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                                    .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenExerciseDetail(ex.id) }
-                                    .padding(horizontal = 6.dp, vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = strings.detailsAction,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = palette.primary
-                                )
-                            }
-                        }
-
-                        AnimatedVisibility(visible = isExpanded) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 12.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    EditorStepperBox(
-                                        modifier = Modifier.weight(1f).testTag("editor_sets_${ex.id}"),
-                                        label = strings.setsLabel,
-                                        valueText = "$sets",
-                                        onMinus = { editPrescription { it.copy(sets = (it.sets - 1).coerceAtLeast(1)) } },
-                                        onPlus = { editPrescription { it.copy(sets = (it.sets + 1).coerceAtMost(10)) } }
-                                    )
-                                    EditorStepperBox(
-                                        modifier = Modifier.weight(1f),
-                                        label = strings.repsLabel,
-                                        valueText = "$reps",
-                                        onMinus = { editPrescription { it.copy(reps = (it.reps - 1).coerceAtLeast(1)) } },
-                                        onPlus = { editPrescription { it.copy(reps = (it.reps + 1).coerceAtMost(50)) } }
-                                    )
-                                }
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    EditorStepperBox(
-                                        modifier = Modifier.weight(1f),
-                                        label = "${strings.weightLabel} (kg)",
-                                        valueText = "${weight.toInt()}",
-                                        onMinus = { editPrescription { it.copy(weightKg = (it.weightKg - 2f).coerceAtLeast(0f)) } },
-                                        onPlus = { editPrescription { it.copy(weightKg = it.weightKg + 2f) } }
-                                    )
-                                    EditorStepperBox(
-                                        modifier = Modifier.weight(1f),
-                                        label = "${strings.restLabel} (s)",
-                                        valueText = "$restSec",
-                                        onMinus = { editPrescription { it.copy(restSec = (it.restSec - 15).coerceAtLeast(15)) } },
-                                        onPlus = { editPrescription { it.copy(restSec = (it.restSec + 15).coerceAtMost(300)) } }
-                                    )
-                                }
-
-                                com.example.ui.components.StudioRemoveProgramExerciseButton(
-                                    ex.id, ex.localizedName(state.language), state.libraryMutationBusy, onRemoveExercise)
-
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = palette.surfaceElevated,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(
-                                        text = ex.localizedEquipment(state.language),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = palette.textPrimary,
-                                        modifier = Modifier.padding(10.dp)
-                                    )
-                                }
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    TrainPilotOutlinedButton(
-                                        onClick = { pendingPrescriptions.remove(draftKey); onToggleExpandExercise(ex.id) },
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .heightIn(min = 48.dp),
-                                        shape = RoundedCornerShape(10.dp)
-                                    ) {
-                                        Text(strings.cancelBtn, color = palette.textPrimary)
-                                    }
-                                    com.repforge.app.ui.theme.TrainPilotSaveButton(
-                                        onClick = {
-                                            onSaveExercisePrescription(ex.id, sets, reps, weight, restSec)
-                                            pendingPrescriptions.remove(draftKey)
-                                        },
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .heightIn(min = 48.dp),
-                                        shape = RoundedCornerShape(10.dp)) {
-                                        Text(strings.saveBtn, fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // + Gyakorlat hozzáadása a könyvtárból & + Új egyedi gyakorlat létrehozása
-            TrainPilotOutlinedButton(
-                onClick = onOpenExerciseLibrary,
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp)
-            ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = palette.textPrimary)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(strings.addExerciseAction, color = palette.textPrimary)
-            }
-
-            com.example.ui.components.StudioProgramManagementControls(
-                program, state.libraryMutationBusy, currentDay != null,
-                onCopyProgram, onDeleteProgram, onAddDay, onDeleteDay,
-                onSave = { onSaveProgram(programName, pendingPrescriptions.values.toList()) }
+            ProgramEditorContent(
+                state = state,
+                program = program,
+                pendingPrescriptions = pendingPrescriptions,
+                showNameField = true,
+                onSelectDayIndex = onSelectDayIndex,
+                onToggleExpandExercise = onToggleExpandExercise,
+                onSaveExercisePrescription = onSaveExercisePrescription,
+                onOpenExerciseDetail = onOpenExerciseDetail,
+                onOpenExerciseLibrary = onOpenExerciseLibrary,
+                onMoveExercise = onMoveExercise,
+                onCopyProgram = onCopyProgram,
+                onDeleteProgram = onDeleteProgram,
+                onAddDay = onAddDay,
+                onDeleteDay = onDeleteDay,
+                onRemoveExercise = onRemoveExercise,
+                onRenameProgram = onRenameProgram,
+                onSaveProgram = onSaveProgram
             )
         }
+    }
+}
+
+/**
+ * Program editor body shared by the full editor route and the inline (card) editor.
+ * Same callbacks, drafts and persistence path; only the surrounding chrome differs.
+ */
+@Composable
+internal fun ProgramEditorContent(
+    state: TrainPilotUiState,
+    program: com.example.model.TrainingProgramModel,
+    pendingPrescriptions: androidx.compose.runtime.snapshots.SnapshotStateMap<Pair<String, String>, com.example.model.StudioProgramPrescriptionDraft>,
+    showNameField: Boolean,
+    onSelectDayIndex: (Int) -> Unit,
+    onToggleExpandExercise: (String) -> Unit,
+    onSaveExercisePrescription: (String, Int, Int, Float, Int) -> Unit,
+    onOpenExerciseDetail: (String) -> Unit,
+    onOpenExerciseLibrary: () -> Unit,
+    onMoveExercise: (Int, Int) -> Unit,
+    onCopyProgram: () -> Unit,
+    onDeleteProgram: () -> Unit,
+    onAddDay: (String) -> Unit,
+    onDeleteDay: () -> Unit,
+    onRemoveExercise: (String) -> Unit,
+    onRenameProgram: (String) -> Unit,
+    onSaveProgram: (String, List<com.example.model.StudioProgramPrescriptionDraft>) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val palette = LocalTrainPilotPalette.current
+    val strings = LocalTrainPilotStrings.current
+    val dayIndex = state.editingDayIndex.coerceIn(0, (program.days.size - 1).coerceAtLeast(0))
+    val currentDay = program.days.getOrNull(dayIndex)
+    val initialProgramName = program.localizedName(state.language)
+    var programName by remember(program.id, initialProgramName) { mutableStateOf(initialProgramName) }
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+    ) {
+        if (showNameField) OutlinedTextField(
+            value = programName,
+            onValueChange = { programName = it },
+            modifier = Modifier.fillMaxWidth().testTag("studio_program_name"),
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true
+        )
+
+        if (showNameField && programName.trim() != initialProgramName) com.repforge.app.ui.theme.TrainPilotSaveButton(
+            onClick = { onRenameProgram(programName) }, enabled = !state.libraryMutationBusy && programName.isNotBlank(),
+            modifier = Modifier.fillMaxWidth().testTag("studio_program_save_name")) {
+            Text(trW(state.language, "Programnév mentése", "Save program name", "Programmname speichern", "Salvează numele programului"))
+        }
+
+        // Segmented A nap | B nap selector (Mockup 4/4 #6)
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            program.days.forEachIndexed { idx, d ->
+                val selected = idx == dayIndex
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (selected) palette.primary else palette.surface,
+                    modifier = Modifier
+                        .widthIn(min = 76.dp)
+                        .heightIn(min = 48.dp)
+                        .trainPilotBorder(
+                            1.dp,
+                            if (selected) palette.primary else palette.cardBorder,
+                            RoundedCornerShape(12.dp)
+                        )
+                        .trainPilotClickable(RoundedCornerShape(12.dp)) { onSelectDayIndex(idx) }
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.padding(vertical = 10.dp, horizontal = 6.dp)
+                    ) {
+                        Text(
+                            text = d.localizedDayCode(state.language),
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = if (selected) palette.onPrimary else palette.textPrimary,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+            }
+        }
+
+        val totalExercisesInDay = currentDay?.exercises?.size ?: 0
+        currentDay?.exercises?.forEachIndexed { index, ex ->
+            val isExpanded = state.expandedEditorExerciseId == ex.id
+            val draftKey = currentDay.id to ex.id
+            val fields = pendingPrescriptions[draftKey] ?: com.example.model.StudioProgramPrescriptionDraft(
+                currentDay.id, ex.id, ex.defaultSets, ex.defaultReps, ex.defaultWeightKg, ex.defaultRestSec)
+            val sets = fields.sets
+            val reps = fields.reps
+            val weight = fields.weightKg
+            val restSec = fields.restSec
+            fun editPrescription(change: (com.example.model.StudioProgramPrescriptionDraft) -> com.example.model.StudioProgramPrescriptionDraft) {
+                pendingPrescriptions[draftKey] = change(pendingPrescriptions[draftKey] ?: fields)
+            }
+            var dragAccumY by remember(ex.id, index) { mutableFloatStateOf(0f) }
+
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = palette.surface,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .trainPilotBorder(
+                        width = if (isExpanded) 1.5.dp else 1.dp,
+                        color = if (isExpanded) palette.primary else palette.cardBorder,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .trainPilotClickable(RoundedCornerShape(16.dp)) { onToggleExpandExercise(ex.id) },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Working Reorder Handle (= with vertical drag + ▲ / ▼ buttons)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .pointerInput(index, totalExercisesInDay) {
+                                    detectVerticalDragGestures(
+                                        onDragStart = { dragAccumY = 0f },
+                                        onVerticalDrag = { change, dragAmount ->
+                                            change.consume()
+                                            dragAccumY += dragAmount
+                                            if (dragAccumY < -40f && index > 0) {
+                                                dragAccumY = 0f
+                                                onMoveExercise(index, index - 1)
+                                            } else if (dragAccumY > 40f && index < totalExercisesInDay - 1) {
+                                                dragAccumY = 0f
+                                                onMoveExercise(index, index + 1)
+                                            }
+                                        }
+                                    )
+                                }
+                                .testTag("editor_exercise_drag_handle_$index")
+                        ) {
+                            Text(
+                                text = "▲",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (index > 0) palette.primary else palette.textMuted.copy(alpha = 0.35f),
+                                modifier = Modifier
+                                    .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index > 0) { onMoveExercise(index, index - 1) }
+                                    .padding(horizontal = 4.dp, vertical = 1.dp)
+                            )
+                            Icon(
+                                imageVector = Icons.Default.DragHandle,
+                                contentDescription = "Sorrend mozgatása",
+                                tint = palette.textSecondary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = "▼",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (index < totalExercisesInDay - 1) palette.primary else palette.textMuted.copy(alpha = 0.35f),
+                                modifier = Modifier
+                                    .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index < totalExercisesInDay - 1) { onMoveExercise(index, index + 1) }
+                                    .padding(horizontal = 4.dp, vertical = 1.dp)
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "${index + 1}.  ${ex.localizedName(state.language)}",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                color = palette.textPrimary
+                            )
+                            val weightLabel = when {
+                                ex.defaultWeightKg > 0f -> "${ex.defaultWeightKg.toString().removeSuffix(".0")} kg"
+                                ex.loadType == "bodyweight" -> trW(state.language, "Testsúly", "Bodyweight", "Körpergewicht", "Greutatea corpului")
+                                else -> trW(state.language, "Súly nincs megadva", "Load not set", "Gewicht offen", "Greutate nesetată")
+                            }
+                            val reps = ex.targetRepsText.ifBlank { ex.defaultReps.toString() }
+                            Text(
+                                text = "${ex.defaultSets} × $reps  •  $weightLabel  •  ${ex.defaultRestSec} s",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = palette.textSecondary
+                            )
+                        }
+                        SmallExerciseVideoButton(exerciseName = ex.localizedName(state.language), exerciseId = ex.id)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                                .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenExerciseDetail(ex.id) }
+                                .padding(horizontal = 6.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = strings.detailsAction,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = palette.primary
+                            )
+                        }
+                    }
+
+                    AnimatedVisibility(visible = isExpanded) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                EditorStepperBox(
+                                    modifier = Modifier.weight(1f).testTag("editor_sets_${ex.id}"),
+                                    label = strings.setsLabel,
+                                    valueText = "$sets",
+                                    onMinus = { editPrescription { it.copy(sets = (it.sets - 1).coerceAtLeast(1)) } },
+                                    onPlus = { editPrescription { it.copy(sets = (it.sets + 1).coerceAtMost(10)) } }
+                                )
+                                EditorStepperBox(
+                                    modifier = Modifier.weight(1f),
+                                    label = strings.repsLabel,
+                                    valueText = "$reps",
+                                    onMinus = { editPrescription { it.copy(reps = (it.reps - 1).coerceAtLeast(1)) } },
+                                    onPlus = { editPrescription { it.copy(reps = (it.reps + 1).coerceAtMost(50)) } }
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                EditorStepperBox(
+                                    modifier = Modifier.weight(1f),
+                                    label = "${strings.weightLabel} (kg)",
+                                    valueText = "${weight.toInt()}",
+                                    onMinus = { editPrescription { it.copy(weightKg = (it.weightKg - 2f).coerceAtLeast(0f)) } },
+                                    onPlus = { editPrescription { it.copy(weightKg = it.weightKg + 2f) } }
+                                )
+                                EditorStepperBox(
+                                    modifier = Modifier.weight(1f),
+                                    label = "${strings.restLabel} (s)",
+                                    valueText = "$restSec",
+                                    onMinus = { editPrescription { it.copy(restSec = (it.restSec - 15).coerceAtLeast(15)) } },
+                                    onPlus = { editPrescription { it.copy(restSec = (it.restSec + 15).coerceAtMost(300)) } }
+                                )
+                            }
+
+                            com.example.ui.components.StudioRemoveProgramExerciseButton(
+                                ex.id, ex.localizedName(state.language), state.libraryMutationBusy, onRemoveExercise)
+
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = palette.surfaceElevated,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = ex.localizedEquipment(state.language),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = palette.textPrimary,
+                                    modifier = Modifier.padding(10.dp)
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                TrainPilotOutlinedButton(
+                                    onClick = { pendingPrescriptions.remove(draftKey); onToggleExpandExercise(ex.id) },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .heightIn(min = 48.dp),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text(strings.cancelBtn, color = palette.textPrimary)
+                                }
+                                com.repforge.app.ui.theme.TrainPilotSaveButton(
+                                    onClick = {
+                                        onSaveExercisePrescription(ex.id, sets, reps, weight, restSec)
+                                        pendingPrescriptions.remove(draftKey)
+                                    },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .heightIn(min = 48.dp),
+                                    shape = RoundedCornerShape(10.dp)) {
+                                    Text(strings.saveBtn, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // + Gyakorlat hozzáadása a könyvtárból & + Új egyedi gyakorlat létrehozása
+        TrainPilotOutlinedButton(
+            onClick = onOpenExerciseLibrary,
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+        ) {
+            Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = palette.textPrimary)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(strings.addExerciseAction, color = palette.textPrimary)
+        }
+
+        com.example.ui.components.StudioProgramManagementControls(
+            program, state.libraryMutationBusy, currentDay != null,
+            onCopyProgram, onDeleteProgram, onAddDay, onDeleteDay,
+            onSave = { onSaveProgram(programName, pendingPrescriptions.values.toList()) }
+        )
+
     }
 }
 
