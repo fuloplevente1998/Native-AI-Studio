@@ -542,7 +542,7 @@ class HealthBackgroundService : Service() {
             if ("connected" == state) "Conectat · pași actualizați la 5 minute" else "Conectare / reconectare…"
         )
         return NotificationCompat.Builder(this, CHANNEL)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_stat_trainpilot)
             .setContentTitle(title)
             .setContentText(body)
             .setContentIntent(open)

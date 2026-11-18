@@ -1,5 +1,6 @@
 package com.repforge.app.ui.progress
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -203,7 +204,7 @@ fun ProgressScreen(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(if (isSelected) colors.accent else colors.card2)
-                                    .clickable { viewModel.selectExercise(ex.id) }
+                                    .trainPilotClickable(RoundedCornerShape(8.dp)) { viewModel.selectExercise(ex.id) }
                                     .testTag("progress_exercise_${ex.id}")
                                     .padding(horizontal = 10.dp, vertical = 6.dp)
                             ) {

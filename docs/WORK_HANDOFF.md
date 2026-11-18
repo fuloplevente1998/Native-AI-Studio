@@ -1,3 +1,64 @@
+# Kész programok felülvizsgálata és személyre szabás — PR268
+
+13 kész program és 29 nap ellenőrizve. Négy gyári programban hat naplista
+javítva, meglévő szerkesztések és azonosítók megőrzésével. Edzőtermi, vegyes
+és szabadtéri profilhoz helyszínfüggő sablonválasztás és kizárásos adaptáció.
+Példasúly helyett csak kompatibilis, friss mérésből átvehető próbasúly,
+új tervnél elérhető alacsony mai készenlét esetén két sorozat.
+Részletek és korlátok: BUILTIN_PROGRAM_REVIEW.md. Statikus ellenőrzés zöld.
+A regressziók, Android-fordítás és CI futtatása továbbra is függőben.
+
+---
+
+# Kezdőprofil és A/B terv — PR268 gyűjtő
+
+Közös első indítási és Kezdőlap profil, kompatibilis kész program ajánlása vagy
+új terv. A/B mozgássorrend, szint és felszerelés szerinti gyakorlatok, új
+tervben kezdősúly nélkül. A meglévő program aktiválása nem készít másolatot.
+Forrás, döntések és tesztállapot a STARTER_PROFILE_PLAN_REVIEW.md fájlban.
+Statikus ellenőrzés megvolt. CI, fordítás és tesztfuttatás szünetel.
+
+---
+
+# Lenyomásjelzés — PR268 gyűjtő, CI továbbra is SZÜNETEL
+
+Témacsoport-fejléc teljes íves kártyaszélességen reagál, a margó a kattintható
+felületen belül van. Telefonos külön clickable műveletek közös alakot követő
+jelzésre átvezetve; kisebb ikonoknál nagyobb érintési célpont megőrizve.
+Valódi Settings pixelregresszió, kompakt törlés regresszió és teljes telefonos
+forráshasználat-őr hozzáadva. Még NEM futottak; nincs CI/build/main/verzió.
+Statikus diff --check és forrásaudit rendben. PHONE_PRESS_FEEDBACK_COVERAGE.md.
+
+---
+
+# Health Connect szinkron — PR268 gyűjtő, CI továbbra is SZÜNETEL
+
+A készülékes row_offset / change_log_request_table hiba felismerése után HC
+változáskövetés helyett a meglévő korlátos napi olvasás folytatódhat. Checkpoint
+és sikeridő érintetlen; eredmény kifejezetten részleges. SQL helyett HU/EN/DE/RO
+érthető jelzés. Regressziók hozzáadva, még NEM futtatva; diff --check tiszta.
+Részletek: HEALTH_CONNECT_SCHEMA_FALLBACK.md. Nincs új CI/build/main/verzió.
+
+---
+
+# #267 / draft PR268 — javításgyűjtés, CI SZÜNETEL, 2026-11-17
+
+Felhasználó további kisebb javításokat jelez, és kifejezetten kéri: CI ne
+induljon. Ne indíts automatikus/manuális CI-t, signed/APK/AAB buildet;
+commitok [skip ci] jelöléssel. Egy közös kapu majd külön felhasználói kérésre.
+
+Ág fix/program-header-notification-icon, main0a0beb9 alapján. Programok fejléc
+ScreenGutter margóval, felesleges+ eltávolítva; négy telefonos értesítési út
+külön fehér/átlátszó TrainPilot súlyzómaszkot használ. Launcher/vezérlés változatlan.
+Első CI44157967188/d98a7dc:836 eset,1 régi first-run UI timeout; az ikon új
+renderelt és valódi ARM-ellenőrzései sikeresek. A korábbi teszt egy még
+letiltott edit-profile gombra kattintott; most engedélyezést vár, feltételeit
+nem gyengíti. E tesztmódosítás még nincs CI-ben ellenőrizve, a csomag nem
+tekinthető teljesen zöldnek. Részletek PROGRAM_HEADER_STATUS_ICON_267.md.
+PR268 draft, nincs main-merge/új installer/verzió. Legutóbbi átadott APK2765-r2.
+
+---
+
 # 2765-r2 · 1.2-beta — main, telefonos APK átadva, 2026-11-17
 
 Felhasználó jóváhagyta PR263/PR265 teljes main-integrációját és telefonos APK-t

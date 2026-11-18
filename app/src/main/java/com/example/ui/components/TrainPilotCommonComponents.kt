@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.material.icons.filled.Flag
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
@@ -118,10 +119,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.ListAlt
-import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.ui.semantics.Role
@@ -199,8 +198,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = 48.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable { onSelectTab(MainTab.HOME) }
+                        .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectTab(MainTab.HOME) }
                         .padding(vertical = 2.dp, horizontal = 4.dp)
                         .testTag("top_bar_brand_home")
                 ) {
@@ -234,8 +232,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         color = if (isCalendarActive) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable { onSelectTab(MainTab.CALENDAR) }
+                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectTab(MainTab.CALENDAR) }
                             .testTag("top_bar_calendar_button")
                             .trainPilotBorder(1.dp, if (isCalendarActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
@@ -259,8 +256,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         color = if (isCoachActive) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable { onSelectTab(MainTab.COACH) }
+                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectTab(MainTab.COACH) }
                             .testTag("top_bar_coach_button")
                             .trainPilotBorder(1.dp, if (isCoachActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
@@ -284,8 +280,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                         color = if (isSettingsActive) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable { onOpenSettings() }
+                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenSettings() }
                             .testTag("top_bar_settings_button")
                             .trainPilotBorder(1.dp, if (isSettingsActive) palette.primary else palette.cardBorder, RoundedCornerShape(10.dp))
                             .clip(RoundedCornerShape(10.dp))
@@ -476,13 +471,12 @@ fun SubScreenTopBar(
     title: String,
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
-    rightExtraContent: (@Composable () -> Unit)? = null
+    rightExtraContent: (@Composable () -> Unit)? = null,
+    modifier: Modifier = Modifier
 ) {
     val palette = LocalTrainPilotPalette.current
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 0.dp, vertical = 0.dp),
+        modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -553,8 +547,7 @@ fun TrainPilotBottomNavigationBar(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onSelectTab(tab) }
+                        .trainPilotClickable(RoundedCornerShape(12.dp)) { onSelectTab(tab) }
                         .padding(vertical = 6.dp)
                         .testTag("bottom_nav_${tab.name.lowercase()}"),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -671,7 +664,7 @@ fun PalettePickerBottomSheet(
                         color = if (active) palette.primary else palette.surfaceElevated,
                         modifier = Modifier
                             .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                            .clickable { onSelectLanguage(lang) }
+                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectLanguage(lang) }
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -703,7 +696,7 @@ fun PalettePickerBottomSheet(
                                 color = if (active) palette.primary else palette.cardBorder,
                                 shape = RoundedCornerShape(10.dp)
                             )
-                            .clickable { onSelectFontScale(scale) }
+                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectFontScale(scale) }
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -728,7 +721,7 @@ fun PalettePickerBottomSheet(
                             color = if (compactPhoneMode) palette.primary else palette.cardBorder,
                             shape = RoundedCornerShape(10.dp)
                         )
-                        .clickable { onToggleCompactMode(!compactPhoneMode) }
+                        .trainPilotClickable(RoundedCornerShape(10.dp)) { onToggleCompactMode(!compactPhoneMode) }
                 ) {
                     Box(
                         contentAlignment = Alignment.Center,
@@ -770,7 +763,7 @@ fun PalettePickerBottomSheet(
                                 color = if (active) palette.primary else palette.cardBorder,
                                 shape = RoundedCornerShape(20.dp)
                             )
-                            .clickable { onSelectCategory(cat) }
+                            .trainPilotClickable(RoundedCornerShape(20.dp)) { onSelectCategory(cat) }
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -846,7 +839,7 @@ private fun PaletteRowCard(
                 color = if (isSelected) item.primary else if (item.hasGlow) item.primary.copy(alpha = 0.7f) else item.cardBorder,
                 shape = RoundedCornerShape(14.dp)
             )
-            .clickable { onClick() }
+            .trainPilotClickable(RoundedCornerShape(14.dp)) { onClick() }
             .testTag("palette_option_${item.id}")
     ) {
         Row(
@@ -984,7 +977,7 @@ fun GoalsEditDialog(
                             .weight(1f)
                             .heightIn(min = 44.dp)
                             .trainPilotBorder(1.dp, if (isWeekly) palette.primary else palette.cardBorder, RoundedCornerShape(12.dp))
-                            .clickable { period = com.example.model.WorkoutGoalPeriod.WEEKLY }
+                            .trainPilotClickable(RoundedCornerShape(12.dp)) { period = com.example.model.WorkoutGoalPeriod.WEEKLY }
                             .testTag("goal_period_weekly_btn")
                     ) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp)) {
@@ -1010,7 +1003,7 @@ fun GoalsEditDialog(
                             .weight(1f)
                             .heightIn(min = 44.dp)
                             .trainPilotBorder(1.dp, if (isMonthly) palette.primary else palette.cardBorder, RoundedCornerShape(12.dp))
-                            .clickable { period = com.example.model.WorkoutGoalPeriod.MONTHLY }
+                            .trainPilotClickable(RoundedCornerShape(12.dp)) { period = com.example.model.WorkoutGoalPeriod.MONTHLY }
                             .testTag("goal_period_monthly_btn")
                     ) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp)) {
@@ -1199,6 +1192,19 @@ fun GoalsEditDialog(
     )
 }
 
+typealias PersonalPlannerSave = (
+        heightCm: Int,
+        weightKg: Float,
+        goalHu: String,
+        experienceHu: String,
+        locationHu: String,
+        equipmentHu: String,
+        daysPerWeek: Int,
+        durationMin: Int,
+        excludedMuscles: Set<String>,
+        excludedExercises: Set<String>
+    ) -> Unit
+
 @Composable
 fun PersonalPlannerModalDialog(
     initialHeightCm: Int = 179,
@@ -1211,21 +1217,13 @@ fun PersonalPlannerModalDialog(
     initialDurationMin: Int = 45,
     initialExcludedMuscles: Set<String> = emptySet(),
     initialExcludedExercises: Set<String> = emptySet(),
-    onSaveAndOpenPlan: (
-        heightCm: Int,
-        weightKg: Float,
-        goalHu: String,
-        experienceHu: String,
-        locationHu: String,
-        equipmentHu: String,
-        daysPerWeek: Int,
-        durationMin: Int,
-        excludedMuscles: Set<String>,
-        excludedExercises: Set<String>
-    ) -> Unit,
+    onSaveAndOpenPlan: PersonalPlannerSave,
     onDismiss: () -> Unit,
     saving: Boolean = false,
-    failed: Boolean = false
+    failed: Boolean = false,
+    gentlerStart: Boolean = false,
+    recommendProgram: ((String, String, String, String, Int, Int, Set<String>, Set<String>) -> String?)? = null,
+    onUseRecommendedPlan: PersonalPlannerSave? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
@@ -1242,14 +1240,19 @@ fun PersonalPlannerModalDialog(
         "Egykezes kézisúlyzó (1 db)" to "1 db kézisúlyzós gyakorlatok (pl. goblet guggolás, egykezes evezés)",
         "Kézisúlyzó pár (2 db)" to "Páros egykezes súlyzós gyakorlatok (nyomások, kitörések, kar)",
         "Kétkezes rúd (Súlyzórúd)" to "Kétkezes rudas alapgyakorlatok (guggolás, felhúzás, evezés, nyomás)",
-        "Pad / Szék / Kanapé" to "Támasz pl. bolgár guggoláshoz, fekvenyomáshoz vagy csípőemeléshez",
+        "Pad / Szék / Kanapé" to "Támasz például bolgár guggoláshoz vagy csípőemeléshez",
+        "Fekvenyomó pad" to "Stabil, súlyzós edzésre tervezett fekvenyomó pad",
+        "Állítható fekvenyomó pad" to "Súlyzós edzésre tervezett, dönthető pad",
+        "Biztonsági állvány" to "Rúdtartó állvány állítható biztonsági támaszokkal",
         "Stabil támaszték / Fal / Szék" to "Kéztámasz pl. egykezes evezéshez vagy vádliemeléshez",
         "Fellépő / Doboz / Lépcső" to "Magasítás fellépéshez (step-up) és felugráshoz",
         "Húzódzkodó rúd" to "Húzódzkodás, függeszkedés és lábemelések",
         "Tolódzkodó korlát" to "Tolódzkodás mellre és tricepszre",
         "Gumiszalag / Ellenállás-szalag" to "Gumiszalagos evezések, lehúzások és izolációk",
         "Kettlebell" to "Kettlebell swing, goblet guggolás és nyomás",
-        "Edzőtermi gépek / Csigás gépek" to "Lábtoló, hátlehúzó, csigás és vezetett gépek"
+        "Edzőtermi gépek / Csigás gépek" to "Lábtoló, hátlehúzó, csigás és vezetett gépek",
+        "Alacsony, stabil rúd" to "Fordított evezéshez használható fix rúd",
+        "Biztonságos szalagrögzítő" to "Stabil pont a gumiszalagos húzó és nyomó gyakorlatokhoz"
     )
     val equipments = equipmentCatalog.map { it.first }
 
@@ -1298,12 +1301,16 @@ fun PersonalPlannerModalDialog(
                 lower == "barbell" || lower.contains("kétkezes") || lower.contains("súlyzórúd") -> {
                     result.add("Kétkezes rúd (Súlyzórúd)")
                 }
+                lower == "lifting-bench" -> result.add("Fekvenyomó pad")
+                lower == "incline-bench" -> result.add("Állítható fekvenyomó pad")
+                lower == "rack" -> result.add("Biztonsági állvány")
+                lower == "low-bar" -> result.add("Alacsony, stabil rúd")
+                lower == "band-anchor" -> result.add("Biztonságos szalagrögzítő")
                 lower == "bench" || lower.contains("pad") || lower.contains("kanapé") -> {
                     result.add("Pad / Szék / Kanapé")
                 }
                 lower == "support" || lower.contains("támasz") || lower.contains("szék") -> {
                     result.add("Stabil támaszték / Fal / Szék")
-                    result.add("Pad / Szék / Kanapé")
                 }
                 lower == "step" || lower.contains("fellépő") || lower.contains("lépcső") -> {
                     result.add("Fellépő / Doboz / Lépcső")
@@ -1397,8 +1404,7 @@ fun PersonalPlannerModalDialog(
                         if (isOpen) palette.primary else palette.cardBorder,
                         RoundedCornerShape(12.dp)
                     )
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable {
+                    .trainPilotClickable(RoundedCornerShape(12.dp)) {
                         openDropdownKey = if (isOpen) null else dropdownKey
                     }
                     .let { if (testTag.isNotEmpty()) it.testTag(testTag) else it }
@@ -1622,8 +1628,7 @@ fun PersonalPlannerModalDialog(
                                         if (isEquipmentOpen) palette.primary else palette.cardBorder,
                                         RoundedCornerShape(12.dp)
                                     )
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {
+                                    .trainPilotClickable(RoundedCornerShape(12.dp)) {
                                         openDropdownKey = if (isEquipmentOpen) null else "equipment"
                                     }
                                     .testTag("profile_equipment_box")
@@ -1832,8 +1837,7 @@ fun PersonalPlannerModalDialog(
                                         if (isMusclesOpen) Color(0xFFFF6E6E) else Color(0xFF7A1B28),
                                         RoundedCornerShape(12.dp)
                                     )
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {
+                                    .trainPilotClickable(RoundedCornerShape(12.dp)) {
                                         openDropdownKey = if (isMusclesOpen) null else "excluded_muscles"
                                     }
                                     .testTag("profile_excluded_muscles_box")
@@ -1935,8 +1939,7 @@ fun PersonalPlannerModalDialog(
                                         if (isExercisesOpen) Color(0xFFFF6E6E) else Color(0xFF7A1B28),
                                         RoundedCornerShape(12.dp)
                                     )
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {
+                                    .trainPilotClickable(RoundedCornerShape(12.dp)) {
                                         openDropdownKey = if (isExercisesOpen) null else "excluded_exercises"
                                     }
                                     .testTag("profile_excluded_exercises_box")
@@ -2037,6 +2040,33 @@ fun PersonalPlannerModalDialog(
             }
         },
         confirmButton = {
+            val recommendation = remember(recommendProgram, selectedEquipment, selectedLocation, selectedExperience,
+                selectedGoal, selectedDays, selectedDuration, excludedMuscles, excludedExercises) {
+                recommendProgram?.invoke(selectedEquipment, selectedLocation, selectedExperience,
+                    selectedGoal, selectedDays, selectedDuration, excludedMuscles, excludedExercises)
+            }
+            if (onUseRecommendedPlan != null && recommendation != null) {
+                com.repforge.app.ui.theme.TrainPilotOutlinedButton(
+                    enabled = !saving,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("planner_recommended_button"),
+                    onClick = { onUseRecommendedPlan(heightCm, weightKg, selectedGoal, selectedExperience,
+                        selectedLocation, selectedEquipment, selectedDays, selectedDuration, excludedMuscles, excludedExercises) }
+                ) {
+                    Text(tr(lang, "Ajánlott program: $recommendation", "Recommended program: $recommendation",
+                        "Empfohlenes Programm: $recommendation", "Program recomandat: $recommendation"))
+                }
+            } else if (recommendProgram != null) {
+                Text(tr(lang, "A beállításokhoz nincs megfelelő kész program.", "No existing program matches these settings.",
+                    "Kein vorhandenes Programm passt zu diesen Einstellungen.", "Niciun program existent nu corespunde acestor setări."),
+                    style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+            }
+            if (gentlerStart) Text(
+                tr(lang, "A mai készenléti adat alapján az új terv két sorozattal indít.",
+                    "Today's readiness suggests starting the new plan with two sets.",
+                    "Auf Basis der heutigen Trainingsbereitschaft beginnt der neue Plan mit zwei Sätzen.",
+                    "Pe baza recuperării de astăzi, planul nou începe cu două serii."),
+                style = MaterialTheme.typography.bodySmall, color = palette.textSecondary
+            )
             if (failed) Text(
                 tr(lang, "A terv/profil mentése nem sikerült. Próbáld újra.",
                     "Failed to save plan/profile. Please try again.",
@@ -2069,10 +2099,10 @@ fun PersonalPlannerModalDialog(
                 Text(
                     tr(
                         lang,
-                        "Terv összeállítása és mentése",
-                        "Build and save plan",
-                        "Plan erstellen und speichern",
-                        "Construiește și salvează planul"
+                        "Új terv készítése",
+                        "Create a new plan",
+                        "Neuen Plan erstellen",
+                        "Creează un plan nou"
                     ),
                     fontWeight = FontWeight.Bold
                 )
@@ -2293,8 +2323,7 @@ fun QuickWorkoutSheet(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(12.dp))
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { strengthDropdownOpen = true }
+                                .trainPilotClickable(RoundedCornerShape(12.dp)) { strengthDropdownOpen = true }
                                 .testTag("quick_strength_picker")
                         ) {
                             Row(
@@ -2438,8 +2467,7 @@ fun QuickWorkoutSheet(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(12.dp))
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { timedDropdownOpen = true }
+                                .trainPilotClickable(RoundedCornerShape(12.dp)) { timedDropdownOpen = true }
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -2550,8 +2578,7 @@ private fun QuickOptionRow(
             .fillMaxWidth()
             .heightIn(min = 48.dp)
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
-            .clip(RoundedCornerShape(14.dp))
-            .clickable { onClick() }
+            .trainPilotClickable(RoundedCornerShape(14.dp)) { onClick() }
     ) {
         Row(
             modifier = Modifier

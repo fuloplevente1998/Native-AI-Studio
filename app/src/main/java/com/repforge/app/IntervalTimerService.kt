@@ -825,7 +825,7 @@ class IntervalTimerService : Service() {
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
             return NotificationCompat.Builder(this, CHANNEL)
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(R.drawable.ic_stat_trainpilot)
                 .setContentTitle(title)
                 .setContentText(
                     DistanceTrackingService.text(
@@ -869,7 +869,7 @@ class IntervalTimerService : Service() {
         )
         val toggleLabel = if (running) pause else DistanceTrackingService.text(language, "Folytatás", "Resume", "Fortsetzen", "Continuă")
         return NotificationCompat.Builder(this, CHANNEL)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_stat_trainpilot)
             .setContentTitle(title)
             .setContentText(body)
             .setContentIntent(open)

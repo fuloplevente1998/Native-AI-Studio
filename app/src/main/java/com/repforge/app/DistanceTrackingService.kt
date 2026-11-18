@@ -416,7 +416,7 @@ class DistanceTrackingService : Service(), LocationListener {
             if (name.isEmpty()) "TrainPilot" else name
         )
         return NotificationCompat.Builder(this, CHANNEL)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_stat_trainpilot)
             .setContentTitle(title)
             .setContentText(body)
             .setContentIntent(content)

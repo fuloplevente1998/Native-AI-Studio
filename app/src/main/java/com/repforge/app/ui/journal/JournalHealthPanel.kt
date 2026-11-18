@@ -1,5 +1,6 @@
 package com.repforge.app.ui.journal
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import androidx.compose.foundation.layout.*
@@ -76,7 +77,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                     shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.weight(1f).heightIn(min = 72.dp)
                         .border(TrainPilotFrames.control(if (expanded) colors.accent else colors.line, expanded), MaterialTheme.shapes.medium)
-                        .clickable(enabled = enabled && (source == "wear" || !refreshing || source == provider), role = Role.Button) {
+                        .trainPilotClickable(MaterialTheme.shapes.medium, enabled = enabled && (source == "wear" || !refreshing || source == provider)) {
                             if (!expanded && source != "wear") selectProvider(source)
                             expandedSource = if (expanded) null else source
                         }.semantics {

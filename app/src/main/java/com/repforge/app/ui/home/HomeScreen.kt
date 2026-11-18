@@ -1,5 +1,6 @@
 package com.repforge.app.ui.home
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import androidx.compose.foundation.background
@@ -350,7 +351,7 @@ fun TodayMetricsGrid(metrics: TodayMetricsUiModel, language: String = "hu", onMe
                     for ((key, label, value, unit, detail, notice) in row) {
                         TrainPilotMetricSurface(Modifier.weight(1f).fillMaxHeight().testTag("home_metric_$key")) {
                             Row(Modifier.fillMaxWidth().then(if (onMetricClick != null)
-                                Modifier.heightIn(min = TrainPilotDimensions.Control).clickable(role = Role.Button) { onMetricClick(key) }
+                                Modifier.heightIn(min = TrainPilotDimensions.Control).trainPilotClickable(RoundedCornerShape(12.dp)) { onMetricClick(key) }
                                 else Modifier), verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Icon(trainPilotMetricIcon(key), null, Modifier.size(18.dp), tint = colors.accentText)

@@ -280,6 +280,28 @@ class TrainPilotSettingsStore(private val context: Context,
         }
     }
 
+    internal suspend fun saveStarterProfileAndActivate(
+        profile: JSONObject,
+        programId: String,
+        completeOnboarding: Boolean,
+        ticket: NativeDataReplacement.Continuation
+    ) {
+        val checked = NativeTrainingProfile.verified(profile).toString()
+        NativeDataReplacement.mutate(context) {
+            ticket.requireCurrent(context)
+            context.trainPilotDataStore.edit { prefs ->
+                if (completeOnboarding) {
+                    check(prefs[KEY_ONBOARDING_128] == NativeOnboardingPolicy.IN_PROGRESS) {
+                        "First-run profile changed before completion"
+                    }
+                    prefs[KEY_ONBOARDING_128] = NativeOnboardingPolicy.COMPLETE
+                }
+                prefs[KEY_TRAINING_PROFILE] = checked
+                prefs[KEY_ACTIVE_PROGRAM_ID] = programId
+            }
+        }
+    }
+
     suspend fun setActiveProgramId(programId: String) {
         NativeDataReplacement.mutate(context) {
             context.trainPilotDataStore.edit { it[KEY_ACTIVE_PROGRAM_ID] = programId }

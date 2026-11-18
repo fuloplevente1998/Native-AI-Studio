@@ -67,11 +67,19 @@ private fun interactionAlpha(source: MutableInteractionSource, enabled: Boolean)
 @Composable
 fun Modifier.trainPilotClickable(shape: Shape, enabled: Boolean = true, onClick: () -> Unit): Modifier {
     val source = remember { MutableInteractionSource() }
+    return trainPilotPressIndication(shape, source, enabled)
+        .clickable(interactionSource = source, indication = null, enabled = enabled,
+            role = Role.Button, onClick = onClick)
+}
+
+/** Paint on the visual child while the accessible parent retains the larger hit area. */
+@Composable
+internal fun Modifier.trainPilotPressIndication(
+    shape: Shape, source: MutableInteractionSource, enabled: Boolean = true
+): Modifier {
     val alpha = interactionAlpha(source, enabled)
     val tint = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
     return clip(shape).drawWithContent { drawContent(); if (alpha > 0f) drawRect(tint) }
-        .clickable(interactionSource = source, indication = null, enabled = enabled,
-            role = Role.Button, onClick = onClick)
 }
 
 /** A held press covers the whole painted outline, including wide buttons. */

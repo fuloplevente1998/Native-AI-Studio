@@ -20,6 +20,7 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.TrainPilotTheme
+import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.TrainPilotButton
 import com.repforge.app.ui.theme.TrainPilotTextButton
 import androidx.compose.ui.focus.focusRequester
@@ -44,6 +45,47 @@ import kotlin.math.roundToInt
 @OptIn(androidx.compose.ui.test.ExperimentalTestApi::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
 class ButtonPressFeedbackRegressionTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun sharedClickableRowPaintsBothPaddedEdgesAndLeavesRoundedCornersClear() {
+        var host: View? = null
+        var clicks = 0
+        val shape = RoundedCornerShape(18.dp)
+        compose.setContent {
+            TrainPilotTheme {
+                val view = LocalView.current
+                SideEffect { host = view }
+                Box(Modifier.background(Color.White).padding(16.dp)) {
+                    Row(Modifier.width(280.dp).height(72.dp).background(Color(0xFF34415A), shape)
+                        .trainPilotClickable(shape) { clicks++ }.testTag("rounded_action_row")
+                        .padding(12.dp)) { Text("Themes") }
+                }
+            }
+        }
+        fun pixels() = compose.runOnIdle {
+            val view = requireNotNull(host)
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            bitmap.asImageBitmap().toPixelMap()
+        }
+        val node = compose.onNodeWithTag("rounded_action_row")
+        val bounds = node.fetchSemanticsNode().boundsInRoot
+        val left = (bounds.left + 5).roundToInt()
+        val right = (bounds.right - 5).roundToInt()
+        val y = bounds.center.y.roundToInt()
+        val cornerX = (bounds.left + 1).roundToInt()
+        val cornerY = (bounds.top + 1).roundToInt()
+        val before = pixels()
+        node.performTouchInput { down(center) }
+        val held = pixels()
+        assertNotEquals(before[left, y].toArgb(), held[left, y].toArgb())
+        assertNotEquals(before[right, y].toArgb(), held[right, y].toArgb())
+        assertEquals(before[cornerX, cornerY].toArgb(), held[cornerX, cornerY].toArgb())
+        node.performTouchInput { up() }
+        val after = pixels()
+        assertEquals(before[left, y].toArgb(), after[left, y].toArgb())
+        assertEquals(before[right, y].toArgb(), after[right, y].toArgb())
+        compose.runOnIdle { assertEquals(1, clicks) }
+    }
 
     @Test fun aPressAndReleaseInOneFrameStillProduceVisibleWholeButtonFeedback() {
         val source = androidx.compose.foundation.interaction.MutableInteractionSource()

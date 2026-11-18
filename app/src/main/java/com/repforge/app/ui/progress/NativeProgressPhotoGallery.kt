@@ -1,5 +1,6 @@
 package com.repforge.app.ui.progress
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
@@ -219,7 +220,7 @@ internal fun NativeProgressPhotoGallery(
                     ) {
                         items(state.progressPhotos.sortedByDescending { it.workoutStartedEpochMs }, key = { it.id }) { photo ->
                             Row(
-                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { open(photo.id) }
+                                modifier = Modifier.fillMaxWidth().trainPilotClickable(RoundedCornerShape(12.dp)) { open(photo.id) }
                                     .testTag("progress_photo_${photo.id}"),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
@@ -246,7 +247,7 @@ internal fun NativeProgressPhotoGallery(
                     ) {
                         items(state.progressPhotos, key = { it.id }) { photo ->
                             Column(
-                                modifier = Modifier.clickable { open(photo.id) }
+                                modifier = Modifier.trainPilotClickable(RoundedCornerShape(12.dp)) { open(photo.id) }
                                     .testTag("progress_photo_${photo.id}").size(140.dp),
                                 verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {

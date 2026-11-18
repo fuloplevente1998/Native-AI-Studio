@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
 
 import com.repforge.app.ui.theme.trainPilotBorder
@@ -134,8 +135,7 @@ fun HomeScreen(
                 .fillMaxWidth()
                 .trainPilotSoftGlow(palette.primary, RoundedCornerShape(14.dp), 3.dp)
                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
-                .clip(RoundedCornerShape(14.dp))
-                .clickable { onOpenPersonalPlanner() }
+                .trainPilotClickable(RoundedCornerShape(14.dp)) { onOpenPersonalPlanner() }
                 .testTag("home_personal_planner_mini_card")
         ) {
             Row(
@@ -216,8 +216,7 @@ fun HomeScreen(
                     ),
                     shape = RoundedCornerShape(20.dp)
                 )
-                .clip(RoundedCornerShape(20.dp))
-                .clickable { onOpenProgramDayDetails() }
+                .trainPilotClickable(RoundedCornerShape(20.dp)) { onOpenProgramDayDetails() }
                 .testTag("home_hero_workout_card")
         ) {
             Column(
@@ -438,8 +437,7 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .heightIn(min = 48.dp)
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                        .clip(RoundedCornerShape(16.dp))
-                .clickable { onOpenGoalsDialog() }
+                        .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenGoalsDialog() }
                         .testTag("home_goals_row_card")
                 ) {
                     Row(
@@ -507,7 +505,7 @@ private fun HomeCompactShortcut(modifier: Modifier, icon: androidx.compose.ui.gr
     Surface(color = p.surface, shape = shape,
         modifier = modifier.trainPilotSoftGlow(p.primary, shape, 3.dp)
             .trainPilotBorder(1.dp, Brush.linearGradient(listOf(p.sectionBorder, p.cardBorder)), shape)
-            .clip(shape).clickable(enabled = enabled, onClick = onClick)) {
+            .trainPilotClickable(shape, enabled = enabled, onClick = onClick)) {
         Column(Modifier.fillMaxWidth().heightIn(min = 60.dp).padding(horizontal = 9.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Icon(icon, null, tint = p.primary, modifier = Modifier.size(18.dp))

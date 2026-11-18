@@ -106,7 +106,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.sp
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.EmojiEvents
 import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
 import com.example.localization.LocalizedStrings
 import com.example.model.LoggedWorkoutEntry
@@ -320,8 +319,7 @@ fun LogTabScreen(
                     modifier = Modifier
                         .size(48.dp)
                         .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
-                        .clip(CircleShape)
-                        .clickable {
+                        .trainPilotClickable(CircleShape) {
                             filterAllMonths = false
                             intervalStartDay = null
                             intervalEndDay = null
@@ -344,8 +342,7 @@ fun LogTabScreen(
                         .weight(1f)
                         .padding(horizontal = 10.dp)
                         .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
-                        .clip(RoundedCornerShape(14.dp))
-                        .clickable { showInlineCalendar = !showInlineCalendar }
+                        .trainPilotClickable(RoundedCornerShape(14.dp)) { showInlineCalendar = !showInlineCalendar }
                         .testTag("log_month_picker_button")
                 ) {
                     Row(
@@ -383,8 +380,7 @@ fun LogTabScreen(
                     modifier = Modifier
                         .size(48.dp)
                         .trainPilotBorder(1.dp, palette.cardBorder, CircleShape)
-                        .clip(CircleShape)
-                        .clickable {
+                        .trainPilotClickable(CircleShape) {
                             filterAllMonths = false
                             intervalStartDay = null
                             intervalEndDay = null
@@ -446,8 +442,7 @@ fun LogTabScreen(
                                     color = palette.surfaceElevated,
                                     modifier = Modifier
                                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .clickable {
+                                        .trainPilotClickable(RoundedCornerShape(10.dp)) {
                                             currentYearMonth = java.time.YearMonth.from(today)
                                             filterAllMonths = false
                                             intervalStartDay = today.dayOfMonth
@@ -468,8 +463,7 @@ fun LogTabScreen(
                                     color = palette.surfaceElevated,
                                     modifier = Modifier
                                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .clickable {
+                                        .trainPilotClickable(RoundedCornerShape(10.dp)) {
                                             intervalStartDay = null
                                             intervalEndDay = null
                                             filterAllMonths = true
@@ -552,8 +546,7 @@ fun LogTabScreen(
                                                         },
                                                         shape = RoundedCornerShape(10.dp)
                                                     )
-                                                    .clip(RoundedCornerShape(10.dp))
-                                                    .clickable { handleDayClick(dayNum) }
+                                                    .trainPilotClickable(RoundedCornerShape(10.dp)) { handleDayClick(dayNum) }
                                             ) {
                                                 Box(contentAlignment = Alignment.Center) {
                                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -612,8 +605,7 @@ fun LogTabScreen(
                         color = palette.primary.copy(alpha = 0.16f),
                         modifier = Modifier
                             .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(10.dp))
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable {
+                            .trainPilotClickable(RoundedCornerShape(10.dp)) {
                                 val firstStrength = filteredLogs.firstOrNull { !it.isOutdoorRun } ?: filteredLogs.firstOrNull()
                                 if (firstStrength != null) {
                                     onOpenWorkoutDetail(firstStrength.id)
@@ -747,7 +739,7 @@ internal fun LogWorkoutCard(
         modifier = Modifier.fillMaxWidth()
             .trainPilotBorder(1.dp, palette.sectionBorder, shape)
             .clip(shape)
-            .clickable { onOpenDetailAlways() }
+            .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenDetailAlways() }
             .testTag("log_card_${entry.id}")
     ) {
         Row(
@@ -816,7 +808,7 @@ internal fun LogWorkoutCard(
                     shape = RoundedCornerShape(8.dp),
                     color = palette.surfaceElevated,
                     modifier = Modifier
-                        .clickable { onOpenDetailAlways() }
+                        .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenDetailAlways() }
                         .testTag("journal_photos_badge_${entry.id}")
                 ) {
                     Row(
@@ -987,8 +979,7 @@ fun LogWorkoutDetailScreen(
                         color = if (selected) palette.primary else palette.surfaceCard,
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onSelectDetailTab(idx) }
+                            .trainPilotClickable(RoundedCornerShape(12.dp)) { onSelectDetailTab(idx) }
                             .testTag("log_detail_tab_$idx")
                     ) {
                         Text(
@@ -1015,8 +1006,7 @@ fun LogWorkoutDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                        .clip(RoundedCornerShape(18.dp))
-                        .clickable { onToggleExpandedExercise(index) }
+                        .trainPilotClickable(RoundedCornerShape(18.dp)) { onToggleExpandedExercise(index) }
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Row(
@@ -1205,8 +1195,7 @@ fun LogWorkoutDetailScreen(
                     modifier = Modifier
                         .weight(1f)
                         .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable { onOpenWatchSync() }
+                        .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenWatchSync() }
                         .testTag("log_detail_open_watch_sync")
                 ) {
                     Row(
@@ -1236,8 +1225,7 @@ fun LogWorkoutDetailScreen(
                     modifier = Modifier
                         .weight(1f)
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable { onOpenHealthTab() }
+                        .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenHealthTab() }
                         .testTag("log_detail_open_health_connect")
                 ) {
                     Row(
@@ -1436,8 +1424,7 @@ fun ProgressTabScreen(
                                 color = if (selected) palette.primary else Color.Transparent,
                                 shape = RoundedCornerShape(10.dp)
                             )
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable { onSelectMainSection(idx) }
+                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectMainSection(idx) }
                             .testTag("progress_section_tab_$idx")
                     ) {
                         Box(
@@ -1556,8 +1543,8 @@ internal fun MainProgressVolumeAndMuscleSection(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .testTag("progress_volume_expand").clickable { expandedVolumeDetails = !expandedVolumeDetails }
+                        .testTag("progress_volume_expand")
+                        .trainPilotClickable(RoundedCornerShape(10.dp)) { expandedVolumeDetails = !expandedVolumeDetails }
                         .testTag("progress_total_volume_header"),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Top
@@ -1647,8 +1634,8 @@ internal fun MainProgressVolumeAndMuscleSection(
                                         color = if (isSel) palette.primary else palette.cardBorder,
                                         shape = RoundedCornerShape(12.dp)
                                     )
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .testTag("progress_range_$rIdx").clickable { onSelectRange(rIdx) }
+                                    .testTag("progress_range_$rIdx")
+                                    .trainPilotClickable(RoundedCornerShape(12.dp)) { onSelectRange(rIdx) }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Text(
@@ -1740,8 +1727,8 @@ internal fun MainProgressVolumeAndMuscleSection(
                                                 color = if (isSel) palette.primary else palette.cardBorder,
                                                 shape = RoundedCornerShape(10.dp)
                                             )
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .testTag("progress_range_$rIdx").clickable { onSelectRange(rIdx) }
+                                            .testTag("progress_range_$rIdx")
+                                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectRange(rIdx) }
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Text(
@@ -1771,8 +1758,8 @@ internal fun MainProgressVolumeAndMuscleSection(
                                                 color = if (isSel) palette.primary else palette.cardBorder,
                                                 shape = RoundedCornerShape(10.dp)
                                             )
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .testTag("progress_range_$rIdx").clickable { onSelectRange(rIdx) }
+                                            .testTag("progress_range_$rIdx")
+                                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectRange(rIdx) }
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Text(
@@ -1871,7 +1858,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                    modifier = Modifier.clickable { onSelectExpandedStatsCard(0) }
+                                    modifier = Modifier.trainPilotClickable(RoundedCornerShape(8.dp)) { onSelectExpandedStatsCard(0) }
                                 ) {
                                     Text(trL(uiState.language, "Bezárás", "Close", "Schließen", "Închide"), style = MaterialTheme.typography.labelSmall, color = palette.primary)
                                     Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
@@ -1920,7 +1907,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                    modifier = Modifier.clickable { onSelectExpandedStatsCard(1) }
+                                    modifier = Modifier.trainPilotClickable(RoundedCornerShape(8.dp)) { onSelectExpandedStatsCard(1) }
                                 ) {
                                     Text(trL(uiState.language, "Bezárás", "Close", "Schließen", "Închide"), style = MaterialTheme.typography.labelSmall, color = palette.primary)
                                     Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
@@ -1960,7 +1947,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                    modifier = Modifier.clickable { onSelectExpandedStatsCard(2) }
+                                    modifier = Modifier.trainPilotClickable(RoundedCornerShape(8.dp)) { onSelectExpandedStatsCard(2) }
                                 ) {
                                     Text(trL(uiState.language, "Bezárás", "Close", "Schließen", "Închide"), style = MaterialTheme.typography.labelSmall, color = palette.primary)
                                     Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
@@ -1996,7 +1983,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                    modifier = Modifier.clickable { onSelectExpandedStatsCard(3) }
+                                    modifier = Modifier.trainPilotClickable(RoundedCornerShape(8.dp)) { onSelectExpandedStatsCard(3) }
                                 ) {
                                     Text(trL(uiState.language, "Bezárás", "Close", "Schließen", "Închide"), style = MaterialTheme.typography.labelSmall, color = palette.primary)
                                     Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
@@ -2056,8 +2043,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                     color = if (expandedAdviceDetails) palette.primary else palette.cardBorder,
                     shape = RoundedCornerShape(16.dp)
                 )
-                .clip(RoundedCornerShape(16.dp))
-                .clickable { expandedAdviceDetails = !expandedAdviceDetails }
+                .trainPilotClickable(RoundedCornerShape(16.dp)) { expandedAdviceDetails = !expandedAdviceDetails }
                 .testTag("progress_advice_card")
         ) {
             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
@@ -2207,8 +2193,7 @@ private fun ExpandableStatSummaryTile(
                 color = if (selected) palette.primary else palette.cardBorder,
                 shape = RoundedCornerShape(14.dp)
             )
-            .clip(RoundedCornerShape(14.dp))
-            .clickable { onClick() }
+            .trainPilotClickable(RoundedCornerShape(14.dp)) { onClick() }
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),

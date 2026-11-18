@@ -16,6 +16,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.ui.viewmodel.TrainPilotViewModel
+import com.repforge.app.HealthConnectSyncRecovery
 import com.repforge.app.HealthConnectRepository
 import com.repforge.app.HealthJournalStore
 import com.repforge.app.NativeHealthRefresh
@@ -159,7 +160,8 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                         val partial = report.optBoolean("partial")
                         model.updateHealthSyncStatus(false, partial = partial,
                             message = "${if (provider == HealthJournalStore.HC) "Health Connect" else "Samsung Health"}: " +
-                                if (partial) "részleges szinkron • ${report.optInt("completedDays")} nap frissítve" else "szinkron befejezve")
+                                if (report.optBoolean("changeTrackingUnavailable")) HealthConnectSyncRecovery.limitedMessage(model.uiState.value.language.name)
+                                else if (partial) "részleges szinkron • ${report.optInt("completedDays")} nap frissítve" else "szinkron befejezve")
                         }
                     })
                 refresh(); refreshSamsung()
@@ -167,7 +169,7 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                 model.updateHealthSyncStatus(false, failed = true, message = "Az egészségügyi művelet megszakadt.")
                 throw cancelled
             } catch (error: Exception) {
-                model.updateHealthSyncStatus(false, failed = true, message = error.message ?: "Az egészségügyi szinkron nem sikerült.")
+                model.updateHealthSyncStatus(false, failed = true, message = HealthConnectSyncRecovery.failureMessage(error, model.uiState.value.language.name))
             } finally {
                 if (!permissionOnly) model.reloadHealthJournal()
                 healthConsent?.cancel(); healthConsent = null

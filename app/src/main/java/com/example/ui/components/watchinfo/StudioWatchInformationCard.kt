@@ -1,7 +1,7 @@
 package com.example.ui.components.watchinfo
 
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -58,7 +58,7 @@ fun StudioWatchInformationCard(
         modifier = modifier.fillMaxWidth()
             .border(TrainPilotFrames.page(palette.sectionBorder, palette.primary), shape)
             .testTag("watch_device_info_card")
-            .clickable(enabled = !data.loading, role = Role.Button, onClick = onRefresh),
+            .trainPilotClickable(shape, enabled = !data.loading, onClick = onRefresh),
         shape = shape,
         color = palette.surfaceCard
     ) {

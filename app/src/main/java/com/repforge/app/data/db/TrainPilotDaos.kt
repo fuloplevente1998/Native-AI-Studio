@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -55,6 +56,12 @@ interface ProgramDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertProgramDays(days: List<ProgramDayEntity>)
+
+    @Update
+    suspend fun updateProgram(program: ProgramEntity)
+
+    @Update
+    suspend fun updateProgramDays(days: List<ProgramDayEntity>)
 
     @Query("DELETE FROM program_days WHERE programId = :programId")
     suspend fun deleteDaysForProgram(programId: String)

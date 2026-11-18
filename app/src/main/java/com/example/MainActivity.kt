@@ -15,7 +15,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -1048,8 +1048,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         .widthIn(max = contentMaxWidth)
                         .heightIn(min = 44.dp)
                         .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(14.dp))
-                        .clip(RoundedCornerShape(14.dp))
-                        .clickable { viewModel.returnToActiveWorkout() }
+                        .trainPilotClickable(RoundedCornerShape(14.dp)) { viewModel.returnToActiveWorkout() }
                         .testTag("floating_return_to_active_workout_bar")
                 ) {
                     Row(
@@ -1111,8 +1110,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     modifier = Modifier
                         .heightIn(min = 48.dp)
                         .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable { viewModel.clearBannerMessage() }
+                        .trainPilotClickable(RoundedCornerShape(16.dp)) { viewModel.clearBannerMessage() }
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),

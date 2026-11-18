@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.toggleable
@@ -86,8 +87,7 @@ internal fun StudioBilateralSetControls(item: ExerciseSetItem, selected: Boolean
     }
     val rir: @Composable () -> Unit = {
         Surface(shape = RoundedCornerShape(8.dp), color = palette.surfaceCard,
-            modifier = Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(8.dp))
-                .clickable(role = Role.Button, onClick = onRir).testTag("bilateral_set_${item.setNumber}_rir")) {
+            modifier = Modifier.heightIn(min = 48.dp).trainPilotClickable(RoundedCornerShape(8.dp), onClick = onRir).testTag("bilateral_set_${item.setNumber}_rir")) {
             Box(Modifier.padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
                 Text(if (item.actualRirProvided) "RIR ${item.rir}" else "RIR —",
                     style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, softWrap = false)
@@ -115,8 +115,7 @@ internal fun StudioBilateralSetControls(item: ExerciseSetItem, selected: Boolean
             val shape = RoundedCornerShape(10.dp)
             Surface(shape = shape, color = if (recorded) palette.success.copy(alpha = .16f) else palette.surfaceCard,
                 border = BorderStroke(1.dp, if (recorded) palette.success else palette.cardBorder),
-                modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 56.dp).clip(shape)
-                    .clickable(role = Role.Button, onClick = onEdit)
+                modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 56.dp).trainPilotClickable(shape, onClick = onEdit)
                     .semantics { contentDescription = "$full: $seconds $unit" }
                     .testTag("bilateral_set_${item.setNumber}_${if (left) "left" else "right"}_value")) {
                 Column(Modifier.padding(horizontal = 6.dp, vertical = 5.dp),

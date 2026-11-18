@@ -93,6 +93,45 @@ class RoundedPressFeedbackRegressionTest {
         }
         compose.runOnIdle { assertEquals(1, clicks) }
     }
+    @Test fun compactDeleteRetainsItsLargerHitTargetWithoutPaintingItsTransparentMargin() {
+        var host: View? = null
+        var clicks = 0
+        compose.setContent { TrainPilotTheme {
+            val view = LocalView.current
+            SideEffect { host = view }
+            Box(Modifier.size(100.dp).background(Color.White)) {
+                com.example.ui.components.TrainPilotDeleteIcon({ clicks++ }, true, "compact_delete", true)
+            }
+        } }
+        fun pixels() = compose.runOnIdle {
+            val view = requireNotNull(host)
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            bitmap.asImageBitmap().toPixelMap()
+        }
+        val target = compose.onNodeWithTag("compact_delete")
+        target.assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(48.dp)
+        val bounds = target.fetchSemanticsNode().boundsInRoot
+        val visual = compose.onNodeWithTag("compact_delete_visual", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertTrue(visual.width < bounds.width)
+        val before = pixels()
+        compose.mainClock.autoAdvance = false
+        try {
+            // Even a press in the transparent, accessible margin must light only the visual.
+            target.performTouchInput { down(Offset(1f, centerY)) }
+            compose.mainClock.advanceTimeBy(160)
+            val held = pixels()
+            val y = bounds.center.y.roundToInt()
+            val outside = (bounds.left + 1).roundToInt()
+            assertEquals(before[outside,y].toArgb(), held[outside,y].toArgb())
+            val inside = (visual.left + 4).roundToInt()
+            assertNotEquals(before[inside,y].toArgb(), held[inside,y].toArgb())
+            target.performTouchInput { up() }
+            compose.mainClock.advanceTimeBy(400)
+        } finally { compose.mainClock.autoAdvance = true }
+        compose.runOnIdle { assertEquals(1, clicks) }
+    }
+
     @Test fun transparentPartOfTheLargerHitTargetStillInvokesClose() {
         var clicks = 0
         compose.setContent { TrainPilotTheme {

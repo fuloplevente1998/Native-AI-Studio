@@ -1,0 +1,13 @@
+# Kezdőprofil és otthoni tervek
+
+A korábbi WebView profil választója ajánlott sablont, konkrét A/B sablont vagy új egyéni tervet kínált. A natív profil eddig egyből egyéni tervet mentett. Az eszközpontozás a több eszközt használó gyakorlatoknak kedvezett, függetlenül a tapasztalati szinttől. A generált terv a katalógus súlyait is átvette. A programszerkesztő a nulla súlyú rudas gyakorlatot is testsúlyosnak mutatta.
+
+A kezdőprofil és a Kezdőlap profilja most ugyanazt a két lehetőséget adja. Az ajánlott kész program nevét a felület megjeleníti, ha a program illik a helyszínhez, szinthez, felszereléshez, kizárásokhoz és időkerethez. A kiválasztása az eredeti programot aktiválja. Az új terv az Otthoni A/B felépítését követi. Előre veszi a térddomináns lábgyakorlatot, a nyomást, a húzást és a csípődomináns mozgást, majd jöhet a törzs, a váll vagy a kar. A B nap variálhatja a mozgásokat, és ismételhet egy jól illeszkedő gyakorlatot. A hiányzó mozgásmintához csak a kiválasztott eszközökkel végezhető és szinthez illő gyakorlat kerülhet be. Tisztán testsúlyos, támasz és húzóeszköz nélküli profilnál a húzóhely üres maradhat.
+
+A kezdő az egyszerűbb változatokból és két munkasorozattal indul. Az újrakezdő ehhez képest legfeljebb öt gyakorlatot kap, és ahol lehetséges, könnyebb fekvőtámaszt. Középhaladó izomépítésnél az időkeret engedhet harmadik sorozatot. Haladónál a nehezebb változatok és legalább 45 perces keretnél az összetett gyakorlatok harmadik sorozata is választható. Az új tervek külső terhelése üresen indul. A kész program aktiválásakor a program meglévő receptje marad a kiindulás.
+
+A padként megadott szék vagy kanapé nem számít fekvenyomó padnak. A rudas fekvenyomáshoz súlyzós pad és biztonsági állvány, a ferdepados változathoz állítható pad is kell.
+
+Az ACSM szerint a hét során érdemes minden fő izomcsoportot edzeni, és az otthoni, saját testsúlyos vagy szalagos edzés is hatásos lehet. Az irányelv nem rangsorol egyetemes „legjobb” gyakorlatokat. A konkrét A/B párosítások és a szintek terhelési határai TrainPilot termékdöntések, az eredeti otthoni terv és a katalógus alapján. [ACSM 2026 állásfoglalás](https://pmc.ncbi.nlm.nih.gov/articles/PMC12965823/) · [Gyakorlatvariációs szisztematikus áttekintés](https://pubmed.ncbi.nlm.nih.gov/35438660/)
+
+A regressziók a kezdőprofilból való sablonaktiválást, a programnapok megőrzését, a szint szerinti generálást, a kizárásokat, az eszközkorlátokat és a kezdősúly átvételét fedik. A statikus ellenőrzés mind a 23 név szerint választott gyakorlatot igazolta a natív katalógusban és felszerelési táblában. A JVM teszt, fordítás és készülékes ellenőrzés függőben van. A PR #268 CI szünetel.

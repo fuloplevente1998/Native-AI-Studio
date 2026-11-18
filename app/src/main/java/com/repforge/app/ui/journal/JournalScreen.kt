@@ -1,5 +1,6 @@
 package com.repforge.app.ui.journal
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
@@ -239,7 +240,7 @@ private fun JournalDetailDialog(state: JournalUiState, text: Resources, language
                                 Text(text.getString(R.string.journal_photos), style = MaterialTheme.typography.titleMedium)
                                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     items(photos, key = { it.id }) { entry ->
-                                        Column(Modifier.width(150.dp).clickable { photo = entry }) {
+                                        Column(Modifier.width(150.dp).trainPilotClickable(RoundedCornerShape(12.dp)) { photo = entry }) {
                                             PrivateJournalPhoto(entry.id, 400, text, Modifier.size(150.dp))
                                             Text(when (entry.label) { "before" -> text.getString(R.string.journal_photo_before)
                                                 "after" -> text.getString(R.string.journal_photo_after); else -> entry.label })

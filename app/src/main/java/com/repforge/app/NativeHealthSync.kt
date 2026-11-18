@@ -18,8 +18,9 @@ internal object NativeHealthSync {
     }
     enum class Stage { PREPARING, CHANGES, DAYS, COMPLETE }
     data class Progress(val stage: Stage, val completed: Int = 0, val total: Int = 0, val pages: Int = 0)
-    data class Report(val full: Boolean, val completedDays: Int, val failedDays: List<LocalDate>, val retryable: Boolean = false) {
-        val successful: Boolean get() = failedDays.isEmpty()
+    data class Report(val full: Boolean, val completedDays: Int, val failedDays: List<LocalDate>, val retryable: Boolean = false,
+        val changeTrackingUnavailable: Boolean = false) {
+        val successful: Boolean get() = failedDays.isEmpty() && !changeTrackingUnavailable
     }
     interface Provider {
         val changesSupported: Boolean
@@ -27,6 +28,7 @@ internal object NativeHealthSync {
         /** Applies exactly one page durably under the publication guard before returning it. */
         suspend fun pollPage(token: String): ChangePage
         fun invalidToken(error: Throwable): Boolean
+        fun changeLogUnavailable(error: Throwable): Boolean = false
         /** Returns false for a partial read; received fields are still durable and visible. */
         suspend fun readDay(day: LocalDate): Boolean
         suspend fun requireIdentity()
@@ -62,6 +64,16 @@ internal object NativeHealthSync {
         val old = journal.checkpoint()
         var full = explicitFull || !old.initialized || old.scope != scope ||
             (provider.changesSupported && old.token.isEmpty())
+        var changesAvailable = provider.changesSupported
+        var changeTrackingUnavailable = false
+        fun fallback(error: Exception): Boolean {
+            guard()
+            if (!provider.changeLogUnavailable(error)) return false
+            changesAvailable = false
+            changeTrackingUnavailable = true
+            full = true
+            return true
+        }
         var candidate = old.token
         var pages = 0
         val changed = sortedSetOf<LocalDate>()
@@ -87,14 +99,19 @@ internal object NativeHealthSync {
                 catch (cancelled: CancellationException) { throw cancelled }
                 catch (error: Exception) {
                     guard()
-                    if (!provider.invalidToken(error)) throw error
-                    full = true
+                    if (!fallback(error)) {
+                        if (!provider.invalidToken(error)) throw error
+                        full = true
+                    }
                 }
             }
-            if (full) {
+            if (full && changesAvailable) {
                 provider.requireIdentity()
-                candidate = provider.createToken() // Before snapshot: concurrent SDK writes cannot fall in a gap.
-                require(candidate.isNotEmpty()) { "Missing change token" }
+                try {
+                    candidate = provider.createToken() // Before snapshot: concurrent SDK writes cannot fall in a gap.
+                    require(candidate.isNotEmpty()) { "Missing change token" }
+                } catch (cancelled: CancellationException) { throw cancelled }
+                catch (error: Exception) { if (!fallback(error)) throw error }
             }
         } else candidate = "" // Samsung SDK has no change-log contract.
 
@@ -125,16 +142,19 @@ internal object NativeHealthSync {
         if (provider.changesSupported) days.addAll(journal.dirtyDays().filter { it <= today })
         days.addAll(changed)
         read(days)
-        if (full && provider.changesSupported) {
+        if (full && changesAvailable) {
             changed.clear()
-            poll()
+            try { poll() }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) { if (!fallback(error)) throw error }
             // Include deletes/updates that happened while reading the 30-day snapshot.
             read(changed)
         }
         guard()
         provider.requireIdentity() // Permission IPC outside the local publication lease.
-        if (failures.isEmpty()) journal.commit(old, Checkpoint(scope, candidate, true), full, now())
+        // A snapshot cannot acknowledge unseen deletes/older changes from a broken change feed.
+        if (failures.isEmpty() && !changeTrackingUnavailable) journal.commit(old, Checkpoint(scope, candidate, true), full, now())
         progress(Progress(Stage.COMPLETE, completed.size, completed.size + failures.size, pages))
-        return Report(full, completed.size, failures.toList(), failures.any { it in transientDays })
+        return Report(full, completed.size, failures.toList(), failures.any { it in transientDays }, changeTrackingUnavailable)
     }
 }

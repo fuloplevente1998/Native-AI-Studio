@@ -1,5 +1,6 @@
 package com.repforge.app.ui.health
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import com.repforge.app.ui.theme.TrainPilotFrames
@@ -783,7 +784,7 @@ fun BleDiscoveryTabContent(
         }
         items(ble.devices, key = { it.id }) { dev ->
             Card(
-                modifier = Modifier.fillMaxWidth().clickable { bleRepo.connect(dev.id) },
+                modifier = Modifier.fillMaxWidth().trainPilotClickable(RoundedCornerShape(12.dp)) { bleRepo.connect(dev.id) },
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = colors.card),
                 border = TrainPilotFrames.stroke(1.dp, if (dev.remembered) colors.accent else colors.line)
@@ -828,7 +829,7 @@ fun ProviderChoiceChip(
             .clip(RoundedCornerShape(10.dp))
             .background(if (isSelected) colors.accent else colors.card2)
             .trainPilotBorder(1.dp, if (isSelected) colors.accent else colors.line, RoundedCornerShape(10.dp))
-            .clickable(onClick = onClick)
+            .trainPilotClickable(RoundedCornerShape(10.dp), onClick = onClick)
             .padding(horizontal = 8.dp),
         contentAlignment = Alignment.Center
     ) {

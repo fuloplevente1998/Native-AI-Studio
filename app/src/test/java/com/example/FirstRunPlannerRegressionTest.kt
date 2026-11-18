@@ -70,7 +70,7 @@ class FirstRunPlannerRegressionTest {
         val model = TrainPilotViewModel()
         if (bound) {
             model.bindNativeEnvironment(context, store, db, scope)
-            await { !model.uiState.value.savedRecordsLoading }
+            await { !model.uiState.value.savedRecordsLoading && model.uiState.value.exercises.isNotEmpty() }
         }
         compose.setContent { TrainPilotTheme {
             NativeFirstLaunchGate(model) { Text("Home", Modifier.testTag("gated_home")) }
@@ -82,7 +82,14 @@ class FirstRunPlannerRegressionTest {
         awaitTag("onboarding_welcome")
         compose.onNodeWithTag("onboarding_begin").performClick()
         awaitTag("onboarding_profile")
-        compose.onNodeWithTag("onboarding_edit_profile").performClick()
+        // DataStore can publish PROFILE before the saving coroutine's finally
+        // re-enables its action. A disabled click is intentionally ignored.
+        await {
+            compose.onAllNodesWithTag("onboarding_edit_profile").fetchSemanticsNodes().singleOrNull()?.let {
+                !it.config.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled)
+            } == true
+        }
+        compose.onNodeWithTag("onboarding_edit_profile").assertIsEnabled().performClick()
         awaitTag("profile_height_box")
         compose.onNodeWithTag("full_height_form_footer").assertIsDisplayed()
         compose.onNodeWithTag("profile_field_height").assertDoesNotExist()
@@ -115,6 +122,21 @@ class FirstRunPlannerRegressionTest {
         await { model.uiState.value.profileComplete && model.uiState.value.userHeightCm == 181 }
         assertEquals(4, model.uiState.value.userScheduleDaysPerWeek)
         compose.onNodeWithTag("onboarding_profile").assertDoesNotExist()
+    }
+
+    @Test fun recommendationActivatesAnExistingProgramWithoutChangingItsDaysOrCreatingACopy() {
+        show()
+        beginAndEdit()
+        val before = runBlocking { db.programDao().getProgramsWithDays() }
+        val quick = before.first { it.program.id == "home-quick-30" }
+        awaitTag("planner_recommended_button")
+        compose.onNodeWithTag("planner_recommended_button").performClick()
+        awaitTag("gated_home")
+        val saved = runBlocking { store.current() }
+        assertEquals("complete", saved.onboarding128)
+        assertEquals(quick.program.id, saved.activeProgramId)
+        val after = runBlocking { db.programDao().getProgramsWithDays() }
+        assertEquals(before.associate { it.program.id to it.days }, after.associate { it.program.id to it.days })
     }
 
     @Test fun closingPlannerDoesNotCompleteOnboardingOrPersistUnconfirmedFields() {

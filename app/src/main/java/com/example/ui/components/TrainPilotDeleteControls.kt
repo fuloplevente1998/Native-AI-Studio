@@ -15,6 +15,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.repforge.app.ui.theme.trainPilotPressIndication
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -53,11 +56,12 @@ internal fun TrainPilotDeleteIcon(
     }
     val foreground = com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeForeground
     val visualSize = if (compactVisual) 41.dp else 48.dp // ~15% smaller; touch target stays 48dp.
+    val interaction = remember { MutableInteractionSource() }
     val shape = RoundedCornerShape(if (compactVisual) 9.dp else 11.dp)
     Box(Modifier.size(48.dp).testTag(tag)
-        .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+        .clickable(enabled = enabled, interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center) {
-        Box(Modifier.size(visualSize).clip(shape)
+        Box(Modifier.size(visualSize).testTag("${tag}_visual").trainPilotPressIndication(shape, interaction, enabled)
             .background(com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeBackground)
             .border(1.dp, com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.7f), shape),
             contentAlignment = Alignment.Center) {

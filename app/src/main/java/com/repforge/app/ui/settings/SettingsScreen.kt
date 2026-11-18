@@ -1,5 +1,6 @@
 package com.repforge.app.ui.settings
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
@@ -201,7 +202,7 @@ fun SettingsScreen(
                 border = TrainPilotFrames.stroke(1.dp, colors.line)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { cloudExpanded = !cloudExpanded }
+                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).trainPilotClickable(RoundedCornerShape(12.dp)) { cloudExpanded = !cloudExpanded }
                         .testTag("native_google_expand"), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.CloudSync, contentDescription = null, tint = colors.accentText, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))

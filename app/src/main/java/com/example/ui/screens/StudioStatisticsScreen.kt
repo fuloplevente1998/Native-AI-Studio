@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import com.repforge.app.ui.theme.trainPilotBorder
@@ -123,7 +125,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                             modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
                                 .testTag("statistics_record_${record.exerciseId}")) {
                             Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable {
+                                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).trainPilotClickable(RoundedCornerShape(14.dp)) {
                                     selectedRecord = if (expanded) null else record.exerciseId
                                     if (!expanded) onExercise(record.exerciseId)
                                 }, verticalAlignment = Alignment.CenterVertically) {

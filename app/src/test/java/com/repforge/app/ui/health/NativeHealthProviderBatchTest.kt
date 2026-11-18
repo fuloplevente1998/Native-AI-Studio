@@ -15,6 +15,21 @@ import org.junit.Test
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class NativeHealthProviderBatchTest {
+    @Test fun limitedHealthConnectReadIsNeverReportedAsFullSuccessOrRawSql() = runBlocking {
+        val report = Batch.run({ true }, {}) { source ->
+            Result.success(JSONObject().put("partial", source == HealthJournalStore.HC)
+                .put("changeTrackingUnavailable", source == HealthJournalStore.HC))
+        }
+        assertTrue(report.partial)
+        assertFalse(report.failed)
+        assertFalse(report.successful)
+        assertTrue(report.json("en").getString("message").contains("Limited sync"))
+        val failed = Batch.run({ true }, {}) { Result.failure<JSONObject>(IllegalStateException(
+            "SQLiteException: table change_log_request_table has no column named row_offset")) }
+        assertTrue(failed.failed)
+        assertFalse(failed.json("en").getString("message").contains("row_offset"))
+    }
+
     @Test fun firstProviderFailureStillReadsTheOtherWithoutOverlappingOrChangingSelection() = runBlocking {
         val visited = mutableListOf<String>()
         var inFlight = false

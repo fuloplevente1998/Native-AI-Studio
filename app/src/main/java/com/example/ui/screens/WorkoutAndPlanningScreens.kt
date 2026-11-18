@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 import com.example.ui.components.TrainPilotFullHeightFormSheet
 
@@ -171,8 +172,7 @@ fun WorkoutTabScreen(
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
                 .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                .clip(RoundedCornerShape(18.dp))
-                .clickable { onOpenQuickWorkout() }
+                .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenQuickWorkout() }
                 .testTag("workout_tab_quick_card")
         ) {
             Row(
@@ -219,8 +219,7 @@ fun WorkoutTabScreen(
                 modifier = Modifier
                     .weight(1f)
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                    .clip(RoundedCornerShape(18.dp))
-                    .clickable { onOpenExerciseLibrary() }
+                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenExerciseLibrary() }
                     .testTag("workout_tab_exercise_picker")
             ) {
                 Column(
@@ -290,8 +289,7 @@ fun WorkoutTabScreen(
                 modifier = Modifier
                     .weight(1f)
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                    .clip(RoundedCornerShape(18.dp))
-                    .clickable { onOpenOutdoorWorkout() }
+                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenOutdoorWorkout() }
                     .testTag("workout_tab_outdoor_card")
             ) {
                 Column(
@@ -403,8 +401,7 @@ fun WorkoutTabScreen(
             Row(
                 modifier = Modifier
                     .heightIn(min = 48.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { onOpenProgramsList() }
+                    .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenProgramsList() }
                     .padding(horizontal = 8.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -440,8 +437,7 @@ fun WorkoutTabScreen(
                                 color = if (isPrimaryDay) palette.primary else palette.cardBorder,
                                 shape = RoundedCornerShape(18.dp)
                             )
-                            .clip(RoundedCornerShape(18.dp))
-                            .clickable { onOpenProgramEditor(activeProgram.id, index) }
+                            .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenProgramEditor(activeProgram.id, index) }
                     ) {
                         Column(
                             modifier = Modifier.padding(14.dp),
@@ -532,8 +528,7 @@ fun WorkoutTabScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                    .clip(RoundedCornerShape(16.dp))
-                    .clickable { onOpenProgressionModal() }
+                    .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenProgressionModal() }
             ) {
                 Row(
                     modifier = Modifier
@@ -635,8 +630,7 @@ private fun ShortcutSquareCard(
         modifier = modifier
             .heightIn(min = 48.dp)
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-            .clip(RoundedCornerShape(16.dp))
-            .clickable { onClick() }
+            .trainPilotClickable(RoundedCornerShape(16.dp)) { onClick() }
     ) {
         Column(
             modifier = Modifier.padding(14.dp),
@@ -761,18 +755,7 @@ fun ProgramsListScreen(
                 title = strings.programsShortcutTitle,
                 onBack = onBack,
                 onOpenSettings = onOpenSettings,
-                rightExtraContent = {
-                    IconButton(
-                        onClick = { onOpenProgramEditor(activeProgram?.id ?: "") },
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = strings.createOrEditProgramAction,
-                            tint = palette.textPrimary
-                        )
-                    }
-                }
+                modifier = Modifier.padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
             )
         } else {
             Spacer(modifier = Modifier.height(8.dp))
@@ -805,8 +788,7 @@ fun ProgramsListScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .heightIn(min = 48.dp)
-                                .clip(RoundedCornerShape(20.dp))
-                                .clickable { onToggleCustomTab(isCustom) }
+                                .trainPilotClickable(RoundedCornerShape(20.dp)) { onToggleCustomTab(isCustom) }
                         ) {
                             Box(
                                 contentAlignment = Alignment.Center,
@@ -837,8 +819,7 @@ fun ProgramsListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(16.dp))
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable { onOpenProgramEditor(activeProgram.id) }
+                        .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenProgramEditor(activeProgram.id) }
                         .testTag("programs_active_program_card")
                 ) {
                     Row(
@@ -960,8 +941,7 @@ fun ProgramsListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
-                        .clip(RoundedCornerShape(14.dp))
-                        .clickable { onOpenProgramEditor(program.id) }
+                        .trainPilotClickable(RoundedCornerShape(14.dp)) { onOpenProgramEditor(program.id) }
                         .testTag("program_card_${program.id}")
                 ) {
                     Row(
@@ -996,8 +976,7 @@ fun ProgramsListScreen(
                                 style = MaterialTheme.typography.labelSmall,
                                 color = if (index > 0) palette.primary else palette.textMuted.copy(alpha = 0.35f),
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .clickable(enabled = index > 0) { onMoveProgramOrder(index, index - 1) }
+                                    .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index > 0) { onMoveProgramOrder(index, index - 1) }
                                     .padding(horizontal = 3.dp, vertical = 0.dp)
                             )
                             Icon(
@@ -1011,8 +990,7 @@ fun ProgramsListScreen(
                                 style = MaterialTheme.typography.labelSmall,
                                 color = if (index < filteredPrograms.lastIndex) palette.primary else palette.textMuted.copy(alpha = 0.35f),
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .clickable(enabled = index < filteredPrograms.lastIndex) { onMoveProgramOrder(index, index + 1) }
+                                    .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index < filteredPrograms.lastIndex) { onMoveProgramOrder(index, index + 1) }
                                     .padding(horizontal = 3.dp, vertical = 0.dp)
                             )
                         }
@@ -1053,8 +1031,7 @@ fun ProgramsListScreen(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
                                     .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .clickable { onActivateProgram(program.id) }
+                                    .trainPilotClickable(RoundedCornerShape(10.dp)) { onActivateProgram(program.id) }
                                     .testTag("program_activate_button_${program.id}")
                             ) {
                                 Surface(
@@ -1233,8 +1210,7 @@ fun ProgramEditorScreen(
                                 if (selected) palette.primary else palette.cardBorder,
                                 RoundedCornerShape(12.dp)
                             )
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onSelectDayIndex(idx) }
+                            .trainPilotClickable(RoundedCornerShape(12.dp)) { onSelectDayIndex(idx) }
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -1282,8 +1258,7 @@ fun ProgramEditorScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 48.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable { onToggleExpandExercise(ex.id) },
+                                .trainPilotClickable(RoundedCornerShape(16.dp)) { onToggleExpandExercise(ex.id) },
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Working Reorder Handle (= with vertical drag + ▲ / ▼ buttons)
@@ -1315,8 +1290,7 @@ fun ProgramEditorScreen(
                                     style = MaterialTheme.typography.labelSmall,
                                     color = if (index > 0) palette.primary else palette.textMuted.copy(alpha = 0.35f),
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .clickable(enabled = index > 0) { onMoveExercise(index, index - 1) }
+                                        .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index > 0) { onMoveExercise(index, index - 1) }
                                         .padding(horizontal = 4.dp, vertical = 1.dp)
                                 )
                                 Icon(
@@ -1330,8 +1304,7 @@ fun ProgramEditorScreen(
                                     style = MaterialTheme.typography.labelSmall,
                                     color = if (index < totalExercisesInDay - 1) palette.primary else palette.textMuted.copy(alpha = 0.35f),
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .clickable(enabled = index < totalExercisesInDay - 1) { onMoveExercise(index, index + 1) }
+                                        .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index < totalExercisesInDay - 1) { onMoveExercise(index, index + 1) }
                                         .padding(horizontal = 4.dp, vertical = 1.dp)
                                 )
                             }
@@ -1341,9 +1314,14 @@ fun ProgramEditorScreen(
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                     color = palette.textPrimary
                                 )
-                                val weightLabel = if (ex.defaultWeightKg > 0f) "${ex.defaultWeightKg.toInt()} kg" else "BW"
+                                val weightLabel = when {
+                                    ex.defaultWeightKg > 0f -> "${ex.defaultWeightKg.toString().removeSuffix(".0")} kg"
+                                    ex.loadType == "bodyweight" -> trW(state.language, "Testsúly", "Bodyweight", "Körpergewicht", "Greutatea corpului")
+                                    else -> trW(state.language, "Súly nincs megadva", "Load not set", "Gewicht offen", "Greutate nesetată")
+                                }
+                                val reps = ex.targetRepsText.ifBlank { ex.defaultReps.toString() }
                                 Text(
-                                    text = "${ex.defaultSets} × ${ex.defaultReps}  •  $weightLabel  •  ${ex.defaultRestSec} s",
+                                    text = "${ex.defaultSets} × $reps  •  $weightLabel  •  ${ex.defaultRestSec} s",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textSecondary
                                 )
@@ -1354,8 +1332,7 @@ fun ProgramEditorScreen(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
                                     .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable { onOpenExerciseDetail(ex.id) }
+                                    .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenExerciseDetail(ex.id) }
                                     .padding(horizontal = 6.dp, vertical = 4.dp)
                             ) {
                                 Text(
@@ -1629,8 +1606,7 @@ fun CalendarPlannerScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .heightIn(min = 48.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .clickable { splitSel = sp }
+                                    .trainPilotClickable(RoundedCornerShape(10.dp)) { splitSel = sp }
                             ) {
                                 Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 10.dp)) {
                                     Text(trW(state.language, "Alap $sp", "Day $sp", "Tag $sp", "Ziua $sp"), fontWeight = FontWeight.Bold, color = if (isSel) palette.onPrimary else palette.textPrimary)
@@ -1648,8 +1624,7 @@ fun CalendarPlannerScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .heightIn(min = 48.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable { timeSel = tm }
+                                    .trainPilotClickable(RoundedCornerShape(8.dp)) { timeSel = tm }
                             ) {
                                 Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 8.dp)) {
                                     Text(tm, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = if (isSel) palette.onPrimary else palette.textPrimary)
@@ -1718,8 +1693,7 @@ fun CalendarPlannerScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(min = 48.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable { shiftAllFollowing = !shiftAllFollowing }
+                            .trainPilotClickable(RoundedCornerShape(10.dp)) { shiftAllFollowing = !shiftAllFollowing }
                     ) {
                         Row(
                             modifier = Modifier.padding(10.dp),
@@ -1809,8 +1783,7 @@ fun CalendarPlannerScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 48.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable {
+                                .trainPilotClickable(RoundedCornerShape(10.dp)) {
                                     when (fieldKey) {
                                         "cadence" -> onUpdatePlanningParams(canonicalVal, state.planningFirstDayHu, state.planningStartDate, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
                                         "firstDay" -> onUpdatePlanningParams(state.planningCadenceHu, canonicalVal, state.planningStartDate, state.planningTime, state.planningDurationMin, state.planningWeeksCount)
@@ -1875,8 +1848,7 @@ fun CalendarPlannerScreen(
                             modifier = Modifier
                                 .size(48.dp)
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { openedDay = null; onSelectMonth(displayedYearMonth.minusMonths(1).toString()) }
+                                .trainPilotClickable(RoundedCornerShape(12.dp)) { openedDay = null; onSelectMonth(displayedYearMonth.minusMonths(1).toString()) }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
@@ -1900,8 +1872,7 @@ fun CalendarPlannerScreen(
                                 modifier = Modifier
                                     .size(48.dp)
                                     .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable { openedDay = null; onSelectMonth(displayedYearMonth.plusMonths(1).toString()) }
+                                    .trainPilotClickable(RoundedCornerShape(12.dp)) { openedDay = null; onSelectMonth(displayedYearMonth.plusMonths(1).toString()) }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
@@ -1919,8 +1890,7 @@ fun CalendarPlannerScreen(
                                     modifier = Modifier
                                         .size(48.dp)
                                         .border(1.dp, palette.danger.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .clickable { onBack() }
+                                        .trainPilotClickable(RoundedCornerShape(12.dp)) { onBack() }
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Text(
@@ -1993,9 +1963,8 @@ fun CalendarPlannerScreen(
                                                     color = if (isSelected) palette.primary else palette.cardBorder,
                                                     shape = RoundedCornerShape(10.dp)
                                                 )
-                                                .clip(RoundedCornerShape(10.dp))
                                                 .testTag("calendar_day_$dayNumber")
-                                                .clickable { onSelectDay(dayNumber); openedDay = dayNumber }
+                                                .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectDay(dayNumber); openedDay = dayNumber }
                                         ) {
                                             Row(
                                                 modifier = Modifier
@@ -2264,7 +2233,7 @@ fun CalendarPlannerScreen(
                                         Surface(
                                             shape = RoundedCornerShape(8.dp),
                                             color = palette.primary.copy(alpha = 0.16f),
-                                            modifier = Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(8.dp)).clickable { openedDay = null; onOpenWorkoutDetail() }
+                                            modifier = Modifier.heightIn(min = 48.dp).trainPilotClickable(RoundedCornerShape(8.dp)) { openedDay = null; onOpenWorkoutDetail() }
                                         ) {
                                             Text(
                                                 text = "${strings.navLog} >",
@@ -2368,8 +2337,7 @@ fun CalendarPlannerScreen(
                             modifier = Modifier
                                 .size(48.dp).testTag("calendar_replan_close")
                                 .border(1.dp, palette.danger.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { onOpenReplanModal(false) }
+                                .trainPilotClickable(RoundedCornerShape(12.dp)) { onOpenReplanModal(false) }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
@@ -2510,8 +2478,7 @@ private fun CalendarActionChip(
         modifier = modifier
             .heightIn(min = 48.dp)
             .border(1.dp, if (negative) com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.7f) else color.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
-            .clip(RoundedCornerShape(10.dp))
-            .clickable { onClick() }
+            .trainPilotClickable(RoundedCornerShape(10.dp)) { onClick() }
     ) {
         Box(
             contentAlignment = Alignment.Center,
@@ -2559,8 +2526,7 @@ private fun PlannerFieldTile(
                         if (expanded) palette.primary else palette.cardBorder,
                         RoundedCornerShape(14.dp)
                     )
-                    .clip(RoundedCornerShape(14.dp))
-                    .clickable {
+                    .trainPilotClickable(RoundedCornerShape(14.dp)) {
                         if (!dropdownOptions.isNullOrEmpty() && onSelectOption != null) {
                             expanded = !expanded
                         } else {
@@ -2752,8 +2718,7 @@ fun ExerciseLibraryScreen(
                                 if (selected) palette.primary else palette.cardBorder,
                                 RoundedCornerShape(16.dp)
                             )
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable { onSelectCategory(cat) }
+                            .trainPilotClickable(RoundedCornerShape(16.dp)) { onSelectCategory(cat) }
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -2852,7 +2817,7 @@ fun ExerciseLibraryScreen(
                     modifier = Modifier.fillMaxWidth()
                         .trainPilotBorder(if (inQueue) 1.5.dp else 1.dp,
                             if (inQueue) palette.primary else palette.cardBorder, RoundedCornerShape(14.dp))
-                        .clip(RoundedCornerShape(14.dp)).clickable { onSelectExercise(ex.id) }
+                        .trainPilotClickable(RoundedCornerShape(14.dp)) { onSelectExercise(ex.id) }
                         .testTag("exercise_library_row_${ex.id}")
                 ) {
                     BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -2928,7 +2893,7 @@ private fun ExerciseLibraryAction(
 ) {
     Box(
         modifier = Modifier.size(48.dp).background(color)
-            .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick)
+            .trainPilotClickable(androidx.compose.ui.graphics.RectangleShape, onClick = onClick)
             .semantics { contentDescription = description }.testTag(tag),
         contentAlignment = Alignment.Center
     ) {
@@ -3297,8 +3262,7 @@ fun AddCustomExerciseModalDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { categoryDropdownOpen = true }
+                            .trainPilotClickable(RoundedCornerShape(12.dp)) { categoryDropdownOpen = true }
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -3347,8 +3311,7 @@ fun AddCustomExerciseModalDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { equipmentDropdownOpen = true }
+                            .trainPilotClickable(RoundedCornerShape(12.dp)) { equipmentDropdownOpen = true }
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -3417,8 +3380,7 @@ fun AddCustomExerciseModalDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable { isTimed = !isTimed }
+                        .trainPilotClickable(RoundedCornerShape(10.dp)) { isTimed = !isTimed }
                 ) {
                     Checkbox(checked = isTimed, onCheckedChange = { isTimed = it })
                     Text(trW(lang, "Időalapú gyakorlat (másodperc / perc mérés)", "Timed exercise (seconds / minutes measurement)", "Zeitbasierte Übung (Sekunden-/Minutenmessung)", "Exercițiu cronometrat (măsurare în secunde / minute)"), style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
@@ -3428,8 +3390,7 @@ fun AddCustomExerciseModalDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable { addToCurrentProgramDay = !addToCurrentProgramDay }
+                        .trainPilotClickable(RoundedCornerShape(10.dp)) { addToCurrentProgramDay = !addToCurrentProgramDay }
                 ) {
                     Checkbox(checked = addToCurrentProgramDay, onCheckedChange = { addToCurrentProgramDay = it })
                     Text(trW(lang, "Hozzáadás az aktuálisan szerkesztett programnaphoz", "Add to currently edited program day", "Zum aktuell bearbeiteten Programmtag hinzufügen", "Adaugă la ziua de program editată curent"), style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)

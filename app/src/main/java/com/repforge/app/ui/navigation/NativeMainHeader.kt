@@ -1,5 +1,6 @@
 package com.repforge.app.ui.navigation
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotBorder
 
 import androidx.compose.foundation.layout.*
@@ -57,7 +58,7 @@ internal fun NativeMainHeader(route: String, language: String, enabled: Boolean,
             val mainPage = route in NativeMainMenu.routes
             if (mainPage) Row(
                 Modifier.weight(1f).heightIn(min = TrainPilotDimensions.Control)
-                    .clickable(enabled = enabled && onHome != null, role = Role.Button) { onHome?.invoke() }
+                    .trainPilotClickable(RoundedCornerShape(12.dp), enabled = enabled && onHome != null) { onHome?.invoke() }
                     .semantics { contentDescription = NativeMainMenu.title("home", language) }
                     .testTag("header_home"), verticalAlignment = Alignment.CenterVertically) {
                 NativeStudioBrand(Modifier.size(26.dp, 18.dp))

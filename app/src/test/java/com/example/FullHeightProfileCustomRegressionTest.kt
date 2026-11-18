@@ -46,7 +46,7 @@ class FullHeightProfileCustomRegressionTest {
         compose.onNodeWithTag("profile_height_box").performClick()
         compose.onNodeWithText("181 cm").performScrollTo().performClick()
         compose.onNodeWithTag("profile_equipment_box").performScrollTo()
-        compose.onNodeWithText("Terv összeállítása és mentése").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("planner_save_button").assertIsDisplayed().performClick()
         compose.runOnIdle {
             assertEquals(181, savedHeight)
             assertEquals("Saját testsúly", savedEquipment)

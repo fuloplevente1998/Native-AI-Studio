@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotSoftGlow
 
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
@@ -66,7 +67,7 @@ internal fun StudioCoachRecommendations(
                     .trainPilotBorder(0.75.dp, palette.cardBorder, RoundedCornerShape(14.dp))) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(row.name, style = MaterialTheme.typography.titleSmall, color = palette.textPrimary,
-                        modifier = Modifier.clickable { onExercise(row.id) })
+                        modifier = Modifier.trainPilotClickable(RoundedCornerShape(12.dp)) { onExercise(row.id) })
                     Text(NativeCoachAdviceText.label(text, row.advice.action), color = palette.primary)
                     Text(NativeCoachAdviceText.reason(text, row.advice.reason), color = palette.textSecondary)
                     Text(coachTr(lang, "Megfelelő előzmény: ${row.advice.historyCount}", "Matching history: ${row.advice.historyCount}", "Passender Verlauf: ${row.advice.historyCount}", "Istoric relevant: ${row.advice.historyCount}"), color = palette.textSecondary)

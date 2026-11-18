@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -158,8 +159,7 @@ private fun WorkoutSetValuePicker(
             Surface(color = p.surface, shape = RoundedCornerShape(10.dp),
                 border = BorderStroke(0.5.dp, p.cardBorder),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .clickable(enabled = enabled, role = Role.Button) { custom = false; expanded = true }
+                    .trainPilotClickable(RoundedCornerShape(10.dp), enabled = enabled) { custom = false; expanded = true }
                     .testTag(tag)) {
                 Row(Modifier.padding(horizontal = 4.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
