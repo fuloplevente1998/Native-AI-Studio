@@ -1066,7 +1066,7 @@ fun ProgramsListScreen(
                         .testTag("programs_active_program_card")
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                        modifier = Modifier.padding(start = 12.dp, end = 2.dp, top = 10.dp, bottom = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         ProgramTypeEmblemIcon(
@@ -1106,17 +1106,37 @@ fun ProgramsListScreen(
                                 color = palette.textSecondary
                             )
                             Spacer(modifier = Modifier.height(4.dp))
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = palette.primary.copy(alpha = 0.14f)
-                            ) {
-                                Text(
-                                    text = programEquipmentSummary(activeProgram, state.language),
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp, lineHeight = 14.sp),
-                                    color = palette.primary,
-                                    fontWeight = FontWeight.SemiBold,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
+                            var equipmentExpanded by androidx.compose.runtime.saveable.rememberSaveable(activeProgram.id) { mutableStateOf(false) }
+                            Column {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .trainPilotClickable(RoundedCornerShape(8.dp)) { equipmentExpanded = !equipmentExpanded }
+                                        .testTag("program_equipment_toggle_${activeProgram.id}")
+                                        .padding(vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        text = trW(state.language, "Felszerelés", "Equipment", "Ausrüstung", "Echipament"),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = palette.primary,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = if (equipmentExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                        contentDescription = null,
+                                        tint = palette.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                if (equipmentExpanded) {
+                                    Text(
+                                        text = programEquipmentSummary(activeProgram, state.language),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = palette.primary,
+                                        modifier = Modifier.testTag("program_equipment_details_${activeProgram.id}")
+                                    )
+                                }
                             }
                         }
                         Spacer(modifier = Modifier.width(4.dp))
@@ -1217,7 +1237,7 @@ fun ProgramsListScreen(
                         .testTag("program_card_${program.id}")
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(start = 10.dp, end = 2.dp, top = 8.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Working Reorder Handle (= + ▲ / ▼)
@@ -1288,16 +1308,37 @@ fun ProgramsListScreen(
                                 color = palette.textSecondary
                             )
                             Spacer(modifier = Modifier.height(3.dp))
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = palette.surfaceElevated
-                            ) {
-                                Text(
-                                    text = programEquipmentSummary(program, state.language),
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, lineHeight = 13.sp),
-                                    color = palette.primary,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
+                            var equipmentExpanded by androidx.compose.runtime.saveable.rememberSaveable(program.id) { mutableStateOf(false) }
+                            Column {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .trainPilotClickable(RoundedCornerShape(8.dp)) { equipmentExpanded = !equipmentExpanded }
+                                        .testTag("program_equipment_toggle_${program.id}")
+                                        .padding(vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        text = trW(state.language, "Felszerelés", "Equipment", "Ausrüstung", "Echipament"),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = palette.primary,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = if (equipmentExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                        contentDescription = null,
+                                        tint = palette.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                if (equipmentExpanded) {
+                                    Text(
+                                        text = programEquipmentSummary(program, state.language),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = palette.primary,
+                                        modifier = Modifier.testTag("program_equipment_details_${program.id}")
+                                    )
+                                }
                             }
                         }
                         Spacer(modifier = Modifier.width(4.dp))
