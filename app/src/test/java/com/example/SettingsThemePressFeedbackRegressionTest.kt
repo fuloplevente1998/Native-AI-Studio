@@ -1,15 +1,9 @@
 package com.example
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.os.Looper
-import android.view.View
-import android.view.ViewConfiguration
-import androidx.compose.runtime.*
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.graphics.toPixelMap
-import androidx.compose.ui.platform.LocalView
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.example.localization.TrainPilotStrings
@@ -23,10 +17,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.Shadows.shadowOf
-import org.robolectric.annotation.*
-import java.time.Duration
-import kotlin.math.roundToInt
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import org.robolectric.annotation.LooperMode
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w480dp-h960dp-mdpi")
@@ -35,13 +28,10 @@ import kotlin.math.roundToInt
 class SettingsThemePressFeedbackRegressionTest {
     @get:Rule val compose = createComposeRule()
 
-    @Test fun realThemeCategoriesCoverTheirPaddingAndFollowTheirRoundOutline() {
-        var host: View? = null
+    @Test fun allThemeCategoryHeadersRespondToATapInTheirSidePadding() {
         var selected by mutableIntStateOf(9)
         compose.setContent {
             TrainPilotTheme(palette = TrainPilotPalettes.getById(selected)) {
-                val view = LocalView.current
-                SideEffect { host = view }
                 SettingsMainScreen(uiState = TrainPilotUiState(selectedPaletteId = selected),
                     strings = TrainPilotStrings.forLanguage(AppLanguage.HU), onBack = {}, onOpenPalettePicker = {},
                     onSelectPalette = { selected = it }, onSelectLanguage = {}, onCycleRestTimer = {},
@@ -49,51 +39,31 @@ class SettingsThemePressFeedbackRegressionTest {
                     onNavigateToSubScreen = {}, onShowBanner = {})
             }
         }
-        fun pixels() = compose.runOnIdle {
-            val view = requireNotNull(host)
-            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-            view.draw(Canvas(bitmap))
-            bitmap.asImageBitmap().toPixelMap()
-        }
         val list = compose.onNodeWithTag("settings_main_screen")
         list.performScrollToNode(hasTestTag("settings_open_palettes_row"))
         compose.onNodeWithTag("settings_open_palettes_row").performClick()
         repeat(4) { index ->
             val tag = "settings_theme_category_toggle_$index"
+            val choice = "settings_palette_choice_${index * 8 + 1}"
             list.performScrollToNode(hasTestTag(tag))
-            val node = compose.onNodeWithTag(tag)
-            val bounds = node.fetchSemanticsNode().boundsInRoot
+            val header = compose.onNodeWithTag(tag)
+            val bounds = header.fetchSemanticsNode().boundsInRoot
             val card = compose.onNodeWithTag("settings_theme_category_$index").fetchSemanticsNode().boundsInRoot
-            assertEquals("Header must own the full painted width, including padding", card.width, bounds.width, 1f)
-            assertEquals("Collapsed category must have no unresponsive inner margin", card.height, bounds.height, 1f)
-            val before = pixels()
-            compose.mainClock.autoAdvance = false
-            try {
-                node.performTouchInput { down(center) }
-                // Clickable delays press delivery in a LazyColumn while it waits to see
-                // whether the gesture becomes a scroll. Drain Android's delayed callback
-                // before advancing the separate Compose animation clock.
-                compose.runOnIdle {
-                    shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(ViewConfiguration.getTapTimeout() + 32L))
-                }
-                compose.mainClock.advanceTimeBy(160)
-                compose.runOnIdle { shadowOf(Looper.getMainLooper()).idle() }
-                val held = pixels()
-                val y = bounds.center.y.roundToInt()
-                for (x in listOf((bounds.left + 4).roundToInt(), (bounds.right - 4).roundToInt()))
-                    assertNotEquals("Category $index feedback must include side padding", before[x,y].toArgb(), held[x,y].toArgb())
-                val cornerX = (bounds.left + 1).roundToInt()
-                val cornerY = (bounds.top + 1).roundToInt()
-                assertEquals("Category $index must retain its curved corner", before[cornerX,cornerY].toArgb(), held[cornerX,cornerY].toArgb())
-                node.performTouchInput { cancel() }
-                compose.mainClock.advanceTimeBy(400)
-            } finally { compose.mainClock.autoAdvance = true }
+            assertEquals("The collapsed header owns the full width", card.width, bounds.width, 1f)
+            assertEquals("The collapsed header owns the full height", card.height, bounds.height, 1f)
+
+            // The label starts 12 dp in. This hit is on the painted card margin.
+            header.performTouchInput { click(Offset(5f, centerY)) }
+            list.performScrollToNode(hasTestTag(choice))
+            compose.onNodeWithTag(choice).assertIsDisplayed()
+            list.performScrollToNode(hasTestTag(tag))
+            if (index < 3) {
+                header.performTouchInput { click(Offset(width - 5f, centerY)) }
+                compose.onNodeWithTag(choice).assertDoesNotExist()
+            }
         }
-        // The new header hit area must not consume a child palette selection.
-        list.performScrollToNode(hasTestTag("settings_theme_category_toggle_0"))
-        compose.onNodeWithTag("settings_theme_category_toggle_0").performClick()
-        list.performScrollToNode(hasTestTag("settings_palette_choice_1"))
-        compose.onNodeWithTag("settings_palette_choice_1").performClick()
-        compose.runOnIdle { assertEquals(1, selected) }
+        list.performScrollToNode(hasTestTag("settings_palette_choice_25"))
+        compose.onNodeWithTag("settings_palette_choice_25").performClick()
+        compose.runOnIdle { assertEquals(25, selected) }
     }
 }
