@@ -390,6 +390,8 @@ class TrainPilotViewModel : ViewModel() {
                     onSaveResult?.invoke(false)
                     return@mutate
                 }
+                val builtinCatalogMeta = runCatching { TrainPilotDatabase.defaultPrograms().first.associateBy { it.id } }
+                    .getOrDefault(emptyMap())
                 currentPrograms.forEachIndexed { pIdx, prog ->
                     if (proposedPrograms != null && prog.id != profileProgramToWrite) return@forEachIndexed
                     val existing = db.programDao().getProgramWithDaysById(prog.id)?.program
@@ -412,9 +414,13 @@ class TrainPilotViewModel : ViewModel() {
                         nameEn = prog.nameEn,
                         nameDe = prog.nameDe.ifBlank { prog.nameEn.ifBlank { prog.nameHu } },
                         nameRo = prog.nameRo.ifBlank { prog.nameEn.ifBlank { prog.nameHu } },
-                        location = profile?.optString("location")?.takeIf(String::isNotBlank)
+                        location = profile?.takeIf { prog.id == profileProgramToWrite || prog.id.startsWith("custom_plan_") }
+                            ?.optString("location")?.takeIf(String::isNotBlank)
+                            ?: builtinCatalogMeta[prog.id]?.location?.takeIf(String::isNotBlank)
                             ?: prog.tagsHu.firstOrNull() ?: "Otthon / Edzőterem",
-                        level = profile?.optString("experience")?.takeIf(String::isNotBlank)
+                        level = profile?.takeIf { prog.id == profileProgramToWrite || prog.id.startsWith("custom_plan_") }
+                            ?.optString("experience")?.takeIf(String::isNotBlank)
+                            ?: builtinCatalogMeta[prog.id]?.level?.takeIf(String::isNotBlank)
                             ?: prog.tagsHu.getOrNull(1) ?: "Kezdő",
                         description = persistedDesc,
                         builtin = !prog.isCustom,
@@ -738,8 +744,13 @@ class TrainPilotViewModel : ViewModel() {
                         titleRo = resolvedDayRo
                     )
                 }
-                val locHu = prog.location.ifBlank { localizedTemplate?.location.orEmpty() }.ifBlank { "Otthon / Edzőterem" }
-                val lvlHu = prog.level.ifBlank { localizedTemplate?.level.orEmpty() }.ifBlank { "Kezdő" }
+                val (locHu, lvlHu) = com.example.model.resolveProgramLocationLevel(
+                    builtin = prog.builtin,
+                    storedLocation = prog.location,
+                    storedLevel = prog.level,
+                    templateLocation = localizedTemplate?.location,
+                    templateLevel = localizedTemplate?.level
+                )
                 val metaSource = localizedTemplate ?: prog
                 val locEn = if (metaSource.builtin) com.repforge.app.data.db.NativeBuiltinCatalog.programMetadata(metaSource, "location", "en")
                     else com.example.model.translateProgramTag(locHu, AppLanguage.EN)
@@ -2045,6 +2056,14 @@ class TrainPilotViewModel : ViewModel() {
                         currentSubScreen = if (missing && state.currentSubScreen == SubScreen.PROGRAM_EDITOR)
                             SubScreen.PROGRAMS_LIST else state.currentSubScreen,
                         expandedEditorExerciseId = null,
+                        inlineEditorProgramId = state.inlineEditorProgramId?.let { open ->
+                            when {
+                                missing -> null
+                                open == state.editingProgramId -> editing
+                                programs.none { it.id == open } -> null
+                                else -> open
+                            }
+                        },
                         statusBannerMessage = success))
                 }
             } catch (error: Exception) {
@@ -2127,6 +2146,20 @@ class TrainPilotViewModel : ViewModel() {
             val draft = change(com.repforge.app.NativeProgramEditor.from(opened, language), rawDayId)
             com.repforge.app.NativeEditedProgramSave.save(context, db, store, opened, draft, language)
         }
+    }
+
+    /** Rename from the program quick-action menu (the inline editor has no name field). */
+    fun renameProgram(programId: String, name: String) {
+        val state = _uiState.value
+        if (name.isBlank() || state.programs.none { it.id == programId }) return
+        if (state.editingProgramId != programId) {
+            if (state.inlineEditorProgramId != null && state.inlineEditorProgramId != programId) collapseInlineProgramEditor()
+            programEditorContinuation = nativeContext?.let {
+                runCatching { com.repforge.app.NativeDataReplacement.continuationForCurrentData(it) }.getOrNull()
+            }
+            _uiState.update { it.copy(editingProgramId = programId, editingDayIndex = 0) }
+        }
+        renameEditorProgram(name)
     }
 
     fun renameEditorProgram(name: String) = editStudioProgram(
@@ -2268,7 +2301,29 @@ class TrainPilotViewModel : ViewModel() {
         persistProgramsToRoomAsync(activatedProgramId = programId)
     }
 
+    /** Legacy entry point: the separate editor page is retired; edit inline in the Programs list. */
     fun openProgramEditor(programId: String, dayIndex: Int = 0) {
+        if (_uiState.value.currentTab != MainTab.PROGRAMS || _uiState.value.currentSubScreen != SubScreen.NONE) {
+            selectTab(MainTab.PROGRAMS)
+        }
+        expandInlineProgramEditor(programId, dayIndex, INLINE_EDITOR_HOST_PROGRAMS)
+    }
+
+    /** Tap on a program card: expand its inline editor, or collapse it when already open. */
+    fun toggleInlineProgramEditor(programId: String, dayIndex: Int = 0, host: String = INLINE_EDITOR_HOST_PROGRAMS) {
+        val state = _uiState.value
+        if (state.inlineEditorProgramId == programId && state.inlineEditorHost == host) {
+            collapseInlineProgramEditor()
+        } else {
+            expandInlineProgramEditor(programId, dayIndex, host)
+        }
+    }
+
+    fun collapseInlineProgramEditor() {
+        _uiState.update { it.copy(inlineEditorProgramId = null, inlineEditorHost = "", expandedEditorExerciseId = null) }
+    }
+
+    private fun expandInlineProgramEditor(programId: String, dayIndex: Int, host: String) {
         val currentPrograms = _uiState.value.programs
         if (programId.isNotBlank() && currentPrograms.isNotEmpty() && currentPrograms.none { it.id == programId }) {
             _uiState.update { state ->
@@ -2285,16 +2340,17 @@ class TrainPilotViewModel : ViewModel() {
             return
         }
         val resolvedId = programId.ifBlank { currentPrograms.firstOrNull { it.isActive }?.id ?: currentPrograms.firstOrNull()?.id.orEmpty() }
+        if (resolvedId.isBlank()) return
         programEditorContinuation = nativeContext?.let {
             runCatching { com.repforge.app.NativeDataReplacement.continuationForCurrentData(it) }.getOrNull()
         }
         _uiState.update {
-            val back = (it.backStack + it.navigationRoute()).takeLast(16)
             it.copy(
                 editingProgramId = resolvedId,
                 editingDayIndex = dayIndex,
-                currentSubScreen = SubScreen.PROGRAM_EDITOR,
-                backStack = back
+                expandedEditorExerciseId = null,
+                inlineEditorProgramId = resolvedId,
+                inlineEditorHost = host
             )
         }
     }
@@ -3589,7 +3645,7 @@ class TrainPilotViewModel : ViewModel() {
             ?: state.programs.firstOrNull { it.isActive } ?: return
         val index = program.days.indexOfFirst { it.id == target?.dayId ||
             it.id == "${program.id}:${target?.dayId}" }.coerceAtLeast(0)
-        openProgramEditor(program.id, index)
+        toggleInlineProgramEditor(program.id, index, INLINE_EDITOR_HOST_HOME)
     }
 
     fun startCoachWorkout(programId: String, dayId: String, scheduleId: String?) {
