@@ -13,15 +13,20 @@ Frissítve: 2026-11-18. Rövid, felülírandó pillanatkép (≤40 sor). Előzm�
 - PR CI (#276): R8 külön job, app tesztek 2 forkban, Gradle 6g. Régi: ~10 perc (run 346).
 - Signed (#277): `signed-pair` ∥ `jvm-tests` → `publish` (csak mindkettő zöldje után
   hozza létre a megszokott artifact-neveket). Régi #76: 16m40s.
-- #77 3m08s – build cache miatt (azonos forrás); valós mérés a következő kódváltozásnál.
+- Mérve kódváltozással: PR CI #351 ~3,5 perc; signed #78 7m29s (régi 16m40s).
 - Tesztek: 866 eset, tényleges futás ~143 s; a költség a Kotlin-fordítás (~2×3,5 perc).
   Tesztösszevonás/-törlés nem éri meg (≈20–30 s).
 
+## 2768-r2 (main `6e8a250`, #280, lezárta #278)
+- Programok + Kezdőlap: kártyán belüli szerkesztő (1 nyitva), külön szerkesztőoldal UI-ból
+  nem érhető el; ⋮ = gyorsműveletek + Átnevezés; mentetlen-draft őr (Kezdőlapon nincs).
+- Beépített programok alcíme a katalógusból (profil csak a generált tervre íródik).
+- Signed #78 (APK only) 7m29s, 869/0 teszt; telefon APK chatben átadva, verzió nem nőtt.
+  Wear forrás változatlan → órás frissítés nem kell. Készülékes elfogadás hátravan.
+
 ## Nyitott
-- #278 Programok kártya még kompaktabb/alacsonyabb (2768 visszajelzés); nyilak maradnak;
-  „Otthon” alcím konditermi programon kivizsgálandó.
 - #269 navigáció + alsó lapok; #208 Wear HRV (funkció). #271/#272 draft doksi/audit PR.
 - `public/assets/aistudio/Screenshot_…jpg` = Programok-kártya mockup (megtartva).
 
 ## Következő lépés
-- #278 megvalósítás külön ágon, draft PR, CI-mérés az új pipeline-on.
+- Készülékes visszajelzés a 2768-r2-re; utána AAB/verzióemelés (2769) csak kérésre.
