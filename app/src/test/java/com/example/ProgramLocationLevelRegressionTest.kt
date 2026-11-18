@@ -4,8 +4,13 @@ import com.example.model.resolveProgramLocationLevel
 import com.repforge.app.data.db.TrainPilotDatabase
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
-/** #278: built-in program cards must not inherit the user's profile location/level. */
+/** #278 (Robolectric: the bundled catalog is parsed with Android org.json). */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class ProgramLocationLevelRegressionTest {
     private val catalog = TrainPilotDatabase.defaultPrograms().first.associateBy { it.id }
 
