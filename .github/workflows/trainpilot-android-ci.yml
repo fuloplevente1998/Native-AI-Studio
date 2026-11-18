@@ -110,7 +110,7 @@ jobs:
               --tests 'com.example.HealthSyncAdmissionRegressionTest' \
               :wear:testDebugUnitTest :shared:testDebugUnitTest
           else
-            gradle --no-daemon --stacktrace --profile --continue :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest :app:minifyReleaseWithR8
+            gradle --no-daemon --stacktrace --profile --continue :app:testDebugUnitTest :wear:testDebugUnitTest :shared:testDebugUnitTest
           fi
 
       - name: Verify raw phone, Wear and shared JUnit XML test results
@@ -141,6 +141,57 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: trainpilot-build-profile
+          path: build/reports/profile/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  release-r8:
+    # Same release R8/shrink check as before, on its own runner so it no longer
+    # competes for CPU with debug compilation and Robolectric tests.
+    name: Release R8 minification check
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TRAINPILOT_MAPS_API_KEY: ${{ secrets.TRAINPILOT_MAPS_API_KEY || secrets.MAPS_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android API 36 SDK from hosted runner
+        shell: bash
+        run: |
+          echo "ANDROID_HOME=${ANDROID_HOME}"
+          SDKMANAGER=$(find "${ANDROID_HOME}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
+          test -n "${SDKMANAGER}"
+          echo "Using ${SDKMANAGER}"
+          "${SDKMANAGER}" --version
+          yes | "${SDKMANAGER}" --licenses > /dev/null || true
+          "${SDKMANAGER}" --install 'platforms;android-36' 'build-tools;36.0.0'
+          # AGP 9.1 requests compileSdk 36.1; install it when listed.
+          "${SDKMANAGER}" --install 'platforms;android-36.1' || true
+
+      - name: Set up Gradle 9.3.1 (repo has no gradlew launcher)
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+          cache-read-only: false
+
+      - name: Run release R8 minification
+        shell: bash
+        if: ${{ !(github.event_name == 'workflow_dispatch' && (inputs.wear_closure_regressions || inputs.targeted_regressions)) }}
+        run: gradle --no-daemon --stacktrace --profile :app:minifyReleaseWithR8
+
+      - name: Upload R8 Gradle task timing profile
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trainpilot-r8-build-profile
           path: build/reports/profile/
           if-no-files-found: ignore
           retention-days: 7
