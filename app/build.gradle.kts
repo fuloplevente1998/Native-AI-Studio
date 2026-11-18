@@ -88,6 +88,11 @@ android {
     unitTests {
       isIncludeAndroidResources = true
       isReturnDefaultValues = true
+      all { test ->
+        // Two isolated Robolectric JVMs: shorter wall time on 4-vCPU CI runners.
+        test.maxParallelForks = 2
+        test.maxHeapSize = "3g"
+      }
     }
   }
   dependenciesInfo {
