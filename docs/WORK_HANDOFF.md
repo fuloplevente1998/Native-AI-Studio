@@ -1479,3 +1479,20 @@ Gradle/CI nem futott. Az ág a párhuzamos #149 natív UiState-mezőket és a ro
 `onReadHealthSource` bekötést igényli, ezért teljes CI csak a közös integráción.
 Az origin-selector és hiányzó metrikasor régi tesztelvárásait a #151 kifejezett
 új UX-e miatt cseréltük le; dátum/lapozás/generation védelmek megmaradtak.
+
+
+---
+
+# Munkafolyamat és kiadás
+
+1. Kezdéskor olvasd el az AGENTS.md-t, a docs/WORK_HANDOFF.md-t és a docs/CURRENT_STATUS.md-t. Ellenőrizd az aktuális origin/main állapotát, az AI Studio ágát vagy exportját, a nyitott PR-eket és a kapcsolódó Actions-futásokat. A régi átadó pillanatkép. A tényleges forrás és a felhasználó aktuális kérése az irányadó.
+
+2. Dolgozz külön ágon, tiszta worktree-ben. Az AI Studio munkáját diff alapján ellenőrizd, és őrizd meg a kész részeket. Nagyobb javítást bonts külön ellenőrizhető szakaszokra, majd fogd össze egy draft PR-ban. Alügynököt kérésre használj, pontos feladat- és fájltulajdonlással. A koordinátor ellenőrzi és illeszti össze a változásokat.
+
+3. CI-hez a meglévő trainpilot-android-ci.yml workflow-t használd. A javítások gyűjtése alatt, ha a felhasználó kéri, [skip ci] commitokkal dolgozz. Integrálás előtt az egyesítendő commiton fusson a teljes telefonos és Wear JVM-regresszió. Ellenőrizd a futás forrás-SHA-ját és a JUnit XML eredményét. Bukó tesztnél keresd meg az okot és futtasd újra a javított commitot. Android-fordításhoz a meglévő GitHub Actions kaput használd.
+
+4. Mainre csak az adott javítócsomagra kapott jóváhagyással és sikeres ellenőrzés után egyesíts. Kiadási kérésnél egyeztesd vagy erősítsd meg a kiadási kódot. Az utolsó átadott build 2766 · 1.2-beta, telefon 276600, Wear OS 276602. Új Play AAB-nál ellenőrizd, hogy a verziókódok használhatók-e.
+
+5. Aláírt csomaghoz a mainről indítsd a trainpilot-persistent-signing.yml workflow-t. APK+AAB kérésnél build_aab=true, csak készülékes APK-nál false. A telefonos és Wear fájlok azonos futásból jöjjenek. Ellenőrizd a letöltött artifactok digestjét, a csomagazonosítót, a verziókat, az aláírást és a fájlok SHA-256 értékét. A Wear release csomagnál maradjon az R8 és az erőforrás-zsugorítás.
+
+6. A kért fájlokat a TrainPilot Native Drive-mappába add át, a korábbiak megőrzésével. Olvasd vissza a fájlneveket, méreteket és a célmappát. Adj külön telefonos és Wear változáslistát. A Play Console-feltöltés külön lépés. A végén frissítsd a rövid átadót a PR-rel, forrás-SHA-val, futáslinkkel, tesztszámokkal, letöltési linkekkel és a még hátralévő készülékes ellenőrzéssel.
