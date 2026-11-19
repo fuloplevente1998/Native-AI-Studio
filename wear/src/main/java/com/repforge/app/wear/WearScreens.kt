@@ -621,12 +621,27 @@ private fun RoundList(title: String, content: LazyListScope.() -> Unit) {
         LazyColumn(
             Modifier.fillMaxSize().padding(top = 32.dp).hierarchicalFocusGroup(active = true),
             state = state,
-            contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 36.dp),
+            contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 4.dp, bottom = 40.dp), // 2777: rows stay inside the round edge
             verticalArrangement = Arrangement.spacedBy(6.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             content = content,
         )
         CurvedHeader(title)
+    }
+}
+
+/** 2777: secondary explanations stay one tap away instead of filling the round screen. */
+private fun LazyListScope.detailsItem(vararg texts: String) {
+    item {
+        var open by rememberSaveable { mutableStateOf(false) }
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Pill((if (open) "▴ " else "ⓘ ") + wearText("Részletek"), tone = Secondary, height = 44, size = 12,
+                modifier = Modifier.testTag("wear-details")) { open = !open }
+            if (open) texts.forEach {
+                Text(it, color = Muted, fontSize = 11.sp, lineHeight = 13.sp, textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp).testTag("wear-details-text"))
+            }
+        }
     }
 }
 
@@ -661,7 +676,7 @@ internal fun SaveSyncScreen(state: WearSaveSyncState?,onRetry: ()->Unit,onBack: 
     RoundList(wearSaveTitle()) {
         centerItem { Text(state?.let { wearSaveLabel(it.phase) } ?: wearSaveEmpty(),color=Gold,
             fontSize=14.sp,textAlign=TextAlign.Center,modifier=Modifier.fillMaxWidth().padding(horizontal=16.dp)) }
-        centerItem { Text(wearSaveDetail(state),color=Muted,fontSize=11.sp,textAlign=TextAlign.Center,
+        if (wearSaveDetail(state) != (state?.let { wearSaveLabel(it.phase) } ?: wearSaveEmpty())) centerItem { Text(wearSaveDetail(state),color=Muted,fontSize=11.sp,textAlign=TextAlign.Center,
             modifier=Modifier.fillMaxWidth().padding(horizontal=16.dp).testTag("wear-save-detail")) }
         if(state?.retryable==true)centerItem { Pill(wearSaveRetry(),tone=Secondary,onClick=onRetry) }
         centerItem { Pill(wearSaveBack(),tone=Secondary,onClick=onBack) }
@@ -725,13 +740,12 @@ internal fun GpsStartScreen216(activityId: String,onStart: ()->Unit,onCancel: ()
     var failed by remember {mutableStateOf(false)}
     RoundList(WearMenu216.text("gps",language)) {
         centerItem { Pill(WearMenu216.text("gps",language)+": "+WearMenu216.text(if(selected)"on" else "off",language),tone=Gold) {selected=!selected} }
-        centerItem { Text(WearMenu216.text("remember",language),color=Muted,fontSize=11.sp,textAlign=TextAlign.Center) }
-        centerItem { Text(WearMenu216.text("consent",language),color=Muted,fontSize=11.sp,textAlign=TextAlign.Center) }
         if(failed)centerItem {Text(WearGpsText193.text("storage",language),color=DangerText,fontSize=11.sp)}
         centerItem { Pill(WearMenu216.text("start",language)) {
             if(WearMenu216.choose(context,activityId,selected))onStart() else failed=true
         } }
         centerItem { Pill(WearMenu216.text("cancel",language),tone=Secondary,onClick=onCancel) }
+        detailsItem(WearMenu216.text("remember",language), WearMenu216.text("consent",language))
     }
 }
 
@@ -750,7 +764,6 @@ internal fun GpsRouteScreen193(
         if(!allowed)centerItem { Text(text("distanceOnly"),color=Muted,fontSize=12.sp,textAlign=TextAlign.Center) }
         if(status?.optBoolean("armed")==true)centerItem { Pill(text("stop"),enabled=onStop!=null,tone=Secondary) { onStop?.invoke() } }
         if(status?.optBoolean("running")!=true) {
-            centerItem {Text(WearMenu216.text("consent",language),color=Muted,fontSize=11.sp,textAlign=TextAlign.Center)}
             centerItem { Pill(text("start"),enabled=allowed&&onStart!=null) { onStart?.invoke() } }
         }
         if(WearMenu216.eligible(workout.exercise))centerItem {
@@ -760,10 +773,9 @@ internal fun GpsRouteScreen193(
         }
         val count=status?.optInt("points") ?: 0
         centerItem { Text(text("points").replace("{count}",count.toString()),color=Muted,fontSize=12.sp,textAlign=TextAlign.Center) }
-        centerItem { Text(text("received").replace("{count}",(status?.optInt("receivedFixes") ?: 0).toString()),color=Muted,fontSize=12.sp,textAlign=TextAlign.Center) }
-        centerItem { Text(WearMenu216.text("aggregate",language),color=Muted,fontSize=11.sp,textAlign=TextAlign.Center) }
-        centerItem { Text(text("consent"),color=Muted,fontSize=11.sp,textAlign=TextAlign.Center) }
         centerItem { Pill(text("back"),tone=Secondary) { onBack() } }
+        detailsItem(text("received").replace("{count}",(status?.optInt("receivedFixes") ?: 0).toString()),
+            WearMenu216.text("aggregate",language), WearMenu216.text("consent",language), text("consent"))
     }
 }
 
@@ -791,13 +803,11 @@ private fun SettingsScreen(
         centerItem {
             Pill(if (gps) wearText("GPS kikapcsolása") else wearText("GPS engedélyezése"), tone = Card, onClick = onGps)
         }
-        centerItem {
-            JournalText(wearText("A GPS a következő mozgásos edzés mérésétől használható."), size = 11)
-        }
         centerItem { Pill(wearText("Órás mérések"), tone = Card, onClick = onMetrics) }
-        centerItem { JournalText(wearText("A színek a telefonon választott témát követik."), size = 11) }
         centerItem { Pill(wearText("Telefon megnyitása"), tone = Secondary, onClick = onOpenPhone) }
         centerItem { Pill(backLabel, tone = Secondary, onClick = onBack) }
+        detailsItem(wearText("A GPS a következő mozgásos edzés mérésétől használható."),
+            wearText("A színek a telefonon választott témát követik."))
     }
 }
 
@@ -1468,14 +1478,7 @@ private fun HealthScreen(
             centerItem { Label(wearText("Aktuális tempó")) }
             centerItem { Title("${formatSeconds((1000/speed).toInt())} /km", 17) }
         }
-        centerItem {
-            Text(
-                wearText("A hiányzó adatot az óra még nem adta át. Az összes kcal az alapanyagcserét is tartalmazza."),
-                color = Muted,
-                fontSize = 10.sp,
-                textAlign = TextAlign.Center,
-            )
-        }
+        detailsItem(wearText("A hiányzó adatot az óra még nem adta át. Az összes kcal az alapanyagcserét is tartalmazza."))
         if (data?.optBoolean("partial") == true)
             centerItem {
                 Text(
@@ -1590,7 +1593,7 @@ private fun ProgramDays(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            day.name.substringAfterLast(" ").take(2),
+                            wearDayInitial(day.name),
                             color = Gold,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -1878,7 +1881,7 @@ private fun WorkoutControls(workout: WearWorkout, restRemaining: Int, recordingE
     }
     CompositionLocalProvider(LocalActionSize provides layout.buttonSize) {
         Box {
-            RoundControl("‹", enabled = workout.currentExercise > 0, caption = wearText("Előző"), description = wearText("Előző gyakorlat"), onClick = onPrevious)
+            RoundControl("‹", enabled = workout.currentExercise > 0, description = wearText("Előző gyakorlat"), onClick = onPrevious)
         }
         Box(Modifier.offset(x = layout.sideOffset.dp, y = (layout.centerTop).dp)) {
             when {
@@ -1894,10 +1897,11 @@ private fun WorkoutControls(workout: WearWorkout, restRemaining: Int, recordingE
         }
         Box(Modifier.offset(x = (2 * layout.sideOffset).dp)) {
             if (workout.currentExercise == workout.exercises.lastIndex)
-                RoundControl("✓", SaveTone,
+                // 2777: finishing is a different action than recording: own glyph and tone, never a second ✓.
+                RoundControl("■", Gold,
                     enabled = workout.completedSets > 0 && !WearUndo188.blocked(workout), caption = wearText("Befejezés"), description = wearText("Edzés befejezése"), onClick = onFinish)
             else RoundControl("›", if (workout.exerciseComplete) Gold else Secondary,
-                caption = wearText("Következő"), description = wearText("Következő gyakorlat"), onClick = onNext)
+                description = wearText("Következő gyakorlat"), onClick = onNext)
         }
     }
 }
@@ -2010,6 +2014,8 @@ private fun CurrentSetScreen(
 }
 
 private val LocalActionSize = compositionLocalOf { 48f }
+/** 2777: two-button footers (confirm, editor) show the caption under the circle, never squeezed inside. */
+private val LocalCaptionBelow = compositionLocalOf { false }
 
 @Composable
 private fun RoundControl(text: String, tone: Color = Secondary, enabled: Boolean = true,
@@ -2026,6 +2032,17 @@ private fun RoundControl(text: String, tone: Color = Secondary, enabled: Boolean
         val measured = caption?.let { textMeasurer.measure(it, captionStyle.copy(fontSize = requested.sp)).size.width } ?: 0
         val available = with(density) { (actionSize - 4f).dp.toPx() }
         requested * if (measured > available) available / measured else 1f
+    }
+    if (caption != null && LocalCaptionBelow.current) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CompositionLocalProvider(LocalCaptionBelow provides false) {
+                RoundControl(text, tone, enabled, caption = null, description = description, onClick = onClick)
+            }
+            Text(caption, color = if (enabled) White else Muted, fontSize = (10f * captionScale / fontScale).sp,
+                lineHeight = (12f * captionScale / fontScale).sp, maxLines = 1, textAlign = TextAlign.Center,
+                modifier = Modifier.widthIn(max = (actionSize + 16f).dp).padding(top = 2.dp))
+        }
+        return
     }
     Column(Modifier.size(LocalActionSize.current.dp).background(if (enabled) tone else Card, CircleShape)
         .then(if (tone == Danger || tone == SaveTone) Modifier.border(1.dp, if (tone == Danger) Color(0xFFEF6670) else Color(0xFF3ECF87), CircleShape) else Modifier)
@@ -2096,7 +2113,7 @@ internal fun ValueEditor(
     ActionPanel(
         title,
         actions = { layout ->
-            CompositionLocalProvider(LocalActionSize provides layout.buttonSize) {
+            CompositionLocalProvider(LocalActionSize provides layout.buttonSize, LocalCaptionBelow provides true) {
                 Row(horizontalArrangement = Arrangement.spacedBy(layout.gap.dp)) {
                     RoundControl("×", caption = wearText("Mégse"), description = wearText("Mégse"), onClick = onBack)
                     RoundControl("✓", SaveTone, enabled=editable && foreground,caption = wearText("Mentés"), description = wearText("✓ Mentés")) {
@@ -2544,7 +2561,7 @@ private fun ConfirmationScreen(discard: Boolean, completed: Int, onAnswer: (Bool
         if (discard) wearText("Félbehagyott edzés") else wearText("Edzés befejezése"),
         count = 2,
         actions = { layout ->
-            CompositionLocalProvider(LocalActionSize provides layout.buttonSize) {
+            CompositionLocalProvider(LocalActionSize provides layout.buttonSize, LocalCaptionBelow provides true) {
                 Row(horizontalArrangement = Arrangement.spacedBy(layout.gap.dp)) {
                     RoundControl(
                         "×",
@@ -2576,7 +2593,7 @@ private fun ConfirmationScreen(discard: Boolean, completed: Int, onAnswer: (Bool
         run {
             Text(
                 if (discard) wearText("A félbehagyott edzés elvész.\nA napló megmarad.")
-                else wearFormat("%d sorozat bekerül a naplóba.\nRészleges edzés is menthető.", completed),
+                else wearFormat("%d sorozat bekerül a naplóba.", completed),
                 color = Muted,
                 fontSize = 11.sp,
                 lineHeight = 13.sp,
@@ -2607,11 +2624,11 @@ private fun SummaryScreen(
     val saved = result.status == "saved" || result.status == "discarded"
     ActionPanel(
         if (result.status == "error") wearText("Szinkronizálás")
-        else if (!saved) wearText("Várakozás a telefonra")
-        else if (result.action == "discardWorkout") wearText("Edzés törölve") else wearText("Edzés kész"),
+        else if (result.action == "discardWorkout") (if (saved) wearText("Edzés törölve") else wearText("Várakozás a telefonra"))
+        else wearText("Edzés kész"), // 2777: the result is ready on the watch; the save state is the line below
         count = if (result.status == "error") 2 else 1,
         actions = { layout ->
-            CompositionLocalProvider(LocalActionSize provides layout.buttonSize) {
+            CompositionLocalProvider(LocalActionSize provides layout.buttonSize, LocalCaptionBelow provides true) {
                 Row(horizontalArrangement = Arrangement.spacedBy(layout.gap.dp)) {
                     RoundControl(
                         if (saved) "✓" else "‹",
@@ -2661,8 +2678,8 @@ private fun SummaryScreen(
             run {
                 Label(
                     if (saved) wearText("Mentve a telefonos naplóba")
-                    else wearText("Helyben megőrizve · mentés várakozik"),
-                    lines = 3,
+                    else "⏳ " + wearText("Telefonra vár"),
+                    lines = 2,
                 )
             }
         } else
@@ -2757,3 +2774,10 @@ private fun fieldValue(set: WearSet, field: String): Double =
         "rightSeconds" -> set.rightSeconds.toDouble()
         else -> set.reps.toDoubleOrNull() ?: 0.0
     }
+
+
+/** 2777: "A nap" -> "A", "Felsőtest – Erő" -> "Fe"; a short token wins over the word "nap". */
+internal fun wearDayInitial(name: String): String {
+    val tokens = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+    return (tokens.firstOrNull { it.length <= 2 } ?: tokens.firstOrNull() ?: "?").take(2).replaceFirstChar { it.uppercase() }
+}
