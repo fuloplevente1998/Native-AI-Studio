@@ -471,6 +471,32 @@ fun LogTabScreen(
                     color = palette.textSecondary,
                     modifier = Modifier.weight(1f)
                 )
+                // 2779: one tap back to the whole list, without opening the calendar (also after a month change).
+                if (!filterAllMonths) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = palette.surfaceCard,
+                        modifier = Modifier
+                            .padding(end = 6.dp)
+                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                            .trainPilotClickable(RoundedCornerShape(10.dp)) {
+                                intervalStartDay = null
+                                intervalEndDay = null
+                                filterAllMonths = true
+                                currentYearMonth = java.time.YearMonth.from(today)
+                            }
+                            .testTag("log_clear_filter_chip")
+                    ) {
+                        Text(
+                            text = "✕ " + trL(uiState.language, "Szűrő törlése", "Clear filter", "Filter löschen", "Șterge filtrul"),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = palette.textPrimary,
+                            maxLines = 1,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
+                }
                 if (filteredLogs.isNotEmpty()) {
                     Surface(
                         shape = RoundedCornerShape(10.dp),
@@ -1388,7 +1414,8 @@ internal fun MainProgressVolumeAndMuscleSection(
     val volumeChange = period.volumeChangePercent(uiState.loggedWorkouts)
     val totalVolumeText = "%,d kg".format(java.util.Locale.US, loggedTotalKg).replace(',', ' ')
     val dateSubtitle = "${period.start.format(huFmt)} – ${period.end.format(huFmt)}"
-    val prCountValue = uiState.prRecords.count {
+    val prRecords = remember(uiState.loggedWorkouts) { loggedPrRecords(uiState.loggedWorkouts) }
+    val prCountValue = prRecords.count {
         period.contains(runCatching { java.time.LocalDate.parse(it.dateLabel.take(10)) }.getOrNull())
     }.toString()
     val workoutCountValue = periodWorkouts.size.toString()
@@ -1739,14 +1766,14 @@ internal fun MainProgressVolumeAndMuscleSection(
                                     Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
                                 }
                             }
-                            if (uiState.prRecords.isEmpty()) {
+                            if (prRecords.isEmpty()) {
                                 Text(
                                     text = trL(uiState.language, "Még nincs rögzített PR rekord. Fejezz be egy edzést a PR-ek számításához!", "No PR records logged yet. Finish a workout to calculate PRs!", "Noch keine PR-Rekorde erfasst. Beende ein Training zur PR-Berechnung!", "Niciun record PR înregistrat încă. Finalizează un antrenament pentru calculul PR-urilor!"),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textSecondary
                                 )
                             } else {
-                                uiState.prRecords.take(4).forEach { pr ->
+                                prRecords.forEach { pr ->
                                     val locPrName = pr.localizedExerciseName(uiState.language, uiState.exercises)
                                     Row(
                                         modifier = Modifier
@@ -1795,7 +1822,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                     color = palette.textSecondary
                                 )
                             } else {
-                                periodWorkouts.take(4).forEach { w ->
+                                periodWorkouts.forEach { w ->
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -1831,7 +1858,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                             if (periodWorkouts.isEmpty()) {
                                 Text(trL(uiState.language, "Még nincs rögzített súlyzós volumen.", "No logged strength volume yet.", "Noch kein Kraftvolumen protokolliert.", "Niciun volum de forță înregistrat încă."), style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                             } else {
-                                periodWorkouts.take(4).forEach { w ->
+                                periodWorkouts.forEach { w ->
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -1867,7 +1894,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                             if (periodWorkouts.isEmpty()) {
                                 Text(trL(uiState.language, "Még nincs rögzített edzésidő.", "No logged workout duration yet.", "Noch keine Trainingszeit protokolliert.", "Nicio durată de antrenament înregistrată încă."), style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                             } else {
-                                periodWorkouts.take(4).forEach { w ->
+                                periodWorkouts.forEach { w ->
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -1988,7 +2015,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                     testTag = "advice_details_sheet"
                 ) {
                     val lowMuscle = uiState.realMuscleLoads.minByOrNull { it.percentage }
-                    val latestPr = uiState.prRecords.firstOrNull()
+                    val latestPr = prRecords.firstOrNull()
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()

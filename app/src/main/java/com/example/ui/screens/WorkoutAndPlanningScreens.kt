@@ -145,7 +145,7 @@ import com.example.ui.viewmodel.INLINE_EDITOR_HOST_PROGRAMS
 
 private val calendarDurationOptions = (15..240 step 15).map(Int::toString)
 
-private fun trW(lang: com.example.model.AppLanguage, hu: String, en: String, de: String, ro: String): String = when (lang) {
+internal fun trW(lang: com.example.model.AppLanguage, hu: String, en: String, de: String, ro: String): String = when (lang) {
     com.example.model.AppLanguage.HU -> hu
     com.example.model.AppLanguage.EN -> en
     com.example.model.AppLanguage.DE -> de
@@ -183,12 +183,14 @@ private fun WorkoutModeTile(
                     color = palette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.textSecondary, modifier = Modifier.size(18.dp))
             }
+            // 2779: the subtitle always reserves two lines and the badge one, so the three big
+            // graphics start on the same line in every tile.
             Text(subtitle, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary,
-                maxLines = 2, modifier = Modifier.testTag("${testTag}_subtitle"))
-            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) { graphic() }
+                minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("${testTag}_subtitle"))
+            Box(Modifier.fillMaxWidth().weight(1f).testTag("${testTag}_graphic"), contentAlignment = Alignment.TopCenter) { graphic() }
             Surface(shape = RoundedCornerShape(8.dp), color = tint.copy(alpha = 0.16f)) {
                 Text(badge, style = MaterialTheme.typography.labelSmall, color = tint, fontWeight = FontWeight.Bold,
-                    maxLines = 2, modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp).testTag("${testTag}_badge"))
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp).testTag("${testTag}_badge"))
             }
         }
     }
@@ -251,16 +253,15 @@ fun WorkoutTabScreen(
 
     val scrollState = rememberScrollState()
 
-    com.example.ui.components.TrainPilotScrollableBox(
-        scrollState = scrollState,
-        modifier = Modifier.fillMaxSize()
-    ) {
+    // 2779: no "more below" arrow; the tab fits one screen. Scrolling stays only as a fallback for
+    // very small screens / large font scale, so nothing becomes unreachable.
+    Box(modifier = Modifier.fillMaxSize().testTag("workout_tab_root")) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
                 .padding(horizontal = TrainPilotCardSpacing.ScreenGutter)
-                .padding(top = 8.dp, bottom = 24.dp),
+                .padding(top = 8.dp, bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
         // 1. Gyors edzés Card (Mockup 1/4 #2)
@@ -274,19 +275,20 @@ fun WorkoutTabScreen(
                 .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenQuickWorkout() }
                 .testTag("workout_tab_quick_card")
         ) {
+            // 2779: flatter row (48 dp touch target kept) so the whole tab fits without scrolling.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.DirectionsRun,
                     contentDescription = null,
                     tint = palette.primary,
-                    modifier = Modifier.size(30.dp)
+                    modifier = Modifier.size(24.dp)
                 )
-                Spacer(modifier = Modifier.width(14.dp))
+                Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = strings.quickWorkoutTitle,
@@ -397,127 +399,15 @@ fun WorkoutTabScreen(
         }
 
         if (activeProgram != null) {
-            // Side-by-side A nap / B nap cards (Mockup 1/4 #2)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // 2773: highlight the day that is really next (same target as Home / Coach), not always day 1.
-                val target = state.homeWorkoutTarget?.takeIf { it.programId == activeProgram.id }
-                val nextIndex = activeProgram.days.take(2).indexOfFirst {
-                    target != null && (it.id == target.dayId || it.id == "${activeProgram.id}:${target.dayId}")
-                }.let { if (it < 0) 0 else it }
-                activeProgram.days.take(2).forEachIndexed { index, day ->
-                    val isPrimaryDay = index == nextIndex
-                    Surface(
-                        shape = RoundedCornerShape(18.dp),
-                        color = palette.surface,
-                        modifier = Modifier
-                            .weight(1f)
-                            .trainPilotBorder(
-                                width = if (isPrimaryDay) 1.5.dp else 1.dp,
-                                color = if (isPrimaryDay) palette.primary else palette.cardBorder,
-                                shape = RoundedCornerShape(18.dp)
-                            )
-                            .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenProgramEditor(activeProgram.id, index) }
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(14.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = day.localizedDayCode(state.language),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = if (isPrimaryDay) palette.primary else palette.textSecondary
-                                )
-                                ProgramTypeEmblemIcon(
-                                    programTitle = "${activeProgram.nameHu} ${day.titleHu}",
-                                    isHighlighted = isPrimaryDay,
-                                    size = 34.dp
-                                )
-                            }
-                            com.example.ui.components.secondaryWorkoutDayTitle(
-                                day.localizedDayCode(state.language), day.localizedTitle(state.language))?.let { distinctTitle ->
-                            Text(
-                                text = distinctTitle,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = palette.textPrimary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = palette.surfaceElevated
-                            ) {
-                                Text(
-                                    text = programEquipmentSummary(day.exercises.ifEmpty { activeProgram.days.flatMap { it.exercises } }, activeProgram.tagsHu.firstOrNull().orEmpty(), state.language),
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                    color = palette.primary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                                )
-                            }
-                            Text(
-                                text = trW(
-                                    state.language,
-                                    "📋 ${day.exercises.size} gyakorlat • ⏱ kb. ${day.durationMinutes} perc",
-                                    "📋 ${day.exercises.size} exercises • ⏱ ~${day.durationMinutes} min",
-                                    "📋 ${day.exercises.size} Übungen • ⏱ ca. ${day.durationMinutes} Min",
-                                    "📋 ${day.exercises.size} exerciții • ⏱ ~${day.durationMinutes} min"
-                                ),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = palette.textSecondary
-                            )
-                            if (isPrimaryDay && target != null) {
-                                val line = com.example.ui.components.homePlannedDateLine(target.startIso,
-                                    java.time.ZonedDateTime.now(), state.language)
-                                Text(
-                                    text = line.text,
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = when (line.timing) {
-                                        com.example.ui.components.HomePlanTiming.TODAY_UPCOMING -> palette.success
-                                        com.example.ui.components.HomePlanTiming.TODAY_PASSED -> palette.warning
-                                        else -> palette.textSecondary
-                                    },
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.testTag("workout_tab_day_date_$index")
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Button(
-                                onClick = { onStartWorkoutDay(index) },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isPrimaryDay) palette.primary else palette.surfaceElevated,
-                                    contentColor = if (isPrimaryDay) palette.onPrimary else palette.textPrimary
-                                ),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(min = 48.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.PlayArrow,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = strings.startAction,
-                                    style = MaterialTheme.typography.labelLarge
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+            // 2779: every day of the program, equal height, each with its next planned date.
+            WorkoutTabDayCards(
+                program = activeProgram,
+                events = state.calendarEvents,
+                target = state.homeWorkoutTarget,
+                language = state.language,
+                onOpenProgramEditor = onOpenProgramEditor,
+                onStartWorkoutDay = onStartWorkoutDay
+            )
 
             // Edzés beállításai (from main Edzés screen)
             Surface(

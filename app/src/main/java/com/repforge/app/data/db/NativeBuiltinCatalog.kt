@@ -90,6 +90,42 @@ internal object NativeBuiltinCatalog {
         return ProgramWithDays(old.copy(rawJson = raw.toString()), days)
     }
 
+    private val legacyHomeBasicDayA = listOf("goblet-squat", "db-floor-press", "one-arm-row", "db-ohp", "db-rdl", "db-curl", "side-plank")
+
+    private fun entryIds(json: String): List<String>? = runCatching {
+        val rows = JSONArray(json)
+        (0 until rows.length()).map { rows.optJSONObject(it)?.getString("id") ?: rows.getString(it) }
+    }.getOrNull()
+
+    /**
+     * 2779: the quick-workout "+" appended exercises in place into the built-in Otthoni A/B
+     * (day A grew from 7 to 10). Only exercises appended after the complete stock list are
+     * removed; the stock entries keep the user's own sets/reps/kg. Any other edit (reorder,
+     * removal, swap) leaves the day untouched.
+     */
+    fun trimAppendedHomeBasic(current: ProgramWithDays): ProgramWithDays? {
+        val old = current.program
+        if (old.id != "home-basic" || !old.builtin || old.generated) return null
+        val stock = (programs.second + originalPrograms.second).filter { it.programId == old.id }
+        val days = current.days.map { day ->
+            val ids = entryIds(day.exercisesJson) ?: return@map day
+            val bases = stock.filter { it.dayId == day.dayId }.mapNotNull { entryIds(it.exercisesJson) } +
+                listOfNotNull(legacyHomeBasicDayA.takeIf { day.dayId == "A" })
+            val base = bases.firstOrNull { it.isNotEmpty() && ids.size > it.size && ids.take(it.size) == it } ?: return@map day
+            val rows = JSONArray(day.exercisesJson)
+            day.copy(exercisesJson = JSONArray().apply { for (i in base.indices) put(rows.get(i)) }.toString())
+        }
+        if (days == current.days) return null
+        val raw = runCatching { JSONObject(old.rawJson) }.getOrNull()
+        val byDay = days.associateBy { it.dayId }
+        raw?.optJSONArray("days")?.let { rawDays ->
+            for (i in 0 until rawDays.length()) rawDays.optJSONObject(i)?.let { row ->
+                byDay[row.optString("id")]?.let { row.put("exercises", JSONArray(it.exercisesJson)) }
+            }
+        }
+        return ProgramWithDays(if (raw != null) old.copy(rawJson = raw.toString()) else old, days)
+    }
+
     private val originalPrograms by lazy { readPrograms(reviewed = false) }
     val programs by lazy { readPrograms(reviewed = true) }
 

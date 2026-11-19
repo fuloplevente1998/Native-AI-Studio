@@ -71,9 +71,11 @@ class EditedProgramSaveRegressionTest {
 
     @Test fun removingLastThreeAndSavingKeepsOneActiveCustomCopyAcrossReopening() {
         val vm = model()
+        // 2779: the three appended exercises of the reported ten-exercise day are trimmed at start.
+        await { exerciseIds(program("home-basic").days.single { it.dayId == "A" }.exercisesJson).size == 7 }
         val original = program("home-basic")
         val ids = exerciseIds(original.days.single { it.dayId == "A" }.exercisesJson)
-        assertEquals(10, ids.size)
+        assertEquals(7, ids.size)
         val beforeIds = native { db.programDao().getProgramIds().toSet() }
         vm.openProgramEditor("home-basic")
         ids.takeLast(3).forEach { id -> mutate(vm) { vm.removeEditorExercise(id) } }
@@ -166,6 +168,9 @@ class EditedProgramSaveRegressionTest {
         }
         val beforeIds = native { db.programDao().getProgramIds().toSet() }
         val vm = model()
+        // 2779: the built-in day is trimmed back to its 7 stock exercises; the personal copy keeps all 10.
+        await { exerciseIds(program("home-basic").days.single { it.dayId == "A" }.exercisesJson).size == 7 }
+        val repairedStock = program("home-basic")
         val id = "existing-home-copy"
         val originalIds = exerciseIds(source.days.first().exercisesJson)
         vm.openProgramEditor(id)
@@ -175,7 +180,8 @@ class EditedProgramSaveRegressionTest {
         assertEquals(id, native { settings.current().activeProgramId })
         assertEquals(beforeIds, native { db.programDao().getProgramIds().toSet() })
         assertEquals(originalIds.dropLast(3), exerciseIds(program(id).days.first().exercisesJson))
-        assertEquals(source, program("home-basic"))
+        assertEquals(10, originalIds.size)
+        assertEquals(repairedStock, program("home-basic"))
     }
 
     @Test fun explicitCopyStillRequiresExplicitActivation() {

@@ -1322,6 +1322,7 @@ class TrainPilotViewModel : ViewModel() {
                 totalVolumeKg = if (w.totalVolumeKg > 0.0) w.totalVolumeKg.roundToInt() else completedDbSets.sumOf { (it.weight ?: 0.0) * (it.reps.toDoubleOrNull() ?: 0.0) }.roundToInt(),
                 summaryExercisesHu = if (isOutdoor) w.programName.ifBlank { "Kültéri aktivitás" } else exerciseNames.ifBlank { "Rögzített gyakorlatok" },
                 hasPr = w.hasPr226,
+                prRecordsJson = w.prRecordsJson226,
                 isOutdoorRun = isOutdoor,
                 routeKeys = detail.exercises.flatMap { it.sets }.flatMap {
                     listOfNotNull(it.gpsRouteKey163, it.gpsRouteKey193)
@@ -1675,6 +1676,7 @@ class TrainPilotViewModel : ViewModel() {
 
     fun selectTab(tab: MainTab) {
         _uiState.update { it.copy(pendingIntervalStart = null) }
+        libraryAddsToProgramDay = false
         if (!pauseWhenLeavingMeasurement()) return
         _uiState.update { state ->
             if (state.currentTab == tab && state.currentSubScreen == SubScreen.NONE) {
@@ -1697,6 +1699,8 @@ class TrainPilotViewModel : ViewModel() {
             return
         }
         if (subScreen !in setOf(SubScreen.EXERCISE_LIBRARY, SubScreen.EXERCISE_DETAIL)) exerciseSelection = null
+        // 2779: a library opened from anywhere else never writes into a program day.
+        if (subScreen != SubScreen.EXERCISE_DETAIL) libraryAddsToProgramDay = false
         if (subScreen != _uiState.value.currentSubScreen && !pauseWhenLeavingMeasurement()) return
         val isActiveMeasurement = subScreen == SubScreen.ACTIVE_STRENGTH ||
             subScreen == SubScreen.ACTIVE_TIMED ||
@@ -1788,7 +1792,10 @@ class TrainPilotViewModel : ViewModel() {
 
     fun navigateBack(): Boolean {
         _uiState.update { it.copy(pendingIntervalStart = null) }
-        if (_uiState.value.currentSubScreen == SubScreen.EXERCISE_LIBRARY) exerciseSelection = null
+        if (_uiState.value.currentSubScreen == SubScreen.EXERCISE_LIBRARY) {
+            exerciseSelection = null
+            libraryAddsToProgramDay = false
+        }
         if (!pauseWhenLeavingMeasurement()) return true
         val current = _uiState.value
         if (current.backStack.isNotEmpty()) {
@@ -2424,33 +2431,33 @@ class TrainPilotViewModel : ViewModel() {
         persistProgramsToRoomAsync()
     }
 
+    /**
+     * 2779: true only while the library was opened from the program editor ("+ Gyakorlat").
+     * The quick-workout queue "+" used to append into whatever program was last opened in the
+     * editor (Otthoni A/B day A grew from 7 to 10) and wrote the built-in row in place.
+     */
+    private var libraryAddsToProgramDay = false
+
+    fun openExerciseLibraryForProgramDay() {
+        navigateToSubScreen(SubScreen.EXERCISE_LIBRARY)
+        libraryAddsToProgramDay = _uiState.value.currentSubScreen == SubScreen.EXERCISE_LIBRARY
+    }
+
+    /** Library/detail "+" inside the editor flow: same copy-on-write save as every other editor change. */
     fun addExerciseToActiveProgramDay(exercise: ExerciseItem) {
-        if (_uiState.value.libraryMutationBusy) return
-        _uiState.update { state ->
-            val updatedPrograms = state.programs.map { prog ->
-                if (prog.id != state.editingProgramId) prog
-                else {
-                    val updatedDays = prog.days.mapIndexed { idx, day ->
-                        if (idx != state.editingDayIndex) day
-                        else if (day.exercises.any { it.id == exercise.id }) day
-                        else day.copy(exercises = day.exercises + exercise)
-                    }
-                    prog.copy(days = updatedDays)
-                }
-            }
-            val exName = exercise.localizedName(state.language)
-            state.copy(
-                programs = updatedPrograms,
-                statusBannerMessage = tr(
-                    "${exercise.nameHu} hozzáadva az edzésnaphoz",
-                    "$exName added to workout day",
-                    "$exName zum Trainingstag hinzugefügt",
-                    "$exName adăugat în ziua de antrenament",
-                    state.language
-                )
-            )
+        if (_uiState.value.libraryMutationBusy || !libraryAddsToProgramDay) return
+        editStudioProgram(tr(
+            "${exercise.nameHu} hozzáadva az edzésnaphoz",
+            "${exercise.localizedName(AppLanguage.EN)} added to workout day",
+            "${exercise.localizedName(AppLanguage.DE)} zum Trainingstag hinzugefügt",
+            "${exercise.localizedName(AppLanguage.RO)} adăugat în ziua de antrenament"
+        )) { draft, dayId ->
+            require(dayId != null)
+            draft.copy(days = draft.days.map { day ->
+                if (day.id != dayId || day.entries.any { com.repforge.app.NativeProgramEditor.exerciseId(it) == exercise.id }) day
+                else com.repforge.app.NativeProgramEditor.addExercise(day, exercise.id)
+            })
         }
-        persistProgramsToRoomAsync()
     }
 
     fun moveEditorExercise(fromIndex: Int, toIndex: Int) {
@@ -4191,6 +4198,7 @@ class TrainPilotViewModel : ViewModel() {
                         totalVolumeKg = dbW.totalVolumeKg.roundToInt(),
                         summaryExercisesHu = summaryNamesFromDb,
                         hasPr = dbW.hasPr226,
+                        prRecordsJson = dbW.prRecordsJson226,
                         isOutdoorRun = isOutdoorSession,
                         routeKeys = savedInDb.exercises.flatMap { it.sets }.flatMap {
                             listOfNotNull(it.gpsRouteKey163, it.gpsRouteKey193)
@@ -4657,6 +4665,9 @@ class TrainPilotViewModel : ViewModel() {
             healthSyncFailed = failed, healthSyncMessage = message) }
     }
 
+    /** Provider whose values are on screen now; null = nothing loaded (or cleared). */
+    @Volatile private var loadedHealthProvider: String? = null
+
     fun reloadHealthJournal() {
         val ctx = nativeContext
         val scope = nativeScope
@@ -4666,8 +4677,11 @@ class TrainPilotViewModel : ViewModel() {
             }
             return
         }
-        _uiState.update {
-            it.copy(
+        // 2779: values are no longer blanked before every reload: the reload overwrites every field
+        // below, so blanking first only made the Coach card and the Today tiles flash "—" and jump.
+        // They are still cleared when the provider changed (old provider's data must not show) or
+        // when the reload fails.
+        fun clearedHealth(st: TrainPilotUiState) = st.copy(
                 dailySteps = 0,
                 currentHrBpm = 0,
                 restingHrBpm = 0,
@@ -4690,7 +4704,11 @@ class TrainPilotViewModel : ViewModel() {
                 bloodGlucoseLabel = "—",
                 respiratoryRateLabel = "—",
                 dailyDistanceKm = 0f
-            )
+        )
+        val providerAtStart = runCatching { HealthJournalStore.get(ctx).preferences().optString("provider", HealthJournalStore.HC) }.getOrNull()
+        if (providerAtStart == null || providerAtStart != loadedHealthProvider) {
+            loadedHealthProvider = null
+            _uiState.update(::clearedHealth)
         }
         scope.launch(Dispatchers.IO) {
             try {
@@ -4870,6 +4888,7 @@ class TrainPilotViewModel : ViewModel() {
 
                 withContext(Dispatchers.Main) {
                     if (store.generation() != generation || store.preferences().optString("provider", HealthJournalStore.HC) != provider) return@withContext
+                    loadedHealthProvider = provider
                     _uiState.update { st ->
                         st.copy(
                             primaryHealthSourceSamsung = provider == HealthJournalStore.SAMSUNG,
@@ -4918,7 +4937,8 @@ class TrainPilotViewModel : ViewModel() {
             } catch (e: Throwable) {
                 withContext(Dispatchers.Main) {
                     _uiState.update {
-                        it.copy(statusBannerMessage = "Hiba az egészségszinkron során: ${e.localizedMessage ?: "szolgáltatói hiba"}")
+                        loadedHealthProvider = null
+                        clearedHealth(it).copy(statusBannerMessage = "Hiba az egészségszinkron során: ${e.localizedMessage ?: "szolgáltatói hiba"}")
                     }
                 }
             }

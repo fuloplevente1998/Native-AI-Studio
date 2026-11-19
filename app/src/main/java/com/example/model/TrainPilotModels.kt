@@ -956,7 +956,9 @@ data class LoggedWorkoutEntry(
     val programId: String = "",
     val dayId: String = "",
     val dayName: String = "",
-    val scheduleId: String = ""
+    val scheduleId: String = "",
+    /** 2779: the saved #226 PR badges of this workout (JSON array), read from Room. */
+    val prRecordsJson: String = ""
 ) {
     fun localizedTitle(
         lang: AppLanguage,

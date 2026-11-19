@@ -6,6 +6,7 @@ import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
 import com.repforge.app.ui.theme.trainPilotBorder
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -104,11 +105,24 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
         ) {
             Column(Modifier.fillMaxSize().verticalScroll(scrollState).padding(horizontal = 12.dp, vertical = 4.dp)
                 .testTag("studio_statistics_screen"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(strings.personalRecordsSubTab, strings.cardioStatsSubTab).forEachIndexed { index, label ->
-                    FilterChip(selected = state.statsSubTab == index, onClick = { onSelectTab(index) },
-                        label = { Text(label) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                            .testTag("statistics_subtab_$index"))
+            // 2779: three tabs in one row: Strength (records) · Cardio · Steps. The stored state stays
+            // statsSubTab 0/1 + cardioFilterStepsMode, so the view model and saved settings are unchanged.
+            val visibleTab = when {
+                state.statsSubTab == 0 -> 0
+                state.cardioFilterStepsMode -> 2
+                else -> 1
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf(statsTr(lang, "Erő", "Strength", "Kraft", "Forță"), statsTr(lang, "Kardió", "Cardio", "Cardio", "Cardio"),
+                    statsTr(lang, "Lépések", "Steps", "Schritte", "Pași")).forEachIndexed { index, label ->
+                    FilterChip(selected = visibleTab == index, onClick = {
+                        when (index) {
+                            0 -> onSelectTab(0)
+                            1 -> { onSelectTab(1); onStepsMode(false) }
+                            else -> { onSelectTab(1); onStepsMode(true) }
+                        }
+                    }, label = { Text(label, maxLines = 1) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                        .testTag("statistics_subtab_$index"))
                 }
             }
             if (state.statsSubTab == 0) {
@@ -163,16 +177,8 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                     }
                 }
             } else {
-                TrainPilotOutlinedButton(
-                    onClick = { onStepsMode(!state.cardioFilterStepsMode) },
-                    modifier = Modifier.fillMaxWidth().testTag("statistics_cardio_mode_button")
-                ) {
-                    Text(if (state.cardioFilterStepsMode) statsTr(lang, "Napi aktivitás / lépések", "Daily Activity / Steps", "Tägliche Aktivität / Schritte", "Activitate zilnică / pași") else statsTr(lang, "Minden mozgás", "All Activities", "Alle Aktivitäten", "Toate activitățile"))
-                }
-                if (!state.cardioFilterStepsMode) NativeCardioProgressPanel(native, onActivity, onRetry)
-                if (state.cardioFilterStepsMode || native.selectedCardioId == NativeCardioModel.ALL_ACTIVITIES) {
-                    DailyActivityStatistics(state, number)
-                }
+                if (state.cardioFilterStepsMode) DailyActivityStatistics(state, number)
+                else NativeCardioProgressPanel(native, onActivity, onRetry)
             }
         }
     }
@@ -228,18 +234,26 @@ internal fun savedRecordLabel(
     )
 }
 
+/** 2779: last 14 days, oldest first; a day without synced steps stays null (missing ≠ 0). */
+internal fun dailyStepBars(days: List<com.example.ui.viewmodel.WeeklyHealthDaySummary>, today: LocalDate): List<Int?> {
+    val byDate = days.associateBy { it.dateIso }
+    return (13 downTo 0).map { back -> byDate[today.minusDays(back.toLong()).toString()]?.takeIf { it.stepsAvailable }?.steps }
+}
+
 @Composable
 private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberFormat) {
     val palette = LocalTrainPilotPalette.current
     val lang = state.language
     val refresh = LocalSyncDailyHealth.current
     var explanationOpen by rememberSaveable { mutableStateOf(false) }
+    var listOpen by rememberSaveable { mutableStateOf(false) }
     val today = LocalDate.now()
     val weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
     val previous = weekStart.minusWeeks(1)
+    val windowStart = minOf(previous, today.minusDays(13))
     val days = state.dailyActivityDays.filter {
         val day = runCatching { LocalDate.parse(it.dateIso) }.getOrNull()
-        day != null && !day.isBefore(previous) && !day.isAfter(today)
+        day != null && !day.isBefore(windowStart) && !day.isAfter(today)
     }
     fun total(from: LocalDate, until: LocalDate): String {
         val available = days.filter { it.stepsAvailable && it.dateIso >= from.toString() && it.dateIso < until.toString() }
@@ -252,21 +266,52 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
             val todayDay = days.firstOrNull { it.dateIso == today.toString() }
             val outside = if (todayDay?.stepsAvailable == true && todayDay.workoutCount == 0)
                 number.format(todayDay.steps) else "—"
-            listOf(
-                listOf(
-                    statsTr(lang, "Mai összes lépés", "Today's Total Steps", "Heutige Gesamtschritte", "Total pași azi") to total(today, today.plusDays(1)),
-                    statsTr(lang, "Edzésen kívül", "Outside Workouts", "Außerhalb Trainings", "În afara antrenamentelor") to outside
-                ),
-                listOf(
-                    statsTr(lang, "Heti lépések", "Weekly Steps", "Wochenschritte", "Pași săptămânali") to total(weekStart, today.plusDays(1)),
-                    statsTr(lang, "Előző hét", "Previous Week", "Vorwoche", "Săptămâna trecută") to total(previous, weekStart)
-                )
-            ).forEach { row ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    row.forEach { (label, value) ->
-                        StatisticsMetricTile(label, value, Modifier.weight(1f))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                StatisticsMetricTile(statsTr(lang, "Ma", "Today", "Heute", "Azi"), total(today, today.plusDays(1)), Modifier.weight(1f),
+                    valueTag = "statistics_steps_today")
+                StatisticsMetricTile(statsTr(lang, "Ez a hét", "This week", "Diese Woche", "Săpt. aceasta"), total(weekStart, today.plusDays(1)),
+                    Modifier.weight(1f), valueTag = "statistics_steps_week")
+                StatisticsMetricTile(statsTr(lang, "Előző hét", "Previous week", "Vorwoche", "Săpt. trecută"), total(previous, weekStart),
+                    Modifier.weight(1f), valueTag = "statistics_steps_previous_week")
+            }
+            Text(statsTr(lang, "Edzésen kívül ma: $outside", "Outside workouts today: $outside", "Außerhalb Trainings heute: $outside", "În afara antrenamentelor azi: $outside"),
+                color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
+            Text(statsTr(lang, "Utolsó 14 nap", "Last 14 days", "Letzte 14 Tage", "Ultimele 14 zile"),
+                color = palette.textSecondary, style = MaterialTheme.typography.labelMedium)
+            val bars = remember(days, today) { dailyStepBars(days, today) }
+            val max = bars.filterNotNull().maxOrNull()?.coerceAtLeast(1) ?: 1
+            Row(Modifier.fillMaxWidth().height(72.dp).testTag("statistics_steps_chart"),
+                horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Bottom) {
+                bars.forEachIndexed { index, value ->
+                    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.BottomCenter) {
+                        if (value == null) Box(Modifier.fillMaxWidth().height(2.dp)
+                            .background(palette.cardBorder, RoundedCornerShape(1.dp)).testTag("statistics_steps_bar_missing_$index"))
+                        else Box(Modifier.fillMaxWidth().fillMaxHeight((value.toFloat() / max).coerceIn(0.04f, 1f))
+                            .background(if (index == bars.lastIndex) palette.primary else palette.primary.copy(alpha = 0.55f),
+                                RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                            .testTag("statistics_steps_bar_$index"))
                     }
                 }
+            }
+            val ordered = days.reversed()
+            (if (listOpen) ordered else ordered.take(2)).forEach { day ->
+                HorizontalDivider(color = palette.cardBorder)
+                Row(Modifier.fillMaxWidth().testTag("statistics_steps_row_${day.dateIso}"), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(day.dateIso, color = palette.textPrimary, style = MaterialTheme.typography.bodySmall)
+                        val localizedSource = if (day.stepsSourceLabelHu.contains("Nincs", ignoreCase = true)) {
+                            statsTr(lang, "Nincs szinkronizálva", "Not synced", "Nicht synchronisiert", "Nesincronizat")
+                        } else day.stepsSourceLabelHu
+                        Text(localizedSource, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                    }
+                    Text(if (!day.stepsAvailable) "— / —" else
+                        "${number.format(day.steps)} / ${if (day.workoutCount == 0) number.format(day.steps) else "—"}", color = palette.textPrimary)
+                }
+            }
+            if (ordered.size > 2) TextButton(onClick = { listOpen = !listOpen },
+                modifier = Modifier.heightIn(min = 48.dp).testTag("statistics_steps_list_toggle")) {
+                Text(if (listOpen) statsTr(lang, "▴ Napi lista bezárása", "▴ Hide daily list", "▴ Tagesliste schließen", "▴ Închide lista zilnică")
+                    else statsTr(lang, "▾ Napi lista (${ordered.size})", "▾ Daily list (${ordered.size})", "▾ Tagesliste (${ordered.size})", "▾ Listă zilnică (${ordered.size})"))
             }
             Text(statsTr(lang, "Szinkronizált napok: ${days.count { it.stepsAvailable }}/${days.size}", "Synced days: ${days.count { it.stepsAvailable }}/${days.size}", "Synchronisierte Tage: ${days.count { it.stepsAvailable }}/${days.size}", "Zile sincronizate: ${days.count { it.stepsAvailable }}/${days.size}"),
                 color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
@@ -279,30 +324,12 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
             if (explanationOpen) Text(
                 statsTr(
                     lang,
-                    "Teljes napi lépések, egy kiválasztott forrásból. Ha az edzésen kívüli rész nem különíthető el, gondolatjelet mutatunk.",
-                    "Total daily steps from the selected source. If non-workout steps cannot be separated, a dash is shown.",
-                    "Gesamte Tagesschritte aus der gewählten Quelle. Wenn Schritte außerhalb des Trainings nicht trennbar sind, wird ein Strich gezeigt.",
-                    "Totalul pașilor zilnici din sursa selectată. Dacă pașii din afara antrenamentului nu pot fi separați, se afișează o linie."
+                    "Teljes napi lépések, egy kiválasztott forrásból. A sorokban: összes / edzésen kívül. Ha az edzésen kívüli rész nem különíthető el, vagy egy nap nincs szinkronizálva, gondolatjelet mutatunk (a grafikonon üres hely).",
+                    "Total daily steps from the selected source. Rows show total / outside workouts. If non-workout steps cannot be separated or a day is not synced, a dash is shown (an empty slot in the chart).",
+                    "Gesamte Tagesschritte aus der gewählten Quelle. Zeilen: gesamt / außerhalb. Nicht trennbare oder nicht synchronisierte Tage zeigen einen Strich (leerer Platz im Diagramm).",
+                    "Totalul pașilor zilnici din sursa selectată. Rânduri: total / în afară. Zilele neseparabile sau nesincronizate afișează o linie (loc gol în grafic)."
                 ),
                 color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
-            Row(Modifier.fillMaxWidth()) {
-                Text(statsTr(lang, "Dátum / forrás", "Date / Source", "Datum / Quelle", "Dată / Sursă"), Modifier.weight(1f), color = palette.textSecondary)
-                Text(statsTr(lang, "Összes / edzésen kívül", "Total / Outside workout", "Gesamt / Außerhalb", "Total / În afară"), color = palette.textSecondary)
-            }
-            days.reversed().forEach { day ->
-                HorizontalDivider(color = palette.cardBorder)
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(day.dateIso, color = palette.textPrimary)
-                        val localizedSource = if (day.stepsSourceLabelHu.contains("Nincs", ignoreCase = true)) {
-                            statsTr(lang, "Nincs szinkronizálva", "Not synced", "Nicht synchronisiert", "Nesincronizat")
-                        } else day.stepsSourceLabelHu
-                        Text(localizedSource, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                    }
-                    Text(if (!day.stepsAvailable) "— / —" else
-                        "${number.format(day.steps)} / ${if (day.workoutCount == 0) number.format(day.steps) else "—"}", color = palette.textPrimary)
-                }
-            }
         }
     }
 }

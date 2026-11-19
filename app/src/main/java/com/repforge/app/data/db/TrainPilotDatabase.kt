@@ -91,7 +91,8 @@ abstract class TrainPilotDatabase : RoomDatabase() {
                 val needsCatalogReview = NativeBuiltinCatalog.reviewedProgramIds.any { id ->
                     db.programDao().getProgramWithDaysById(id)?.let(NativeBuiltinCatalog::reviewUpdate) != null
                 }
-                if (!needsHomeBasicDayAMigration && !needsCatalogReview &&
+                val needsHomeBasicTrim = homeBasicWithDays?.let(NativeBuiltinCatalog::trimAppendedHomeBasic) != null
+                if (!needsHomeBasicDayAMigration && !needsCatalogReview && !needsHomeBasicTrim &&
                     defaultExercises().all { it.id in exercises } &&
                     defaultPrograms().first.all { it.id in programs }
                 ) {
@@ -110,6 +111,11 @@ abstract class TrainPilotDatabase : RoomDatabase() {
                         if (db.programDao().insertMissingProgram(program) != -1L)
                             db.programDao().upsertProgramDays(days.filter { it.programId == program.id })
                     }
+                    db.programDao().getProgramWithDaysById("home-basic")
+                        ?.let(NativeBuiltinCatalog::trimAppendedHomeBasic)?.let { trimmed ->
+                            db.programDao().updateProgram(trimmed.program)
+                            db.programDao().updateProgramDays(trimmed.days)
+                        }
                     val existingHomeBasic = db.programDao().getProgramWithDaysById("home-basic")
                     if (existingHomeBasic != null &&
                         existingHomeBasic.program.builtin &&

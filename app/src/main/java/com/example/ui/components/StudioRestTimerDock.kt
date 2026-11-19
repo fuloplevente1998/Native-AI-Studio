@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -52,7 +53,19 @@ internal fun StudioRestTimerDock(
     val idle = !uiState.restTimerRunning && uiState.restTimerRemainingSec == uiState.defaultRestSec
     if (com.repforge.app.StudioRestTimer.visible(uiState) && (showIdle || !idle)) {
     val progress = (uiState.restTimerRemainingSec.toFloat() / uiState.defaultRestSec.coerceAtLeast(1)).coerceIn(0f, 1f)
-    if (!large) {
+    // 2779: compact <-> large is a quick fade + size change instead of a jump.
+    androidx.compose.animation.AnimatedContent(
+        targetState = large,
+        transitionSpec = {
+            (androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(160, delayMillis = 60)) togetherWith
+                androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(90)))
+                .using(androidx.compose.animation.SizeTransform(clip = true) { _, _ -> androidx.compose.animation.core.tween(220) })
+        },
+        contentAlignment = Alignment.BottomCenter,
+        label = "rest_dock_size",
+        modifier = Modifier.fillMaxWidth().testTag("rest_dock_animated")
+    ) { isLarge ->
+    if (!isLarge) {
         // COMPACT FLAT STICKY REST TIMER BAR
         Surface(
             shape = RoundedCornerShape(14.dp),
@@ -226,5 +239,6 @@ internal fun StudioRestTimerDock(
         }
     }
 
+    }
     }
 }
