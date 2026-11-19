@@ -214,7 +214,7 @@ internal fun TrainPilotWearApp(
                 "gpsStart216" -> { pendingGps216=null;gpsBack216 }
                 "gpsRoute193" -> "workout"
                 "planned216", "quick", "ownership193" -> "menu"
-                "calendar" -> "planned216"
+                "calendar" -> "menu"
                 "days" -> daysBack216
                 "save-sync" -> syncBackRoute
                 "journal-detail" -> miniJournalBackRoute
@@ -351,7 +351,8 @@ internal fun TrainPilotWearApp(
                             active == null &&
                                 home.value?.hasDraft == false &&
                                 closure.value?.status !in listOf("pending", "error"),
-                            onBack = { route = "planned216" },
+                            onBack = { route = "menu" },
+                            onDays = { daysBack216 = "calendar"; route = "days" },
                         ) { entry ->
                             entry.day?.let {
                                 startWithGps216(it.exercises.firstOrNull()) {onStart(it, entry.scheduleId)}
@@ -1143,6 +1144,7 @@ private fun CalendarScreen(
     home: WatchHomeSnapshot?,
     canStart: Boolean,
     onBack: () -> Unit,
+    onDays: () -> Unit = {},
     onStart: (WatchCalendarEntry) -> Unit,
 ) {
     val today = LocalDate.now()
@@ -1174,6 +1176,7 @@ private fun CalendarScreen(
                     textAlign = TextAlign.Center,
                 )
             }
+            centerItem { Pill(WearMenu216.text("days"), tone = Card, onClick = onDays) }
             centerItem { Pill(wearText("‹ Főmenü"), tone = Secondary, onClick = onBack) }
         }
         return
@@ -1199,7 +1202,7 @@ private fun CalendarScreen(
             modifier = Modifier.fillMaxSize(),
             key = { weeks[it].toString() },
         ) { page ->
-            CalendarWeekPage(weeks[page], entries, today, page + 1, weeks.size, onBack) {
+            CalendarWeekPage(weeks[page], entries, today, page + 1, weeks.size, onBack, onDays) {
                 selectedKey = it.toString()
             }
         }
@@ -1214,6 +1217,7 @@ private fun CalendarWeekPage(
     pageNumber: Int,
     pageCount: Int,
     onBack: () -> Unit,
+    onDays: () -> Unit,
     onSelect: (LocalDate) -> Unit,
 ) {
     val fontScale = LocalDensity.current.fontScale
@@ -1309,16 +1313,27 @@ private fun CalendarWeekPage(
                         .background(marker, CircleShape)
                 )
         }
-        Box(
-            Modifier.align(Alignment.TopCenter)
-                .offset(y = layout.menuTop.dp)
-                .width(56.dp)
-                .height(20.dp)
-                .clickable(role = Role.Button, onClick = onBack)
-                .semantics { contentDescription = wearText("Vissza a főmenübe") },
-            contentAlignment = Alignment.Center,
+        // 2777 (A): "‹" back to the main menu + "Programnapok" replace the old "Menü" word.
+        Row(
+            Modifier.align(Alignment.TopCenter).offset(y = (layout.menuTop - 4f).dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(wearText("Menü"), color = Muted, fontSize = textSize(9f), maxLines = 1)
+            Box(
+                Modifier.size(26.dp).background(Card, CircleShape)
+                    .clickable(role = Role.Button, onClick = onBack)
+                    .semantics { contentDescription = wearText("Vissza a főmenübe") }
+                    .testTag("wear-calendar-back"),
+                contentAlignment = Alignment.Center,
+            ) { Text("‹", color = White, fontSize = textSize(14f), maxLines = 1) }
+            Box(
+                Modifier.height(26.dp).background(Card, RoundedCornerShape(13.dp))
+                    .clickable(role = Role.Button, onClick = onDays)
+                    .semantics { contentDescription = WearMenu216.text("days") }
+                    .testTag("wear-calendar-days")
+                    .padding(horizontal = 10.dp),
+                contentAlignment = Alignment.Center,
+            ) { Text(WearMenu216.text("days"), color = White, fontSize = textSize(10f), maxLines = 1) }
         }
     }
 }

@@ -14,7 +14,7 @@ internal object WearMenu216 {
         if (active) add("resume" to "workout")
         if (!active || quick) add((if (quick) "add" else "quick") to "quick")
         // 2777: no "Home" row (back/swipe returns home); fewer rows on a small round screen.
-        addAll(listOf("planned" to "planned216", "journal" to "journal", "metrics" to "metrics", "settings" to "settings"))
+        addAll(listOf("planned" to "calendar", "journal" to "journal", "metrics" to "metrics", "settings" to "settings"))
     }
     private val words = mapOf(
         "hu" to listOf("Főmenü","Edzés folytatása","Gyors edzés","+ Gyakorlat","Tervezett edzések","Napló","Órás mérések","Beállítások","Kezdőlap","Naptár","Programnapok","Megnyitás telefonon","Edzés törlése","Edzés indítása","Mégse","GPS-útvonal","Be","Ki","Megjegyezzük ehhez a mozgáshoz. Csak kifejezett edzésindításkor kapcsol be.","A táv/sebesség mérése önmagában nem jelent GPS-útvonalat.","Következő indításkor","Vissza","GPS-pontok az órán és a párosított telefonon; felhőmentés nélkül.","Pihenő"),

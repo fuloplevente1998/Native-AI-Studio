@@ -18,6 +18,8 @@ class Wear2777Test {
             val keys = WearMenu216.entries(active, quick).map { it.first }
             assertFalse(keys.contains("home"))
             assertTrue(keys.containsAll(listOf("planned", "journal", "metrics", "settings")))
+            // 2777 (A): "Planned" opens the calendar directly; program days are a button on it.
+            assertEquals("calendar", WearMenu216.entries(active, quick).first { it.first == "planned" }.second)
         }
     }
 
