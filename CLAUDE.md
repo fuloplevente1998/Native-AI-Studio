@@ -46,5 +46,16 @@ tartós szabályváltozáskor módosítsd (cache-barát). Kommunikáció: magyar
 - GPS/fotó privát tárban; health backup-consent alapból ki. Titkot ne kérj/naplózz/commitolj.
   Tartós signer és package változatlan.
 
+## A felhasználó munkastílusa (tartós)
+- Telefonról irányít: rövid, magyar, telefonon olvasható válasz; hosszú naplót ne.
+- Visszajelzéseket **gyűjtő draft PR-ba** rögzítjük (`docs/FIXES_<verzió>.md` táblázat);
+  kódolás csak „mehet” után, egy közös CI-körrel. UI-változásnál **előbb mockup** (PNG
+  Playwrighttal a scratchpadben, SendUserFile), kódolás jóváhagyás után.
+- Jóváhagyott minta: zöld CI → merge main → aláírt APK+AAB (`build_aab=true`), 4 fájl
+  ellenőrizve (verzió, signer, hash, nyers XML tesztszám) chatben átadva; Drive-csatoló
+  ~3 MB/hívás, ezért binárist oda nem. Verzió: `27NN00`/`27NN02`, Play „Újdonságok” ≤500 kar.
+- Dizájn: kompakt, témakövető (palette), íves keret, 48 dp érintés; alulról nyíló lapok
+  (`TrainPilotSheetRoutes`, `TrainPilotRouteSheet`) a tartalom magasságáig.
+
 ## Válaszformátum
 Módosítva / Teszt / GitHub / Következő lépés – telefonon olvasható rövidséggel.
