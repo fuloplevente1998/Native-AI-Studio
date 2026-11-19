@@ -54,9 +54,9 @@ internal fun HealthRecordDayDetails(day: LocalDate, provider: String, source: St
         val page = cached!!
         // At most 25 record cards, with the existing 20-item sample/stage pagination.
         if (page.rows.isEmpty()) Text(text.getString(R.string.health_records_empty))
-        // 2776: one compact line per time window (different record types merged); tap opens the detail cards.
+        // 2776/2778: one compact line per time window (different record types merged); no detail cards.
         groupHealthRecordRows(page.rows).forEach { group -> key(group.first().channel, group.first().id) {
-            HealthRecordCompactRow(group, language) { source -> page.origins.firstOrNull { it.source == source }?.name.orEmpty() }
+            HealthRecordCompactRow(group, language)
         } }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             TextButton(onClick = { cursors = cursors.dropLast(1); cached = null; error = false }, enabled = cursors.size > 1,
