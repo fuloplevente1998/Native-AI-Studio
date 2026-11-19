@@ -1,13 +1,15 @@
 # HANDOFF – aktuális állapot
 
-Frissítve: 2026-11-19 00:50 UTC. Rövid, felülírandó pillanatkép. Előzmény: git log / PR-ek.
+Frissítve: 2026-11-19 07:35 (magyar idő). Rövid, felülírandó pillanatkép. Előzmény: git log / PR-ek.
 
-## Main – utolsó kiadás 2770 · 1.3-beta (`3a52325`, PR #284)
-- Telefon 277000 / Wear 277002, signed #81, 877/0 teszt; 4 fájl (APK+AAB) chatben átadva.
-- Tartalom: `docs/FIXES_2770.md` (11 pont: lapok magassága, gyors edzés, ▶+⋮ választó,
-  ═ fogantyús sorrend, naptár 6 sor + rögzített tervező, forgatás logó nélkül, kompakt sorok).
-- Play feltöltés a felhasználónál; „Újdonságok” szöveg chatben.
-- Következő: új gyűjtő-PR (`docs/FIXES_2771.md`) a felhasználó visszajelzéseire.
+## Main – utolsó kiadás 2771 · 1.3.1 (`dd58f64`, PR #286)
+- Telefon 277100 / Wear 277102, signed #82, 880/0 teszt; 4 fájl chatben átadva.
+- Tartalom (`docs/FIXES_2771.md`): sorrend-húzáskor élő helyadás; Napló naptár lapon
+  (6 sor, húzással lapoz); szerkesztőablakok → `TrainPilotFormSheet` (megerősítések
+  maradnak középen); Egészség dátumválasztó lap+húzás; statisztika/tanács/Ma-csempe
+  részletek görgethető lapon.
+- Előző: 2770 · 1.3-beta (`3a52325`, signed #81). Play feltöltés a felhasználónál.
+- Következő: új gyűjtő-PR (`docs/FIXES_2772.md`) a felhasználó visszajelzéseire.
 
 ## Fontos döntések (ne kérdezd újra)
 - Programkártya koppintás = kártyán belüli szerkesztő (1 nyitva), külön szerkesztőoldal megszűnt.
@@ -19,4 +21,4 @@ Frissítve: 2026-11-19 00:50 UTC. Rövid, felülírandó pillanatkép. Előzmén
   PR CI-t is kihagyja → ilyenkor workflow_dispatch az ágra.
 
 ## Nyitott
-- #269 maradék elfogadási pontjai; #208 Wear HRV; #271/#272 régi draftok.
+- Lezárva: #208 (Wear HRV elvetve), #269, #271, #272.
