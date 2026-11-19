@@ -312,10 +312,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     onSelectExercise = { exId -> viewModel.openExerciseDetail(exId) },
                     onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true) },
                     onStartExerciseNow = { ex -> viewModel.toggleQuickWorkoutSheet(false); viewModel.selectLibraryExercise(ex) },
-                    onAddExerciseToQueue = { ex ->
-                        viewModel.addExerciseToWorkoutQueue(ex)
-                        viewModel.addExerciseToActiveProgramDay(ex)
-                    },
+                    // 2779: the quick-workout queue never edits a program day.
+                    onAddExerciseToQueue = viewModel::addExerciseToWorkoutQueue,
                     onRemoveExerciseFromQueue = viewModel::removeExerciseFromWorkoutQueue,
                     onStartQueuedWorkout = { viewModel.toggleQuickWorkoutSheet(false); viewModel.startQueuedWorkout() },
                     onToggleFavoritesOnly = viewModel::toggleFavoriteExercisesOnly,
@@ -421,7 +419,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             viewModel.updateProgramExercisePrescription(exId, sets, reps, kg, rest)
                         },
                         onOpenExerciseDetail = { exId -> viewModel.openExerciseDetail(exId) },
-                        onOpenExerciseLibrary = { viewModel.navigateToSubScreen(SubScreen.EXERCISE_LIBRARY) },
+                        onOpenExerciseLibrary = { viewModel.openExerciseLibraryForProgramDay() },
                         onMoveExercise = { fromIdx, toIdx -> viewModel.moveEditorExercise(fromIdx, toIdx) },
                         onCopyProgram = viewModel::copyEditorProgram,
                         onDeleteProgram = viewModel::deleteEditorProgram,
@@ -471,7 +469,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 viewModel.updateProgramExercisePrescription(exId, sets, reps, kg, rest)
                             },
                             onOpenExerciseDetail = { exId -> viewModel.openExerciseDetail(exId) },
-                            onOpenExerciseLibrary = { viewModel.navigateToSubScreen(SubScreen.EXERCISE_LIBRARY) },
+                            onOpenExerciseLibrary = { viewModel.openExerciseLibraryForProgramDay() },
                             onMoveExercise = { fromIdx, toIdx -> viewModel.moveEditorExercise(fromIdx, toIdx) },
                             onCopyProgram = viewModel::copyEditorProgram,
                             onDeleteProgram = viewModel::deleteEditorProgram,

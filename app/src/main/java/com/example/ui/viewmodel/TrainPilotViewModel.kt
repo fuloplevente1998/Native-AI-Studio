@@ -1676,6 +1676,7 @@ class TrainPilotViewModel : ViewModel() {
 
     fun selectTab(tab: MainTab) {
         _uiState.update { it.copy(pendingIntervalStart = null) }
+        libraryAddsToProgramDay = false
         if (!pauseWhenLeavingMeasurement()) return
         _uiState.update { state ->
             if (state.currentTab == tab && state.currentSubScreen == SubScreen.NONE) {
@@ -1698,6 +1699,8 @@ class TrainPilotViewModel : ViewModel() {
             return
         }
         if (subScreen !in setOf(SubScreen.EXERCISE_LIBRARY, SubScreen.EXERCISE_DETAIL)) exerciseSelection = null
+        // 2779: a library opened from anywhere else never writes into a program day.
+        if (subScreen != SubScreen.EXERCISE_DETAIL) libraryAddsToProgramDay = false
         if (subScreen != _uiState.value.currentSubScreen && !pauseWhenLeavingMeasurement()) return
         val isActiveMeasurement = subScreen == SubScreen.ACTIVE_STRENGTH ||
             subScreen == SubScreen.ACTIVE_TIMED ||
@@ -1789,7 +1792,10 @@ class TrainPilotViewModel : ViewModel() {
 
     fun navigateBack(): Boolean {
         _uiState.update { it.copy(pendingIntervalStart = null) }
-        if (_uiState.value.currentSubScreen == SubScreen.EXERCISE_LIBRARY) exerciseSelection = null
+        if (_uiState.value.currentSubScreen == SubScreen.EXERCISE_LIBRARY) {
+            exerciseSelection = null
+            libraryAddsToProgramDay = false
+        }
         if (!pauseWhenLeavingMeasurement()) return true
         val current = _uiState.value
         if (current.backStack.isNotEmpty()) {
@@ -2425,33 +2431,33 @@ class TrainPilotViewModel : ViewModel() {
         persistProgramsToRoomAsync()
     }
 
+    /**
+     * 2779: true only while the library was opened from the program editor ("+ Gyakorlat").
+     * The quick-workout queue "+" used to append into whatever program was last opened in the
+     * editor (Otthoni A/B day A grew from 7 to 10) and wrote the built-in row in place.
+     */
+    private var libraryAddsToProgramDay = false
+
+    fun openExerciseLibraryForProgramDay() {
+        navigateToSubScreen(SubScreen.EXERCISE_LIBRARY)
+        libraryAddsToProgramDay = _uiState.value.currentSubScreen == SubScreen.EXERCISE_LIBRARY
+    }
+
+    /** Library/detail "+" inside the editor flow: same copy-on-write save as every other editor change. */
     fun addExerciseToActiveProgramDay(exercise: ExerciseItem) {
-        if (_uiState.value.libraryMutationBusy) return
-        _uiState.update { state ->
-            val updatedPrograms = state.programs.map { prog ->
-                if (prog.id != state.editingProgramId) prog
-                else {
-                    val updatedDays = prog.days.mapIndexed { idx, day ->
-                        if (idx != state.editingDayIndex) day
-                        else if (day.exercises.any { it.id == exercise.id }) day
-                        else day.copy(exercises = day.exercises + exercise)
-                    }
-                    prog.copy(days = updatedDays)
-                }
-            }
-            val exName = exercise.localizedName(state.language)
-            state.copy(
-                programs = updatedPrograms,
-                statusBannerMessage = tr(
-                    "${exercise.nameHu} hozzáadva az edzésnaphoz",
-                    "$exName added to workout day",
-                    "$exName zum Trainingstag hinzugefügt",
-                    "$exName adăugat în ziua de antrenament",
-                    state.language
-                )
-            )
+        if (_uiState.value.libraryMutationBusy || !libraryAddsToProgramDay) return
+        editStudioProgram(tr(
+            "${exercise.nameHu} hozzáadva az edzésnaphoz",
+            "${exercise.localizedName(AppLanguage.EN)} added to workout day",
+            "${exercise.localizedName(AppLanguage.DE)} zum Trainingstag hinzugefügt",
+            "${exercise.localizedName(AppLanguage.RO)} adăugat în ziua de antrenament"
+        )) { draft, dayId ->
+            require(dayId != null)
+            draft.copy(days = draft.days.map { day ->
+                if (day.id != dayId || day.entries.any { com.repforge.app.NativeProgramEditor.exerciseId(it) == exercise.id }) day
+                else com.repforge.app.NativeProgramEditor.addExercise(day, exercise.id)
+            })
         }
-        persistProgramsToRoomAsync()
     }
 
     fun moveEditorExercise(fromIndex: Int, toIndex: Int) {

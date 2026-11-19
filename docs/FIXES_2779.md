@@ -16,5 +16,5 @@
 | 12 | Napló / Statisztikák | Rendbe rakás – ötlet, mockup | Mockup | mockup |
 | 13 | Egészség – Health Connect forrás | HC kiválasztva kevés adat (aktív kcal „—”, regeneráció „—”); Samsungnál megvan | Hibakeresés: HC napi mezők + Coach regeneráció forrás | vizsgálat |
 | 14 | Coach – végső érték | Samsunggal a Samsung értéket viszi tovább, nélküle az app becslését | Ellenőrizni a végső érték szabályát (forrásválasztás) | vizsgálat |
-| 15 | Programok – Otthoni A/B | Az A napban 10 gyakorlat, nem törölhető (korábban 7) | Beépített sablon visszaállítása 7/7-re (új telepítéskor/frissítéskor), törlés javítása | vizsgálat |
+| 15 | Programok – Otthoni A/B | Az A napban 10 gyakorlat, nem törölhető (korábban 7) | Ok: a gyors edzés/könyvtár „+” a legutóbb szerkesztett program napjába is beírt, a gyári sort helyben. Javítva: csak a szerkesztőből nyitott könyvtár ír programnapba (másolat-mentéssel); indításkor a gyári Otthoni A/B napról lekerülnek a hozzáfűzött extrák (saját kg/ism. marad) | kész |
 | 16 | CI – `PaletteSystemBarsTest` | Időnként bukik | Tesztizoláció | nyitott |

@@ -39,4 +39,41 @@ class Collector2779RegressionTest {
         assertEquals("30 mp", coachTargetText(t("30", "time"), "", "hu"))
         assertEquals("2 RIR", coachTargetText(t("2 RIR", "rir"), "ism.", "hu")) // already has a unit
     }
+
+    @Test fun homeBasicLosesOnlyExercisesAppendedAfterTheStockListAndKeepsOwnValues() {
+        val stock = com.repforge.app.data.db.TrainPilotDatabase.defaultPrograms()
+        val program = stock.first.first { it.id == "home-basic" }
+        val dayA = stock.second.first { it.programId == "home-basic" && it.dayId == "A" }
+        val dayB = stock.second.first { it.programId == "home-basic" && it.dayId == "B" }
+        val ids = JSONArray(dayA.exercisesJson).let { rows -> (0 until rows.length()).map { rows.optJSONObject(it)?.getString("id") ?: rows.getString(it) } }
+        assertEquals(7, ids.size)
+        // Persisted by the old queue path: object rows with the user's own kg, plus three appended exercises.
+        val grown = JSONArray().apply {
+            ids.forEach { put(JSONObject().put("id", it).put("sets", 4).put("reps", "10").put("weight", 12.5)) }
+            listOf("pushup", "plank", "lateral-raise").forEach { put(JSONObject().put("id", it).put("sets", 3)) }
+        }
+        val current = com.repforge.app.data.db.ProgramWithDays(program, listOf(dayA.copy(exercisesJson = grown.toString()), dayB))
+        val trimmed = requireNotNull(com.repforge.app.data.db.NativeBuiltinCatalog.trimAppendedHomeBasic(current))
+        val rows = JSONArray(trimmed.days.first { it.dayId == "A" }.exercisesJson)
+        assertEquals(7, rows.length())
+        assertEquals(ids, (0 until rows.length()).map { rows.getJSONObject(it).getString("id") })
+        assertEquals(12.5, rows.getJSONObject(0).getDouble("weight"), 0.0) // own prescription kept
+        assertEquals(dayB, trimmed.days.first { it.dayId == "B" })
+
+        // A reordered/edited day, a personal copy or a stock day is never touched.
+        val reordered = JSONArray(grown.toString()).apply { val first = get(0); put(0, get(1)); put(1, first) }
+        assertNull(com.repforge.app.data.db.NativeBuiltinCatalog.trimAppendedHomeBasic(current.copy(days = listOf(dayA.copy(exercisesJson = reordered.toString()), dayB))))
+        assertNull(com.repforge.app.data.db.NativeBuiltinCatalog.trimAppendedHomeBasic(current.copy(program = program.copy(builtin = false))))
+        assertNull(com.repforge.app.data.db.NativeBuiltinCatalog.trimAppendedHomeBasic(com.repforge.app.data.db.ProgramWithDays(program, listOf(dayA, dayB))))
+    }
+
+    @Test fun quickWorkoutQueueNoLongerWritesIntoAProgramDay() {
+        val main = java.io.File("src/main/java/com/example/MainActivity.kt").readText()
+        val vm = java.io.File("src/main/java/com/example/ui/viewmodel/TrainPilotViewModel.kt").readText()
+        // Only the editor entry arms the program-day write; every other library entry is queue-only.
+        assertEquals(2, Regex("openExerciseLibraryForProgramDay\\(\\)").findAll(main).count())
+        assertTrue(vm.contains("if (_uiState.value.libraryMutationBusy || !libraryAddsToProgramDay) return"))
+        val quickSheet = main.substringAfter("if (uiState.showQuickWorkoutSheet)").substringBefore("onRemoveExerciseFromQueue")
+        assertFalse(quickSheet.contains("addExerciseToActiveProgramDay"))
+    }
 }
