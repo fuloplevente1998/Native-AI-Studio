@@ -62,21 +62,21 @@ TrainPilot: workout planner and training log for your phone and Wear OS watch.
 
 ## Újdonságok (Play: 276500/276502 óta → 1.4.0, ≤500 karakter)
 HU:
-• Edzés közben: egységes fejléc, Videó · Coach · Részletek, pihenő minden gyakorlatnál, legutóbbi érték
-• Edzés fül: minden programnap dátummal, egy képernyőn
-• Gyors edzés 1 lapon, Gyakorlatlista
-• Programok: kompakt kártyák, beépített szerkesztő
-• Fejlődés: PR rekordok, teljes listák; Statisztikák: Erő · Kardió · Lépések, koppintható grafikon
+• Edzés közben: egységes fejléc, gyakorlatsor, Videó · Coach · Részletek, pihenő mindenhol, kész sorozat zöld, előző érték
+• Edzés fül: minden nap dátummal; Gyors edzés 1 lapon
+• Programok: kompakt kártyák, szerkesztő, húzható sorrend
+• Fejlődés: PR rekordok, teljes listák; Statisztikák: Erő · Kardió · Lépések
 • Egészségnapló: tömör napi nézet, szűrők
-• Óra: kerek kijelzőre igazított menük
-• Javítás: Otthoni A/B, villogó Coach kártya, Health Connect
+• Dizájn: alulról nyíló lapok, új Coach ikon, világos témák
+• Óra: kerek kijelzőre igazítva
+• Javítások: Otthoni A/B, villogás, Health Connect
 
 EN:
-• During workouts: one header, Video · Coach · Details, rest for every exercise, last-time values
-• Workout tab: every program day with its date, on one screen
-• Quick workout in one sheet, Exercise list
-• Programs: compact cards, inline editor
-• Progress: PR records, full lists; Statistics: Strength · Cardio · Steps, tappable chart
+• During workouts: one header, exercise strip, Video · Coach · Details, rest everywhere, done sets green, last values
+• Workout tab: every day with its date; Quick workout in one sheet
+• Programs: compact cards, editor, drag to reorder
+• Progress: PR records, full lists; Statistics: Strength · Cardio · Steps
 • Health journal: compact day view, filters
-• Watch: menus fit the round screen
-• Fixes: Home A/B, flickering Coach card, Health Connect
+• Design: bottom sheets, new Coach icon, light themes
+• Watch: fits the round screen
+• Fixes: Home A/B, flicker, Health Connect
