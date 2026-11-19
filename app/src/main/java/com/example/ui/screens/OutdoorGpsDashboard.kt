@@ -481,7 +481,7 @@ private fun MetricsPanel(state: OutdoorGpsDisplay, strings: LocalizedStrings, sh
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(if (state.paused) copy.paused else if (state.started) copy.elapsed else copy.ready,
                     color = palette.textSecondary, style = MaterialTheme.typography.labelMedium)
-                Text(state.elapsed, color = palette.textPrimary, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold,
+                Text(state.elapsed, color = palette.textPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier.testTag("gps_elapsed_timer_text"))
             }
             val metrics = listOf(Triple(strings.distanceLabel, state.distance, "${state.pointCount} ${copy.points}"),

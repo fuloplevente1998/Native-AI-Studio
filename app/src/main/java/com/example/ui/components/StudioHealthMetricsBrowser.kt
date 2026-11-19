@@ -130,7 +130,7 @@ internal fun StudioHealthMetricsBrowser(
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_day_$date")) {
                         Column(Modifier.weight(1f)) {
-                            Text(date.toString(), fontWeight = FontWeight.ExtraBold, color = palette.textPrimary)
+                            Text(date.toString(), fontWeight = FontWeight.Bold, color = palette.textPrimary)
                             Text(NativeWorkoutHealthSource.label(provider), color = palette.primary, style = MaterialTheme.typography.labelSmall)
                             if (source.isNotEmpty()) Text(friendlyHealthSourceName(source, "", NativeWorkoutHealthSource.label(provider)),
                                 color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)

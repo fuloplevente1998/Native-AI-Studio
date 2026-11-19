@@ -53,12 +53,12 @@ class AuditActiveExerciseNavigationUiTest {
         fun previousNode(): SemanticsNodeInteraction = when (mode) {
             "strength" -> compose.onNodeWithTag("active_prev_exercise_btn")
             "bilateral" -> compose.onNodeWithTag("bilateral_prev_exercise_btn")
-            else -> compose.onNodeWithText("< Előző")
+            else -> compose.onNodeWithTag("timed_prev_exercise_btn")
         }
         fun nextNode(): SemanticsNodeInteraction = when (mode) {
             "strength" -> compose.onNodeWithTag("active_next_exercise_btn")
             "bilateral" -> compose.onNodeWithTag("bilateral_next_exercise_btn")
-            else -> compose.onNodeWithText("Következő (2/2) >")
+            else -> compose.onNodeWithTag("timed_next_exercise_btn")
         }
         val blocked = listOf(
             state.copy(phoneControlsWorkout = false),

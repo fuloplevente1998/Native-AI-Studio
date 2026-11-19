@@ -2370,7 +2370,7 @@ fun CalendarPlannerScreen(
 
                         Text(
                             text = monthHeaderText,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             color = palette.textPrimary
                         )
 
@@ -2405,7 +2405,7 @@ fun CalendarPlannerScreen(
                                     Box(contentAlignment = Alignment.Center) {
                                         Text(
                                             text = "✕",
-                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                             color = palette.textPrimary
                                         )
                                     }
@@ -2486,7 +2486,7 @@ fun CalendarPlannerScreen(
                                                 Text(
                                                     text = "$dayNumber",
                                                     style = MaterialTheme.typography.bodyMedium.copy(
-                                                        fontWeight = FontWeight.ExtraBold
+                                                        fontWeight = FontWeight.Bold
                                                     ),
                                                     color = palette.textPrimary
                                                 )
@@ -2503,7 +2503,7 @@ fun CalendarPlannerScreen(
                                                         Text(
                                                             text = plannedEv.splitBadge,
                                                             style = MaterialTheme.typography.labelMedium.copy(
-                                                                fontWeight = FontWeight.ExtraBold
+                                                                fontWeight = FontWeight.Bold
                                                             ),
                                                             color = palette.primary
                                                         )
@@ -2562,7 +2562,7 @@ fun CalendarPlannerScreen(
                         ) {
                             Text(
                                 text = trW(state.language, "Újratervezés", "Replan", "Neu planen", "Replanificare"),
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold)
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
                             )
                         }
                     }
@@ -2846,7 +2846,7 @@ fun CalendarPlannerScreen(
                     ) {
                         Text(
                             text = trW(state.language, "Edzések újratervezése", "Replan workouts", "Trainings neu planen", "Replanificare antrenamente"),
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                             color = palette.textPrimary
                         )
                         Surface(
@@ -2860,7 +2860,7 @@ fun CalendarPlannerScreen(
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     text = "✕",
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                     color = palette.textPrimary
                                 )
                             }
@@ -2922,7 +2922,7 @@ fun CalendarPlannerScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "${trW(state.language, "Program", "Program", "Programm", "Program")}: $selectedProgName",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                         color = palette.textPrimary
                     )
 
@@ -2945,7 +2945,7 @@ fun CalendarPlannerScreen(
                         ) {
                             Text(
                                 text = splitTitle,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = palette.textPrimary
                             )
                             Text(
@@ -2973,7 +2973,7 @@ fun CalendarPlannerScreen(
                     ) {
                         Text(
                             text = trW(state.language, "Terv frissítése", "Update plan", "Plan aktualisieren", "Actualizează planul"),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                     }
                 }
@@ -3070,7 +3070,7 @@ private fun PlannerFieldTile(
                         Text(
                             text = value,
                             style = (if (compact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge)
-                                .copy(fontWeight = FontWeight.ExtraBold),
+                                .copy(fontWeight = FontWeight.Bold),
                             color = palette.textPrimary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -3315,7 +3315,7 @@ fun ExerciseLibraryScreen(
                                 .heightIn(min = 48.dp)
                                 .testTag("exercise_library_start_queued_workout_button")
                         ) {
-                            Text("▶ ${strings.startAction}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold)
+                            Text("▶ ${strings.startAction}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

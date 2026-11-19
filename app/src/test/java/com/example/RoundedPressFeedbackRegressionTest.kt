@@ -42,9 +42,11 @@ class RoundedPressFeedbackRegressionTest {
     @Test fun pressFeedbackStaysInsideThePaintedButtonAndTheLargerHitTargetStillClicks() {
         var clicks = 0
         var captureView: View? = null
+        var negativeBackground = Color.Unspecified
         compose.setContent { TrainPilotTheme {
             val view = LocalView.current
-            SideEffect { captureView = view }
+            val themed = TrainPilotActionAppearance.negativeBackground
+            SideEffect { captureView = view; negativeBackground = themed }
             Box(Modifier.size(100.dp).background(Color.White).testTag("canvas")) {
                 TrainPilotRedCloseButton(onClick = { clicks++ }, modifier = Modifier.align(Alignment.Center), testTag = "close")
             }
@@ -69,7 +71,7 @@ class RoundedPressFeedbackRegressionTest {
         val probeX = (painted.left - canvasBounds.left + 6f).roundToInt()
         val probeY = (painted.center.y - canvasBounds.top).roundToInt()
         assertEquals("The real visual must be present in the captured Compose host",
-            TrainPilotActionAppearance.negativeBackground.toArgb(), before[probeX, probeY].toArgb())
+            negativeBackground.toArgb(), before[probeX, probeY].toArgb())
         compose.mainClock.autoAdvance = false
         var pointerDown = false
         try {

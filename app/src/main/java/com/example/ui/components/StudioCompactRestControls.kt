@@ -34,7 +34,7 @@ internal fun StudioCompactRestControls(
     val toggle = if (running) word("Szünet", "Pause", "Pause", "Pauză") else word("Indít", "Start", "Start", "Start")
     val skip = word("Kihagy", "Skip", "Überspringen", "Omite")
     val expand = word("Nagy pihenő mód", "Expanded rest timer", "Großer Pausenmodus", "Mod pauză extins")
-    val style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold, fontFeatureSettings = "tnum")
+    val style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontFeatureSettings = "tnum")
     val measure = rememberTextMeasurer()
     val density = LocalDensity.current
     BoxWithConstraints(modifier.fillMaxWidth().testTag("compact_rest_controls")) {

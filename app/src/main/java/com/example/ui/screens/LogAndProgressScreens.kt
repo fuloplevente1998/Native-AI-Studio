@@ -1431,7 +1431,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                             text = totalVolumeText,
                             modifier = Modifier.testTag("progress_volume_total"),
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.ExtraBold,
+                            fontWeight = FontWeight.Bold,
                             color = palette.textPrimary
                         )
                         Text(
@@ -1532,7 +1532,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                         Text(
                             text = trL(uiState.language, "Volumen trend", "Volume trend", "Volumentrend", "Trend volum"),
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.ExtraBold,
+                            fontWeight = FontWeight.Bold,
                             color = palette.textPrimary
                         )
                         Surface(

@@ -159,7 +159,7 @@ fun HealthPulseDayRow(
                     Text(
                         text = date,
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.ExtraBold,
+                        fontWeight = FontWeight.Bold,
                         color = palette.textPrimary
                     )
                     Box(
@@ -179,7 +179,7 @@ fun HealthPulseDayRow(
                 Text(
                     text = headlineBpm,
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontWeight = FontWeight.Bold,
                     color = if (headlineBpm == "—") palette.textSecondary else palette.primary
                 )
             }
@@ -245,7 +245,7 @@ fun HealthRecoveryRow(reading: RecoveryDayReading, modifier: Modifier = Modifier
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(origin, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                Text(reading.displayScoreHu, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.ExtraBold, color = palette.primary)
+                Text(reading.displayScoreHu, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.primary)
             }
             Text(
                 text = if (lang == AppLanguage.HU) reading.explanationHu else localizedExplanation,

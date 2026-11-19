@@ -592,6 +592,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onToggleAutoMode = { enabled -> viewModel.toggleAutoMode(enabled) },
                             onPreviousExercise = { viewModel.previousActiveExercise() },
                             onNextExercise = nextWithFeedback,
+                            onFinishWorkout = { viewModel.navigateToSubScreen(SubScreen.WORKOUT_SUMMARY) },
+                            onDiscardWorkout = { viewModel.stopActiveWorkoutSession(uiState.activeWorkoutId, uiState.activeWorkoutGeneration) },
                             exerciseFeedback = { com.example.ui.components.StudioActiveExerciseFeedback(uiState,
                                 onEffort = { id, index -> viewModel.updateExerciseFeedback(id, index = index) },
                                 onNote = { id, note -> viewModel.updateExerciseFeedback(id, note = note) }) },
@@ -610,6 +612,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onSelectMeasurementMode = { mode -> viewModel.navigateToSubScreen(mode, MainTab.WORKOUT) },
                             onPreviousExercise = { viewModel.previousActiveExercise() },
                             onNextExercise = nextWithFeedback,
+                            onFinishWorkout = { viewModel.navigateToSubScreen(SubScreen.WORKOUT_SUMMARY) },
+                            onDiscardWorkout = { viewModel.stopActiveWorkoutSession(uiState.activeWorkoutId, uiState.activeWorkoutGeneration) },
                             exerciseFeedback = { com.example.ui.components.StudioActiveExerciseFeedback(uiState,
                                 onEffort = { id, index -> viewModel.updateExerciseFeedback(id, index = index) },
                                 onNote = { id, note -> viewModel.updateExerciseFeedback(id, note = note) }) },
@@ -639,6 +643,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onSkipRest = { viewModel.skipRestTimer() },
                             onPreviousExercise = { viewModel.previousActiveExercise() },
                             onNextExercise = nextWithFeedback,
+                            onFinishWorkout = { viewModel.navigateToSubScreen(SubScreen.WORKOUT_SUMMARY) },
+                            onDiscardWorkout = { viewModel.stopActiveWorkoutSession(uiState.activeWorkoutId, uiState.activeWorkoutGeneration) },
                             exerciseFeedback = { com.example.ui.components.StudioActiveExerciseFeedback(uiState,
                                 onEffort = { id, index -> viewModel.updateExerciseFeedback(id, index = index) },
                                 onNote = { id, note -> viewModel.updateExerciseFeedback(id, note = note) }) },
@@ -1145,7 +1151,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             Text(
                                 text = "$inProgressPrefix ($exStepText): $activeExName$restInfo",
                                 style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.ExtraBold,
+                                fontWeight = FontWeight.Bold,
                                 color = palette.textPrimary,
                                 maxLines = 1
                             )
@@ -1158,7 +1164,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             Text(
                                 text = returnBtnLabel,
                                 style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.ExtraBold,
+                                fontWeight = FontWeight.Bold,
                                 color = palette.onPrimary,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                             )
