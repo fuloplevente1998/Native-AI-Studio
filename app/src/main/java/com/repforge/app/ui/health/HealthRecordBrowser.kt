@@ -521,7 +521,8 @@ private fun SourceFilterPill(
 }
 
 @Composable
-internal fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName: String) {
+internal fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName: String,
+    tag: String = "health_record_${row.id}") {
     val text = nativeResources(LocalContext.current, language)
     val colors = LocalTrainPilotColors.current
     val langCode = language.lowercase(Locale.ROOT)
@@ -546,7 +547,7 @@ internal fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName
         modifier = Modifier
             .fillMaxWidth()
             .border(com.repforge.app.ui.theme.TrainPilotFrames.stroke(1.dp, colors.line), RoundedCornerShape(22.dp))
-            .testTag("health_record_${row.id}"),
+            .testTag(tag),
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = colors.card)
     ) {
@@ -734,7 +735,7 @@ internal fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName
     }
 }
 
-private fun healthRecordIcon(type: String): ImageVector = when (type) {
+internal fun healthRecordIcon(type: String): ImageVector = when (type) {
     "SleepSessionRecord" -> Icons.Default.Bedtime
     "HeartRateRecord", "RestingHeartRateRecord", "HeartRateVariabilityRmssdRecord" -> Icons.Default.FavoriteBorder
     "StepsRecord", "DistanceRecord", "FloorsClimbedRecord" -> Icons.AutoMirrored.Filled.DirectionsWalk
@@ -742,7 +743,7 @@ private fun healthRecordIcon(type: String): ImageVector = when (type) {
     else -> Icons.Default.Timeline
 }
 
-private fun formatSleepDurationHero(minutesValue: Double, langCode: String): String {
+internal fun formatSleepDurationHero(minutesValue: Double, langCode: String): String {
     val totalMinutes = minutesValue.roundToInt().coerceAtLeast(0)
     val hours = totalMinutes / 60
     val mins = totalMinutes % 60
@@ -767,7 +768,7 @@ private fun formatRecordTimeWindow(startMs: Long, endMs: Long): String = runCatc
     }
 }.getOrDefault("")
 
-private fun healthRecordShortTime(value: Long, language: String): String = runCatching {
+internal fun healthRecordShortTime(value: Long, language: String): String = runCatching {
     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withLocale(Locale.forLanguageTag(language))
         .withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(value))
 }.getOrDefault("—")
@@ -804,11 +805,11 @@ internal fun friendlyHealthSourceName(source: String, suppliedName: String, chan
     }
 }
 
-private fun healthRecordNumber(value: Double?, language: String): String = value?.let {
+internal fun healthRecordNumber(value: Double?, language: String): String = value?.let {
     NumberFormat.getNumberInstance(Locale.forLanguageTag(language)).apply { maximumFractionDigits = 2 }.format(it)
 } ?: "—"
 
-private fun healthChannelName(channel: String, text: android.content.res.Resources): String = when (channel) {
+internal fun healthChannelName(channel: String, text: android.content.res.Resources): String = when (channel) {
     HealthJournalStore.HC -> "Health Connect"
     HealthJournalStore.SAMSUNG -> "Samsung Health"
     HealthJournalStore.BLE -> "BLE"

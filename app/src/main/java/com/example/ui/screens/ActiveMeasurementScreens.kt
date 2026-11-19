@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.layout.sizeIn
+import com.example.ui.components.activeWorkoutDockFrame
 import com.example.ui.components.WorkoutControlAppearance
 import com.example.ui.components.StudioCompactAction
 import com.example.ui.components.StudioCompactActionRow
@@ -419,10 +420,10 @@ fun ActiveStrengthWorkoutScreen(
         // 2) Sticky < Előző | Következő > buttons
         Surface(
             shape = RoundedCornerShape(20.dp),
-            color = palette.surfaceElevated,
+            color = palette.background, // 2776 (A): darker dock, separated from the set cards
             modifier = Modifier
                 .fillMaxWidth()
-                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+                .activeWorkoutDockFrame(palette.background, palette.primary, 20.dp)
                 .pointerInput(isRestTimerLargeMode) {
                     detectVerticalDragGestures { _, dragAmount ->
                         if (dragAmount < -12f) {
@@ -1087,10 +1088,10 @@ fun ActiveTimedWorkoutScreen(
         // Fixed Sticky Bottom navigation buttons
         Surface(
             shape = RoundedCornerShape(18.dp),
-            color = palette.surfaceElevated,
+            color = palette.background, // 2776 (A): darker dock, separated from the set cards
             modifier = Modifier
                 .fillMaxWidth()
-                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                .activeWorkoutDockFrame(palette.background, palette.primary, 18.dp)
         ) {
             val lang = uiState.language
             // 2772: ‹ Previous · ⏹ Finish · Next › (Finish = save & finish / discard / keep training).
@@ -1816,10 +1817,10 @@ fun ActiveBilateralWorkoutScreen(
         // Fixed Sticky Bottom Area: Rest Timer Dock + Előző / Következő Navigation
         Surface(
             shape = RoundedCornerShape(18.dp),
-            color = palette.surfaceElevated,
+            color = palette.background, // 2776 (A): darker dock, separated from the set cards
             modifier = Modifier
                 .fillMaxWidth()
-                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                .activeWorkoutDockFrame(palette.background, palette.primary, 18.dp)
         ) {
             Column(
                 modifier = Modifier
