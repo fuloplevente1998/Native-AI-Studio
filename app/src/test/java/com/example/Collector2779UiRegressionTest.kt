@@ -152,7 +152,8 @@ class Collector2779UiRegressionTest {
                 large = large, onLarge = { large = it }, onAdjust = {}, onToggle = {}, onSkip = {}, skipLabel = "Kihagy")
         } }
         val compact = compose.onNodeWithTag("rest_dock_animated").fetchSemanticsNode().boundsInRoot.height
-        compose.onNodeWithTag("sticky_rest_timer_compact").performClick()
+        // Tap the time area on the left; the centre holds the −15 / play / +15 buttons.
+        compose.onNodeWithTag("sticky_rest_timer_compact").performTouchInput { click(androidx.compose.ui.geometry.Offset(30f, centerY)) }
         compose.waitForIdle()
         val full = compose.onNodeWithTag("rest_dock_animated").fetchSemanticsNode().boundsInRoot.height
         assertTrue("large dock is taller: $compact -> $full", full > compact)
