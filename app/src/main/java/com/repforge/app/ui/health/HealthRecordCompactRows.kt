@@ -82,7 +82,7 @@ internal fun HealthRecordCompactRow(group: List<HealthRecordRow>, language: Stri
     val shape = RoundedCornerShape(10.dp)
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).trainPilotClickable(shape) { open = !open }
-            .padding(horizontal = 4.dp, vertical = 6.dp).testTag("health_record_row_${head.id}"),
+            .padding(horizontal = 4.dp, vertical = 6.dp).testTag("health_record_${head.id}"),
             verticalAlignment = Alignment.CenterVertically) {
             Text(compactWindow(head.startMs, head.endMs), color = colors.muted, fontSize = 12.sp,
                 modifier = Modifier.width(88.dp))
@@ -90,10 +90,10 @@ internal fun HealthRecordCompactRow(group: List<HealthRecordRow>, language: Stri
                 group.forEachIndexed { index, row ->
                     if (index > 0) Text(" · ", color = colors.muted, fontSize = 13.sp)
                     val title = text.getString(NativeHealthRecords.title(row.type))
-                    // Each record keeps its own tag so a merged line never hides a record.
+                    // The clickable line merges semantics, so it carries the first record's tag; values keep their own.
                     Text(healthRecordCompactValue(row, language, text.getString(R.string.health_records_steps), title),
                         color = colors.accentText, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.testTag("health_record_${row.id}"))
+                        modifier = Modifier.testTag("health_record_value_${row.id}"))
                 }
             }
             Icon(if (open) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = colors.muted,
