@@ -269,10 +269,10 @@ class UiUx219RegressionTest {
         // Reorder: no up/down arrows; a plain tap on the handle does nothing, a long press + drag
         // moves the card and saves once on release.
         compose.onNodeWithTag("program_move_down_gym-strength-abc").assertDoesNotExist()
-        compose.onNodeWithTag("program_drag_handle_gym-strength-abc").performClick()
+        compose.onNodeWithTag("program_drag_handle_gym-strength-abc", useUnmergedTree = true).performClick()
         assertNull("A tap on the handle must not reorder", movedPair)
         val cardHeight = cardBoundsCollapsed.bottom - cardBoundsCollapsed.top
-        compose.onNodeWithTag("program_drag_handle_gym-strength-abc").performTouchInput {
+        compose.onNodeWithTag("program_drag_handle_gym-strength-abc", useUnmergedTree = true).performTouchInput {
             down(center)
             advanceEventTime(viewConfiguration.longPressTimeoutMillis + 100)
             moveBy(androidx.compose.ui.geometry.Offset(0f, (cardHeight.toPx() + 12.dp.toPx()) * 1.1f), delayMillis = 50)

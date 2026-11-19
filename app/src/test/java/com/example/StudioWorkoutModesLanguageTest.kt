@@ -81,7 +81,7 @@ class StudioWorkoutModesLanguageTest {
             assertEquals("hit", previewStyle)
         }
         // Opens as the same full editor window as on the Workout tab; its Back button closes it.
-        compose.onNodeWithTag("studio_modes_dismiss").performScrollTo().performClick()
+        compose.onNodeWithTag("studio_modes_dismiss").performClick()
         compose.onAllNodesWithTag("studio_modes_sound").assertCountEquals(0)
         compose.onAllNodesWithTag("studio_modes_vibration").assertCountEquals(0)
     }
