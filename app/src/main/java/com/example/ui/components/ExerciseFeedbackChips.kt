@@ -150,11 +150,6 @@ internal fun StudioWorkoutOverallFeedback(effort: String?, note: String, languag
                     contentDescription = null, tint = palette.primary)
             }
             if (expanded) {
-                Text(feedbackText(language, "Az egész edzésről szól; a gyakorlatok válaszait nem módosítja.",
-                    "For the whole workout; it does not change exercise answers.",
-                    "Für das gesamte Training; Übungsantworten bleiben erhalten.",
-                    "Pentru întregul antrenament; nu modifică răspunsurile exercițiilor."),
-                    color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
                 ExerciseFeedbackChips(effort, note, language, onEffort, onNote, enabled = enabled,
                     tag = "${tag}_choices", noteTitle = feedbackText(language, "Edzésjegyzet", "Workout note", "Trainingsnotiz", "Notiță antrenament"))
             } else if (note.isNotBlank()) Text(note, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)

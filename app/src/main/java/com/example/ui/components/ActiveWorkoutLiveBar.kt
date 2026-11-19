@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -78,7 +79,9 @@ fun ActiveWorkoutLiveBar(
     ) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (paused) Text("⏸", color = palette.primary, fontWeight = FontWeight.Bold)
+            // 2778: drawn pause icon in the theme colour (like the home card), not the orange emoji square.
+            if (paused) androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Pause, contentDescription = null,
+                tint = palette.primary, modifier = Modifier.size(22.dp).testTag("live_bar_paused_icon"))
             else Box(Modifier.size(9.dp).clip(RoundedCornerShape(5.dp)).background(palette.success))
             Column(Modifier.weight(1f)) {
                 Text(elapsed, style = MaterialTheme.typography.titleMedium.copy(

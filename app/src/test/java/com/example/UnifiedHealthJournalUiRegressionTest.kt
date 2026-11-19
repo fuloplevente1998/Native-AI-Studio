@@ -90,6 +90,9 @@ class UnifiedHealthJournalUiRegressionTest {
         compose.onNodeWithTag(summary).assertTextEquals("0")
         compose.onNodeWithTag("studio_health_record_browser").assertDoesNotExist()
         compose.onNodeWithTag("journal_day_$day").performScrollTo().performClick()
+        // 2778: detailed records start folded and open on their header.
+        compose.onNodeWithTag("health_record_hcwatch").assertDoesNotExist()
+        compose.onNodeWithTag("journal_records_toggle_$day").performScrollTo().performClick()
         awaitTag("health_record_hcwatch")
         compose.onNodeWithTag("journal_metric_${day}_steps").performScrollTo().assertTextContains("0")
         compose.onNodeWithTag("health_record_browser").assertDoesNotExist()
@@ -105,6 +108,7 @@ class UnifiedHealthJournalUiRegressionTest {
         compose.onNodeWithTag("journal_origin_all").assertDoesNotExist()
         compose.onNodeWithTag("journal_origin_phone").assertDoesNotExist()
         compose.onNodeWithTag("journal_day_$day").performScrollTo().performClick()
+        compose.onNodeWithTag("journal_records_toggle_$day").performScrollTo().performClick()
         awaitTag("health_record_hcphone")
         compose.onNodeWithTag("health_record_hcwatch").assertExists()
         compose.onNodeWithTag("journal_metric_${day}_weightKg").assertDoesNotExist()

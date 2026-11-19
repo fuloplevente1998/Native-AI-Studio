@@ -74,34 +74,25 @@ private fun compactWindow(startMs: Long, endMs: Long): String = runCatching {
 }.getOrDefault("")
 
 @Composable
-internal fun HealthRecordCompactRow(group: List<HealthRecordRow>, language: String, sourceName: (String) -> String) {
+internal fun HealthRecordCompactRow(group: List<HealthRecordRow>, language: String) {
+    // 2778: one line per time window is the whole view; no second level of large cards.
     val colors = LocalTrainPilotColors.current
     val text = nativeResources(LocalContext.current, language)
     val head = group.first()
-    var open by rememberSaveable(head.channel, head.id) { mutableStateOf(false) }
-    val shape = RoundedCornerShape(10.dp)
     Column(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).trainPilotClickable(shape) { open = !open }
-            .padding(horizontal = 4.dp, vertical = 6.dp).testTag("health_record_${head.id}"),
-            verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 40.dp).padding(horizontal = 4.dp, vertical = 6.dp)
+            .testTag("health_record_${head.id}"), verticalAlignment = Alignment.CenterVertically) {
             Text(compactWindow(head.startMs, head.endMs), color = colors.muted, fontSize = 12.sp,
                 modifier = Modifier.width(88.dp))
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                 group.forEachIndexed { index, row ->
                     if (index > 0) Text(" · ", color = colors.muted, fontSize = 13.sp)
                     val title = text.getString(NativeHealthRecords.title(row.type))
-                    // The clickable line merges semantics, so it carries the first record's tag; values keep their own.
                     Text(healthRecordCompactValue(row, language, text.getString(R.string.health_records_steps), title),
                         color = colors.accentText, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.testTag("health_record_value_${row.id}"))
                 }
             }
-            Icon(if (open) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = colors.muted,
-                modifier = Modifier.size(18.dp))
-        }
-        // Source, modification time and samples stay one tap away in the existing detail card.
-        if (open) Column(Modifier.padding(bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            group.forEach { row -> HealthRecordCard(row, language, sourceName(row.source), tag = "health_record_detail_${row.id}") }
         }
         HorizontalDivider(color = colors.line)
     }

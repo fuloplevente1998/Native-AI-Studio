@@ -47,10 +47,8 @@ internal fun StudioDailyHealthStatus(state: TrainPilotUiState, showRefreshButton
         }
         Text("${word("Utolsó sikeres szinkron", "Last successful sync", "Letzte erfolgreiche Synchronisierung", "Ultima sincronizare reușită")}: $last", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
         Text(if (fields.isEmpty()) word(
-                "Mai napi mérés még nincs lekérve. A Frissítés ellenőrzi a hozzáférést és lekéri a napi adatokat.",
-                "Today's daily measurements have not been fetched yet. Refresh checks access and fetches daily data.",
-                "Heutige Tagesmessungen wurden noch nicht abgerufen. Aktualisieren prüft den Zugriff und lädt die Tagesdaten.",
-                "Măsurătorile zilnice de azi nu au fost încă preluate. Actualizarea verifică accesul și preia datele zilnice."
+                "Mai mérés még nincs lekérve.", "Today's data not fetched yet.",
+                "Heutige Daten noch nicht abgerufen.", "Datele de azi nu au fost preluate."
             )
             else "${word("Napi lépés", "Daily steps", "Tagesschritte", "Pași zilnici")}: ${if ("steps" in fields) state.dailySteps.toString() else "—"} • " +
                 "${word("Aktív energia", "Active energy", "Aktive Energie", "Energie activă")}: ${if ("activeCalories" in fields) "${state.activeCaloriesKcal} kcal" else "—"}",
