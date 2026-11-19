@@ -2362,6 +2362,7 @@ fun CalendarPlannerScreen(
         // Reserve space for the complete three-row planner, its actions and month header.
         // Never shrink touch targets: short windows and large fonts use the page scroll.
         val calendarCellHeight = ((maxHeight - 424.dp) / calendarWeeks.toFloat()).coerceIn(48.dp, 52.dp)
+        val calendarPageHeight = maxHeight
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                 .padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 4.dp)
@@ -2369,7 +2370,7 @@ fun CalendarPlannerScreen(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
           Column(
-            Modifier.fillMaxWidth().heightIn(min = maxHeight - 8.dp).testTag("calendar_pinned_layout"),
+            Modifier.fillMaxWidth().heightIn(min = calendarPageHeight - 8.dp).testTag("calendar_pinned_layout"),
             verticalArrangement = Arrangement.SpaceBetween
           ) {
             // 1. EXACT SCREENSHOT 7 CALENDAR CARD
