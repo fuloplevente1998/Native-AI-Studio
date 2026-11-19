@@ -97,6 +97,7 @@ class WearScreenAuditTest {
         controller.pause().stop().destroy()
     }
 
+    @Composable
     private fun app(route: String, workout: WearWorkout? = null, closure: WearClosure? = null) {
         val h = home()
         TrainPilotWearApp(
