@@ -15,6 +15,9 @@ internal val TrainPilotSheetRoutes: Set<SubScreen> = setOf(
     SubScreen.PERMISSIONS_SCREEN,
     SubScreen.BACKUP_RESTORE,
     SubScreen.EXERCISE_DETAIL,
+    // 2773: the exercise library opens as a sheet from every entry (active workout swap,
+    // programs list, program editor), like the Quick workout tabs.
+    SubScreen.EXERCISE_LIBRARY,
     SubScreen.LOG_WORKOUT_DETAIL,
     SubScreen.PRIVATE_PHOTOS
 )

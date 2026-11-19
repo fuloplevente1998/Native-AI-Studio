@@ -227,12 +227,15 @@ internal object NativeHealthRefresh {
                         commitRead { store.nativeSyncCheckpoint(prepared.provider, prepared.journalGeneration,
                             expected.revision, next, full, at.toString()) }
                     }
+                    override suspend fun dataSynced(at: java.time.Instant) = withContext(Dispatchers.IO) {
+                        commitRead { store.nativeSyncDataOnly(prepared.provider, prepared.journalGeneration, at.toString()) }
+                    }
                 }
                 val grants = if (provider.changesSupported) prepared.healthGrants else samsungGrants
                 val scope = "v1|${prepared.provider}|${prepared.zone.id}|${grants.sorted().joinToString(",")}"
                 val report = NativeHealthSync.run(provider, journal, scope, prepared.localDay, fullSync, guard,
                     { value -> withContext(Dispatchers.Main.immediate) { screenGuard(); progress(value) } })
-                JSONObject().put("partial", !report.successful).put("full", report.full).put("retryable", report.retryable)
+                JSONObject().put("partial", report.failedDays.isNotEmpty()).put("full", report.full).put("retryable", report.retryable)
                     .put("changeTrackingUnavailable", report.changeTrackingUnavailable)
                     .put("completedDays", report.completedDays).put("failedDays", org.json.JSONArray(report.failedDays.map { it.toString() }))
             }

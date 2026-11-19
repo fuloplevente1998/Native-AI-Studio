@@ -1977,6 +1977,7 @@ internal fun CoachDetailScreen(
         if (uiState.currentSubScreen == SubScreen.COACH_DETAIL) {
             item {
                 SubScreenTopBar(
+                    leadingIcon = com.example.ui.components.TrainPilotCoachIcon,
                     title = "TrainPilot Coach",
                     onBack = onBack,
                     onOpenSettings = onOpenSettings

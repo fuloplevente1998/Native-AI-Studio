@@ -270,9 +270,14 @@ class NavigationOriginUiRegressionTest {
             moreBtn.performClick()
             compose.onNodeWithTag("program_action_sheet").assertIsDisplayed()
 
-            // 3. Action Sheet -> Edit expands the editor inside this card: no separate page, tab and list stay.
-            compose.onNodeWithTag("program_action_edit").performClick()
+            // 2773: the ⋮ sheet no longer repeats Activate / Edit (both stay on the card itself).
+            compose.onNodeWithTag("program_action_activate").assertDoesNotExist()
+            compose.onNodeWithTag("program_action_edit").assertDoesNotExist()
+            compose.onNodeWithTag("program_action_rename").assertExists()
+            compose.onNodeWithTag("program_action_sheet_close").performClick()
             compose.onNodeWithTag("program_action_sheet").assertDoesNotExist()
+            // 3. Tapping the card header expands the editor inside this card: no separate page, tab and list stay.
+            compose.onNodeWithTag("program_header_${alpha.id}").performScrollTo().performClick()
             assertEquals(SubScreen.NONE, model.uiState.value.currentSubScreen)
             assertEquals(MainTab.PROGRAMS, model.uiState.value.currentTab)
             assertEquals(alpha.id, model.uiState.value.editingProgramId)

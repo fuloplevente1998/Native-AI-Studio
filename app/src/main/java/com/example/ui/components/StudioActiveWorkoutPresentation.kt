@@ -54,14 +54,21 @@ internal fun StudioActiveWorkoutSessionInfo(state: TrainPilotUiState) {
 internal fun StudioActiveWorkoutHeaderSequence(
     state: TrainPilotUiState,
     header: @Composable () -> Unit,
-    exerciseSequence: @Composable () -> Unit
+    exerciseSequence: @Composable () -> Unit,
+    /** 2774: e.g. the compact Coach chip, placed in the free space right of the day badge. */
+    sessionTrailing: (@Composable () -> Unit)? = null
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().testTag("active_workout_header_sequence"),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Box(Modifier.testTag("active_workout_large_header")) { header() }
-        StudioActiveWorkoutSessionInfo(state)
+        if (sessionTrailing == null) StudioActiveWorkoutSessionInfo(state)
+        else Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.weight(1f)) { StudioActiveWorkoutSessionInfo(state) }
+            sessionTrailing()
+        }
         Box(Modifier.testTag("active_workout_exercise_sequence_slot")) { exerciseSequence() }
     }
 }

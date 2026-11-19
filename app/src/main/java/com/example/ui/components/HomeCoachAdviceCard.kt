@@ -88,6 +88,7 @@ internal fun HomeCoachAdviceCard(state: TrainPilotUiState, strings: LocalizedStr
         Column(Modifier.background(Brush.verticalGradient(listOf(p.surfaceElevated.copy(alpha = 0.65f), p.surface)))
             .padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Icon(TrainPilotCoachIcon, null, tint = p.primary, modifier = Modifier.padding(end = 6.dp).size(16.dp))
                 Text(strings.coachSuggestionHeader, color = p.primary, style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = p.primary, modifier = Modifier.size(18.dp))

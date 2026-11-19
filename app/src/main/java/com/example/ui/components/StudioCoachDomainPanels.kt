@@ -6,6 +6,7 @@ import com.repforge.app.ui.theme.trainPilotSoftGlow
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
@@ -145,10 +146,15 @@ internal fun StudioCoachNextTrainingCard(
                     Text(if (letterDay == null) target.title else "${coachTr(lang, "Edzésnap", "Workout day", "Trainingstag", "Zi antrenament")}: ${target.title}",
                         style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary,
                         maxLines = 2, modifier = Modifier.testTag("studio_coach_day_name"))
-                    target.schedule?.let {
-                        Text(it.date, style = MaterialTheme.typography.bodySmall,
-                            color = palette.textSecondary, modifier = Modifier.testTag("studio_coach_next_date"))
-                    }
+                    // 2773: same date line as the Home card (today / still doable today / next date / cycle).
+                    val line = homePlannedDateLine(target.schedule?.startIso, java.time.ZonedDateTime.now(),
+                        com.example.model.AppLanguage.entries.firstOrNull { it.code == lang } ?: com.example.model.AppLanguage.HU)
+                    Text(line.text, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
+                        color = when (line.timing) {
+                            HomePlanTiming.TODAY_UPCOMING -> palette.success
+                            HomePlanTiming.TODAY_PASSED -> palette.warning
+                            else -> palette.textSecondary
+                        }, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("studio_coach_next_date"))
                 }
                 if (letterDay != null) {
                     Surface(color = palette.tintedSurface(0.16f),
@@ -191,7 +197,13 @@ internal fun StudioWorkoutCoachAdvice(state: WorkoutCoachAdviceState, onReload: 
             val row = state.row
             Text(NativeCoachAdviceText.label(text, row.advice.action), color = palette.primary,
                 modifier = Modifier.testTag("studio_active_coach_action"))
-            Text(NativeCoachAdviceText.reason(text, row.advice.reason), color = palette.textSecondary,
+            // 2774: say where the pain hold comes from; never claim past history when there is none.
+            Text(if (row.advice.reason == "pain" && row.advice.historyCount == 0) coachTr(lang,
+                    "Ma fájdalmat jeleztél, ezért nincs terhelésemelés.",
+                    "You reported pain today, so the load is not increased.",
+                    "Du hast heute Schmerzen gemeldet, daher keine Laststeigerung.",
+                    "Ai semnalat durere azi, deci nu creștem încărcarea.")
+                else NativeCoachAdviceText.reason(text, row.advice.reason), color = palette.textSecondary,
                 modifier = Modifier.testTag("studio_active_coach_reason"))
             Text(coachTr(lang, "Megfelelő előzmény: ${row.advice.historyCount}", "Matching history: ${row.advice.historyCount}", "Passender Verlauf: ${row.advice.historyCount}", "Istoric relevant: ${row.advice.historyCount}"), color = palette.textSecondary)
             if (row.advice.historyCount == 0 && row.advice.reason != "distance" &&
@@ -279,4 +291,53 @@ internal fun StudioWorkoutCoachPanel(exerciseId: String,
             state.statusMessage?.let { Text(it, color = palette.textSecondary) }
         }
     }
+}
+
+
+/** 2774: collapsed Coach during a workout: icon + "Coach" + state dot; the full panel opens as a sheet. */
+@Composable
+internal fun StudioWorkoutCoachChip(exerciseId: String,
+    owner: androidx.lifecycle.ViewModelStoreOwner = rememberStudioWorkoutCoachOwner()) {
+    val app = LocalContext.current.applicationContext as android.app.Application
+    val adviceModel: WorkoutCoachAdviceViewModel = viewModel(viewModelStoreOwner = owner,
+        factory = androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(app))
+    LaunchedEffect(exerciseId) { adviceModel.selectExercise(exerciseId) }
+    val adviceState by adviceModel.state.collectAsStateWithLifecycle()
+    val palette = LocalTrainPilotPalette.current
+    val row = adviceState.row?.takeIf { adviceState.exerciseId == exerciseId }
+    val tone = coachChipTone(row?.advice)
+    val warning = tone == CoachChipTone.WARNING
+    val proposal = tone == CoachChipTone.PROPOSAL
+    val tint = when { warning -> palette.warning; proposal -> palette.primary; else -> palette.textSecondary }
+    var open by androidx.compose.runtime.saveable.rememberSaveable(exerciseId) { mutableStateOf(false) }
+    val shape = RoundedCornerShape(50)
+    Surface(shape = shape, color = tint.copy(alpha = if (warning || proposal) 0.14f else 0.06f),
+        modifier = Modifier.padding(vertical = 2.dp).heightIn(min = 44.dp)
+            .trainPilotBorder(1.5.dp, tint.copy(alpha = 0.8f), shape)
+            .trainPilotClickable(shape) { open = true }
+            .testTag("studio_active_coach_chip")) {
+        Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Icon(TrainPilotCoachIcon, null, tint = tint, modifier = Modifier.size(18.dp))
+            Text("Coach", color = tint, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
+            if (warning || proposal) androidx.compose.foundation.layout.Box(Modifier.size(7.dp)
+                .background(tint, androidx.compose.foundation.shape.CircleShape).testTag("studio_active_coach_chip_dot"))
+        }
+    }
+    if (open) TrainPilotScreenSheet(onDismiss = { open = false }, testTag = "studio_active_coach_sheet") {
+        androidx.compose.foundation.layout.Box(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 16.dp)) {
+            StudioWorkoutCoachPanel(exerciseId, owner)
+        }
+    }
+}
+
+
+internal enum class CoachChipTone { NEUTRAL, PROPOSAL, WARNING }
+
+/** Warning for pain / low readiness / reduce, proposal for a real weight change, otherwise neutral. */
+internal fun coachChipTone(advice: NativeCoachExerciseAdvice.Advice?): CoachChipTone = when {
+    advice == null -> CoachChipTone.NEUTRAL
+    advice.reason in setOf("pain", "low-readiness", "recovery") || advice.action == "reduce" -> CoachChipTone.WARNING
+    advice.action in setOf("increase", "start") && advice.weight > 0 -> CoachChipTone.PROPOSAL
+    else -> CoachChipTone.NEUTRAL
 }

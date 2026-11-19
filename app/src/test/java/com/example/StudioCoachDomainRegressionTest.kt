@@ -141,4 +141,19 @@ class StudioCoachDomainRegressionTest {
         compose.onNodeWithTag("studio_active_coach_no_history").assertDoesNotExist()
         compose.onNodeWithTag("studio_active_coach_weight").assertDoesNotExist()
     }
+
+    @Test fun painHoldSaysTodayWhenThereIsNoHistoryAndTheChipWarns() {
+        // 2774: no "past pain" claim next to "matching history: 0".
+        val pain = NativeCoachExerciseAdvice.Advice("hold", "pain", 0.0, 0.0, false, 0,
+            NativeCoachExerciseAdvice.Target("reps", text = "15"))
+        compose.setContent { TrainPilotTheme { androidx.compose.foundation.layout.Column {
+            StudioWorkoutCoachAdvice(WorkoutCoachAdviceState("crunch", loading = false,
+                row = CoachExerciseAdvice("crunch", "Hasprés", pain))) {}
+        } } }
+        compose.onNodeWithTag("studio_active_coach_reason").assertTextContains("Ma fájdalmat jeleztél", substring = true)
+        assertEquals(com.example.ui.components.CoachChipTone.WARNING, com.example.ui.components.coachChipTone(pain))
+        assertEquals(com.example.ui.components.CoachChipTone.PROPOSAL, com.example.ui.components.coachChipTone(
+            NativeCoachExerciseAdvice.Advice("increase", "stable", 6.0, 5.5, false, 4, NativeCoachExerciseAdvice.Target("reps"))))
+        assertEquals(com.example.ui.components.CoachChipTone.NEUTRAL, com.example.ui.components.coachChipTone(null))
+    }
 }

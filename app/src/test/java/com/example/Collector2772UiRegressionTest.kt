@@ -89,5 +89,54 @@ class Collector2772UiRegressionTest {
             .map { it.name }.toList()
         assertEquals(emptyList<String>(), offenders)
     }
-}
 
+    @Test fun workoutTabTilesAndExerciseLibraryRowCallTheirActions() {
+        val calls = mutableListOf<String>()
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.WorkoutTabScreen(
+                state = com.example.ui.viewmodel.TrainPilotUiState(), onOpenSettings = {},
+                onOpenQuickWorkout = { calls += "quick" }, onOpenExerciseLibrary = { calls += "strength" },
+                onOpenOutdoorWorkout = { calls += "outdoor" }, onOpenProgramsList = {}, onOpenProgramEditor = { _, _ -> },
+                onStartWorkoutDay = {}, onOpenCalendar = {}, onOpenCoach = {}, onOpenProgressionModal = {},
+                onOpenTimed = { calls += "timed" }, onOpenExerciseCatalog = { calls += "catalog" })
+        } }
+        listOf("workout_tab_quick_card", "workout_tab_exercise_picker", "workout_tab_timed_card",
+            "workout_tab_outdoor_card", "workout_tab_exercise_catalog").forEach {
+            compose.onNodeWithTag(it).performScrollTo().performClick()
+        }
+        compose.runOnIdle { assertEquals(listOf("quick", "strength", "timed", "outdoor", "catalog"), calls) }
+    }
+
+    @Test fun libraryButtonReadsSwapWhileReplacingTheActiveExercise() {
+        val ex = com.example.model.ExerciseItem("one", "Első gyakorlat")
+        var state by mutableStateOf(com.example.ui.viewmodel.TrainPilotUiState(exercises = listOf(ex)))
+        var started: com.example.model.ExerciseItem? = null
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.ExerciseLibraryScreen(state, {}, {}, {}, {}, {}, onStartExerciseNow = { started = it })
+        } }
+        val before = compose.onNodeWithTag("exercise_library_start_now_one").fetchSemanticsNode()
+            .config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].joinToString()
+        assertFalse(before, before.contains("Csere"))
+        compose.runOnIdle { state = state.copy(exerciseSwapMode = true) }
+        compose.onNodeWithTag("exercise_library_start_now_one").assertContentDescriptionContains("Csere", substring = true).performClick()
+        compose.runOnIdle { assertEquals(ex, started) }
+    }
+
+    @Test fun workoutTabHighlightsTheRealNextDayAndShowsItsDate() {
+        // 2773: the next day comes from the same target as Home/Coach, not always day 1.
+        val program = com.example.model.TrainingProgramModel("p", "Otthoni A/B", "Home A/B", "", "", emptyList(), false, true,
+            listOf(com.example.model.ProgramDayModel("p:a", "A nap", "A nap", "Day A", 60, emptyList()),
+                com.example.model.ProgramDayModel("p:b", "B nap", "B nap", "Day B", 60, emptyList())))
+        val tomorrow = java.time.ZonedDateTime.now().plusDays(1).withHour(10).withMinute(0).toInstant().toString()
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.WorkoutTabScreen(
+                state = com.example.ui.viewmodel.TrainPilotUiState(programs = listOf(program),
+                    homeWorkoutTarget = com.repforge.app.ui.home.HomeWorkoutTarget("p", "b", "plan", tomorrow)),
+                onOpenSettings = {}, onOpenQuickWorkout = {}, onOpenExerciseLibrary = {}, onOpenOutdoorWorkout = {},
+                onOpenProgramsList = {}, onOpenProgramEditor = { _, _ -> }, onStartWorkoutDay = {}, onOpenCalendar = {},
+                onOpenCoach = {}, onOpenProgressionModal = {})
+        } }
+        compose.onNodeWithTag("workout_tab_day_date_1", useUnmergedTree = true).performScrollTo().assertTextEquals("📅 Holnap, 10:00")
+        compose.onNodeWithTag("workout_tab_day_date_0", useUnmergedTree = true).assertDoesNotExist()
+    }
+}

@@ -1,5 +1,6 @@
 package com.repforge.app.ui.home
 
+import kotlinx.coroutines.flow.drop
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -34,7 +35,9 @@ data class TodayMetricsUiModel(
     val isPartial: Boolean = false
 )
 
-data class HomeWorkoutTarget(val programId: String, val dayId: String, val scheduleId: String? = null)
+/** [startIso] is the planned calendar instant when the target comes from the calendar (2773 date line). */
+data class HomeWorkoutTarget(val programId: String, val dayId: String, val scheduleId: String? = null,
+    val startIso: String? = null)
 
 data class HomeUiState(
     val recommendedProgram: ProgramWithDays? = null,
@@ -69,6 +72,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             settingsStore.settingsFlow.map { it.activeProgramId to it.language }.distinctUntilChanged()
                 .catch { error -> if (error is CancellationException) throw error else failed() }
                 .collect { loadHomeData() }
+        }
+        viewModelScope.launch {
+            // Today's plan stays until local midnight, then the next planned workout is shown (2773).
+            NativeHomeRepository.dayChanges().drop(1).collect { loadHomeData() }
         }
         viewModelScope.launch {
             database.keyValueDocumentDao().observeDocument("draft")

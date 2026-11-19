@@ -1,0 +1,25 @@
+# 2774 – gyűjtött javítások
+
+Kódolás csak „mehet” után, egy közös CI-körrel.
+
+| # | Terület | Visszajelzés | Terv | Állapot |
+|---|---------|--------------|------|---------|
+| 1 | Alsó „Edzés folyamatban” sáv | Ne csak a visszatérés legyen, hanem az eltelt idő és a szünet állapot | Sáv: program·nap, eltelt idő (ugyanaz, mint az edzés oldal tetején), „Szünetel” jelzés; gomb: Vissza ▶ / Folytatás ▶. Minden oldalon marad. Kezdőlap „Szüneteltetve” kártyán is az idő + kész gyakorlatok | kódolva |
+| 2 | Gyakorlatcsere | A névre koppintva kis legördülő lista + „Választás a 140 gyakorlatkönyvtárból…” | A legördülő megszűnik: névre koppintva egyből a könyvtár-lap nyílik csere módban (erő, időzített, kétoldali). Gyakorlatok közti váltás a felső sávban marad | kódolva |
+| 3 | Health Connect „Korlátozott szinkron” | Narancs hiba, utolsó sikeres HC szinkron 11.17 | Ok: a telefon Health Connect moduljának változásnapló-táblája hibás (`change_log_request_table` … `row_offset` hiányzik) – rendszer/HC hiba, nem az appé. Az app már most is teljes napi olvasással pótolja. Javítás: ha a napi olvasás hibátlan, számítson sikeres szinkronnak (utolsó sikeres idő frissül), az üzenet semleges tájékoztatás legyen; javaslat: Play Áruház → Health Connect / Google Play rendszerfrissítés | kódolva |
+| 4 | Coach edzés közben | Túl rejtett (a lista legalján, a feedback alatt) | Egysoros Coach-sáv közvetlenül a gyakorlat fejléce alatt (javaslat: „5,5 → 6 kg”, vagy szürkén „nincs módosítás”); koppintásra Coach-lap: állapotcímke, magyarázat, Cél / Előzmény / Javaslat sorok, Coach frissítése, Alkalmazás csak valódi javaslatnál. 3 állapot: figyelmeztetés (sárga-narancs), javaslat, nincs elég előzmény. A lista aljáról a nagy kártya megszűnik. Bekötés változatlan | kódolva |
+| 5 | Edzés közben jobb felső ikon | Mindig súlyzó (plank, fekvőtámasz is); koppintásra részletek | Gyakorlatfüggő ikon: időalapú → óra, testsúlyos → alak, gép/csiga → gép, súlyzó/rúd → súlyzó; kis ⓘ jelzés, hogy részleteket nyit. Erő/időzített/kétoldali | kódolva |
+| 6 | Coach szöveg ellentmondás | „Legutóbbi alkalmakban fájdalomjelzés volt” mellett „Megfelelő előzmény: 0” | A fájdalom-tiltás forrása a mai jelzés/készenlét is lehet, a szöveg mégis múltbeli előzményt állít. Javítás: forrás szerinti szöveg („Ma fájdalmat jeleztél – nincs terhelésemelés” vs. „Az utolsó alkalmakban…”), előzmény-szám csak ha van; a Coach-sáv (4.) ilyenkor figyelmeztető színű | kódolva |
+| 7 | Coach csukott állapot (edzés közben) | Csukva csak kis ikon + „Coach” felirat | Kis chip a gyakorlat fejléce alatt: ikon + „Coach” + állapotpont (narancs figyelmeztetés / sárga javaslat / szürke semmi); koppintásra a jóváhagyott Coach-lap | kódolva |
+| 8 | Új Coach ikon mindenhol | A mostani fej-ikon nem jó; navigációs sáv + mindenhol | **B) szikra** jóváhagyva: fejléc, Coach-chip, Kezdőlap „Mai javaslat”, Coach oldal | kódolva |
+| 9 | Alsó sáv – szünet/fut (minden oldal felett) | Csak az alsó sáv változik: óra + Folytatás; mellé kompakt Befejezés, mint edzés közben | Egy sáv, mint most: ● / ⏸, eltelt idő, „Fut · B nap 3/7” vagy „Szünetel · …”, „⏹ Befejezés” (ugyanaz a Befejezés-lap) + „Folytatás ▶” (visszavisz, szünetből folytat). Kezdőlap kártya változatlan; az 1. pont ezzel kiváltva | kódolva |
+
+## Bekötés-ellenőrzés
+| Funkció | Régi | Új | Hívott művelet |
+|---|---|---|---|
+| Vissza az edzéshez | alsó sáv érintése | sáv / „Folytatás ▶” | `returnToActiveWorkout` (szünetből folytat) |
+| Befejezés (mentés) | csak edzés oldalon | alsó sáv „⏹ Befejezés” → lap | `navigateToSubScreen(WORKOUT_SUMMARY)` |
+| Elvetés | Kezdőlap kártya / Befejezés lap | + alsó sáv Befejezés lapja (megerősítéssel) | `stopActiveWorkoutSession(id, generation)` |
+| Gyakorlatcsere | név → legördülő → „Választás a könyvtárból” | név → könyvtár-lap (Csere) | `openActiveExerciseLibrary` → `selectLibraryExercise` |
+| Gyakorlat részletei | jobb felső súlyzó | gyakorlatfüggő ikon + ⓘ | `onOpenExerciseDetail` |
+| Coach javaslat / alkalmazás | lista alján panel | „Coach” chip → lap (ugyanaz a panel) | `previewTrainingModeWeight`, `reviewTrainingModeWeight`, `approveTrainingModeWeight`, `reload` |

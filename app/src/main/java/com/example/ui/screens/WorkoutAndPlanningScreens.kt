@@ -70,6 +70,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.OndemandVideo
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Remove
@@ -236,6 +237,8 @@ fun WorkoutTabScreen(
     onOpenOutdoorWorkout: () -> Unit,
     onOpenProgramsList: () -> Unit,
     onOpenTimed: () -> Unit = onOpenExerciseLibrary,
+    /** 2773: browse / manage the exercise library (sheet) without starting anything. */
+    onOpenExerciseCatalog: () -> Unit = {},
     onOpenProgramEditor: (String, Int) -> Unit,
     onStartWorkoutDay: (Int) -> Unit,
     onOpenCalendar: () -> Unit,
@@ -338,6 +341,33 @@ fun WorkoutTabScreen(
             ) { OutdoorRouteGraphic() }
         }
 
+        // 2773 (A): exercise library entry right under the three tiles.
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = palette.surface,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp)
+                .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenExerciseCatalog() }
+                .testTag("workout_tab_exercise_catalog")
+        ) {
+            Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.AutoMirrored.Filled.FormatListBulleted, null, tint = palette.primary, modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(trW(state.language, "Gyakorlatkönyvtár", "Exercise library", "Übungsbibliothek", "Bibliotecă de exerciții"),
+                        style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
+                    Text(trW(state.language, "${state.exercises.size} gyakorlat · keresés, kedvencek, új gyakorlat",
+                        "${state.exercises.size} exercises · search, favorites, new exercise",
+                        "${state.exercises.size} Übungen · Suche, Favoriten, neue Übung",
+                        "${state.exercises.size} exerciții · căutare, favorite, exercițiu nou"),
+                        style = MaterialTheme.typography.bodySmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.textSecondary)
+            }
+        }
+
         // 3. Aktuális program Header + Összes megtekintése >
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -377,8 +407,13 @@ fun WorkoutTabScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // 2773: highlight the day that is really next (same target as Home / Coach), not always day 1.
+                val target = state.homeWorkoutTarget?.takeIf { it.programId == activeProgram.id }
+                val nextIndex = activeProgram.days.take(2).indexOfFirst {
+                    target != null && (it.id == target.dayId || it.id == "${activeProgram.id}:${target.dayId}")
+                }.let { if (it < 0) 0 else it }
                 activeProgram.days.take(2).forEachIndexed { index, day ->
-                    val isPrimaryDay = index == 0
+                    val isPrimaryDay = index == nextIndex
                     Surface(
                         shape = RoundedCornerShape(18.dp),
                         color = palette.surface,
@@ -445,6 +480,22 @@ fun WorkoutTabScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = palette.textSecondary
                             )
+                            if (isPrimaryDay && target != null) {
+                                val line = com.example.ui.components.homePlannedDateLine(target.startIso,
+                                    java.time.ZonedDateTime.now(), state.language)
+                                Text(
+                                    text = line.text,
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = when (line.timing) {
+                                        com.example.ui.components.HomePlanTiming.TODAY_UPCOMING -> palette.success
+                                        com.example.ui.components.HomePlanTiming.TODAY_PASSED -> palette.warning
+                                        else -> palette.textSecondary
+                                    },
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.testTag("workout_tab_day_date_$index")
+                                )
+                            }
                             Spacer(modifier = Modifier.height(2.dp))
                             Button(
                                 onClick = { onStartWorkoutDay(index) },
@@ -799,54 +850,8 @@ fun ProgramsListScreen(
 
                 HorizontalDivider(color = palette.cardBorder)
 
-                val canActivate = targetProgram == null || !targetProgram.isActive
-                Button(
-                    onClick = {
-                        actionSheetProgramId = null
-                        onActivateProgram(targetId)
-                    },
-                    enabled = canActivate && !state.libraryMutationBusy,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = palette.primary,
-                        contentColor = palette.onPrimary
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 48.dp)
-                        .testTag("program_action_activate")
-                ) {
-                    Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (targetProgram?.isActive == true)
-                            trW(state.language, "Jelenleg aktív program", "Currently active program", "Aktuell aktives Programm", "Program activ în prezent")
-                        else strings.activateAction,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                TrainPilotOutlinedButton(
-                    onClick = {
-                        actionSheetProgramId = null
-                        requestInlineEditor(targetId, INLINE_EDITOR_HOST_PROGRAMS, toggle = false)
-                    },
-                    enabled = !state.libraryMutationBusy,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 48.dp)
-                        .testTag("program_action_edit")
-                ) {
-                    Icon(imageVector = Icons.Default.Edit, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = trW(state.language, "Szerkesztés", "Edit", "Bearbeiten", "Editează"),
-                        color = palette.textPrimary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
+                // 2773: Activate is always visible on the card and tapping the card opens the editor,
+                // so the ⋮ sheet keeps only rename / copy / delete.
                 TrainPilotOutlinedButton(
                     onClick = {
                         actionSheetProgramId = null
@@ -3167,6 +3172,7 @@ fun ExerciseLibraryScreen(
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
+    val startLabel = if (state.exerciseSwapMode) trW(state.language, "Csere", "Swap", "Tauschen", "Schimbă") else strings.startAction
     val pool = if (timedOnly) state.exercises.filter { it.isTimed || it.measurementType == "time" } else state.exercises
     val filtered = pool.filter { ex ->
         val matchesCategory = state.selectedExerciseCategory == ExerciseCategory.ALL || ex.category == state.selectedExerciseCategory
@@ -3380,7 +3386,7 @@ fun ExerciseLibraryScreen(
                                     contentAlignment = Alignment.Center,
                                     modifier = Modifier.heightIn(min = 48.dp).widthIn(min = 48.dp)
                                         .trainPilotClickable(RoundedCornerShape(10.dp)) { onStartExerciseNow(ex) }
-                                        .semantics { contentDescription = "${strings.startAction}: $name" }
+                                        .semantics { contentDescription = "$startLabel: $name" }
                                         .testTag("exercise_library_start_now_${ex.id}")
                                 ) {
                                     Row(
@@ -3388,9 +3394,9 @@ fun ExerciseLibraryScreen(
                                             .padding(horizontal = 10.dp, vertical = 7.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Icon(Icons.Default.PlayArrow, contentDescription = null, tint = palette.onPrimary, modifier = Modifier.size(16.dp))
+                                        Icon(if (state.exerciseSwapMode) Icons.Default.SwapHoriz else Icons.Default.PlayArrow, contentDescription = null, tint = palette.onPrimary, modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(2.dp))
-                                        Text(strings.startAction, style = MaterialTheme.typography.labelMedium,
+                                        Text(startLabel, style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.Bold, color = palette.onPrimary, maxLines = 1)
                                     }
                                 }
