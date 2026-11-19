@@ -1,20 +1,13 @@
 # HANDOFF – aktuális állapot
 
-Frissítve: 2026-11-19 00:20 UTC. Rövid, felülírandó pillanatkép. Előzmény: git log / PR-ek.
+Frissítve: 2026-11-19 00:50 UTC. Rövid, felülírandó pillanatkép. Előzmény: git log / PR-ek.
 
-## Main – utolsó kiadás 2769 · 1.3-beta (`6d24f78`)
-- Telefon 276900 / Wear 276902, signed #80, 876/0 teszt; APK+AAB chatben átadva.
-- Play Console-ban még 276500/276502 – feltöltés a felhasználónál; „Újdonságok” szöveg
-  (HU/EN, ≤500 kar) chatben átadva.
-
-## Folyamatban: 2770 · 1.3-beta – PR #284 (`fix/collector-2770`, head `827a941`)
-- Lista `docs/FIXES_2770.md`, 11 pont kész, CI fut: Mentés lap állandó magasság; Privát
-  fotók lap; Beállítások→Edzés beállításai = Edzés fül ablaka; Gyors edzés legördülők;
-  gyakorlatválasztó „▶ Indítás + ⋮” (B változat); Gyors edzés lap tartalom-magasság;
-  sorrend csak ═ fogantyú hosszú nyomás+húzás (▲▼ megszűnt, `TrainPilotReorder.kt`);
-  naptár 6 sor + kisebb nyilak + aljára rögzített tervező; forgatáskor nincs logó-animáció
-  (`StartupScreen.install(restored)`); Edzés fül kijelölve marad; kompakt szerkesztő-sorok.
-- Jóváhagyva: zöld CI → merge → APK+AAB (277000/277002) → 4 fájl + Play szöveg.
+## Main – utolsó kiadás 2770 · 1.3-beta (`3a52325`, PR #284)
+- Telefon 277000 / Wear 277002, signed #81, 877/0 teszt; 4 fájl (APK+AAB) chatben átadva.
+- Tartalom: `docs/FIXES_2770.md` (11 pont: lapok magassága, gyors edzés, ▶+⋮ választó,
+  ═ fogantyús sorrend, naptár 6 sor + rögzített tervező, forgatás logó nélkül, kompakt sorok).
+- Play feltöltés a felhasználónál; „Újdonságok” szöveg chatben.
+- Következő: új gyűjtő-PR (`docs/FIXES_2771.md`) a felhasználó visszajelzéseire.
 
 ## Fontos döntések (ne kérdezd újra)
 - Programkártya koppintás = kártyán belüli szerkesztő (1 nyitva), külön szerkesztőoldal megszűnt.
@@ -26,4 +19,4 @@ Frissítve: 2026-11-19 00:20 UTC. Rövid, felülírandó pillanatkép. Előzmén
   PR CI-t is kihagyja → ilyenkor workflow_dispatch az ágra.
 
 ## Nyitott
-- #269 maradék elfogadási pontjai; #208 Wear HRV; #271/#272 régi draftok; #279 ez a doksi-PR.
+- #269 maradék elfogadási pontjai; #208 Wear HRV; #271/#272 régi draftok.
