@@ -48,6 +48,7 @@ tartós szabályváltozáskor módosítsd (cache-barát). Kommunikáció: magyar
 
 ## A felhasználó munkastílusa (tartós)
 - Telefonról irányít: rövid, magyar, telefonon olvasható válasz; hosszú naplót ne.
+- Időpontokat magyar idő szerint add meg (Europe/Budapest, UTC+1 télen), ne UTC-ben.
 - Visszajelzéseket **gyűjtő draft PR-ba** rögzítjük (`docs/FIXES_<verzió>.md` táblázat);
   kódolás csak „mehet” után, egy közös CI-körrel. UI-változásnál **előbb mockup** (PNG
   Playwrighttal a scratchpadben, SendUserFile), kódolás jóváhagyás után.
