@@ -45,7 +45,10 @@ class Collector2776RegressionTest {
             val layout = layouts.single()
             val info = "lines=${layout.lineCount} size=${layout.size} w=${layout.didOverflowWidth} h=${layout.didOverflowHeight} " +
                 "constraints=${layout.layoutInput.constraints} density=${layout.layoutInput.density.density}"
-            assertFalse("$tag is clipped: $info", layout.hasVisualOverflow)
+            // hasVisualOverflow is not usable for wrap-content text (paragraph width vs. size); check each line instead.
+            assertFalse("$tag is cut vertically: $info", layout.didOverflowHeight)
+            for (line in 0 until layout.lineCount) assertTrue("$tag line $line is wider than its box: $info",
+                layout.getLineRight(line) - layout.getLineLeft(line) <= layout.size.width + 1f)
             assertEquals("$tag is ellipsized", text.length, layout.getLineEnd(layout.lineCount - 1, visibleEnd = true))
         }
     }
