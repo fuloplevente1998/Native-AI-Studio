@@ -267,7 +267,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Psychology,
+                                imageVector = TrainPilotCoachIcon, // 2774: sparkle (B)
                                 contentDescription = strings.navCoach,
                                 tint = if (isCoachActive) palette.onPrimary else palette.textPrimary,
                                 modifier = Modifier.size(20.dp)
@@ -473,7 +473,8 @@ fun SubScreenTopBar(
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
     rightExtraContent: (@Composable () -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     Row(
@@ -481,6 +482,7 @@ fun SubScreenTopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
+        if (leadingIcon != null) Icon(leadingIcon, null, tint = palette.primary, modifier = Modifier.padding(end = 8.dp).size(22.dp))
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,

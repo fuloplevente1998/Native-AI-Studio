@@ -16,14 +16,21 @@ import org.junit.Test
 @Config(sdk = [34])
 class NativeHealthProviderBatchTest {
     @Test fun limitedHealthConnectReadIsNeverReportedAsFullSuccessOrRawSql() = runBlocking {
+        // 2774: complete day reads without a change feed are a successful sync with an info note.
         val report = Batch.run({ true }, {}) { source ->
+            Result.success(JSONObject().put("partial", false)
+                .put("changeTrackingUnavailable", source == HealthJournalStore.HC))
+        }
+        assertFalse(report.partial)
+        assertFalse(report.failed)
+        assertTrue(report.successful)
+        assertTrue(report.json("en").getString("message").contains("Synced by reading days directly"))
+        // Missing days are still partial.
+        val partial = Batch.run({ true }, {}) { source ->
             Result.success(JSONObject().put("partial", source == HealthJournalStore.HC)
                 .put("changeTrackingUnavailable", source == HealthJournalStore.HC))
         }
-        assertTrue(report.partial)
-        assertFalse(report.failed)
-        assertFalse(report.successful)
-        assertTrue(report.json("en").getString("message").contains("Limited sync"))
+        assertTrue(partial.partial)
         val failed = Batch.run({ true }, {}) { Result.failure<JSONObject>(IllegalStateException(
             "SQLiteException: table change_log_request_table has no column named row_offset")) }
         assertTrue(failed.failed)

@@ -1084,94 +1084,14 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         bottom = if (uiState.statusBannerMessage != null) 66.dp else 14.dp
                     )
             ) {
-                val activeExName = uiState.activeWorkoutExercises
-                    .getOrNull(uiState.activeExerciseIndex)?.localizedName(uiState.language)
-                    ?: uiState.activeWorkoutTitleHu
-                val activeStepLabel = when (uiState.language) {
-                    com.example.model.AppLanguage.HU -> "Aktív"
-                    com.example.model.AppLanguage.EN -> "Active"
-                    com.example.model.AppLanguage.DE -> "Aktiv"
-                    com.example.model.AppLanguage.RO -> "Activ"
-                }
-                val exStepText = if (uiState.activeWorkoutExercises.isNotEmpty()) {
-                    "${uiState.activeExerciseIndex + 1}/${uiState.activeWorkoutExercises.size}"
-                } else activeStepLabel
-                val restPrefix = when (uiState.language) {
-                    com.example.model.AppLanguage.HU -> "Pihenő"
-                    com.example.model.AppLanguage.EN -> "Rest"
-                    com.example.model.AppLanguage.DE -> "Pause"
-                    com.example.model.AppLanguage.RO -> "Pauză"
-                }
-                val restInfo = if (uiState.restTimerRunning && uiState.restTimerRemainingSec > 0) {
-                    String.format(" • %s %02d:%02d", restPrefix, uiState.restTimerRemainingSec / 60, uiState.restTimerRemainingSec % 60)
-                } else ""
-                val inProgressPrefix = when (uiState.language) {
-                    com.example.model.AppLanguage.HU -> "Edzés folyamatban"
-                    com.example.model.AppLanguage.EN -> "Workout in progress"
-                    com.example.model.AppLanguage.DE -> "Training läuft"
-                    com.example.model.AppLanguage.RO -> "Antrenament în curs"
-                }
-                val returnBtnLabel = when (uiState.language) {
-                    com.example.model.AppLanguage.HU -> "Vissza az edzéshez ▶"
-                    com.example.model.AppLanguage.EN -> "Back to workout ▶"
-                    com.example.model.AppLanguage.DE -> "Zurück zum Training ▶"
-                    com.example.model.AppLanguage.RO -> "Înapoi la antrenament ▶"
-                }
-
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = palette.surfaceElevated.copy(alpha = 0.98f),
-                    tonalElevation = 10.dp,
-                    shadowElevation = 8.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = contentMaxWidth)
-                        .heightIn(min = 44.dp)
-                        .trainPilotBorder(1.5.dp, palette.primary, RoundedCornerShape(14.dp))
-                        .trainPilotClickable(RoundedCornerShape(14.dp)) { viewModel.returnToActiveWorkout() }
-                        .testTag("floating_return_to_active_workout_bar")
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 9.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(9.dp)
-                                    .clip(RoundedCornerShape(5.dp))
-                                    .background(palette.success)
-                            )
-                            Text(
-                                text = "$inProgressPrefix ($exStepText): $activeExName$restInfo",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.textPrimary,
-                                maxLines = 1
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = palette.primary
-                        ) {
-                            Text(
-                                text = returnBtnLabel,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.onPrimary,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                            )
-                        }
-                    }
-                }
+                // 2774: one compact bar over every page: elapsed time, running/paused, Finish, Continue.
+                com.example.ui.components.ActiveWorkoutLiveBar(
+                    state = uiState,
+                    onContinue = { viewModel.returnToActiveWorkout() },
+                    onFinish = { viewModel.navigateToSubScreen(SubScreen.WORKOUT_SUMMARY, MainTab.WORKOUT) },
+                    onDiscard = { viewModel.stopActiveWorkoutSession(uiState.activeWorkoutId, uiState.activeWorkoutGeneration) },
+                    modifier = Modifier.widthIn(max = contentMaxWidth)
+                )
             }
 
             // Status / Toast Banner Pill at bottom-top

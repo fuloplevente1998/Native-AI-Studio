@@ -317,7 +317,6 @@ fun ActiveStrengthWorkoutScreen(
     }
     val coachOwner = com.example.ui.components.rememberStudioWorkoutCoachOwner()
     val columnLabels = com.example.ui.components.strengthColumnLabels(currentExercise, uiState.language)
-    var exerciseDropdownExpanded by remember { mutableStateOf(false) }
 
     val listState = rememberLazyListState()
     val isScrolledDown by remember {
@@ -390,7 +389,7 @@ fun ActiveStrengthWorkoutScreen(
                     Box(modifier = Modifier.weight(1f)) {
                         Column(
                             modifier = Modifier
-                                .trainPilotClickable(RoundedCornerShape(12.dp)) { exerciseDropdownExpanded = true }
+                                .trainPilotClickable(RoundedCornerShape(12.dp)) { onOpenExerciseLibrary() } // 2774: straight to the library sheet in swap mode
                                 .padding(vertical = 2.dp)
                         ) {
                             Row(
@@ -421,72 +420,6 @@ fun ActiveStrengthWorkoutScreen(
                             )
                         }
 
-                        DropdownMenu(
-                            expanded = exerciseDropdownExpanded,
-                            onDismissRequest = { exerciseDropdownExpanded = false },
-                            properties = PopupProperties(focusable = true),
-                            modifier = Modifier
-                                .background(palette.surfaceElevated)
-                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
-                        ) {
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.MenuBook,
-                                            contentDescription = null,
-                                            tint = palette.primary,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Text(
-                                            text = tr(
-                                                lang,
-                                                "Választás a ${uiState.exercises.size} gyakorlatkönyvtárból...",
-                                                "Choose from the ${uiState.exercises.size} exercise library...",
-                                                "Aus der ${uiState.exercises.size} Übungsbibliothek wählen...",
-                                                "Alege din biblioteca de ${uiState.exercises.size} exerciții..."
-                                            ),
-                                            color = palette.primary,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                },
-                                onClick = {
-                                    exerciseDropdownExpanded = false
-                                    onOpenExerciseLibrary()
-                                }
-                            )
-                            HorizontalDivider(color = palette.cardBorder)
-                            val switchableList = (workoutExercises + uiState.exercises.filter { !it.isTimed })
-                                .distinctBy { it.id }
-
-                            switchableList.forEach { exOption ->
-                                val isSel = exOption.id == currentExerciseId
-                                DropdownMenuItem(
-                                    text = {
-                                        Column {
-                                            Text(
-                                                text = exOption.localizedName(lang),
-                                                color = if (isSel) palette.primary else palette.textPrimary,
-                                                fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium
-                                            )
-                                            Text(
-                                                text = "${exOption.localizedPrimaryMuscles(lang)} • ${exOption.localizedEquipment(lang)}",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = palette.textSecondary
-                                            )
-                                        }
-                                    },
-                                    onClick = {
-                                        exerciseDropdownExpanded = false
-                                        onSwitchExercise(exOption)
-                                    }
-                                )
-                            }
-                        }
                     }
 
                     Row(
@@ -500,16 +433,26 @@ fun ActiveStrengthWorkoutScreen(
                             modifier = Modifier
                                 .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenExerciseDetail(currentExerciseId) }
                         ) {
-                            Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.FitnessCenter,
-                                    contentDescription = tr(lang, "Tárcsa & Bemelegítés", "Plates & Warm-up", "Scheiben & Aufwärmen", "Discuri & Încălzire"),
-                                    tint = palette.textPrimary, modifier = Modifier.size(20.dp))
+                            // 2774: exercise-specific icon + "i" badge: it opens the exercise details.
+                            Box(Modifier.size(48.dp).testTag("active_exercise_kind_icon"), contentAlignment = Alignment.Center) {
+                                Icon(com.example.ui.components.exerciseKindIcon(currentExercise),
+                                    contentDescription = tr(lang, "Gyakorlat részletei", "Exercise details", "Übungsdetails", "Detalii exercițiu"),
+                                    tint = palette.textPrimary, modifier = Modifier.size(22.dp))
+                                Box(Modifier.align(Alignment.BottomEnd).padding(3.dp).size(15.dp)
+                                    .background(palette.primary, androidx.compose.foundation.shape.CircleShape),
+                                    contentAlignment = Alignment.Center) {
+                                    Text("i", color = palette.onPrimary, fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp))
+                                }
                             }
                         }
                     }
                 }
             }
         }
+
+        // 2774: collapsed Coach chip under the exercise header; tapping opens the full Coach sheet.
+        item(key = "active_coach") { com.example.ui.components.StudioWorkoutCoachChip(uiState.selectedExerciseId, coachOwner) }
 
         // Section header
         item {
@@ -558,7 +501,6 @@ fun ActiveStrengthWorkoutScreen(
 
         // Canonical history-based preview and explicit approval; no local progress formula.
         item(key = "active_exercise_feedback") { exerciseFeedback() }
-        item(key = "active_coach") { com.example.ui.components.StudioWorkoutCoachPanel(uiState.selectedExerciseId, coachOwner) }
 
         }
 
@@ -882,7 +824,6 @@ fun ActiveTimedWorkoutScreen(
     var targetSec by remember(currentExercise?.id) { mutableIntStateOf(defaultTargetSec) }
     val currentSetIndex = nativeSet?.setNumber ?: ((nativeExercise?.sets?.size ?: 0) + 1)
     val completedSets = nativeExercise?.sets?.filter { it.isCompleted }?.map { it.reps.toIntOrNull() ?: 0 }.orEmpty()
-    var timedDropdownExpanded by remember { mutableStateOf(false) }
 
     val timedExerciseOptions = remember(uiState.exercises) {
         val fromDb = uiState.exercises.filter {
@@ -957,7 +898,7 @@ fun ActiveTimedWorkoutScreen(
                             Box(modifier = Modifier.weight(1f)) {
                                 Column(
                                     modifier = Modifier
-                                        .trainPilotClickable(RoundedCornerShape(10.dp)) { timedDropdownExpanded = true }
+                                        .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenExerciseLibrary() } // 2774: straight to the library sheet in swap mode
                                         .padding(vertical = 2.dp)
                                 ) {
                                     Row(
@@ -1020,51 +961,6 @@ fun ActiveTimedWorkoutScreen(
                                     }
                                 }
 
-                                DropdownMenu(
-                                    expanded = timedDropdownExpanded,
-                                    onDismissRequest = { timedDropdownExpanded = false },
-                                    properties = PopupProperties(focusable = true),
-                                    modifier = Modifier
-                                        .background(palette.surfaceElevated)
-                                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
-                                ) {
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                text = tr(
-                                                    lang,
-                                                    "Gyakorlatkönyvtár megnyitása...",
-                                                    "Open Exercise Library...",
-                                                    "Übungsbibliothek öffnen...",
-                                                    "Deschide biblioteca de exerciții..."
-                                                ),
-                                                color = palette.primary,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        },
-                                        onClick = {
-                                            timedDropdownExpanded = false
-                                            onOpenExerciseLibrary()
-                                        }
-                                    )
-                                    HorizontalDivider(color = palette.cardBorder)
-                                    timedExerciseOptions.forEach { option ->
-                                        val isSel = option.id == currentExercise?.id || option.localizedName(lang).equals(exerciseNameHu, ignoreCase = true)
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    text = "${option.localizedName(lang)} (${option.targetSeconds.coerceAtLeast(30)} $secWord)",
-                                                    color = if (isSel) palette.primary else palette.textPrimary,
-                                                    fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium
-                                                )
-                                            },
-                                            onClick = {
-                                                timedDropdownExpanded = false
-                                                onSwitchExercise(option)
-                                            }
-                                        )
-                                    }
-                                }
                             }
                             SmallExerciseVideoButton(
                                 exerciseName = exerciseNameHu,
@@ -1412,7 +1308,6 @@ fun ActiveBilateralWorkoutScreen(
 
     // Modal dialog for manual bilateral set editing
     var editingBilateralSet by remember { mutableStateOf<com.example.model.ExerciseSetItem?>(null) }
-    var showExerciseDropdown by remember { mutableStateOf(false) }
     var restTimerLargeMode by remember(com.repforge.app.StudioRestTimer.visible(uiState)) { mutableStateOf(false) }
     StudioRestCountdown(uiState, onAdjustRestTimer)
 
@@ -1609,7 +1504,7 @@ fun ActiveBilateralWorkoutScreen(
                                     color = palette.surfaceElevated,
                                     modifier = Modifier
                                         .fillMaxWidth().heightIn(min = 40.dp).testTag("bilateral_exercise_switch")
-                                        .trainPilotClickable(RoundedCornerShape(8.dp)) { showExerciseDropdown = true }
+                                        .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenExerciseLibrary() } // 2774: straight to the library sheet in swap mode
                                         .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
                                 ) {
                                     Text(
@@ -1619,49 +1514,6 @@ fun ActiveBilateralWorkoutScreen(
                                         fontWeight = FontWeight.Bold,
                                         color = palette.textPrimary,
                                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                                    )
-                                }
-                                DropdownMenu(
-                                    expanded = showExerciseDropdown,
-                                    onDismissRequest = { showExerciseDropdown = false },
-                                    modifier = Modifier
-                                        .background(palette.surfaceElevated)
-                                        .heightIn(max = 300.dp)
-                                ) {
-                                    workoutExercises.forEachIndexed { idx, ex ->
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    text = "${idx + 1}. ${ex.localizedName(lang)}",
-                                                    color = if (idx == uiState.activeExerciseIndex) palette.primary else palette.textPrimary,
-                                                    fontWeight = if (idx == uiState.activeExerciseIndex) FontWeight.Bold else FontWeight.Normal
-                                                )
-                                            },
-                                            onClick = {
-                                                showExerciseDropdown = false
-                                                onSwitchExercise(ex)
-                                            }
-                                        )
-                                    }
-                                    HorizontalDivider(color = palette.cardBorder)
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                text = tr(
-                                                    lang,
-                                                    "Gyakorlatkönyvtár megnyitása...",
-                                                    "Open Exercise Library...",
-                                                    "Übungsbibliothek öffnen...",
-                                                    "Deschide biblioteca de exerciții..."
-                                                ),
-                                                color = palette.primary,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        },
-                                        onClick = {
-                                            showExerciseDropdown = false
-                                            onOpenExerciseLibrary()
-                                        }
                                     )
                                 }
                             }

@@ -22,6 +22,8 @@ class HealthConnectSyncRecoveryRegressionTest {
         override suspend fun attempt(at: Instant) {}
         override suspend fun commit(expected: NativeHealthSync.Checkpoint, next: NativeHealthSync.Checkpoint,
             full: Boolean, at: Instant) { commits++ }
+        var dataSynced = 0
+        override suspend fun dataSynced(at: Instant) { dataSynced++ }
     }
     private inner class Provider(val failureAt: String, val failure: Exception = brokenSchema()) : NativeHealthSync.Provider {
         override val changesSupported = true
