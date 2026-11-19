@@ -236,6 +236,8 @@ fun WorkoutTabScreen(
     onOpenOutdoorWorkout: () -> Unit,
     onOpenProgramsList: () -> Unit,
     onOpenTimed: () -> Unit = onOpenExerciseLibrary,
+    /** 2773: browse / manage the exercise library (sheet) without starting anything. */
+    onOpenExerciseCatalog: () -> Unit = {},
     onOpenProgramEditor: (String, Int) -> Unit,
     onStartWorkoutDay: (Int) -> Unit,
     onOpenCalendar: () -> Unit,
@@ -336,6 +338,33 @@ fun WorkoutTabScreen(
                 onClick = onOpenOutdoorWorkout,
                 modifier = Modifier.weight(1f)
             ) { OutdoorRouteGraphic() }
+        }
+
+        // 2773 (A): exercise library entry right under the three tiles.
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = palette.surface,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp)
+                .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenExerciseCatalog() }
+                .testTag("workout_tab_exercise_catalog")
+        ) {
+            Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.AutoMirrored.Filled.FormatListBulleted, null, tint = palette.primary, modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(trW(state.language, "Gyakorlatkönyvtár", "Exercise library", "Übungsbibliothek", "Bibliotecă de exerciții"),
+                        style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
+                    Text(trW(state.language, "${state.exercises.size} gyakorlat · keresés, kedvencek, új gyakorlat",
+                        "${state.exercises.size} exercises · search, favorites, new exercise",
+                        "${state.exercises.size} Übungen · Suche, Favoriten, neue Übung",
+                        "${state.exercises.size} exerciții · căutare, favorite, exercițiu nou"),
+                        style = MaterialTheme.typography.bodySmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.textSecondary)
+            }
         }
 
         // 3. Aktuális program Header + Összes megtekintése >
@@ -799,54 +828,8 @@ fun ProgramsListScreen(
 
                 HorizontalDivider(color = palette.cardBorder)
 
-                val canActivate = targetProgram == null || !targetProgram.isActive
-                Button(
-                    onClick = {
-                        actionSheetProgramId = null
-                        onActivateProgram(targetId)
-                    },
-                    enabled = canActivate && !state.libraryMutationBusy,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = palette.primary,
-                        contentColor = palette.onPrimary
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 48.dp)
-                        .testTag("program_action_activate")
-                ) {
-                    Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (targetProgram?.isActive == true)
-                            trW(state.language, "Jelenleg aktív program", "Currently active program", "Aktuell aktives Programm", "Program activ în prezent")
-                        else strings.activateAction,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                TrainPilotOutlinedButton(
-                    onClick = {
-                        actionSheetProgramId = null
-                        requestInlineEditor(targetId, INLINE_EDITOR_HOST_PROGRAMS, toggle = false)
-                    },
-                    enabled = !state.libraryMutationBusy,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 48.dp)
-                        .testTag("program_action_edit")
-                ) {
-                    Icon(imageVector = Icons.Default.Edit, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = trW(state.language, "Szerkesztés", "Edit", "Bearbeiten", "Editează"),
-                        color = palette.textPrimary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
+                // 2773: Activate is always visible on the card and tapping the card opens the editor,
+                // so the ⋮ sheet keeps only rename / copy / delete.
                 TrainPilotOutlinedButton(
                     onClick = {
                         actionSheetProgramId = null

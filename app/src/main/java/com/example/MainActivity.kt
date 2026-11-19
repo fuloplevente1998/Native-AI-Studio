@@ -906,6 +906,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onOpenOutdoorWorkout = { viewModel.openQuickWorkoutSheet(2) },
                                     onOpenProgramsList = { viewModel.navigateToSubScreen(SubScreen.PROGRAMS_LIST) },
                                     onOpenTimed = { viewModel.openQuickWorkoutSheet(1) },
+                                    onOpenExerciseCatalog = { viewModel.navigateToSubScreen(SubScreen.EXERCISE_LIBRARY) },
                                     onOpenProgramEditor = { progId, dayIdx -> viewModel.openProgramEditor(progId, dayIdx) },
                                     onStartWorkoutDay = { dayIdx ->
                                         viewModel.startPlannedWorkout(null, dayIdx)

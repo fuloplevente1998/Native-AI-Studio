@@ -20,10 +20,11 @@ import org.robolectric.annotation.Config
 class SheetRouteHostRegressionTest {
     @Test fun sheetRoutesAndFullPagesAreSeparated() {
         for (sheet in listOf(SubScreen.WATCH_AND_SYNC, SubScreen.PERMISSIONS_SCREEN, SubScreen.BACKUP_RESTORE,
-                SubScreen.EXERCISE_DETAIL, SubScreen.LOG_WORKOUT_DETAIL, SubScreen.PRIVATE_PHOTOS)) assertTrue(sheet.name, sheet in TrainPilotSheetRoutes)
+                SubScreen.EXERCISE_DETAIL, SubScreen.LOG_WORKOUT_DETAIL, SubScreen.PRIVATE_PHOTOS,
+                SubScreen.EXERCISE_LIBRARY)) assertTrue(sheet.name, sheet in TrainPilotSheetRoutes)
         for (page in listOf(SubScreen.ACTIVE_STRENGTH, SubScreen.ACTIVE_TIMED, SubScreen.ACTIVE_BILATERAL,
                 SubScreen.ACTIVE_OUTDOOR_GPS, SubScreen.WORKOUT_SUMMARY, SubScreen.LOG_ROUTE_MAP,
-                SubScreen.EXERCISE_LIBRARY, SubScreen.SETTINGS_MAIN, SubScreen.NONE)) assertFalse(page.name, page in TrainPilotSheetRoutes)
+                SubScreen.SETTINGS_MAIN, SubScreen.NONE)) assertFalse(page.name, page in TrainPilotSheetRoutes)
     }
 
     @Test fun settingsStaysUnderneathItsDeviceSheets() {
@@ -37,14 +38,19 @@ class SheetRouteHostRegressionTest {
     }
 
     @Test fun nestedSheetsUseTheLatestFullScreenAndPagesAreUnchanged() {
-        val library = NavRoute(MainTab.WORKOUT, SubScreen.EXERCISE_LIBRARY)
+        // 2773: the library is a sheet too; opened from an active workout, the workout stays underneath.
+        val active = NavRoute(MainTab.WORKOUT, SubScreen.ACTIVE_STRENGTH)
+        val library = TrainPilotUiState(currentTab = MainTab.WORKOUT, currentSubScreen = SubScreen.EXERCISE_LIBRARY,
+            backStack = listOf(NavRoute(MainTab.WORKOUT), active))
+        assertEquals(SubScreen.ACTIVE_STRENGTH, library.sheetHostState().currentSubScreen)
         val nested = TrainPilotUiState(currentTab = MainTab.WORKOUT, currentSubScreen = SubScreen.EXERCISE_DETAIL,
-            backStack = listOf(library, NavRoute(MainTab.WORKOUT, SubScreen.LOG_WORKOUT_DETAIL)))
-        assertEquals(SubScreen.EXERCISE_LIBRARY, nested.sheetHostState().currentSubScreen)
+            backStack = listOf(active, NavRoute(MainTab.WORKOUT, SubScreen.EXERCISE_LIBRARY)))
+        assertEquals(SubScreen.ACTIVE_STRENGTH, nested.sheetHostState().currentSubScreen)
         val fromTab = TrainPilotUiState(currentTab = MainTab.PROGRESS, currentSubScreen = SubScreen.LOG_WORKOUT_DETAIL)
         assertEquals(SubScreen.NONE, fromTab.sheetHostState().currentSubScreen)
         assertEquals(MainTab.PROGRESS, fromTab.sheetHostState().currentTab)
-        val page = TrainPilotUiState(currentSubScreen = SubScreen.EXERCISE_LIBRARY)
+        val page = TrainPilotUiState(currentSubScreen = SubScreen.ACTIVE_STRENGTH)
         assertEquals(page, page.sheetHostState())
     }
+
 }

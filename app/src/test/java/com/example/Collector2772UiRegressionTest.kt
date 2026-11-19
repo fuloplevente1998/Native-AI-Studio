@@ -89,5 +89,21 @@ class Collector2772UiRegressionTest {
             .map { it.name }.toList()
         assertEquals(emptyList<String>(), offenders)
     }
-}
 
+    @Test fun workoutTabTilesAndExerciseLibraryRowCallTheirActions() {
+        val calls = mutableListOf<String>()
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.WorkoutTabScreen(
+                state = com.example.ui.viewmodel.TrainPilotUiState(), onOpenSettings = {},
+                onOpenQuickWorkout = { calls += "quick" }, onOpenExerciseLibrary = { calls += "strength" },
+                onOpenOutdoorWorkout = { calls += "outdoor" }, onOpenProgramsList = {}, onOpenProgramEditor = { _, _ -> },
+                onStartWorkoutDay = {}, onOpenCalendar = {}, onOpenCoach = {}, onOpenProgressionModal = {},
+                onOpenTimed = { calls += "timed" }, onOpenExerciseCatalog = { calls += "catalog" })
+        } }
+        listOf("workout_tab_quick_card", "workout_tab_exercise_picker", "workout_tab_timed_card",
+            "workout_tab_outdoor_card", "workout_tab_exercise_catalog").forEach {
+            compose.onNodeWithTag(it).performScrollTo().performClick()
+        }
+        compose.runOnIdle { assertEquals(listOf("quick", "strength", "timed", "outdoor", "catalog"), calls) }
+    }
+}
