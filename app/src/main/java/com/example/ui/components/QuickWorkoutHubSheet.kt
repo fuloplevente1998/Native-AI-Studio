@@ -49,6 +49,8 @@ fun QuickWorkoutHubSheet(
     onSelectTab: (Int) -> Unit,
     onDismiss: () -> Unit,
     onStartOutdoor: (activityName: String) -> Unit,
+    /** One tap start without picking an exercise: today's planned program day (kept from the old sheet). */
+    onStartPlanned: () -> Unit = {},
     strengthContent: @Composable () -> Unit,
     timedContent: @Composable () -> Unit
 ) {
@@ -61,6 +63,15 @@ fun QuickWorkoutHubSheet(
                     style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
                     color = palette.textPrimary, modifier = Modifier.weight(1f))
                 TrainPilotRedCloseButton(onClick = onDismiss, modifier = Modifier.testTag("quick_workout_close"))
+            }
+            com.repforge.app.ui.theme.TrainPilotButton(
+                onClick = onStartPlanned,
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 6.dp).heightIn(min = 48.dp)
+                    .testTag("quick_start_planned")
+            ) {
+                Text(qw(language, "▶ Indítás – mai programnap", "▶ Start – today's program day",
+                    "▶ Start – heutiger Programmtag", "▶ Pornește – ziua de azi din program"), fontWeight = FontWeight.Bold)
             }
             // Segmented tabs: Strength · Timed · Outdoor.
             val tabs = listOf(

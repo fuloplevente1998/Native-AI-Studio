@@ -44,13 +44,17 @@ class Post2757PresentationRegressionTest {
         var started: ExerciseItem? = null
         var outdoor: String? = null
         var dismissed = 0
+        var planned = 0
         val state = TrainPilotUiState(exercises = listOf(strength, timed))
         compose.setContent { TrainPilotTheme {
-            QuickWorkoutHubSheet(AppLanguage.HU, tab, { tab = it }, { dismissed++ }, { outdoor = it },
+            QuickWorkoutHubSheet(AppLanguage.HU, tab, { tab = it }, { dismissed++ }, { outdoor = it }, onStartPlanned = { planned++ },
                 strengthContent = { ExerciseLibraryScreen(state, {}, {}, {}, {}, {}, onStartExerciseNow = { started = it }, embedded = true) },
                 timedContent = { ExerciseLibraryScreen(state, {}, {}, {}, {}, {}, onStartExerciseNow = { started = it }, embedded = true, timedOnly = true) })
         } }
         compose.onNodeWithTag("quick_workout_sheet").assertExists()
+        // One-tap start of today's program day stays available.
+        compose.onNodeWithTag("quick_start_planned").performClick()
+        compose.runOnIdle { assertEquals(1, planned) }
         compose.onNodeWithText("Első gyakorlat").assertExists()
         compose.onNodeWithText("Plank").assertExists()
         compose.onNodeWithTag("quick_tab_1").performClick()
