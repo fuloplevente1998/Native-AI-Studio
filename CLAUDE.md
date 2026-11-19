@@ -48,12 +48,16 @@ tartós szabályváltozáskor módosítsd (cache-barát). Kommunikáció: magyar
 
 ## A felhasználó munkastílusa (tartós)
 - Telefonról irányít: rövid, magyar, telefonon olvasható válasz; hosszú naplót ne.
+- Időpontokat magyar idő szerint add meg (Europe/Budapest, UTC+1 télen), ne UTC-ben.
 - Visszajelzéseket **gyűjtő draft PR-ba** rögzítjük (`docs/FIXES_<verzió>.md` táblázat);
   kódolás csak „mehet” után, egy közös CI-körrel. UI-változásnál **előbb mockup** (PNG
   Playwrighttal a scratchpadben, SendUserFile), kódolás jóváhagyás után.
 - Jóváhagyott minta: zöld CI → merge main → aláírt APK+AAB (`build_aab=true`), 4 fájl
-  ellenőrizve (verzió, signer, hash, nyers XML tesztszám) chatben átadva; Drive-csatoló
+  ellenőrizve (verzió, signer, hash, nyers XML tesztszám) chatben átadva egy ZIP-ben
+  (4 fájl + SHA256SUMS.txt); Drive-csatoló
   ~3 MB/hívás, ezért binárist oda nem. Verzió: `27NN00`/`27NN02`, Play „Újdonságok” ≤500 kar.
+- UI-átalakításnál minden meglévő funkció és gomb bekötése maradjon meg (nem csak a felület):
+  régi/új belépési pontok listája a PR-ban, minden gombhoz teszt, ami a hívott műveletet ellenőrzi.
 - Dizájn: kompakt, témakövető (palette), íves keret, 48 dp érintés; alulról nyíló lapok
   (`TrainPilotSheetRoutes`, `TrainPilotRouteSheet`) a tartalom magasságáig.
 

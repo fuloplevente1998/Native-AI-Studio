@@ -3,6 +3,10 @@
 Ez a fájl a teljes repóra érvényes. Az aktuális felhasználói utasítás elsőbbséget
 élvez. A régi átadók és külső tervek forrásanyagok, nem új végrehajtási engedélyek.
 
+## Válaszstílus (felhasználói szabály, 2026-11-19)
+- Token és kontextus kímélése: rövid, lényegre törő, pontos válaszok és kérdések.
+- Hosszabb, részletes magyarázat csak kifejezett kérésre.
+
 ## Indulás és önálló haladás
 
 1. Olvasd el a [rövid átadót](docs/WORK_HANDOFF.md), az aktuális feladathoz szükséges
