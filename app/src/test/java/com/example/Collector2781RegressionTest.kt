@@ -20,4 +20,11 @@ class Collector2781RegressionTest {
         }
         assertTrue(BuildConfig.PRIVACY_POLICY_URL.startsWith("https://fuloplevente1998.github.io/TrainPilot.io/"))
     }
+
+    @Test fun aboutRowShowsTheInstalledBuildAndOpensTheWebsite() {
+        val line = com.example.ui.screens.settingsAboutLine(com.example.model.AppLanguage.HU)
+        assertTrue(line, line.startsWith("Verzió: TrainPilot ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"))
+        assertTrue(line.contains(BuildConfig.DEVELOPER_NAME) && line.contains(BuildConfig.SUPPORT_EMAIL))
+        org.junit.Assert.assertEquals("https://fuloplevente1998.github.io/TrainPilot.io/", com.example.ui.screens.settingsWebsiteUrl())
+    }
 }

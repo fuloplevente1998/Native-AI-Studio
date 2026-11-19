@@ -2694,9 +2694,36 @@ fun SettingsMainScreen(
                 testTag = "settings_open_privacy_row"
             )
         }
+
+        // 2781: About / version – the installed build, developer and contact; opens the website.
+        item {
+            val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+            SettingsActionRowCard(
+                title = tr(uiState.language, "Névjegy", "About", "Über", "Despre"),
+                subtitle = settingsAboutLine(uiState.language),
+                badgeText = tr(uiState.language, "Weboldal", "Website", "Webseite", "Site"),
+                onClick = { runCatching { uriHandler.openUri(settingsWebsiteUrl()) } },
+                testTag = "settings_about_row"
+            )
+        }
     }
 }
 }
+
+/** 2781: "TrainPilot 1.4.0 (278000) · FulTechStudios · e-mail" from the build itself, never typed by hand. */
+internal fun settingsAboutLine(language: com.example.model.AppLanguage): String {
+    val version = when (language) {
+        com.example.model.AppLanguage.HU -> "Verzió"
+        com.example.model.AppLanguage.EN -> "Version"
+        com.example.model.AppLanguage.DE -> "Version"
+        com.example.model.AppLanguage.RO -> "Versiune"
+    }
+    return "$version: TrainPilot ${com.repforge.app.BuildConfig.VERSION_NAME} (${com.repforge.app.BuildConfig.VERSION_CODE})" +
+        " · ${com.repforge.app.BuildConfig.DEVELOPER_NAME} · ${com.repforge.app.BuildConfig.SUPPORT_EMAIL}"
+}
+
+internal fun settingsWebsiteUrl(): String =
+    com.repforge.app.BuildConfig.PRIVACY_POLICY_URL.substringBeforeLast('/') + "/"
 
 @Composable
 private fun SettingsActionRowCard(
