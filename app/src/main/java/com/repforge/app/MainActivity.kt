@@ -242,6 +242,16 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         PaletteSystemBars.apply(window, TrainPilotPalettes.getById(viewModel.uiState.value.selectedPaletteId))
+        // 2776: re-read the stored settings on every return. The live settings collector can start with
+        // its default (palette 1) and miss an already stored theme (seen in CI: stored=25, UI=1, RESUMED).
+        lifecycleScope.launch {
+            val stored = try { withContext(Dispatchers.IO) { settingsStore.current() } }
+                catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                catch (_: Exception) { null } ?: return@launch
+            viewModel.syncNativeSettings(stored.language, stored.themeKey, stored.restSeconds,
+                stored.soundEnabled, stored.vibrationEnabled)
+            PaletteSystemBars.apply(window, TrainPilotPalettes.getById(viewModel.uiState.value.selectedPaletteId))
+        }
         if (!migrationReady) return
         HealthBackgroundService.stop(this)
         lifecycleScope.launch(Dispatchers.IO) {
