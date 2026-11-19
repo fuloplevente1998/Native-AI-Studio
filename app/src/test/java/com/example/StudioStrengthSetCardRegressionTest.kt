@@ -101,7 +101,7 @@ class StudioStrengthSetCardRegressionTest {
         val cardBounds = compose.onNodeWithTag("active_strength_set_1").getUnclippedBoundsInRoot()
         assertTrue(toggleBounds.bottom - toggleBounds.top >= 48.dp)
         assertEquals(weight.top, toggleBounds.top)
-        compose.onNodeWithTag("delete_set_1").assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp)
+        compose.onNodeWithTag("set_menu_1").assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp)
         assertTrue(cardBounds.bottom - cardBounds.top <= 64.dp)
     }
 
@@ -117,9 +117,35 @@ class StudioStrengthSetCardRegressionTest {
         compose.onNodeWithTag("active_set_reps_1_menu").assertExists()
         compose.runOnIdle { enabled = false }
         compose.onNodeWithTag("active_set_reps_1_menu").assertDoesNotExist()
-        for (tag in listOf("active_set_weight_1", "active_set_reps_1", "active_set_rir_1", "toggle_set_1", "delete_set_1")) {
+        for (tag in listOf("active_set_weight_1", "active_set_reps_1", "active_set_rir_1", "toggle_set_1", "set_menu_1")) {
             compose.onNodeWithTag(tag).assertIsNotEnabled()
         }
         compose.runOnIdle { assertEquals(0, changes) }
+    }
+
+    @Test fun deleteLivesInTheRowMenuAndCallsTheCanonicalCallbackOnce() {
+        var deletes = 0
+        compose.setContent { TrainPilotTheme {
+            StudioStrengthSetCard(ExerciseSetItem(1, 5.5f, 15, 2, false, id = "set-a"),
+                "workout/1/exercise/set-a", AppLanguage.HU, "kg", "ism.", true, true,
+                onValues = { _, _, _ -> }, onToggle = {}, onDelete = { deletes++ })
+        } }
+        compose.onNodeWithTag("delete_set_1").assertDoesNotExist()
+        compose.onNodeWithTag("set_menu_1").performClick()
+        compose.onNodeWithTag("delete_set_1").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals(1, deletes) }
+        compose.onNodeWithTag("delete_set_1").assertDoesNotExist()
+    }
+
+    @Test fun lastTimeLineOnlyAppearsWithSavedHistory() {
+        var label by mutableStateOf<String?>(null)
+        compose.setContent { TrainPilotTheme {
+            StudioStrengthSetCard(ExerciseSetItem(1, 5.5f, 15, 2, false, id = "set-a"),
+                "workout/1/exercise/set-a", AppLanguage.HU, "kg", "ism.", true, true,
+                onValues = { _, _, _ -> }, onToggle = {}, onDelete = {}, lastLabel = label)
+        } }
+        compose.onNodeWithTag("active_set_last_1").assertDoesNotExist()
+        compose.runOnIdle { label = "legutóbb: 5,5 × 12" }
+        compose.onNodeWithTag("active_set_last_1").assertTextEquals("legutóbb: 5,5 × 12")
     }
 }
