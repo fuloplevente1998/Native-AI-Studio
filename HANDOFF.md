@@ -1,8 +1,14 @@
 # HANDOFF – aktuális állapot
 
-Frissítve: 2026-11-19 17:30 (magyar idő). Rövid, felülírandó pillanatkép. Előzmény: git log / PR-ek.
+Frissítve: 2026-11-19 19:05 (magyar idő). Rövid, felülírandó pillanatkép. Előzmény: git log / PR-ek.
 
-## Main – utolsó kiadás 2777 · 1.3.7 (`f26d966`, PR #292)
+## Main – utolsó kiadás 2778 · 1.3.8 (`cabc720`, PR #293)
+- Telefon 277800 / Wear 277802; 912/0 teszt; ZIP chatben.
+- 2778 (`docs/FIXES_2778.md`): közös pihenő-dokk `StudioRestTimerDock` (Erő/Kétoldali/Időalapú; időalapún
+  `showIdle=false`; Kültéri opcionális „Pihenő” gomb), élő sáv rajzolt ❚❚, Egészségnapló részletes rekordok
+  alapból becsukva, egysoros sorok; magyarázó szövegek törölve (anatómiai jelmagyarázat marad).
+- Nyitott: `PaletteSystemBarsTest` időnként bukik (tárolt téma ≠ VM, RESUMED) – valószínű DataStore-példány
+  megosztás tesztek között; tesztizoláció kell (külön tétel).
 - Telefon 277700 / Wear 277702; signed run 44566174999; ZIP chatben.
 - 2777 óra (`docs/FIXES_2777.md`): kerek kijelzőre igazított listák (18 dp oldalsáv), felirat a kör alatt
   (megerősítés, szerkesztő, összesítő), ■ Befejezés ≠ ✓ Rögzítés, nap betűje (A/B), „ⓘ Részletek”,
