@@ -330,7 +330,6 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                 onSelectTab = viewModel::selectQuickWorkoutTab,
                 onDismiss = { viewModel.toggleQuickWorkoutSheet(false) },
                 onStartOutdoor = { activity -> viewModel.startOutdoorWorkout(activity) },
-                onStartPlanned = { viewModel.toggleQuickWorkoutSheet(false); viewModel.startPlannedWorkout() },
                 strengthContent = { library(false) },
                 timedContent = { library(true) }
             )
