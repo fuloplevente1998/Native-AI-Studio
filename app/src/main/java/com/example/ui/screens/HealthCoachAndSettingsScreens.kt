@@ -2603,13 +2603,13 @@ fun SettingsMainScreen(
                             Text("${localizeTrainingStyle(uiState.trainingStyleHu, uiState.language)} • ${localizeProgressionRule(uiState.progressionRuleHu, uiState.language)} • ${strings.restLabel}: ${uiState.defaultRestSec} $secUnit",
                                 style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                         }
-                        Icon(if (uiState.showProgressionModal) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight,
                             contentDescription = null, tint = palette.primary)
                     }
+                    // Same full-height editor window as Workout tab → Workout settings (global scope here).
                     if (uiState.showProgressionModal) {
-                        HorizontalDivider(color = palette.cardBorder)
                         StudioWorkoutModesDialog(
-                            state = uiState, scope = "global", embedded = true,
+                            state = uiState, scope = "global", embedded = false,
                             onDismiss = { onToggleProgressionModal(false) },
                             onCycleRest = onCycleRestTimer,
                             onToggleSound = onToggleSoundAlert,
@@ -3566,6 +3566,11 @@ fun BackupRestoreScreen(
     LazyColumn(
         modifier = Modifier
             .then(com.example.ui.components.sheetAwareFillMaxSize())
+            // In the sheet the JSON / ZIP / DRIVE tabs share one stable height (the tallest, Drive),
+            // so switching tabs never makes the sheet jump.
+            .then(if (com.example.ui.components.LocalTrainPilotInSheet.current)
+                Modifier.heightIn(min = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp * 0.78f)
+                else Modifier)
             .background(palette.background)
             .testTag("backup_restore_screen"),
         contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),

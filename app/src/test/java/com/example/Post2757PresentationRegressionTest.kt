@@ -46,7 +46,8 @@ class Post2757PresentationRegressionTest {
                 onStartOutdoorGps = {}, onBrowseExercises = {}, onDismiss = { dismissed++ })
         } }
         val sheet = compose.onNodeWithTag("quick_workout_sheet").assertIsDisplayed().getUnclippedBoundsInRoot()
-        assertTrue("Sheet should open at full available height", (sheet.bottom - sheet.top).value >= 800f)
+        // 2770: the quick sheet wraps its content instead of filling the window.
+        assertTrue("Sheet should wrap content, not fill the window", (sheet.bottom - sheet.top).value in 1f..899f)
         compose.onNodeWithTag("quick_strength_picker").performScrollTo().performClick()
         compose.onNodeWithTag("quick_strength_option_two").performClick()
         compose.onNodeWithTag("quick_strength_start").performScrollTo().performClick()

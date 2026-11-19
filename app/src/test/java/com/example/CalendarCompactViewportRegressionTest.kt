@@ -180,4 +180,18 @@ class CalendarCompactViewportRegressionTest {
         assertEquals(listOf("2026-04", "2026-03"), months)
         assertEquals(10, state.selectedCalendarDay)
     }
+
+    @Test fun monthPanelKeepsOneHeightAcrossFiveAndSixWeekMonths() {
+        state = state.copy(calendarYearMonth = "2026-02") // Feb 2026 needs 5 week rows, March 2026 needs 6
+        render()
+        val five = compose.onNodeWithTag("calendar_month_panel").getUnclippedBoundsInRoot()
+        val plannerBefore = compose.onNodeWithTag("calendar_planning_block").getUnclippedBoundsInRoot()
+        compose.onNodeWithTag("calendar_next_month").performClick() // March 2026: 6 rows
+        compose.waitForIdle()
+        assertEquals(listOf("2026-03"), months)
+        val six = compose.onNodeWithTag("calendar_month_panel").getUnclippedBoundsInRoot()
+        val plannerAfter = compose.onNodeWithTag("calendar_planning_block").getUnclippedBoundsInRoot()
+        assertEquals("Month panel height must not jump", five.bottom - five.top, six.bottom - six.top)
+        assertEquals("Planner stays pinned in place", plannerBefore.top, plannerAfter.top)
+    }
 }

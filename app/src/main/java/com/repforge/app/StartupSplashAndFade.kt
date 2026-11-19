@@ -406,8 +406,13 @@ internal class StartupScreen private constructor(
 
     companion object {
         @JvmStatic
-        fun install(activity: Activity): StartupScreen {
-            return StartupScreen(activity, activity.installSplashScreen())
+        /**
+         * [restored]: the activity is being recreated (rotation, theme/config change, process
+         * restore). The system splash must still be installed for the theme switch, but the logo
+         * overlay animation only plays on a real launch.
+         */
+        fun install(activity: Activity, restored: Boolean = false): StartupScreen {
+            return StartupScreen(activity, activity.installSplashScreen()).also { if (restored) it.removed = true }
         }
 
         @JvmStatic

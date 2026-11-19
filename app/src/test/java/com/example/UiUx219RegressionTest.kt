@@ -266,8 +266,21 @@ class UiUx219RegressionTest {
         assertNull(activatedId)
 
         // 6. Reorder controls, 3-dot menu, and long-press continue to work for the exact program ID
-        compose.onNodeWithTag("program_move_down_gym-strength-abc").performClick()
+        // Reorder: no up/down arrows; a plain tap on the handle does nothing, a long press + drag
+        // moves the card and saves once on release.
+        compose.onNodeWithTag("program_move_down_gym-strength-abc").assertDoesNotExist()
+        compose.onNodeWithTag("program_drag_handle_gym-strength-abc", useUnmergedTree = true).performClick()
+        assertNull("A tap on the handle must not reorder", movedPair)
+        val cardHeight = cardBoundsCollapsed.bottom - cardBoundsCollapsed.top
+        compose.onNodeWithTag("program_drag_handle_gym-strength-abc", useUnmergedTree = true).performTouchInput {
+            down(center)
+            advanceEventTime(viewConfiguration.longPressTimeoutMillis + 100)
+            moveBy(androidx.compose.ui.geometry.Offset(0f, (cardHeight.toPx() + 12.dp.toPx()) * 1.1f), delayMillis = 50)
+            up()
+        }
         assertEquals(0 to 1, movedPair)
+        assertNull("Dragging the handle must not open the action sheet",
+            compose.onAllNodesWithTag("program_action_sheet").fetchSemanticsNodes().firstOrNull())
 
         compose.onNodeWithTag("program_more_button_gym-strength-abc").performClick()
         compose.onNodeWithTag("program_action_sheet").assertIsDisplayed()
@@ -334,6 +347,7 @@ class UiUx219RegressionTest {
         compose.onNodeWithTag("exercise_library_meta_arnold-press", useUnmergedTree = true)
             .assertTextContains("Váll • 2 kézisúlyzó • 3×10")
 
+        compose.onNodeWithTag("exercise_library_more_arnold-press").performClick()
         compose.onNodeWithTag("exercise_library_add_to_queue_arnold-press").performClick()
         assertEquals("arnold-press", queuedId)
         compose.onNodeWithTag("exercise_library_start_now_arnold-press").performClick()

@@ -20,9 +20,9 @@ import org.robolectric.annotation.Config
 class SheetRouteHostRegressionTest {
     @Test fun sheetRoutesAndFullPagesAreSeparated() {
         for (sheet in listOf(SubScreen.WATCH_AND_SYNC, SubScreen.PERMISSIONS_SCREEN, SubScreen.BACKUP_RESTORE,
-                SubScreen.EXERCISE_DETAIL, SubScreen.LOG_WORKOUT_DETAIL)) assertTrue(sheet.name, sheet in TrainPilotSheetRoutes)
+                SubScreen.EXERCISE_DETAIL, SubScreen.LOG_WORKOUT_DETAIL, SubScreen.PRIVATE_PHOTOS)) assertTrue(sheet.name, sheet in TrainPilotSheetRoutes)
         for (page in listOf(SubScreen.ACTIVE_STRENGTH, SubScreen.ACTIVE_TIMED, SubScreen.ACTIVE_BILATERAL,
-                SubScreen.ACTIVE_OUTDOOR_GPS, SubScreen.WORKOUT_SUMMARY, SubScreen.LOG_ROUTE_MAP, SubScreen.PRIVATE_PHOTOS,
+                SubScreen.ACTIVE_OUTDOOR_GPS, SubScreen.WORKOUT_SUMMARY, SubScreen.LOG_ROUTE_MAP,
                 SubScreen.EXERCISE_LIBRARY, SubScreen.SETTINGS_MAIN, SubScreen.NONE)) assertFalse(page.name, page in TrainPilotSheetRoutes)
     }
 

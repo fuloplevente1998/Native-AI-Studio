@@ -105,23 +105,23 @@ class ExerciseLibraryCompactRegressionTest {
                     assertFalse("Word split in $name at $end", name[end - 1].isLetter() && name[end].isLetter())
                 }
             }
-            for (tag in listOf("exercise_library_favorite_long", "exercise_video_btn_${name.hashCode()}",
-                "exercise_library_add_to_queue_long", "exercise_library_start_now_long")) {
+            for (tag in listOf("exercise_library_favorite_long", "exercise_library_start_now_long",
+                "exercise_library_more_long")) {
                 val control = compose.onNodeWithTag(tag).performScrollTo().assertIsEnabled()
                 val hit = control.getUnclippedBoundsInRoot()
                 assertTrue("$tag width", (hit.right - hit.left) >= 48.dp)
                 assertTrue("$tag height", (hit.bottom - hit.top) >= 48.dp)
 
             }
-            val videoBounds = compose.onNodeWithTag("exercise_video_btn_${name.hashCode()}").getUnclippedBoundsInRoot()
-            val addBounds = compose.onNodeWithTag("exercise_library_add_to_queue_long").getUnclippedBoundsInRoot()
+            // Option B: primary Start + more button on one line; video/add live in the menu.
+            compose.onNodeWithTag("exercise_video_btn_${name.hashCode()}").assertDoesNotExist()
+            compose.onNodeWithTag("exercise_library_add_to_queue_long").assertDoesNotExist()
             val startBounds = compose.onNodeWithTag("exercise_library_start_now_long").getUnclippedBoundsInRoot()
-            assertEquals(videoBounds.right, addBounds.left)
-            assertEquals(addBounds.right, startBounds.left)
-            assertEquals(videoBounds.top, addBounds.top)
-            assertEquals(addBounds.top, startBounds.top)
+            val moreBounds = compose.onNodeWithTag("exercise_library_more_long").getUnclippedBoundsInRoot()
+            assertTrue("More button must follow Start", moreBounds.left >= startBounds.right - 1.dp)
+            assertTrue("Start and more share a row", moreBounds.top < startBounds.bottom && startBounds.top < moreBounds.bottom)
             val group = compose.onNodeWithTag("exercise_library_actions_long", useUnmergedTree = true).getUnclippedBoundsInRoot()
-            assertTrue(group.left <= videoBounds.left && group.right >= startBounds.right)
+            assertTrue(group.left <= startBounds.left && group.right >= moreBounds.right)
             val titleBounds = node.getUnclippedBoundsInRoot()
             assertTrue("Actions must not overlap the title", group.left >= titleBounds.right || group.top >= titleBounds.bottom)
             val meta = compose.onNodeWithTag("exercise_library_meta_long", useUnmergedTree = true)
@@ -158,9 +158,11 @@ class ExerciseLibraryCompactRegressionTest {
         compose.onNodeWithTag("exercise_library_favorite_long").performScrollTo().assertIsNotEnabled()
         compose.runOnIdle { mutationBusy = false }
         compose.onNodeWithTag("exercise_library_favorite_long").performClick().assertIsOn()
-        compose.onNodeWithTag("exercise_video_btn_${exercise.localizedName(language).hashCode()}").performScrollTo().performClick()
+        compose.onNodeWithTag("exercise_library_more_long").performScrollTo().performClick()
+        compose.onNodeWithTag("exercise_video_btn_${exercise.localizedName(language).hashCode()}").performClick()
         assertEquals(exercise.localizedName(language) to exercise.id, video)
-        compose.onNodeWithTag("exercise_library_add_to_queue_long").performScrollTo().performClick()
+        compose.onNodeWithTag("exercise_library_more_long").performScrollTo().performClick()
+        compose.onNodeWithTag("exercise_library_add_to_queue_long").performClick()
         assertTrue(queued)
         compose.onNodeWithTag("exercise_library_start_now_long").performScrollTo().performClick()
         assertEquals(1, started)
@@ -189,7 +191,10 @@ class ExerciseLibraryCompactRegressionTest {
             }
         }
         val ids = exercises.map { it.id }
-        fun button(id: String) = compose.onNodeWithTag("exercise_library_add_to_queue_$id").performScrollTo()
+        fun button(id: String): SemanticsNodeInteraction {
+            compose.onNodeWithTag("exercise_library_more_$id").performScrollTo().performClick()
+            return compose.onNodeWithTag("exercise_library_add_to_queue_$id")
+        }
         for (language in AppLanguage.entries) {
             compose.runOnIdle { model.selectLanguage(language) }
             exercises.forEach { button(it.id).performClick() }
