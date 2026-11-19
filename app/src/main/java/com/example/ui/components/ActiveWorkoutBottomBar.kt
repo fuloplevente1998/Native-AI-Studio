@@ -22,6 +22,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -144,4 +147,33 @@ fun WorkoutFinishSheet(
             }
         }
     )
+}
+
+/**
+ * 2776 (A): the sticky workout dock stands apart from the set cards: theme background (darker than
+ * the cards), a thin theme-coloured top line, a shadow, and the list fading out just above it.
+ */
+internal fun Modifier.activeWorkoutDockFrame(
+    background: androidx.compose.ui.graphics.Color,
+    accent: androidx.compose.ui.graphics.Color,
+    corner: androidx.compose.ui.unit.Dp = 20.dp
+): Modifier {
+    val shape = RoundedCornerShape(corner)
+    return this
+        .drawBehind {
+            val fade = 18.dp.toPx()
+            drawRect(
+                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                    listOf(background.copy(alpha = 0f), background), startY = -fade, endY = 0f),
+                topLeft = androidx.compose.ui.geometry.Offset(0f, -fade),
+                size = androidx.compose.ui.geometry.Size(size.width, fade))
+        }
+        .shadow(10.dp, shape, clip = false)
+        .drawWithContent {
+            drawContent()
+            val r = corner.toPx()
+            drawLine(accent, androidx.compose.ui.geometry.Offset(r, 1.dp.toPx()),
+                androidx.compose.ui.geometry.Offset(size.width - r, 1.dp.toPx()), strokeWidth = 2.dp.toPx())
+        }
+        .testTag("active_workout_dock")
 }

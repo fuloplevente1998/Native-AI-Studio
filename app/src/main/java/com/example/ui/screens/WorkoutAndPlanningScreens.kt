@@ -177,18 +177,18 @@ private fun WorkoutModeTile(
             .testTag(testTag)
     ) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
-                color = palette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(subtitle, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary,
-                maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) { graphic() }
+            // 2776: the arrow sits next to the title so subtitle and badge can use the full width (no "14…").
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Surface(shape = RoundedCornerShape(8.dp), color = tint.copy(alpha = 0.16f), modifier = Modifier.weight(1f, fill = false)) {
-                    Text(badge, style = MaterialTheme.typography.labelSmall, color = tint, fontWeight = FontWeight.Bold,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp))
-                }
-                Spacer(Modifier.weight(1f))
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+                    color = palette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.textSecondary, modifier = Modifier.size(18.dp))
+            }
+            Text(subtitle, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary,
+                maxLines = 2, modifier = Modifier.testTag("${testTag}_subtitle"))
+            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) { graphic() }
+            Surface(shape = RoundedCornerShape(8.dp), color = tint.copy(alpha = 0.16f)) {
+                Text(badge, style = MaterialTheme.typography.labelSmall, color = tint, fontWeight = FontWeight.Bold,
+                    maxLines = 2, modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp).testTag("${testTag}_badge"))
             }
         }
     }
