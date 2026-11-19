@@ -53,7 +53,9 @@ tartós szabályváltozáskor módosítsd (cache-barát). Kommunikáció: magyar
   Playwrighttal a scratchpadben, SendUserFile), kódolás jóváhagyás után.
 - Jóváhagyott minta: zöld CI → merge main → aláírt APK+AAB (`build_aab=true`), 4 fájl
   ellenőrizve (verzió, signer, hash, nyers XML tesztszám) chatben átadva; Drive-csatoló
-  ~3 MB/hívás, ezért binárist oda nem. Verzió: `27NN00`/`27NN02`, Play „Újdonságok” ≤500 kar.
+  ~3 MB/hívás, ezért binárist oda nem. Verzió: `27NN00`/`27NN02`.
+- Play kibocsátási megjegyzés (`docs/PLAY_LISTING.md`): 4 nyelv Play-címkékkel `<hu-HU>` `<de-DE>` `<en-US>` `<ro>`,
+  nyelvenként ≤500 kar., külön telefon és óra, a Playen lévő utolsó kiadás óta összes újítás; chatben egy kódblokk.
 - Dizájn: kompakt, témakövető (palette), íves keret, 48 dp érintés; alulról nyíló lapok
   (`TrainPilotSheetRoutes`, `TrainPilotRouteSheet`) a tartalom magasságáig.
 
