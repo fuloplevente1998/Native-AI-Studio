@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
 import androidx.compose.runtime.*
@@ -48,7 +49,9 @@ internal fun StudioStrengthSetCard(
     active: Boolean,
     onValues: (Float, Int, Int?) -> Unit,
     onToggle: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    /** 2775: "legutóbb: 5,5 × 12" from a saved workout; null = no history, nothing is shown. */
+    lastLabel: String? = null
 ) {
     val p = LocalTrainPilotPalette.current
     fun tr(hu: String, en: String, de: String, ro: String) = when (language) {
@@ -65,11 +68,17 @@ internal fun StudioStrengthSetCard(
     }
     val shape = RoundedCornerShape(14.dp)
     Surface(
-        color = p.surfaceElevated, shape = shape,
-        border = if (active) TrainPilotFrames.page(p.cardBorder, p.primary)
-            else BorderStroke(0.75.dp, p.cardBorder.copy(alpha = 0.55f)),
+        // 2775: a completed set reads green at a glance.
+        color = if (item.completed) androidx.compose.ui.graphics.lerp(p.surfaceElevated, p.success, 0.14f) else p.surfaceElevated,
+        shape = shape,
+        border = when {
+            item.completed -> BorderStroke(1.dp, p.success.copy(alpha = 0.75f))
+            active -> TrainPilotFrames.page(p.cardBorder, p.primary)
+            else -> BorderStroke(0.75.dp, p.cardBorder.copy(alpha = 0.55f))
+        },
         modifier = Modifier.fillMaxWidth().testTag("active_strength_set_${item.setNumber}")
     ) {
+        Column {
         BoxWithConstraints(Modifier.padding(6.dp)) {
             val availableWidth = maxWidth
             val singleRow = availableWidth >= 324.dp && LocalDensity.current.fontScale <= 1.3f
@@ -94,7 +103,7 @@ internal fun StudioStrengthSetCard(
                 val toggleShape = RoundedCornerShape(12.dp)
                 Surface(
                     shape = toggleShape,
-                    color = if (item.completed) p.success.copy(alpha = 0.18f) else p.surface,
+                    color = if (item.completed) p.success else p.surface,
                     border = BorderStroke(1.dp, if (item.completed) p.success else p.cardBorder),
                     modifier = Modifier.size(48.dp).clip(toggleShape)
                         .toggleable(value = item.completed, enabled = enabled, role = Role.Checkbox, onValueChange = { onToggle() })
@@ -103,14 +112,31 @@ internal fun StudioStrengthSetCard(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(Icons.Default.Check, contentDescription = null,
-                            tint = (if (item.completed) p.success else p.textSecondary)
+                            tint = (if (item.completed) com.repforge.app.ui.theme.NativeThemeTokens.onFill(p.success) else p.textSecondary)
                                 .copy(alpha = if (enabled) 1f else 0.5f),
                             modifier = Modifier.size(22.dp))
                     }
                 }
-                TrainPilotNegativeButton(onClick = onDelete, enabled = enabled,
-                    modifier = Modifier.size(48.dp).testTag("delete_set_${item.setNumber}"),
-                    contentPadding = PaddingValues(8.dp)) { Text("−") }
+                // 2775: deletion moved into a ⋮ menu instead of a red "−" button on every row.
+                var menuOpen by remember { mutableStateOf(false) }
+                LaunchedEffect(enabled) { if (!enabled) menuOpen = false }
+                Box {
+                    Box(Modifier.size(48.dp).clip(RoundedCornerShape(12.dp))
+                        .trainPilotClickable(RoundedCornerShape(12.dp), enabled = enabled) { menuOpen = true }
+                        .semantics { contentDescription = tr("Sorozat műveletek", "Set actions", "Satzaktionen", "Acțiuni serie") }
+                        .testTag("set_menu_${item.setNumber}"), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.MoreVert, null, tint = p.textSecondary.copy(alpha = if (enabled) 1f else 0.5f),
+                            modifier = Modifier.size(20.dp))
+                    }
+                    DropdownMenu(expanded = menuOpen && enabled, onDismissRequest = { menuOpen = false },
+                        modifier = Modifier.background(p.surface).testTag("set_menu_${item.setNumber}_menu")) {
+                        DropdownMenuItem(
+                            text = { Text(tr("Sorozat törlése", "Delete set", "Satz löschen", "Șterge seria"), color = p.danger) },
+                            enabled = enabled,
+                            onClick = { menuOpen = false; onDelete() },
+                            modifier = Modifier.testTag("delete_set_${item.setNumber}"))
+                    }
+                }
                 }
             }
             if (singleRow) {
@@ -134,6 +160,11 @@ internal fun StudioStrengthSetCard(
                     else Column(verticalArrangement = Arrangement.spacedBy(4.dp)) { fields(Modifier.fillMaxWidth()) }
                 }
             }
+        }
+        lastLabel?.let {
+            Text(it, color = p.textSecondary, style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(start = 30.dp, end = 8.dp, bottom = 6.dp).testTag("active_set_last_${item.setNumber}"))
+        }
         }
     }
 }

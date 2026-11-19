@@ -3,6 +3,7 @@ package com.example.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -93,9 +94,13 @@ fun ActiveWorkoutLiveBar(
             Surface(shape = small, color = palette.surfaceCard, modifier = Modifier.heightIn(min = 44.dp)
                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.6f), small)
                 .trainPilotClickable(small, enabled = enabled) { showFinish = true }.testTag("live_bar_finish")) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 9.dp, vertical = 10.dp)) {
-                    Text("⏹ " + lb(lang, "Befejezés", "Finish", "Beenden", "Finalizare"), color = palette.primary,
-                        fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, maxLines = 1)
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 9.dp, vertical = 10.dp)) {
+                    // 2775: drawn stop icon instead of the emoji square.
+                    androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Stop, contentDescription = null,
+                        tint = palette.primary, modifier = Modifier.size(16.dp).testTag("live_bar_finish_icon"))
+                    androidx.compose.foundation.layout.Spacer(Modifier.width(3.dp))
+                    Text(lb(lang, "Befejezés", "Finish", "Beenden", "Finalizare"), color = palette.textPrimary,
+                        fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelLarge, maxLines = 1)
                 }
             }
             Surface(shape = small, color = palette.primary, modifier = Modifier.heightIn(min = 44.dp)

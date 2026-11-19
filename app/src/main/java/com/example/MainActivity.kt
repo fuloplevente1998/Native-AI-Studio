@@ -618,6 +618,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 onEffort = { id, index -> viewModel.updateExerciseFeedback(id, index = index) },
                                 onNote = { id, note -> viewModel.updateExerciseFeedback(id, note = note) }) },
                             onSwitchExercise = { ex -> viewModel.switchCurrentActiveExercise(ex) },
+                            onOpenExerciseDetail = { exId -> viewModel.openExerciseDetail(exId) },
                             onOpenExerciseLibrary = { viewModel.openActiveExerciseLibrary() }
                         )
                     }
@@ -649,6 +650,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 onEffort = { id, index -> viewModel.updateExerciseFeedback(id, index = index) },
                                 onNote = { id, note -> viewModel.updateExerciseFeedback(id, note = note) }) },
                             onSwitchExercise = { ex -> viewModel.switchCurrentActiveExercise(ex) },
+                            onOpenExerciseDetail = { exId -> viewModel.openExerciseDetail(exId) },
                             onOpenExerciseLibrary = { viewModel.openActiveExerciseLibrary() }
                         )
                     }

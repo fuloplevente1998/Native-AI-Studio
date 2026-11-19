@@ -209,7 +209,9 @@ class StudioLiveStopwatchRegressionTest {
         }
         for (scale in listOf(1f,1.5f,2f)) for (lang in AppLanguage.entries) {
             compose.runOnIdle { language=lang;fontScale=scale }
-            inspect("bilateral_exercise_switch")
+            // 2775: switching moved to the shared title row (name ⌄ opens the library in swap mode).
+            compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("active_exercise_title"))
+            compose.onNodeWithTag("active_exercise_title").assertIsDisplayed().assertHasClickAction()
             inspect("bilateral_left_start_pause_btn")
             inspect("bilateral_left_stop_record_btn")
             inspect("bilateral_set_1_left_value")

@@ -308,14 +308,17 @@ fun ActiveStrengthWorkoutScreen(
     val lang = uiState.language
     val currentExerciseName = currentExercise?.localizedName(lang) ?: tr(lang, "Goblet guggolás", "Goblet Squat", "Goblet Squat", "Genuflexiune Goblet")
     val currentExerciseId = currentExercise?.id ?: "goblet_squat"
-    val restWord = tr(lang, "Pihenő", "Rest", "Pause", "Pauză")
     val secWord = tr(lang, "mp", "s", "Sek.", "sec")
     val currentExerciseSubtitle = if (currentExercise != null) {
-        "${currentExercise.localizedPrimaryMuscles(lang)} • ${currentExercise.localizedEquipment(lang)} • ${currentExercise.defaultSets}×${currentExercise.defaultReps} • $restWord: ${currentExercise.defaultRestSec} $secWord"
+        "${currentExercise.localizedPrimaryMuscles(lang)} • ${currentExercise.localizedEquipment(lang)} • ${currentExercise.defaultSets}×${currentExercise.defaultReps}" // 2775: rest is shown by the bottom bar
     } else {
-        tr(lang, "Láb • Kézisúlyzó • 3×8–20 • Pihenő: 90 mp", "Legs • Dumbbell • 3×8–20 • Rest: 90 s", "Beine • Kurzhantel • 3×8–20 • Pause: 90 Sek.", "Picioare • Ganteră • 3×8–20 • Pauză: 90 sec")
+        tr(lang, "Láb • Kézisúlyzó • 3×8–20", "Legs • Dumbbell • 3×8–20", "Beine • Kurzhantel • 3×8–20", "Picioare • Ganteră • 3×8–20")
     }
     val coachOwner = com.example.ui.components.rememberStudioWorkoutCoachOwner()
+    // 2775: previous saved values per set; empty without history (nothing shown, nothing invented).
+    val lastSets = remember(uiState.loggedWorkouts, currentExercise, uiState.activeWorkoutId) {
+        com.example.ui.components.lastLoggedSets(uiState.loggedWorkouts, currentExercise, uiState.activeWorkoutId)
+    }
     val columnLabels = com.example.ui.components.strengthColumnLabels(currentExercise, uiState.language)
 
     val listState = rememberLazyListState()
@@ -348,108 +351,14 @@ fun ActiveStrengthWorkoutScreen(
             contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 8.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
-            // Top Workout Progress & Exercise Sequence Strip + Floating Exercise Switcher
+            // 2775: shared header (title, day badge + Coach, exercise strip) and exercise title row.
         item {
-            val localizedWorkoutTitle = remember(uiState.activeWorkoutTitleHu, lang, uiState.programs, uiState.exercises) {
-                com.example.model.LoggedWorkoutEntry(
-                    id = "",
-                    titleHu = uiState.activeWorkoutTitleHu
-                ).localizedTitle(lang, uiState.programs, uiState.exercises)
-            }
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                com.example.ui.components.StudioActiveWorkoutHeaderSequence(
-                    state = uiState,
-                    header = {
-                        SubScreenTopBar(
-                        title = tr(
-                        lang,
-                        "$localizedWorkoutTitle • ${currentExerciseIdx + 1} / $totalExercisesCount gyakorlat",
-                        "$localizedWorkoutTitle • ${currentExerciseIdx + 1} / $totalExercisesCount exercises",
-                        "$localizedWorkoutTitle • ${currentExerciseIdx + 1} / $totalExercisesCount Übungen",
-                        "$localizedWorkoutTitle • ${currentExerciseIdx + 1} / $totalExercisesCount exerciții"
-                        ),
-                        onBack = onBack,
-                        onOpenSettings = onOpenSettings,
-                        rightExtraContent = { com.example.ui.components.StudioWorkoutHealthAction() }
-                        )
-                    },
-                    exerciseSequence = {
-                        com.example.ui.components.StudioExerciseSequenceStrip(
-                            state = uiState, exercises = workoutExercises,
-                            currentIndex = currentExerciseIdx, onSelect = onSwitchExercise)
-                    },
-                    // 2774: compact Coach chip next to the day badge; tapping opens the full Coach sheet.
-                    sessionTrailing = { com.example.ui.components.StudioWorkoutCoachChip(uiState.selectedExerciseId, coachOwner) }
-                )
-
-                // Current Exercise Header + Floating Exercise Switcher Dropdown + Library Button
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        Column(
-                            modifier = Modifier
-                                .trainPilotClickable(RoundedCornerShape(12.dp)) { onOpenExerciseLibrary() } // 2774: straight to the library sheet in swap mode
-                                .padding(vertical = 2.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = currentExerciseName,
-                                    modifier = Modifier.weight(1f),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.textPrimary
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = tr(lang, "Gyakorlat váltása", "Switch exercise", "Übung wechseln", "Schimbă exercițiul"),
-                                    tint = palette.primary,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                text = currentExerciseSubtitle,
-                                maxLines = 2, overflow = TextOverflow.Ellipsis,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = palette.textSecondary
-                            )
-                        }
-
-                    }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        SmallExerciseVideoButton(exerciseName = currentExerciseName, exerciseId = currentExerciseId)
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = palette.surfaceElevated,
-                            modifier = Modifier
-                                .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenExerciseDetail(currentExerciseId) }
-                        ) {
-                            // 2774: exercise-specific icon + "i" badge: it opens the exercise details.
-                            Box(Modifier.size(48.dp).testTag("active_exercise_kind_icon"), contentAlignment = Alignment.Center) {
-                                Icon(com.example.ui.components.exerciseKindIcon(currentExercise),
-                                    contentDescription = tr(lang, "Gyakorlat részletei", "Exercise details", "Übungsdetails", "Detalii exercițiu"),
-                                    tint = palette.textPrimary, modifier = Modifier.size(22.dp))
-                                Box(Modifier.align(Alignment.BottomEnd).padding(3.dp).size(15.dp)
-                                    .background(palette.primary, androidx.compose.foundation.shape.CircleShape),
-                                    contentAlignment = Alignment.Center) {
-                                    Text("i", color = palette.onPrimary, fontWeight = FontWeight.Bold,
-                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp))
-                                }
-                            }
-                        }
-                    }
-                }
+                com.example.ui.components.StudioActiveWorkoutTop(uiState, workoutExercises, currentExerciseIdx,
+                    onBack, onOpenSettings, onSwitchExercise)
+                com.example.ui.components.StudioActiveExerciseTitleRow(lang, currentExerciseName, currentExerciseSubtitle,
+                    currentExercise, currentExerciseId, onOpenExerciseLibrary, onOpenExerciseDetail,
+                    uiState.selectedExerciseId, coachOwner)
             }
         }
 
@@ -474,7 +383,9 @@ fun ActiveStrengthWorkoutScreen(
                 active = !setItem.completed && uiState.activeSets.firstOrNull { !it.completed }?.setNumber == setItem.setNumber,
                 onValues = { kg, reps, rir -> onUpdateSetValuesExact(setItem.setNumber, kg, reps, rir) },
                 onToggle = { onToggleSetCompleted(setItem.setNumber) },
-                onDelete = { onDeleteSet(setItem.setNumber) }
+                onDelete = { onDeleteSet(setItem.setNumber) },
+                lastLabel = lastSets.firstOrNull { it.setNumber == setItem.setNumber }
+                    ?.let { com.example.ui.components.lastSetLabel(it, lang) }
             )
         }
 
@@ -491,7 +402,7 @@ fun ActiveStrengthWorkoutScreen(
                 Icon(Icons.Default.Add, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    tr(lang, "+ Új sorozat hozzáadása", "+ Add new set", "+ Neuen Satz hinzufügen", "+ Adaugă o serie nouă"),
+                    tr(lang, "Új sorozat", "New set", "Neuer Satz", "Serie nouă"),
                     color = palette.textPrimary,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -770,6 +681,7 @@ fun ActiveTimedWorkoutScreen(
     onNextExercise: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
     onSwitchExercise: (ExerciseItem) -> Unit = {},
     onOpenExerciseLibrary: () -> Unit = {},
+    onOpenExerciseDetail: (String) -> Unit = {},
     exerciseFeedback: @Composable () -> Unit = {},
     consumeIntervalStart: (com.repforge.app.NativeWorkoutTarget) -> Boolean = { false },
     onFinishWorkout: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
@@ -785,6 +697,7 @@ fun ActiveTimedWorkoutScreen(
         ?: uiState.exercises.find { it.id == uiState.selectedExerciseId }
         ?: uiState.exercises.firstOrNull { it.isTimed }
     val exerciseNameHu = currentExercise?.localizedName(uiState.language) ?: "Plank"
+    val coachOwner = com.example.ui.components.rememberStudioWorkoutCoachOwner()
     val defaultTargetSec = (currentExercise?.targetSeconds ?: 45).coerceAtLeast(15)
 
     val nativeModel: com.repforge.app.ui.workout.ActiveWorkoutViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
@@ -865,22 +778,19 @@ fun ActiveTimedWorkoutScreen(
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
             item {
-                val localizedWorkoutTitle = com.example.model.LoggedWorkoutEntry(
-                    id = "",
-                    titleHu = uiState.activeWorkoutTitleHu
-                ).localizedTitle(uiState.language, uiState.programs, uiState.exercises)
-                SubScreenTopBar(
-                    title = tr(
-                        uiState.language,
-                        "$localizedWorkoutTitle • ${currentIdx + 1} / $totalCount gyakorlat",
-                        "$localizedWorkoutTitle • ${currentIdx + 1} / $totalCount exercises",
-                        "$localizedWorkoutTitle • ${currentIdx + 1} / $totalCount Übungen",
-                        "$localizedWorkoutTitle • ${currentIdx + 1} / $totalCount exerciții"
-                    ),
-                    onBack = onBack,
-                    onOpenSettings = onOpenSettings,
-                    rightExtraContent = { com.example.ui.components.StudioWorkoutHealthAction() }
-                )
+                // 2775: same header as the strength screen + shared exercise title row.
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    com.example.ui.components.StudioActiveWorkoutTop(uiState, workoutExercises, currentIdx,
+                        onBack, onOpenSettings, onSwitchExercise)
+                    com.example.ui.components.StudioActiveExerciseTitleRow(uiState.language, exerciseNameHu,
+                        tr(uiState.language,
+                            "Stopper • $currentSetIndex. sorozat • célidő $targetSec mp",
+                            "Stopwatch • set $currentSetIndex • target $targetSec s",
+                            "Stoppuhr • Satz $currentSetIndex • Ziel $targetSec Sek.",
+                            "Cronometru • seria $currentSetIndex • țintă $targetSec sec"),
+                        currentExercise, currentExercise?.id ?: timedExerciseOptions.firstOrNull { it.localizedName(uiState.language) == exerciseNameHu }?.id,
+                        onOpenExerciseLibrary, onOpenExerciseDetail, currentExercise?.id ?: uiState.selectedExerciseId, coachOwner)
+                }
             }
             item {
                 val lang = uiState.language
@@ -893,78 +803,36 @@ fun ActiveTimedWorkoutScreen(
                         .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                Column(
-                                    modifier = Modifier
-                                        .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenExerciseLibrary() } // 2774: straight to the library sheet in swap mode
-                                        .padding(vertical = 2.dp)
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Text(
-                                            text = exerciseNameHu,
-                                            style = MaterialTheme.typography.titleLarge,
-                                            fontWeight = FontWeight.Bold,
-                                            color = palette.textPrimary
-                                        )
-                                        Icon(
-                                            imageVector = Icons.Default.KeyboardArrowDown,
-                                            contentDescription = tr(lang, "Időalapú gyakorlat váltása", "Switch timed exercise", "Zeitbasierte Übung wechseln", "Schimbă exercițiul cronometrat"),
-                                            tint = palette.primary,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                    Text(
-                                        text = tr(
-                                            lang,
-                                            "Cél: $currentSetIndex. sorozat • Célidő: $targetSec mp • Koppints a váltáshoz",
-                                            "Target: Set #$currentSetIndex • Target time: $targetSec s • Tap to switch",
-                                            "Ziel: $currentSetIndex. Satz • Zielzeit: $targetSec Sek. • Tippen zum Wechseln",
-                                            "Țintă: Seria #$currentSetIndex • Timp țintă: $targetSec sec • Atinge pentru schimbare"
-                                        ),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = palette.textSecondary
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = if (isRunning) palette.primary.copy(alpha = 0.2f) else palette.secondary.copy(alpha = 0.18f)
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Timer,
-                                                contentDescription = null,
-                                                tint = if (isRunning) palette.primary else palette.secondary,
-                                                modifier = Modifier.size(12.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(
-                                                text = if (intervalActive) {
-                                                    tr(lang, "Intervallummérés", "Interval measurement", "Intervallmessung", "Măsurare pe intervale")
-                                                } else if (isRunning) {
-                                                    tr(lang, "Stopper fut ●", "Stopwatch running ●", "Stoppuhr läuft ●", "Cronometrul rulează ●")
-                                                } else {
-                                                    tr(lang, "Stopper készenlétben", "Stopwatch ready", "Stoppuhr bereit", "Cronometru pregătit")
-                                                },
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = if (isRunning) palette.primary else palette.secondary,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                }
-
+                        // 2775: name, target and switching live in the shared title row above; only the state stays here.
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isRunning) palette.primary.copy(alpha = 0.2f) else palette.secondary.copy(alpha = 0.18f),
+                            modifier = Modifier.align(Alignment.CenterHorizontally).testTag("timed_stopwatch_state")
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Timer,
+                                    contentDescription = null,
+                                    tint = if (isRunning) palette.primary else palette.secondary,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (intervalActive) {
+                                        tr(lang, "Intervallummérés", "Interval measurement", "Intervallmessung", "Măsurare pe intervale")
+                                    } else if (isRunning) {
+                                        tr(lang, "Stopper fut ●", "Stopwatch running ●", "Stoppuhr läuft ●", "Cronometrul rulează ●")
+                                    } else {
+                                        tr(lang, "Stopper készenlétben", "Stopwatch ready", "Stoppuhr bereit", "Cronometru pregătit")
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (isRunning) palette.primary else palette.secondary,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
-                            SmallExerciseVideoButton(
-                                exerciseName = exerciseNameHu,
-                                exerciseId = currentExercise?.id ?: timedExerciseOptions.firstOrNull { it.localizedName(lang) == exerciseNameHu }?.id
-                            )
                         }
 
                     if (nativeExercise != null) {
@@ -1055,7 +923,7 @@ fun ActiveTimedWorkoutScreen(
                             enabled = target != null,
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isRunning) palette.primary else palette.success,
+                                containerColor = palette.primary, // 2775: theme primary like Save/Next
                                 contentColor = palette.onPrimary
                             ),
                             modifier = Modifier
@@ -1268,6 +1136,7 @@ fun ActiveBilateralWorkoutScreen(
     onNextExercise: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
     onSwitchExercise: (com.example.model.ExerciseItem) -> Unit = {},
     onOpenExerciseLibrary: () -> Unit = {},
+    onOpenExerciseDetail: (String) -> Unit = {},
     exerciseFeedback: @Composable () -> Unit = {},
     onFinishWorkout: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
     onDiscardWorkout: () -> Unit = {}
@@ -1283,6 +1152,7 @@ fun ActiveBilateralWorkoutScreen(
     val secWord = tr(lang, "mp", "s", "Sek.", "sec")
     val exerciseTitle = currentExercise?.localizedName(lang) ?: tr(lang, "Oldalsó plank", "Side Plank", "Seitlicher Plank", "Plank lateral")
     val defaultTargetSec = currentExercise?.targetSeconds ?: 30
+    val coachOwner = com.example.ui.components.rememberStudioWorkoutCoachOwner()
 
     // Determine target set for stopwatch recording (defaults to first uncompleted set)
     val firstUncompletedSetNum = uiState.activeSets.firstOrNull { !it.completed }?.setNumber
@@ -1430,94 +1300,20 @@ fun ActiveBilateralWorkoutScreen(
             contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
+            // 2775: same header as the strength screen; the duplicated title/name/target texts are gone.
             item {
-                SubScreenTopBar(
-                    title = "$exerciseTitle • ${tr(lang, "Kétoldali stopper", "Bilateral stopwatch", "Beidseitige Stoppuhr", "Cronometru bilateral")}",
-                    onBack = onBack,
-                    onOpenSettings = onOpenSettings,
-                    rightExtraContent = { com.example.ui.components.StudioWorkoutHealthAction() }
-                )
-            }
-
-            // Header Card + Exercise Switcher
-            item {
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = palette.surfaceCard,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
-                ) {
-                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = exerciseTitle,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.textPrimary
-                                )
-                                Text(
-                                    text = tr(
-                                        lang,
-                                        "Az oldalakat külön mérd. A rögzítés a(z) ${selectedTargetSetNumber}. sorozatba menti az időt.",
-                                        "Measure each side separately. Record saves the time to set #${selectedTargetSetNumber}.",
-                                        "Jede Seite einzeln messen. Speichern sichert die Zeit im ${selectedTargetSetNumber}. Satz.",
-                                        "Măsoară fiecare parte separat. Salvarea înregistrează timpul în seria #${selectedTargetSetNumber}."
-                                    ),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = palette.textSecondary
-                                )
-                            }
-                            SmallExerciseVideoButton(
-                                exerciseName = exerciseTitle,
-                                exerciseId = currentExercise?.id ?: uiState.exercises.firstOrNull { it.localizedName(lang) == exerciseTitle || it.nameHu == exerciseTitle }?.id
-                            )
-                        }
-
-                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = palette.primary.copy(alpha = 0.16f)
-                            ) {
-                                Text(
-                                    text = tr(
-                                        lang,
-                                        "${uiState.activeExerciseIndex + 1} / ${workoutExercises.size.coerceAtLeast(1)} gyakorlat • Aktív cél: ${selectedTargetSetNumber}. sorozat",
-                                        "${uiState.activeExerciseIndex + 1} / ${workoutExercises.size.coerceAtLeast(1)} exercises • Active target: Set #${selectedTargetSetNumber}",
-                                        "${uiState.activeExerciseIndex + 1} / ${workoutExercises.size.coerceAtLeast(1)} Übungen • Aktives Ziel: ${selectedTargetSetNumber}. Satz",
-                                        "${uiState.activeExerciseIndex + 1} / ${workoutExercises.size.coerceAtLeast(1)} exerciții • Țintă activă: Seria #${selectedTargetSetNumber}"
-                                    ),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.primary,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-
-                            Box(Modifier.fillMaxWidth()) {
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = palette.surfaceElevated,
-                                    modifier = Modifier
-                                        .fillMaxWidth().heightIn(min = 40.dp).testTag("bilateral_exercise_switch")
-                                        .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenExerciseLibrary() } // 2774: straight to the library sheet in swap mode
-                                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
-                                ) {
-                                    Text(
-                                        maxLines = 1, softWrap = false,
-                                        text = tr(lang, "Gyakorlat váltása ▾", "Switch exercise ▾", "Übung wechseln ▾", "Schimbă exercițiul ▾"),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = palette.textPrimary,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.testTag("bilateral_header")) {
+                    com.example.ui.components.StudioActiveWorkoutTop(uiState, workoutExercises, uiState.activeExerciseIndex,
+                        onBack, onOpenSettings, onSwitchExercise)
+                    com.example.ui.components.StudioActiveExerciseTitleRow(lang, exerciseTitle,
+                        tr(lang,
+                            "Kétoldali stopper • $selectedTargetSetNumber. sorozat • $defaultTargetSec mp / oldal",
+                            "Both sides • set $selectedTargetSetNumber • $defaultTargetSec s / side",
+                            "Beidseitig • Satz $selectedTargetSetNumber • $defaultTargetSec Sek. / Seite",
+                            "Bilateral • seria $selectedTargetSetNumber • $defaultTargetSec sec / parte"),
+                        currentExercise,
+                        currentExercise?.id ?: uiState.exercises.firstOrNull { it.localizedName(lang) == exerciseTitle || it.nameHu == exerciseTitle }?.id,
+                        onOpenExerciseLibrary, onOpenExerciseDetail, currentExercise?.id ?: uiState.selectedExerciseId, coachOwner)
                 }
             }
 
@@ -1627,7 +1423,7 @@ fun ActiveBilateralWorkoutScreen(
                             enabled = target != null,
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (leftRunning) palette.warning else palette.success,
+                                    containerColor = palette.primary, // 2775
                                     contentColor = palette.onPrimary
                                 ),
                                 modifier = Modifier
@@ -1788,7 +1584,7 @@ fun ActiveBilateralWorkoutScreen(
                             enabled = target != null,
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (rightRunning) palette.warning else palette.success,
+                                    containerColor = palette.primary, // 2775
                                     contentColor = palette.onPrimary
                                 ),
                                 modifier = Modifier
