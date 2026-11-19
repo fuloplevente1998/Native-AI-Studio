@@ -2,6 +2,8 @@ package com.example
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import com.example.model.AppLanguage
 import com.example.model.CalendarDayEvent
 import com.example.model.CalendarEventStatus
@@ -141,5 +143,24 @@ class Collector2779UiRegressionTest {
         assertEquals(7711, bars.last())
         assertNull(bars[12]) // not synced ≠ 0 steps
         assertTrue(bars.take(12).all { it == null })
+    }
+
+    @Test fun restDockSwitchesSizeWithAShortAnimationNotAJump() {
+        var large by androidx.compose.runtime.mutableStateOf(false)
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.components.StudioRestTimerDock(TrainPilotUiState(restTimerRemainingSec = 60, defaultRestSec = 90),
+                large = large, onLarge = { large = it }, onAdjust = {}, onToggle = {}, onSkip = {}, skipLabel = "Kihagy")
+        } }
+        val compact = compose.onNodeWithTag("rest_dock_animated").fetchSemanticsNode().boundsInRoot.height
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithTag("sticky_rest_timer_compact").performClick()
+        compose.mainClock.advanceTimeBy(96)
+        val middle = compose.onNodeWithTag("rest_dock_animated").fetchSemanticsNode().boundsInRoot.height
+        compose.mainClock.advanceTimeBy(600)
+        val full = compose.onNodeWithTag("rest_dock_animated").fetchSemanticsNode().boundsInRoot.height
+        assertTrue("grows in steps: $compact -> $middle -> $full", compact < middle && middle < full)
+        compose.mainClock.autoAdvance = true
+        compose.onNodeWithTag("sticky_rest_timer_large").assertExists()
+        compose.onNodeWithTag("sticky_rest_timer_compact").assertDoesNotExist()
     }
 }

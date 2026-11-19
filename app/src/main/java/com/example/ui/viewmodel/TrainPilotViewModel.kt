@@ -4665,6 +4665,9 @@ class TrainPilotViewModel : ViewModel() {
             healthSyncFailed = failed, healthSyncMessage = message) }
     }
 
+    /** Provider whose values are on screen now; null = nothing loaded (or cleared). */
+    @Volatile private var loadedHealthProvider: String? = null
+
     fun reloadHealthJournal() {
         val ctx = nativeContext
         val scope = nativeScope
@@ -4674,8 +4677,11 @@ class TrainPilotViewModel : ViewModel() {
             }
             return
         }
-        _uiState.update {
-            it.copy(
+        // 2779: values are no longer blanked before every reload: the reload overwrites every field
+        // below, so blanking first only made the Coach card and the Today tiles flash "—" and jump.
+        // They are still cleared when the provider changed (old provider's data must not show) or
+        // when the reload fails.
+        fun clearedHealth(st: TrainPilotUiState) = st.copy(
                 dailySteps = 0,
                 currentHrBpm = 0,
                 restingHrBpm = 0,
@@ -4698,7 +4704,11 @@ class TrainPilotViewModel : ViewModel() {
                 bloodGlucoseLabel = "—",
                 respiratoryRateLabel = "—",
                 dailyDistanceKm = 0f
-            )
+        )
+        val providerAtStart = runCatching { HealthJournalStore.get(ctx).preferences().optString("provider", HealthJournalStore.HC) }.getOrNull()
+        if (providerAtStart == null || providerAtStart != loadedHealthProvider) {
+            loadedHealthProvider = null
+            _uiState.update(::clearedHealth)
         }
         scope.launch(Dispatchers.IO) {
             try {
@@ -4878,6 +4888,7 @@ class TrainPilotViewModel : ViewModel() {
 
                 withContext(Dispatchers.Main) {
                     if (store.generation() != generation || store.preferences().optString("provider", HealthJournalStore.HC) != provider) return@withContext
+                    loadedHealthProvider = provider
                     _uiState.update { st ->
                         st.copy(
                             primaryHealthSourceSamsung = provider == HealthJournalStore.SAMSUNG,
@@ -4926,7 +4937,8 @@ class TrainPilotViewModel : ViewModel() {
             } catch (e: Throwable) {
                 withContext(Dispatchers.Main) {
                     _uiState.update {
-                        it.copy(statusBannerMessage = "Hiba az egészségszinkron során: ${e.localizedMessage ?: "szolgáltatói hiba"}")
+                        loadedHealthProvider = null
+                        clearedHealth(it).copy(statusBannerMessage = "Hiba az egészségszinkron során: ${e.localizedMessage ?: "szolgáltatói hiba"}")
                     }
                 }
             }

@@ -119,14 +119,20 @@ class StudioProgressDataRegressionTest {
         assertEquals("2026-11-02T08:00:00Z", model.uiState.value.dailyHealthLastSyncIso)
         health.setPreferences(JSONObject().put("provider", HealthJournalStore.HC))
         model.reloadHealthJournal()
+        // Provider changed: Samsung's values are cleared at once, never shown as Health Connect data.
+        assertEquals(0, model.uiState.value.dailySteps)
         awaitCondition { model.uiState.value.dailySteps == 8000 }
+        // 2779: a reload of the same provider keeps the values on screen until the new ones arrive (no "—" flash).
+        model.reloadHealthJournal()
+        assertEquals(8000, model.uiState.value.dailySteps)
+        awaitCondition { model.uiState.value.dailySteps == 8000 && model.uiState.value.dailyHealthDate == day }
         assertEquals(8000, model.uiState.value.weeklyTotalSteps)
         assertEquals("—", model.uiState.value.dailyHealthLastSyncIso)
         health.erase()
         health.samsungDay(day, JSONObject().put("steps", 7000), JSONArray(), health.generation())
         model.reloadHealthJournal()
-        awaitCondition { model.uiState.value.dailyHealthSourceLabel == "Health Connect" }
-        assertTrue(model.uiState.value.dailyHealthAvailableFields.isEmpty())
+        awaitCondition { model.uiState.value.dailyHealthSourceLabel == "Health Connect" &&
+            model.uiState.value.dailyHealthAvailableFields.isEmpty() }
         assertEquals(0, model.uiState.value.dailySteps)
     }
     @Test fun savedRecordListUsesEveryMeasuredExerciseAndTheCanonicalPrTypes() {

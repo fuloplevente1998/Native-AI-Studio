@@ -79,7 +79,9 @@ internal fun HomeCoachAdviceCard(state: TrainPilotUiState, strings: LocalizedStr
         )
     }
     var summaryExpanded by rememberSaveable(summary) { mutableStateOf(false) }
-    var summaryOverflow by remember(summary) { mutableStateOf(false) }
+    // 2779: not reset when the advice text changes (that hid the button for a frame and made the card jump);
+    // every layout recomputes it.
+    var summaryOverflow by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(18.dp)
     Surface(shape = shape, color = p.surface,
         modifier = Modifier.fillMaxWidth().trainPilotSoftGlow(p.primary, shape)
@@ -96,6 +98,7 @@ internal fun HomeCoachAdviceCard(state: TrainPilotUiState, strings: LocalizedStr
             Text(heading, color = p.textPrimary, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
             Text(summary, color = p.textSecondary, style = MaterialTheme.typography.bodySmall,
                 maxLines = if (summaryExpanded) Int.MAX_VALUE else 4,
+                minLines = 3,
                 overflow = TextOverflow.Ellipsis,
                 onTextLayout = { if (!summaryExpanded) summaryOverflow = it.hasVisualOverflow },
                 modifier = Modifier.testTag("home_coach_summary"))
