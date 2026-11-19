@@ -35,7 +35,7 @@ import java.util.Locale
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @LooperMode(LooperMode.Mode.PAUSED)
 class WearScreenAuditTest {
-    private val started = "2026-11-19T09:00:00Z"
+    private val started = java.time.Instant.now().minusSeconds(14 * 60).toString()
 
     private fun exercise(id: String, name: String, unit: String, load: String, sets: Int, weight: Double, reps: String = "") =
         JSONObject().put("id", id).put("name", name).put("loadType", load).put("repUnit", unit).put("targetReps", reps)
@@ -106,9 +106,9 @@ class WearScreenAuditTest {
             onChange = { _, _ -> }, onComplete = {}, onPrevious = {}, onNext = {}, onSelectExercise = {}, onSkipRest = {},
             onFinish = {}, onDiscard = {}, onResumeWorkout = {}, onRetry = {}, onDismissClosure = {}, onOpenPhone = {},
             onRefreshJournal = {}, health = mutableStateOf(JSONObject().put("heartRate", 128)), measuring = mutableStateOf(true),
-            gpsEnabled = mutableStateOf(false), requestedRoute = mutableStateOf(route), onRouteConsumed = {},
+            gpsEnabled = mutableStateOf(false), requestedRoute = mutableStateOf<String?>(null), onRouteConsumed = {},
             onEnableHealth = {}, onDisableHealth = {}, onToggleGps = {},
-            phoneConnected = mutableStateOf(true), batteryLevel = mutableStateOf(64))
+            phoneConnected = mutableStateOf(true), batteryLevel = mutableStateOf(64), initialRoute = route)
     }
 
     private val routes = listOf("home", "menu", "planned216", "calendar", "days", "quick", "journal", "journal-detail",

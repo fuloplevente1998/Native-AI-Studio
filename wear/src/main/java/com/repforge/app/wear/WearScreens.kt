@@ -138,8 +138,10 @@ internal fun TrainPilotWearApp(
     onStartGpsRoute193: (() -> Unit)? = null,
     onStopGpsRoute193: (() -> Unit)? = null,
     touchClock189: ()->Long = { android.os.SystemClock.uptimeMillis() },
+    /** Start route; only the screen audit passes another one (production always starts at "home"). */
+    initialRoute: String = "home",
 ) {
-    var route by rememberSaveable { mutableStateOf("home") }
+    var route by rememberSaveable { mutableStateOf(initialRoute) }
     val context = LocalContext.current
     var pendingGps216 by remember { mutableStateOf<GpsLaunch216?>(null) }
     var gpsBack216 by rememberSaveable { mutableStateOf("menu") }
