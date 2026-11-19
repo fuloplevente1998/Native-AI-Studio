@@ -14,8 +14,8 @@ android {
         applicationId = "com.TrainPilot.com"
         minSdk = 30
         targetSdk = 36
-        versionCode = 277902 // Play scheme: release 2779, Wear suffix 02
-        versionName = "1.3.9"
+        versionCode = 278002 // Play scheme: release 2780, Wear suffix 02
+        versionName = "1.4.0"
     }
     signingConfigs {
         create("phoneDebug") { initWith(phoneAndroid.signingConfigs.getByName("debugConfig")) }

@@ -192,6 +192,14 @@ internal fun StudioHealthMetricsBrowser(
                                 repeat(3 - cells.size) { Spacer(Modifier.weight(1f)) }
                             }
                         }
+                        // 2780: say why a Health Connect day has fewer tiles instead of leaving a silent gap.
+                        if (healthConnectLacksActiveCalories(provider, available.map { it.key }.toSet()))
+                            Text(label("A Health Connect nem kap aktív kalóriát és Energiapontot – Samsung Health forrással láthatók.",
+                                "Health Connect receives no active calories or Energy score – shown with the Samsung Health source.",
+                                "Health Connect erhält keine aktiven Kalorien und keinen Energiewert – mit Samsung Health als Quelle sichtbar.",
+                                "Health Connect nu primește calorii active și scor de energie – vizibile cu sursa Samsung Health."),
+                                color = palette.textSecondary, style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.testTag("journal_hc_missing_hint_$date"))
                         val headerShape = RoundedCornerShape(10.dp)
                         Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).trainPilotClickable(headerShape) { recordsOpen = !recordsOpen }
                             .testTag("journal_records_toggle_$date"), verticalAlignment = Alignment.CenterVertically) {
@@ -283,3 +291,7 @@ internal fun StudioHealthMetricsBrowser(
         )
     }
 }
+
+/** 2780: Health Connect day without active calories (Samsung Health does not hand them over to HC). */
+internal fun healthConnectLacksActiveCalories(provider: String, availableKeys: Set<String>): Boolean =
+    provider == com.repforge.app.HealthJournalStore.HC && "activeCalories" !in availableKeys && availableKeys.isNotEmpty()

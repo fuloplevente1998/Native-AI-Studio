@@ -20,6 +20,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextOverflow
@@ -280,23 +282,63 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
                 color = palette.textSecondary, style = MaterialTheme.typography.labelMedium)
             val bars = remember(days, today) { dailyStepBars(days, today) }
             val max = bars.filterNotNull().maxOrNull()?.coerceAtLeast(1) ?: 1
-            Row(Modifier.fillMaxWidth().height(72.dp).testTag("statistics_steps_chart"),
-                horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Bottom) {
+            // 2780: every column is tappable; the selected day's line has a fixed place above the chart
+            // (today by default), so nothing appears or disappears and the card never jumps.
+            var selectedBar by rememberSaveable { mutableStateOf(bars.lastIndex) }
+            val selectedDate = today.minusDays((bars.lastIndex - selectedBar).toLong())
+            val selectedDay = days.firstOrNull { it.dateIso == selectedDate.toString() }
+            val locale = Locale.forLanguageTag(lang.name.lowercase())
+            val weekdayFmt = remember(locale) { java.time.format.DateTimeFormatter.ofPattern("EEEE", locale) }
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(palette.surfaceElevated)
+                .padding(horizontal = 10.dp, vertical = 6.dp).testTag("statistics_steps_selected")) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("${selectedDate.monthValue}.${"%02d".format(selectedDate.dayOfMonth)}. (${selectedDate.format(weekdayFmt)})",
+                        color = palette.textPrimary, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(bars[selectedBar]?.let { statsTr(lang, "${number.format(it)} lépés", "${number.format(it)} steps",
+                        "${number.format(it)} Schritte", "${number.format(it)} pași") }
+                        ?: statsTr(lang, "nincs szinkronizálva", "not synced", "nicht synchronisiert", "nesincronizat"),
+                        color = if (bars[selectedBar] != null) palette.primary else palette.textSecondary,
+                        style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.testTag("statistics_steps_selected_value"))
+                }
+                val outsideSelected = selectedDay?.takeIf { it.stepsAvailable }?.let {
+                    if (it.workoutCount == 0) number.format(it.steps) else "—" } ?: "—"
+                val sourceSelected = selectedDay?.stepsSourceLabelHu?.takeIf { it.isNotBlank() && !it.contains("Nincs", ignoreCase = true) } ?: "—"
+                Text(statsTr(lang, "$sourceSelected · edzésen kívül: $outsideSelected", "$sourceSelected · outside workouts: $outsideSelected",
+                    "$sourceSelected · außerhalb: $outsideSelected", "$sourceSelected · în afara antrenamentelor: $outsideSelected"),
+                    color = palette.textSecondary, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            val letters = remember(locale) { java.time.format.DateTimeFormatter.ofPattern("EEEEE", locale) }
+            Row(Modifier.fillMaxWidth().height(92.dp).testTag("statistics_steps_chart"),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 bars.forEachIndexed { index, value ->
-                    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.BottomCenter) {
-                        if (value == null) Box(Modifier.fillMaxWidth().height(2.dp)
-                            .background(palette.cardBorder, RoundedCornerShape(1.dp)).testTag("statistics_steps_bar_missing_$index"))
-                        else Box(Modifier.fillMaxWidth().fillMaxHeight((value.toFloat() / max).coerceIn(0.04f, 1f))
-                            .background(if (index == bars.lastIndex) palette.primary else palette.primary.copy(alpha = 0.55f),
-                                RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                            .testTag("statistics_steps_bar_$index"))
+                    val selected = index == selectedBar
+                    Column(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(6.dp))
+                        .trainPilotClickable(RoundedCornerShape(6.dp)) { selectedBar = index }
+                        .testTag("statistics_steps_column_$index"), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.BottomCenter) {
+                            if (value == null) Box(Modifier.fillMaxWidth().height(2.dp)
+                                .background(if (selected) palette.primary else palette.cardBorder, RoundedCornerShape(1.dp))
+                                .testTag("statistics_steps_bar_missing_$index"))
+                            else Box(Modifier.fillMaxWidth().fillMaxHeight((value.toFloat() / max).coerceIn(0.04f, 1f))
+                                .background(if (selected) palette.primary else palette.primary.copy(alpha = 0.45f),
+                                    RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                .testTag("statistics_steps_bar_$index"))
+                        }
+                        Text(today.minusDays((bars.lastIndex - index).toLong()).format(letters),
+                            color = if (selected) palette.primary else palette.textSecondary,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                            style = MaterialTheme.typography.labelSmall, maxLines = 1)
                     }
                 }
             }
             val ordered = days.reversed()
             (if (listOpen) ordered else ordered.take(2)).forEach { day ->
                 HorizontalDivider(color = palette.cardBorder)
-                Row(Modifier.fillMaxWidth().testTag("statistics_steps_row_${day.dateIso}"), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().background(if (day.dateIso == selectedDate.toString()) palette.primary.copy(alpha = 0.12f)
+                    else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(8.dp))
+                    .testTag("statistics_steps_row_${day.dateIso}"), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(day.dateIso, color = palette.textPrimary, style = MaterialTheme.typography.bodySmall)
                         val localizedSource = if (day.stepsSourceLabelHu.contains("Nincs", ignoreCase = true)) {
