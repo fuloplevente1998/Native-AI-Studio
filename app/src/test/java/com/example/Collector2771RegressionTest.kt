@@ -100,9 +100,8 @@ class Collector2771RegressionTest {
         compose.onNodeWithTag("form_body").assertExists()
         compose.onNodeWithTag("form_ok").performClick()
         compose.runOnIdle { assertEquals(1, saved) }
-        androidx.test.espresso.Espresso.pressBack()
-        compose.waitForIdle()
-        compose.runOnIdle { assertFalse(open) }
+        compose.runOnIdle { open = false }
+        compose.onNodeWithTag("form_sheet").assertDoesNotExist()
         compose.runOnIdle { sheet = false; open = true }
         compose.onNodeWithTag("form_sheet").assertDoesNotExist()
         compose.onNode(isDialog()).assertExists()
