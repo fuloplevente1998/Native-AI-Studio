@@ -9,7 +9,9 @@ Frissítve: 2026-11-19 07:35 (magyar idő). Rövid, felülírandó pillanatkép.
   maradnak középen); Egészség dátumválasztó lap+húzás; statisztika/tanács/Ma-csempe
   részletek görgethető lapon.
 - Előző: 2770 · 1.3-beta (`3a52325`, signed #81). Play feltöltés a felhasználónál.
-- Következő: új gyűjtő-PR (`docs/FIXES_2772.md`) a felhasználó visszajelzéseire.
+- Folyamatban: 2772 · 1.3.2 gyűjtő #287 (`fix/collector-2772`). 1–5 kódolva, CI zöld (2aa719a);
+  6–9 (világos téma akciószínek, alsó sáv B, Következő név nélkül, betűvastagság) gyűjtve,
+  kódolás „mehet” után. Build csak külön kérésre.
 
 ## Fontos döntések (ne kérdezd újra)
 - Programkártya koppintás = kártyán belüli szerkesztő (1 nyitva), külön szerkesztőoldal megszűnt.
