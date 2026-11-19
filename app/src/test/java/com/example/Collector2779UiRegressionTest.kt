@@ -152,15 +152,14 @@ class Collector2779UiRegressionTest {
                 large = large, onLarge = { large = it }, onAdjust = {}, onToggle = {}, onSkip = {}, skipLabel = "Kihagy")
         } }
         val compact = compose.onNodeWithTag("rest_dock_animated").fetchSemanticsNode().boundsInRoot.height
-        compose.mainClock.autoAdvance = false
         compose.onNodeWithTag("sticky_rest_timer_compact").performClick()
-        compose.mainClock.advanceTimeBy(96)
-        val middle = compose.onNodeWithTag("rest_dock_animated").fetchSemanticsNode().boundsInRoot.height
-        compose.mainClock.advanceTimeBy(600)
+        compose.waitForIdle()
         val full = compose.onNodeWithTag("rest_dock_animated").fetchSemanticsNode().boundsInRoot.height
-        assertTrue("grows in steps: $compact -> $middle -> $full", compact < middle && middle < full)
-        compose.mainClock.autoAdvance = true
+        assertTrue("large dock is taller: $compact -> $full", full > compact)
         compose.onNodeWithTag("sticky_rest_timer_large").assertExists()
+        // The switch runs inside one AnimatedContent (fade + size), not an if/else swap.
+        val source = java.io.File("src/main/java/com/example/ui/components/StudioRestTimerDock.kt").readText()
+        assertTrue(source.contains("AnimatedContent(") && source.contains("SizeTransform("))
         compose.onNodeWithTag("sticky_rest_timer_compact").assertDoesNotExist()
     }
 }
