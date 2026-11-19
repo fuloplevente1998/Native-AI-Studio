@@ -127,7 +127,13 @@ class StudioLiveStopwatchRegressionTest {
             await { measurement.uiState.value.stopwatchRunning }
             advance(2)
             readout("timed_live_readout").assertTextEquals("00:06")
-            compose.onNodeWithTag("record_timed_stopper").performScrollTo().performClick()
+            fun dbg(tag: String) { val u = studio.uiState.value
+                System.err.println("DBG2778 $tag clock=${android.os.SystemClock.elapsedRealtime()} rest=${u.restTimerRemainingSec}/${u.restTimerRunning} sw=${measurement.uiState.value.stopwatchSeconds}") }
+            dbg("before-scroll")
+            compose.onNodeWithTag("record_timed_stopper").performScrollTo()
+            dbg("after-scroll")
+            compose.onNodeWithTag("record_timed_stopper").performClick()
+            dbg("after-click")
             await { target.resolve(PhoneWorkoutExecution.store(context).snapshot()!!).set.optBoolean("done") }
             val recorded = PhoneWorkoutExecution.store(context).snapshot()!!
             assertEquals("6", target.resolve(recorded).set.getString("reps"))
