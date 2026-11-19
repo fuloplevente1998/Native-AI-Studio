@@ -1,14 +1,15 @@
 # HANDOFF – aktuális állapot
 
-Frissítve: 2026-11-19 07:35 (magyar idő). Rövid, felülírandó pillanatkép. Előzmény: git log / PR-ek.
+Frissítve: 2026-11-19 12:00 (magyar idő). Rövid, felülírandó pillanatkép. Előzmény: git log / PR-ek.
 
-## Main – utolsó kiadás 2772 · 1.3.2 (`993b72c`, PR #287)
-- Telefon 277200 / Wear 277202, signed #83 (run 44486428287), 884/0 teszt; 4 fájl chatben.
-- Tartalom (`docs/FIXES_2772.md`): gyors edzés = 1 lap 3 füllel (Erő/Időzített/Kültéri), Edzés fül
-  3 csempe; közös időszak-naptár (Napló + Egészségnapló); kiemelt Mai nap/Szűrő törlése;
-  világos témában világos akciószínek; alsó sáv ‹Előző · ⏹Befejezés · Következő›; Bold-ig betűk.
-- Folyamatban: 2773 gyűjtő #288 – Kezdőlap dátum-sor, mai terv éjfélig + napváltás-frissítés
-  (mockup küldve, „mehet”-re vár).
+## Main – utolsó kiadás 2774 · 1.3.4 (`4ce1fed`, PR #289)
+- Telefon 277400 / Wear 277402, signed run 44510303682, 893/0 teszt; ZIP chatben.
+- Tartalom (`docs/FIXES_2774.md`): egy alsó élő sáv (idő/szünet, Befejezés, Folytatás);
+  gyakorlatcsere közvetlenül a könyvtárba; Coach chip a napjelvény mellett + ✨ ikon mindenhol;
+  gyakorlatfüggő ikon (kind); HC: teljes napi olvasás = szinkron (change-log séma hiba a telefonon).
+- 2773 · 1.3.3 (#288): Kezdőlap/Edzés/Coach dátum-sor, mai terv éjfélig.
+- Play Console: még nincs feltöltve; leírás `docs/PLAY_LISTING.md`.
+- Ismert flake: `PaletteSystemBarsTest` (1× újrafuttatásra zöld) – gyökérokot érdemes javítani.
 
 ## Fontos döntések (ne kérdezd újra)
 - Programkártya koppintás = kártyán belüli szerkesztő (1 nyitva), külön szerkesztőoldal megszűnt.
