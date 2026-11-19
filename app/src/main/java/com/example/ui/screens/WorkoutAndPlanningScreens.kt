@@ -45,6 +45,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -1826,7 +1827,8 @@ internal fun ProgramEditorContent(
                         shape = RoundedCornerShape(16.dp)
                     )
             ) {
-                Column(modifier = Modifier.padding(14.dp)) {
+                // Compact row like the program cards: 48 dp touch height, less padding.
+                Column(modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 2.dp, bottom = 2.dp)) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1850,9 +1852,11 @@ internal fun ProgramEditorContent(
                         )
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "${index + 1}.  ${ex.localizedName(state.language)}",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = palette.textPrimary
+                                text = "${index + 1}. ${ex.localizedName(state.language)}",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, lineHeight = 18.sp),
+                                color = palette.textPrimary,
+                                maxLines = 2,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                             )
                             val weightLabel = when {
                                 ex.defaultWeightKg > 0f -> "${ex.defaultWeightKg.toString().removeSuffix(".0")} kg"
@@ -1861,9 +1865,11 @@ internal fun ProgramEditorContent(
                             }
                             val reps = ex.targetRepsText.ifBlank { ex.defaultReps.toString() }
                             Text(
-                                text = "${ex.defaultSets} × $reps  •  $weightLabel  •  ${ex.defaultRestSec} s",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = palette.textSecondary
+                                text = "${ex.defaultSets} × $reps • $weightLabel • ${ex.defaultRestSec} s",
+                                style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
+                                color = palette.textSecondary,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                             )
                         }
                         SmallExerciseVideoButton(exerciseName = ex.localizedName(state.language), exerciseId = ex.id)
@@ -1873,13 +1879,10 @@ internal fun ProgramEditorContent(
                             modifier = Modifier
                                 .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                                 .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenExerciseDetail(ex.id) }
-                                .padding(horizontal = 6.dp, vertical = 4.dp)
+                                .semantics { contentDescription = "${strings.detailsAction}: ${ex.localizedName(state.language)}" }
+                                .testTag("editor_exercise_details_${ex.id}")
                         ) {
-                            Text(
-                                text = strings.detailsAction,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = palette.primary
-                            )
+                            Icon(Icons.Outlined.Info, contentDescription = null, tint = palette.primary, modifier = Modifier.size(20.dp))
                         }
                     }
 
