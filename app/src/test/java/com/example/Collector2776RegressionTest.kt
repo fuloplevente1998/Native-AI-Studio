@@ -13,9 +13,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w360dp-h780dp-xxhdpi")
+// Real text measurement: the legacy shadow returns placeholder layouts (e.g. 15 px wide, "overflowing").
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class Collector2776RegressionTest {
     @get:Rule val compose = createComposeRule()
 
