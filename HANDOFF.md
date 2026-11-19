@@ -1,24 +1,29 @@
 # HANDOFF – aktuális állapot
 
-Frissítve: 2026-11-18. Rövid, felülírandó pillanatkép (≤40 sor). Előzmény: git log / PR-ek.
+Frissítve: 2026-11-19 00:20 UTC. Rövid, felülírandó pillanatkép. Előzmény: git log / PR-ek.
 
-## Main
-- `9368ff9` AI Studio: Programok kártya 3 zóna + lenyitható Részletek (közvetlen push).
-  Main CI run 347 (44381881703) kézzel indítva (push nem triggereli az android-ci-t).
-- Előző kiadás: `ad835c2` = 2767 · 1.2-beta, signed run #75 SUCCESS.
-- `docs/CURRENT_STATUS.md` / `docs/WORK_HANDOFF.md` 2765-r2/PR268-nál megállt (elavult).
+## Main – utolsó kiadás 2769 · 1.3-beta (`6d24f78`)
+- Telefon 276900 / Wear 276902, signed #80, 876/0 teszt; APK+AAB chatben átadva.
+- Play Console-ban még 276500/276502 – feltöltés a felhasználónál; „Újdonságok” szöveg
+  (HU/EN, ≤500 kar) chatben átadva.
 
-## Folyamatban: 2768 kiadás – PR #275 (`claude/trainpilot-native-handoff-g28fst`)
-- Verzió 276800 / 276802, 1.2-beta. Részletek gomb érintési cél 26→48 dp + teszt.
-- Felhasználó jóváhagyta: zöld PR CI után merge → signed APK+AAB (#76) → Drive.
+## Folyamatban: 2770 · 1.3-beta – PR #284 (`fix/collector-2770`, head `827a941`)
+- Lista `docs/FIXES_2770.md`, 11 pont kész, CI fut: Mentés lap állandó magasság; Privát
+  fotók lap; Beállítások→Edzés beállításai = Edzés fül ablaka; Gyors edzés legördülők;
+  gyakorlatválasztó „▶ Indítás + ⋮” (B változat); Gyors edzés lap tartalom-magasság;
+  sorrend csak ═ fogantyú hosszú nyomás+húzás (▲▼ megszűnt, `TrainPilotReorder.kt`);
+  naptár 6 sor + kisebb nyilak + aljára rögzített tervező; forgatáskor nincs logó-animáció
+  (`StartupScreen.install(restored)`); Edzés fül kijelölve marad; kompakt szerkesztő-sorok.
+- Jóváhagyva: zöld CI → merge → APK+AAB (277000/277002) → 4 fájl + Play szöveg.
 
-## Nyitott PR-ek
-| PR | Állapot |
-| --- | --- |
-| #274 | CI 346 FAIL, ütközik a mainnel (9368ff9 felülírta) → lezárás javasolt |
-| #272, #271 | draft (AI Studio audit, munkafolyamat-doksi) |
+## Fontos döntések (ne kérdezd újra)
+- Programkártya koppintás = kártyán belüli szerkesztő (1 nyitva), külön szerkesztőoldal megszűnt.
+- Lapok: a beágyazott lap fagyását a route-onkénti új példány javítja (#283, ne vond vissza).
+- Adatvédelmi tájékoztató marad középső ablak. Privát fotók teljes képe maradhat teljes képernyő.
 
-## Nyitott / megjegyzés
-- #269 navigáció + alsó lapok; elfogadás 0/7.
-- `public/assets/aistudio/Screenshot_…_ChatGPT….jpg` a 9368ff9-ben – kell-e a repóban?
-- TODO: Actions futásidő optimalizálása (felhasználói kérés).
+## CI (mérve)
+- PR CI ~4–6 perc; signed APK+AAB ~7–7,5 perc. `[skip ci]` a push utolsó commitján a
+  PR CI-t is kihagyja → ilyenkor workflow_dispatch az ágra.
+
+## Nyitott
+- #269 maradék elfogadási pontjai; #208 Wear HRV; #271/#272 régi draftok; #279 ez a doksi-PR.
