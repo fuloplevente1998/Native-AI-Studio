@@ -39,6 +39,8 @@ internal fun StudioRestTimerDock(
     onToggle: () -> Unit,
     onSkip: () -> Unit,
     skipLabel: String,
+    /** false: an untouched, not running rest (the default before the first set) stays hidden. */
+    showIdle: Boolean = true,
 ) {
     val palette = LocalTrainPilotPalette.current
     val lang = uiState.language
@@ -47,7 +49,8 @@ internal fun StudioRestTimerDock(
     }
     val secWord = tr(lang, "mp", "s", "Sek.", "sec")
     val formattedRest = String.format("%02d:%02d", uiState.restTimerRemainingSec / 60, uiState.restTimerRemainingSec % 60)
-    if (com.repforge.app.StudioRestTimer.visible(uiState)) {
+    val idle = !uiState.restTimerRunning && uiState.restTimerRemainingSec == uiState.defaultRestSec
+    if (com.repforge.app.StudioRestTimer.visible(uiState) && (showIdle || !idle)) {
     val progress = (uiState.restTimerRemainingSec.toFloat() / uiState.defaultRestSec.coerceAtLeast(1)).coerceIn(0f, 1f)
     if (!large) {
         // COMPACT FLAT STICKY REST TIMER BAR

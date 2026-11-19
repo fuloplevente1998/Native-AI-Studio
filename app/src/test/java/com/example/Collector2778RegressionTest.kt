@@ -46,4 +46,14 @@ class Collector2778RegressionTest {
         compose.onNodeWithTag("sticky_rest_timer_compact").assertDoesNotExist()
         compose.onNodeWithTag("sticky_rest_timer_large").assertDoesNotExist()
     }
+
+    @Test fun timedScreenHidesTheUntouchedIdleRestButShowsARunningOne() {
+        var state by mutableStateOf(TrainPilotUiState(restTimerRemainingSec = 90, defaultRestSec = 90, restTimerRunning = false))
+        compose.setContent { TrainPilotTheme {
+            StudioRestTimerDock(state, false, {}, {}, {}, {}, "Kihagyás", showIdle = false)
+        } }
+        compose.onNodeWithTag("sticky_rest_timer_compact").assertDoesNotExist()
+        compose.runOnIdle { state = state.copy(restTimerRunning = true) }
+        compose.onNodeWithTag("sticky_rest_timer_compact").assertExists()
+    }
 }

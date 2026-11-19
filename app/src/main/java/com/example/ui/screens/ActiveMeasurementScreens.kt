@@ -931,7 +931,9 @@ fun ActiveTimedWorkoutScreen(
             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 com.example.ui.components.StudioRestTimerDock(uiState, restTimerLargeMode,
                     onLarge = { restTimerLargeMode = it }, onAdjust = onAdjustRestTimer,
-                    onToggle = onToggleRestRunning, onSkip = onSkipRest, skipLabel = strings.skipAction)
+                    onToggle = onToggleRestRunning, onSkip = onSkipRest, skipLabel = strings.skipAction,
+                    // Timed sets: the rest appears once it runs or was changed, not as an idle 90 s before the first set.
+                    showIdle = false)
                 com.example.ui.components.ActiveWorkoutBottomBar(
                     language = uiState.language,
                     enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
