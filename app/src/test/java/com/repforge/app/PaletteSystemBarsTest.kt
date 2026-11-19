@@ -55,7 +55,11 @@ class PaletteSystemBarsTest {
             val viewModel = ViewModelProvider(activity)[TrainPilotViewModel::class.java]
             val bars = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
             fun awaitPalette(id: Int, darkIcons: Boolean) = await("palette $id", {
-                "actual=${viewModel.uiState.value.selectedPaletteId}, status=${bars.isAppearanceLightStatusBars}, nav=${bars.isAppearanceLightNavigationBars}"
+                var stored = "?"
+                runCatching { background { stored = settings.current().themeKey } }
+                "actual=${viewModel.uiState.value.selectedPaletteId}, status=${bars.isAppearanceLightStatusBars}, " +
+                    "nav=${bars.isAppearanceLightNavigationBars}, stored=$stored, " +
+                    "lifecycle=${activity.lifecycle.currentState}"
             }) {
                 viewModel.uiState.value.selectedPaletteId == id &&
                     bars.isAppearanceLightStatusBars == darkIcons &&

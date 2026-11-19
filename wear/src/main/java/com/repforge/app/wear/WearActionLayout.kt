@@ -82,9 +82,10 @@ internal fun wearFixedPageLayout(
     } else {
         val layout = wearActionLayout(width, height, count, gap)
         footerWidth = count * layout.buttonSize + (count - 1) * layout.gap
-        footerHeight = layout.buttonSize
+        // 2777: room for the caption under the circles (12 dp) and the controls a bit higher on the rim.
+        footerHeight = layout.buttonSize + 14f
         val outerCenterX = (footerWidth - layout.buttonSize) / 2f
-        val radius = diameter / 2f - layout.buttonSize / 2f - 6f
+        val radius = diameter / 2f - layout.buttonSize / 2f - 22f
         val centerY = sqrt((radius * radius - outerCenterX * outerCenterX).coerceAtLeast(0f))
         footerTop = top + diameter / 2f + centerY - layout.buttonSize / 2f
     }

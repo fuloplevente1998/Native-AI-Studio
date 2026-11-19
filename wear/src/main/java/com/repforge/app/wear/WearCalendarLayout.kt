@@ -23,10 +23,11 @@ internal fun wearCalendarLayout(width: Float, height: Float): WearCalendarLayout
     val stride = button + min(4f, diameter * .02f)
     val days = (0..6).map { index ->
         val x = if (index < 4) (index - 1.5f) * stride else (index - 5f) * stride
-        WearCalendarPoint(x, inset + diameter * if (index < 4) .47f else .73f)
+        // 2777: rows a little higher so the back + "Program days" row fits inside the round bottom.
+        WearCalendarPoint(x, inset + diameter * if (index < 4) .395f else .595f)
     }
-    return WearCalendarLayout(button, inset + diameter * .08f, inset + diameter * .235f,
-        inset + diameter * .87f, days)
+    return WearCalendarLayout(button, inset + diameter * .07f, inset + diameter * .215f,
+        inset + diameter * .76f, days)
 }
 
 internal data class WearCalendarCaption(val month: String, val dates: String)
