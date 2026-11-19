@@ -84,6 +84,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -330,7 +331,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                 TopNavPillItem(
                     label = strings.navWorkout,
                     icon = Icons.AutoMirrored.Filled.DirectionsRun,
-                    selected = currentTab == MainTab.WORKOUT && currentSubScreen == SubScreen.NONE,
+                    selected = isWorkoutTabSelected(currentTab, currentSubScreen),
                     onClick = { onSelectTab(MainTab.WORKOUT) },
                     modifier = itemModifier,
                     testTag = "top_nav_workout"
@@ -2142,6 +2143,9 @@ fun QuickWorkoutSheet(
         )
     }
     var strengthDropdownOpen by remember { mutableStateOf(false) }
+    // Exercise "Váltás" menus open at the full width of their field, framed like the app's panels.
+    var quickPickerWidthPx by remember { mutableIntStateOf(0) }
+    val quickPickerWidth = with(androidx.compose.ui.platform.LocalDensity.current) { quickPickerWidthPx.toDp() }
 
     var selectedTimedEx by remember(timedList) {
         mutableStateOf(timedList.firstOrNull())
@@ -2153,7 +2157,8 @@ fun QuickWorkoutSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        modifier = Modifier.trainPilotSheetTopSafeArea().fillMaxHeight().testTag("quick_workout_sheet"),
+        // Opens only as high as its content (no full-screen sheet for a short list).
+        modifier = Modifier.trainPilotSheetTopSafeArea().testTag("quick_workout_sheet"),
         containerColor = palette.surface,
         contentColor = palette.textPrimary
     ) {
@@ -2324,6 +2329,7 @@ fun QuickWorkoutSheet(
                                 .fillMaxWidth()
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(12.dp))
                                 .trainPilotClickable(RoundedCornerShape(12.dp)) { strengthDropdownOpen = true }
+                                .onSizeChanged { quickPickerWidthPx = it.width }
                                 .testTag("quick_strength_picker")
                         ) {
                             Row(
@@ -2362,9 +2368,11 @@ fun QuickWorkoutSheet(
                         DropdownMenu(
                             expanded = strengthDropdownOpen,
                             onDismissRequest = { strengthDropdownOpen = false },
-                            containerColor = palette.surface,
+                            containerColor = palette.surfaceCard,
+                            shape = RoundedCornerShape(14.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, palette.primary.copy(alpha = 0.65f)),
                             modifier = Modifier
-                                .widthIn(min = 260.dp, max = 340.dp)
+                                .then(if (quickPickerWidthPx > 0) Modifier.width(quickPickerWidth) else Modifier.widthIn(min = 260.dp))
                                 .heightIn(max = 280.dp)
                         ) {
                             strengthList.forEach { ex ->
@@ -2468,6 +2476,7 @@ fun QuickWorkoutSheet(
                                 .fillMaxWidth()
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(12.dp))
                                 .trainPilotClickable(RoundedCornerShape(12.dp)) { timedDropdownOpen = true }
+                                .onSizeChanged { quickPickerWidthPx = it.width }
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -2500,9 +2509,11 @@ fun QuickWorkoutSheet(
                         DropdownMenu(
                             expanded = timedDropdownOpen,
                             onDismissRequest = { timedDropdownOpen = false },
-                            containerColor = palette.surface,
+                            containerColor = palette.surfaceCard,
+                            shape = RoundedCornerShape(14.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, palette.primary.copy(alpha = 0.65f)),
                             modifier = Modifier
-                                .widthIn(min = 260.dp, max = 340.dp)
+                                .then(if (quickPickerWidthPx > 0) Modifier.width(quickPickerWidth) else Modifier.widthIn(min = 260.dp))
                                 .heightIn(max = 260.dp)
                         ) {
                             val secUnit = tr(strings.language, "mp", "s", "Sek.", "sec")
@@ -2793,3 +2804,9 @@ fun TrainPilotScrollableListBox(
     }
 }
 
+/** Screens opened from the Workout tab keep the Workout tab highlighted (library, detail, quick/active workouts…). */
+internal fun isWorkoutTabSelected(currentTab: MainTab, currentSubScreen: SubScreen): Boolean =
+    currentTab == MainTab.WORKOUT && currentSubScreen !in setOf(
+        SubScreen.SETTINGS_MAIN, SubScreen.CALENDAR_PLANNER, SubScreen.COACH_DETAIL, SubScreen.PROGRAMS_LIST,
+        SubScreen.WATCH_AND_SYNC, SubScreen.BACKUP_RESTORE, SubScreen.PERMISSIONS_SCREEN, SubScreen.PRIVATE_PHOTOS
+    )

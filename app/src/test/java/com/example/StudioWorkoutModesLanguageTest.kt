@@ -60,17 +60,17 @@ class StudioWorkoutModesLanguageTest {
         compose.onAllNodesWithTag("studio_modes_sound").assertCountEquals(0)
         compose.onAllNodesWithTag("studio_modes_vibration").assertCountEquals(0)
         compose.onNodeWithTag("settings_workout_toggle").performClick()
-        list.performScrollToNode(hasTestTag("studio_modes_sound"))
+        compose.onNodeWithTag("studio_modes_sound").performScrollTo()
         compose.onAllNodesWithTag("studio_modes_sound").assertCountEquals(1)
         compose.onNodeWithTag("studio_modes_sound").performClick()
-        list.performScrollToNode(hasTestTag("studio_modes_vibration"))
+        compose.onNodeWithTag("studio_modes_vibration").performScrollTo()
         compose.onAllNodesWithTag("studio_modes_vibration").assertCountEquals(1)
         compose.onNodeWithTag("studio_modes_vibration").performClick()
-        list.performScrollToNode(hasTestTag("studio_modes_rest"))
+        compose.onNodeWithTag("studio_modes_rest").performScrollTo()
         compose.onNodeWithTag("studio_modes_rest").performClick()
-        list.performScrollToNode(hasTestTag("studio_modes_style_hit"))
+        compose.onNodeWithTag("studio_modes_style_hit").performScrollTo()
         compose.onNodeWithTag("studio_modes_style_hit").performClick()
-        list.performScrollToNode(hasTestTag("studio_modes_preview"))
+        compose.onNodeWithTag("studio_modes_preview").performScrollTo()
         compose.onNodeWithTag("studio_modes_preview").performClick()
         compose.runOnIdle {
             assertEquals(1, soundChanges)
@@ -80,8 +80,8 @@ class StudioWorkoutModesLanguageTest {
             assertFalse(state.vibrationEnabled)
             assertEquals("hit", previewStyle)
         }
-        list.performScrollToNode(hasTestTag("settings_workout_toggle"))
-        compose.onNodeWithTag("settings_workout_toggle").performClick()
+        // Opens as the same full editor window as on the Workout tab; its Back button closes it.
+        compose.onNodeWithTag("studio_modes_dismiss").performScrollTo().performClick()
         compose.onAllNodesWithTag("studio_modes_sound").assertCountEquals(0)
         compose.onAllNodesWithTag("studio_modes_vibration").assertCountEquals(0)
     }

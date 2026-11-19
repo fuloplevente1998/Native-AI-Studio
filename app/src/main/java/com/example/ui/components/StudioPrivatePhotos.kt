@@ -117,7 +117,7 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
     val photos = all.progressPhotos.filter { state.privatePhotoWorkoutId == null || it.workoutId == state.privatePhotoWorkoutId }
     val lang = state.language
     CompositionLocalProvider(LocalTrainPilotColors provides nativeColors) {
-        LazyColumn(Modifier.fillMaxSize().background(palette.background).testTag("private_photos_screen"),
+        LazyColumn(Modifier.then(sheetAwareFillMaxSize()).background(palette.background).testTag("private_photos_screen"),
             contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item { SubScreenTopBar(strings.privatePhotosTitle, back, settings) }
             item {

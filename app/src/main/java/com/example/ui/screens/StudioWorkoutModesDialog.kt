@@ -263,7 +263,8 @@ internal fun StudioWorkoutModesDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = { if (review != null) onEditPreview() else onDismiss() }, enabled = !busy) {
+            TextButton(onClick = { if (review != null) onEditPreview() else onDismiss() }, enabled = !busy,
+                modifier = Modifier.testTag("studio_modes_dismiss")) {
                 Text(if (review == null) workoutModeText(lang, "Mégse", "Cancel", "Abbrechen", "Anulează")
                     else workoutModeText(lang, "Vissza", "Back", "Zurück", "Înapoi"), color = p.textSecondary)
             }

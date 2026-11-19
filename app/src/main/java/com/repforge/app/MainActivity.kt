@@ -74,7 +74,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        startupScreen = StartupScreen.install(this)
+        startupScreen = StartupScreen.install(this, restored = savedInstanceState != null)
         super.onCreate(savedInstanceState)
         // Establish transparent edge-to-edge bars before the selected palette is loaded.
         enableEdgeToEdge(

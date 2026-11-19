@@ -4,6 +4,7 @@ import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotCombinedClickable
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 import com.example.ui.components.TrainPilotFullHeightFormSheet
+import com.example.ui.components.trainPilotReorderItem
 import com.example.ui.components.TrainPilotDeleteButton
 import com.example.ui.components.TrainPilotRedCloseButton
 import com.example.ui.components.trainPilotSheetTopSafeArea
@@ -714,6 +715,7 @@ fun ProgramsListScreen(
         mutableStateMapOf<Pair<String, String>, com.example.model.StudioProgramPrescriptionDraft>()
     }
     var pendingInlineSwitch by remember { mutableStateOf<Pair<String, String>?>(null) }
+    val programReorder = com.example.ui.components.rememberTrainPilotReorderState()
     var renameTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
     fun isInlineOpen(programId: String, host: String) =
         state.inlineEditorProgramId == programId && state.inlineEditorHost == host
@@ -1269,6 +1271,7 @@ fun ProgramsListScreen(
                             if (program.isActive || isExpanded) palette.primary else palette.cardBorder,
                             RoundedCornerShape(14.dp)
                         )
+                        .trainPilotReorderItem(programReorder, program.id)
                         .testTag("program_card_${program.id}")
                 ) {
                     ProgramCardContent(
@@ -1293,54 +1296,19 @@ fun ProgramsListScreen(
                         ),
                         expandedContent = { inlineEditor(program, inlinePending) },
                         reorderSlot = {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(0.dp),
-                                modifier = Modifier
-                                    .padding(end = 4.dp)
-                                    .pointerInput(index, filteredPrograms.size) {
-                                        detectVerticalDragGestures(
-                                            onDragStart = { dragAccumY = 0f },
-                                            onVerticalDrag = { change, dragAmount ->
-                                                change.consume()
-                                                dragAccumY += dragAmount
-                                                if (dragAccumY < -44f && index > 0) {
-                                                    dragAccumY = 0f
-                                                    onMoveProgramOrder(index, index - 1)
-                                                } else if (dragAccumY > 44f && index < filteredPrograms.lastIndex) {
-                                                    dragAccumY = 0f
-                                                    onMoveProgramOrder(index, index + 1)
-                                                }
-                                            }
-                                        )
-                                    }
-                                    .testTag("program_drag_handle_${program.id}")
-                            ) {
-                                Text(
-                                    text = "▲",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (index > 0) palette.primary else palette.textMuted.copy(alpha = 0.35f),
-                                    modifier = Modifier
-                                        .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index > 0) { onMoveProgramOrder(index, index - 1) }
-                                        .padding(horizontal = 3.dp, vertical = 0.dp)
-                                        .testTag("program_move_up_${program.id}")
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.DragHandle,
-                                    contentDescription = trW(state.language, "Sorrend módosítása", "Change order", "Reihenfolge ändern", "Schimbă ordinea"),
-                                    tint = palette.textSecondary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    text = "▼",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (index < filteredPrograms.lastIndex) palette.primary else palette.textMuted.copy(alpha = 0.35f),
-                                    modifier = Modifier
-                                        .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index < filteredPrograms.lastIndex) { onMoveProgramOrder(index, index + 1) }
-                                        .padding(horizontal = 3.dp, vertical = 0.dp)
-                                        .testTag("program_move_down_${program.id}")
-                                )
-                            }
+                            com.example.ui.components.TrainPilotReorderHandle(
+                                state = programReorder,
+                                key = program.id,
+                                index = index,
+                                lastIndex = filteredPrograms.lastIndex,
+                                gap = TrainPilotCardSpacing.CardGap,
+                                label = trW(state.language, "Sorrend: tartsd nyomva és húzd", "Order: press and hold, then drag", "Reihenfolge: gedrückt halten und ziehen", "Ordine: ține apăsat și trage"),
+                                moveUpLabel = trW(state.language, "Feljebb mozgatás", "Move up", "Nach oben", "Mută mai sus"),
+                                moveDownLabel = trW(state.language, "Lejjebb mozgatás", "Move down", "Nach unten", "Mută mai jos"),
+                                testTag = "program_drag_handle_${program.id}",
+                                onMove = onMoveProgramOrder,
+                                modifier = Modifier.padding(end = 2.dp)
+                            )
                         }
                     )
                 }
@@ -1831,6 +1799,7 @@ internal fun ProgramEditorContent(
         }
 
         val totalExercisesInDay = currentDay?.exercises?.size ?: 0
+        val exerciseReorder = com.example.ui.components.rememberTrainPilotReorderState()
         currentDay?.exercises?.forEachIndexed { index, ex ->
             val isExpanded = state.expandedEditorExerciseId == ex.id
             val draftKey = currentDay.id to ex.id
@@ -1850,6 +1819,7 @@ internal fun ProgramEditorContent(
                 color = palette.surface,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .trainPilotReorderItem(exerciseReorder, ex.id)
                     .trainPilotBorder(
                         width = if (isExpanded) 1.5.dp else 1.dp,
                         color = if (isExpanded) palette.primary else palette.cardBorder,
@@ -1864,53 +1834,20 @@ internal fun ProgramEditorContent(
                             .trainPilotClickable(RoundedCornerShape(16.dp)) { onToggleExpandExercise(ex.id) },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Working Reorder Handle (= with vertical drag + ▲ / ▼ buttons)
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(2.dp),
-                            modifier = Modifier
-                                .padding(end = 8.dp)
-                                .pointerInput(index, totalExercisesInDay) {
-                                    detectVerticalDragGestures(
-                                        onDragStart = { dragAccumY = 0f },
-                                        onVerticalDrag = { change, dragAmount ->
-                                            change.consume()
-                                            dragAccumY += dragAmount
-                                            if (dragAccumY < -40f && index > 0) {
-                                                dragAccumY = 0f
-                                                onMoveExercise(index, index - 1)
-                                            } else if (dragAccumY > 40f && index < totalExercisesInDay - 1) {
-                                                dragAccumY = 0f
-                                                onMoveExercise(index, index + 1)
-                                            }
-                                        }
-                                    )
-                                }
-                                .testTag("editor_exercise_drag_handle_$index")
-                        ) {
-                            Text(
-                                text = "▲",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (index > 0) palette.primary else palette.textMuted.copy(alpha = 0.35f),
-                                modifier = Modifier
-                                    .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index > 0) { onMoveExercise(index, index - 1) }
-                                    .padding(horizontal = 4.dp, vertical = 1.dp)
-                            )
-                            Icon(
-                                imageVector = Icons.Default.DragHandle,
-                                contentDescription = "Sorrend mozgatása",
-                                tint = palette.textSecondary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Text(
-                                text = "▼",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (index < totalExercisesInDay - 1) palette.primary else palette.textMuted.copy(alpha = 0.35f),
-                                modifier = Modifier
-                                    .trainPilotClickable(RoundedCornerShape(4.dp), enabled = index < totalExercisesInDay - 1) { onMoveExercise(index, index + 1) }
-                                    .padding(horizontal = 4.dp, vertical = 1.dp)
-                            )
-                        }
+                        // Only reorder control: long press the handle, drag, release (saved once).
+                        com.example.ui.components.TrainPilotReorderHandle(
+                            state = exerciseReorder,
+                            key = ex.id,
+                            index = index,
+                            lastIndex = totalExercisesInDay - 1,
+                            gap = TrainPilotCardSpacing.CardGap,
+                            label = trW(state.language, "Sorrend: tartsd nyomva és húzd", "Order: press and hold, then drag", "Reihenfolge: gedrückt halten und ziehen", "Ordine: ține apăsat și trage"),
+                            moveUpLabel = trW(state.language, "Feljebb mozgatás", "Move up", "Nach oben", "Mută mai sus"),
+                            moveDownLabel = trW(state.language, "Lejjebb mozgatás", "Move down", "Nach unten", "Mută mai jos"),
+                            testTag = "editor_exercise_drag_handle_$index",
+                            onMove = onMoveExercise,
+                            modifier = Modifier.padding(end = 6.dp)
+                        )
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "${index + 1}.  ${ex.localizedName(state.language)}",
@@ -2417,7 +2354,8 @@ fun CalendarPlannerScreen(
     }
 
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
-        val calendarWeeks = ((displayedYearMonth.atDay(1).dayOfWeek.value - 1 + displayedYearMonth.lengthOfMonth() + 6) / 7)
+        // Always 6 week rows (empty trailing row for shorter months): month changes never resize the page.
+        val calendarWeeks = 6
         // Reserve space for the complete three-row planner, its actions and month header.
         // Never shrink touch targets: short windows and large fonts use the page scroll.
         val calendarCellHeight = ((maxHeight - 424.dp) / calendarWeeks.toFloat()).coerceIn(48.dp, 52.dp)
@@ -2427,6 +2365,10 @@ fun CalendarPlannerScreen(
                 .testTag("calendar_compact_page"),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+          Column(
+            Modifier.fillMaxWidth().heightIn(min = maxHeight - 8.dp).testTag("calendar_pinned_layout"),
+            verticalArrangement = Arrangement.SpaceBetween
+          ) {
             // 1. EXACT SCREENSHOT 7 CALENDAR CARD
             Surface(
                 shape = RoundedCornerShape(22.dp),
@@ -2471,9 +2413,10 @@ fun CalendarPlannerScreen(
                             shape = RoundedCornerShape(12.dp),
                             color = palette.surfaceElevated,
                             modifier = Modifier
-                                .size(48.dp)
-                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                                .trainPilotClickable(RoundedCornerShape(12.dp)) { openedDay = null; onSelectMonth(displayedYearMonth.minusMonths(1).toString()) }
+                                .size(36.dp)
+                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                                .trainPilotClickable(RoundedCornerShape(10.dp)) { openedDay = null; onSelectMonth(displayedYearMonth.minusMonths(1).toString()) }
+                                .testTag("calendar_prev_month")
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
@@ -2495,9 +2438,10 @@ fun CalendarPlannerScreen(
                                 shape = RoundedCornerShape(12.dp),
                                 color = palette.surfaceElevated,
                                 modifier = Modifier
-                                    .size(48.dp)
-                                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
-                                    .trainPilotClickable(RoundedCornerShape(12.dp)) { openedDay = null; onSelectMonth(displayedYearMonth.plusMonths(1).toString()) }
+                                    .size(36.dp)
+                                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
+                                    .trainPilotClickable(RoundedCornerShape(10.dp)) { openedDay = null; onSelectMonth(displayedYearMonth.plusMonths(1).toString()) }
+                                    .testTag("calendar_next_month")
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
@@ -2551,7 +2495,7 @@ fun CalendarPlannerScreen(
                     // Dynamic month grid with rounded dark cells matching Screenshot 7
                     val daysInMonth = displayedYearMonth.lengthOfMonth()
                     val firstDayOffset = displayedYearMonth.atDay(1).dayOfWeek.value - 1 // Monday=0 .. Sunday=6
-                    val totalCells = ((firstDayOffset + daysInMonth + 6) / 7) * 7
+                    val totalCells = calendarWeeks * 7
 
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         for (weekIdx in 0 until (totalCells / 7)) {
@@ -2633,12 +2577,13 @@ fun CalendarPlannerScreen(
                     }
                 }
             }
-            // 3. Calendar planning stays visible below the month grid.
+            // 3. Calendar planning pinned to the bottom (stays below the month on short windows).
             Surface(
                 shape = RoundedCornerShape(22.dp),
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(top = 6.dp)
                     .testTag("calendar_planning_block")
                     .trainPilotBorder(TrainPilotFrames.panelWidth, palette.cardBorder, RoundedCornerShape(22.dp))
             ) {
@@ -2777,7 +2722,8 @@ fun CalendarPlannerScreen(
                     }
                 }
             }
-        }
+                  }
+}
     }
     if (state.showCalendarClearDialog) {
         AlertDialog(onDismissRequest = onCancelClearCalendar,
@@ -3437,6 +3383,7 @@ fun ExerciseLibraryScreen(
                     ex.localizedEquipment(state.language)).map { it.trim() }.filter { it.isNotBlank() }
                     .distinctBy { it.lowercase(java.util.Locale.ROOT) }.joinToString(" • ")
                 val openVideo = LocalOpenExerciseVideo.current
+                var rowMenuOpen by remember(ex.id) { mutableStateOf(false) }
                 val nameStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold)
                 val measurer = rememberTextMeasurer()
                 val density = LocalDensity.current
@@ -3448,7 +3395,12 @@ fun ExerciseLibraryScreen(
                     modifier = Modifier.fillMaxWidth()
                         .trainPilotBorder(if (inQueue) 1.5.dp else 1.dp,
                             if (inQueue) palette.primary else palette.cardBorder, RoundedCornerShape(14.dp))
-                        .trainPilotClickable(RoundedCornerShape(14.dp)) { onSelectExercise(ex.id) }
+                        .trainPilotCombinedClickable(
+                            shape = RoundedCornerShape(14.dp),
+                            onLongClickLabel = trW(state.language, "Műveletek: $name", "Actions: $name", "Aktionen: $name", "Acțiuni: $name"),
+                            onLongClick = { rowMenuOpen = true },
+                            onClick = { onSelectExercise(ex.id) }
+                        )
                         .testTag("exercise_library_row_${ex.id}")
                 ) {
                     BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -3473,22 +3425,70 @@ fun ExerciseLibraryScreen(
                                     modifier = Modifier.fillMaxWidth().testTag("exercise_library_meta_${ex.id}"))
                             }
                         }
+                        // Approved option B: one primary "Start" action + a more button; video and
+                        // add/remove live in the menu (also on long press). Row tap = details.
                         val actions: @Composable () -> Unit = {
-                            Row(Modifier.padding(end = 4.dp).clip(RoundedCornerShape(10.dp))
-                                .border(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
-                                .testTag("exercise_library_actions_${ex.id}")) {
-                                ExerciseLibraryAction("exercise_video_btn_${name.hashCode()}", "${strings.videoLabel}: $name",
-                                    Color(0xFFE53935).copy(alpha = 0.12f), Color(0xFFE53935), Icons.Default.OndemandVideo) { openVideo(name, ex.id) }
-                                ExerciseLibraryAction("exercise_library_add_to_queue_${ex.id}",
-                                    if (inQueue) trW(state.language, "Visszavonás az összeállításból", "Remove from workout selection", "Aus Trainingsauswahl entfernen", "Elimină din selecția antrenamentului")
-                                    else trW(state.language, "Hozzáadás az edzéshez", "Add to workout", "Zum Training hinzufügen", "Adaugă la antrenament"),
-                                    if (inQueue) Color(0xFFE53935).copy(alpha = 0.12f) else palette.surfaceElevated,
-                                    if (inQueue) Color(0xFFE53935) else palette.primary,
-                                    if (inQueue) Icons.Default.Check else Icons.Default.Add) {
-                                    if (inQueue) onRemoveExerciseFromQueue(ex.id) else onAddExerciseToQueue(ex)
+                            Row(Modifier.padding(end = 2.dp).testTag("exercise_library_actions_${ex.id}"),
+                                verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.heightIn(min = 48.dp).widthIn(min = 48.dp)
+                                        .trainPilotClickable(RoundedCornerShape(10.dp)) { onStartExerciseNow(ex) }
+                                        .semantics { contentDescription = "${strings.startAction}: $name" }
+                                        .testTag("exercise_library_start_now_${ex.id}")
+                                ) {
+                                    Row(
+                                        Modifier.clip(RoundedCornerShape(10.dp)).background(palette.primary)
+                                            .padding(horizontal = 10.dp, vertical = 7.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(Icons.Default.PlayArrow, contentDescription = null, tint = palette.onPrimary, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(2.dp))
+                                        Text(strings.startAction, style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold, color = palette.onPrimary, maxLines = 1)
+                                    }
                                 }
-                                ExerciseLibraryAction("exercise_library_start_now_${ex.id}", strings.startAction,
-                                    palette.primary.copy(alpha = 0.15f), palette.primary, Icons.Default.PlayArrow) { onStartExerciseNow(ex) }
+                                Box {
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier.size(48.dp)
+                                            .trainPilotClickable(RoundedCornerShape(10.dp)) { rowMenuOpen = true }
+                                            .semantics { contentDescription = trW(state.language, "További műveletek: $name", "More actions: $name", "Weitere Aktionen: $name", "Mai multe acțiuni: $name") }
+                                            .testTag("exercise_library_more_${ex.id}")
+                                    ) {
+                                        Icon(Icons.Default.MoreVert, contentDescription = null, tint = palette.textSecondary)
+                                    }
+                                    DropdownMenu(
+                                        expanded = rowMenuOpen,
+                                        onDismissRequest = { rowMenuOpen = false },
+                                        containerColor = palette.surfaceCard,
+                                        shape = RoundedCornerShape(14.dp),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, palette.cardBorder)
+                                    ) {
+                                        val videoLabel = "${strings.videoLabel}: $name"
+                                        DropdownMenuItem(
+                                            text = { Text(strings.videoLabel, color = palette.textPrimary) },
+                                            leadingIcon = { Icon(Icons.Default.OndemandVideo, contentDescription = null, tint = Color(0xFFE53935)) },
+                                            onClick = { rowMenuOpen = false; openVideo(name, ex.id) },
+                                            modifier = Modifier.semantics { contentDescription = videoLabel }
+                                                .testTag("exercise_video_btn_${name.hashCode()}")
+                                        )
+                                        val queueLabel = if (inQueue) trW(state.language, "Visszavonás az összeállításból", "Remove from workout selection", "Aus Trainingsauswahl entfernen", "Elimină din selecția antrenamentului")
+                                            else trW(state.language, "Hozzáadás az edzéshez", "Add to workout", "Zum Training hinzufügen", "Adaugă la antrenament")
+                                        DropdownMenuItem(
+                                            text = { Text(queueLabel, color = palette.textPrimary) },
+                                            leadingIcon = { Icon(if (inQueue) Icons.Default.Check else Icons.Default.Add, contentDescription = null,
+                                                tint = if (inQueue) Color(0xFFE53935) else palette.primary) },
+                                            enabled = !state.libraryMutationBusy,
+                                            onClick = {
+                                                rowMenuOpen = false
+                                                if (inQueue) onRemoveExerciseFromQueue(ex.id) else onAddExerciseToQueue(ex)
+                                            },
+                                            modifier = Modifier.semantics { contentDescription = queueLabel }
+                                                .testTag("exercise_library_add_to_queue_${ex.id}")
+                                        )
+                                    }
+                                }
                             }
                         }
                         if (inline) {
