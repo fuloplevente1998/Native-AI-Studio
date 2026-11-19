@@ -2,16 +2,13 @@
 
 Frissítve: 2026-11-19 07:35 (magyar idő). Rövid, felülírandó pillanatkép. Előzmény: git log / PR-ek.
 
-## Main – utolsó kiadás 2771 · 1.3.1 (`dd58f64`, PR #286)
-- Telefon 277100 / Wear 277102, signed #82, 880/0 teszt; 4 fájl chatben átadva.
-- Tartalom (`docs/FIXES_2771.md`): sorrend-húzáskor élő helyadás; Napló naptár lapon
-  (6 sor, húzással lapoz); szerkesztőablakok → `TrainPilotFormSheet` (megerősítések
-  maradnak középen); Egészség dátumválasztó lap+húzás; statisztika/tanács/Ma-csempe
-  részletek görgethető lapon.
-- Előző: 2770 · 1.3-beta (`3a52325`, signed #81). Play feltöltés a felhasználónál.
-- Folyamatban: 2772 · 1.3.2 gyűjtő #287 (`fix/collector-2772`). 1–5 kódolva, CI zöld (2aa719a);
-  6–9 (világos téma akciószínek, alsó sáv B, Következő név nélkül, betűvastagság) gyűjtve,
-  kódolás „mehet” után. Build csak külön kérésre.
+## Main – utolsó kiadás 2772 · 1.3.2 (`993b72c`, PR #287)
+- Telefon 277200 / Wear 277202, signed #83 (run 44486428287), 884/0 teszt; 4 fájl chatben.
+- Tartalom (`docs/FIXES_2772.md`): gyors edzés = 1 lap 3 füllel (Erő/Időzített/Kültéri), Edzés fül
+  3 csempe; közös időszak-naptár (Napló + Egészségnapló); kiemelt Mai nap/Szűrő törlése;
+  világos témában világos akciószínek; alsó sáv ‹Előző · ⏹Befejezés · Következő›; Bold-ig betűk.
+- Folyamatban: 2773 gyűjtő #288 – Kezdőlap dátum-sor, mai terv éjfélig + napváltás-frissítés
+  (mockup küldve, „mehet”-re vár).
 
 ## Fontos döntések (ne kérdezd újra)
 - Programkártya koppintás = kártyán belüli szerkesztő (1 nyitva), külön szerkesztőoldal megszűnt.
