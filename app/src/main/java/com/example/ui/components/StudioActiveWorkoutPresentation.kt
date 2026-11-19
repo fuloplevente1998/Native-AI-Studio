@@ -31,21 +31,18 @@ internal fun StudioActiveWorkoutSessionInfo(state: TrainPilotUiState) {
         feedbackWord(state, "${rawDay.uppercase()} nap", "Day ${rawDay.uppercase()}", "Tag ${rawDay.uppercase()}", "Ziua ${rawDay.uppercase()}")
     } else rawDay
     val palette = LocalTrainPilotPalette.current
-    Box(modifier = Modifier.testTag("active_workout_day_between_header_and_exercises")) {
-        Surface(
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
-            color = palette.tintedSurface(0.22f),
-            border = com.repforge.app.ui.theme.TrainPilotFrames.stroke(1.5.dp, palette.primary),
-            modifier = Modifier.testTag("active_workout_day")
-        ) {
-            Text(
-                text = formattedDay,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                color = palette.primary,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-            )
-        }
+    // 2775: plain text (the badge had no function): "A nap · 2 / 4 sorozat kész".
+    val total = state.activeSets.size
+    val done = state.activeSets.count { it.completed }
+    Row(modifier = Modifier.testTag("active_workout_day_between_header_and_exercises"),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+        Text(formattedDay, style = MaterialTheme.typography.labelLarge,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = palette.primary,
+            modifier = Modifier.testTag("active_workout_day"))
+        if (total > 0) Text(" · " + feedbackWord(state, "$done / $total sorozat kész", "$done / $total sets done",
+            "$done / $total Sätze fertig", "$done / $total serii gata"),
+            style = MaterialTheme.typography.labelLarge, color = palette.textSecondary,
+            modifier = Modifier.testTag("active_workout_set_progress"))
     }
 }
 

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -21,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,6 +33,7 @@ import com.example.model.ExerciseItem
 import com.example.model.ExerciseSetItem
 import com.example.model.LoggedWorkoutEntry
 import com.example.ui.theme.LocalTrainPilotPalette
+import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.example.ui.viewmodel.TrainPilotUiState
 import java.text.NumberFormat
@@ -51,8 +54,7 @@ internal fun StudioActiveWorkoutTop(
     currentIndex: Int,
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
-    onSwitchExercise: (ExerciseItem) -> Unit,
-    coachOwner: androidx.lifecycle.ViewModelStoreOwner
+    onSwitchExercise: (ExerciseItem) -> Unit
 ) {
     val lang = uiState.language
     val title = LoggedWorkoutEntry(id = "", titleHu = uiState.activeWorkoutTitleHu)
@@ -73,14 +75,13 @@ internal fun StudioActiveWorkoutTop(
         exerciseSequence = {
             StudioExerciseSequenceStrip(state = uiState, exercises = exercises,
                 currentIndex = currentIndex.coerceIn(0, total - 1), onSelect = onSwitchExercise)
-        },
-        sessionTrailing = { StudioWorkoutCoachChip(uiState.selectedExerciseId, coachOwner) }
+        }
     )
 }
 
 /**
- * 2775: shared exercise title row: name ⌄ (opens the library in swap mode), one subtitle line,
- * video button and the exercise-kind icon with an "i" badge (opens the details).
+ * 2775: shared exercise title: name ⌄ (opens the library in swap mode) + one subtitle line, then one tidy
+ * tool row: the red Video button, Coach (opens the Coach sheet) and Details (exercise-kind icon).
  */
 @Composable
 internal fun StudioActiveExerciseTitleRow(
@@ -90,12 +91,13 @@ internal fun StudioActiveExerciseTitleRow(
     exercise: ExerciseItem?,
     exerciseId: String?,
     onOpenLibrary: () -> Unit,
-    onOpenDetail: (String) -> Unit
+    onOpenDetail: (String) -> Unit,
+    coachExerciseId: String? = null,
+    coachOwner: androidx.lifecycle.ViewModelStoreOwner? = null
 ) {
     val palette = LocalTrainPilotPalette.current
-    Row(Modifier.fillMaxWidth().testTag("active_exercise_title_row"),
-        horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f).trainPilotClickable(RoundedCornerShape(12.dp)) { onOpenLibrary() }
+    Column(Modifier.fillMaxWidth().testTag("active_exercise_title_row"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.fillMaxWidth().trainPilotClickable(RoundedCornerShape(12.dp)) { onOpenLibrary() }
             .padding(vertical = 2.dp).testTag("active_exercise_title")) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(name, modifier = Modifier.weight(1f, fill = false), style = MaterialTheme.typography.titleMedium,
@@ -111,18 +113,21 @@ internal fun StudioActiveExerciseTitleRow(
                     modifier = Modifier.testTag("active_exercise_subtitle"))
             }
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth().testTag("active_exercise_tools"), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             SmallExerciseVideoButton(exerciseName = name, exerciseId = exerciseId)
-            Surface(shape = RoundedCornerShape(10.dp), color = palette.surfaceElevated,
-                modifier = Modifier.trainPilotClickable(RoundedCornerShape(10.dp)) { exerciseId?.let(onOpenDetail) }) {
-                Box(Modifier.size(48.dp).testTag("active_exercise_kind_icon"), contentAlignment = Alignment.Center) {
-                    Icon(exerciseKindIcon(exercise),
-                        contentDescription = topTr(language, "Gyakorlat részletei", "Exercise details", "Übungsdetails", "Detalii exercițiu"),
-                        tint = palette.textPrimary, modifier = Modifier.size(22.dp))
-                    Box(Modifier.align(Alignment.BottomEnd).padding(3.dp).size(15.dp).background(palette.primary, CircleShape),
-                        contentAlignment = Alignment.Center) {
-                        Text("i", color = palette.onPrimary, fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp))
+            if (coachOwner != null && !coachExerciseId.isNullOrBlank()) StudioWorkoutCoachChip(coachExerciseId, coachOwner)
+            val shape = RoundedCornerShape(8.dp)
+            Box(Modifier.heightIn(min = 48.dp).clip(shape)
+                .trainPilotClickable(shape) { exerciseId?.let(onOpenDetail) }
+                .testTag("active_exercise_kind_icon"), contentAlignment = Alignment.Center) {
+                Surface(shape = shape, color = palette.surfaceElevated,
+                    modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, shape)) {
+                    Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Icon(exerciseKindIcon(exercise), contentDescription = null, tint = palette.primary, modifier = Modifier.size(15.dp))
+                        Text(topTr(language, "Részletek", "Details", "Details", "Detalii"), color = palette.textPrimary,
+                            fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelMedium)
                     }
                 }
             }

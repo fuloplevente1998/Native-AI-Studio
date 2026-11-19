@@ -10,6 +10,7 @@
 | 6 | Alsó sáv – Befejezés | Sárga emoji-négyzet (⏹) | Téma szerinti másodlagos gomb + rajzolt ikon (alsó sáv és élő sáv) | kódolva |
 | 7 | Témák – teljesen fekete háttér | Sok helyen fekete, korábban témakövető | Ok: 2769 lap háttér `surface`→`background` (Kontraszt témákban #000). Javaslat: lap háttér = background/surface keverék témánként (mockup E) | elvetve (Kontraszt témában szándékos) |
 
+| 8 | Felső gombok rendezése | Coach, Videó, súlyzó-ikon össze-vissza; „A nap” jelvény funkció nélkül | **A) jóváhagyva**: név alatt egy eszközsor: piros Videó (marad) · ✦ Coach (állapotpont) · Részletek (gyakorlat-ikon); „A nap” sima szöveg + „x / y sorozat kész” | kódolva |
 
 ## Bekötés (régi → új belépők)
 | Funkció | Régi | Új | Callback |
@@ -17,7 +18,7 @@
 | Gyakorlat váltása (időalapú) | névre koppintás | közös címsor név ⌄ | `onOpenExerciseLibrary` (csere mód) |
 | Gyakorlat váltása (kétoldali) | „Gyakorlat váltása ▾” | közös címsor név ⌄ | `onOpenExerciseLibrary` |
 | Gyakorlatsor (ugrás) | csak Erő | mind a 3 oldal | `onSwitchExercise` |
-| Részletek (i) | csak Erő | mind a 3 oldal | `onOpenExerciseDetail` (MainActivity bekötve) |
-| Coach | csak Erő | mind a 3 oldal, kisebb chip | Coach lap |
+| Részletek | ikon + „i” jelvény, csak Erő | „Részletek” gomb a gyakorlat-ikonnal, mind a 3 oldal | `onOpenExerciseDetail` (MainActivity bekötve) |
+| Coach | napjelvény mellett, csak Erő | eszközsor, mind a 3 oldal | Coach lap (`StudioWorkoutCoachPanel`) |
 | Sorozat törlése | piros „−” | ⋮ → „Sorozat törlése” | `onDelete` (változatlan) |
 | Befejezés | „⏹” emoji | rajzolt ikon, másodlagos gomb | `WorkoutFinishSheet` (változatlan) |

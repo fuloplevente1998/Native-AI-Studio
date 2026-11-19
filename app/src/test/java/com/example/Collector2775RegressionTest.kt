@@ -56,6 +56,10 @@ class Collector2775RegressionTest {
                 ExerciseItem("side-plank", "Oldalsó plank", isTimed = true), "side-plank",
                 onOpenLibrary = { library++ }, onOpenDetail = { details += it })
         } }
+        // 2775 A: one tidy tool row under the name: red Video, (Coach), Details with the exercise icon.
+        compose.onNodeWithTag("active_exercise_tools").assertIsDisplayed()
+        compose.onNodeWithTag("exercise_video_btn_${"Oldalsó plank".hashCode()}").assertHasClickAction()
+        compose.onNodeWithText("Részletek", useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithTag("active_exercise_title").performClick()
         compose.onNodeWithTag("active_exercise_kind_icon").performClick()
         compose.runOnIdle {

@@ -355,9 +355,10 @@ fun ActiveStrengthWorkoutScreen(
         item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 com.example.ui.components.StudioActiveWorkoutTop(uiState, workoutExercises, currentExerciseIdx,
-                    onBack, onOpenSettings, onSwitchExercise, coachOwner)
+                    onBack, onOpenSettings, onSwitchExercise)
                 com.example.ui.components.StudioActiveExerciseTitleRow(lang, currentExerciseName, currentExerciseSubtitle,
-                    currentExercise, currentExerciseId, onOpenExerciseLibrary, onOpenExerciseDetail)
+                    currentExercise, currentExerciseId, onOpenExerciseLibrary, onOpenExerciseDetail,
+                    uiState.selectedExerciseId, coachOwner)
             }
         }
 
@@ -780,7 +781,7 @@ fun ActiveTimedWorkoutScreen(
                 // 2775: same header as the strength screen + shared exercise title row.
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     com.example.ui.components.StudioActiveWorkoutTop(uiState, workoutExercises, currentIdx,
-                        onBack, onOpenSettings, onSwitchExercise, coachOwner)
+                        onBack, onOpenSettings, onSwitchExercise)
                     com.example.ui.components.StudioActiveExerciseTitleRow(uiState.language, exerciseNameHu,
                         tr(uiState.language,
                             "Stopper • $currentSetIndex. sorozat • célidő $targetSec mp",
@@ -788,7 +789,7 @@ fun ActiveTimedWorkoutScreen(
                             "Stoppuhr • Satz $currentSetIndex • Ziel $targetSec Sek.",
                             "Cronometru • seria $currentSetIndex • țintă $targetSec sec"),
                         currentExercise, currentExercise?.id ?: timedExerciseOptions.firstOrNull { it.localizedName(uiState.language) == exerciseNameHu }?.id,
-                        onOpenExerciseLibrary, onOpenExerciseDetail)
+                        onOpenExerciseLibrary, onOpenExerciseDetail, currentExercise?.id ?: uiState.selectedExerciseId, coachOwner)
                 }
             }
             item {
@@ -1303,7 +1304,7 @@ fun ActiveBilateralWorkoutScreen(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.testTag("bilateral_header")) {
                     com.example.ui.components.StudioActiveWorkoutTop(uiState, workoutExercises, uiState.activeExerciseIndex,
-                        onBack, onOpenSettings, onSwitchExercise, coachOwner)
+                        onBack, onOpenSettings, onSwitchExercise)
                     com.example.ui.components.StudioActiveExerciseTitleRow(lang, exerciseTitle,
                         tr(lang,
                             "Kétoldali stopper • $selectedTargetSetNumber. sorozat • $defaultTargetSec mp / oldal",
@@ -1312,7 +1313,7 @@ fun ActiveBilateralWorkoutScreen(
                             "Bilateral • seria $selectedTargetSetNumber • $defaultTargetSec sec / parte"),
                         currentExercise,
                         currentExercise?.id ?: uiState.exercises.firstOrNull { it.localizedName(lang) == exerciseTitle || it.nameHu == exerciseTitle }?.id,
-                        onOpenExerciseLibrary, onOpenExerciseDetail)
+                        onOpenExerciseLibrary, onOpenExerciseDetail, currentExercise?.id ?: uiState.selectedExerciseId, coachOwner)
                 }
             }
 

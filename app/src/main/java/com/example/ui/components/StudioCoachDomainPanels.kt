@@ -298,7 +298,8 @@ internal fun StudioWorkoutCoachPanel(exerciseId: String,
 /** 2774: collapsed Coach during a workout: icon + "Coach" + state dot; the full panel opens as a sheet. */
 @Composable
 internal fun StudioWorkoutCoachChip(exerciseId: String,
-    owner: androidx.lifecycle.ViewModelStoreOwner = rememberStudioWorkoutCoachOwner()) {
+    owner: androidx.lifecycle.ViewModelStoreOwner = rememberStudioWorkoutCoachOwner(),
+    modifier: Modifier = Modifier) {
     val app = LocalContext.current.applicationContext as android.app.Application
     val adviceModel: WorkoutCoachAdviceViewModel = viewModel(viewModelStoreOwner = owner,
         factory = androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(app))
@@ -311,17 +312,18 @@ internal fun StudioWorkoutCoachChip(exerciseId: String,
     val proposal = tone == CoachChipTone.PROPOSAL
     val tint = when { warning -> palette.warning; proposal -> palette.primary; else -> palette.textSecondary }
     var open by androidx.compose.runtime.saveable.rememberSaveable(exerciseId) { mutableStateOf(false) }
-    val shape = RoundedCornerShape(50)
-    // 2775: compact pill (~32 dp visible) inside a 48 dp touch target.
-    androidx.compose.foundation.layout.Box(Modifier.heightIn(min = 48.dp).clip(shape)
+    // 2775: small framed tool button like the red Video button (~32 dp visible, 48 dp touch target).
+    val shape = RoundedCornerShape(8.dp)
+    androidx.compose.foundation.layout.Box(modifier.heightIn(min = 48.dp).clip(shape)
         .trainPilotClickable(shape) { open = true }.testTag("studio_active_coach_chip"),
         contentAlignment = androidx.compose.ui.Alignment.Center) {
-        Surface(shape = shape, color = tint.copy(alpha = if (warning || proposal) 0.14f else 0.06f),
-            modifier = Modifier.trainPilotBorder(1.dp, tint.copy(alpha = 0.8f), shape).testTag("studio_active_coach_chip_pill")) {
-            Row(Modifier.padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        Surface(shape = shape, color = if (warning || proposal) tint.copy(alpha = 0.14f) else palette.surfaceElevated,
+            modifier = Modifier.trainPilotBorder(1.dp, if (warning || proposal) tint.copy(alpha = 0.8f) else palette.cardBorder, shape)
+                .testTag("studio_active_coach_chip_pill")) {
+            Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                Icon(TrainPilotCoachIcon, null, tint = tint, modifier = Modifier.size(15.dp))
-                Text("Coach", color = tint, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelMedium)
+                Icon(TrainPilotCoachIcon, null, tint = if (warning || proposal) tint else palette.primary, modifier = Modifier.size(15.dp))
+                Text("Coach", color = if (warning) tint else palette.textPrimary, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelMedium)
                 if (warning || proposal) androidx.compose.foundation.layout.Box(Modifier.size(6.dp)
                     .background(tint, androidx.compose.foundation.shape.CircleShape).testTag("studio_active_coach_chip_dot"))
             }
