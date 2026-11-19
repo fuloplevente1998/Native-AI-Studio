@@ -336,6 +336,23 @@ fun HomeScreen(
                             style = MaterialTheme.typography.labelSmall,
                             color = palette.textSecondary
                         )
+                        // 2773: when is it planned (today / still doable today / next date / next in cycle).
+                        if (!state.isWorkoutSessionActive && target != null) {
+                            val line = com.example.ui.components.homePlannedDateLine(target.startIso,
+                                java.time.ZonedDateTime.now(), state.language)
+                            Text(
+                                text = line.text,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = when (line.timing) {
+                                    com.example.ui.components.HomePlanTiming.TODAY_UPCOMING -> palette.success
+                                    com.example.ui.components.HomePlanTiming.TODAY_PASSED -> palette.warning
+                                    else -> palette.textSecondary
+                                },
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.testTag("home_planned_date_line")
+                            )
+                        }
                     }
 
                     Icon(

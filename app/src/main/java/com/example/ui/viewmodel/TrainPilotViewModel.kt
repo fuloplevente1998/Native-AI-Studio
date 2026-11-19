@@ -1043,8 +1043,10 @@ class TrainPilotViewModel : ViewModel() {
         observersScope.launch {
             val repository = com.repforge.app.ui.home.NativeHomeRepository(database)
             kotlinx.coroutines.flow.combine(repository.invalidations(),
-                settingsStore.settingsFlow.map { it.activeProgramId to it.language }.distinctUntilChanged()
-            ) { _, settings -> settings }.collect { (activeId, language) ->
+                settingsStore.settingsFlow.map { it.activeProgramId to it.language }.distinctUntilChanged(),
+                // 2773: re-select at local midnight (today's plan stays all day, then the next one).
+                com.repforge.app.ui.home.NativeHomeRepository.dayChanges()
+            ) { _, settings, _ -> settings }.collect { (activeId, language) ->
                 try {
                     val ticket = NativeDataReplacement.continuationForCurrentData(context)
                     val snapshot = withContext(Dispatchers.IO) {
