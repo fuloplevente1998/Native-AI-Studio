@@ -8,6 +8,7 @@ import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.*
 import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton as OutlinedButton
@@ -311,17 +312,19 @@ internal fun StudioWorkoutCoachChip(exerciseId: String,
     val tint = when { warning -> palette.warning; proposal -> palette.primary; else -> palette.textSecondary }
     var open by androidx.compose.runtime.saveable.rememberSaveable(exerciseId) { mutableStateOf(false) }
     val shape = RoundedCornerShape(50)
-    Surface(shape = shape, color = tint.copy(alpha = if (warning || proposal) 0.14f else 0.06f),
-        modifier = Modifier.padding(vertical = 2.dp).heightIn(min = 44.dp)
-            .trainPilotBorder(1.5.dp, tint.copy(alpha = 0.8f), shape)
-            .trainPilotClickable(shape) { open = true }
-            .testTag("studio_active_coach_chip")) {
-        Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Icon(TrainPilotCoachIcon, null, tint = tint, modifier = Modifier.size(18.dp))
-            Text("Coach", color = tint, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
-            if (warning || proposal) androidx.compose.foundation.layout.Box(Modifier.size(7.dp)
-                .background(tint, androidx.compose.foundation.shape.CircleShape).testTag("studio_active_coach_chip_dot"))
+    // 2775: compact pill (~32 dp visible) inside a 48 dp touch target.
+    androidx.compose.foundation.layout.Box(Modifier.heightIn(min = 48.dp).clip(shape)
+        .trainPilotClickable(shape) { open = true }.testTag("studio_active_coach_chip"),
+        contentAlignment = androidx.compose.ui.Alignment.Center) {
+        Surface(shape = shape, color = tint.copy(alpha = if (warning || proposal) 0.14f else 0.06f),
+            modifier = Modifier.trainPilotBorder(1.dp, tint.copy(alpha = 0.8f), shape).testTag("studio_active_coach_chip_pill")) {
+            Row(Modifier.padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                Icon(TrainPilotCoachIcon, null, tint = tint, modifier = Modifier.size(15.dp))
+                Text("Coach", color = tint, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelMedium)
+                if (warning || proposal) androidx.compose.foundation.layout.Box(Modifier.size(6.dp)
+                    .background(tint, androidx.compose.foundation.shape.CircleShape).testTag("studio_active_coach_chip_dot"))
+            }
         }
     }
     if (open) TrainPilotScreenSheet(onDismiss = { open = false }, testTag = "studio_active_coach_sheet") {

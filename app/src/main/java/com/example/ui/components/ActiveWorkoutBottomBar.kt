@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -60,12 +63,20 @@ fun ActiveWorkoutBottomBar(
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("${tagPrefix}_prev_exercise_btn")
         ) { Text(bb(language, "‹ Előző", "‹ Previous", "‹ Zurück", "‹ Anterior"), fontWeight = FontWeight.SemiBold, maxLines = 1) }
+        // 2775: theme-following secondary button with a drawn stop icon (no emoji square).
         TrainPilotOutlinedButton(
             onClick = { showFinish = true }, enabled = enabled,
+            colors = WorkoutControlAppearance.secondaryColors(), border = WorkoutControlAppearance.secondaryBorder(),
             shape = RoundedCornerShape(16.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp),
             modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("${tagPrefix}_finish_menu_btn")
-        ) { Text(bb(language, "⏹ Befejezés", "⏹ Finish", "⏹ Beenden", "⏹ Finalizare"), fontWeight = FontWeight.Bold, maxLines = 1,
-            overflow = TextOverflow.Ellipsis, color = palette.primary) }
+        ) {
+            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Stop, contentDescription = null,
+                tint = palette.primary, modifier = Modifier.size(18.dp).testTag("${tagPrefix}_finish_icon"))
+            androidx.compose.foundation.layout.Spacer(Modifier.width(4.dp))
+            Text(bb(language, "Befejezés", "Finish", "Beenden", "Finalizare"), fontWeight = FontWeight.SemiBold, maxLines = 1,
+                overflow = TextOverflow.Ellipsis)
+        }
         TrainPilotButton(
             onClick = onNext, enabled = enabled, shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),
