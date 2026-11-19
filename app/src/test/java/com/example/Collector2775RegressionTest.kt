@@ -80,4 +80,16 @@ class Collector2775RegressionTest {
         compose.onAllNodesWithText("⏹", substring = true).assertCountEquals(0)
         compose.onNodeWithTag("active_finish_menu_btn").assertHasClickAction()
     }
+
+    @Test fun activeHeaderHasNoHealthHeartButKeepsTheExerciseStrip() {
+        val exercises = listOf(ExerciseItem("press", "Nyomás"), ExerciseItem("row", "Evezés"))
+        val state = com.example.ui.viewmodel.TrainPilotUiState(isWorkoutSessionActive = true,
+            activeWorkoutId = "session", activeWorkoutGeneration = 7, activeWorkoutTitleHu = "Otthoni A/B",
+            activeWorkoutExercises = exercises)
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.components.StudioActiveWorkoutTop(state, exercises, 0, onBack = {}, onOpenSettings = {}, onSwitchExercise = {})
+        } }
+        compose.onNodeWithTag("active_workout_header_sequence").assertExists()
+        compose.onNodeWithTag("workout_read_health").assertDoesNotExist()
+    }
 }

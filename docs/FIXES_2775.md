@@ -11,6 +11,7 @@
 | 7 | Témák – teljesen fekete háttér | Sok helyen fekete, korábban témakövető | Ok: 2769 lap háttér `surface`→`background` (Kontraszt témákban #000). Javaslat: lap háttér = background/surface keverék témánként (mockup E) | elvetve (Kontraszt témában szándékos) |
 
 | 8 | Felső gombok rendezése | Coach, Videó, súlyzó-ikon össze-vissza; „A nap” jelvény funkció nélkül | **A) jóváhagyva**: név alatt egy eszközsor: piros Videó (marad) · ✦ Coach (állapotpont) · Részletek (gyakorlat-ikon); „A nap” sima szöveg + „x / y sorozat kész” | kódolva |
+| 9 | Szív (edzés egészségadatai) | Kell-e edzés közben? | **1) jóváhagyva**: Erő/Időalapú/Kétoldali fejlécből ki; Összesítőn és Kültérin marad (`StudioWorkoutHealthAction`, `LocalOpenWorkoutHealth` változatlan) | kódolva |
 
 ## Bekötés (régi → új belépők)
 | Funkció | Régi | Új | Callback |

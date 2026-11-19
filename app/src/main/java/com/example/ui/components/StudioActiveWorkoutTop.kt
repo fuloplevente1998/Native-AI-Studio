@@ -68,8 +68,8 @@ internal fun StudioActiveWorkoutTop(
                 title = topTr(lang, "$title • $position / $total gyakorlat", "$title • $position / $total exercises",
                     "$title • $position / $total Übungen", "$title • $position / $total exerciții"),
                 onBack = onBack,
-                onOpenSettings = onOpenSettings,
-                rightExtraContent = { StudioWorkoutHealthAction() }
+                onOpenSettings = onOpenSettings
+                // 2775: no health heart here; it stays on the summary and the outdoor screen.
             )
         },
         exerciseSequence = {
