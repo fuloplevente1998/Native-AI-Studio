@@ -53,7 +53,8 @@ tartós szabályváltozáskor módosítsd (cache-barát). Kommunikáció: magyar
   kódolás csak „mehet” után, egy közös CI-körrel. UI-változásnál **előbb mockup** (PNG
   Playwrighttal a scratchpadben, SendUserFile), kódolás jóváhagyás után.
 - Jóváhagyott minta: zöld CI → merge main → aláírt APK+AAB (`build_aab=true`), 4 fájl
-  ellenőrizve (verzió, signer, hash, nyers XML tesztszám) chatben átadva; Drive-csatoló
+  ellenőrizve (verzió, signer, hash, nyers XML tesztszám) chatben átadva egy ZIP-ben
+  (4 fájl + SHA256SUMS.txt); Drive-csatoló
   ~3 MB/hívás, ezért binárist oda nem. Verzió: `27NN00`/`27NN02`, Play „Újdonságok” ≤500 kar.
 - UI-átalakításnál minden meglévő funkció és gomb bekötése maradjon meg (nem csak a felület):
   régi/új belépési pontok listája a PR-ban, minden gombhoz teszt, ami a hívott műveletet ellenőrzi.
