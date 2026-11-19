@@ -10,7 +10,11 @@ import com.example.ui.viewmodel.TrainPilotUiState
 import com.repforge.app.SavedExerciseBest
 import com.repforge.app.ui.progress.Exercise1RmPointUiModel
 import com.repforge.app.ui.progress.ProgressUiState
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -78,17 +82,27 @@ class ProfileAndRecordLayoutRegressionTest {
         assertTrue(card.bottom - card.top >= collapsed + 160.dp)
         assertTrue(plot.top >= card.top && plot.bottom <= card.bottom)
     }
-    @Test fun specificCardioFilterHidesDailyActivityUntilAllIsSelected() {
+    @Test fun cardioAndStepsAreSeparateTabsOfTheStatistics() {
+        // 2779: Erő · Kardió · Lépések. Daily steps live only on their own tab.
         val selected = androidx.compose.runtime.mutableStateOf("cycling")
+        var state by androidx.compose.runtime.mutableStateOf(TrainPilotUiState(statsSubTab = 1, cardioFilterStepsMode = false))
         compose.setContent { TrainPilotTheme {
-            StudioStatisticsContent(state = TrainPilotUiState(statsSubTab = 1, cardioFilterStepsMode = false),
+            StudioStatisticsContent(state = state,
                 native = ProgressUiState(selectedCardioId = selected.value),
-                onSelectTab = {}, onStepsMode = {}, onExercise = {},
-                onActivity = { selected.value = it }, onRetry = {}, onRefreshRecords = {})
+                onSelectTab = { state = state.copy(statsSubTab = it) }, onStepsMode = { state = state.copy(cardioFilterStepsMode = it) },
+                onExercise = {}, onActivity = { selected.value = it }, onRetry = {}, onRefreshRecords = {})
         } }
         compose.onNodeWithTag("statistics_daily_activity").assertDoesNotExist()
         compose.onNodeWithTag("progress_cardio_all").performClick()
+        compose.onNodeWithTag("statistics_daily_activity").assertDoesNotExist()
+        compose.onNodeWithTag("statistics_subtab_2").performClick()
         compose.onNodeWithTag("statistics_daily_activity").assertExists()
+        compose.onNodeWithTag("statistics_cardio_mode_button").assertDoesNotExist()
+        compose.onNodeWithTag("statistics_subtab_1").performClick()
+        compose.runOnIdle { assertEquals(1, state.statsSubTab); assertFalse(state.cardioFilterStepsMode) }
+        compose.onNodeWithTag("statistics_daily_activity").assertDoesNotExist()
+        compose.onNodeWithTag("statistics_subtab_0").performClick()
+        compose.runOnIdle { assertEquals(0, state.statsSubTab) }
     }
 
     @Test fun libraryStarsUpdateFavoritesAndKeepSearchCompact() {
