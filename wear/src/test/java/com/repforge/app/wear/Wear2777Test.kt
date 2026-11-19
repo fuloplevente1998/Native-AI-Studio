@@ -26,9 +26,9 @@ class Wear2777Test {
             val page = wearFixedPageLayout(size, size, false, 2)
             val layout = wearActionLayout(size, size, 2, 7f)
             val x = (layout.buttonSize + layout.gap) / 2f
-            // caption line: 12 dp under the circle, ±(button+16)/2 wide
+            // caption line: 12 dp under the circle; a 44 dp wide caption ("Befejezés") centred under it
             val captionY = page.footerTop + layout.buttonSize + 12f - size / 2f
-            val halfWidth = (layout.buttonSize + 16f) / 2f
+            val halfWidth = 22f
             assertTrue("caption fits at $size", hypot(x + halfWidth, captionY) <= min(size, size) / 2f)
             assertEquals(layout.buttonSize + 14f, page.footerHeight, .001f)
         }
