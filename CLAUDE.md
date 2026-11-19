@@ -55,6 +55,8 @@ tartós szabályváltozáskor módosítsd (cache-barát). Kommunikáció: magyar
 - Jóváhagyott minta: zöld CI → merge main → aláírt APK+AAB (`build_aab=true`), 4 fájl
   ellenőrizve (verzió, signer, hash, nyers XML tesztszám) chatben átadva; Drive-csatoló
   ~3 MB/hívás, ezért binárist oda nem. Verzió: `27NN00`/`27NN02`, Play „Újdonságok” ≤500 kar.
+- UI-átalakításnál minden meglévő funkció és gomb bekötése maradjon meg (nem csak a felület):
+  régi/új belépési pontok listája a PR-ban, minden gombhoz teszt, ami a hívott műveletet ellenőrzi.
 - Dizájn: kompakt, témakövető (palette), íves keret, 48 dp érintés; alulról nyíló lapok
   (`TrainPilotSheetRoutes`, `TrainPilotRouteSheet`) a tartalom magasságáig.
 
