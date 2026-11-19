@@ -8,4 +8,5 @@ Felhasználói visszajelzések a 2769 · 1.3-beta után. Egy közös CI-kör a v
 | 2 | Privát edzésfotók | Alulról nyíló lapon nyíljon (Beállításokból és a naplóból is), ne külön oldalon; teljes képes nézet maradhat teljes képernyő. | nyitott |
 | 3 | Beállítások → Edzés beállításai | Ne a Beállítások oldalon belül/felugróan, hanem az Edzés fülön már meglévő „Edzés beállításai” megnyitással azonos, teljes magas lapon nyíljon (ugyanaz a komponens). | nyitott |
 | 4 | Gyors edzés – „Váltás” legördülők (Súlyzós, Időalapú) | A lenyíló lista kövesse az app dizájnt: íves sarkok, keret (TrainPilotFrames), a mező teljes szélességében nyíljon (most keskenyebb, balra tolt menü), téma szerinti háttér. | nyitott |
-| 5 | Gyakorlatválasztó – sor 3 gombja (Videó / + / ▶) | Finomítás: kevesebb hely, név több szélességet kapjon; mockup alapján választott változat. | mockup |
+| 5 | Gyakorlatválasztó – sor 3 gombja (Videó / + / ▶) | **B változat (jóváhagyva):** a soron csak „▶ Indítás” (sárga) + ⋮; Videó és Hozzáadás a ⋮ / hosszú nyomás menüben; sorra koppintás = részletek; ☆ marad. | nyitott |
+| 6 | Gyors edzés lap | Csak a tartalom magasságáig nyíljon (ne teljes kijelző), mint a többi lap. | nyitott |
