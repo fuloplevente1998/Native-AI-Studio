@@ -9,6 +9,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -39,7 +41,22 @@ internal fun CompactDatePickerDialog(
     val month = YearMonth.parse(monthIso)
     val selected = LocalDate.parse(selectedIso)
     CompactCalendarDialog(label("Dátum választása", "Select date", "Datum auswählen", "Selectează data"),
-        "health_date_picker", onDismiss) {
+        "health_date_picker", onDismiss, asSheet = true) {
+        // Bottom sheet; swipe sideways to change month like on the Calendar page.
+        Column(Modifier.fillMaxWidth().pointerInput(monthIso) {
+            val threshold = 56.dp.toPx()
+            var dragX = 0f
+            detectHorizontalDragGestures(
+                onDragStart = { dragX = 0f },
+                onDragCancel = { dragX = 0f },
+                onDragEnd = {
+                    if (dragX <= -threshold && (month.year < 9999 || month.monthValue < 12)) monthIso = month.plusMonths(1).toString()
+                    else if (dragX >= threshold && (month.year > 1 || month.monthValue > 1)) monthIso = month.minusMonths(1).toString()
+                    dragX = 0f
+                },
+                onHorizontalDrag = { change, amount -> change.consume(); dragX += amount }
+            )
+        }.testTag("health_date_swipe_area"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { monthIso = month.minusYears(1).toString() }, enabled = month.year > 1,
                 modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).testTag("health_date_previous_year")
@@ -65,7 +82,8 @@ internal fun CompactDatePickerDialog(
                 textAlign = TextAlign.Center, modifier = Modifier.weight(1f)) }
         }
         val offset = month.atDay(1).dayOfWeek.value - 1
-        repeat((offset + month.lengthOfMonth() + 6) / 7) { week ->
+        // Always 6 rows so the sheet keeps one height while swiping.
+        repeat(6) { week ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                 repeat(7) { weekday ->
                     val number = week * 7 + weekday - offset + 1
@@ -90,6 +108,7 @@ internal fun CompactDatePickerDialog(
         }
         Text(selected.format(DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.LONG).withLocale(locale)),
             color = palette.primary, modifier = Modifier.testTag("health_date_selected"))
+        }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TrainPilotOutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("health_date_cancel")) {
                 Text(label("Mégse", "Cancel", "Abbrechen", "Anulează"))

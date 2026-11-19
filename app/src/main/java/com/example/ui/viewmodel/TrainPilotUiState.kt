@@ -197,6 +197,8 @@ data class TrainPilotUiState(
     val showGoalsDialog: Boolean = false,
     val showPersonalPlannerModal: Boolean = false,
     val showQuickWorkoutSheet: Boolean = false,
+    /** Quick workout sheet tab (2772): 0 = strength, 1 = timed, 2 = outdoor; kept as the last used tab. */
+    val quickWorkoutTab: Int = 0,
     val sleepDurationLabel: String = "—",
     val sleepHoursDecimal: String = "—",
     val sleepHasStages: Boolean = false,

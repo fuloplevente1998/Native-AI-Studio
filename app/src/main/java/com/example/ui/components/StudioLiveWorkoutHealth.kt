@@ -69,7 +69,7 @@ internal val LocalOpenWorkoutHealth = staticCompositionLocalOf<() -> Unit> { {} 
         com.example.model.AppLanguage.DE -> de
         com.example.model.AppLanguage.RO -> ro
     }
-    AlertDialog(onDismissRequest = { if (!busy) onDismiss() }, title = {
+    com.example.ui.components.TrainPilotFormSheet(scrollText = false, onDismissRequest = { if (!busy) onDismiss() }, title = {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(word("Edzés egészségadatai", "Workout health data", "Trainings-Gesundheitsdaten", "Date de sănătate antrenament"), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
             TrainPilotRedCloseButton(onDismiss)

@@ -63,7 +63,6 @@ import com.example.ui.components.ExerciseYouTubeVideoModalDialog
 import com.example.ui.components.GoalsEditDialog
 import com.example.ui.components.LocalOpenExerciseVideo
 import com.example.ui.components.PalettePickerBottomSheet
-import com.example.ui.components.QuickWorkoutSheet
 import com.example.ui.components.TrainPilotGlobalTopHeaderAndNav
 import com.example.ui.components.TrainPilotRedCloseButton
 import com.example.ui.screens.ActiveBilateralWorkoutScreen
@@ -302,38 +301,37 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
 
         // 4. Quick Workout Sheet (Gyors edzés indítása)
         if (uiState.showQuickWorkoutSheet) {
-            QuickWorkoutSheet(
-                exercises = uiState.exercises,
-                queuedExercises = uiState.quickWorkoutQueue,
-                onStartStrengthQuick = {
-                    viewModel.startPlannedWorkout()
-                },
-                onStartStrengthWithExercise = { ex ->
-                    viewModel.startQuickStrengthWithExercise(ex)
-                },
-                onStartTimedQuick = {
-                    val timedEx = uiState.exercises.firstOrNull { it.isTimed } ?: uiState.exercises.firstOrNull()
-                    if (timedEx != null) {
-                        viewModel.startQuickTimedWithExercise(timedEx)
-                    } else {
-                        viewModel.navigateToSubScreen(SubScreen.ACTIVE_TIMED, MainTab.WORKOUT)
-                    }
-                },
-                onStartTimedWithExercise = { ex ->
-                    viewModel.startQuickTimedWithExercise(ex)
-                },
-                onStartQueuedWorkout = {
-                    viewModel.startQueuedWorkout()
-                },
-                onStartOutdoorGps = {
-                    viewModel.toggleQuickWorkoutSheet(false)
-                    viewModel.navigateToSubScreen(SubScreen.ACTIVE_OUTDOOR_GPS, MainTab.WORKOUT)
-                },
-                onBrowseExercises = {
-                    viewModel.toggleQuickWorkoutSheet(false)
-                    viewModel.navigateToSubScreen(SubScreen.EXERCISE_LIBRARY, MainTab.WORKOUT)
-                },
-                onDismiss = { viewModel.toggleQuickWorkoutSheet(false) }
+            // 2772: one sheet, three tabs; the exercise picker is hosted 1:1 instead of a separate page.
+            val library: @Composable (Boolean) -> Unit = { timed ->
+                ExerciseLibraryScreen(
+                    state = uiState,
+                    onBack = { viewModel.toggleQuickWorkoutSheet(false) },
+                    onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
+                    onSearchQueryChange = { viewModel.updateExerciseSearch(it) },
+                    onSelectCategory = { viewModel.selectExerciseCategory(it) },
+                    onSelectExercise = { exId -> viewModel.openExerciseDetail(exId) },
+                    onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true) },
+                    onStartExerciseNow = { ex -> viewModel.toggleQuickWorkoutSheet(false); viewModel.selectLibraryExercise(ex) },
+                    onAddExerciseToQueue = { ex ->
+                        viewModel.addExerciseToWorkoutQueue(ex)
+                        viewModel.addExerciseToActiveProgramDay(ex)
+                    },
+                    onRemoveExerciseFromQueue = viewModel::removeExerciseFromWorkoutQueue,
+                    onStartQueuedWorkout = { viewModel.toggleQuickWorkoutSheet(false); viewModel.startQueuedWorkout() },
+                    onToggleFavoritesOnly = viewModel::toggleFavoriteExercisesOnly,
+                    onToggleFavorite = viewModel::toggleExerciseFavorite,
+                    embedded = true,
+                    timedOnly = timed
+                )
+            }
+            com.example.ui.components.QuickWorkoutHubSheet(
+                language = uiState.language,
+                tab = uiState.quickWorkoutTab,
+                onSelectTab = viewModel::selectQuickWorkoutTab,
+                onDismiss = { viewModel.toggleQuickWorkoutSheet(false) },
+                onStartOutdoor = { activity -> viewModel.startOutdoorWorkout(activity) },
+                strengthContent = { library(false) },
+                timedContent = { library(true) }
             )
         }
 
@@ -594,6 +592,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onToggleAutoMode = { enabled -> viewModel.toggleAutoMode(enabled) },
                             onPreviousExercise = { viewModel.previousActiveExercise() },
                             onNextExercise = nextWithFeedback,
+                            onFinishWorkout = { viewModel.navigateToSubScreen(SubScreen.WORKOUT_SUMMARY) },
+                            onDiscardWorkout = { viewModel.stopActiveWorkoutSession(uiState.activeWorkoutId, uiState.activeWorkoutGeneration) },
                             exerciseFeedback = { com.example.ui.components.StudioActiveExerciseFeedback(uiState,
                                 onEffort = { id, index -> viewModel.updateExerciseFeedback(id, index = index) },
                                 onNote = { id, note -> viewModel.updateExerciseFeedback(id, note = note) }) },
@@ -612,6 +612,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onSelectMeasurementMode = { mode -> viewModel.navigateToSubScreen(mode, MainTab.WORKOUT) },
                             onPreviousExercise = { viewModel.previousActiveExercise() },
                             onNextExercise = nextWithFeedback,
+                            onFinishWorkout = { viewModel.navigateToSubScreen(SubScreen.WORKOUT_SUMMARY) },
+                            onDiscardWorkout = { viewModel.stopActiveWorkoutSession(uiState.activeWorkoutId, uiState.activeWorkoutGeneration) },
                             exerciseFeedback = { com.example.ui.components.StudioActiveExerciseFeedback(uiState,
                                 onEffort = { id, index -> viewModel.updateExerciseFeedback(id, index = index) },
                                 onNote = { id, note -> viewModel.updateExerciseFeedback(id, note = note) }) },
@@ -641,6 +643,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onSkipRest = { viewModel.skipRestTimer() },
                             onPreviousExercise = { viewModel.previousActiveExercise() },
                             onNextExercise = nextWithFeedback,
+                            onFinishWorkout = { viewModel.navigateToSubScreen(SubScreen.WORKOUT_SUMMARY) },
+                            onDiscardWorkout = { viewModel.stopActiveWorkoutSession(uiState.activeWorkoutId, uiState.activeWorkoutGeneration) },
                             exerciseFeedback = { com.example.ui.components.StudioActiveExerciseFeedback(uiState,
                                 onEffort = { id, index -> viewModel.updateExerciseFeedback(id, index = index) },
                                 onNote = { id, note -> viewModel.updateExerciseFeedback(id, note = note) }) },
@@ -898,9 +902,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     state = uiState,
                                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                                     onOpenQuickWorkout = { viewModel.toggleQuickWorkoutSheet(true) },
-                                    onOpenExerciseLibrary = { viewModel.navigateToSubScreen(SubScreen.EXERCISE_LIBRARY) },
-                                    onOpenOutdoorWorkout = { viewModel.navigateToSubScreen(SubScreen.ACTIVE_OUTDOOR_GPS) },
+                                    onOpenExerciseLibrary = { viewModel.openQuickWorkoutSheet(0) },
+                                    onOpenOutdoorWorkout = { viewModel.openQuickWorkoutSheet(2) },
                                     onOpenProgramsList = { viewModel.navigateToSubScreen(SubScreen.PROGRAMS_LIST) },
+                                    onOpenTimed = { viewModel.openQuickWorkoutSheet(1) },
                                     onOpenProgramEditor = { progId, dayIdx -> viewModel.openProgramEditor(progId, dayIdx) },
                                     onStartWorkoutDay = { dayIdx ->
                                         viewModel.startPlannedWorkout(null, dayIdx)
@@ -1146,7 +1151,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             Text(
                                 text = "$inProgressPrefix ($exStepText): $activeExName$restInfo",
                                 style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.ExtraBold,
+                                fontWeight = FontWeight.Bold,
                                 color = palette.textPrimary,
                                 maxLines = 1
                             )
@@ -1159,7 +1164,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             Text(
                                 text = returnBtnLabel,
                                 style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.ExtraBold,
+                                fontWeight = FontWeight.Bold,
                                 color = palette.onPrimary,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                             )

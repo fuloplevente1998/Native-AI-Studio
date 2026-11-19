@@ -274,7 +274,7 @@ fun HealthTabScreen(
         var dateText by remember(editingMeasurement, uiState.showAddWeightDialog) {
             mutableStateOf(editingMeasurement?.dateLabel ?: todayDotLabel)
         }
-        AlertDialog(
+        com.example.ui.components.TrainPilotFormSheet(
             onDismissRequest = {
                 editingMeasurement = null
                 onToggleAddWeightDialog(false)
@@ -457,7 +457,7 @@ fun HealthTabScreen(
                                 Text(
                                     text = strings.todayStateTitle,
                                     style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.ExtraBold,
+                                    fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary
                                 )
                                 Text(
@@ -498,7 +498,11 @@ fun HealthTabScreen(
                     }
 
                     // Expandable Detail Dropdown Card when any of the 6 "Mai állapot" tiles is tapped
-                    androidx.compose.animation.AnimatedVisibility(visible = expandedTodayTileKey != null) {
+                    // 2771: tile details open from the bottom instead of pushing the page down.
+                    if (expandedTodayTileKey != null) com.example.ui.components.TrainPilotScreenSheet(
+                        onDismiss = { expandedTodayTileKey = null },
+                        testTag = "health_today_tile_sheet"
+                    ) {
                         val activeKey = expandedTodayTileKey ?: "sleep"
                         val currentDaily = uiState.dailyHealthDate == today.toString()
                         val activeEnergy = if (currentDaily && "activeCalories" in uiState.dailyHealthAvailableFields)
@@ -512,11 +516,12 @@ fun HealthTabScreen(
                             color = palette.background.copy(alpha = 0.75f),
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
                                 .testTag("health_today_tile_expanded_card")
                         ) {
                             Column(
-                                modifier = Modifier.padding(12.dp),
+                                modifier = Modifier.verticalScroll(rememberScrollState()).padding(12.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 val openHealthJournalAndScroll: () -> Unit = {
@@ -896,7 +901,7 @@ fun HealthTabScreen(
                                         .fillMaxWidth()
                                         .heightIn(min = 48.dp)
                                         .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
-                                        .trainPilotClickable(RoundedCornerShape(10.dp)) { onActionClick() }
+                                        .trainPilotClickable(RoundedCornerShape(10.dp)) { expandedTodayTileKey = null; onActionClick() }
                                         .testTag("health_expanded_action_button")
                                 ) {
                                     Row(
@@ -975,7 +980,7 @@ fun HealthTabScreen(
                                     tr(uiState.language, "Heti egészség & edzés célok", "Weekly Health & Workout Goals", "Wöchentliche Gesundheits- & Trainingsziele", "Obiective săptămânale sănătate și antrenament")
                                 },
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.ExtraBold,
+                                fontWeight = FontWeight.Bold,
                                 color = palette.textPrimary
                             )
                             Spacer(modifier = Modifier.height(2.dp))
@@ -1335,7 +1340,7 @@ fun HealthTabScreen(
                                                     text = latestChronologicalEntry?.weightLabel
                                                         ?: if (uiState.currentBodyWeightKg > 0f) "${uiState.currentBodyWeightKg} kg" else "—",
                                                     style = MaterialTheme.typography.titleLarge,
-                                                    fontWeight = FontWeight.ExtraBold,
+                                                    fontWeight = FontWeight.Bold,
                                                     color = palette.textPrimary
                                                 )
                                                 Text(
@@ -1792,7 +1797,7 @@ internal fun MainTodayStatusTile(
             Text(
                 text = value,
                 style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = FontWeight.Bold,
                 color = palette.textPrimary,
                 maxLines = 1
             )
@@ -1827,7 +1832,7 @@ private fun PulseInnerBox(
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = FontWeight.Bold,
                 color = palette.textPrimary,
                 maxLines = 1
             )
@@ -2061,7 +2066,7 @@ internal fun CoachDetailScreen(
                                 Text(
                                     text = if (hasScore) "$displayScore" else "—",
                                     style = MaterialTheme.typography.headlineLarge,
-                                    fontWeight = FontWeight.ExtraBold,
+                                    fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary
                                 )
                                 Text(
@@ -3551,7 +3556,7 @@ fun BackupRestoreScreen(
     }
 
     if (showHealthInfo) {
-        AlertDialog(
+        com.example.ui.components.TrainPilotFormSheet(scrollText = false,
             onDismissRequest = { showHealthInfo = false },
             title = { Text(tr(uiState.language, "Egészségadatok", "Health data", "Gesundheitsdaten", "Date de sănătate")) },
             text = { Text(modifier = Modifier.verticalScroll(rememberScrollState()), text = tr(uiState.language,

@@ -50,7 +50,7 @@ internal fun StudioCoachRecommendations(
     val lang = state.language.ifBlank { com.example.localization.LocalTrainPilotStrings.current.language.code }
     val text = nativeResources(LocalContext.current, lang)
     state.variationPreview?.let { preview ->
-        AlertDialog(onDismissRequest = onCloseVariation,
+        com.example.ui.components.TrainPilotFormSheet(onDismissRequest = onCloseVariation,
             title = { Text(coachTr(lang, "Gyakorlatváltozat előnézete", "Exercise Variation Preview", "Vorschau der Übungsvariante", "Previzualizare variantă exercițiu")) },
             text = { Text(NativeCoachAdviceText.variation(text, preview.next)) },
             confirmButton = { com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = onSaveVariation, enabled = !state.variationBusy,
@@ -139,7 +139,7 @@ internal fun StudioCoachNextTrainingCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(target.programTitle.ifBlank { coachTr(lang, "Következő edzés", "Next workout", "Nächstes Training", "Următorul antrenament") },
-                        style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold,
+                        style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
                         color = palette.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.testTag("studio_coach_program_name"))
                     Text(if (letterDay == null) target.title else "${coachTr(lang, "Edzésnap", "Workout day", "Trainingstag", "Zi antrenament")}: ${target.title}",
@@ -158,7 +158,7 @@ internal fun StudioCoachNextTrainingCard(
                         Box(Modifier.sizeIn(minWidth = 58.dp, minHeight = 58.dp).padding(8.dp),
                             contentAlignment = androidx.compose.ui.Alignment.Center) {
                             Text(letterDay, style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.Black, color = palette.primary)
+                                fontWeight = FontWeight.Bold, color = palette.primary)
                         }
                     }
                 }

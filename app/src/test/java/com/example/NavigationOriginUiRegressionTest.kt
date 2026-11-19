@@ -87,7 +87,8 @@ class NavigationOriginUiRegressionTest {
             if (!systemBack) {
                 val bounds = row.fetchSemanticsNode().boundsInRoot
                 fun pixels() = compose.runOnIdle {
-                    val host = compose.activity.findViewById<View>(android.R.id.content)
+                    // 2771: the workout rows live in the stats details bottom sheet (its own window).
+                    val host = (row.fetchSemanticsNode().root as androidx.compose.ui.platform.ViewRootForTest).view
                     val bitmap = Bitmap.createBitmap(host.width, host.height, Bitmap.Config.ARGB_8888)
                     host.draw(Canvas(bitmap))
                     bitmap.asImageBitmap().toPixelMap()

@@ -11,22 +11,34 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 
-/** Action colors are independent of the selected decorative theme. */
+/**
+ * Action colors (save = green, negative = red) independent of the decorative accent. Dark themes keep
+ * the deep tonal look; light themes get light tonal containers with dark text (2772: no dark blocks
+ * on light screens).
+ */
 object TrainPilotActionAppearance {
-    val saveBackground = Color(0xFF19382C)
-    val saveForeground = Color(0xFF88E5B3)
-    val saveOutline = Color(0xFF3ECF87)
-    val negativeBackground = Color(0xFF3E2024)
-    val negativeForeground = Color(0xFFFFB4B4)
-    val negativeOutline = Color(0xFFEF6670)
+    private val dark: Boolean @Composable @androidx.compose.runtime.ReadOnlyComposable
+        get() = com.example.ui.theme.LocalTrainPilotPalette.current.isDark
+    val saveBackground: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
+        get() = if (dark) Color(0xFF19382C) else Color(0xFFDDF3E8)
+    val saveForeground: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
+        get() = if (dark) Color(0xFF88E5B3) else Color(0xFF146C43)
+    val saveOutline: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
+        get() = if (dark) Color(0xFF3ECF87) else Color(0xFF4FB985)
+    val negativeBackground: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
+        get() = if (dark) Color(0xFF3E2024) else Color(0xFFFBE3E3)
+    val negativeForeground: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
+        get() = if (dark) Color(0xFFFFB4B4) else Color(0xFFB3261E)
+    val negativeOutline: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
+        get() = if (dark) Color(0xFFEF6670) else Color(0xFFD9878A)
     @Composable fun saveColors() = ButtonDefaults.outlinedButtonColors(
         containerColor = saveBackground, contentColor = saveForeground,
         disabledContainerColor = saveBackground.copy(alpha = 0.5f), disabledContentColor = saveForeground.copy(alpha = 0.38f))
     @Composable fun negativeColors() = ButtonDefaults.outlinedButtonColors(
         containerColor = negativeBackground, contentColor = negativeForeground,
         disabledContainerColor = negativeBackground.copy(alpha = 0.5f), disabledContentColor = negativeForeground.copy(alpha = 0.38f))
-    fun saveBorder(enabled: Boolean = true) = BorderStroke(1.dp, saveOutline.copy(alpha = if (enabled) 0.7f else 0.3f))
-    fun negativeBorder(enabled: Boolean = true) = BorderStroke(1.dp, negativeOutline.copy(alpha = if (enabled) 0.7f else 0.3f))
+    @Composable fun saveBorder(enabled: Boolean = true) = BorderStroke(1.dp, saveOutline.copy(alpha = if (enabled) 0.7f else 0.3f))
+    @Composable fun negativeBorder(enabled: Boolean = true) = BorderStroke(1.dp, negativeOutline.copy(alpha = if (enabled) 0.7f else 0.3f))
 }
 
 /** For a confirmation dialog whose committed action can be either save or delete. */

@@ -37,6 +37,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -287,6 +290,55 @@ fun LogTabScreen(
         )
     }
 
+    if (showInlineCalendar) {
+        // Shared period sheet (same as the Health journal): Today / Clear emphasized, 6 rows, swipe months.
+        val logWeekdayHeaders = when (uiState.language) {
+            com.example.model.AppLanguage.HU -> listOf("H", "K", "Sze", "Cs", "P", "Szo", "V")
+            com.example.model.AppLanguage.EN -> listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+            com.example.model.AppLanguage.DE -> listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
+            com.example.model.AppLanguage.RO -> listOf("Lun", "Mar", "Mie", "Joi", "Vin", "Sâm", "Dum")
+        }
+        val loggedDates = remember(uiState.loggedWorkouts) { uiState.loggedWorkouts.mapNotNull { it.localWorkoutDate() }.toSet() }
+        com.example.ui.components.TrainPilotRangeCalendarSheet(
+            tagPrefix = "log",
+            title = trL(uiState.language, "Napló időszak", "Log period", "Protokollzeitraum", "Perioada jurnalului"),
+            monthTitle = monthFullHu,
+            hint = when {
+                intervalStartDay == null -> trL(uiState.language, "Jelölj ki két napot az időszak megtekintéséhez.", "Select two days to view a date range.", "Wähle zwei Tage, um den Zeitraum anzuzeigen.", "Selectează două zile pentru a vedea intervalul.")
+                intervalEndDay == null -> trL(uiState.language, "Kezdőnap: $monthPrefixDisplay ${intervalStartDay}. • Jelöld ki a zárónapot.", "From: $monthPrefixDisplay ${intervalStartDay}. • Select the end day.", "Ab: $monthPrefixDisplay ${intervalStartDay}. • Wähle den Endtag.", "De la: $monthPrefixDisplay ${intervalStartDay}. • Selectează ziua finală.")
+                else -> "${trL(uiState.language, "Intervallum", "Interval", "Intervall", "Interval")}: $monthPrefixDisplay ${rangeMinDay}. – $monthPrefixDisplay ${rangeMaxDay}."
+            },
+            weekdayHeaders = logWeekdayHeaders,
+            month = currentYearMonth,
+            start = intervalStartDay?.let { currentYearMonth.atDay(it.coerceIn(1, currentYearMonth.lengthOfMonth())) },
+            end = intervalEndDay?.let { currentYearMonth.atDay(it.coerceIn(1, currentYearMonth.lengthOfMonth())) },
+            today = today,
+            hasMark = { it in loggedDates },
+            todayLabel = trL(uiState.language, "Mai nap", "Today", "Heute", "Azi"),
+            clearLabel = trL(uiState.language, "Szűrő törlése", "Clear filter", "Filter löschen", "Șterge filtrul"),
+            doneLabel = trL(uiState.language, "Rendben", "OK", "OK", "OK"),
+            onMonthChange = {
+                filterAllMonths = false
+                intervalStartDay = null
+                intervalEndDay = null
+                currentYearMonth = it
+            },
+            onDayClick = { handleDayClick(it.dayOfMonth) },
+            onToday = {
+                currentYearMonth = java.time.YearMonth.from(today)
+                filterAllMonths = false
+                intervalStartDay = today.dayOfMonth
+                intervalEndDay = today.dayOfMonth
+            },
+            onClear = {
+                intervalStartDay = null
+                intervalEndDay = null
+                filterAllMonths = true
+            },
+            onDismiss = { showInlineCalendar = false }
+        )
+    }
+
     val logListState = androidx.compose.foundation.lazy.rememberLazyListState()
 
     com.example.ui.components.TrainPilotScrollableListBox(
@@ -394,186 +446,6 @@ fun LogTabScreen(
                             contentDescription = trL(uiState.language, "Következő hónap", "Next month", "Nächster Monat", "Luna următoare"),
                             tint = palette.primary
                         )
-                    }
-                }
-            }
-        }
-
-        // Expandable Interval Calendar Filter Card (1. nap = Innentől, 2. nap = Idáig + Szűrő törlése + Mai napra ugrás)
-        item {
-            AnimatedVisibility(visible = showInlineCalendar) {
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = palette.surfaceCard,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth().testTag("log_interval_calendar_header"),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Column {
-                                Text(
-                                    text = monthFullHu,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.textPrimary
-                                )
-                                Text(
-                                    text = when {
-                                        intervalStartDay == null -> trL(uiState.language, "Jelölj ki két napot az időszak megtekintéséhez.", "Select two days to view a date range.", "Wähle zwei Tage, um den Zeitraum anzuzeigen.", "Selectează două zile pentru a vedea intervalul.")
-                                        intervalEndDay == null -> trL(uiState.language, "Kezdőnap: $monthPrefixDisplay ${intervalStartDay}. • Jelöld ki a zárónapot.", "From: $monthPrefixDisplay ${intervalStartDay}. • Select the end day.", "Ab: $monthPrefixDisplay ${intervalStartDay}. • Wähle den Endtag.", "De la: $monthPrefixDisplay ${intervalStartDay}. • Selectează ziua finală.")
-                                        else -> "${trL(uiState.language, "Intervallum", "Interval", "Intervall", "Interval")}: $monthPrefixDisplay ${rangeMinDay}. – $monthPrefixDisplay ${rangeMaxDay}."
-                                    },
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = palette.primary
-                                )
-                            }
-                            FlowRow(modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = palette.surfaceElevated,
-                                    modifier = Modifier
-                                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
-                                        .trainPilotClickable(RoundedCornerShape(10.dp)) {
-                                            currentYearMonth = java.time.YearMonth.from(today)
-                                            filterAllMonths = false
-                                            intervalStartDay = today.dayOfMonth
-                                            intervalEndDay = today.dayOfMonth
-                                        }
-                                        .testTag("log_jump_today_button")
-                                ) {
-                                    Text(
-                                        text = trL(uiState.language, "Mai napra ugrás", "Jump to today", "Zu heute springen", "Salt la azi"),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = palette.primary,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
-                                    )
-                                }
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = palette.surfaceElevated,
-                                    modifier = Modifier
-                                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(10.dp))
-                                        .trainPilotClickable(RoundedCornerShape(10.dp)) {
-                                            intervalStartDay = null
-                                            intervalEndDay = null
-                                            filterAllMonths = true
-                                        }
-                                        .testTag("log_clear_filter_button")
-                                ) {
-                                    Text(
-                                        text = trL(uiState.language, "Szűrő törlése", "Clear filter", "Filter löschen", "Șterge filtrul"),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = palette.textSecondary,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        val logWeekdayHeaders = when (uiState.language) {
-                            com.example.model.AppLanguage.HU -> listOf("H", "K", "Sze", "Cs", "P", "Szo", "V")
-                            com.example.model.AppLanguage.EN -> listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-                            com.example.model.AppLanguage.DE -> listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
-                            com.example.model.AppLanguage.RO -> listOf("Lun", "Mar", "Mie", "Joi", "Vin", "Sâm", "Dum")
-                        }
-                        Column(Modifier.horizontalScroll(rememberScrollState()).widthIn(min = 336.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            logWeekdayHeaders.forEach { dHdr ->
-                                Text(
-                                    text = dHdr,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.textSecondary,
-                                    modifier = Modifier.width(48.dp),
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                )
-                            }
-                        }
-
-                        val daysInMonth = currentYearMonth.lengthOfMonth()
-                        val firstDayOffset = currentYearMonth.atDay(1).dayOfWeek.value - 1
-                        val isCurrentMonthToday = currentYearMonth.year == today.year && currentYearMonth.monthValue == today.monthValue
-
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            var dayCounter = 1
-                            for (row in 0..5) {
-                                if (dayCounter > daysInMonth) break
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    for (col in 0..6) {
-                                        if ((row == 0 && col < firstDayOffset) || dayCounter > daysInMonth) {
-                                            Spacer(modifier = Modifier.size(48.dp))
-                                        } else {
-                                            val dayNum = dayCounter
-                                            val isStartOrEnd = dayNum == intervalStartDay || dayNum == intervalEndDay
-                                            val isInInterval = rangeMinDay != null && rangeMaxDay != null && dayNum in rangeMinDay..rangeMaxDay
-                                            val isToday = isCurrentMonthToday && dayNum == today.dayOfMonth
-                                            val targetDayDate = currentYearMonth.atDay(dayNum)
-                                            val hasLoggedWorkout = uiState.loggedWorkouts.any {
-                                                it.localWorkoutDate() == targetDayDate
-                                            }
-                                            Surface(
-                                                shape = RoundedCornerShape(10.dp),
-                                                color = when {
-                                                    isStartOrEnd -> palette.primary
-                                                    isInInterval -> palette.primary.copy(alpha = 0.28f)
-                                                    else -> palette.surfaceElevated
-                                                },
-                                                modifier = Modifier
-                                                    .size(48.dp)
-                                                    .trainPilotBorder(
-                                                        width = if (isToday || isStartOrEnd) 1.5.dp else 1.dp,
-                                                        color = when {
-                                                            isStartOrEnd || isToday -> palette.primary
-                                                            isInInterval -> palette.primary.copy(alpha = 0.65f)
-                                                            else -> palette.cardBorder
-                                                        },
-                                                        shape = RoundedCornerShape(10.dp)
-                                                    )
-                                                    .trainPilotClickable(RoundedCornerShape(10.dp)) { handleDayClick(dayNum) }
-                                            ) {
-                                                Box(contentAlignment = Alignment.Center) {
-                                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                        Text(
-                                                            text = "$dayNum",
-                                                            style = MaterialTheme.typography.labelSmall,
-                                                            fontWeight = if (isStartOrEnd || isInInterval || isToday) FontWeight.Bold else FontWeight.Normal,
-                                                            color = if (isStartOrEnd) palette.onPrimary else palette.textPrimary
-                                                        )
-                                                        if (hasLoggedWorkout) {
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .size(4.dp)
-                                                                    .clip(CircleShape)
-                                                                    .background(if (isStartOrEnd) palette.onPrimary else palette.primary)
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            dayCounter++
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        }
                     }
                 }
             }
@@ -1559,7 +1431,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                             text = totalVolumeText,
                             modifier = Modifier.testTag("progress_volume_total"),
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.ExtraBold,
+                            fontWeight = FontWeight.Bold,
                             color = palette.textPrimary
                         )
                         Text(
@@ -1660,7 +1532,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                         Text(
                             text = trL(uiState.language, "Volumen trend", "Volume trend", "Volumentrend", "Trend volum"),
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.ExtraBold,
+                            fontWeight = FontWeight.Bold,
                             color = palette.textPrimary
                         )
                         Surface(
@@ -1838,15 +1710,20 @@ internal fun MainProgressVolumeAndMuscleSection(
         }
 
         // Expandable Dropdown Card when any of the 4 tiles is tapped (collapsed by default so everything fits on screen!)
-        AnimatedVisibility(visible = uiState.expandedStatsCardIndex in 0..3) {
+        // 2771: details open from the bottom instead of pushing the page down.
+        if (uiState.expandedStatsCardIndex in 0..3) com.example.ui.components.TrainPilotScreenSheet(
+            onDismiss = { onSelectExpandedStatsCard(uiState.expandedStatsCardIndex) },
+            testTag = "stats_details_sheet"
+        ) {
             Surface(
                 shape = RoundedCornerShape(18.dp),
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, bottom = 16.dp)
                     .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(18.dp))
             ) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(12.dp).testTag("stats_details_sheet_content"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     when (uiState.expandedStatsCardIndex) {
                         0 -> {
                             Row(
@@ -2107,13 +1984,18 @@ internal fun MainProgressVolumeAndMuscleSection(
                     )
                 }
 
-                AnimatedVisibility(visible = expandedAdviceDetails) {
+                // 2771: tip details open from the bottom instead of pushing the page down.
+                if (expandedAdviceDetails) com.example.ui.components.TrainPilotScreenSheet(
+                    onDismiss = { expandedAdviceDetails = false },
+                    testTag = "advice_details_sheet"
+                ) {
                     val lowMuscle = uiState.realMuscleLoads.minByOrNull { it.percentage }
                     val latestPr = uiState.prRecords.firstOrNull()
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 10.dp),
+                            .verticalScroll(rememberScrollState())
+                            .padding(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, bottom = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         HorizontalDivider(color = palette.cardBorder)
