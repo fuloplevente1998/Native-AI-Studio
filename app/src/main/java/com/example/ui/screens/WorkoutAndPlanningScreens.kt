@@ -776,7 +776,7 @@ fun ProgramsListScreen(
 
     renameTarget?.let { (targetId, currentName) ->
         var newName by remember(targetId) { mutableStateOf(currentName) }
-        AlertDialog(
+        com.example.ui.components.TrainPilotFormSheet(
             onDismissRequest = { renameTarget = null },
             containerColor = palette.surface,
             title = { Text(trW(state.language, "Program átnevezése", "Rename program", "Programm umbenennen", "Redenumește programul"), color = palette.textPrimary) },
@@ -1045,7 +1045,7 @@ fun ProgramsListScreen(
     if (showCreateCustomProgramDialog) {
         var customProgName by remember { mutableStateOf("") }
         var customProgSub by remember { mutableStateOf(trW(state.language, "Saját egyedi összeállítású edzésterv", "Custom workout plan", "Eigener Trainingsplan", "Plan de antrenament personalizat")) }
-        AlertDialog(
+        com.example.ui.components.TrainPilotFormSheet(
             onDismissRequest = { showCreateCustomProgramDialog = false },
             containerColor = palette.surfaceCard,
             titleContentColor = palette.textPrimary,
@@ -1272,7 +1272,7 @@ fun ProgramsListScreen(
                             if (program.isActive || isExpanded) palette.primary else palette.cardBorder,
                             RoundedCornerShape(14.dp)
                         )
-                        .trainPilotReorderItem(programReorder, program.id)
+                        .trainPilotReorderItem(programReorder, program.id, index)
                         .testTag("program_card_${program.id}")
                 ) {
                     ProgramCardContent(
@@ -1820,7 +1820,7 @@ internal fun ProgramEditorContent(
                 color = palette.surface,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .trainPilotReorderItem(exerciseReorder, ex.id)
+                    .trainPilotReorderItem(exerciseReorder, ex.id, index)
                     .trainPilotBorder(
                         width = if (isExpanded) 1.5.dp else 1.dp,
                         color = if (isExpanded) palette.primary else palette.cardBorder,
@@ -2120,7 +2120,7 @@ fun CalendarPlannerScreen(
         var splitSel by remember(ev.id) { mutableStateOf(ev.splitBadge) }
         var timeSel by remember(ev.id) { mutableStateOf(ev.timeLabel) }
         var durSel by remember(ev.id) { mutableIntStateOf(ev.durationMinutes) }
-        AlertDialog(
+        com.example.ui.components.TrainPilotFormSheet(
             onDismissRequest = { editingEvent = null },
             containerColor = palette.surface,
             titleContentColor = palette.textPrimary,
@@ -2204,7 +2204,7 @@ fun CalendarPlannerScreen(
     movingEvent?.let { ev ->
         var targetDay by remember(ev.id) { mutableIntStateOf((ev.dayOfMonth + 1).coerceAtMost(displayedYearMonth.lengthOfMonth())) }
         var shiftAllFollowing by remember(ev.id) { mutableStateOf(true) }
-        AlertDialog(
+        com.example.ui.components.TrainPilotFormSheet(
             onDismissRequest = { movingEvent = null },
             containerColor = palette.surface,
             titleContentColor = palette.textPrimary,
@@ -2284,7 +2284,7 @@ fun CalendarPlannerScreen(
 
     // 3. Planner Field Picker Dialog
     activeFieldDialog?.let { fieldKey ->
-        AlertDialog(
+        com.example.ui.components.TrainPilotFormSheet(scrollText = false,
             onDismissRequest = { activeFieldDialog = null },
             containerColor = palette.surface,
             titleContentColor = palette.textPrimary,

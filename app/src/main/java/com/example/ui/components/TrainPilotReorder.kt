@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
@@ -19,6 +21,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -37,34 +40,60 @@ import androidx.compose.ui.zIndex
 import com.example.ui.theme.LocalTrainPilotPalette
 import kotlin.math.roundToInt
 
-/** Drag state of one reorderable list: only the lifted row moves; the list is written once on drop. */
+/**
+ * Drag state of one reorderable list. The lifted row follows the finger and the rows it passes
+ * slide one place up or down live, so the gap always shows where it will land; the list itself is
+ * written once on drop.
+ */
 class TrainPilotReorderState {
     var draggingKey by mutableStateOf<Any?>(null)
         internal set
     var offsetY by mutableFloatStateOf(0f)
         internal set
     internal val heights = mutableStateMapOf<Any, Int>()
+    internal var draggingIndex by mutableStateOf(-1)
+    internal var draggingLastIndex by mutableStateOf(-1)
+    internal var draggingStepPx by mutableFloatStateOf(0f)
 
     /** Target index for a drop of [index] after dragging [offsetY] px with rows [stepPx] apart. */
     fun dropTarget(index: Int, lastIndex: Int, stepPx: Float): Int =
         if (stepPx <= 0f) index else (index + (offsetY / stepPx).roundToInt()).coerceIn(0, lastIndex)
+
+    /** Live shift in px of the row at [index] while another row is dragged (0 when idle). */
+    fun displacementFor(index: Int): Float {
+        val from = draggingIndex
+        if (draggingKey == null || from < 0 || index == from || draggingStepPx <= 0f) return 0f
+        val target = dropTarget(from, draggingLastIndex, draggingStepPx)
+        return when {
+            target > from && index in (from + 1)..target -> -draggingStepPx
+            target < from && index in target until from -> draggingStepPx
+            else -> 0f
+        }
+    }
 }
 
 @Composable
 fun rememberTrainPilotReorderState(): TrainPilotReorderState = remember { TrainPilotReorderState() }
 
-/** Applied to each reorderable row: measures it and lifts/translates it while dragged. */
-fun Modifier.trainPilotReorderItem(state: TrainPilotReorderState, key: Any): Modifier =
-    this
-        .onSizeChanged { state.heights[key] = it.height }
-        .then(
-            if (state.draggingKey == key) Modifier.zIndex(1f).graphicsLayer {
-                translationY = state.offsetY
-                shadowElevation = 18f
-                scaleX = 1.02f
-                scaleY = 1.02f
-            } else Modifier
+/** Applied to each reorderable row: measures it, lifts the dragged row and slides the others aside. */
+fun Modifier.trainPilotReorderItem(state: TrainPilotReorderState, key: Any, index: Int): Modifier =
+    composed {
+        val shift by animateFloatAsState(
+            targetValue = state.displacementFor(index),
+            animationSpec = tween(durationMillis = 150),
+            label = "reorderShift"
         )
+        this
+            .onSizeChanged { state.heights[key] = it.height }
+            .then(
+                if (state.draggingKey == key) Modifier.zIndex(1f).graphicsLayer {
+                    translationY = state.offsetY
+                    shadowElevation = 18f
+                    scaleX = 1.02f
+                    scaleY = 1.02f
+                } else Modifier.graphicsLayer { translationY = if (state.draggingKey == null) 0f else shift }
+            )
+    }
 
 /**
  * The only reorder control of a row (no up/down arrows): a long press on the handle lifts the row,
@@ -103,6 +132,9 @@ fun TrainPilotReorderHandle(
                     val longPress = awaitLongPressOrCancellation(down.id) ?: return@awaitEachGesture
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     state.offsetY = 0f
+                    state.draggingIndex = currentIndex
+                    state.draggingLastIndex = currentLast
+                    state.draggingStepPx = (state.heights[key] ?: 0) + gapPx
                     state.draggingKey = key
                     longPress.consume()
                     val completed = drag(longPress.id) { change ->
@@ -112,6 +144,7 @@ fun TrainPilotReorderHandle(
                     val step = (state.heights[key] ?: 0) + gapPx
                     val target = state.dropTarget(currentIndex, currentLast, step)
                     state.draggingKey = null
+                    state.draggingIndex = -1
                     state.offsetY = 0f
                     if (completed && target != currentIndex) currentMove(currentIndex, target)
                 }

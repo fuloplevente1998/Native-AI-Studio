@@ -394,7 +394,6 @@ class JournalWorkoutHealthRegressionTest {
         compose.onNodeWithTag("log_month_picker_button").performClick()
         for (lang in AppLanguage.entries) {
             compose.runOnIdle { language = lang }
-            compose.onNodeWithTag("log_tab_screen").performScrollToNode(hasTestTag("log_interval_calendar_header"))
             val header = compose.onNodeWithTag("log_interval_calendar_header").fetchSemanticsNode().boundsInRoot
             assertTrue("Calendar header too tall: $lang / $header", header.height <= 160 * compose.activity.resources.displayMetrics.density)
             listOf("log_jump_today_button", "log_clear_filter_button").forEach { tag ->

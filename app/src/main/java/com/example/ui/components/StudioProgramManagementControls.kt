@@ -60,7 +60,7 @@ internal fun StudioProgramManagementControls(
         ), style = MaterialTheme.typography.labelSmall)
     }
     pending?.let { operation ->
-        AlertDialog(onDismissRequest = { if (!busy) pending = null }, title = { Text(when (operation) {
+        com.example.ui.components.TrainPilotFormSheet(asSheet = operation == "add-day", onDismissRequest = { if (!busy) pending = null }, title = { Text(when (operation) {
             "add-day" -> word("Új edzésnap", "New workout day", "Neuer Trainingstag", "Zi nouă de antrenament")
             "delete-day" -> word("Edzésnap törlése?", "Delete workout day?", "Trainingstag löschen?", "Ștergi ziua de antrenament?")
             else -> word("Program törlése?", "Delete program?", "Programm löschen?", "Ștergi programul?")
