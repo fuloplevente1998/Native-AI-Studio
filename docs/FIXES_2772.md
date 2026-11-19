@@ -21,3 +21,10 @@ Kódolás csak „mehet” után, egy közös CI-körrel.
 | Edzés fül belépők | Gyakorlatválasztó, Kültéri kártya | Erő / Időzített / Kültéri csempe | `openQuickWorkoutSheet(0/1/2)` |
 | Egészségnapló időszak | Kezdőnap/Zárónap + Alkalmaz | Szűrőgomb → időszak-lap | from/to/end állapot, Mai nap, Törlés (30 nap) |
 | Indítás kiválasztás nélkül (mai programnap) | Gyors edzés: Indítás | Edzés fül: A/B nap kártya ▶ Indítás (változatlan) | `startPlannedWorkout` – a lapra nem kell (felhasználói döntés) |
+
+## Dizájn-kör (2. rész)
+| # | Terület | Visszajelzés | Terv | Állapot |
+|---|---------|--------------|------|---------|
+| 6 | Világos témák | Sötét foltok: piros ✕ bezárás, sorozat „–” gomb, zöld „Mentés (JSON)”, több helyen | Ok: `TrainPilotActionAppearance` fix sötét színei. Világos palettán világos tónus (zöld: #DDF3E8 / #146C43, piros: #FBE3E3 / #B3261E), sötét palettán marad a mostani. Egy helyen javul minden mentés/törlés/bezárás gomb | mockup küldve |
+| 7 | Aktív edzés alsó sáv | 3 gomb, Elvetés középen (vagy jobb javaslat) | A) ‹ Előző · ✕ Elvetés (megerősítéssel) · Következő ›; B) javaslat: ‹ Előző · ⏹ Befejezés (lap: Mentés és befejezés / Elvetés) · Következő › | mockup küldve, döntésre vár |
+| 8 | Következő gomb | A gyakorlat neve felesleges (fent látszik) | „Következő ›”; utolsó gyakorlatnál „Befejezés ›” | mockup küldve |
