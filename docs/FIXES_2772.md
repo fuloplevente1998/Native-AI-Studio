@@ -20,4 +20,4 @@ Kódolás csak „mehet” után, egy közös CI-körrel.
 | Kültéri edzés | Gyors edzés / Edzés fül → GPS oldal | Kültéri fül: tevékenység → Tovább | `startOutdoorWorkout(tevékenység)` → teljes GPS-nézet |
 | Edzés fül belépők | Gyakorlatválasztó, Kültéri kártya | Erő / Időzített / Kültéri csempe | `openQuickWorkoutSheet(0/1/2)` |
 | Egészségnapló időszak | Kezdőnap/Zárónap + Alkalmaz | Szűrőgomb → időszak-lap | from/to/end állapot, Mai nap, Törlés (30 nap) |
-| **Megszűnt** | Gyors edzés: „Indítás” kiválasztás nélkül (aktív programnap / első időzített) | — | `startPlannedWorkout` az Edzés fül napkártyáin elérhető; döntés kell |
+| Indítás kiválasztás nélkül (mai programnap) | Gyors edzés: Indítás | Edzés fül: A/B nap kártya ▶ Indítás (változatlan) | `startPlannedWorkout` – a lapra nem kell (felhasználói döntés) |
