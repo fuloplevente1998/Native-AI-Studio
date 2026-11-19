@@ -377,7 +377,9 @@ fun ActiveStrengthWorkoutScreen(
                         com.example.ui.components.StudioExerciseSequenceStrip(
                             state = uiState, exercises = workoutExercises,
                             currentIndex = currentExerciseIdx, onSelect = onSwitchExercise)
-                    }
+                    },
+                    // 2774: compact Coach chip next to the day badge; tapping opens the full Coach sheet.
+                    sessionTrailing = { com.example.ui.components.StudioWorkoutCoachChip(uiState.selectedExerciseId, coachOwner) }
                 )
 
                 // Current Exercise Header + Floating Exercise Switcher Dropdown + Library Button
@@ -450,9 +452,6 @@ fun ActiveStrengthWorkoutScreen(
                 }
             }
         }
-
-        // 2774: collapsed Coach chip under the exercise header; tapping opens the full Coach sheet.
-        item(key = "active_coach") { com.example.ui.components.StudioWorkoutCoachChip(uiState.selectedExerciseId, coachOwner) }
 
         // Section header
         item {
