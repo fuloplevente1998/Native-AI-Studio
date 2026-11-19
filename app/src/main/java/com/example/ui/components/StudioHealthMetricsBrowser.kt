@@ -5,6 +5,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.CalendarMonth
+import com.repforge.app.ui.theme.trainPilotBorder
+import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
@@ -51,9 +54,11 @@ internal fun StudioHealthMetricsBrowser(
     var from by rememberSaveable { mutableStateOf(LocalDate.now().minusDays(29).toString()) }
     var to by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
     var end by rememberSaveable { mutableStateOf(to) }
-    var draftFrom by rememberSaveable { mutableStateOf(from) }
-    var draftTo by rememberSaveable { mutableStateOf(to) }
-    var editing by rememberSaveable { mutableStateOf<String?>(null) }
+    // 2772: one filter button opens the same period sheet as the Progress log.
+    var showCalendar by rememberSaveable { mutableStateOf(false) }
+    var pickStart by rememberSaveable { mutableStateOf<String?>(null) }
+    var pickEnd by rememberSaveable { mutableStateOf<String?>(null) }
+    var calendarMonth by rememberSaveable { mutableStateOf(java.time.YearMonth.from(LocalDate.parse(to)).toString()) }
     var reload by rememberSaveable { mutableIntStateOf(0) }
     val range = HealthJournalRange(LocalDate.parse(from), LocalDate.parse(to), LocalDate.parse(end))
     val revision = "$refreshKey:$reload"
@@ -83,23 +88,24 @@ internal fun StudioHealthMetricsBrowser(
                     .testTag("journal_provider_$selected"))
         }
     }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        TrainPilotOutlinedButton(onClick = { editing = "from" }, modifier = Modifier.weight(1f).testTag("journal_range_from")) {
-            Column { Text(label("Kezdőnap", "From", "Von", "De la")); Text(draftFrom) }
+    val periodFormat = java.time.format.DateTimeFormatter.ofPattern("MMM d.", Locale.forLanguageTag(language))
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        val pillShape = RoundedCornerShape(14.dp)
+        Surface(shape = pillShape, color = palette.surfaceCard, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+            .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), pillShape)
+            .trainPilotClickable(pillShape) {
+                pickStart = from; pickEnd = to
+                calendarMonth = java.time.YearMonth.from(LocalDate.parse(to)).toString()
+                showCalendar = true
+            }.testTag("journal_period_button")) {
+            Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Default.CalendarMonth, null, tint = palette.primary, modifier = Modifier.size(18.dp))
+                Text("${LocalDate.parse(from).format(periodFormat)} – ${LocalDate.parse(to).format(periodFormat)}",
+                    color = palette.textPrimary, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Icon(if (showCalendar) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.primary)
+            }
         }
-        TrainPilotOutlinedButton(onClick = { editing = "to" }, modifier = Modifier.weight(1f).testTag("journal_range_to")) {
-            Column { Text(label("Zárónap", "To", "Bis", "Până la")); Text(draftTo) }
-        }
-    }
-    val valid = HealthJournalStore.validDay(draftFrom) && HealthJournalStore.validDay(draftTo) && draftFrom <= draftTo
-    if (!valid) Text(label("A kezdőnap nem lehet későbbi a zárónapnál.", "From must not be after To.",
-        "Von darf nicht nach Bis liegen.", "Data de început nu poate depăși data de sfârșit."), color = palette.danger)
-    if (draftFrom != from || draftTo != to) TrainPilotOutlinedButton(onClick = {
-        from = draftFrom; to = draftTo; end = draftTo
-    }, enabled = valid, modifier = Modifier.fillMaxWidth().testTag("journal_range_apply")) {
-        Text(label("Időszak alkalmazása", "Apply period", "Zeitraum anwenden", "Aplică perioada"))
-    }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
         IconButton(onClick = {
             if (onRefreshProvider != null) onRefreshProvider(provider) else reload++
         }, enabled = !refreshBusy && (snapshot != null || failed), modifier = Modifier.testTag("journal_reload")) {
@@ -193,6 +199,51 @@ internal fun StudioHealthMetricsBrowser(
         TextButton(onClick = { end = range.older().pageEnd.toString() }, enabled = range.pageStart > range.from,
             modifier = Modifier.weight(1f).testTag("journal_older")) { Text(label("Korábbi napok", "Older days", "Ältere Tage", "Zile mai vechi")) }
     }
-    if (editing != null) CompactDatePickerDialog(LocalDate.parse(if (editing == "from") draftFrom else draftTo), language,
-        onDismiss = { editing = null }, onConfirm = { if (editing == "from") draftFrom = it.toString() else draftTo = it.toString(); editing = null })
+    if (showCalendar) {
+        fun applyPeriod(a: String, b: String) {
+            val lo = minOf(a, b); val hi = maxOf(a, b)
+            from = lo; to = hi; end = hi
+        }
+        val locale = Locale.forLanguageTag(language)
+        val month = java.time.YearMonth.parse(calendarMonth)
+        val ps = pickStart?.let(LocalDate::parse); val pe = pickEnd?.let(LocalDate::parse)
+        TrainPilotRangeCalendarSheet(
+            tagPrefix = "journal",
+            title = label("Egészségnapló időszak", "Health journal period", "Gesundheitsjournal-Zeitraum", "Perioada jurnalului de sănătate"),
+            monthTitle = "${month.year}. ${month.month.getDisplayName(java.time.format.TextStyle.FULL_STANDALONE, locale)}",
+            hint = when {
+                ps == null -> label("Jelölj ki két napot az időszak megtekintéséhez.", "Select two days to view a date range.", "Wähle zwei Tage, um den Zeitraum anzuzeigen.", "Selectează două zile pentru a vedea intervalul.")
+                pe == null -> label("Kezdőnap: ${ps.format(periodFormat)} • Jelöld ki a zárónapot.", "From: ${ps.format(periodFormat)} • Select the end day.", "Ab: ${ps.format(periodFormat)} • Wähle den Endtag.", "De la: ${ps.format(periodFormat)} • Selectează ziua finală.")
+                else -> "${minOf(ps, pe).format(periodFormat)} – ${maxOf(ps, pe).format(periodFormat)}"
+            },
+            weekdayHeaders = (1..7).map { java.time.DayOfWeek.of(it).getDisplayName(java.time.format.TextStyle.SHORT, locale) },
+            month = month,
+            start = ps,
+            end = pe,
+            today = LocalDate.now(),
+            hasMark = { false },
+            todayLabel = label("Mai nap", "Today", "Heute", "Azi"),
+            clearLabel = label("Szűrő törlése", "Clear filter", "Filter löschen", "Șterge filtrul"),
+            doneLabel = label("Rendben", "OK", "OK", "OK"),
+            onMonthChange = { calendarMonth = it.toString() },
+            onDayClick = { day ->
+                val d = day.toString()
+                if (pickStart == null || pickEnd != null) { pickStart = d; pickEnd = null }
+                else { pickEnd = d; applyPeriod(pickStart!!, d) }
+            },
+            onToday = {
+                val t = LocalDate.now().toString()
+                pickStart = t; pickEnd = t; calendarMonth = java.time.YearMonth.now().toString(); applyPeriod(t, t)
+            },
+            onClear = {
+                val a = LocalDate.now().minusDays(29).toString(); val b = LocalDate.now().toString()
+                pickStart = a; pickEnd = b; calendarMonth = java.time.YearMonth.now().toString(); applyPeriod(a, b)
+            },
+            onDismiss = {
+                // A single tapped day means that day only.
+                if (pickStart != null && pickEnd == null) applyPeriod(pickStart!!, pickStart!!)
+                showCalendar = false
+            }
+        )
+    }
 }

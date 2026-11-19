@@ -1995,6 +1995,15 @@ class TrainPilotViewModel : ViewModel() {
         _uiState.update { it.copy(showQuickWorkoutSheet = show) }
     }
 
+    /** Opens the Quick workout sheet directly on a tab (Workout tab tiles). */
+    fun openQuickWorkoutSheet(tab: Int) {
+        _uiState.update { it.copy(showQuickWorkoutSheet = true, quickWorkoutTab = tab.coerceIn(0, 2)) }
+    }
+
+    fun selectQuickWorkoutTab(tab: Int) {
+        _uiState.update { it.copy(quickWorkoutTab = tab.coerceIn(0, 2)) }
+    }
+
     // Program & Exercise Editor Actions
     internal suspend fun awaitStudioProgramWrites() {
         programWriteJob?.join()
