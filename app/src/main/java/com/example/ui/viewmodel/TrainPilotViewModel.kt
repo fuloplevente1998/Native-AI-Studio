@@ -3964,6 +3964,11 @@ class TrainPilotViewModel : ViewModel() {
     private data class ExerciseSelection(val target: com.repforge.app.NativeWorkoutTarget,
         val data: com.repforge.app.NativeDataReplacement.Continuation)
     private var exerciseSelection: ExerciseSelection? = null
+        set(value) {
+            field = value
+            // 2773: the library shows "Swap" instead of "Start" while it replaces the active exercise.
+            if (_uiState.value.exerciseSwapMode != (value != null)) _uiState.update { it.copy(exerciseSwapMode = value != null) }
+        }
     private var exerciseSelectionJob: Job? = null
 
     private fun currentExerciseSelection(): ExerciseSelection {

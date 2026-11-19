@@ -106,4 +106,19 @@ class Collector2772UiRegressionTest {
         }
         compose.runOnIdle { assertEquals(listOf("quick", "strength", "timed", "outdoor", "catalog"), calls) }
     }
+
+    @Test fun libraryButtonReadsSwapWhileReplacingTheActiveExercise() {
+        val ex = com.example.model.ExerciseItem("one", "Első gyakorlat")
+        var state by mutableStateOf(com.example.ui.viewmodel.TrainPilotUiState(exercises = listOf(ex)))
+        var started: com.example.model.ExerciseItem? = null
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.ExerciseLibraryScreen(state, {}, {}, {}, {}, {}, onStartExerciseNow = { started = it })
+        } }
+        val before = compose.onNodeWithTag("exercise_library_start_now_one").fetchSemanticsNode()
+            .config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].joinToString()
+        assertFalse(before, before.contains("Csere"))
+        compose.runOnIdle { state = state.copy(exerciseSwapMode = true) }
+        compose.onNodeWithTag("exercise_library_start_now_one").assertContentDescriptionContains("Csere", substring = true).performClick()
+        compose.runOnIdle { assertEquals(ex, started) }
+    }
 }

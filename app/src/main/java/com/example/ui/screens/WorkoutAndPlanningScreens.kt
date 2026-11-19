@@ -70,6 +70,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.OndemandVideo
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Remove
@@ -3150,6 +3151,7 @@ fun ExerciseLibraryScreen(
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
+    val startLabel = if (state.exerciseSwapMode) trW(state.language, "Csere", "Swap", "Tauschen", "Schimbă") else strings.startAction
     val pool = if (timedOnly) state.exercises.filter { it.isTimed || it.measurementType == "time" } else state.exercises
     val filtered = pool.filter { ex ->
         val matchesCategory = state.selectedExerciseCategory == ExerciseCategory.ALL || ex.category == state.selectedExerciseCategory
@@ -3363,7 +3365,7 @@ fun ExerciseLibraryScreen(
                                     contentAlignment = Alignment.Center,
                                     modifier = Modifier.heightIn(min = 48.dp).widthIn(min = 48.dp)
                                         .trainPilotClickable(RoundedCornerShape(10.dp)) { onStartExerciseNow(ex) }
-                                        .semantics { contentDescription = "${strings.startAction}: $name" }
+                                        .semantics { contentDescription = "$startLabel: $name" }
                                         .testTag("exercise_library_start_now_${ex.id}")
                                 ) {
                                     Row(
@@ -3371,9 +3373,9 @@ fun ExerciseLibraryScreen(
                                             .padding(horizontal = 10.dp, vertical = 7.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Icon(Icons.Default.PlayArrow, contentDescription = null, tint = palette.onPrimary, modifier = Modifier.size(16.dp))
+                                        Icon(if (state.exerciseSwapMode) Icons.Default.SwapHoriz else Icons.Default.PlayArrow, contentDescription = null, tint = palette.onPrimary, modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(2.dp))
-                                        Text(strings.startAction, style = MaterialTheme.typography.labelMedium,
+                                        Text(startLabel, style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.Bold, color = palette.onPrimary, maxLines = 1)
                                     }
                                 }

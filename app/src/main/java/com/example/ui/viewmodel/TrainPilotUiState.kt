@@ -199,6 +199,8 @@ data class TrainPilotUiState(
     val showQuickWorkoutSheet: Boolean = false,
     /** Quick workout sheet tab (2772): 0 = strength, 1 = timed, 2 = outdoor; kept as the last used tab. */
     val quickWorkoutTab: Int = 0,
+    /** True while the exercise library replaces the current exercise of the active workout. */
+    val exerciseSwapMode: Boolean = false,
     val sleepDurationLabel: String = "—",
     val sleepHoursDecimal: String = "—",
     val sleepHasStages: Boolean = false,
