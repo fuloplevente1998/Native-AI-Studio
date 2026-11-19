@@ -2655,22 +2655,23 @@ private fun SummaryScreen(
             }
         } else if (result.action == "finishWorkout") {
             run {
+                // 2777: smaller numbers so the save state line below always fits above the button.
                 Text(
                     formatSeconds(result.durationSeconds),
                     color = White,
-                    fontSize = 33.sp,
-                    lineHeight = 35.sp,
+                    fontSize = if (compact) 24.sp else 28.sp,
+                    lineHeight = if (compact) 26.sp else 30.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
             }
             run {
                 Row(horizontalArrangement = Arrangement.spacedBy(19.dp)) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Title("${result.exerciseCount}", 22)
+                        Title("${result.exerciseCount}", 17)
                         Label(wearText("gyakorlat"))
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Title("${result.completedSets}", 22)
+                        Title("${result.completedSets}", 17)
                         Label(wearText("sorozat"))
                     }
                 }
