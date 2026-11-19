@@ -38,4 +38,13 @@ class Collector2780RegressionTest {
         compose.onNodeWithTag("statistics_steps_column_0").performClick()
         compose.onNodeWithTag("statistics_steps_selected_value", useUnmergedTree = true).assertTextEquals("nincs szinkronizálva")
     }
+
+    @Test fun healthConnectDayExplainsMissingActiveCaloriesOnlyWhenTheyAreMissing() {
+        val hc = com.repforge.app.HealthJournalStore.HC
+        org.junit.Assert.assertTrue(com.example.ui.components.healthConnectLacksActiveCalories(hc, setOf("steps", "totalCalories")))
+        org.junit.Assert.assertFalse(com.example.ui.components.healthConnectLacksActiveCalories(hc, setOf("steps", "activeCalories")))
+        org.junit.Assert.assertFalse(com.example.ui.components.healthConnectLacksActiveCalories(hc, emptySet())) // empty day: no claim
+        org.junit.Assert.assertFalse(com.example.ui.components.healthConnectLacksActiveCalories(
+            com.repforge.app.HealthJournalStore.SAMSUNG, setOf("steps")))
+    }
 }
