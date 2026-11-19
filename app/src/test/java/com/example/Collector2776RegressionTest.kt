@@ -40,7 +40,9 @@ class Collector2776RegressionTest {
             val layouts = mutableListOf<TextLayoutResult>()
             node.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
             val layout = layouts.single()
-            assertFalse("$tag is clipped", layout.hasVisualOverflow)
+            val info = "lines=${layout.lineCount} size=${layout.size} w=${layout.didOverflowWidth} h=${layout.didOverflowHeight} " +
+                "constraints=${layout.layoutInput.constraints} density=${layout.layoutInput.density.density}"
+            assertFalse("$tag is clipped: $info", layout.hasVisualOverflow)
             assertEquals("$tag is ellipsized", text.length, layout.getLineEnd(layout.lineCount - 1, visibleEnd = true))
         }
     }
