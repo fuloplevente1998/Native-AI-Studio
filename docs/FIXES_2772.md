@@ -26,5 +26,5 @@ Kódolás csak „mehet” után, egy közös CI-körrel.
 | # | Terület | Visszajelzés | Terv | Állapot |
 |---|---------|--------------|------|---------|
 | 6 | Világos témák | Sötét foltok: piros ✕ bezárás, sorozat „–” gomb, zöld „Mentés (JSON)”, több helyen | Ok: `TrainPilotActionAppearance` fix sötét színei. Világos palettán világos tónus (zöld: #DDF3E8 / #146C43, piros: #FBE3E3 / #B3261E), sötét palettán marad a mostani. Egy helyen javul minden mentés/törlés/bezárás gomb | mockup küldve |
-| 7 | Aktív edzés alsó sáv | 3 gomb, Elvetés középen (vagy jobb javaslat) | A) ‹ Előző · ✕ Elvetés (megerősítéssel) · Következő ›; B) javaslat: ‹ Előző · ⏹ Befejezés (lap: Mentés és befejezés / Elvetés) · Következő › | mockup küldve, döntésre vár |
+| 7 | Aktív edzés alsó sáv | 3 gomb, Elvetés középen (vagy jobb javaslat) | A) ‹ Előző · ✕ Elvetés (megerősítéssel) · Következő ›; B) javaslat: ‹ Előző · ⏹ Befejezés (lap: Mentés és befejezés / Elvetés) · Következő › | **B jóváhagyva** (utolsó gyakorlatnál jobb gomb: „Mentés ›”) |
 | 8 | Következő gomb | A gyakorlat neve felesleges (fent látszik) | „Következő ›”; utolsó gyakorlatnál „Befejezés ›” | mockup küldve |
