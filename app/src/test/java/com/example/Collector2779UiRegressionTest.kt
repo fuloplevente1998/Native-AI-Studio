@@ -110,7 +110,7 @@ class Collector2779UiRegressionTest {
                 onSelectRange = {}, onSelectVolumeBar = {}, onSelectExpandedStatsCard = {}, onOpenWorkoutDetail = {})
         } }
         val rows = compose.onAllNodes(SemanticsMatcher("progress workout row") {
-            it.config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.TestTag)?.startsWith("progress_workout_") == true
+            it.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.TestTag) { null }?.startsWith("progress_workout_") == true
         }).fetchSemanticsNodes()
         assertEquals(35, rows.size)
     }
