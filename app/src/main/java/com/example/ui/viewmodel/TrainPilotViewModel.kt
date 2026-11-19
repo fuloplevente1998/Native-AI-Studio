@@ -1322,6 +1322,7 @@ class TrainPilotViewModel : ViewModel() {
                 totalVolumeKg = if (w.totalVolumeKg > 0.0) w.totalVolumeKg.roundToInt() else completedDbSets.sumOf { (it.weight ?: 0.0) * (it.reps.toDoubleOrNull() ?: 0.0) }.roundToInt(),
                 summaryExercisesHu = if (isOutdoor) w.programName.ifBlank { "Kültéri aktivitás" } else exerciseNames.ifBlank { "Rögzített gyakorlatok" },
                 hasPr = w.hasPr226,
+                prRecordsJson = w.prRecordsJson226,
                 isOutdoorRun = isOutdoor,
                 routeKeys = detail.exercises.flatMap { it.sets }.flatMap {
                     listOfNotNull(it.gpsRouteKey163, it.gpsRouteKey193)
@@ -4191,6 +4192,7 @@ class TrainPilotViewModel : ViewModel() {
                         totalVolumeKg = dbW.totalVolumeKg.roundToInt(),
                         summaryExercisesHu = summaryNamesFromDb,
                         hasPr = dbW.hasPr226,
+                        prRecordsJson = dbW.prRecordsJson226,
                         isOutdoorRun = isOutdoorSession,
                         routeKeys = savedInDb.exercises.flatMap { it.sets }.flatMap {
                             listOfNotNull(it.gpsRouteKey163, it.gpsRouteKey193)

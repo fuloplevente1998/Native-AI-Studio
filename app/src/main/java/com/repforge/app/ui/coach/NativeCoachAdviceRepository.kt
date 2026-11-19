@@ -11,7 +11,9 @@ import java.time.Instant
 
 internal data class CoachExerciseAdvice(val id: String, val name: String, val advice: NativeCoachExerciseAdvice.Advice,
     val loadType: String = "", val modePreview: NativeTrainingModeProgression.Preview? = null,
-    val sourceFingerprint: String = "")
+    val sourceFingerprint: String = "",
+    /** 2779: the exercise's unit ("ism.", "mp", …) so the target reads "Cél: 25 mp". */
+    val repUnit: String = "")
 
 /** Bounded canonical Room reads; no full-history relations/cache or second workout state. */
 internal class NativeCoachAdviceRepository(private val db: TrainPilotDatabase) {
@@ -112,7 +114,7 @@ internal class NativeCoachAdviceRepository(private val db: TrainPilotDatabase) {
                     append(workout.toString()); append("\\u001e"); append(exercise.toString()); append("\\u001f")
                 }
                 append(readiness.toString()); append("\\u001f"); append(settings.trainingModes197Json)
-            })
+            }).copy(repUnit = library.repUnit)
     }
 
     internal suspend fun recent(id: String, programId: String, lib: JSONObject, rx: JSONObject,

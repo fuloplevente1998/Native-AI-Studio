@@ -1388,7 +1388,8 @@ internal fun MainProgressVolumeAndMuscleSection(
     val volumeChange = period.volumeChangePercent(uiState.loggedWorkouts)
     val totalVolumeText = "%,d kg".format(java.util.Locale.US, loggedTotalKg).replace(',', ' ')
     val dateSubtitle = "${period.start.format(huFmt)} – ${period.end.format(huFmt)}"
-    val prCountValue = uiState.prRecords.count {
+    val prRecords = remember(uiState.loggedWorkouts) { loggedPrRecords(uiState.loggedWorkouts) }
+    val prCountValue = prRecords.count {
         period.contains(runCatching { java.time.LocalDate.parse(it.dateLabel.take(10)) }.getOrNull())
     }.toString()
     val workoutCountValue = periodWorkouts.size.toString()
@@ -1739,14 +1740,14 @@ internal fun MainProgressVolumeAndMuscleSection(
                                     Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
                                 }
                             }
-                            if (uiState.prRecords.isEmpty()) {
+                            if (prRecords.isEmpty()) {
                                 Text(
                                     text = trL(uiState.language, "Még nincs rögzített PR rekord. Fejezz be egy edzést a PR-ek számításához!", "No PR records logged yet. Finish a workout to calculate PRs!", "Noch keine PR-Rekorde erfasst. Beende ein Training zur PR-Berechnung!", "Niciun record PR înregistrat încă. Finalizează un antrenament pentru calculul PR-urilor!"),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textSecondary
                                 )
                             } else {
-                                uiState.prRecords.take(4).forEach { pr ->
+                                prRecords.take(4).forEach { pr ->
                                     val locPrName = pr.localizedExerciseName(uiState.language, uiState.exercises)
                                     Row(
                                         modifier = Modifier
@@ -1988,7 +1989,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                     testTag = "advice_details_sheet"
                 ) {
                     val lowMuscle = uiState.realMuscleLoads.minByOrNull { it.percentage }
-                    val latestPr = uiState.prRecords.firstOrNull()
+                    val latestPr = prRecords.firstOrNull()
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()

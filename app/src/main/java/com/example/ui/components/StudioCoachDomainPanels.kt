@@ -73,7 +73,7 @@ internal fun StudioCoachRecommendations(
                     Text(NativeCoachAdviceText.label(text, row.advice.action), color = palette.primary)
                     Text(NativeCoachAdviceText.reason(text, row.advice.reason), color = palette.textSecondary)
                     Text(coachTr(lang, "Megfelelő előzmény: ${row.advice.historyCount}", "Matching history: ${row.advice.historyCount}", "Passender Verlauf: ${row.advice.historyCount}", "Istoric relevant: ${row.advice.historyCount}"), color = palette.textSecondary)
-                    if (row.advice.target.text.isNotBlank()) Text("${coachTr(lang, "Cél", "Target", "Ziel", "Țintă")}: ${row.advice.target.text}", color = palette.textSecondary)
+                    if (row.advice.target.text.isNotBlank()) Text("${coachTr(lang, "Cél", "Target", "Ziel", "Țintă")}: ${coachTargetText(row.advice.target, row.repUnit, lang)}", color = palette.textSecondary)
                     if (row.advice.action in setOf("increase", "reduce", "start") && row.advice.weight > 0)
                         Text("${coachTr(lang, "Javasolt súly", "Suggested weight", "Empfohlenes Gewicht", "Greutate recomandată")}: ${row.advice.weight} kg" + when (row.loadType) {
                             "per_hand" -> coachTr(lang, " kézenként", " per hand", " pro Hand", " pe mână")
@@ -214,7 +214,7 @@ internal fun StudioWorkoutCoachAdvice(state: WorkoutCoachAdviceState, onReload: 
                 "Kein passender, vergleichbarer Verlauf für diese Übung in den letzten 90 Tagen.",
                 "Nu există istoric comparabil pentru acest exercițiu în ultimele 90 de zile."),
                 color = palette.textSecondary, modifier = Modifier.testTag("studio_active_coach_no_history"))
-            if (row.advice.target.text.isNotBlank()) Text("${coachTr(lang, "Cél", "Target", "Ziel", "Țintă")}: ${row.advice.target.text}", color = palette.textSecondary)
+            if (row.advice.target.text.isNotBlank()) Text("${coachTr(lang, "Cél", "Target", "Ziel", "Țintă")}: ${coachTargetText(row.advice.target, row.repUnit, lang)}", color = palette.textSecondary)
             if (row.advice.action in setOf("increase", "reduce", "start") && row.advice.weight > 0)
                 Text("${coachTr(lang, "Javasolt súly", "Suggested weight", "Empfohlenes Gewicht", "Greutate recomandată")}: ${row.advice.weight} kg" + when (row.loadType) {
                     "per_hand" -> coachTr(lang, " kézenként", " per hand", " pro Hand", " pe mână")
@@ -345,4 +345,19 @@ internal fun coachChipTone(advice: NativeCoachExerciseAdvice.Advice?): CoachChip
     advice.reason in setOf("pain", "low-readiness", "recovery") || advice.action == "reduce" -> CoachChipTone.WARNING
     advice.action in setOf("increase", "start") && advice.weight > 0 -> CoachChipTone.PROPOSAL
     else -> CoachChipTone.NEUTRAL
+}
+
+
+/** 2779: the target with its unit ("25 mp", "8–12 ism."); a text that already names a unit is kept. */
+internal fun coachTargetText(target: com.repforge.app.ui.coach.NativeCoachExerciseAdvice.Target, repUnit: String, lang: String): String {
+    val text = target.text.trim()
+    if (text.isEmpty() || Regex("[a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ]").containsMatchIn(text)) return text
+    val unit = repUnit.trim().ifBlank {
+        when (target.kind) {
+            "time" -> coachTr(lang, "mp", "s", "Sek.", "sec")
+            "reps" -> coachTr(lang, "ism.", "reps", "Wdh.", "rep.")
+            else -> ""
+        }
+    }
+    return if (unit.isBlank()) text else "$text $unit"
 }
