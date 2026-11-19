@@ -43,8 +43,8 @@ class Wear2777Test {
             val lastRowBottom = layout.days[4].y + layout.buttonSize / 2f + 6f // marker under the day
             assertTrue("row overlaps the days at $size", rowTop >= lastRowBottom)
             val rowCenter = rowTop + 13f - size / 2f
-            // ‹ (26) + gap (6) + "Programnapok" pill (~96) centred
-            assertTrue("row clipped at $size", kotlin.math.hypot(64f, rowCenter + 13f) <= size / 2f)
+            // ‹ (26) + gap (6) + "Programnapok" pill (~96) centred, 26 dp tall with round ends
+            assertTrue("row clipped at $size", kotlin.math.hypot(51f, rowCenter) + 13f <= size / 2f)
         }
     }
 }
