@@ -145,10 +145,15 @@ internal fun StudioCoachNextTrainingCard(
                     Text(if (letterDay == null) target.title else "${coachTr(lang, "Edzésnap", "Workout day", "Trainingstag", "Zi antrenament")}: ${target.title}",
                         style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary,
                         maxLines = 2, modifier = Modifier.testTag("studio_coach_day_name"))
-                    target.schedule?.let {
-                        Text(it.date, style = MaterialTheme.typography.bodySmall,
-                            color = palette.textSecondary, modifier = Modifier.testTag("studio_coach_next_date"))
-                    }
+                    // 2773: same date line as the Home card (today / still doable today / next date / cycle).
+                    val line = homePlannedDateLine(target.schedule?.startIso, java.time.ZonedDateTime.now(),
+                        com.example.model.AppLanguage.entries.firstOrNull { it.code == lang } ?: com.example.model.AppLanguage.HU)
+                    Text(line.text, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
+                        color = when (line.timing) {
+                            HomePlanTiming.TODAY_UPCOMING -> palette.success
+                            HomePlanTiming.TODAY_PASSED -> palette.warning
+                            else -> palette.textSecondary
+                        }, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("studio_coach_next_date"))
                 }
                 if (letterDay != null) {
                     Surface(color = palette.tintedSurface(0.16f),
