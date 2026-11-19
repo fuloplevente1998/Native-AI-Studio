@@ -121,4 +121,22 @@ class Collector2772UiRegressionTest {
         compose.onNodeWithTag("exercise_library_start_now_one").assertContentDescriptionContains("Csere", substring = true).performClick()
         compose.runOnIdle { assertEquals(ex, started) }
     }
+
+    @Test fun workoutTabHighlightsTheRealNextDayAndShowsItsDate() {
+        // 2773: the next day comes from the same target as Home/Coach, not always day 1.
+        val program = com.example.model.TrainingProgramModel("p", "Otthoni A/B", "Home A/B", "", "", emptyList(), false, true,
+            listOf(com.example.model.ProgramDayModel("p:a", "A nap", "A nap", "Day A", 60, emptyList()),
+                com.example.model.ProgramDayModel("p:b", "B nap", "B nap", "Day B", 60, emptyList())))
+        val tomorrow = java.time.ZonedDateTime.now().plusDays(1).withHour(10).withMinute(0).toInstant().toString()
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.WorkoutTabScreen(
+                state = com.example.ui.viewmodel.TrainPilotUiState(programs = listOf(program),
+                    homeWorkoutTarget = com.repforge.app.ui.home.HomeWorkoutTarget("p", "b", "plan", tomorrow)),
+                onOpenSettings = {}, onOpenQuickWorkout = {}, onOpenExerciseLibrary = {}, onOpenOutdoorWorkout = {},
+                onOpenProgramsList = {}, onOpenProgramEditor = { _, _ -> }, onStartWorkoutDay = {}, onOpenCalendar = {},
+                onOpenCoach = {}, onOpenProgressionModal = {})
+        } }
+        compose.onNodeWithTag("workout_tab_day_date_1", useUnmergedTree = true).performScrollTo().assertTextEquals("📅 Holnap, 10:00")
+        compose.onNodeWithTag("workout_tab_day_date_0", useUnmergedTree = true).assertDoesNotExist()
+    }
 }

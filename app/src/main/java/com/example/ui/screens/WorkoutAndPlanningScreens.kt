@@ -407,8 +407,13 @@ fun WorkoutTabScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // 2773: highlight the day that is really next (same target as Home / Coach), not always day 1.
+                val target = state.homeWorkoutTarget?.takeIf { it.programId == activeProgram.id }
+                val nextIndex = activeProgram.days.take(2).indexOfFirst {
+                    target != null && (it.id == target.dayId || it.id == "${activeProgram.id}:${target.dayId}")
+                }.let { if (it < 0) 0 else it }
                 activeProgram.days.take(2).forEachIndexed { index, day ->
-                    val isPrimaryDay = index == 0
+                    val isPrimaryDay = index == nextIndex
                     Surface(
                         shape = RoundedCornerShape(18.dp),
                         color = palette.surface,
@@ -475,6 +480,22 @@ fun WorkoutTabScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = palette.textSecondary
                             )
+                            if (isPrimaryDay && target != null) {
+                                val line = com.example.ui.components.homePlannedDateLine(target.startIso,
+                                    java.time.ZonedDateTime.now(), state.language)
+                                Text(
+                                    text = line.text,
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = when (line.timing) {
+                                        com.example.ui.components.HomePlanTiming.TODAY_UPCOMING -> palette.success
+                                        com.example.ui.components.HomePlanTiming.TODAY_PASSED -> palette.warning
+                                        else -> palette.textSecondary
+                                    },
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.testTag("workout_tab_day_date_$index")
+                                )
+                            }
                             Spacer(modifier = Modifier.height(2.dp))
                             Button(
                                 onClick = { onStartWorkoutDay(index) },
