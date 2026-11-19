@@ -1,4 +1,4 @@
-# Play Console – áruházi adatlap (tervezet, 2779 · 1.3.9 alapján)
+# Play Console – áruházi adatlap (tervezet, 2780 · 1.4.0 alapján)
 
 Csak meglévő, az appban működő funkciók. Egészségügyi állítás nincs.
 
@@ -60,13 +60,13 @@ TrainPilot: workout planner and training log for your phone and Wear OS watch.
 • GPS routes and photos in private storage; health data is only included in backups with explicit consent
 • Multiple light and dark themes; Hungarian, English, German and Romanian
 
-## Újdonságok (Play: 276500/276502 óta → 1.3.9, ≤500 karakter)
+## Újdonságok (Play: 276500/276502 óta → 1.4.0, ≤500 karakter)
 HU:
 • Edzés közben: egységes fejléc, Videó · Coach · Részletek, pihenő minden gyakorlatnál, legutóbbi érték
 • Edzés fül: minden programnap dátummal, egy képernyőn
 • Gyors edzés 1 lapon, Gyakorlatlista
 • Programok: kompakt kártyák, beépített szerkesztő
-• Fejlődés: PR rekordok, teljes listák; Statisztikák: Erő · Kardió · Lépések
+• Fejlődés: PR rekordok, teljes listák; Statisztikák: Erő · Kardió · Lépések, koppintható grafikon
 • Egészségnapló: tömör napi nézet, szűrők
 • Óra: kerek kijelzőre igazított menük
 • Javítás: Otthoni A/B, villogó Coach kártya, Health Connect
@@ -76,7 +76,7 @@ EN:
 • Workout tab: every program day with its date, on one screen
 • Quick workout in one sheet, Exercise list
 • Programs: compact cards, inline editor
-• Progress: PR records, full lists; Statistics: Strength · Cardio · Steps
+• Progress: PR records, full lists; Statistics: Strength · Cardio · Steps, tappable chart
 • Health journal: compact day view, filters
 • Watch: menus fit the round screen
 • Fixes: Home A/B, flickering Coach card, Health Connect
