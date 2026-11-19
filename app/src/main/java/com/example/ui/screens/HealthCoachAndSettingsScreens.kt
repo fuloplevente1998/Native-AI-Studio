@@ -521,7 +521,7 @@ fun HealthTabScreen(
                                 .testTag("health_today_tile_expanded_card")
                         ) {
                             Column(
-                                modifier = Modifier.padding(12.dp),
+                                modifier = Modifier.verticalScroll(rememberScrollState()).padding(12.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 val openHealthJournalAndScroll: () -> Unit = {

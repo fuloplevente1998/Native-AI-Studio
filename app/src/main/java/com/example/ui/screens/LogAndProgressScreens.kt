@@ -1888,7 +1888,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                     .padding(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, bottom = 16.dp)
                     .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(18.dp))
             ) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(12.dp).testTag("stats_details_sheet_content"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     when (uiState.expandedStatsCardIndex) {
                         0 -> {
                             Row(
@@ -2159,6 +2159,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
                             .padding(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, bottom = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {

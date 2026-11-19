@@ -76,7 +76,8 @@ class Collector2771RegressionTest {
         compose.onNodeWithTag("log_calendar_swipe_area").performTouchInput { swipeLeft() }
         compose.waitForIdle()
         val nextName = listOf("január", "február", "március", "április", "május", "június", "július", "augusztus", "szeptember", "október", "november", "december")[next.monthValue - 1]
-        compose.onNodeWithText("${next.year}. $nextName", ignoreCase = true).assertExists()
+        // Both the sheet header and the filter button show the new month.
+        assertTrue(compose.onAllNodesWithText("${next.year}. $nextName", ignoreCase = true).fetchSemanticsNodes().isNotEmpty())
         compose.onNodeWithTag("log_calendar_done").performClick()
         compose.waitForIdle()
         compose.onNodeWithTag("log_calendar_sheet").assertDoesNotExist()
