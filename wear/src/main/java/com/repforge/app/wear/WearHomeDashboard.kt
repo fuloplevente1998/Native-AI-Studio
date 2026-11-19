@@ -208,9 +208,10 @@ internal fun WearHomeDashboard(
                 style = CurvedTextStyle(color = HomeWhite, fontSize = (8f / fontScale).sp),
             )
         }
-        CurvedLayout(
+        // 2777: on small/medium watches the curved status ran off the right edge; it moves into the body.
+        if (large) CurvedLayout(
             Modifier.align(Alignment.Center).size(diameter - 18.dp),
-            anchor = if (large) 0f else 335f,
+            anchor = 0f,
         ) {
             curvedComposable {
                 Image(
@@ -291,6 +292,13 @@ internal fun WearHomeDashboard(
                         8f,
                         HomeMuted,
                     )
+                    if (!large)
+                        HomeFitText(
+                            "♥ $sideLabel",
+                            Modifier.fillMaxWidth().height(10.dp).testTag("wear-home-measurement"),
+                            8f,
+                            theme.secondaryColor,
+                        )
                     if (large)
                         HomeFitText(
                             "${wearText(model.detail)} · ${wearText(model.source)}",
@@ -353,7 +361,7 @@ internal fun WearHomeDashboard(
             Box(Modifier.offset(x = (2 * arc.sideOffset).dp)) {
                 HomeQuickButton(
                     R.drawable.ic_tp_settings,
-                    wearText("Beállít."),
+                    wearText("Beállítás"),
                     wearText("Beállítások"),
                     theme,
                     false,

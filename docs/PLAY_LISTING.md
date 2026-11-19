@@ -1,4 +1,4 @@
-# Play Console – áruházi adatlap (tervezet, 2776 · 1.3.6 alapján)
+# Play Console – áruházi adatlap (tervezet, 2777 · 1.3.7 alapján)
 
 Csak meglévő, az appban működő funkciók. Egészségügyi állítás nincs.
 
@@ -60,21 +60,23 @@ TrainPilot: workout planner and training log for your phone and Wear OS watch.
 • GPS routes and photos in private storage; health data is only included in backups with explicit consent
 • Multiple light and dark themes; Hungarian, English, German and Romanian
 
-## Újdonságok (Play: 276500/276502 óta → 1.3.6, ≤500 karakter)
+## Újdonságok (Play: 276500/276502 óta → 1.3.7, ≤500 karakter)
 HU:
-• Edzés közben: egységes fejléc minden gyakorlatnál, gyakorlatsor, Videó · Coach · Részletek, alsó sáv idővel, kész sorozat zölden, legutóbbi érték
-• Kezdőlap, Edzés, Coach: tervezett nap dátuma, mai edzés éjfélig
+• Edzés közben: egységes fejléc, gyakorlatsor, Videó · Coach · Részletek, alsó sáv idővel, kész sorozat zölden, legutóbbi érték
+• Tervezett nap dátuma, mai edzés éjfélig
 • Gyors edzés 1 lapon, Gyakorlatlista az Edzés fülön
 • Programok: kompakt kártyák, beépített szerkesztő, húzható sorrend
 • Egészségnapló: tömör napi nézet, szűrők; naptár húzással
 • Dizájn: alulról nyíló lapok, új Coach ikon, világos témák
-• Javítás: Health Connect, lapfagyás, forgatás
+• Óra: kerek kijelzőre igazított menük és gombok
+• Javítás: Health Connect, lapfagyás
 
 EN:
-• During workouts: one header for every exercise, exercise strip, Video · Coach · Details, bottom bar with time, done sets in green, last-time values
-• Home, Workout, Coach: planned day's date, today stays till midnight
+• During workouts: one header, exercise strip, Video · Coach · Details, bottom bar with time, done sets in green, last-time values
+• Planned day's date, today stays till midnight
 • Quick workout in one sheet, Exercise list on Workout tab
 • Programs: compact cards, inline editor, drag to reorder
 • Health journal: compact day view, filters; swipe calendar
 • Design: bottom sheets, new Coach icon, light themes
-• Fixes: Health Connect, sheet freeze, rotation
+• Watch: menus and buttons fit the round screen
+• Fixes: Health Connect, sheet freeze
