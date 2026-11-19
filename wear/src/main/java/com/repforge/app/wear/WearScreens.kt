@@ -2779,5 +2779,5 @@ private fun fieldValue(set: WearSet, field: String): Double =
 /** 2777: "A nap" -> "A", "Felsőtest – Erő" -> "Fe"; a short token wins over the word "nap". */
 internal fun wearDayInitial(name: String): String {
     val tokens = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
-    return (tokens.firstOrNull { it.length <= 2 } ?: tokens.firstOrNull() ?: "?").take(2).replaceFirstChar { it.uppercase() }
+    return (tokens.firstOrNull { it.length <= 2 && it.all(Char::isLetterOrDigit) } ?: tokens.firstOrNull() ?: "?").take(2).replaceFirstChar { it.uppercase() }
 }
