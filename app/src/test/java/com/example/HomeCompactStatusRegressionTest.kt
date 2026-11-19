@@ -83,7 +83,13 @@ class HomeCompactStatusRegressionTest {
         compose.onNodeWithTag("health_today_pulse").performClick()
         compose.onNodeWithTag("health_today_tile_expanded_card").assertExists()
         compose.onNodeWithTag("health_pulse_trend_header").assertExists()
+        // 2771: the tile details are a bottom sheet over the page; system back closes it.
+        androidx.test.espresso.Espresso.pressBack()
+        compose.waitForIdle()
+        compose.onNodeWithTag("health_today_tile_sheet").assertDoesNotExist()
         compose.onNodeWithTag("health_today_pulse").performClick()
+        androidx.test.espresso.Espresso.pressBack()
+        compose.waitForIdle()
         compose.onNodeWithTag("health_pulse_trend_header").assertDoesNotExist()
     }
 }

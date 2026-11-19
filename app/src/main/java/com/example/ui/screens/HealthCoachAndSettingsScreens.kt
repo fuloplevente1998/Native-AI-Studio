@@ -274,7 +274,7 @@ fun HealthTabScreen(
         var dateText by remember(editingMeasurement, uiState.showAddWeightDialog) {
             mutableStateOf(editingMeasurement?.dateLabel ?: todayDotLabel)
         }
-        AlertDialog(
+        com.example.ui.components.TrainPilotFormSheet(
             onDismissRequest = {
                 editingMeasurement = null
                 onToggleAddWeightDialog(false)
@@ -498,7 +498,11 @@ fun HealthTabScreen(
                     }
 
                     // Expandable Detail Dropdown Card when any of the 6 "Mai állapot" tiles is tapped
-                    androidx.compose.animation.AnimatedVisibility(visible = expandedTodayTileKey != null) {
+                    // 2771: tile details open from the bottom instead of pushing the page down.
+                    if (expandedTodayTileKey != null) com.example.ui.components.TrainPilotScreenSheet(
+                        onDismiss = { expandedTodayTileKey = null },
+                        testTag = "health_today_tile_sheet"
+                    ) {
                         val activeKey = expandedTodayTileKey ?: "sleep"
                         val currentDaily = uiState.dailyHealthDate == today.toString()
                         val activeEnergy = if (currentDaily && "activeCalories" in uiState.dailyHealthAvailableFields)
@@ -512,6 +516,7 @@ fun HealthTabScreen(
                             color = palette.background.copy(alpha = 0.75f),
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
                                 .testTag("health_today_tile_expanded_card")
                         ) {
@@ -896,7 +901,7 @@ fun HealthTabScreen(
                                         .fillMaxWidth()
                                         .heightIn(min = 48.dp)
                                         .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
-                                        .trainPilotClickable(RoundedCornerShape(10.dp)) { onActionClick() }
+                                        .trainPilotClickable(RoundedCornerShape(10.dp)) { expandedTodayTileKey = null; onActionClick() }
                                         .testTag("health_expanded_action_button")
                                 ) {
                                     Row(
@@ -3551,7 +3556,7 @@ fun BackupRestoreScreen(
     }
 
     if (showHealthInfo) {
-        AlertDialog(
+        com.example.ui.components.TrainPilotFormSheet(scrollText = false,
             onDismissRequest = { showHealthInfo = false },
             title = { Text(tr(uiState.language, "Egészségadatok", "Health data", "Gesundheitsdaten", "Date de sănătate")) },
             text = { Text(modifier = Modifier.verticalScroll(rememberScrollState()), text = tr(uiState.language,

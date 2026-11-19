@@ -50,7 +50,7 @@ internal fun StudioCoachRecommendations(
     val lang = state.language.ifBlank { com.example.localization.LocalTrainPilotStrings.current.language.code }
     val text = nativeResources(LocalContext.current, lang)
     state.variationPreview?.let { preview ->
-        AlertDialog(onDismissRequest = onCloseVariation,
+        com.example.ui.components.TrainPilotFormSheet(onDismissRequest = onCloseVariation,
             title = { Text(coachTr(lang, "Gyakorlatváltozat előnézete", "Exercise Variation Preview", "Vorschau der Übungsvariante", "Previzualizare variantă exercițiu")) },
             text = { Text(NativeCoachAdviceText.variation(text, preview.next)) },
             confirmButton = { com.repforge.app.ui.theme.TrainPilotSaveButton(onClick = onSaveVariation, enabled = !state.variationBusy,

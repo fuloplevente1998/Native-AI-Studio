@@ -935,7 +935,7 @@ fun GoalsEditDialog(
     var workoutsInputText by remember(workouts) { mutableStateOf(workouts.toString()) }
     var stepsInputText by remember(steps) { mutableStateOf(steps.toString()) }
 
-    AlertDialog(
+    com.example.ui.components.TrainPilotFormSheet(scrollText = false,
         onDismissRequest = onDismiss,
         containerColor = palette.surface,
         titleContentColor = palette.textPrimary,
