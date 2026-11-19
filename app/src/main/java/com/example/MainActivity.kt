@@ -619,6 +619,9 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 onNote = { id, note -> viewModel.updateExerciseFeedback(id, note = note) }) },
                             onSwitchExercise = { ex -> viewModel.switchCurrentActiveExercise(ex) },
                             onOpenExerciseDetail = { exId -> viewModel.openExerciseDetail(exId) },
+                            onAdjustRestTimer = { delta -> viewModel.adjustRestTimer(delta) },
+                            onToggleRestRunning = { viewModel.toggleRestTimerRunning() },
+                            onSkipRest = { viewModel.skipRestTimer() },
                             onOpenExerciseLibrary = { viewModel.openActiveExerciseLibrary() }
                         )
                     }
@@ -669,7 +672,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 viewModel.selectOutdoorActivityType(activityName)
                             },
                             onStartGpsTracking = { activityName, key -> viewModel.startGpsTrackingSession(activityName, key) },
-                            onPauseMeasurement = { paused -> viewModel.pauseOutdoorMeasurement(paused) }
+                            onPauseMeasurement = { paused -> viewModel.pauseOutdoorMeasurement(paused) },
+                            onAdjustRestTimer = { delta -> viewModel.adjustRestTimer(delta) },
+                            onToggleRestRunning = { viewModel.toggleRestTimerRunning() },
+                            onSkipRest = { viewModel.skipRestTimer() }
                         )
                     }
 

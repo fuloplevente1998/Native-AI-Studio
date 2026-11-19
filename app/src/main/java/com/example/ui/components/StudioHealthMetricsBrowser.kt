@@ -128,6 +128,8 @@ internal fun StudioHealthMetricsBrowser(
             val metrics = NativeHealthMetrics.parse(context, NativeDetailedHealthMetrics.admitted(raw, provider, date), language)
             var expanded by rememberSaveable(provider, source, date) { mutableStateOf(false) }
             var type by rememberSaveable(provider, source, date) { mutableStateOf("") }
+            // 2778: detailed records start folded; the header opens/closes them.
+            var recordsOpen by rememberSaveable(provider, source, date) { mutableStateOf(false) }
             Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceElevated,
                 border = TrainPilotFrames.stroke(1.dp, palette.cardBorder), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -178,7 +180,7 @@ internal fun StudioHealthMetricsBrowser(
                                     val tileShape = RoundedCornerShape(10.dp)
                                     Surface(shape = tileShape, color = if (type == recordType) palette.primary.copy(alpha = 0.16f) else palette.surfaceCard,
                                         modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                                            .trainPilotClickable(tileShape) { type = if (type == recordType) "" else recordType }
+                                            .trainPilotClickable(tileShape) { type = if (type == recordType) "" else recordType; recordsOpen = true }
                                             .testTag("journal_metric_${date}_$metricKey")) {
                                         Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
                                             Text(title, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1,
@@ -190,8 +192,15 @@ internal fun StudioHealthMetricsBrowser(
                                 repeat(3 - cells.size) { Spacer(Modifier.weight(1f)) }
                             }
                         }
-                        Text(label("Részletes rekordok", "Detailed records", "Detaillierte Einträge", "Înregistrări detaliate"),
-                            color = palette.primary, fontWeight = FontWeight.Bold)
+                        val headerShape = RoundedCornerShape(10.dp)
+                        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).trainPilotClickable(headerShape) { recordsOpen = !recordsOpen }
+                            .testTag("journal_records_toggle_$date"), verticalAlignment = Alignment.CenterVertically) {
+                            Text(label("Részletes rekordok", "Detailed records", "Detaillierte Einträge", "Înregistrări detaliate"),
+                                color = palette.primary, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                            Icon(if (recordsOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null, tint = palette.primary)
+                        }
+                        if (recordsOpen) {
                         val filters = listOf(
                             "" to label("Mind", "All", "Alle", "Toate"),
                             "StepsRecord" to label("Lépés", "Steps", "Schritte", "Pași"),
@@ -210,10 +219,11 @@ internal fun StudioHealthMetricsBrowser(
                                         if (filterType.isEmpty()) "journal_records_all_$date" else "journal_records_filter_${date}_$filterType"))
                             }
                         }
+                        }
                     }
                     StudioNativeEditorTheme {
                         HealthRecordDayDetails(date, provider, source, type, language, snapshot.getLong("generation"),
-                            "$revision:${snapshot.getLong("generation")}", expanded)
+                            "$revision:${snapshot.getLong("generation")}", expanded && recordsOpen)
                     }
                 }
             }

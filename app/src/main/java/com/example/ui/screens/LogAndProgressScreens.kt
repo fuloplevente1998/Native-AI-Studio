@@ -973,14 +973,13 @@ fun LogWorkoutDetailScreen(
                             Text("${strings.distanceLabel}: $distVal", color = palette.textPrimary)
                             val paceVal = workout.paceLabel.takeUnless { it.isBlank() || it == "—" } ?: trL(uiState.language, "Nincs adat", "No data", "Keine Daten", "Fără date")
                             Text("${strings.avgPaceLabel}: $paceVal", color = palette.textPrimary)
-                            Text(trL(uiState.language, "Pulzus és kalória: csak hiteles órás/Health Connect mérés esetén", "Heart rate & calories: only from verified watch/Health Connect measurements", "Puls & Kalorien: nur aus verifizierten Uhr-/Health-Connect-Messungen", "Puls și calorii: doar din măsurători verificate de ceas/Health Connect"), color = palette.textSecondary)
                         }
                     }
                 } else {
                     val localizedTitle = workout.localizedTitle(uiState.language, uiState.programs, uiState.exercises)
                     AnatomicalMuscleHeatmapCard(
                         title = "${strings.muscleLoadTitle} ($localizedTitle)",
-                        subtitle = trL(uiState.language, "Elöl- és hátulnézeti anatómiai terhelés ezen az edzésen", "Front & back anatomical muscle load for this workout", "Anatomische Vorder- und Rückseitenbelastung in diesem Training", "Încărcarea anatomică față și spate la acest antrenament"),
+                        subtitle = "",
                         realMuscleLoads = uiState.logWorkoutMuscleLoads,
                         periodDays = null
                     )
@@ -999,7 +998,6 @@ fun LogWorkoutDetailScreen(
                         Text(trL(uiState.language, "Adatforrás és szinkron napló", "Data source & sync log", "Datenquelle & Synchronisationsprotokoll", "Sursă de date și jurnal de sincronizare"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                         val originLabel = if (workout.originDevice == "watch") trL(uiState.language, "Óra", "Watch", "Uhr", "Ceas") else trL(uiState.language, "Telefon", "Phone", "Telefon", "Telefon")
                         Text("• ${trL(uiState.language, "Rögzítő eszköz", "Recording device", "Aufzeichnungsgerät", "Dispozitiv de înregistrare")}: $originLabel", color = palette.textPrimary)
-                        Text("• ${trL(uiState.language, "Pulzus és kalória: csak hiteles edzésmérésből jeleníthető meg", "Heart rate & calories: shown only from verified workout measurements", "Puls & Kalorien: nur aus verifizierten Trainingsmessungen sichtbar", "Puls și calorii: afișate doar din măsurători verificate")}", color = palette.textSecondary)
                     }
                 }
             }

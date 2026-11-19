@@ -133,12 +133,6 @@ private fun QuickOutdoorTab(language: AppLanguage, onStartOutdoor: (String) -> U
                 }
             }
         }
-        Text(qw(language,
-            "Indítás után a megszokott élő GPS-nézet nyílik: térkép, idő, kör, szünet, kézi táv.",
-            "Start opens the familiar live GPS view: map, time, laps, pause, manual distance.",
-            "Der Start öffnet die gewohnte Live-GPS-Ansicht: Karte, Zeit, Runden, Pause, manuelle Distanz.",
-            "Pornirea deschide vizualizarea GPS live: hartă, timp, ture, pauză, distanță manuală."),
-            style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
         com.repforge.app.ui.theme.TrainPilotButton(
             onClick = { onStartOutdoor(selected) },
             colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = palette.primary, contentColor = palette.onPrimary),

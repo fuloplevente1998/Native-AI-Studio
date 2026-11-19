@@ -293,11 +293,6 @@ fun WorkoutTabScreen(
                         style = MaterialTheme.typography.titleMedium,
                         color = palette.textPrimary
                     )
-                    Text(
-                        text = strings.quickWorkoutSub,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = palette.textSecondary
-                    )
                 }
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
@@ -358,10 +353,10 @@ fun WorkoutTabScreen(
                 Column(Modifier.weight(1f)) {
                     Text(trW(state.language, "Gyakorlatkönyvtár", "Exercise library", "Übungsbibliothek", "Bibliotecă de exerciții"),
                         style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
-                    Text(trW(state.language, "${state.exercises.size} gyakorlat · keresés, kedvencek, új gyakorlat",
-                        "${state.exercises.size} exercises · search, favorites, new exercise",
-                        "${state.exercises.size} Übungen · Suche, Favoriten, neue Übung",
-                        "${state.exercises.size} exerciții · căutare, favorite, exercițiu nou"),
+                    Text(trW(state.language, "${state.exercises.size} gyakorlat",
+                        "${state.exercises.size} exercises",
+                        "${state.exercises.size} Übungen",
+                        "${state.exercises.size} exerciții"),
                         style = MaterialTheme.typography.bodySmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.textSecondary)
@@ -996,17 +991,6 @@ fun ProgramsListScreen(
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = trW(
-                            state.language,
-                            "Adj nevet és leírást az új egyedi programodnak (pl. Kör futás & Core, Saját A/B terv):",
-                            "Enter a name and description for your new custom program:",
-                            "Gib einen Namen und eine Beschreibung für dein eigenes Programm ein:",
-                            "Introdu un nume și o descriere pentru noul tău program personalizat:"
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.textSecondary
-                    )
                     OutlinedTextField(
                         value = customProgName,
                         onValueChange = { customProgName = it },
@@ -2875,10 +2859,10 @@ fun CalendarPlannerScreen(
                     Text(
                         text = trW(
                             state.language,
-                            "Bármelyik edzésnappal újratervezhetsz. Programváltáskor a hátralévő tervet az új program váltja fel. A naplózott és aktív edzések megmaradnak.",
-                            "Replan starting with any workout day. Switching programs replaces the remaining plan while keeping logged and active workouts.",
-                            "Du kannst mit jedem Trainingstag neu planen. Beim Programmwechsel wird der restliche Plan ersetzt, protokollierte und aktive Trainings bleiben erhalten.",
-                            "Poți replanifica începând cu orice zi de antrenament. La schimbarea programului, restul planului este înlocuit, iar antrenamentele salvate și active rămân."
+                            "A naplózott edzések megmaradnak.",
+                            "Logged workouts are kept.",
+                            "Protokollierte Trainings bleiben erhalten.",
+                            "Antrenamentele salvate rămân."
                         ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = palette.textSecondary
@@ -3823,17 +3807,6 @@ fun AddCustomExerciseModalDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = trW(
-                        lang,
-                        "Adj meg saját gyakorlatot (pl. Kör futás, Saját köredzés), válassz kategóriát és írd le a végrehajtás lépéseit:",
-                        "Enter your custom exercise, choose a category, and describe the execution steps:",
-                        "Gib deine eigene Übung ein, wähle eine Kategorie und beschreibe die Ausführungsschritte:",
-                        "Introdu propriul exercițiu, alege o categorie și descrie pașii de execuție:"
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = palette.textSecondary
-                )
 
                 Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceElevated,
                     modifier = Modifier.fillMaxWidth()) {

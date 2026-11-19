@@ -172,13 +172,6 @@ internal fun StudioWorkoutModesDialog(
                             "Das Programm übernimmt die globale Einstellung.",
                             "Programul va moșteni setarea globală."),
                         color = p.textSecondary)
-                    Text(
-                        workoutModeText(lang,
-                            "A változtatás nem ír át korábbi naplót, programreceptet vagy aktív edzést. Az új súlyjavaslat külön jóváhagyást igényel.",
-                            "This does not rewrite past sessions, program prescriptions or an active workout. New weight proposals require separate approval.",
-                            "Vergangene Trainings, Programmrezepte und aktive Trainings bleiben unverändert. Gewichtsvorschläge brauchen eine eigene Freigabe.",
-                            "Nu modifică antrenamentele trecute, rețetele sau sesiunile active. Propunerile de greutate cer confirmare separată."),
-                        color = p.textSecondary)
                 } else {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween) {
@@ -252,12 +245,6 @@ internal fun StudioWorkoutModesDialog(
                             "Mode changes cannot be saved during an active workout.",
                             "Moduswechsel können während eines Trainings nicht gespeichert werden.",
                             "Modurile nu pot fi schimbate în timpul antrenamentului."),
-                        color = p.textSecondary)
-                    Text(workoutModeText(lang,
-                        "A pihenőidő, a hang és a rezgés módosítása azonnal mentődik.",
-                        "Rest, sound and vibration changes are saved immediately.",
-                        "Pause, Ton und Vibration werden sofort gespeichert.",
-                        "Pauza, sunetul și vibrațiile se salvează imediat."),
                         color = p.textSecondary)
                 }
             }
