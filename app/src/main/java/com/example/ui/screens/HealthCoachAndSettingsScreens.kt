@@ -3393,10 +3393,8 @@ fun StudioGoogleCloudSyncCard(
                 Text(
                     text = tr(
                         lang,
-                        "Jelentkezz be Google-fiókkal az automatikus többeszközös Drive-szinkronhoz (edzésnapló, tervek, privát fotók) és a dedikált edzésnaptárhoz.",
-                        "Sign in with Google for automatic multi-device Drive sync (workout log, plans, private photos) and dedicated workout calendar.",
-                        "Melde dich mit Google an für automatische Drive-Synchronisierung (Protokoll, Pläne, private Fotos) und Trainingskalender.",
-                        "Conectează-te cu Google pentru sincronizare automată Drive (jurnal, planuri, fotografii private) și calendar dedicat."
+                        "Drive-mentés és Naptár szinkron", "Drive backup and Calendar sync",
+                        "Drive-Sicherung und Kalendersynchronisierung", "Backup Drive și sincronizare Calendar"
                     ),
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary

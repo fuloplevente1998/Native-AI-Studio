@@ -172,7 +172,8 @@ fun HomeScreen(
                             color = palette.textPrimary
                         )
                         Text(
-                            text = "${strings.personalPlannerTitle} • ${com.example.localization.StudioProfileOptionLabels.label(state.trainingStyleHu, state.language)} • ${com.example.localization.StudioProfileOptionLabels.label(state.progressionRuleHu, state.language)}",
+                            // 2778: only the useful part; the explanation and the duplicate button text are gone.
+                            text = "${com.example.localization.StudioProfileOptionLabels.label(state.trainingStyleHu, state.language)} • ${com.example.localization.StudioProfileOptionLabels.label(state.progressionRuleHu, state.language)}",
                             style = MaterialTheme.typography.labelSmall,
                             color = palette.textSecondary,
                             maxLines = 1,
@@ -180,23 +181,8 @@ fun HomeScreen(
                         )
                     }
                 }
-                Button(
-                    onClick = onOpenPersonalPlanner,
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = palette.primary,
-                        contentColor = palette.onPrimary
-                    ),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                    modifier = Modifier
-                        .heightIn(min = 34.dp)
-                        .testTag("home_profile_new_plan_button")
-                ) {
-                    Text(
-                        text = strings.profileAndNewPlanBtn,
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
-                    )
-                }
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = strings.profileAndNewPlanBtn,
+                    tint = palette.primary, modifier = Modifier.size(24.dp).testTag("home_profile_new_plan_button"))
             }
         }
 
@@ -418,7 +404,7 @@ fun HomeScreen(
             val sideBySide = maxWidth >= 300.dp && androidx.compose.ui.platform.LocalDensity.current.fontScale <= 1.3f
             val quick: @Composable (Modifier) -> Unit = { card ->
                 HomeCompactShortcut(card.testTag("home_quick_workout_card"), Icons.AutoMirrored.Filled.DirectionsRun,
-                    strings.quickWorkoutTitle, strings.quickWorkoutSub, onOpenQuickWorkout)
+                    strings.quickWorkoutTitle, "", onOpenQuickWorkout) // 2778: title is enough
             }
             val watch: @Composable (Modifier) -> Unit = { card ->
                 val status = when {
@@ -550,7 +536,7 @@ private fun HomeCompactShortcut(modifier: Modifier, icon: androidx.compose.ui.gr
                 if (connected != null) Box(Modifier.size(7.dp).clip(CircleShape)
                     .background(if (connected) p.success else p.warning))
             }
-            Text(subtitle, color = p.textSecondary, style = MaterialTheme.typography.labelSmall,
+            if (subtitle.isNotBlank()) Text(subtitle, color = p.textSecondary, style = MaterialTheme.typography.labelSmall,
                 maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
     }

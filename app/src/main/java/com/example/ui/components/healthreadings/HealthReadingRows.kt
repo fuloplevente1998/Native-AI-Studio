@@ -50,19 +50,6 @@ fun HealthPulseWeekRows(
         days.forEach { day ->
             HealthPulseDayRow(day, zone = zone)
         }
-        if (days.isNotEmpty()) {
-            Text(
-                text = trH(
-                    "A kiválasztott adatforrás tárolt mérései (nem élő érték).",
-                    "Stored readings from the selected data source (not live).",
-                    "Gespeicherte Messwerte der gewählten Datenquelle (kein Live-Wert).",
-                    "Măsurători stocate din sursa de date selectată (nu în timp real)."
-                ),
-                style = MaterialTheme.typography.labelSmall,
-                color = palette.textMuted,
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-            )
-        }
     }
 }
 

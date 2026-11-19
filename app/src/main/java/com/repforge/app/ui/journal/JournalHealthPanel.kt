@@ -179,10 +179,6 @@ private fun JournalHealthSourceEvidence(summary: NativeWorkoutHealthSummary.Resu
             Text(if (relation.confirmedMirror) local("Azonos rekordkapcsolat", "Shared record identity", "Gemeinsame Datensatzidentität", "Identitate comună înregistrare") + ": $other"
                 else local("Átfedő mérés; lehetséges tükrözés", "Overlapping measurement; possible mirror", "Überlappende Messung; mögliche Spiegelung", "Măsurare suprapusă; posibilă copie") + ": $other", color = colors.muted)
         }
-        Text(local("Az összesítő az átfedést egyszer veszi figyelembe; az eredeti forrásadat itt megmarad.",
-            "The summary counts overlaps once; original source data is preserved here.",
-            "Die Übersicht zählt Überlappungen einmal; Originaldaten bleiben hier erhalten.",
-            "Rezumatul numără suprapunerile o dată; datele originale sunt păstrate aici."), color = colors.muted)
     }
 
 @Composable

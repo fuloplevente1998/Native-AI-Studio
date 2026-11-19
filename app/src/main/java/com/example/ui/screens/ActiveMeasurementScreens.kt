@@ -1501,17 +1501,6 @@ fun ActiveBilateralWorkoutScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary
                                 )
-                                Text(
-                                    text = tr(
-                                        lang,
-                                        "Koppints egy sorozatra a cél-kijelöléshez, vagy az oldal mezőre a kézi szerkesztéshez",
-                                        "Tap a set to select target, or tap a side field for manual editing",
-                                        "Tippe auf einen Satz für die Zielauswahl oder auf ein Seitenfeld zur manuellen Bearbeitung",
-                                        "Atinge o serie pentru a o selecta ca țintă sau câmpul părții pentru editare manuală"
-                                    ),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = palette.textSecondary
-                                )
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Surface(
@@ -1610,14 +1599,11 @@ fun ActiveBilateralWorkoutScreen(
                                 )
                             }
                         }
-                        Text(
+                        if (compareLeft != 0 || compareRight != 0) Text(
                             text = when {
                                 compareLeft == 0 && compareRight == 0 -> tr(
                                     lang,
-                                    "Indítsd el a stoppereket a bal és jobb oldal méréséhez.",
-                                    "Start the stopwatches to measure left and right sides.",
-                                    "Starte die Stoppuhren, um die linke und rechte Seite zu messen.",
-                                    "Pornește cronometrele pentru a măsura partea stângă și dreaptă."
+                                    "", "", "", "" // 2778: no hint before any measurement
                                 )
                                 diff == 0 -> tr(
                                     lang,
@@ -2959,10 +2945,7 @@ fun WorkoutSummaryScreen(
                         Text(
                             text = tr(
                                 lang,
-                                "Csatolj fotót az edzésről a fejlődés követéséhez (opcionális).",
-                                "Attach a photo to track your workout progress (optional).",
-                                "Hänge ein Foto an, um deinen Trainingsfortschritt zu verfolgen (optional).",
-                                "Atașează o fotografie pentru a urmări progresul antrenamentului (opțional)."
+                                "Fotó (opcionális)", "Photo (optional)", "Foto (optional)", "Fotografie (opțional)"
                             ),
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.textMuted

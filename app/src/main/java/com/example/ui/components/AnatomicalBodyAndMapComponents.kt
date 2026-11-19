@@ -466,7 +466,7 @@ fun AnatomicalMuscleHeatmapCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            if (showExplanation) Text(
+            if (showExplanation && resolvedSubtitle.isNotBlank()) Text(
                 text = resolvedSubtitle,
                 style = MaterialTheme.typography.labelSmall,
                 color = palette.textSecondary,

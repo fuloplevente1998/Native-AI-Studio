@@ -14,7 +14,7 @@
 | Pihenő -15/+15, indítás/szünet, kihagyás | Erő, Kétoldali, Időalapú, Kültéri (opcionális) | `adjustRestTimer`, `toggleRestTimerRunning`, `skipRestTimer` (változatlan VM) |
 | Kompakt ↔ nagy | mind | dokk saját állapota (Erő: görgetésre is nagy) |
 
-## 6 – Felesleges magyarázó szövegek (javaslat, „mehet”-re vár)
+## 6 – Felesleges magyarázó szövegek (jóváhagyva, kódolva)
 Elv: cím + rövid alcím marad; hibaüzenet, megerősítés, adatvédelmi hozzájárulás marad.
 
 | Hol | Most | Javaslat |
@@ -37,3 +37,5 @@ Elv: cím + rövid alcím marad; hibaüzenet, megerősítés, adatvédelmi hozz�
 | Milyen volt az edzés? | „Az egész edzésről szól; a gyakorlatok válaszait nem módosítja.” | törlés |
 
 Marad: Coach javaslat szövege (tartalom), hibák, törlés-megerősítések, mentési hozzájárulás, „TrainPilot-becslés, nem Samsung-pontszám”.
+
+Megtartva (kérés szerint/indok): anatómiai jelmagyarázat Kisebb · Közepes · Nagyobb; a Statisztika és a Beállítások szinkron-részletek csak kinyitásra látszanak (felhasználó kéri), ezért maradtak.
