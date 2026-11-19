@@ -94,7 +94,7 @@ internal fun StudioWorkoutHandoverBar(state: TrainPilotUiState, strings: Localiz
                         Text(
                             text = elapsedText,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.ExtraBold,
+                            fontWeight = FontWeight.Bold,
                             color = palette.primary,
                             maxLines = 1,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)

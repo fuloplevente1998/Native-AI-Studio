@@ -457,7 +457,7 @@ fun HealthTabScreen(
                                 Text(
                                     text = strings.todayStateTitle,
                                     style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.ExtraBold,
+                                    fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary
                                 )
                                 Text(
@@ -980,7 +980,7 @@ fun HealthTabScreen(
                                     tr(uiState.language, "Heti egészség & edzés célok", "Weekly Health & Workout Goals", "Wöchentliche Gesundheits- & Trainingsziele", "Obiective săptămânale sănătate și antrenament")
                                 },
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.ExtraBold,
+                                fontWeight = FontWeight.Bold,
                                 color = palette.textPrimary
                             )
                             Spacer(modifier = Modifier.height(2.dp))
@@ -1340,7 +1340,7 @@ fun HealthTabScreen(
                                                     text = latestChronologicalEntry?.weightLabel
                                                         ?: if (uiState.currentBodyWeightKg > 0f) "${uiState.currentBodyWeightKg} kg" else "—",
                                                     style = MaterialTheme.typography.titleLarge,
-                                                    fontWeight = FontWeight.ExtraBold,
+                                                    fontWeight = FontWeight.Bold,
                                                     color = palette.textPrimary
                                                 )
                                                 Text(
@@ -1797,7 +1797,7 @@ internal fun MainTodayStatusTile(
             Text(
                 text = value,
                 style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = FontWeight.Bold,
                 color = palette.textPrimary,
                 maxLines = 1
             )
@@ -1832,7 +1832,7 @@ private fun PulseInnerBox(
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = FontWeight.Bold,
                 color = palette.textPrimary,
                 maxLines = 1
             )
@@ -2066,7 +2066,7 @@ internal fun CoachDetailScreen(
                                 Text(
                                     text = if (hasScore) "$displayScore" else "—",
                                     style = MaterialTheme.typography.headlineLarge,
-                                    fontWeight = FontWeight.ExtraBold,
+                                    fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary
                                 )
                                 Text(

@@ -236,6 +236,15 @@ class Issues199Through198RegressionTest {
         compose.waitForIdle()
         compose.onNodeWithTag("outdoor_manual_distance_card").assertIsDisplayed()
         compose.onNodeWithTag("outdoor_manual_distance_input").assertIsDisplayed()
-        compose.onNodeWithTag("outdoor_manual_distance_save").assertIsDisplayed()
+                compose.onNodeWithTag("outdoor_manual_distance_save").assertIsDisplayed()
+        // 2772: compact app-style field (48 dp like the Save button) and three equal metric tiles.
+        val field = compose.onNodeWithTag("outdoor_manual_distance_input").fetchSemanticsNode().boundsInRoot
+        val save = compose.onNodeWithTag("outdoor_manual_distance_save").fetchSemanticsNode().boundsInRoot
+        assertEquals(save.height, field.height, 1f)
+        val tiles = (0..2).map { compose.onNodeWithTag("outdoor_metric_tile_$it", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot }
+        tiles.drop(1).forEach {
+            assertEquals(tiles[0].height, it.height, 1f)
+            assertEquals(tiles[0].width, it.width, 1f)
+        }
     }
 }

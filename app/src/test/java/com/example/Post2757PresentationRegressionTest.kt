@@ -16,7 +16,8 @@ import com.example.localization.TrainPilotStrings
 import com.example.model.AppLanguage
 import com.example.model.ExerciseItem
 import com.example.ui.components.HomeCoachAdviceCard
-import com.example.ui.components.QuickWorkoutSheet
+import com.example.ui.components.QuickWorkoutHubSheet
+import com.example.ui.screens.ExerciseLibraryScreen
 import com.example.ui.screens.BackupRestoreScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.theme.TrainPilotTheme
@@ -35,25 +36,34 @@ import org.robolectric.annotation.*
 class Post2757PresentationRegressionTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
-    @Test fun quickSheetFillsWindowSelectsExerciseAndCloses() {
-        val first = ExerciseItem("one", "Első gyakorlat")
-        val second = ExerciseItem("two", "Második gyakorlat")
+    @Test fun quickSheetHostsThePickerInTabsStartsAnExerciseAndHandsOutdoorToTheLiveScreen() {
+        // 2772: one sheet with Strength / Timed / Outdoor tabs; no separate picker or GPS page.
+        val strength = ExerciseItem("one", "Első gyakorlat")
+        val timed = ExerciseItem("two", "Plank", isTimed = true)
+        var tab by mutableIntStateOf(0)
         var started: ExerciseItem? = null
+        var outdoor: String? = null
         var dismissed = 0
+        val state = TrainPilotUiState(exercises = listOf(strength, timed))
         compose.setContent { TrainPilotTheme {
-            QuickWorkoutSheet(exercises = listOf(first, second), onStartStrengthQuick = {},
-                onStartStrengthWithExercise = { started = it }, onStartTimedQuick = {},
-                onStartOutdoorGps = {}, onBrowseExercises = {}, onDismiss = { dismissed++ })
+            QuickWorkoutHubSheet(AppLanguage.HU, tab, { tab = it }, { dismissed++ }, { outdoor = it },
+                strengthContent = { ExerciseLibraryScreen(state, {}, {}, {}, {}, {}, onStartExerciseNow = { started = it }, embedded = true) },
+                timedContent = { ExerciseLibraryScreen(state, {}, {}, {}, {}, {}, onStartExerciseNow = { started = it }, embedded = true, timedOnly = true) })
         } }
-        val sheet = compose.onNodeWithTag("quick_workout_sheet").assertIsDisplayed().getUnclippedBoundsInRoot()
-        // 2770: the quick sheet wraps its content instead of filling the window.
-        assertTrue("Sheet should wrap content, not fill the window", (sheet.bottom - sheet.top).value in 1f..899f)
-        compose.onNodeWithTag("quick_strength_picker").performScrollTo().performClick()
-        compose.onNodeWithTag("quick_strength_option_two").performClick()
-        compose.onNodeWithTag("quick_strength_start").performScrollTo().performClick()
-        compose.runOnIdle { assertEquals(second, started) }
-        compose.onNodeWithContentDescription(TrainPilotStrings.forLanguage(AppLanguage.HU).closeAction).performScrollTo().performClick()
-        compose.runOnIdle { assertEquals(1, dismissed) }
+        compose.onNodeWithTag("quick_workout_sheet").assertExists()
+        compose.onNodeWithText("Első gyakorlat").assertExists()
+        compose.onNodeWithText("Plank").assertExists()
+        compose.onNodeWithTag("quick_tab_1").performClick()
+        compose.runOnIdle { assertEquals(1, tab) }
+        // Timed tab lists only time-based exercises.
+        compose.onNodeWithText("Első gyakorlat").assertDoesNotExist()
+        compose.onNodeWithText("Plank").assertExists()
+        compose.onNodeWithTag("quick_tab_2").performClick()
+        compose.onNodeWithTag("quick_outdoor_kerékpározás").performClick()
+        compose.onNodeWithTag("quick_outdoor_start").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals("Kerékpározás", outdoor) }
+        compose.onNodeWithTag("quick_workout_close").performClick()
+        compose.runOnIdle { assertEquals(1, dismissed); assertNull(started) }
     }
 
     @Test fun todayTilesShareFramePreserveMissingValuesAndDestinations() {

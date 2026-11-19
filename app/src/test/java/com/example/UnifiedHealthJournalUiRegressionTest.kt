@@ -171,21 +171,31 @@ class UnifiedHealthJournalUiRegressionTest {
         compose.onNodeWithTag("journal_refresh_error").assertTextEquals("Samsung Health: PERMISSION_DENIED")
     }
 
-    @Test fun cancellingDateSelectionPreservesRangeAndAnInvalidRangeCannotBeApplied() {
+    @Test fun periodSheetKeepsRangeOnCloseAndTwoTapsInAnyOrderGiveAValidPeriod() {
         journal()
         awaitTag("journal_day_$day")
-        compose.onNodeWithTag("journal_range_from").performScrollTo().performClick()
-        compose.onNodeWithTag("health_date_next_year").performScrollTo().performClick()
-        compose.onNodeWithTag("health_date_cancel").performScrollTo().performClick()
-        compose.onNodeWithTag("journal_range_apply").assertDoesNotExist()
+        // 2772: one period button opens the shared period sheet (same as the Progress log).
+        compose.onNodeWithTag("journal_period_button").performScrollTo().performClick()
+        compose.onNodeWithTag("journal_calendar_sheet").assertExists()
+        compose.onNodeWithTag("journal_jump_today_button").assertExists()
+        compose.onNodeWithTag("journal_clear_filter_button").assertExists()
+        compose.onNodeWithTag("journal_calendar_done").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag("journal_calendar_sheet").assertDoesNotExist()
         compose.onNodeWithTag("journal_day_$day").assertExists()
-        compose.onNodeWithTag("journal_range_from").performScrollTo().performClick()
-        compose.onNodeWithTag("health_date_next_year").performScrollTo().performClick()
-        // A selected day remains independent of the navigated month until a day is tapped.
-        compose.onNodeWithTag("health_date_day_1").performScrollTo().performClick()
-        compose.onNodeWithTag("health_date_confirm").performScrollTo().performClick()
-        compose.onNodeWithTag("journal_range_apply").performScrollTo().assertIsNotEnabled()
-        compose.onNodeWithTag("journal_day_$day").assertExists()
+        // Reverse order (later day first) still yields from <= to; today stays inside the period.
+        compose.onNodeWithTag("journal_period_button").performScrollTo().performClick()
+        compose.onNodeWithTag("journal_calendar_day_${day.dayOfMonth}").performClick()
+        compose.onNodeWithTag("journal_calendar_day_1").performClick()
+        compose.onNodeWithTag("journal_calendar_done").performClick()
+        awaitTag("journal_day_$day")
+        if (day.dayOfMonth > 1) compose.onNodeWithTag("journal_day_${day.minusDays(1)}").assertExists()
+        // Today = only today; Clear = back to the last 30 days.
+        compose.onNodeWithTag("journal_period_button").performScrollTo().performClick()
+        compose.onNodeWithTag("journal_jump_today_button").performClick()
+        compose.onNodeWithTag("journal_calendar_done").performClick()
+        awaitTag("journal_day_$day")
+        compose.onNodeWithTag("journal_day_${day.minusDays(1)}").assertDoesNotExist()
     }
 
     @Test fun foldingKeepsTheRecordPageAndAReplacementStartsANewGeneration() {

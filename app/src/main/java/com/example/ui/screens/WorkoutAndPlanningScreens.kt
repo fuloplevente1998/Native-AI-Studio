@@ -31,6 +31,8 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -61,6 +63,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -149,6 +152,82 @@ private fun trW(lang: com.example.model.AppLanguage, hu: String, en: String, de:
 }
 
 @Composable
+private fun WorkoutModeTile(
+    title: String,
+    subtitle: String,
+    badge: String,
+    testTag: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    badgeColor: Color? = null,
+    graphic: @Composable () -> Unit
+) {
+    val palette = LocalTrainPilotPalette.current
+    val shape = RoundedCornerShape(18.dp)
+    val tint = badgeColor ?: palette.primary
+    Surface(
+        shape = shape,
+        color = palette.surface,
+        modifier = modifier
+            .fillMaxHeight()
+            .heightIn(min = 150.dp)
+            .trainPilotBorder(1.25.dp, palette.sectionBorder, shape)
+            .trainPilotClickable(shape) { onClick() }
+            .testTag(testTag)
+    ) {
+        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+                color = palette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(subtitle, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) { graphic() }
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Surface(shape = RoundedCornerShape(8.dp), color = tint.copy(alpha = 0.16f), modifier = Modifier.weight(1f, fill = false)) {
+                    Text(badge, style = MaterialTheme.typography.labelSmall, color = tint, fontWeight = FontWeight.Bold,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp))
+                }
+                Spacer(Modifier.weight(1f))
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.textSecondary, modifier = Modifier.size(18.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun WorkoutModeIcon(icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    val palette = LocalTrainPilotPalette.current
+    Surface(shape = RoundedCornerShape(18.dp), color = palette.primary.copy(alpha = 0.16f), modifier = Modifier.size(64.dp)) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = palette.primary, modifier = Modifier.size(36.dp))
+        }
+    }
+}
+
+/** The familiar dark route preview of the outdoor card, larger. */
+@Composable
+private fun OutdoorRouteGraphic() {
+    val palette = LocalTrainPilotPalette.current
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color(0xFF14261C))
+            .border(1.dp, palette.success.copy(alpha = 0.45f), RoundedCornerShape(14.dp))
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            drawLine(Color(0xFF1E3A5F), Offset(0f, h * 0.2f), Offset(w * 0.35f, h), strokeWidth = 12.dp.toPx())
+            drawLine(Color(0xFFF59E0B), Offset(w * 0.22f, h * 0.78f), Offset(w * 0.52f, h * 0.24f), strokeWidth = 3.5.dp.toPx(), cap = StrokeCap.Round)
+            drawLine(Color(0xFFF59E0B), Offset(w * 0.52f, h * 0.24f), Offset(w * 0.82f, h * 0.65f), strokeWidth = 3.5.dp.toPx(), cap = StrokeCap.Round)
+            drawCircle(Color(0xFF22C55E), radius = 5.dp.toPx(), center = Offset(w * 0.22f, h * 0.78f))
+            drawCircle(Color(0xFFF59E0B), radius = 5.dp.toPx(), center = Offset(w * 0.82f, h * 0.65f))
+        }
+    }
+}
+
+@Composable
 fun WorkoutTabScreen(
     state: TrainPilotUiState,
     onOpenSettings: () -> Unit,
@@ -156,6 +235,7 @@ fun WorkoutTabScreen(
     onOpenExerciseLibrary: () -> Unit,
     onOpenOutdoorWorkout: () -> Unit,
     onOpenProgramsList: () -> Unit,
+    onOpenTimed: () -> Unit = onOpenExerciseLibrary,
     onOpenProgramEditor: (String, Int) -> Unit,
     onStartWorkoutDay: (Int) -> Unit,
     onOpenCalendar: () -> Unit,
@@ -224,182 +304,38 @@ fun WorkoutTabScreen(
             }
         }
 
-        // 2. Two-column cards: Gyakorlat választása (with posture mini-graphic) & Szabadtéri edzés (with mini GPS map & live metrics preview)
+        // 2. Three tall tiles (2772): Strength / Timed / Outdoor, title on top, big icon below.
+        //    Each opens the Quick workout sheet on its own tab (no separate page).
+        val timedCount = state.exercises.count { it.isTimed || it.measurementType == "time" }
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = palette.surface,
-                modifier = Modifier
-                    .weight(1f)
-                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenExerciseLibrary() }
-                    .testTag("workout_tab_exercise_picker")
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = palette.primary.copy(alpha = 0.16f),
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.FitnessCenter,
-                                    contentDescription = null,
-                                    tint = palette.primary,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                        }
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = palette.primary.copy(alpha = 0.16f)
-                        ) {
-                            Text(
-                                text = trW(state.language, "${state.exercises.size} gyak.", "${state.exercises.size} ex.", "${state.exercises.size} Üb.", "${state.exercises.size} ex."),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = palette.primary,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                            )
-                        }
-                    }
-                    Text(
-                        text = strings.exercisePickerTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = palette.textPrimary
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = strings.exercisePickerSub,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = palette.textSecondary,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = palette.textSecondary
-                        )
-                    }
-                }
-            }
-
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = palette.surface,
-                modifier = Modifier
-                    .weight(1f)
-                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenOutdoorWorkout() }
-                    .testTag("workout_tab_outdoor_card")
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Mini outdoor GPS map preview box
-                        Box(
-                            modifier = Modifier
-                                .width(68.dp)
-                                .height(42.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(Color(0xFF14261C))
-                                .border(1.dp, palette.success.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
-                        ) {
-                            Canvas(modifier = Modifier.fillMaxSize()) {
-                                val w = size.width
-                                val h = size.height
-                                // River stripe
-                                drawLine(
-                                    color = Color(0xFF1E3A5F),
-                                    start = Offset(0f, h * 0.2f),
-                                    end = Offset(w * 0.35f, h),
-                                    strokeWidth = 8.dp.toPx()
-                                )
-                                // GPS loop
-                                drawLine(
-                                    color = Color(0xFFF59E0B),
-                                    start = Offset(w * 0.28f, h * 0.78f),
-                                    end = Offset(w * 0.55f, h * 0.24f),
-                                    strokeWidth = 2.5.dp.toPx(),
-                                    cap = StrokeCap.Round
-                                )
-                                drawLine(
-                                    color = Color(0xFFF59E0B),
-                                    start = Offset(w * 0.55f, h * 0.24f),
-                                    end = Offset(w * 0.82f, h * 0.65f),
-                                    strokeWidth = 2.5.dp.toPx(),
-                                    cap = StrokeCap.Round
-                                )
-                                drawCircle(
-                                    color = Color(0xFF22C55E),
-                                    radius = 3.2.dp.toPx(),
-                                    center = Offset(w * 0.28f, h * 0.78f)
-                                )
-                                drawCircle(
-                                    color = Color(0xFFF59E0B),
-                                    radius = 3.2.dp.toPx(),
-                                    center = Offset(w * 0.82f, h * 0.65f)
-                                )
-                            }
-                        }
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = palette.success.copy(alpha = 0.16f)
-                        ) {
-                            Text(
-                                text = trW(state.language, "GPS élő", "GPS live", "GPS live", "GPS live"),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = palette.success,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                            )
-                        }
-                    }
-                    Text(
-                        text = strings.outdoorWorkoutTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = palette.textPrimary
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = strings.outdoorWorkoutSub,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = palette.textSecondary,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = palette.textSecondary
-                        )
-                    }
-                }
-            }
+            WorkoutModeTile(
+                title = trW(state.language, "Erő", "Strength", "Kraft", "Forță"),
+                subtitle = trW(state.language, "súly × ismétlés", "weight × reps", "Gewicht × Wdh.", "greutate × rep."),
+                badge = trW(state.language, "${state.exercises.size} gyak.", "${state.exercises.size} ex.", "${state.exercises.size} Üb.", "${state.exercises.size} ex."),
+                testTag = "workout_tab_exercise_picker",
+                onClick = onOpenExerciseLibrary,
+                modifier = Modifier.weight(1f)
+            ) { WorkoutModeIcon(Icons.Default.FitnessCenter) }
+            WorkoutModeTile(
+                title = trW(state.language, "Időzített", "Timed", "Zeit", "Cronometrat"),
+                subtitle = trW(state.language, "idő / tartás", "time / hold", "Zeit / Halten", "timp / menținere"),
+                badge = trW(state.language, "$timedCount gyak.", "$timedCount ex.", "$timedCount Üb.", "$timedCount ex."),
+                testTag = "workout_tab_timed_card",
+                onClick = onOpenTimed,
+                modifier = Modifier.weight(1f)
+            ) { WorkoutModeIcon(Icons.Default.Timer) }
+            WorkoutModeTile(
+                title = trW(state.language, "Kültéri", "Outdoor", "Outdoor", "Exterior"),
+                subtitle = trW(state.language, "futás, séta", "run, walk", "Laufen, Gehen", "alergare, mers"),
+                badge = trW(state.language, "GPS élő", "GPS live", "GPS live", "GPS live"),
+                badgeColor = palette.success,
+                testTag = "workout_tab_outdoor_card",
+                onClick = onOpenOutdoorWorkout,
+                modifier = Modifier.weight(1f)
+            ) { OutdoorRouteGraphic() }
         }
 
         // 3. Aktuális program Header + Összes megtekintése >
@@ -1267,12 +1203,13 @@ fun ProgramsListScreen(
                     color = palette.surface,
                     modifier = Modifier
                         .fillMaxWidth()
+                        // Lift first so the frame moves with the card while dragging (2772).
+                        .trainPilotReorderItem(programReorder, program.id, index)
                         .trainPilotBorder(
                             if (program.isActive || isExpanded) 1.5.dp else 1.dp,
                             if (program.isActive || isExpanded) palette.primary else palette.cardBorder,
                             RoundedCornerShape(14.dp)
                         )
-                        .trainPilotReorderItem(programReorder, program.id, index)
                         .testTag("program_card_${program.id}")
                 ) {
                     ProgramCardContent(
@@ -2433,7 +2370,7 @@ fun CalendarPlannerScreen(
 
                         Text(
                             text = monthHeaderText,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             color = palette.textPrimary
                         )
 
@@ -2468,7 +2405,7 @@ fun CalendarPlannerScreen(
                                     Box(contentAlignment = Alignment.Center) {
                                         Text(
                                             text = "✕",
-                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                             color = palette.textPrimary
                                         )
                                     }
@@ -2549,7 +2486,7 @@ fun CalendarPlannerScreen(
                                                 Text(
                                                     text = "$dayNumber",
                                                     style = MaterialTheme.typography.bodyMedium.copy(
-                                                        fontWeight = FontWeight.ExtraBold
+                                                        fontWeight = FontWeight.Bold
                                                     ),
                                                     color = palette.textPrimary
                                                 )
@@ -2566,7 +2503,7 @@ fun CalendarPlannerScreen(
                                                         Text(
                                                             text = plannedEv.splitBadge,
                                                             style = MaterialTheme.typography.labelMedium.copy(
-                                                                fontWeight = FontWeight.ExtraBold
+                                                                fontWeight = FontWeight.Bold
                                                             ),
                                                             color = palette.primary
                                                         )
@@ -2625,7 +2562,7 @@ fun CalendarPlannerScreen(
                         ) {
                             Text(
                                 text = trW(state.language, "Újratervezés", "Replan", "Neu planen", "Replanificare"),
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold)
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
                             )
                         }
                     }
@@ -2909,7 +2846,7 @@ fun CalendarPlannerScreen(
                     ) {
                         Text(
                             text = trW(state.language, "Edzések újratervezése", "Replan workouts", "Trainings neu planen", "Replanificare antrenamente"),
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                             color = palette.textPrimary
                         )
                         Surface(
@@ -2923,7 +2860,7 @@ fun CalendarPlannerScreen(
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     text = "✕",
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                     color = palette.textPrimary
                                 )
                             }
@@ -2985,7 +2922,7 @@ fun CalendarPlannerScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "${trW(state.language, "Program", "Program", "Programm", "Program")}: $selectedProgName",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                         color = palette.textPrimary
                     )
 
@@ -3008,7 +2945,7 @@ fun CalendarPlannerScreen(
                         ) {
                             Text(
                                 text = splitTitle,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = palette.textPrimary
                             )
                             Text(
@@ -3036,7 +2973,7 @@ fun CalendarPlannerScreen(
                     ) {
                         Text(
                             text = trW(state.language, "Terv frissítése", "Update plan", "Plan aktualisieren", "Actualizează planul"),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                     }
                 }
@@ -3133,7 +3070,7 @@ private fun PlannerFieldTile(
                         Text(
                             text = value,
                             style = (if (compact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge)
-                                .copy(fontWeight = FontWeight.ExtraBold),
+                                .copy(fontWeight = FontWeight.Bold),
                             color = palette.textPrimary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -3222,11 +3159,16 @@ fun ExerciseLibraryScreen(
     onStartQueuedWorkout: () -> Unit = {},
     onToggleFavoritesOnly: () -> Unit = {},
     onToggleFavorite: (String) -> Unit = {},
-    onRemoveExerciseFromQueue: (String) -> Unit = {}
+    onRemoveExerciseFromQueue: (String) -> Unit = {},
+    /** Inside the Quick workout sheet (2772): no own title bar, the sheet has the header and tabs. */
+    embedded: Boolean = false,
+    /** Timed tab of the Quick workout sheet: only time-based exercises. */
+    timedOnly: Boolean = false
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
-    val filtered = state.exercises.filter { ex ->
+    val pool = if (timedOnly) state.exercises.filter { it.isTimed || it.measurementType == "time" } else state.exercises
+    val filtered = pool.filter { ex ->
         val matchesCategory = state.selectedExerciseCategory == ExerciseCategory.ALL || ex.category == state.selectedExerciseCategory
         val matchesSearch = state.exerciseSearchQuery.isBlank() ||
             ex.nameHu.contains(state.exerciseSearchQuery, ignoreCase = true) ||
@@ -3247,7 +3189,7 @@ fun ExerciseLibraryScreen(
             .padding(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 4.dp, bottom = 24.dp)
     ) {
         // Matches Mockup 1/4 #5 "Gyakorlatok" (106-os gyakorlat-adatbázis kategóriák szerint)
-        SubScreenTopBar(
+        if (!embedded) SubScreenTopBar(
             title = "${strings.exercisePickerTitle} (${state.exercises.size})",
             onBack = onBack,
             onOpenSettings = onOpenSettings
@@ -3282,12 +3224,12 @@ fun ExerciseLibraryScreen(
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                ExerciseCategory.entries.forEach { cat ->
+                ExerciseCategory.entries.filter { !timedOnly || it == ExerciseCategory.ALL || pool.any { e -> e.category == it } }.forEach { cat ->
                     val selected = state.selectedExerciseCategory == cat
                     val catCount = if (cat == ExerciseCategory.ALL) {
-                        state.exercises.size
+                        pool.size
                     } else {
-                        state.exercises.count { it.category == cat }
+                        pool.count { it.category == cat }
                     }
                     Surface(
                         shape = RoundedCornerShape(16.dp),
@@ -3322,7 +3264,7 @@ fun ExerciseLibraryScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = trW(state.language, "${filtered.size} / ${state.exercises.size} gyakorlat", "${filtered.size} / ${state.exercises.size} exercises", "${filtered.size} / ${state.exercises.size} Übungen", "${filtered.size} / ${state.exercises.size} exerciții"),
+                    text = trW(state.language, "${filtered.size} / ${pool.size} gyakorlat", "${filtered.size} / ${pool.size} exercises", "${filtered.size} / ${pool.size} Übungen", "${filtered.size} / ${pool.size} exerciții"),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = palette.textSecondary
@@ -3373,7 +3315,7 @@ fun ExerciseLibraryScreen(
                                 .heightIn(min = 48.dp)
                                 .testTag("exercise_library_start_queued_workout_button")
                         ) {
-                            Text("▶ ${strings.startAction}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold)
+                            Text("▶ ${strings.startAction}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

@@ -139,7 +139,7 @@ internal fun StudioCoachNextTrainingCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(target.programTitle.ifBlank { coachTr(lang, "Következő edzés", "Next workout", "Nächstes Training", "Următorul antrenament") },
-                        style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold,
+                        style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
                         color = palette.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.testTag("studio_coach_program_name"))
                     Text(if (letterDay == null) target.title else "${coachTr(lang, "Edzésnap", "Workout day", "Trainingstag", "Zi antrenament")}: ${target.title}",
@@ -158,7 +158,7 @@ internal fun StudioCoachNextTrainingCard(
                         Box(Modifier.sizeIn(minWidth = 58.dp, minHeight = 58.dp).padding(8.dp),
                             contentAlignment = androidx.compose.ui.Alignment.Center) {
                             Text(letterDay, style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.Black, color = palette.primary)
+                                fontWeight = FontWeight.Bold, color = palette.primary)
                         }
                     }
                 }

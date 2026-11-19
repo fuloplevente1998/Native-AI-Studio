@@ -25,6 +25,7 @@ import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
 import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.runtime.*
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
@@ -318,21 +319,34 @@ private fun OutdoorManualDistanceCard(state: OutdoorGpsDisplay, actions: Outdoor
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                OutlinedTextField(
+                // 2772: app-style compact field (48 dp, rounded, palette colours) instead of the square Material box.
+                val fieldShape = RoundedCornerShape(12.dp)
+                androidx.compose.foundation.text.BasicTextField(
                     value = state.manualDistanceInput,
                     onValueChange = actions.onManualDistanceInputChange,
-                    placeholder = { Text(placeholderText, style = MaterialTheme.typography.bodySmall) },
                     singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(palette.primary),
                     textStyle = MaterialTheme.typography.bodyMedium.copy(color = palette.textPrimary),
                     modifier = Modifier
                         .weight(1f)
-                        .heightIn(min = 48.dp)
-                        .testTag("outdoor_manual_distance_input")
+                        .height(48.dp)
+                        .clip(fieldShape)
+                        .background(palette.background)
+                        .border(1.dp, palette.cardBorder, fieldShape)
+                        .testTag("outdoor_manual_distance_input"),
+                    decorationBox = { inner ->
+                        Box(Modifier.fillMaxSize().padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {
+                            if (state.manualDistanceInput.isEmpty()) Text(placeholderText,
+                                style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary)
+                            inner()
+                        }
+                    }
                 )
                 TrainPilotOutlinedButton(
                     onClick = actions.onSaveManualDistance,
                     modifier = Modifier
-                        .heightIn(min = 48.dp)
+                        .height(48.dp)
                         .testTag("outdoor_manual_distance_save"),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                 ) {
@@ -467,7 +481,7 @@ private fun MetricsPanel(state: OutdoorGpsDisplay, strings: LocalizedStrings, sh
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(if (state.paused) copy.paused else if (state.started) copy.elapsed else copy.ready,
                     color = palette.textSecondary, style = MaterialTheme.typography.labelMedium)
-                Text(state.elapsed, color = palette.textPrimary, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold,
+                Text(state.elapsed, color = palette.textPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier.testTag("gps_elapsed_timer_text"))
             }
             val metrics = listOf(Triple(strings.distanceLabel, state.distance, "${state.pointCount} ${copy.points}"),
@@ -477,8 +491,9 @@ private fun MetricsPanel(state: OutdoorGpsDisplay, strings: LocalizedStrings, sh
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     metrics.forEachIndexed { i, metric -> MetricTile(metric, i == 0, Modifier.fillMaxWidth()) }
                 }
-            } else Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                metrics.forEachIndexed { i, metric -> MetricTile(metric, i == 0, Modifier.weight(1f)) }
+            } else Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                // Equal width and equal height tiles (2772).
+                metrics.forEachIndexed { i, metric -> MetricTile(metric, i == 0, Modifier.weight(1f).fillMaxHeight().testTag("outdoor_metric_tile_$i")) }
             }
         }
     }
@@ -491,10 +506,12 @@ private fun MetricTile(metric: Triple<String, String, String>, highlighted: Bool
         modifier = modifier.trainPilotBorder(1.dp, if (highlighted) palette.primary.copy(alpha = 0.5f) else palette.cardBorder,
             RoundedCornerShape(12.dp))) {
         Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            Text(metric.first, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+            Text(metric.first, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(metric.second, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
-                color = if (highlighted) palette.primary else palette.textPrimary)
-            Text(metric.third, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                color = if (highlighted) palette.primary else palette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(metric.third, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

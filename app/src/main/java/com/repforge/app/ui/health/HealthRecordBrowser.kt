@@ -180,7 +180,7 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
                     text = tr("TRAINPILOT / EGÉSZSÉG", "TRAINPILOT / HEALTH", "TRAINPILOT / GESUNDHEIT", "TRAINPILOT / SĂNĂTATE"),
                     color = colors.accentText,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontWeight = FontWeight.Bold,
                     letterSpacing = 0.8.sp
                 )
                 Row(
@@ -201,7 +201,7 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
                         },
                         color = colors.text,
                         fontSize = 23.sp,
-                        fontWeight = FontWeight.ExtraBold,
+                        fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f)
                     )
                     IconButton(
@@ -328,7 +328,7 @@ internal fun HealthRecordBrowser(day: String, channel: String, type: String, lan
                     text = tr("Mérési eredmények", "Measurement results", "Messergebnisse", "Rezultate măsurători"),
                     color = colors.text,
                     fontSize = 19.sp,
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = FontWeight.Bold
                 )
                 IconButton(
                     onClick = { restart() },
@@ -462,13 +462,13 @@ private fun DateBoundBox(
             text = "${date.year}.",
             color = colors.accentText,
             fontSize = 18.sp,
-            fontWeight = FontWeight.ExtraBold
+            fontWeight = FontWeight.Bold
         )
         Text(
             text = String.format(Locale.ROOT, "%02d.  %d.", date.monthValue, date.dayOfMonth),
             color = colors.text,
             fontSize = 21.sp,
-            fontWeight = FontWeight.ExtraBold
+            fontWeight = FontWeight.Bold
         )
     }
 }
@@ -496,7 +496,7 @@ private fun SourceFilterPill(
             Text(
                 text = label,
                 fontSize = 14.sp,
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -569,7 +569,7 @@ internal fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName
                     text = text.getString(NativeHealthRecords.title(row.type)),
                     color = colors.text,
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = FontWeight.Bold
                 )
             }
 
@@ -579,7 +579,7 @@ internal fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName
                     text = "${healthRecordNumber(NativeHealthRecords.number(data, "systolic"), language)} / ${healthRecordNumber(NativeHealthRecords.number(data, "diastolic"), language)} $unit",
                     color = colors.accentText,
                     fontSize = 28.sp,
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = FontWeight.Bold
                 )
             } else if (scalar != null) {
                 val heroText = if (row.type == "SleepSessionRecord" && data.has("durationMinutes")) {
@@ -591,7 +591,7 @@ internal fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName
                     text = heroText,
                     color = colors.accentText,
                     fontSize = 30.sp,
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = FontWeight.Bold
                 )
             } else if (count == 0) {
                 Text(
@@ -646,7 +646,7 @@ internal fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName
                             text = count.toString(),
                             color = colors.text,
                             fontSize = 18.sp,
-                            fontWeight = FontWeight.ExtraBold
+                            fontWeight = FontWeight.Bold
                         )
                         Icon(
                             imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,

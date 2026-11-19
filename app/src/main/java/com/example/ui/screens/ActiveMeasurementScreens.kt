@@ -288,7 +288,9 @@ fun ActiveStrengthWorkoutScreen(
     onNextExercise: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
     onSwitchExercise: (ExerciseItem) -> Unit = {},
     onOpenExerciseLibrary: () -> Unit = {},
-    exerciseFeedback: @Composable () -> Unit = {}
+    exerciseFeedback: @Composable () -> Unit = {},
+    onFinishWorkout: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
+    onDiscardWorkout: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val restMin = uiState.restTimerRemainingSec / 60
@@ -671,7 +673,7 @@ fun ActiveStrengthWorkoutScreen(
                                     Text(
                                         text = formattedRest,
                                         style = MaterialTheme.typography.headlineLarge.copy(fontFeatureSettings = "tnum"),
-                                        fontWeight = FontWeight.ExtraBold,
+                                        fontWeight = FontWeight.Bold,
                                         color = palette.textPrimary,
                                         maxLines = 1,
                                         softWrap = false
@@ -763,58 +765,20 @@ fun ActiveStrengthWorkoutScreen(
 
                 }
 
-                // Sticky < Előző | Következő > Navigation Row
-                val hasNextExercise = currentExerciseIdx + 1 < totalExercisesCount
-                val nextExName = workoutExercises.getOrNull(currentExerciseIdx + 1)?.localizedName(lang)
-                val prevWord = tr(lang, "Előző", "Previous", "Zurück", "Anterior")
-                val nextWord = tr(lang, "Következő", "Next", "Weiter", "Următorul")
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    TrainPilotOutlinedButton(
-                        onClick = onPreviousExercise,
-                        enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
-                        colors = WorkoutControlAppearance.secondaryColors(),
-                        border = WorkoutControlAppearance.secondaryBorder(),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 48.dp)
-                            .testTag("active_prev_exercise_btn")
-                    ) {
-                        Text(
-                            text = if (currentExerciseIdx > 0) "< $prevWord (${currentExerciseIdx}/$totalExercisesCount)" else "< $prevWord",
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-
-                    Button(
-                        onClick = onNextExercise,
-                        enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = palette.primary,
-                            contentColor = palette.onPrimary
-                        ),
-                        modifier = Modifier
-                            .weight(1.45f)
-                            .height(48.dp)
-                            .testTag("active_next_exercise_btn")
-                    ) {
-                        Text(
-                            text = if (hasNextExercise) {
-                                "$nextWord: ${nextExName ?: tr(lang, "${currentExerciseIdx + 2}. gyakorlat", "Exercise #${currentExerciseIdx + 2}", "${currentExerciseIdx + 2}. Übung", "Exercițiul #${currentExerciseIdx + 2}")} >"
-                            } else {
-                                tr(lang, "Edzés befejezése >", "Finish workout >", "Training beenden >", "Finalizare antrenament >")
-                            },
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
+                // 2772: ‹ Previous · ⏹ Finish · Next › (Finish = save & finish / discard / keep training).
+                com.example.ui.components.ActiveWorkoutBottomBar(
+                    language = uiState.language,
+                    enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
+                    hasNext = currentExerciseIdx + 1 < totalExercisesCount,
+                    completedSets = uiState.activeSetsByExerciseId.values.sumOf { sets -> sets.count { it.completed } },
+                    totalSets = uiState.activeSetsByExerciseId.values.sumOf { it.size },
+                    elapsedLabel = "",
+                    tagPrefix = "active",
+                    onPrevious = onPreviousExercise,
+                    onNext = onNextExercise,
+                    onFinish = onFinishWorkout,
+                    onDiscard = onDiscardWorkout
+                )
             }
         }
     }
@@ -866,7 +830,9 @@ fun ActiveTimedWorkoutScreen(
     onSwitchExercise: (ExerciseItem) -> Unit = {},
     onOpenExerciseLibrary: () -> Unit = {},
     exerciseFeedback: @Composable () -> Unit = {},
-    consumeIntervalStart: (com.repforge.app.NativeWorkoutTarget) -> Boolean = { false }
+    consumeIntervalStart: (com.repforge.app.NativeWorkoutTarget) -> Boolean = { false },
+    onFinishWorkout: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
+    onDiscardWorkout: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val workoutExercises = remember(uiState.activeWorkoutExercises, uiState.exercises) {
@@ -1364,49 +1330,21 @@ fun ActiveTimedWorkoutScreen(
                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
         ) {
             val lang = uiState.language
-            val hasNext = currentIdx + 1 < totalCount
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TrainPilotOutlinedButton(
-                    onClick = onPreviousExercise,
-                        enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
-                    colors = WorkoutControlAppearance.secondaryColors(),
-                    border = WorkoutControlAppearance.secondaryBorder(),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                ) {
-                    Text(tr(lang, "< Előző", "< Previous", "< Zurück", "< Anterior"), fontWeight = FontWeight.SemiBold)
-                }
-                Button(
-                    onClick = onNextExercise,
-                        enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = palette.primary,
-                        contentColor = palette.onPrimary
-                    ),
-                    modifier = Modifier.weight(1.3f).height(48.dp)
-                ) {
-                    Text(
-                        text = if (hasNext) {
-                            tr(
-                                lang,
-                                "Következő (${currentIdx + 2}/$totalCount) >",
-                                "Next (${currentIdx + 2}/$totalCount) >",
-                                "Weiter (${currentIdx + 2}/$totalCount) >",
-                                "Următorul (${currentIdx + 2}/$totalCount) >"
-                            )
-                        } else {
-                            tr(lang, "Edzés befejezése >", "Finish workout >", "Training beenden >", "Finalizare antrenament >")
-                        },
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+            // 2772: ‹ Previous · ⏹ Finish · Next › (Finish = save & finish / discard / keep training).
+            androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                com.example.ui.components.ActiveWorkoutBottomBar(
+                    language = uiState.language,
+                    enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
+                    hasNext = currentIdx + 1 < totalCount,
+                    completedSets = uiState.activeSetsByExerciseId.values.sumOf { sets -> sets.count { it.completed } },
+                    totalSets = uiState.activeSetsByExerciseId.values.sumOf { it.size },
+                    elapsedLabel = "",
+                    tagPrefix = "timed",
+                    onPrevious = onPreviousExercise,
+                    onNext = onNextExercise,
+                    onFinish = onFinishWorkout,
+                    onDiscard = onDiscardWorkout
+                )
             }
         }
     }
@@ -1435,7 +1373,9 @@ fun ActiveBilateralWorkoutScreen(
     onNextExercise: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
     onSwitchExercise: (com.example.model.ExerciseItem) -> Unit = {},
     onOpenExerciseLibrary: () -> Unit = {},
-    exerciseFeedback: @Composable () -> Unit = {}
+    exerciseFeedback: @Composable () -> Unit = {},
+    onFinishWorkout: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
+    onDiscardWorkout: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
 
@@ -2287,55 +2227,20 @@ fun ActiveBilateralWorkoutScreen(
 
                 }
 
-                val hasNextExercise = uiState.activeExerciseIndex + 1 < workoutExercises.size
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TrainPilotOutlinedButton(
-                        onClick = onPreviousExercise,
-                        enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
-                        colors = WorkoutControlAppearance.secondaryColors(),
-                        border = WorkoutControlAppearance.secondaryBorder(),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 48.dp)
-                            .testTag("bilateral_prev_exercise_btn")
-                    ) {
-                        Text(tr(lang, "< Előző", "< Previous", "< Zurück", "< Anterior"), fontWeight = FontWeight.SemiBold)
-                    }
-                    Button(
-                        onClick = onNextExercise,
-                        enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = palette.primary,
-                            contentColor = palette.onPrimary
-                        ),
-                        modifier = Modifier
-                            .weight(1.3f)
-                            .height(48.dp)
-                            .testTag("bilateral_next_exercise_btn")
-                    ) {
-                        Text(
-                            text = if (hasNextExercise) {
-                                tr(
-                                    lang,
-                                    "Következő (${uiState.activeExerciseIndex + 2}/${workoutExercises.size}) >",
-                                    "Next (${uiState.activeExerciseIndex + 2}/${workoutExercises.size}) >",
-                                    "Weiter (${uiState.activeExerciseIndex + 2}/${workoutExercises.size}) >",
-                                    "Următorul (${uiState.activeExerciseIndex + 2}/${workoutExercises.size}) >"
-                                )
-                            } else {
-                                tr(lang, "Edzés befejezése ✓", "Finish workout ✓", "Training beenden ✓", "Finalizare antrenament ✓")
-                            },
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1
-                        )
-                    }
-                }
+                // 2772: ‹ Previous · ⏹ Finish · Next › (Finish = save & finish / discard / keep training).
+                com.example.ui.components.ActiveWorkoutBottomBar(
+                    language = uiState.language,
+                    enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
+                    hasNext = uiState.activeExerciseIndex + 1 < workoutExercises.size,
+                    completedSets = uiState.activeSetsByExerciseId.values.sumOf { sets -> sets.count { it.completed } },
+                    totalSets = uiState.activeSetsByExerciseId.values.sumOf { it.size },
+                    elapsedLabel = "",
+                    tagPrefix = "bilateral",
+                    onPrevious = onPreviousExercise,
+                    onNext = onNextExercise,
+                    onFinish = onFinishWorkout,
+                    onDiscard = onDiscardWorkout
+                )
             }
         }
     }
