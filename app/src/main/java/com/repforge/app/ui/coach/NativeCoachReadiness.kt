@@ -63,10 +63,9 @@ internal object NativeCoachReadiness {
         val energy = if (externalEnergyAvailable) validEnergy(externalEnergy, now, zone)
             else validEnergy(daily, now, zone) ?: validEnergy(recovery, now, zone)
         var score = energy?.first ?: ownScore?.toDouble()
-        if (energy != null && score != null) {
-            if (pain || loadParts > 0 && load < 55) score = minOf(score, 54.0)
-            else if (loadParts > 0 && load < 70) score = minOf(score, 74.0)
-        }
+        // 2779: with Samsung the final value is the Samsung Energy score itself (without it: the own
+        // estimate, which already contains the recent load). Only a pain report still caps it.
+        if (energy != null && score != null && pain) score = minOf(score, 54.0)
         return Result(score, ownScore, energy?.first, energy?.second, energy?.third, sleep, hrv, baseline,
             if (loadParts > 0) load else null, parts, pain)
     }

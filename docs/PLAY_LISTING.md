@@ -1,4 +1,4 @@
-# Play Console – áruházi adatlap (tervezet, 2778 · 1.3.8 alapján)
+# Play Console – áruházi adatlap (tervezet, 2779 · 1.3.9 alapján)
 
 Csak meglévő, az appban működő funkciók. Egészségügyi állítás nincs.
 
@@ -60,23 +60,23 @@ TrainPilot: workout planner and training log for your phone and Wear OS watch.
 • GPS routes and photos in private storage; health data is only included in backups with explicit consent
 • Multiple light and dark themes; Hungarian, English, German and Romanian
 
-## Újdonságok (Play: 276500/276502 óta → 1.3.8, ≤500 karakter)
+## Újdonságok (Play: 276500/276502 óta → 1.3.9, ≤500 karakter)
 HU:
-• Edzés közben: egységes fejléc, gyakorlatsor, Videó · Coach · Részletek, pihenő minden gyakorlatnál, kész sorozat zöld, legutóbbi érték
-• Tervezett nap dátuma, mai edzés éjfélig
+• Edzés közben: egységes fejléc, Videó · Coach · Részletek, pihenő minden gyakorlatnál, legutóbbi érték
+• Edzés fül: minden programnap dátummal, egy képernyőn
 • Gyors edzés 1 lapon, Gyakorlatlista
-• Programok: kompakt kártyák, beépített szerkesztő, húzható sorrend
-• Egészségnapló: tömör napi nézet, szűrők; naptár húzással
-• Dizájn: alulról nyíló lapok, új Coach ikon, világos témák
-• Óra: kerek kijelzőre igazított menük és gombok
-• Javítás: Health Connect, lapfagyás
+• Programok: kompakt kártyák, beépített szerkesztő
+• Fejlődés: PR rekordok, teljes listák; Statisztikák: Erő · Kardió · Lépések
+• Egészségnapló: tömör napi nézet, szűrők
+• Óra: kerek kijelzőre igazított menük
+• Javítás: Otthoni A/B, villogó Coach kártya, Health Connect
 
 EN:
-• During workouts: one header, exercise strip, Video · Coach · Details, rest for every exercise, done sets green, last-time values
-• Planned day's date, today stays till midnight
+• During workouts: one header, Video · Coach · Details, rest for every exercise, last-time values
+• Workout tab: every program day with its date, on one screen
 • Quick workout in one sheet, Exercise list
-• Programs: compact cards, inline editor, drag to reorder
-• Health journal: compact day view, filters; swipe calendar
-• Design: bottom sheets, new Coach icon, light themes
-• Watch: menus and buttons fit the round screen
-• Fixes: Health Connect, sheet freeze
+• Programs: compact cards, inline editor
+• Progress: PR records, full lists; Statistics: Strength · Cardio · Steps
+• Health journal: compact day view, filters
+• Watch: menus fit the round screen
+• Fixes: Home A/B, flickering Coach card, Health Connect

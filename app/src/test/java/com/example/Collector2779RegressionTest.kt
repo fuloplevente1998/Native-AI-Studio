@@ -76,4 +76,19 @@ class Collector2779RegressionTest {
         val quickSheet = main.substringAfter("if (uiState.showQuickWorkoutSheet)").substringBefore("onRemoveExerciseFromQueue")
         assertFalse(quickSheet.contains("addExerciseToActiveProgramDay"))
     }
+
+    @Test fun finalCoachValueIsTheSamsungScoreAndOnlyPainCapsIt() {
+        val now = java.time.Instant.parse("2026-11-03T10:00:00Z")
+        val energy = JSONObject().put("energyScore", 86).put("energyScoreSource", "samsung_health")
+            .put("energyScoreTime", "2026-11-03T09:00:00Z").put("day", "2026-11-03")
+        fun workout(effort: String) = JSONObject().put("started", "2026-11-03T07:00:00Z").put("finished", "2026-11-03T08:00:00Z")
+            .put("exercises", JSONArray().put(JSONObject().put("effort", effort)).put(JSONObject().put("effort", effort)))
+        val hard = com.repforge.app.ui.coach.NativeCoachReadiness.calculate(JSONObject(), energy,
+            listOf(workout("hard"), workout("hard"), workout("hard")), now, java.time.ZoneOffset.UTC)
+        assertEquals(86.0, requireNotNull(hard.score), 0.0)
+        assertEquals(hard.samsungScore, hard.score)
+        val noSamsung = com.repforge.app.ui.coach.NativeCoachReadiness.calculate(JSONObject(), JSONObject(),
+            listOf(workout("hard")), now, java.time.ZoneOffset.UTC)
+        assertEquals(noSamsung.trainpilotScore?.toDouble(), noSamsung.score)
+    }
 }

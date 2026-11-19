@@ -2080,7 +2080,7 @@ internal fun CoachDetailScreen(
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
-                                text = tr(uiState.language, "3. Terheléssel korlátozott végső Coach készenlét", "3. Load-Adjusted Final Coach Readiness", "3. Belastungsbereinigte Coach-Bereitschaft", "3. Pregătire finală Coach ajustată la sarcină"),
+                                text = tr(uiState.language, "3. Végső Coach készenlét", "3. Final Coach Readiness", "3. Finale Coach-Bereitschaft", "3. Pregătire finală Coach"),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.primary
@@ -2147,7 +2147,7 @@ internal fun CoachDetailScreen(
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
-                                Text(tr(uiState.language, "3. Terheléshez igazítva", "3. Load-Adjusted", "3. Mit Belastung", "3. Cu sarcină"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(tr(uiState.language, "3. Samsung / saját", "3. Samsung / own", "3. Samsung / eigen", "3. Samsung / propriu"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Text(
                                     text = if (hasScore) "$displayScore / 100" else "—",
                                     style = MaterialTheme.typography.titleMedium,
