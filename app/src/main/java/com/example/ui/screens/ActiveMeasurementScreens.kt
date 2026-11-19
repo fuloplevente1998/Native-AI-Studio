@@ -440,183 +440,10 @@ fun ActiveStrengthWorkoutScreen(
                     .padding(horizontal = 14.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                if (com.repforge.app.StudioRestTimer.visible(uiState)) {
-                val progress = (uiState.restTimerRemainingSec.toFloat() / uiState.defaultRestSec.coerceAtLeast(1)).coerceIn(0f, 1f)
-                if (!isRestTimerLargeMode) {
-                    // COMPACT FLAT STICKY REST TIMER BAR
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = palette.surfaceCard,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .trainPilotBorder(
-                                width = 1.dp,
-                                color = if (uiState.restTimerRunning) palette.primary else palette.cardBorder,
-                                shape = RoundedCornerShape(14.dp)
-                            )
-                            .trainPilotClickable(RoundedCornerShape(14.dp)) { restTimerManualOverride = true }
-                            .testTag("sticky_rest_timer_compact")
-                    ) {
-                        com.example.ui.components.StudioCompactRestControls(
-                            language = lang, remainingSec = uiState.restTimerRemainingSec,
-                            running = uiState.restTimerRunning,
-                            enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending,
-                            onAdjust = onAdjustRestTimer, onToggle = onToggleRestRunning,
-                            onSkip = onSkipRest, onExpand = { restTimerManualOverride = true },
-                            modifier = Modifier.padding(start = 8.dp, end = 0.dp, top = 2.dp, bottom = 2.dp))
-                    }
-                } else {
-                    // LARGE EXPANDED STICKY REST TIMER CARD (shown when scrolled down or expanded)
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = palette.surfaceCard,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .trainPilotBorder(0.5.dp, palette.primary.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
-                            .testTag("sticky_rest_timer_large")
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Timer,
-                                            contentDescription = null,
-                                            tint = palette.primary,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Text(
-                                            text = tr(lang, "Pihenőidő (Nagy mód)", "Rest timer (Expanded)", "Pausenzeit (Groß)", "Timp de pauză (Extins)"),
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = palette.primary,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = palette.surfaceElevated,
-                                            modifier = Modifier
-                                                .trainPilotClickable(RoundedCornerShape(8.dp)) { restTimerManualOverride = false }
-                                        ) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                            ) {
-                                                Text(
-                                                    text = tr(lang, "Lapos mód", "Compact mode", "Kompaktmodus", "Mod compact"),
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = palette.textSecondary
-                                                )
-                                                Icon(
-                                                    imageVector = Icons.Default.ExpandMore,
-                                                    contentDescription = tr(lang, "Kis lapos mód", "Compact rest timer", "Kompakter Pausenmodus", "Mod pauză compact"),
-                                                    tint = palette.textSecondary,
-                                                    modifier = Modifier.size(14.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = formattedRest,
-                                        style = MaterialTheme.typography.headlineLarge.copy(fontFeatureSettings = "tnum"),
-                                        fontWeight = FontWeight.Bold,
-                                        color = palette.textPrimary,
-                                        maxLines = 1,
-                                        softWrap = false
-                                    )
-                                    Text(
-                                        text = if (uiState.restTimerRunning) {
-                                            tr(lang, "Visszaszámlálás fut • Rezgés a végén", "Countdown running • Vibrates at end", "Countdown läuft • Vibration am Ende", "Numărătoare inversă • Vibrație la final")
-                                        } else {
-                                            tr(lang, "Koppints a körre vagy az Indításra", "Tap the ring or Start", "Tippe auf den Kreis oder Start", "Atinge inelul sau Start")
-                                        },
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = palette.textSecondary
-                                    )
-                                }
-
-                                Box(
-                                    modifier = Modifier
-                                        .size(58.dp)
-                                        .trainPilotClickable(CircleShape, enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending) { onToggleRestRunning() },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    val ringColor = palette.primary
-                                    val trackColor = palette.surfaceElevated
-                                    Canvas(modifier = Modifier.size(54.dp)) {
-                                        drawArc(
-                                            color = trackColor,
-                                            startAngle = 0f,
-                                            sweepAngle = 360f,
-                                            useCenter = false,
-                                            style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round)
-                                        )
-                                        drawArc(
-                                            color = ringColor,
-                                            startAngle = -90f,
-                                            sweepAngle = 360f * progress,
-                                            useCenter = false,
-                                            style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round)
-                                        )
-                                    }
-                                    Icon(
-                                        imageVector = if (uiState.restTimerRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                        contentDescription = null,
-                                        tint = palette.primary,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                TrainPilotOutlinedButton(
-                                    onClick = { onAdjustRestTimer(-15) },
-                                    enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending,
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.weight(1f).height(40.dp),
-                                    contentPadding = PaddingValues(0.dp)
-                                ) {
-                                    Text("-15 $secWord", color = palette.textPrimary, fontWeight = FontWeight.Bold)
-                                }
-                                TrainPilotOutlinedButton(
-                                    onClick = { onAdjustRestTimer(15) },
-                                    enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending,
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.weight(1f).height(40.dp),
-                                    contentPadding = PaddingValues(0.dp)
-                                ) {
-                                    Text("+15 $secWord", color = palette.textPrimary, fontWeight = FontWeight.Bold)
-                                }
-                                Button(
-                                    onClick = onSkipRest,
-                                    enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending,
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = palette.primary,
-                                        contentColor = palette.onPrimary
-                                    ),
-                                    modifier = Modifier.weight(1.2f).height(40.dp),
-                                    contentPadding = PaddingValues(0.dp)
-                                ) {
-                                    Text(strings.skipAction, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                }
+                // 2778: shared rest dock (same component on every measurement screen).
+                com.example.ui.components.StudioRestTimerDock(uiState, isRestTimerLargeMode,
+                    onLarge = { restTimerManualOverride = it }, onAdjust = onAdjustRestTimer,
+                    onToggle = onToggleRestRunning, onSkip = onSkipRest, skipLabel = strings.skipAction)
 
                 // 2772: ‹ Previous · ⏹ Finish · Next › (Finish = save & finish / discard / keep training).
                 com.example.ui.components.ActiveWorkoutBottomBar(
@@ -683,6 +510,9 @@ fun ActiveTimedWorkoutScreen(
     onSwitchExercise: (ExerciseItem) -> Unit = {},
     onOpenExerciseLibrary: () -> Unit = {},
     onOpenExerciseDetail: (String) -> Unit = {},
+    onAdjustRestTimer: (Int) -> Unit = {},
+    onToggleRestRunning: () -> Unit = {},
+    onSkipRest: () -> Unit = {},
     exerciseFeedback: @Composable () -> Unit = {},
     consumeIntervalStart: (com.repforge.app.NativeWorkoutTarget) -> Boolean = { false },
     onFinishWorkout: () -> Unit = { onSelectMeasurementMode(SubScreen.WORKOUT_SUMMARY) },
@@ -699,6 +529,9 @@ fun ActiveTimedWorkoutScreen(
         ?: uiState.exercises.firstOrNull { it.isTimed }
     val exerciseNameHu = currentExercise?.localizedName(uiState.language) ?: "Plank"
     val coachOwner = com.example.ui.components.rememberStudioWorkoutCoachOwner()
+    // 2778: rest timer on the timed screen too (same countdown + dock as the strength screen).
+    StudioRestCountdown(uiState, onAdjustRestTimer)
+    var restTimerLargeMode by remember(com.repforge.app.StudioRestTimer.visible(uiState)) { mutableStateOf(false) }
     val defaultTargetSec = (currentExercise?.targetSeconds ?: 45).coerceAtLeast(15)
 
     val nativeModel: com.repforge.app.ui.workout.ActiveWorkoutViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
@@ -1095,7 +928,10 @@ fun ActiveTimedWorkoutScreen(
         ) {
             val lang = uiState.language
             // 2772: ‹ Previous · ⏹ Finish · Next › (Finish = save & finish / discard / keep training).
-            androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                com.example.ui.components.StudioRestTimerDock(uiState, restTimerLargeMode,
+                    onLarge = { restTimerLargeMode = it }, onAdjust = onAdjustRestTimer,
+                    onToggle = onToggleRestRunning, onSkip = onSkipRest, skipLabel = strings.skipAction)
                 com.example.ui.components.ActiveWorkoutBottomBar(
                     language = uiState.language,
                     enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending && !uiState.isSavingWorkout,
@@ -1828,52 +1664,10 @@ fun ActiveBilateralWorkoutScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                // Sticky compact/expandable Rest Timer strip
-                if (com.repforge.app.StudioRestTimer.visible(uiState)) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = palette.surfaceCard,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .trainPilotBorder(
-                            1.dp,
-                            if (uiState.restTimerRunning) palette.primary else palette.cardBorder,
-                            RoundedCornerShape(12.dp)
-                        )
-                        .pointerInput(Unit) {
-                            detectVerticalDragGestures { _, dragAmount ->
-                                if (dragAmount > 12f) restTimerLargeMode = true
-                                else if (dragAmount < -12f) restTimerLargeMode = false
-                            }
-                        }
-                        .trainPilotClickable(RoundedCornerShape(12.dp)) { restTimerLargeMode = !restTimerLargeMode }
-                ) {
-                    Column(modifier = Modifier.padding(start = 8.dp, end = 0.dp, top = 2.dp, bottom = 2.dp)) {
-                        com.example.ui.components.StudioCompactRestControls(
-                            language = lang, remainingSec = uiState.restTimerRemainingSec,
-                            running = uiState.restTimerRunning,
-                            enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending,
-                            onAdjust = onAdjustRestTimer, onToggle = onToggleRestRunning,
-                            onSkip = onSkipRest, onExpand = { restTimerLargeMode = !restTimerLargeMode },
-                            showSkip = uiState.restTimerRunning || uiState.restTimerRemainingSec < uiState.defaultRestSec)
-                        if (restTimerLargeMode) {
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = tr(
-                                    lang,
-                                    "Húzd felfelé a kompakt módhoz • Mindkét oldal rögzítése után a pihenő automatikusan elindul.",
-                                    "Swipe up for compact mode • Rest timer starts automatically after both sides are recorded.",
-                                    "Nach oben wischen für Kompaktmodus • Pause startet automatisch nach Erfassung beider Seiten.",
-                                    "Glisează în sus pentru modul compact • Pauza pornește automat după înregistrarea ambelor părți."
-                                ),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = palette.textSecondary
-                            )
-                        }
-                    }
-                }
-
-                }
+                // 2778: same rest dock as the strength screen (compact <-> large card), not a hint line.
+                com.example.ui.components.StudioRestTimerDock(uiState, restTimerLargeMode,
+                    onLarge = { restTimerLargeMode = it }, onAdjust = onAdjustRestTimer,
+                    onToggle = onToggleRestRunning, onSkip = onSkipRest, skipLabel = strings.skipAction)
 
                 // 2772: ‹ Previous · ⏹ Finish · Next › (Finish = save & finish / discard / keep training).
                 com.example.ui.components.ActiveWorkoutBottomBar(
@@ -1910,7 +1704,10 @@ fun ActiveOutdoorGpsScreen(
     onUpdateOutdoorMetrics: (String, Float, String) -> Unit = { _, _, _ -> },
     onSelectOutdoorActivity: (String) -> Unit = {},
     onStartGpsTracking: (String, String) -> Boolean = { _, _ -> false },
-    onPauseMeasurement: (Boolean) -> Boolean = { false }
+    onPauseMeasurement: (Boolean) -> Boolean = { false },
+    onAdjustRestTimer: (Int) -> Unit = {},
+    onToggleRestRunning: () -> Unit = {},
+    onSkipRest: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val context = LocalContext.current
@@ -2391,7 +2188,29 @@ fun ActiveOutdoorGpsScreen(
             showZoomControls = mapPadding.calculateTopPadding() > 0.dp,
             mapContentPadding = mapPadding)
     }
-    OutdoorGpsDashboard(display, strings, actions, mapContent = routeMap)
+    // 2778: rest is optional on continuous distance workouts: a "Pihenő" chip shows the shared rest dock.
+    var restShown by androidx.compose.runtime.saveable.rememberSaveable(uiState.activeWorkoutId) {
+        mutableStateOf(com.repforge.app.StudioRestTimer.visible(uiState) && uiState.restTimerRunning)
+    }
+    var restLarge by remember { mutableStateOf(false) }
+    if (restShown) StudioRestCountdown(uiState, onAdjustRestTimer)
+    val restSlot: @Composable () -> Unit = {
+        if (restShown) com.example.ui.components.StudioRestTimerDock(uiState, restLarge, onLarge = { restLarge = it },
+            onAdjust = onAdjustRestTimer, onToggle = onToggleRestRunning, onSkip = onSkipRest, skipLabel = strings.skipAction)
+        com.repforge.app.ui.theme.TrainPilotOutlinedButton(onClick = {
+                // Showing loads the default rest (paused) so the dock has something to start.
+                if (!restShown && uiState.restTimerRemainingSec == 0) onAdjustRestTimer(uiState.defaultRestSec)
+                restShown = !restShown
+            },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("outdoor_rest_toggle"),
+            shape = RoundedCornerShape(14.dp)) {
+            Icon(Icons.Default.Timer, null, tint = palette.primary, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(if (restShown) tr(uiState.language, "Pihenő elrejtése", "Hide rest", "Pause ausblenden", "Ascunde pauza")
+                else tr(uiState.language, "Pihenő", "Rest", "Pause", "Pauză"), color = palette.textPrimary)
+        }
+    }
+    OutdoorGpsDashboard(display, strings, actions, restSlot = restSlot, mapContent = routeMap)
     if (isFullscreenMapOpen) {
         OutdoorGpsFullscreenDialog(
             state = display,

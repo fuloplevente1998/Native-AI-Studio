@@ -176,6 +176,8 @@ internal fun OutdoorGpsDashboard(
     actions: OutdoorGpsActions,
     modifier: Modifier = Modifier,
     fullscreen: Boolean = false,
+    /** 2778: optional rest timer (off by default for continuous distance workouts). */
+    restSlot: @Composable () -> Unit = {},
     mapContent: @Composable (Modifier) -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
@@ -249,6 +251,7 @@ internal fun OutdoorGpsDashboard(
                     if (state.error.isNotBlank()) Text(state.error, color = palette.danger,
                         style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("outdoor_finish_error"))
             }
+            restSlot()
             DashboardControls(state, strings, actions)
         }
     }
