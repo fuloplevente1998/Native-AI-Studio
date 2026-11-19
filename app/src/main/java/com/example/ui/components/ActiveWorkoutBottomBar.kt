@@ -53,7 +53,6 @@ fun ActiveWorkoutBottomBar(
 ) {
     val palette = LocalTrainPilotPalette.current
     var showFinish by rememberSaveable { mutableStateOf(false) }
-    var confirmDiscard by rememberSaveable { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         TrainPilotOutlinedButton(
             onClick = onPrevious, enabled = enabled,
@@ -77,7 +76,27 @@ fun ActiveWorkoutBottomBar(
                 fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
-    if (showFinish) TrainPilotScreenSheet(onDismiss = { showFinish = false }, testTag = "${tagPrefix}_finish_sheet") {
+    if (showFinish) WorkoutFinishSheet(language, enabled, completedSets, totalSets, elapsedLabel, tagPrefix,
+        onFinish = onFinish, onDiscard = onDiscard, onDismiss = { showFinish = false })
+}
+
+
+/** Shared finish sheet: save & finish (summary) / discard after confirmation / keep training. */
+@Composable
+fun WorkoutFinishSheet(
+    language: AppLanguage,
+    enabled: Boolean,
+    completedSets: Int,
+    totalSets: Int,
+    elapsedLabel: String,
+    tagPrefix: String,
+    onFinish: () -> Unit,
+    onDiscard: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val palette = LocalTrainPilotPalette.current
+    var confirmDiscard by rememberSaveable { mutableStateOf(false) }
+    TrainPilotScreenSheet(onDismiss = onDismiss, testTag = "${tagPrefix}_finish_sheet") {
         Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(bb(language, "Edzés befejezése", "Finish workout", "Training beenden", "Finalizare antrenament"),
                 style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
@@ -85,14 +104,14 @@ fun ActiveWorkoutBottomBar(
                 "$completedSets / $totalSets Sätze erledigt", "$completedSets / $totalSets serii gata"),
                 style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
             com.repforge.app.ui.theme.TrainPilotSaveButton(
-                onClick = { showFinish = false; onFinish() }, enabled = enabled,
+                onClick = { onDismiss(); onFinish() }, enabled = enabled,
                 modifier = Modifier.fillMaxWidth().testTag("${tagPrefix}_finish_save")
             ) { Text(bb(language, "✓ Mentés és befejezés", "✓ Save and finish", "✓ Speichern und beenden", "✓ Salvează și încheie"), fontWeight = FontWeight.Bold) }
             com.repforge.app.ui.theme.TrainPilotActionButton(positive = false,
                 onClick = { confirmDiscard = true }, enabled = enabled,
                 modifier = Modifier.fillMaxWidth().testTag("${tagPrefix}_finish_discard")
             ) { Text(bb(language, "✕ Elvetés", "✕ Discard", "✕ Verwerfen", "✕ Renunță"), fontWeight = FontWeight.Bold) }
-            TrainPilotOutlinedButton(onClick = { showFinish = false },
+            TrainPilotOutlinedButton(onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("${tagPrefix}_finish_continue")
             ) { Text(bb(language, "Folytatom az edzést", "Keep training", "Weiter trainieren", "Continui antrenamentul")) }
         }
@@ -104,7 +123,7 @@ fun ActiveWorkoutBottomBar(
             "Dieses Training wird nicht gespeichert. Das kann nicht rückgängig gemacht werden.", "Antrenamentul nu va fi salvat. Nu se poate anula.")) },
         confirmButton = {
             com.repforge.app.ui.theme.TrainPilotActionButton(positive = false,
-                onClick = { confirmDiscard = false; showFinish = false; onDiscard() },
+                onClick = { confirmDiscard = false; onDismiss(); onDiscard() },
                 modifier = Modifier.testTag("${tagPrefix}_discard_confirm")
             ) { Text(bb(language, "Elvetés", "Discard", "Verwerfen", "Renunță"), fontWeight = FontWeight.Bold) }
         },

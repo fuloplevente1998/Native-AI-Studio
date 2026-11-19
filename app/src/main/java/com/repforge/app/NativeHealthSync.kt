@@ -38,6 +38,8 @@ internal object NativeHealthSync {
         suspend fun dirtyDays(): Set<LocalDate>
         suspend fun attempt(at: Instant)
         suspend fun commit(expected: Checkpoint, next: Checkpoint, full: Boolean, at: Instant)
+        /** Days were read completely without a usable change feed: record the sync time only (no token). */
+        suspend fun dataSynced(at: Instant) {}
     }
 
     fun recentDays(today: LocalDate, count: Int): List<LocalDate> {
@@ -154,6 +156,7 @@ internal object NativeHealthSync {
         provider.requireIdentity() // Permission IPC outside the local publication lease.
         // A snapshot cannot acknowledge unseen deletes/older changes from a broken change feed.
         if (failures.isEmpty() && !changeTrackingUnavailable) journal.commit(old, Checkpoint(scope, candidate, true), full, now())
+        else if (failures.isEmpty()) journal.dataSynced(now()) // 2774: data is current; the token stays unset.
         progress(Progress(Stage.COMPLETE, completed.size, completed.size + failures.size, pages))
         return Report(full, completed.size, failures.toList(), failures.any { it in transientDays }, changeTrackingUnavailable)
     }

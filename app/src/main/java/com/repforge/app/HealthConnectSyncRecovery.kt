@@ -20,11 +20,15 @@ internal object HealthConnectSyncRecovery {
         return matched
     }
 
+    /**
+     * 2774: the phone's Health Connect change log is broken (system schema bug), so the app reads
+     * the days directly. That read is a successful sync; this is an informational note, not an error.
+     */
     fun limitedMessage(language: String): String = when (language.lowercase(java.util.Locale.ROOT)) {
-        "en" -> "Limited sync: daily data was read, but Health Connect change tracking is unavailable. Check for system and Health Connect updates; then sync again."
-        "de" -> "Eingeschränkte Synchronisierung: Tagesdaten wurden gelesen, die Änderungsverfolgung von Health Connect ist nicht verfügbar. System- und Health-Connect-Updates prüfen und erneut synchronisieren."
-        "ro" -> "Sincronizare limitată: datele zilnice au fost citite, dar urmărirea modificărilor Health Connect nu este disponibilă. Verifică actualizările de sistem și Health Connect, apoi sincronizează din nou."
-        else -> "Korlátozott szinkron: a napi adatok olvasása megtörtént, de a Health Connect változáskövetése nem érhető el. Ellenőrizd a rendszer és a Health Connect frissítéseit, majd szinkronizálj újra."
+        "en" -> "Synced by reading days directly. Health Connect change tracking does not work on this phone; updating Health Connect in the Play Store may fix it."
+        "de" -> "Durch direktes Lesen der Tage synchronisiert. Die Änderungsverfolgung von Health Connect funktioniert auf diesem Telefon nicht; ein Health-Connect-Update im Play Store kann helfen."
+        "ro" -> "Sincronizat prin citirea directă a zilelor. Urmărirea modificărilor Health Connect nu funcționează pe acest telefon; actualizarea Health Connect din Play Store poate ajuta."
+        else -> "Szinkron kész a napok közvetlen olvasásával. A Health Connect változáskövetése ezen a telefonon nem működik; a Health Connect frissítése a Play Áruházban segíthet."
     }
 
     fun failureMessage(error: Throwable, language: String): String = when (language.lowercase(java.util.Locale.ROOT)) {

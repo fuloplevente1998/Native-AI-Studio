@@ -20,7 +20,8 @@ internal object NativeHealthProviderBatch {
             return JSONObject().put("partial", !successful)
             .put("failed", failed).put("message", outcomes.joinToString(" • ") { row ->
                 NativeWorkoutHealthSource.label(row.provider) + ": " + when (row.status) {
-                    Status.SUCCESS -> tr("sikeres szinkron", "sync completed", "Synchronisierung abgeschlossen", "sincronizare finalizată")
+                    Status.SUCCESS -> if (row.changeTrackingUnavailable) HealthConnectSyncRecovery.limitedMessage(language)
+                        else tr("sikeres szinkron", "sync completed", "Synchronisierung abgeschlossen", "sincronizare finalizată")
                     Status.PARTIAL -> if (row.changeTrackingUnavailable) HealthConnectSyncRecovery.limitedMessage(language) else tr("részleges szinkron; ellenőrizd az engedélyeket és a forrás hibáit", "partial sync; check permissions and source errors", "teilweise synchronisiert; Berechtigungen und Quellfehler prüfen", "sincronizare parțială; verifică permisiunile și erorile sursei")
                     Status.UNAVAILABLE -> tr("nem elérhető vagy hiányzó olvasási engedély", "unavailable or missing read permission", "nicht verfügbar oder Leseberechtigung fehlt", "indisponibil sau fără permisiune de citire")
                     Status.FAILED -> tr("sikertelen", "failed", "fehlgeschlagen", "eșuat")

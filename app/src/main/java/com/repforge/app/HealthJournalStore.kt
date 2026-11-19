@@ -788,6 +788,16 @@ internal class HealthJournalStore(context: Context) :
         }
     }
 
+    /** 2774: a complete day read without a change token still counts as the provider's last sync. */
+    internal fun nativeSyncDataOnly(provider: String, expectedGeneration: Long, at: String) {
+        transaction { db ->
+            writable(db, expectedGeneration)
+            putMeta(db, "lastSyncAt", at)
+            putMeta(db, "lastSyncAt_$provider", at)
+            null
+        }
+    }
+
     internal fun nativeSyncAttempt(expectedGeneration: Long, at: String) {
         transaction { db ->
             writable(db, expectedGeneration)
