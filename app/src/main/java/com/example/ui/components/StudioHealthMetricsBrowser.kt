@@ -1,6 +1,8 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
@@ -34,6 +36,7 @@ import java.time.LocalDate
 import java.util.Locale
 
 /** One read-only, paged journal. A day header and its details share one admitted projection. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 internal fun StudioHealthMetricsBrowser(
     initialProvider: String,
@@ -139,51 +142,74 @@ internal fun StudioHealthMetricsBrowser(
                             contentDescription = label("Napi részletek", "Day details", "Tagesdetails", "Detalii zilnice"), tint = palette.primary)
                     }
                     val sleep = NativeHealthJournal.sleepMinutes(raw, provider, date)
-                    val summary = listOf(Triple("sleep", label("Alvás", "Sleep", "Schlaf", "Somn"), sleep?.let { "${it.toInt()} min" } ?: "—")) +
-                        listOf("steps", "activeCalories", "averageHeartRate").map { key ->
-                            val metric = metrics.first { it.key == key }
-                            Triple(key, metric.label, if (metric.isAvailable) "${metric.valueText} ${metric.unit}".trim() else "—")
+                    val sleepText = sleep?.let { m -> val t = m.toInt(); if (t >= 60) "${t / 60} ${label("ó", "h", "Std.", "h")} ${t % 60} ${label("p", "m", "Min.", "m")}" else "$t min" }
+                    val available = metrics.filter { metric -> metric.isAvailable &&
+                        NativeDetailedHealthMetrics.status(raw, metric.key, provider, date) == NativeDetailedHealthMetrics.Status.AVAILABLE }
+                    if (!expanded) {
+                        // 2776: a closed day is one summary line; values keep their own tags.
+                        val steps = metrics.first { it.key == "steps" }
+                        val line = buildList {
+                            add(Triple("steps", if (steps.isAvailable) steps.valueText else "—", steps.unit.ifBlank { steps.label }))
+                            sleepText?.let { add(Triple("sleep", it, label("alvás", "sleep", "Schlaf", "somn"))) }
+                            listOf("activeCalories", "averageHeartRate").forEach { key -> metrics.first { it.key == key }.takeIf { it.isAvailable }
+                                ?.let { add(Triple(key, it.valueText, it.unit)) } }
                         }
-                    // Two columns keep the existing compact boxed journal readable with larger text.
-                    summary.chunked(2).forEach { cells ->
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            cells.forEach { (metricKey, title, value) ->
-                                Surface(shape = RoundedCornerShape(10.dp), color = palette.surfaceCard, modifier = Modifier.weight(1f)) {
-                                    Column(Modifier.padding(8.dp)) {
-                                        Text(title, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                                        Text(value, color = palette.textPrimary, fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.testTag("journal_summary_${date}_$metricKey"))
-                                    }
-                                }
+                        androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth().testTag("journal_day_line_$date"),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            line.forEachIndexed { index, (metricKey, value, unit) ->
+                                if (index > 0) Text("·", color = palette.textSecondary, style = MaterialTheme.typography.labelMedium)
+                                Text(value, color = palette.textPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium,
+                                    modifier = Modifier.testTag("journal_summary_${date}_$metricKey"))
+                                if (unit.isNotBlank()) Text(unit, color = palette.textSecondary, style = MaterialTheme.typography.labelMedium)
                             }
                         }
-                    }
-                    if (expanded) {
-                        Text(label("Elérhető napi mérések", "Available daily measurements",
-                            "Verfügbare Tagesmessungen", "Măsurători zilnice disponibile"), color = palette.primary)
+                    } else {
                         if (raw?.optBoolean("partial") == true) Text(label("Részleges adat / újraolvasás szükséges", "Partial data / reload required",
                             "Teilweise Daten / neu laden erforderlich", "Date parțiale / reîncărcare necesară"), color = palette.textSecondary)
-                        metrics.filter { metric -> metric.isAvailable &&
-                            NativeDetailedHealthMetrics.status(raw, metric.key, provider, date) == NativeDetailedHealthMetrics.Status.AVAILABLE
-                        }.forEach { metric ->
-                            HorizontalDivider(color = palette.cardBorder)
-                            TextButton(onClick = { type = NativeDetailedHealthMetrics.recordType(metric.key) },
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_metric_${date}_${metric.key}")) {
-                                Column(Modifier.weight(1f)) {
-                                    Text(metric.label, color = palette.textPrimary)
-                                    val description = listOfNotNull(NativeWorkoutHealthSource.label(provider),
-                                        NativeDetailedHealthMetrics.origin(raw, metric.key),
-                                        NativeDetailedHealthMetrics.timestamp(raw, metric.key), date.toString()).distinct().joinToString(" · ")
-                                    Text(description, color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
+                        // 2776: one 3-column grid instead of 4 tiles + a repeated list; a tile filters the records below.
+                        val tiles = buildList {
+                            sleepText?.let { add(Triple("sleep", label("Alvás", "Sleep", "Schlaf", "Somn"), it)) }
+                            available.forEach { add(Triple(it.key, it.label, "${it.valueText} ${it.unit}".trim())) }
+                        }
+                        tiles.chunked(3).forEach { cells ->
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                cells.forEach { (metricKey, title, value) ->
+                                    val recordType = if (metricKey == "sleep") "SleepSessionRecord" else NativeDetailedHealthMetrics.recordType(metricKey)
+                                    val tileShape = RoundedCornerShape(10.dp)
+                                    Surface(shape = tileShape, color = if (type == recordType) palette.primary.copy(alpha = 0.16f) else palette.surfaceCard,
+                                        modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                                            .trainPilotClickable(tileShape) { type = if (type == recordType) "" else recordType }
+                                            .testTag("journal_metric_${date}_$metricKey")) {
+                                        Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
+                                            Text(title, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1,
+                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                            Text(value, color = palette.textPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
+                                        }
+                                    }
                                 }
-                                Text(if (metric.isAvailable) "${metric.valueText} ${metric.unit}".trim() else "—", color = palette.primary)
+                                repeat(3 - cells.size) { Spacer(Modifier.weight(1f)) }
                             }
                         }
-                        HorizontalDivider(color = palette.cardBorder)
-                        TextButton(onClick = { type = "" }, modifier = Modifier.testTag("journal_records_all_$date")) {
-                            Text(label("Összes napi rekord / alvásfázisok", "All day records / sleep stages", "Alle Tageseinträge / Schlafphasen", "Toate înregistrările zilei / faze de somn"))
+                        Text(label("Részletes rekordok", "Detailed records", "Detaillierte Einträge", "Înregistrări detaliate"),
+                            color = palette.primary, fontWeight = FontWeight.Bold)
+                        val filters = listOf(
+                            "" to label("Mind", "All", "Alle", "Toate"),
+                            "StepsRecord" to label("Lépés", "Steps", "Schritte", "Pași"),
+                            "ActiveCaloriesBurnedRecord" to label("Kalória", "Calories", "Kalorien", "Calorii"),
+                            "DistanceRecord" to label("Táv", "Distance", "Distanz", "Distanță"),
+                            "HeartRateRecord" to label("Pulzus", "Heart rate", "Puls", "Puls"),
+                            "SleepSessionRecord" to label("Alvás", "Sleep", "Schlaf", "Somn"))
+                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            filters.forEach { (filterType, filterLabel) ->
+                                FilterChip(selected = type == filterType, onClick = { type = filterType },
+                                    colors = FilterChipDefaults.filterChipColors(containerColor = palette.surfaceCard,
+                                        labelColor = palette.textPrimary, selectedContainerColor = palette.primary,
+                                        selectedLabelColor = palette.onPrimary),
+                                    label = { Text(filterLabel) },
+                                    modifier = Modifier.heightIn(min = 48.dp).testTag(
+                                        if (filterType.isEmpty()) "journal_records_all_$date" else "journal_records_filter_${date}_$filterType"))
+                            }
                         }
-                        if (type.isNotEmpty()) Text(com.repforge.app.ui.text.nativeResources(context, language).getString(NativeHealthRecords.title(type)), color = palette.primary)
                     }
                     StudioNativeEditorTheme {
                         HealthRecordDayDetails(date, provider, source, type, language, snapshot.getLong("generation"),

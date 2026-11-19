@@ -52,4 +52,30 @@ class Collector2776RegressionTest {
             assertEquals("$tag is ellipsized", text.length, layout.getLineEnd(layout.lineCount - 1, visibleEnd = true))
         }
     }
+
+    private fun rec(id: String, type: String, start: Long, source: String = "watch", data: String = "{\"value\":1}") =
+        com.repforge.app.ui.health.HealthRecordRow(id, "hc", source, type, start, start + 60_000, start, data)
+
+    @Test fun oneLinePerTimeWindowMergesOnlyDifferentTypesOfTheSameSource() {
+        val t = 1_000_000L
+        val groups = com.repforge.app.ui.health.groupHealthRecordRows(listOf(
+            rec("s1", "StepsRecord", t), rec("c1", "ActiveCaloriesBurnedRecord", t), rec("d1", "DistanceRecord", t),
+            rec("s2", "StepsRecord", t), // same type again: never merged, so no value is hidden
+            rec("p1", "StepsRecord", t, source = "phone"), // other source: own line
+            rec("s3", "StepsRecord", t + 120_000)))
+        assertEquals(listOf(listOf("s1", "c1", "d1"), listOf("s2"), listOf("p1"), listOf("s3")), groups.map { g -> g.map { it.id } })
+        assertEquals(6, groups.sumOf { it.size }) // every record is still shown
+    }
+
+    @Test fun compactValueUsesTheRecordsOwnNumbers() {
+        val v = com.repforge.app.ui.health.healthRecordCompactValue(
+            rec("c", "ActiveCaloriesBurnedRecord", 0, data = "{\"value\":15.42,\"unit\":\"kcal\"}"), "hu", "lépés", "Aktív kalória")
+        assertEquals("15,42 kcal", v)
+        val steps = com.repforge.app.ui.health.healthRecordCompactValue(
+            rec("s", "StepsRecord", 0, data = "{\"value\":12,\"unit\":\"steps\"}"), "hu", "lépés", "Lépésszám")
+        assertEquals("12 lépés", steps)
+        val hr = com.repforge.app.ui.health.healthRecordCompactValue(
+            rec("h", "HeartRateRecord", 0, data = "{\"samples\":[{\"value\":80}]}"), "hu", "lépés", "Pulzus")
+        assertEquals("Pulzus · 1", hr)
+    }
 }
