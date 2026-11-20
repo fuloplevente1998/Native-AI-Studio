@@ -1,6 +1,6 @@
 # TrainPilot Native – átadó és teljes audit prompt
 
-> Másold be egy másik ügynöknek (ChatGPT/Codex/Claude) egy az egyben. Repo:
+> Másold be egy másik ügynöknek (ChatGPT/Codex/Claude) egy az egyben. Hatókör: **a teljes app**. Repo:
 > `fuloplevente1998/Native-AI-Studio`. Kiinduló állapot: `main` @ `b76e2f0` (2787 merge),
 > nyitott: PR #304 (csak verziókód 278700/278702). Utolsó kiadott build: 1.4.1 · 278600/278602.
 
@@ -9,9 +9,14 @@
 ## 1. Szerep és cél
 
 Senior Android (Kotlin/Compose, Room, DataStore, Wear OS Data Layer) auditor vagy. Feladat:
-**a 2779–2787 körben (PR #290–#304) bekerült összes változás és a hozzájuk kapcsolódó régi kód
-teljes átvizsgálása**, kis, könnyen elsikló hibákra is (kerekítés, két helyen számolt érték,
-eltérő címke és csík, levágott szöveg, rossz tesztcél, témából kilógó szín, üres gomb).
+**a TELJES kódbázis átvizsgálása** – telefon (`app/`), óra (`wear/`), közös szerződés (`shared/`),
+Room-séma és migrációk, DataStore, Health Connect / Samsung Health integráció, GPS/kültéri edzés,
+mentés/visszaállítás (Drive), értesítések, engedélyek, R8/ProGuard, GitHub Actions workflow-k,
+lokalizáció (hu/en/de/ro), valamint a weboldal (`fuloplevente1998/TrainPilot.io`) és a Play-adatlap
+szövegei. **Nem csak** a legutóbbi PR-ek (#290–#304): azok csak elsőbbséget kapnak, mert ott ismert,
+hogy kis hibák csúsztak át. Kis, könnyen elsikló hibákra is figyelj (kerekítés, két helyen számolt érték,
+eltérő címke és csík, levágott szöveg, rossz tesztcél, témából kilógó szín, üres gomb, elhallgatott kivétel,
+szálkezelés, életciklus, memóriaszivárgás, rossz időzóna/locale).
 Először **jelentést** adsz; kódot csak külön kérésre, gyűjtő draft PR-ba írsz.
 
 ## 2. Kötelező szabályok (nem alku tárgya)
@@ -41,6 +46,10 @@ Először **jelentést** adsz; kódot csak külön kérésre, gyűjtő draft PR-
   `screens/StatisticsExerciseTrend.kt`, `screens/StudioStatisticsScreen.kt`.
 
 ## 4. Audit-ellenőrzőlista (mindet végig kell nézni)
+
+Sorrend: (1) adatbiztonság és -helyesség az egész appban, (2) telefon ↔ óra, (3) a 2779–2787 körös
+változások, (4) a teljes UI és lokalizáció, (5) build/kiadás/weboldal. Minden modult érints: ha egy
+területet nem néztél meg, írd a „Nem vizsgált” listába, indokkal.
 
 ### A. Egy érték = egy számítás
 Már talált hibaosztály (#303): ugyanaz a mutató két helyen eltérően számolva (kompakt vs. lenyitott %,
@@ -95,10 +104,32 @@ versionCode minden buildnél nő (`27NN00`/`27NN02`), versionName egyezik telefo
 `docs/PLAY_LISTING.md` 4 nyelv, nyelvenként ≤ 500 karakter, csak valós változás;
 weboldal (`TrainPilot.io` index + privacy) verziósora = legutolsó build; adatvédelmi szöveg és URL helyes.
 
+### I. Teljes app – további területek
+- **Room/DAO**: minden migráció (régi verzióról frissítés adatvesztés nélkül), indexek, tranzakciók,
+  `onConflict` stratégia, főszálon futó lekérdezés, Flow-k lezárása.
+- **ViewModel/állapot**: versenyhelyzet (`_uiState.update` párhuzamosan), forgatás/folyamat-újraindítás után
+  elvesző állapot, `rememberSaveable` hiánya, coroutine-scope szivárgás, `runCatching` elnyelt hibák.
+- **Health Connect / Samsung Health**: engedélykezelés, részleges hozzáférés, duplikált (tükrözött) rekordok,
+  időzóna-határ (éjfél), háttérfrissítés, hiba üzenete a felhasználónak.
+- **Aktív edzés**: időzítő pontossága háttérben/képernyő zárva, pihenő, visszavonás, félbehagyott edzés
+  helyreállítása, mentés folyamat kill után, foreground service.
+- **Kültéri/GPS**: engedély, akku, pontatlan pontok szűrése, táv/tempó számítás, privát tárolás.
+- **Mentés/visszaállítás (Drive, export/import)**: teljes-e, visszaállítás után nincs duplikáció, health
+  backup-consent alapból ki.
+- **Wear OS**: kerek kijelző, rotary, akku, kapcsolat megszakadása edzés közben, telefon nélküli mód.
+- **Biztonság/adatvédelem**: titkok nincsenek a kódban/logban, exported komponensek, intent-szűrők,
+  fájlok privát tárban, adatvédelmi szöveg = valós működés.
+- **Lokalizáció**: hiányzó/keveredő nyelv, beégetett magyar szöveg más nyelven, szám/dátum formátum.
+- **Akadálymentesség**: contentDescription, 48 dp, kontraszt (világos/kontraszt téma).
+- **Teljesítmény**: nagy listák (LazyColumn kulcsok), felesleges újrakomponálás, főszálon IO.
+- **CI/workflow**: tesztek valóban futnak-e minden modulra (JUnit XML ellenőrzés), aláírás-ellenőrzés,
+  verziókód-egyediség.
+
 ## 5. Munkamenet
 
-1. `git log --oneline` a 2779–2787 körre, PR-ek (#290–#304) és `docs/FIXES_27NN.md` táblák.
-2. Diff-alapú átnézés, utána a kapcsolódó régi kód (hívók, ViewModel, Room DAO).
+1. Modulonként végig (app, wear, shared, workflows, weboldal); a 2779–2787 kör diffjét (#290–#304,
+   `docs/FIXES_27NN.md`) kiemelten.
+2. Képernyőnként és adatfolyamonként: UI → ViewModel → repository/DAO → Room/DataStore/HC/óra.
 3. Minden gyanút forráskóddal igazolj (fájl:sor); ahol csak futtatással dönthető el, jelöld „ellenőrizendő”.
 4. Ne írj kódot, amíg a tulajdonos nem mondja: „mehet”.
 
@@ -109,6 +140,7 @@ Rövid magyar összefoglaló (max 10 sor), utána táblázat:
 | # | Súlyosság (Kritikus/Magas/Közepes/Alacsony) | Terület | Fájl:sor | Mi a hiba (konkrét bemenet → rossz eredmény) | Javaslat | Teszt, ami megfogja |
 |---|---|---|---|---|---|---|
 
-Külön lista: „Igazoltan rendben” (mit néztél meg és jó), és „Nem tudtam eldönteni” (miért).
+Külön lista: „Igazoltan rendben” (mit néztél meg és jó), „Nem tudtam eldönteni” (miért) és
+„Nem vizsgált” (modul/terület, indok). Nagy kódbázisnál több részletben is jelenthetsz, modulonként.
 Javítás csak jóváhagyás után: új ág `fix/collector-27NN`, `docs/FIXES_27NN.md` táblába rögzítve,
 egy közös CI-kör, nyers JUnit XML szám (tests/failures/errors/skipped) a jelentésben.
