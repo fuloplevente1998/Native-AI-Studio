@@ -1041,6 +1041,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onSelectWeightRange = { viewModel.selectWeightRange(it) },
                                     onToggleAddWeightDialog = { viewModel.toggleAddWeightDialog(it) },
                                     onSaveNewWeight = { kg, dateStr -> viewModel.saveNewBodyWeight(kg, dateStr) },
+                                    onUpdateWeight = { id, kg, dateStr -> viewModel.saveNewBodyWeight(kg, dateStr, editingId = id) },
                                     onTogglePrimaryHealthSource = { nativeHealth.setProvider(
                                         if (health.provider == com.repforge.app.HealthJournalStore.SAMSUNG) com.repforge.app.HealthJournalStore.HC
                                         else com.repforge.app.HealthJournalStore.SAMSUNG, activity) },

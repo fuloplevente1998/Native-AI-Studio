@@ -22,7 +22,11 @@ import java.time.LocalDate
 /** Always composed with its day; folding the day keeps the current bounded page in memory. */
 @Composable
 internal fun HealthRecordDayDetails(day: LocalDate, provider: String, source: String, type: String,
-    language: String, generation: Long, refreshKey: String, visible: Boolean) {
+    language: String, generation: Long, refreshKey: String, visible: Boolean,
+    /** 2788: optional heading, shown only together with the records. */
+    title: String? = null,
+    /** 2788: nothing at all (no "no records" text, no pager) when the first page is empty. */
+    hideWhenEmpty: Boolean = false) {
     val context = LocalContext.current
     val text = nativeResources(context, language)
     var cursors by rememberSaveable(day, provider, source, type, generation, refreshKey) { mutableStateOf(listOf("")) }
@@ -48,12 +52,17 @@ internal fun HealthRecordDayDetails(day: LocalDate, provider: String, source: St
         catch (_: Exception) { error = true }
     }
     if (!visible) return
+    val emptyFirstPage = cached?.rows?.isEmpty() == true && cursors.size == 1
+    if (hideWhenEmpty && (emptyFirstPage || (cached == null && !error))) return
+    if (title != null) Text(title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     if (error) Text(text.getString(R.string.health_history_error), color = MaterialTheme.colorScheme.error)
     else if (cached == null) LinearProgressIndicator(Modifier.fillMaxWidth())
     else {
         val page = cached!!
         // At most 25 record cards, with the existing 20-item sample/stage pagination.
         if (page.rows.isEmpty()) Text(text.getString(R.string.health_records_empty))
+        // 2788: an empty first page has nothing to page through.
+        if (emptyFirstPage) return
         // 2776/2778: one compact line per time window (different record types merged); no detail cards.
         groupHealthRecordRows(page.rows).forEach { group -> key(group.first().channel, group.first().id) {
             HealthRecordCompactRow(group, language)

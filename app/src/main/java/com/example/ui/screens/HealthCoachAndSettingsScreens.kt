@@ -118,6 +118,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.style.TextAlign
 import com.example.ui.components.trainPilotChartTap
 import androidx.compose.ui.graphics.Color
@@ -221,7 +222,9 @@ fun HealthTabScreen(
     onSelectHealthSource: (Boolean) -> Unit = { onTogglePrimaryHealthSource() },
     onRequestHealthPermissions: () -> Unit = { onNavigateToSubScreen(SubScreen.PERMISSIONS_SCREEN) },
     onOpenLoggedWorkout: (String) -> Unit = { onNavigateToSubScreen(SubScreen.LOG_WORKOUT_DETAIL) },
-    onReadHealthSource: ((String) -> Unit)? = null
+    onReadHealthSource: ((String) -> Unit)? = null,
+    /** 2788: edit an existing weight entry in place (id, kg, date label). */
+    onUpdateWeight: (String, Float, String) -> Unit = { _, kg, date -> onSaveNewWeight(kg, date) }
 ) {
     val palette = LocalTrainPilotPalette.current
     val today = remember { java.time.LocalDate.now() }
@@ -354,6 +357,8 @@ fun HealthTabScreen(
                 }, modifier = Modifier.weight(1f).testTag("health_weight_cancel"))
                 com.example.ui.components.TrainPilotPrimaryButton(strings.saveAction, modifier = Modifier.weight(1f).testTag("health_weight_save"),
                     onClick = {
+                        // 2788: captured before the sheet state is cleared below.
+                        val editId = editingMeasurement?.id
                         val parsed = weightText.replace(',', '.').toFloatOrNull() ?: uiState.currentBodyWeightKg
                         if (parsed > 0f) {
                             val formattedKg = if (parsed % 1f == 0f) "${parsed.toInt()} kg" else "${"%.1f".format(parsed).replace('.', ',')} kg"
@@ -381,7 +386,9 @@ fun HealthTabScreen(
                                     parsedDate = entryLocalDate
                                 )).sortedByDescending { it.parsedDate }
                             }
-                            onSaveNewWeight(parsed, normalizedDateLabel)
+                            // 2788: an edit keeps its ID (no duplicate row); a new entry gets a new one.
+                            if (editId != null) onUpdateWeight(editId, parsed, normalizedDateLabel)
+                            else onSaveNewWeight(parsed, normalizedDateLabel)
                         } else {
                             editingMeasurement = null
                             onToggleAddWeightDialog(false)
@@ -393,6 +400,8 @@ fun HealthTabScreen(
     }
 
     val healthListState = androidx.compose.foundation.lazy.rememberLazyListState()
+    // 2788: positions of the Today card and its weekly block, so a tile sheet can jump to the weekly view.
+    val weeklyAnchor = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(2) }
     // 2783: a Today tile with data opens the journal at today's records of that type.
     var journalFocus by remember { mutableStateOf<Pair<String, String>?>(null) }
     var journalFocusKey by remember { androidx.compose.runtime.mutableIntStateOf(0) }
@@ -417,6 +426,7 @@ fun HealthTabScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .onGloballyPositioned { weeklyAnchor[0] = it }
                     .trainPilotBorder(1.2.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(24.dp))
             ) {
                 Column(
@@ -490,7 +500,8 @@ fun HealthTabScreen(
                     // 2786: weekly goals live in "Today": compact bars, tap opens the big view below them.
                     com.example.ui.components.WeeklyGoalsCompact(uiState, framed = false,
                         onOpen = { onToggleHealthSection("weekly") }, onGoals = onOpenGoalsDialog,
-                        expanded = uiState.expandedHealthWeeklyGoals, modifier = Modifier.testTag("health_weekly_goals_compact"))
+                        expanded = uiState.expandedHealthWeeklyGoals,
+                        modifier = Modifier.onGloballyPositioned { weeklyAnchor[1] = it }.testTag("health_weekly_goals_compact"))
                     AnimatedVisibility(visible = uiState.expandedHealthWeeklyGoals) {
                         HealthWeeklyGoalsPanel(uiState, strings, onToggleHealthSection, onOpenGoalsDialog)
                     }
@@ -575,10 +586,10 @@ fun HealthTabScreen(
                                     "steps" -> listOf(
                                         tr(uiState.language, "Lépések részletek • ${if ("steps" in uiState.dailyHealthAvailableFields) "${uiState.dailySteps}" else "—"} / ${uiState.stepsGoal}", "Steps Details • ${if ("steps" in uiState.dailyHealthAvailableFields) "${uiState.dailySteps}" else "—"} / ${uiState.stepsGoal}", "Schritte Details • ${if ("steps" in uiState.dailyHealthAvailableFields) "${uiState.dailySteps}" else "—"} / ${uiState.stepsGoal}", "Detalii pași • ${if ("steps" in uiState.dailyHealthAvailableFields) "${uiState.dailySteps}" else "—"} / ${uiState.stepsGoal}"),
                                         if ("steps" in uiState.dailyHealthAvailableFields) {
-                                            tr(uiState.language, "Egyetlen deduplikált forrásból (${uiState.dailyHealthSourceLabel}). Teljesítés: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Becsült táv: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km",
-                                                "Single deduplicated source (${uiState.dailyHealthSourceLabel}). Completion: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Est. distance: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km",
-                                                "Aus einer deduplizierten Quelle (${uiState.dailyHealthSourceLabel}). Erfüllung: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Gesch. Distanz: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km",
-                                                "Sursă deduplicată unică (${uiState.dailyHealthSourceLabel}). Progres: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Dist. est.: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km")
+                                            tr(uiState.language, "Forrás: ${uiState.dailyHealthSourceLabel} • Teljesítés: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Becsült táv: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km",
+                                                "Source: ${uiState.dailyHealthSourceLabel} • Completion: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Est. distance: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km",
+                                                "Quelle: ${uiState.dailyHealthSourceLabel} • Erfüllung: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Gesch. Distanz: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km",
+                                                "Sursă: ${uiState.dailyHealthSourceLabel} • Progres: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Dist. est.: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km")
                                         } else {
                                             tr(uiState.language, "Ma még nem érkezett lépésadat a kiválasztott szolgáltatótól (${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"}). Napi cél: ${uiState.stepsGoal} lépés.",
                                                 "No steps data fetched yet today from ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"}. Daily target: ${uiState.stepsGoal} steps.",
@@ -593,15 +604,15 @@ fun HealthTabScreen(
                                         listOf(
                                             tr(uiState.language, "Mai edzések • ${todaysWorkouts.size} rögzített edzés", "Today's Workouts • ${todaysWorkouts.size} logged", "Heutige Trainings • ${todaysWorkouts.size} erfasst", "Antrenamente azi • ${todaysWorkouts.size} înregistrate"),
                                             if (todaysWorkouts.isNotEmpty()) {
-                                                tr(uiState.language, "Helyi Room edzésnapló • Utolsó mai edzés: ${latestTodayTitle ?: "Edzés"}",
-                                                    "Local Room workout log • Latest workout today: ${latestTodayTitle ?: "Workout"}",
-                                                    "Lokales Room-Protokoll • Letztes Training heute: ${latestTodayTitle ?: "Training"}",
-                                                    "Jurnal local Room • Ultimul antrenament azi: ${latestTodayTitle ?: "Antrenament"}")
+                                                tr(uiState.language, "Utolsó mai edzés: ${latestTodayTitle ?: "Edzés"}",
+                                                    "Latest workout today: ${latestTodayTitle ?: "Workout"}",
+                                                    "Letztes Training heute: ${latestTodayTitle ?: "Training"}",
+                                                    "Ultimul antrenament azi: ${latestTodayTitle ?: "Antrenament"}")
                                             } else {
-                                                tr(uiState.language, "Ma még nincs befejezett és elmentett edzés a helyi Room naplóban a mai naptári napra.",
-                                                    "No completed workout logged yet today in local Room database for today's calendar date.",
-                                                    "Heute noch kein abgeschlossenes Training im lokalen Room-Protokoll für das heutige Kalenderdatum.",
-                                                    "Niciun antrenament finalizat înregistrat azi în baza de date locală Room.")
+                                                tr(uiState.language, "Ma még nincs elmentett edzés.",
+                                                    "No saved workout yet today.",
+                                                    "Heute noch kein gespeichertes Training.",
+                                                    "Niciun antrenament salvat azi.")
                                             },
                                             if (todaysWorkouts.isNotEmpty()) {
                                                 tr(uiState.language, "Edzésnapló részletek megnyitása >", "Open Workout Log details >", "Trainingsprotokoll-Details öffnen >", "Deschide detaliile jurnalului >")
@@ -918,7 +929,18 @@ fun HealthTabScreen(
                                         }
                                     }
                                 }
-                                TodayTileSheetExtras(activeKey, uiState, today)
+                                // 2788: the sheet is about TODAY; the 7-day steps/workout history lives only in Weekly goals.
+                                TodayTileSheetExtras(activeKey, uiState, today, onOpenWeekly = {
+                                    expandedTodayTileKey = null
+                                    if (!uiState.expandedHealthWeeklyGoals) onToggleHealthSection("weekly")
+                                    coroutineScope.launch {
+                                        val card = weeklyAnchor[0]
+                                        val block = weeklyAnchor[1]
+                                        val offset = if (card != null && block != null && card.isAttached && block.isAttached)
+                                            card.localPositionOf(block, Offset.Zero).y.toInt().coerceAtLeast(0) else 0
+                                        healthListState.animateScrollToItem(0, offset)
+                                    }
+                                })
                                 if (activeKey != "pulse") Surface(
                                     shape = RoundedCornerShape(10.dp),
                                     color = palette.primary.copy(alpha = 0.16f),
@@ -1304,7 +1326,8 @@ internal fun MainTodayStatusTile(
     value: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    compact: Boolean = false
+    compact: Boolean = false,
+    titleTag: String = "today_tile_title"
 ) {
     val palette = LocalTrainPilotPalette.current
     Surface(
@@ -1328,12 +1351,13 @@ internal fun MainTodayStatusTile(
                     tint = palette.primary,
                     modifier = Modifier.size(if (compact) 14.dp else 16.dp)
                 )
-                Text(
+                // 2788: whole word, never "Aktív ka…": the font steps down, wraps only as a last resort.
+                com.example.ui.components.TrainPilotFitText(
                     text = title,
                     style = MaterialTheme.typography.labelSmall,
                     color = palette.textSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    minSize = 8.sp,
+                    modifier = Modifier.weight(1f).testTag(titleTag)
                 )
             }
             Text(
@@ -3454,111 +3478,78 @@ private fun HealthWeeklyGoalsPanel(
     val weeklyMinutesCurrent = goalDays.sumOf { it.workoutMinutes }
     val primaryProviderName = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"
 
-    // 303: the compact header already shows the workout goal; do not repeat it in a third card.
+    // 2788: one section per goal (no nested cards, no second "daily breakdown" to open): summary, bar,
+    // tappable day columns with day names, then the days themselves. The only place of the 7-day history.
     val goal = com.example.ui.components.weeklyGoalSummary(uiState, today)
-    val minUnit = tr(uiState.language, "perc", "min", "Min.", "min")
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        for (steps in listOf(true, false)) {
-            val expanded = if (steps) uiState.expandedWeeklySteps else uiState.expandedWeeklyWorkouts
-            val tag = if (steps) "steps" else "minutes"
-            Surface(shape = RoundedCornerShape(18.dp), color = palette.background.copy(alpha = 0.55f),
-                modifier = Modifier.weight(1f).trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onToggleHealthSection(if (steps) "weekly_steps" else "weekly_workouts") }
-                    .testTag("health_weekly_${tag}_card")) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            if (steps) tr(uiState.language, "Heti lépésszám", "Weekly Steps", "Wöchentliche Schritte", "Pași săptămânali")
-                            else tr(uiState.language, "Aktív edzésidő", "Active Workout Time", "Aktive Trainingszeit", "Timp activ antrenament"),
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.labelLarge, color = palette.textPrimary
-                        )
-                        Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.primary)
-                    }
-                    Text(if (steps) { if (goalDays.none { it.stepsAvailable }) "—" else "%,d".format(java.util.Locale.US, weeklyStepsCurrent).replace(',', ' ') }
-                        else "${goal.workoutsDone} / ${goal.workoutsTarget} ${tr(uiState.language, "edzés", "workouts", "Trainings", "antrenamente")}", style = MaterialTheme.typography.headlineMedium,
-                        color = palette.textPrimary, modifier = Modifier.testTag("health_weekly_${tag}_total"))
-                    Text(
-                        if (steps) strings.stepsGoalWithCount(weeklyStepsTarget)
-                        else "$weeklyMinutesCurrent $minUnit ${tr(uiState.language, "összesen", "total", "gesamt", "total")}",
-                        style = MaterialTheme.typography.labelSmall, color = palette.textSecondary
-                    )
-                    LinearProgressIndicator(progress = { if (steps) (weeklyStepsPct / 100f).coerceIn(0f, 1f) else goal.workoutFraction },
-                        modifier = Modifier.fillMaxWidth(), color = palette.primary, trackColor = palette.surfaceElevated)
-                    if (steps && goalDays.any { it.stepsAvailable }) Text("$weeklyStepsPct%",
-                        style = MaterialTheme.typography.labelMedium, color = palette.primary,
-                        modifier = Modifier.testTag("health_weekly_steps_percent"))
-                    if (steps) Text(
-                        tr(
-                            uiState.language,
-                            "${goalDays.count { it.stepsAvailable }}/7 napi adat • $primaryProviderName",
-                            "${goalDays.count { it.stepsAvailable }}/7 daily records • $primaryProviderName",
-                            "${goalDays.count { it.stepsAvailable }}/7 Tagesdaten • $primaryProviderName",
-                            "${goalDays.count { it.stepsAvailable }}/7 zile cu date • $primaryProviderName"
-                        ),
-                        style = MaterialTheme.typography.labelSmall, color = palette.textSecondary
-                    )
+    val lang = uiState.language
+    val langCode = lang.name.lowercase()
+    val minUnit = tr(lang, "perc", "min", "Min.", "min")
+    val nf = java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag(langCode))
+    val dates = goalDays.map { java.time.LocalDate.parse(it.dateIso) }
+    val weekWorkouts = goalDays.sumOf { it.workoutCount }
+
+    @Composable
+    fun Section(title: String, summary: String, tag: String, content: @Composable () -> Unit) {
+        Surface(shape = RoundedCornerShape(18.dp), color = palette.background.copy(alpha = 0.55f),
+            modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp)).testTag(tag)) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary, modifier = Modifier.weight(1f))
+                    Text(summary, style = MaterialTheme.typography.labelMedium, color = palette.textSecondary, modifier = Modifier.testTag("${tag}_summary"))
                 }
+                content()
             }
         }
     }
 
-    // Details reserve a full-width row beneath both summary cards.
-    for (steps in listOf(true, false)) {
-        val expanded = if (steps) uiState.expandedWeeklySteps else uiState.expandedWeeklyWorkouts
-        val tag = if (steps) "steps" else "minutes"
-        AnimatedVisibility(visible = expanded) {
-            Surface(shape = RoundedCornerShape(18.dp), color = palette.surfaceElevated,
-                modifier = Modifier.fillMaxWidth().testTag("health_weekly_${tag}_days")
-                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        if (steps) tr(uiState.language, "Heti lépésszám • napi bontás", "Weekly Steps • Daily Breakdown", "Wöchentliche Schritte • Tagesübersicht", "Pași săptămânali • Detaliere zilnică")
-                        else tr(uiState.language, "Aktív edzésidő • napi bontás", "Active Workout Time • Daily Breakdown", "Aktive Trainingszeit • Tagesübersicht", "Timp activ • Detaliere zilnică"),
-                        style = MaterialTheme.typography.titleMedium, color = palette.textPrimary
-                    )
-                    // 2786: tappable day columns with an info line (real values; missing day = "nincs adat").
-                    com.example.ui.components.WeeklyDayBars(
-                        days = goalDays.map { java.time.LocalDate.parse(it.dateIso) },
-                        values = goalDays.map { d -> if (steps) d.steps.toDouble().takeIf { d.stepsAvailable } else d.workoutMinutes.takeIf { it > 0 }?.toDouble() },
-                        label = { date, v -> todayTileWeekLabel(if (steps) "steps" else "workout", date, v, uiState.language.name.lowercase()) },
-                        tag = "health_weekly_${tag}_bars")
-                    for (day in goalDays) {
-                        val dayWorkouts = if (steps) emptyList() else
-                            uiState.loggedWorkouts.filter { it.localWorkoutDate()?.toString() == day.dateIso }
-                        HorizontalDivider(color = palette.cardBorder)
-                        Row(Modifier.fillMaxWidth().padding(vertical = 3.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                                Text(day.dayLabelHu, style = MaterialTheme.typography.labelLarge,
-                                    color = palette.textPrimary)
-                                Text(if (steps) day.stepsSourceLabelHu else
-                                    if (dayWorkouts.isEmpty()) tr(uiState.language, "Room edzésnapló • nincs mai edzés", "Room workout log • no workout", "Room-Protokoll • kein Training", "Jurnal Room • fără antrenament")
-                                    else "Room • " + dayWorkouts.joinToString(" · ") {
-                                        "${it.titleHu}: ${it.durationMinutes} $minUnit"
-                                    },
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = palette.textSecondary, maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis)
-                            }
-                            Text(
-                                if (steps) {
-                                    if (day.stepsAvailable) "${day.steps} ${tr(uiState.language, "lépés", "steps", "Schritte", "pași")}" else "—"
-                                } else {
-                                    "${day.workoutMinutes} $minUnit • ${day.workoutCount} ${tr(uiState.language, "edzés", "workouts", "Trainings", "antr.")}"
-                                },
-                                modifier = Modifier.testTag("health_weekly_${tag}_${day.dateIso}"),
-                                style = MaterialTheme.typography.bodySmall, color = palette.textPrimary
-                            )
-                        }
-                    }
-                }
+    // Workouts: the goal counts the calendar week/month, the columns show the last 7 days of the journal.
+    Section(tr(lang, "Edzések", "Workouts", "Trainings", "Antrenamente"),
+        "${goal.workoutsDone} / ${goal.workoutsTarget} " + (if (goal.monthly) tr(lang, "ebben a hónapban", "this month", "diesen Monat", "luna aceasta")
+            else tr(lang, "ezen a héten", "this week", "diese Woche", "săptămâna aceasta")), "health_weekly_workouts_section") {
+        LinearProgressIndicator(progress = { goal.workoutFraction }, modifier = Modifier.fillMaxWidth(), color = palette.primary, trackColor = palette.surfaceElevated)
+        Text(tr(lang, "Utolsó 7 nap: $weekWorkouts edzés · $weeklyMinutesCurrent perc", "Last 7 days: $weekWorkouts workouts · $weeklyMinutesCurrent min",
+                "Letzte 7 Tage: $weekWorkouts Trainings · $weeklyMinutesCurrent Min.", "Ultimele 7 zile: $weekWorkouts antrenamente · $weeklyMinutesCurrent min"),
+            style = MaterialTheme.typography.labelMedium, color = palette.textPrimary, modifier = Modifier.testTag("health_weekly_minutes_total"))
+        com.example.ui.components.WeeklyDayBars(dates, goalDays.map { d -> d.workoutMinutes.takeIf { it > 0 }?.toDouble() },
+            label = { date, v -> todayTileWeekLabel("workout", date, v, langCode) }, tag = "health_weekly_minutes_bars", lang = langCode)
+        val list = uiState.loggedWorkouts.filter { w -> w.localWorkoutDate()?.let { it in dates } == true }
+            .sortedBy { it.localWorkoutDate() }
+        if (list.isEmpty()) Text(tr(lang, "Az elmúlt 7 napban nincs edzés.", "No workouts in the last 7 days.", "Keine Trainings in den letzten 7 Tagen.", "Niciun antrenament în ultimele 7 zile."),
+            style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+        list.forEach { w ->
+            HorizontalDivider(color = palette.cardBorder)
+            Row(Modifier.fillMaxWidth().padding(vertical = 3.dp).testTag("health_weekly_workout_row_${w.id}"), verticalAlignment = Alignment.CenterVertically) {
+                Text(w.localWorkoutDate()?.let { com.example.ui.components.chartDateLabel(it, langCode) }.orEmpty(),
+                    style = MaterialTheme.typography.labelMedium, color = palette.textSecondary, modifier = Modifier.weight(1f))
+                Text("${w.localizedTitle(lang, uiState.programs, uiState.exercises)} · ${w.durationMinutes.coerceAtLeast(0)} $minUnit",
+                    style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = palette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
 
-
+    // Steps: rolling 7 days, only measured days count ("—" when none).
+    val measuredDays = goalDays.count { it.stepsAvailable }
+    Section(tr(lang, "Lépések", "Steps", "Schritte", "Pași"),
+        if (measuredDays == 0) "—" else "${nf.format(weeklyStepsCurrent)} / ${nf.format(weeklyStepsTarget)} · $weeklyStepsPct%", "health_weekly_steps_section") {
+        LinearProgressIndicator(progress = { if (measuredDays == 0) 0f else (weeklyStepsPct / 100f).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth(),
+            color = palette.primary, trackColor = palette.surfaceElevated)
+        Text(tr(lang, "Utolsó 7 nap · $measuredDays/7 nap adat · $primaryProviderName", "Last 7 days · $measuredDays/7 days of data · $primaryProviderName",
+                "Letzte 7 Tage · $measuredDays/7 Tage mit Daten · $primaryProviderName", "Ultimele 7 zile · $measuredDays/7 zile cu date · $primaryProviderName"),
+            style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, modifier = Modifier.testTag("health_weekly_steps_total"))
+        com.example.ui.components.WeeklyDayBars(dates, goalDays.map { d -> d.steps.toDouble().takeIf { d.stepsAvailable } },
+            label = { date, v -> todayTileWeekLabel("steps", date, v, langCode) + if (date == today) " · " + tr(lang, "napi cél", "daily goal", "Tagesziel", "obiectiv zilnic") + " ${nf.format(uiState.stepsGoal)}" else "" },
+            tag = "health_weekly_steps_bars", lang = langCode)
+        goalDays.forEachIndexed { i, day ->
+            HorizontalDivider(color = palette.cardBorder)
+            Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(com.example.ui.components.chartDateLabel(dates[i], langCode), style = MaterialTheme.typography.labelMedium,
+                    color = palette.textSecondary, modifier = Modifier.weight(1f))
+                Text(if (day.stepsAvailable) "${nf.format(day.steps)} ${tr(lang, "lépés", "steps", "Schritte", "pași")}" else tr(lang, "nincs adat", "no data", "keine Daten", "fără date"),
+                    style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = palette.textPrimary,
+                    modifier = Modifier.testTag("health_weekly_steps_${day.dateIso}"))
+            }
+        }
+    }
   }
 }
 
@@ -3735,6 +3726,8 @@ internal fun todayTileWeekLabel(key: String, date: java.time.LocalDate, value: D
     val l = lang.take(2)
     val locale = java.util.Locale.forLanguageTag(l)
     val day = com.example.ui.components.chartDateLabel(date, l)
+    // 2788: the workout journal is complete, so a day without a workout is "no workout", not "no data".
+    if (value == null && key == "workout") return "$day · " + when (l) { "en" -> "no workout"; "de" -> "kein Training"; "ro" -> "fără antrenament"; else -> "nincs edzés" }
     if (value == null) return "$day · " + when (l) { "en" -> "no data"; "de" -> "keine Daten"; "ro" -> "fără date"; else -> "nincs adat" }
     val number = java.text.NumberFormat.getIntegerInstance(locale).format(Math.round(value))
     val unit = when (key) {
@@ -3746,39 +3739,100 @@ internal fun todayTileWeekLabel(key: String, date: java.time.LocalDate, value: D
     return "$day · $number $unit"
 }
 
-/** 2784: last 7 days (missing day = empty slot) and today's own records of the tile's type. */
+/**
+ * 2788: one calorie day as text. Total = resting + active (measured by the provider); the two are never
+ * added together. "nincs adat" for what was not measured; no estimate.
+ */
+internal fun calorieDayLabel(date: java.time.LocalDate, total: Int?, active: Int?, lang: String): String {
+    val l = lang.take(2)
+    val day = com.example.ui.components.chartDateLabel(date, l)
+    val nf = java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag(l))
+    val noData = when (l) { "en" -> "no data"; "de" -> "keine Daten"; "ro" -> "fără date"; else -> "nincs adat" }
+    val totalWord = when (l) { "en" -> "total"; "de" -> "gesamt"; "ro" -> "total"; else -> "teljes" }
+    val activeWord = when (l) { "en" -> "active"; "de" -> "aktiv"; "ro" -> "activ"; else -> "aktív" }
+    val ofWhich = when (l) { "en" -> "of which active"; "de" -> "davon aktiv"; "ro" -> "din care activ"; else -> "ebből aktív" }
+    return when {
+        total != null && active != null -> "$day · $totalWord ${nf.format(total)} kcal · $ofWhich ${nf.format(active)}"
+        total != null -> "$day · $totalWord ${nf.format(total)} kcal · $activeWord: $noData"
+        active != null -> "$day · $activeWord ${nf.format(active)} kcal · $totalWord: $noData"
+        else -> "$day · $noData"
+    }
+}
+
+/**
+ * 2784/2788: extras of a Today tile sheet. The sheet is about TODAY: steps and workouts link to the 7-day
+ * history in Weekly goals (no second copy of that chart here); calories show total vs active per day;
+ * pulse keeps its 7-day averages. Today's own records appear only when there are any.
+ */
 @Composable
-private fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today: java.time.LocalDate) {
+private fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today: java.time.LocalDate, onOpenWeekly: () -> Unit) {
     val palette = LocalTrainPilotPalette.current
     val lang = uiState.language
     val days = (6 downTo 0).map { today.minusDays(it.toLong()).toString() }
     val weekly = (uiState.weeklyHealthDays + uiState.dailyActivityDays).associateBy { it.dateIso }
-    val values: List<Double?>? = when (key) {
-        "steps" -> days.map { d -> weekly[d]?.takeIf { it.stepsAvailable }?.steps?.toDouble() }
-        "calories" -> days.map { d -> weekly[d]?.activeCaloriesKcal?.takeIf { it > 0 }?.toDouble() }
-        "pulse" -> days.map { d -> weekly[d]?.pulse?.averageBpm }
-        "workout" -> days.map { d -> weekly[d]?.workoutMinutes?.takeIf { it > 0 }?.toDouble() }
-        else -> null
-    }
-    if (values != null && values.any { it != null }) {
-        Text(tr(lang, "Utolsó 7 nap", "Last 7 days", "Letzte 7 Tage", "Ultimele 7 zile"), style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
-        val max = values.filterNotNull().maxOrNull()?.coerceAtLeast(1.0) ?: 1.0
-        // 2785: every day column is tappable; the selected one is highlighted and named in the info line.
-        var sel by remember(key, today) { androidx.compose.runtime.mutableIntStateOf(values.lastIndex) }
-        Row(Modifier.fillMaxWidth().height(56.dp).testTag("health_today_tile_week_$key"), horizontalArrangement = Arrangement.spacedBy(5.dp),
-            verticalAlignment = Alignment.Bottom) {
-            values.forEachIndexed { i, v ->
-                val on = i == sel
-                Box(Modifier.weight(1f).fillMaxHeight().trainPilotClickable(RoundedCornerShape(6.dp)) { sel = i }
-                    .testTag("health_today_tile_week_${key}_$i"), contentAlignment = Alignment.BottomCenter) {
-                    if (v == null) Box(Modifier.fillMaxWidth().height(2.dp).background(if (on) palette.primary else palette.cardBorder))
-                    else Box(Modifier.fillMaxWidth().fillMaxHeight((v / max).toFloat().coerceIn(0.05f, 1f))
-                        .background(if (on) palette.primary else palette.primary.copy(alpha = 0.45f), RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)))
-                }
+    if (key == "steps" || key == "workout") {
+        Surface(shape = RoundedCornerShape(10.dp), color = palette.surfaceCard,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                .trainPilotClickable(RoundedCornerShape(10.dp)) { onOpenWeekly() }.testTag("health_today_tile_open_weekly_$key")) {
+            Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(if (key == "steps") tr(lang, "Heti lépések és előzmények", "Weekly steps and history", "Wochenschritte und Verlauf", "Pașii săptămânii și istoric")
+                    else tr(lang, "Heti edzések és előzmények", "Weekly workouts and history", "Wochentrainings und Verlauf", "Antrenamentele săptămânii și istoric"),
+                    style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = palette.primary, modifier = Modifier.weight(1f))
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.primary, modifier = Modifier.size(16.dp))
             }
         }
-        com.example.ui.components.TrainPilotChartInfoLine(todayTileWeekLabel(key, java.time.LocalDate.parse(days[sel]), values.getOrNull(sel), lang.name.lowercase()),
-            Modifier.testTag("health_today_tile_week_info_$key"))
+    } else if (key == "calories") {
+        val totals = days.map { d -> weekly[d]?.totalCaloriesKcal }
+        val actives = days.map { d -> weekly[d]?.activeCaloriesMeasured }
+        if (totals.any { it != null } || actives.any { it != null }) {
+            Text(tr(lang, "Napi kalóriaégetés · 7 nap", "Daily calories burned · 7 days", "Täglicher Kalorienverbrauch · 7 Tage", "Calorii arse zilnic · 7 zile"),
+                style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
+            val max = days.indices.maxOf { (totals[it] ?: actives[it] ?: 0) }.coerceAtLeast(1).toFloat()
+            var sel by remember(key, today) { androidx.compose.runtime.mutableIntStateOf(days.lastIndex) }
+            val resting = palette.textSecondary.copy(alpha = 0.35f)
+            Row(Modifier.fillMaxWidth().height(72.dp).testTag("health_today_tile_week_calories"), horizontalArrangement = Arrangement.spacedBy(5.dp),
+                verticalAlignment = Alignment.Bottom) {
+                days.indices.forEach { i ->
+                    val on = i == sel
+                    val total = totals[i]
+                    val active = actives[i]
+                    Box(Modifier.weight(1f).fillMaxHeight().trainPilotClickable(RoundedCornerShape(6.dp)) { sel = i }
+                        .testTag("health_today_tile_week_calories_$i"), contentAlignment = Alignment.BottomCenter) {
+                        val top = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+                        val activeColor = if (on) palette.primary else palette.primary.copy(alpha = 0.55f)
+                        when {
+                            total != null -> Column(Modifier.fillMaxWidth().fillMaxHeight((total / max).coerceIn(0.05f, 1f))) {
+                                // Resting part above, active part at the bottom (both inside the measured total).
+                                val activeShare = ((active ?: 0).toFloat() / total).coerceIn(0f, 1f)
+                                if (activeShare < 1f) Box(Modifier.fillMaxWidth().weight(1f - activeShare)
+                                    .background(if (on) resting.copy(alpha = 0.6f) else resting, top))
+                                if (activeShare > 0f) Box(Modifier.fillMaxWidth().weight(activeShare).background(activeColor,
+                                    if (activeShare >= 1f) top else RoundedCornerShape(0.dp)))
+                            }
+                            active != null -> Box(Modifier.fillMaxWidth().fillMaxHeight((active / max).coerceIn(0.05f, 1f)).background(activeColor, top))
+                            else -> Box(Modifier.fillMaxWidth().height(2.dp).background(if (on) palette.primary else palette.cardBorder))
+                        }
+                    }
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(9.dp).background(palette.primary, RoundedCornerShape(2.dp)))
+                Text(tr(lang, "aktív (mozgás)", "active (movement)", "aktiv (Bewegung)", "activ (mișcare)"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                Box(Modifier.size(9.dp).background(resting, RoundedCornerShape(2.dp)))
+                Text(tr(lang, "nyugalmi", "resting", "Ruhe", "repaus"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+            }
+            com.example.ui.components.TrainPilotChartInfoLine(calorieDayLabel(java.time.LocalDate.parse(days[sel]), totals[sel], actives[sel], lang.name.lowercase()),
+                Modifier.testTag("health_today_tile_week_info_calories"))
+        }
+    } else if (key == "pulse") {
+        val values = days.map { d -> weekly[d]?.pulse?.averageBpm }
+        if (values.any { it != null }) {
+            Text(tr(lang, "Utolsó 7 nap", "Last 7 days", "Letzte 7 Tage", "Ultimele 7 zile"), style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
+            com.example.ui.components.WeeklyDayBars(days.map { java.time.LocalDate.parse(it) }, values,
+                label = { date, v -> todayTileWeekLabel("pulse", date, v, lang.name.lowercase()) }, tag = "health_today_tile_week_pulse",
+                lang = lang.name.lowercase())
+        }
     }
     val type = when (key) {
         "sleep" -> "SleepSessionRecord"
@@ -3792,7 +3846,8 @@ private fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today:
         value = runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.repforge.app.HealthJournalStore.get(context).generation() } }.getOrNull()
     }
     val g = generation ?: return
-    Text(tr(lang, "Mai rekordok", "Today's records", "Heutige Einträge", "Înregistrările de azi"), style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
+    // 2788: no empty "Today's records" block with a pager when there is nothing stored.
     com.repforge.app.ui.health.HealthRecordDayDetails(today, provider, "", type, lang.name.lowercase(), g,
-        "${uiState.healthRefreshRevision}", visible = true)
+        "${uiState.healthRefreshRevision}", visible = true,
+        title = tr(lang, "Mai rekordok", "Today's records", "Heutige Einträge", "Înregistrările de azi"), hideWhenEmpty = true)
 }
