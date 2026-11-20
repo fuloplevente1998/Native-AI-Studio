@@ -3451,9 +3451,7 @@ private fun HealthWeeklyGoalsPanel(
     val weeklyStepsTarget = (uiState.stepsGoal.coerceAtLeast(1) * 7)
     val weeklyStepsCurrent = goalDays.filter { it.stepsAvailable }.sumOf { it.steps }
     val weeklyStepsPct = ((weeklyStepsCurrent.toDouble() / weeklyStepsTarget.toDouble()) * 100.0).toInt()
-    val weeklyMinutesTarget = (uiState.userScheduleDaysPerWeek * uiState.userWorkoutDurationMin).coerceAtLeast(150)
     val weeklyMinutesCurrent = goalDays.sumOf { it.workoutMinutes }
-    val weeklyMinutesPct = ((weeklyMinutesCurrent.toDouble() / weeklyMinutesTarget.toDouble()) * 100.0).toInt()
     val primaryProviderName = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"
 
     // 303: the compact header already shows the workout goal; do not repeat it in a third card.
@@ -3485,7 +3483,7 @@ private fun HealthWeeklyGoalsPanel(
                         else "$weeklyMinutesCurrent $minUnit ${tr(uiState.language, "összesen", "total", "gesamt", "total")}",
                         style = MaterialTheme.typography.labelSmall, color = palette.textSecondary
                     )
-                    LinearProgressIndicator(progress = { ((if (steps) weeklyStepsPct else weeklyMinutesPct) / 100f).coerceIn(0f, 1f) },
+                    LinearProgressIndicator(progress = { if (steps) (weeklyStepsPct / 100f).coerceIn(0f, 1f) else goal.workoutFraction },
                         modifier = Modifier.fillMaxWidth(), color = palette.primary, trackColor = palette.surfaceElevated)
                     if (steps && goalDays.any { it.stepsAvailable }) Text("$weeklyStepsPct%",
                         style = MaterialTheme.typography.labelMedium, color = palette.primary,
