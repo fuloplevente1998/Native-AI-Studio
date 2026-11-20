@@ -1,146 +1,244 @@
-# TrainPilot Native – átadó és teljes audit prompt
+# TrainPilot Native – teljes kódaudit (átadó prompt)
 
-> Másold be egy másik ügynöknek (ChatGPT/Codex/Claude) egy az egyben. Hatókör: **a teljes app**. Repo:
-> `fuloplevente1998/Native-AI-Studio`. Kiinduló állapot: `main` @ `b76e2f0` (2787 merge),
-> nyitott: PR #304 (csak verziókód 278700/278702). Utolsó kiadott build: 1.4.1 · 278600/278602.
+> **Használat:** az alábbi teljes szöveget másold be az auditor ügynöknek (AI Studio / ChatGPT / Codex /
+> Claude), és add mellé a repót: `fuloplevente1998/Native-AI-Studio`, ág `main`.
+> Kiinduló állapot: `main` @ `d795593` = **1.4.1 · telefon 278700 · óra 278702**.
+> Hatókör: **a teljes app**. A legutóbbi kör (PR #290–#304) csak elsőbbséget kap.
 
 ---
 
 ## 1. Szerep és cél
 
-Senior Android (Kotlin/Compose, Room, DataStore, Wear OS Data Layer) auditor vagy. Feladat:
-**a TELJES kódbázis átvizsgálása** – telefon (`app/`), óra (`wear/`), közös szerződés (`shared/`),
-Room-séma és migrációk, DataStore, Health Connect / Samsung Health integráció, GPS/kültéri edzés,
-mentés/visszaállítás (Drive), értesítések, engedélyek, R8/ProGuard, GitHub Actions workflow-k,
-lokalizáció (hu/en/de/ro), valamint a weboldal (`fuloplevente1998/TrainPilot.io`) és a Play-adatlap
-szövegei. **Nem csak** a legutóbbi PR-ek (#290–#304): azok csak elsőbbséget kapnak, mert ott ismert,
-hogy kis hibák csúsztak át. Kis, könnyen elsikló hibákra is figyelj (kerekítés, két helyen számolt érték,
-eltérő címke és csík, levágott szöveg, rossz tesztcél, témából kilógó szín, üres gomb, elhallgatott kivétel,
-szálkezelés, életciklus, memóriaszivárgás, rossz időzóna/locale).
-Először **jelentést** adsz; kódot csak külön kérésre, gyűjtő draft PR-ba írsz.
+Tapasztalt Android-auditor vagy: Kotlin, Jetpack Compose, Room, SQLite, DataStore, coroutines,
+Health Connect, Samsung Health, Wear OS Data Layer, GPS foreground service.
 
-## 2. Kötelező szabályok (nem alku tárgya)
+Feladatod **hibakeresés, nem újraírás**. Keresd meg mindazt, ami miatt az app:
+1. **adatot veszít, duplikál vagy hamis adatot mutat** (ez a legfontosabb);
+2. összeomlik vagy lefagy;
+3. rossz értéket, rossz nyelvet vagy levágott szöveget jelenít meg;
+4. nem csinál semmit egy gombra, vagy két helyen mást mond ugyanarról;
+5. eltér a projekt szabályaitól (lent).
 
-- Olvasd el: `CLAUDE.md`, `AGENTS.md`, `.specify/memory/constitution.md`, `docs/FRAME_DESIGN_SYSTEM.md`.
-  A ~100 `docs/*` naplót csak célzott kereséssel.
-- **Adat**: mentett edzés/program/napló/Room-migráció/DataStore megőrzendő; nincs reset hibaelfedésre;
-  siker csak tartós írás után; azonos ID-jú dupla mentés nem duplikál. **Hiányzó mérés ≠ 0.**
-  Tükrözött Samsung/HC/Wear adat egyszer számít; aktív + összes kcal nem adható össze. Nincs gyártott adat.
-- Helyi Gradle/emulátor **tilos**; fordítás/teszt csak GitHub Actions (`trainpilot-android-ci.yml`).
-- Merge, release, verzióemelés, aláírás, GitHub-komment csak a tulajdonos kifejezett engedélyével.
-- Signer és applicationId (`com.TrainPilot.com`) változatlan. Titkot ne kérj, ne naplózz.
-- Teszt viselkedést védjen, ne UI-node létezést; tesztet kihagyni/kikapcsolni tilos.
-- Dizájn: palette-színek (`LocalTrainPilotPalette`), íves keret, 48 dp érintés, `trainPilotClickable`
-  (nyers `.clickable` tilos, lásd `PhonePressFeedbackUsageRegressionTest`), alsó lapok a tartalom magasságáig.
-- Kommunikáció a tulajdonossal: magyar, rövid, telefonon olvasható.
+A kis hibák is számítanak. Egy korábbi átnézés pont ilyeneket talált: eltérő kerekítés a kompakt és a
+lenyitott nézetben, egy csík, amelynek a célja más volt, mint a kiírt cél, és egy rossz görgetési célpont
+egy tesztben. Az ilyesmi ember szemmel könnyen elsiklik, ezért módszeresen keresd.
 
-## 3. Architektúra-térkép
+**Először csak jelentést adsz.** Kódot csak akkor írsz, ha a tulajdonos kifejezetten kéri („mehet”).
 
-- `app/` telefon (`com.example`), `wear/` óra (`com.repforge.app.wear`), `shared/` szinkronszerződés.
-- Nagy fájlok (csak célzott olvasás): `ui/viewmodel/TrainPilotViewModel.kt`,
-  `ui/screens/HealthCoachAndSettingsScreens.kt`, `WorkoutAndPlanningScreens.kt`, `ActiveMeasurementScreens.kt`,
-  `ui/components/TrainPilotCommonComponents.kt`, `MainActivity.kt`.
-- Új közös elemek (2784–2787): `components/TrainPilotControls.kt` (chip, mező, gombok),
-  `components/TrainPilotChartSelection.kt` (koppintható grafikon + infósor),
-  `components/WeeklyGoals.kt` (közös Heti célok), `components/TrainPilotFitText.kt`,
-  `screens/StatisticsExerciseTrend.kt`, `screens/StudioStatisticsScreen.kt`.
+## 2. Kemény szabályok (ezeket az app is, te is betartod)
 
-## 4. Audit-ellenőrzőlista (mindet végig kell nézni)
+**Adat**
+- Mentett edzés, program, napló, Room-adat, DataStore megőrzendő. Hibát resettel elfedni tilos.
+- „Siker” csak tartós írás után jelenhet meg. Azonos azonosítójú ismételt mentés nem duplikálhat.
+- **Hiányzó mérés ≠ 0.** Nincs adat → „—” vagy „nincs adat”. Átlagba, összegbe, csíkba nem kerülhet kitalált 0.
+- Tükrözött Samsung / Health Connect / óra adat egyszer számít. Aktív és összes kalória nem adható össze.
+- **Nincs gyártott, demó vagy minta adat** sehol (Coach, mérés, grafikon). Ez a projekt korábban
+  WebView-alapú demó volt; vissza nem állítható, kamu értékek nem vezethetők be újra.
 
-Sorrend: (1) adatbiztonság és -helyesség az egész appban, (2) telefon ↔ óra, (3) a 2779–2787 körös
-változások, (4) a teljes UI és lokalizáció, (5) build/kiadás/weboldal. Minden modult érints: ha egy
-területet nem néztél meg, írd a „Nem vizsgált” listába, indokkal.
+**Működés**
+- Telefon ↔ óra: egyetlen natív motor és időzítő-tulajdonos. Kötelező elemek:
+  - ownership, epoch, ACK;
+  - stabil workout/set azonosító;
+  - finalization/discard;
+  - receipt, tombstone, restore generation.
+- Az applicationId (`com.TrainPilot.com`) és az aláíró kulcs nem változhat. Titkot ne kérj, ne naplózz, ne commitolj.
+- GPS-adat és fotók privát tárban maradnak. Az egészségadat biztonsági mentése alapból ki van kapcsolva.
 
-### A. Egy érték = egy számítás
-Már talált hibaosztály (#303): ugyanaz a mutató két helyen eltérően számolva (kompakt vs. lenyitott %,
-csík célja ≠ kiírt cél, eltérő kerekítés). Keresd meg az összes ilyet:
-- `weeklyGoalSummary()` vs. `HealthWeeklyGoalsPanel` saját számításai (lépés %, cél, napok).
-- Heti lépés: gördülő 7 nap; edzéscél: naptári hét/hónap (`workoutsInPeriodToDate`). Címkék ezt pontosan mondják-e?
-- `TodayTileSheetExtras`: `weeklyHealthDays + dailyActivityDays` `associateBy` – melyik nyer, lehet-e dupla forrás?
-- Kezdőlap Mai állapot csempék vs. Egészség csempék vs. Statisztikák Lépések – azonos szám-e ugyanarra a napra?
-- Fejlődés volumen, PR rekordok (`LoggedPrRecords`, `replayedPrRecords`), Coach célérték – azonos forrás.
+**Dizájn**
+- Színek csak a palettából (`LocalTrainPilotPalette`). Nincs beégetett fehér vagy fekete, nincs Material alapszín.
+- Íves keretek, legalább 48 dp érintési felület.
+- Kattintáshoz `trainPilotClickable`. Nyers `.clickable` tilos, ezt a `PhonePressFeedbackUsageRegressionTest` őrzi.
+- Alulról nyíló lapok a tartalom magasságáig, legfeljebb kb. a képernyő 2/3-áig.
+- Nincs rövidítés és nincs levágott szó: erre a `TrainPilotFitText` való.
 
-### B. Hiányzó adat és 0
-Minden grafikon/összeg: hiányzó nap „nincs adat”/„—”, nem 0; átlag nem számol 0-val; csík nem telik
-gyártott értékből. Ellenőrizd: `todayTileWeekLabel`, `WeeklyDayBars`, `weeklyGoalSummary`, pulzus 24 h,
-Health Connect hiány-hint (2780), Coach.
+**Folyamat**
+- Helyi Gradle és emulátor tilos. Fordítás és teszt csak GitHub Actionsben (`trainpilot-android-ci.yml`).
+- Tesztet kihagyni, kikapcsolni vagy gyengíteni tilos. A teszt viselkedést védjen, ne csak azt, hogy egy UI-elem létezik.
+- Merge, kiadás, verzióemelés, aláírás és GitHub-komment csak a tulajdonos kifejezett engedélyével.
 
-### C. Adatírás és ID-k (gyanús pontok, ellenőrizd!)
-- Testsúly **szerkesztés**: a lap `onSaveNewWeight(kg, dátum)`-ot hív ID nélkül → szerkesztés új rekordot
-  hozhat létre, a régi megmarad a DB-ben (a képernyő helyi listája közben „szerkesztettnek” mutatja)?
-  Dátum módosításnál duplikál-e? Törlés után újraindításkor visszajön-e?
-- Testsúly időszakok (`weightMeasurementsInRange`): határnap benne van-e, időzóna.
-- Edzés mentés/törlés/visszavonás, óráról érkező edzés: duplikáció, tombstone, receipt.
-- Room migrációk, DataStore kulcsok: nincs adatvesztés frissítéskor (1.4.0 → 1.4.1 → 278700).
+## 3. Kódbázis-térkép (ellenőrizve)
 
-### D. UI-szabályok
-- Szöveg sehol ne vágódjon (4 nyelv: hu/en/de/ro, nagy betűméret, 320 dp szélesség): Edzés fül 3 csempe,
-  Statisztikák fülek, Gyors edzés, Heti célok, Testsúlynapló fejléc, Források kártya alcíme.
-- Nincs fehér/Material alapszínű keret; minden új vezérlő palette-színt használ sötét, világos, kontraszt témán.
-  `TrainPilotFilterChip`/`TrainPilotTextField` figyelmen kívül hagyja a hívó `colors`/`border` paraméterét –
-  van-e hívó, ahol ez jelentést hordozott (pl. hiba/veszély szín)?
-- Minden koppintható grafikon: kiemelés + fix magasságú infósor, alapból a legutóbbi; a koppintás nem nyit
-  véletlenül más lapot (szülő kattintható felület).
-- Lapok: tartalom magasságáig (max ~2/3), bezáráskor nem ugrik a kezdőlapra (`dismissSheetRoute`).
-- Érintési cél ≥ 48 dp; nincs dupla belépési pont ugyanarra a funkcióra ugyanazon a képernyőn.
+| Modul | Fájlok | Megjegyzés |
+|---|---|---|
+| `app/` telefon | ~317 main / ~150 teszt `.kt` | két csomag: `com.example` (UI, ViewModel) és `com.repforge.app` (adat, natív szolgáltatások) |
+| `wear/` óra | ~48 / ~38 | `com.repforge.app.wear` |
+| `shared/` | 14, **0 teszt** | szinkronszerződés: `WorkoutSharedContracts`, `WorkoutOwnership193`, `OwnershipJournal193`, `OwnershipTransport193`, `GpsRoute*193`, `IntervalTimeline193`, `WatchHomePayload`, `LegacySyncIdentity18` |
 
-### E. Bekötés és navigáció
-- Minden gomb valódi műveletet hív (nincs `= {}`); `Collector2785RegressionTest.noVisibleControlIsBoundToAnEmptyAction`
-  engedélylistája (`onBack`, `onOpenSettings`, `onValueChange`) nem túl tág-e?
-- Kezdőlap Heti célok → Egészség lenyitva (`openHealthAndExpand(weeklyGoals = true)`), ⚙ → célok ablak.
-- Pozicionális Compose-paraméterek: új paraméter ne csússzon régi pozíciók közé (2786-ban ez okozott hibát).
-- Egyesített „Források, óra és szinkron” kártya: zárt állapotban is elérhető-e a szinkron, látszik-e hiba?
+**Adattárolás**
+- Room: `app/.../repforge/app/data/db/TrainPilotDatabase.kt`, entitások: `TrainPilotEntities.kt`.
+  **`version = 1`, `exportSchema = false`, nincs `Migration`.**
+- Saját SQLite:
+  - `HealthJournalStore.kt` (v2, `onUpgrade` csak 1→2-re, egyébként kivételt dob);
+  - `PhoneWorkoutExecutionStore.kt` (v1, minden upgrade-re kivételt dob).
+- DataStore: `data/store/TrainPilotSettingsStore.kt`.
+- Egyéb tárak: `ActiveWorkoutStore`, `GpsRouteStore`, `NativeWeightTombstones18`, `BackupRestoreManager`,
+  `BackupJsonIO`, `ArchiveIO`, `NativeCloudMergeGuard`, `NativeDataReplacement`.
 
-### F. Telefon ↔ óra
-Egy motor és időzítő-tulajdonos; ownership/epoch/ACK; stabil workout/set ID; finalization/discard;
-receipt; tombstone; restore generation. A 2779–2787 változtatások nem érintették-e (`shared/`)?
+**Nagy fájlok** (csak célzottan olvasd)
+- `ui/viewmodel/TrainPilotViewModel.kt` (~5,4 ezer sor)
+- `ui/screens/HealthCoachAndSettingsScreens.kt`
+- `WorkoutAndPlanningScreens.kt`
+- `ActiveMeasurementScreens.kt`
+- `ui/components/TrainPilotCommonComponents.kt`
+- `com/example/MainActivity.kt`
 
-### G. Tesztek minősége
-Viselkedést védenek-e; scroll-célpont stabil-e (#303-ban rossz célpontra görgetett);
-`useUnmergedTree` indokolt-e; pixel/téma tesztek tűrése; hiányzó teszt a fenti gyanús pontokra.
+**Óra-integráció:** `NativeWatch*Admission.kt`, `NativeWatchHandoffReceipt.kt`, `NativeWearCompanion.kt`,
+`NativeSavedWearHealth.kt`, valamint a `wear/` modul.
 
-### H. Kiadás-higiénia
-versionCode minden buildnél nő (`27NN00`/`27NN02`), versionName egyezik telefon/óra;
-`docs/PLAY_LISTING.md` 4 nyelv, nyelvenként ≤ 500 karakter, csak valós változás;
-weboldal (`TrainPilot.io` index + privacy) verziósora = legutolsó build; adatvédelmi szöveg és URL helyes.
+**Egészség:** `HealthConnectRepository`, `HealthConnectJournal`, `HealthConnectSyncRecovery`, `NativeHealthSync`,
+`NativeHealthRefresh`, `NativeHealthProviderBatch/Data`, `HealthProjectionsAndEnergy`, `NativeDailyHealthDetails`.
 
-### I. Teljes app – további területek
-- **Room/DAO**: minden migráció (régi verzióról frissítés adatvesztés nélkül), indexek, tranzakciók,
-  `onConflict` stratégia, főszálon futó lekérdezés, Flow-k lezárása.
-- **ViewModel/állapot**: versenyhelyzet (`_uiState.update` párhuzamosan), forgatás/folyamat-újraindítás után
-  elvesző állapot, `rememberSaveable` hiánya, coroutine-scope szivárgás, `runCatching` elnyelt hibák.
-- **Health Connect / Samsung Health**: engedélykezelés, részleges hozzáférés, duplikált (tükrözött) rekordok,
-  időzóna-határ (éjfél), háttérfrissítés, hiba üzenete a felhasználónak.
-- **Aktív edzés**: időzítő pontossága háttérben/képernyő zárva, pihenő, visszavonás, félbehagyott edzés
-  helyreállítása, mentés folyamat kill után, foreground service.
-- **Kültéri/GPS**: engedély, akku, pontatlan pontok szűrése, táv/tempó számítás, privát tárolás.
-- **Mentés/visszaállítás (Drive, export/import)**: teljes-e, visszaállítás után nincs duplikáció, health
-  backup-consent alapból ki.
-- **Wear OS**: kerek kijelző, rotary, akku, kapcsolat megszakadása edzés közben, telefon nélküli mód.
-- **Biztonság/adatvédelem**: titkok nincsenek a kódban/logban, exported komponensek, intent-szűrők,
-  fájlok privát tárban, adatvédelmi szöveg = valós működés.
-- **Lokalizáció**: hiányzó/keveredő nyelv, beégetett magyar szöveg más nyelven, szám/dátum formátum.
-- **Akadálymentesség**: contentDescription, 48 dp, kontraszt (világos/kontraszt téma).
-- **Teljesítmény**: nagy listák (LazyColumn kulcsok), felesleges újrakomponálás, főszálon IO.
-- **CI/workflow**: tesztek valóban futnak-e minden modulra (JUnit XML ellenőrzés), aláírás-ellenőrzés,
-  verziókód-egyediség.
+**Új közös UI-elemek (2784–2787):**
+- `components/TrainPilotControls.kt` (chip, mező, gombok)
+- `components/TrainPilotChartSelection.kt` (koppintható grafikon és infósor)
+- `components/WeeklyGoals.kt` (közös Heti célok)
+- `components/TrainPilotFitText.kt`
+- `screens/StatisticsExerciseTrend.kt`, `screens/StudioStatisticsScreen.kt`
 
-## 5. Munkamenet
+**CI:**
+- `.github/workflows/trainpilot-android-ci.yml` (PR-en futó teljes JVM-regresszió)
+- `trainpilot-persistent-signing.yml` (aláírt APK+AAB)
+- `trainpilot-play-internal-aab.yml`
+- `scripts/verify_junit_xml.py`
 
-1. Modulonként végig (app, wear, shared, workflows, weboldal); a 2779–2787 kör diffjét (#290–#304,
-   `docs/FIXES_27NN.md`) kiemelten.
-2. Képernyőnként és adatfolyamonként: UI → ViewModel → repository/DAO → Room/DataStore/HC/óra.
-3. Minden gyanút forráskóddal igazolj (fájl:sor); ahol csak futtatással dönthető el, jelöld „ellenőrizendő”.
-4. Ne írj kódot, amíg a tulajdonos nem mondja: „mehet”.
+## 4. Kockázati térkép – ezzel kezdd
 
-## 6. Elvárt kimenet
+### 4.1 Már igazolt hiba (erősítsd meg, és mérd fel a hatását)
+- **Testsúly szerkesztése új rekordot ír.**
+  - A lap `HealthCoachAndSettingsScreens.kt` ~384. sorában `onSaveNewWeight(kg, dátum)`-ot hív, azonosító nélkül.
+  - A `TrainPilotViewModel.saveNewBodyWeight` (~4499) mindig `UUID.randomUUID()` azonosítót ad (~4538), majd `upsertWeight`-et hív.
+  - Következmény: a szerkesztett mérés mellett a régi is megmarad a DB-ben. Újraindítás után mindkettő látszik, dátummódosításnál biztosan.
+  - Nézd meg a törlést (`deleteBodyWeightLog` ~4583) és a tombstone-okat (`NativeWeightTombstones18`) is.
+  - Ellenőrizd a felhőszinkron-összefésülést (`NativeCloudMergeGuard`): visszahozhatja-e a törölt mérést.
 
-Rövid magyar összefoglaló (max 10 sor), utána táblázat:
+### 4.2 Ismert hibaosztályok – keresd mindenhol
+1. **Egy mutató, több számítás.** Példa: a heti lépés % kétszer van kiszámolva, egyszer
+   `weeklyGoalSummary()`-ben (`WeeklyGoals.kt`), egyszer `HealthWeeklyGoalsPanel`-ben
+   (`HealthCoachAndSettingsScreens.kt` ~3453). Eltérő forráslistából, eltérő napokra számolhatnak.
+   Ugyanígy nézd meg:
+   - a Mai állapot csempéket (Kezdőlap és Egészség);
+   - a Statisztikák Lépések fülét;
+   - a PR rekordokat (`LoggedPrRecords`, `replayedPrRecords`);
+   - a Fejlődés volument;
+   - a Coach célértékét.
+2. **Felirat és vizuális elem eltérése.** Más érték a feliratban, mint a csíkon vagy a grafikonon;
+   eltérő kerekítés; 100%-ra levágott érték, miközben a felirat mást mond.
+3. **Időszak-keveredés.** Gördülő 7 nap és naptári hét összekeverése (`workoutsInPeriodToDate`); éjfél és időzóna;
+   a `LocalDate.now()` több helyen külön hívva (napváltáskor szétcsúszhat).
+4. **Forrás-összefésülés.** `weeklyHealthDays + dailyActivityDays` `associateBy`-jal (`TodayTileSheetExtras`):
+   melyik nyer, lehet-e dupla vagy rossz forrás?
+5. **Pozicionális Compose-paraméter.** Új paraméter nem csúszhat a régiek közé (ez már okozott fordítási hibát).
+6. **Figyelmen kívül hagyott paraméter.** A `TrainPilotFilterChip` és a `TrainPilotTextField` szándékosan eldobja
+   a hívó `colors`/`border`/`shape` paraméterét. Van-e hívó, ahol ez jelentést hordozott (hiba, veszély, kiválasztás)?
+7. **Elnyelt hiba.** `runCatching { }.getOrDefault(...)`, üres `catch`, olyan „siker” üzenet, ami nem tartós írás után jön.
+8. **Tesztminőség.** Instabil görgetési célpont, indokolatlan `useUnmergedTree`, olyan teszt, ami csak azt nézi, hogy egy node létezik.
 
-| # | Súlyosság (Kritikus/Magas/Közepes/Alacsony) | Terület | Fájl:sor | Mi a hiba (konkrét bemenet → rossz eredmény) | Javaslat | Teszt, ami megfogja |
-|---|---|---|---|---|---|---|
+### 4.3 Kiemelt gyanús pontok
+- **Room v1, sémaexport nélkül.** Változott-e bármely entitás az első kiadás óta? Ha igen, frissítéskor
+  összeomlás vagy adatvesztés jöhet. A `HealthJournalStore` és a `PhoneWorkoutExecutionStore` minden más
+  verzióváltásra kivételt dob: mi történik ilyenkor a felhasználónál?
+- **A `shared/` modulnak nincs tesztje**, pedig ez a telefon–óra szerződés.
+- **Egyesített „Források, óra és szinkron” kártya:** zárt állapotban is elérhető-e a szinkron, és látszik-e a hiba?
+- **Bekötés-őrteszt:** a `Collector2785RegressionTest.noVisibleControlIsBoundToAnEmptyAction` engedélylistája
+  (`onBack`, `onOpenSettings`, `onValueChange`) túl tág lehet, valódi üres gombot is átengedhet.
 
-Külön lista: „Igazoltan rendben” (mit néztél meg és jó), „Nem tudtam eldönteni” (miért) és
-„Nem vizsgált” (modul/terület, indok). Nagy kódbázisnál több részletben is jelenthetsz, modulonként.
-Javítás csak jóváhagyás után: új ág `fix/collector-27NN`, `docs/FIXES_27NN.md` táblába rögzítve,
-egy közös CI-kör, nyers JUnit XML szám (tests/failures/errors/skipped) a jelentésben.
+## 5. Ellenőrzőlista – minden pont ellenőrizhető állítás
+
+**A. Adatbiztonság (Kritikus terület)**
+- Minden írás (edzés, sorozat, program, napló, testsúly, fotó, GPS, beállítás) tranzakcióban fut, ütközéskor helyes stratégiával.
+- A „siker” csak a tartós írás után jelenik meg.
+- Szerkesztés = ugyanaz az azonosító. Törlés = tombstone, és szinkron vagy visszaállítás után sem jön vissza.
+- Folyamat kilövése, forgatás vagy akkumulátor-kímélő mód után nincs elveszett aktív edzés (`ActiveWorkoutStore`, foreground service).
+- Biztonsági mentés és visszaállítás (Drive, JSON, archív): teljes, nem duplikál, verzióváltáskor kompatibilis.
+  Az egészségadat-mentés hozzájárulás nélkül nem kerül bele.
+- Frissítés 1.3 → 1.4.0 → 1.4.1 → 278700: minden adatbázis és DataStore-kulcs megmarad.
+
+**B. Telefon ↔ óra**
+- Egy tulajdonos: nincs két párhuzamosan futó időzítő.
+- Az ACK és az epoch elveszett vagy ismételt üzenetnél is helyes állapotot ad.
+- A befejezés és az eldobás idempotens: nincs dupla edzés, és nincs elveszett edzés.
+- A receipt és a tombstone megakadályozza, hogy egy törölt edzés visszajöjjön.
+- Megszakadt kapcsolat edzés közben: utána helyes az összefésülés.
+
+**C. Egészségadat**
+- Engedély: teljes, részleges, visszavont. A részleges hozzáférés nem 0-t mutat.
+- Samsung/HC tükrözött rekord egyszer számít. Az éjféli határ jó helyen van. A háttérfrissítés nem duplikál.
+- Pulzus, alvás, kalória: hiányzó adat nem 0. Aktív és összes kalória nincs összeadva.
+
+**D. Aktív edzés és GPS**
+- Az időzítő pontos háttérben és zárt képernyővel is.
+- Pihenő, visszavonás, félbehagyás, helyreállítás működik.
+- A GPS-pontok szűrése működik, a táv és a tempó helyes, akkukímélő módban sem hibás. Az útvonal privát tárban van.
+
+**E. UI és lokalizáció** (hu/en/de/ro, 320 dp szélesség, nagy betűméret, sötét/világos/kontraszt téma)
+- Nincs levágott szó.
+- Nincs keveredő nyelv: magyar szöveg nem jelenik meg más nyelven.
+- Szám- és dátumformátum a nyelvnek megfelelő.
+- Minden koppintható grafikonon van kiemelés és fix infósor, alapból a legutóbbi elemen.
+- Ugyanarra a funkcióra ugyanazon a képernyőn nincs két belépési pont.
+- Akadálymentesség: `contentDescription`, 48 dp, kontraszt.
+
+**F. Állapot és szálkezelés**
+- `_uiState.update` versenyhelyzet; főszálon futó IO; lezáratlan Flow vagy coroutine.
+- Hiányzó `rememberSaveable`; `LazyColumn` kulcsok hiánya; felesleges újrakomponálás nagy listán.
+
+**G. Biztonság**
+- Exportált komponensek és intent-szűrők; titok a kódban vagy a logban.
+- Fájlok privát tárban; az adatvédelmi szöveg megfelel a valós működésnek, és helyes benne a webcím.
+
+**H. Kiadás**
+- A versionCode minden buildnél nő (`27NN00`/`27NN02`); a versionName egyezik a telefonon és az órán.
+- `docs/PLAY_LISTING.md`: 4 nyelv, nyelvenként ≤ 500 karakter, csak valós változás.
+- A weboldal (`TrainPilot.io`: `index.html`, `privacy.html`) verziósora = a legutolsó build.
+- A CI valóban lefuttatja minden modul tesztjeit (`verify_junit_xml.py`).
+
+## 6. Módszer
+
+1. **Adatfolyamonként haladj**, ne fájlonként: képernyő → ViewModel → repository/DAO → Room/SQLite/DataStore,
+   illetve Health Connect vagy óra. Minden kiírt számnál keresd meg, honnan jön, és hol számolják még.
+2. **Bizonyíték nélkül nincs találat.** Minden találathoz kell:
+   - fájl:sor;
+   - a hívási út (valóban elérhető-e);
+   - konkrét bemenet → rossz kimenet;
+   - bizonyosság: **Igazolt** (a kódból egyértelmű), **Valószínű**, vagy **Ellenőrizendő** (csak futtatással dönthető el).
+3. **Kerüld a hamis riasztást.**
+   - Stílus-preferencia nem hiba.
+   - Nézd meg, véd-e már teszt az adott viselkedésre (`app/src/test`, `wear/src/test`).
+   - Nézd meg a `docs/FIXES_27NN.md` táblákat: ami szándékos döntés, az nem hiba.
+4. **Korlátozott kontextus.** Ha nem látod a teljes repót, sorold fel, mely fájlokra van szükséged (pontos útvonallal).
+   Ne találgass meg nem nézett kódról.
+5. **Modulonként, több részletben jelents:**
+   1. adatbiztonság;
+   2. telefon–óra;
+   3. egészség;
+   4. aktív edzés és GPS;
+   5. UI és lokalizáció;
+   6. kiadás.
+
+## 7. Elvárt kimenet
+
+**Összefoglaló:** max. 10 sor, magyarul. A 3 legsúlyosabb hiba egy-egy mondatban.
+
+**Találatok:**
+
+| # | Súlyosság | Bizonyosság | Terület | Fájl:sor | Hiba (bemenet → rossz eredmény) | Javasolt javítás | Regressziós teszt |
+|---|---|---|---|---|---|---|---|
+
+Súlyosság:
+- **Kritikus:** adatvesztés, duplikált vagy hamis adat, összeomlás fő úton.
+- **Magas:** rossz érték, nem működő funkció, telefon–óra eltérés.
+- **Közepes:** UI-eltérés, levágott szöveg, rossz nyelv, téma-eltérés.
+- **Alacsony:** kozmetikai vagy kódminőségi hiba.
+
+**Külön listák:**
+- **Igazoltan rendben:** mit néztél meg, és jó.
+- **Nem tudtam eldönteni:** miért.
+- **Nem vizsgált:** melyik modul vagy terület maradt ki, és miért.
+
+## 8. Ha javítást kérnek
+
+- Új ág: `fix/collector-27NN`. Minden pont kerüljön be a `docs/FIXES_27NN.md` táblába (Hol / Visszajelzés / Javaslat / Állapot).
+- UI-változás előtt mockup kell.
+- Minimális diff, viselkedést védő regressziós teszt, egy közös CI-kör.
+- A jelentésben kötelező: forrás SHA, valamint a nyers JUnit XML számai (tests/failures/errors/skipped).
+- Teljes fájlt újraírni, mintaadatot betenni vagy tesztet törölni tilos. Merge és kiadás csak engedéllyel.
