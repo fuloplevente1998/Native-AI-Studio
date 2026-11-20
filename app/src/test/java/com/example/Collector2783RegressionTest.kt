@@ -55,4 +55,22 @@ class Collector2783RegressionTest {
         assertEquals("25 mp/oldal", coachTargetText(t("25/oldal", "time"), "", "hu"))
         assertEquals("2 RIR", coachTargetText(t("2 RIR", "rir"), "ism.", "hu"))
     }
+
+    @Test fun exerciseCardsGetAMiniTrendFromSavedSets() {
+        fun w(day: String, kg: Float, reps: Int) = LoggedWorkoutEntry(id = day, titleHu = "A", savedStartIso = "${day}T09:00",
+            exerciseDetails = listOf(com.example.model.LoggedExerciseDetail("Goblet guggolás", "",
+                listOf(com.example.model.ExerciseSetItem(1, kg, reps, 2, true), com.example.model.ExerciseSetItem(2, kg + 5f, reps, 2, false)))))
+        val record = com.repforge.app.SavedExerciseBest("goblet", "Goblet guggolás", "Goblet squat", "ism.", "reps", 12.5, 12, null, null)
+        val points = com.example.ui.screens.exerciseTrend(record, listOf(w("2026-11-10", 12.5f, 12), w("2026-11-01", 10f, 12)))
+        assertEquals(listOf(LocalDate.parse("2026-11-01"), LocalDate.parse("2026-11-10")), points.map { it.date }) // oldest first
+        assertEquals(10.0 * (1 + 12 / 30.0), points.first().value, 1e-6) // uncompleted heavier set ignored
+        val kind = com.example.ui.screens.exerciseTrendKind(record)
+        assertEquals("▲ +3 kg", com.example.ui.screens.exerciseTrendChange(points, kind, "hu"))
+        assertNull(com.example.ui.screens.exerciseTrendChange(points.take(1), kind, "hu"))
+        val bodyweight = record.copy(weightKg = null)
+        assertEquals("± 0", com.example.ui.screens.exerciseTrendChange(
+            com.example.ui.screens.exerciseTrend(bodyweight, listOf(w("2026-11-10", 0f, 12), w("2026-11-01", 0f, 12))),
+            com.example.ui.screens.exerciseTrendKind(bodyweight), "hu"))
+        assertTrue(com.example.ui.screens.exerciseTrend(record.copy(distanceMeters = 5000.0), listOf(w("2026-11-10", 12.5f, 12))).isEmpty())
+    }
 }

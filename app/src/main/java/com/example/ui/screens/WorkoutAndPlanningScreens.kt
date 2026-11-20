@@ -312,7 +312,7 @@ fun WorkoutTabScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             WorkoutModeTile(
-                title = trW(state.language, "Erő", "Strength", "Kraft", "Forță"),
+                title = trW(state.language, "Ismétléses", "Reps", "Wiederholungen", "Repetări"),
                 subtitle = trW(state.language, "súly × ismétlés", "weight × reps", "Gewicht × Wdh.", "greutate × rep."),
                 badge = trW(state.language, "${state.exercises.size} gyak.", "${state.exercises.size} ex.", "${state.exercises.size} Üb.", "${state.exercises.size} ex."),
                 testTag = "workout_tab_exercise_picker",

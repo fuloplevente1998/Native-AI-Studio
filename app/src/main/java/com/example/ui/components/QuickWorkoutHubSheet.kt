@@ -64,7 +64,7 @@ fun QuickWorkoutHubSheet(
             }
             // Segmented tabs: Strength · Timed · Outdoor.
             val tabs = listOf(
-                qw(language, "💪 Erő", "💪 Strength", "💪 Kraft", "💪 Forță"),
+                qw(language, "💪 Ismétléses", "💪 Reps", "💪 Wiederh.", "💪 Repetări"),
                 qw(language, "⏱ Időzített", "⏱ Timed", "⏱ Zeit", "⏱ Cronometrat"),
                 qw(language, "🗺 Kültéri", "🗺 Outdoor", "🗺 Outdoor", "🗺 Exterior")
             )
