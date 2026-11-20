@@ -223,7 +223,7 @@ private fun WorkoutSetValuePicker(
             }
         }
         if (custom && enabled) {
-            OutlinedTextField(value = draft, onValueChange = { draft = it }, singleLine = true,
+            com.example.ui.components.TrainPilotTextField(value = draft, onValueChange = { draft = it }, singleLine = true,
                 isError = !valid, modifier = Modifier.fillMaxWidth().testTag("${tag}_custom_input"),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { if (valid) { onSelect(canonical); custom = false } }))

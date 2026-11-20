@@ -184,7 +184,7 @@ fun ProgressScreen(
                                 NativeStrengthRange.YEAR -> R.string.native_progress_strength_year
                                 NativeStrengthRange.ALL -> R.string.native_progress_strength_all
                             }
-                            FilterChip(
+                            com.example.ui.components.TrainPilotFilterChip(
                                 selected = state.selectedStrengthRange == range,
                                 onClick = { viewModel.selectStrengthRange(range) },
                                 label = { Text(strings.getString(title)) },
@@ -342,7 +342,7 @@ private fun ProgressStrengthSnapshot(
 }
 
 @Composable
-fun TrendCanvas(points: List<Double>) {
+fun TrendCanvas(points: List<Double>, selected: Int = -1) {
     val colors = LocalTrainPilotColors.current
     Canvas(modifier = Modifier.fillMaxSize()) {
         val minVal = points.minOrNull() ?: 0.0
@@ -376,6 +376,12 @@ fun TrendCanvas(points: List<Double>) {
             style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
         )
         offsets.forEach { o ->
+            drawCircle(color = colors.accent2, radius = 3.dp.toPx(), center = o)
+        }
+        // 2785: the tapped point is highlighted with a guide line and a larger dot.
+        offsets.getOrNull(selected)?.let { o ->
+            drawLine(colors.accentText.copy(alpha = 0.5f), Offset(o.x, 0f), Offset(o.x, size.height), strokeWidth = 1.5.dp.toPx())
+            drawCircle(color = colors.accentText, radius = 6.dp.toPx(), center = o)
             drawCircle(color = colors.accent2, radius = 3.dp.toPx(), center = o)
         }
     }

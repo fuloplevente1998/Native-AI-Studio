@@ -85,11 +85,11 @@ internal fun QuickWorkoutScreen(outdoorOnly: Boolean, starting: Boolean,
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(if (outdoorOnly) text[1] else text[0], style = MaterialTheme.typography.titleLarge, color = colors.text)
         Text(text[2], color = colors.muted)
-        OutlinedTextField(value = query, onValueChange = { query = it }, label = { Text(text[3]) },
+        com.example.ui.components.TrainPilotTextField(value = query, onValueChange = { query = it }, label = { Text(text[3]) },
             modifier = Modifier.fillMaxWidth().testTag("exercise_search"), enabled = !starting, singleLine = true)
         val favText = quickFavoriteWords(resources)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = favoritesOnly, onClick = { favoritesOnly = !favoritesOnly },
+            com.example.ui.components.TrainPilotFilterChip(selected = favoritesOnly, onClick = { favoritesOnly = !favoritesOnly },
                 enabled = !starting, label = { Text(favText[0]) }, modifier = Modifier.testTag("exercise_favorites_filter"))
             Text("${favorites.size} ★", color = colors.muted)
         }

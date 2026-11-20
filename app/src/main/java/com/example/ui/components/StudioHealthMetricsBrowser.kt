@@ -85,7 +85,7 @@ internal fun StudioHealthMetricsBrowser(
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC).forEach { selected ->
-            FilterChip(selected = provider == selected, onClick = { if (provider != selected) provider = selected },
+            com.example.ui.components.TrainPilotFilterChip(selected = provider == selected, onClick = { if (provider != selected) provider = selected },
                 colors = FilterChipDefaults.filterChipColors(containerColor = palette.surfaceCard,
                     labelColor = palette.textPrimary, selectedContainerColor = palette.primary,
                     selectedLabelColor = palette.onPrimary),
@@ -224,7 +224,7 @@ internal fun StudioHealthMetricsBrowser(
                             "SleepSessionRecord" to label("Alvás", "Sleep", "Schlaf", "Somn"))
                         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             filters.forEach { (filterType, filterLabel) ->
-                                FilterChip(selected = type == filterType, onClick = { type = filterType },
+                                com.example.ui.components.TrainPilotFilterChip(selected = type == filterType, onClick = { type = filterType },
                                     colors = FilterChipDefaults.filterChipColors(containerColor = palette.surfaceCard,
                                         labelColor = palette.textPrimary, selectedContainerColor = palette.primary,
                                         selectedLabelColor = palette.onPrimary),

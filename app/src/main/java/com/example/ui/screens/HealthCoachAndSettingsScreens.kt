@@ -62,6 +62,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Bedtime
@@ -117,6 +118,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.style.TextAlign
+import com.example.ui.components.trainPilotChartTap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -257,15 +260,8 @@ fun HealthTabScreen(
     }
     // Always sorted chronologically (oldest -> newest) by the user-entered date for the chart!
     val chronologicalMeasurements = remember(recentMeasurements, uiState.selectedWeightRangeIndex) {
-        val cutoff = when (uiState.selectedWeightRangeIndex) {
-            0 -> today.minusDays(7)
-            1 -> today.minusDays(30)
-            2 -> today.minusMonths(3)
-            3 -> today.minusYears(1)
-            else -> java.time.LocalDate.of(1970, 1, 1)
-        }
-        val filtered = recentMeasurements.filter { !it.parsedDate.isBefore(cutoff) }
-        (if (filtered.size >= 2) filtered else recentMeasurements).sortedBy { it.parsedDate }
+        // 2785: only the selected period's measurements (no silent fallback to the full list).
+        weightMeasurementsInRange(recentMeasurements, uiState.selectedWeightRangeIndex, today)
     }
     val latestChronologicalEntry = remember(recentMeasurements) {
         recentMeasurements.maxByOrNull { it.parsedDate }
@@ -308,56 +304,55 @@ fun HealthTabScreen(
                             "Greutate (kg) și data măsurătorii (ordonate cronologic pe grafic):"
                         )
                     )
-                    OutlinedTextField(
+                    com.example.ui.components.TrainPilotTextField(
                         value = weightText,
                         onValueChange = { weightText = it },
                         singleLine = true,
                         label = { Text(tr(uiState.language, "Testsúly (kg)", "Weight (kg)", "Gewicht (kg)", "Greutate (kg)")) }
                     )
-                    OutlinedTextField(
-                        value = dateText,
-                        onValueChange = { dateText = it },
-                        singleLine = true,
-                        label = {
-                            Text(
-                                tr(
-                                    uiState.language,
-                                    "Mérés dátuma (pl. 2026. 10. 15.)",
-                                    "Measurement date (e.g. 2026. 10. 15.)",
-                                    "Messdatum (z. B. 2026. 10. 15.)",
-                                    "Data măsurătorii (ex. 2026. 10. 15.)"
-                                )
-                            )
-                        }
-                    )
-                    // Quick date presets for fast testing of historical dates
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    // 2785: the date opens a calendar; quick chips for the usual days.
+                    var datePickerOpen by remember { mutableStateOf(false) }
+                    val pickedDate = parseWeightEntryLocalDate(dateText, today)
+                    Box(Modifier.fillMaxWidth()) {
+                        com.example.ui.components.TrainPilotTextField(
+                            value = pickedDate.format(dotFormatter),
+                            onValueChange = {},
+                            readOnly = true,
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text(tr(uiState.language, "Mérés dátuma", "Measurement date", "Messdatum", "Data măsurătorii")) },
+                            trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) }
+                        )
+                        Box(Modifier.matchParentSize().padding(top = 8.dp)
+                            .trainPilotClickable(RoundedCornerShape(14.dp)) { datePickerOpen = true }
+                            .testTag("health_weight_date_field"))
+                    }
+                    if (datePickerOpen) com.example.ui.components.CompactDatePickerDialog(pickedDate, uiState.language.name.lowercase(),
+                        onDismiss = { datePickerOpen = false },
+                        onConfirm = { dateText = it.format(dotFormatter); datePickerOpen = false })
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf(
                             tr(uiState.language, "Ma", "Today", "Heute", "Azi") to today,
-                            tr(uiState.language, "-3 nap", "-3d", "-3T", "-3 zile") to today.minusDays(3),
-                            tr(uiState.language, "-7 nap", "-7d", "-7T", "-7 zile") to today.minusDays(7),
-                            tr(uiState.language, "-14 nap", "-14d", "-14T", "-14 zile") to today.minusDays(14)
-                        ).forEach { (presetTitle, presetDate) ->
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = palette.surfaceElevated,
-                                modifier = Modifier
-                                    .trainPilotClickable(RoundedCornerShape(8.dp)) { dateText = presetDate.format(dotFormatter) }
-                            ) {
-                                Text(
-                                    text = presetTitle,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = palette.primary,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
+                            tr(uiState.language, "Tegnap", "Yesterday", "Gestern", "Ieri") to today.minusDays(1),
+                            tr(uiState.language, "−3 nap", "−3 days", "−3 Tage", "−3 zile") to today.minusDays(3),
+                            tr(uiState.language, "−7 nap", "−7 days", "−7 Tage", "−7 zile") to today.minusDays(7)
+                        ).forEachIndexed { idx, (presetTitle, presetDate) ->
+                            com.example.ui.components.TrainPilotFilterChip(selected = pickedDate == presetDate,
+                                onClick = { dateText = presetDate.format(dotFormatter) },
+                                label = { Text(presetTitle, maxLines = 1) },
+                                modifier = Modifier.heightIn(min = 48.dp).testTag("health_weight_date_preset_$idx"))
                         }
                     }
                 }
             },
             confirmButton = {
-                com.repforge.app.ui.theme.TrainPilotSaveButton(
+              // 2785: Mégse dark, Mentés in the theme accent (gold by default), both full-width halves.
+              Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                com.example.ui.components.TrainPilotSecondaryButton(strings.cancelAction, onClick = {
+                    editingMeasurement = null
+                    onToggleAddWeightDialog(false)
+                }, modifier = Modifier.weight(1f).testTag("health_weight_cancel"))
+                com.example.ui.components.TrainPilotPrimaryButton(strings.saveAction, modifier = Modifier.weight(1f).testTag("health_weight_save"),
                     onClick = {
                         val parsed = weightText.replace(',', '.').toFloatOrNull() ?: uiState.currentBodyWeightKg
                         if (parsed > 0f) {
@@ -391,19 +386,8 @@ fun HealthTabScreen(
                             editingMeasurement = null
                             onToggleAddWeightDialog(false)
                         }
-                    }) {
-                    Text(strings.saveAction, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TrainPilotOutlinedButton(
-                    onClick = {
-                        editingMeasurement = null
-                        onToggleAddWeightDialog(false)
-                    }
-                ) {
-                    Text(strings.cancelAction, color = palette.textPrimary)
-                }
+                    })
+              }
             }
         )
     }
@@ -772,6 +756,9 @@ fun HealthTabScreen(
 
                                             Spacer(modifier = Modifier.height(10.dp))
 
+                                            var selectedPulse by remember(uiState.dailyPulseHistory) {
+                                                androidx.compose.runtime.mutableIntStateOf(uiState.dailyPulseHistory.lastIndex)
+                                            }
                                             // Full-width dark sparkline box with red wave curve (Screenshot 9)
                                             Surface(
                                                 shape = RoundedCornerShape(14.dp),
@@ -795,8 +782,13 @@ fun HealthTabScreen(
                                                     }
                                                 } else {
                                                     val readings = uiState.dailyPulseHistory
+                                                    // 2785: tap → nearest reading highlighted; time + bpm in the info line below.
+                                                    val fractions = remember(readings) { pulseTimeFractions(readings) }
+                                                    val pulseLine = Color(0xFFEF4444)
+                                                    val pulseDotCenter = palette.surfaceCard
                                                     Canvas(Modifier.fillMaxSize().padding(horizontal = 9.dp, vertical = 7.dp)
-                                                        .testTag("health_pulse_real_trend")) {
+                                                        .testTag("health_pulse_real_trend")
+                                                        .trainPilotChartTap(fractions, { x, w -> com.example.ui.components.chartNearestByFraction(x, w, fractions) }) { selectedPulse = it }) {
                                                         val first = java.time.Instant.parse(readings.first().timeIso).toEpochMilli()
                                                         val last = java.time.Instant.parse(readings.last().timeIso).toEpochMilli()
                                                         val delta = (last - first).coerceAtLeast(1L).toFloat()
@@ -814,10 +806,22 @@ fun HealthTabScreen(
                                                             if (p == null) line.moveTo(x, y) else { val mx = (p.x + x) / 2f; line.cubicTo(mx, p.y, mx, y, x, y) }
                                                             prev = Offset(x, y)
                                                         }
-                                                        drawPath(line, color = Color(0xFFEF4444),
+                                                        drawPath(line, color = pulseLine,
                                                             style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
+                                                        readings.getOrNull(selectedPulse)?.let { sample ->
+                                                            val x = (fractions.getOrElse(selectedPulse) { 1f }) * size.width
+                                                            val y = size.height - (sample.bpm - lowest) / spread * size.height
+                                                            drawLine(pulseLine.copy(alpha = 0.45f), Offset(x, 0f), Offset(x, size.height), strokeWidth = 1.5.dp.toPx())
+                                                            drawCircle(pulseLine, radius = 5.dp.toPx(), center = Offset(x, y))
+                                                            drawCircle(pulseDotCenter, radius = 2.dp.toPx(), center = Offset(x, y))
+                                                        }
                                                     }
                                                 }
+                                            }
+                                            uiState.dailyPulseHistory.getOrNull(selectedPulse)?.takeIf { uiState.dailyPulseHistory.size >= 2 }?.let { sample ->
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                com.example.ui.components.TrainPilotChartInfoLine("${pulseClockLabel(sample.timeIso)} · ${sample.bpm} bpm",
+                                                    Modifier.testTag("health_pulse_chart_info"))
                                             }
 
                                             if (uiState.expandedHealthPulseTrend) {
@@ -3591,6 +3595,18 @@ internal fun todayTileJournalType(key: String, state: com.example.ui.viewmodel.T
     else -> null
 }
 
+/** 2785: measurements of the selected weight period only (0 = 7 d, 1 = 30 d, 2 = 3 mo, 3 = 1 yr, else all), oldest first. */
+internal fun weightMeasurementsInRange(entries: List<WeightMeasurementEntry>, rangeIndex: Int, today: java.time.LocalDate): List<WeightMeasurementEntry> {
+    val cutoff = when (rangeIndex) {
+        0 -> today.minusDays(7)
+        1 -> today.minusDays(30)
+        2 -> today.minusMonths(3)
+        3 -> today.minusYears(1)
+        else -> null
+    }
+    return entries.filter { cutoff == null || !it.parsedDate.isBefore(cutoff) }.sortedBy { it.parsedDate }
+}
+
 @Composable
 private fun WeightLogBody(
     uiState: TrainPilotUiState,
@@ -3614,7 +3630,7 @@ private fun WeightLogBody(
             tr(lang, "3 hó", "3 mo", "3 Mon.", "3 luni"), tr(lang, "1 év", "1 yr", "1 Jahr", "1 an"), tr(lang, "Mind", "All", "Alle", "Toate"))
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             labels.forEachIndexed { idx, label ->
-                FilterChip(selected = uiState.selectedWeightRangeIndex == idx, onClick = { onSelectRange(idx) }, label = { Text(label, maxLines = 1) },
+                com.example.ui.components.TrainPilotFilterChip(selected = uiState.selectedWeightRangeIndex == idx, onClick = { onSelectRange(idx) }, label = { Text(label, maxLines = 1) },
                     modifier = Modifier.heightIn(min = 48.dp).testTag("health_weight_range_$idx"))
             }
         }
@@ -3624,13 +3640,25 @@ private fun WeightLogBody(
             .trainPilotClickable(RoundedCornerShape(14.dp)) { if (!expanded) onToggle() }
             .testTag(if (expanded) "health_weight_chart_large" else "health_weight_chart_compact")) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
-            if (chronological.isEmpty()) {
+            val latest = newestFirst.firstOrNull()
+            if (latest == null) {
                 Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
                     Text(tr(lang, "Még nincs rögzített testsúlymérés.", "No weight entries recorded yet.", "Noch keine Gewichtsmessung.", "Nicio greutate înregistrată."),
                         style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                 }
+            } else if (chronological.size < 2) {
+                // 2785: a short period shows only its own data; with fewer than two points, say so.
+                val last = "${latest.dateLabel} · ${latest.weightLabel}"
+                Box(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("health_weight_range_empty"), contentAlignment = Alignment.Center) {
+                    Text(if (chronological.isEmpty()) tr(lang, "Nincs mérés ebben az időszakban · utolsó: $last", "No entries in this period · latest: $last",
+                            "Keine Messung in diesem Zeitraum · letzte: $last", "Nicio măsurătoare în această perioadă · ultima: $last")
+                        else tr(lang, "1 mérés ebben az időszakban: $last", "1 entry in this period: $last", "1 Messung in diesem Zeitraum: $last", "1 măsurătoare în această perioadă: $last"),
+                        style = MaterialTheme.typography.bodySmall, color = palette.textSecondary, textAlign = TextAlign.Center)
+                }
             } else {
                 val pts = chronological.map { it.weightValue }
+                var selectedPoint by remember(chronological) { androidx.compose.runtime.mutableIntStateOf(chronological.lastIndex) }
+                val selectedDotCenter = palette.surfaceCard
                 val minW = (pts.minOrNull() ?: 0f) - 0.5f
                 val maxW = (pts.maxOrNull() ?: 1f) + 0.5f
                 Row(Modifier.fillMaxWidth()) {
@@ -3641,7 +3669,10 @@ private fun WeightLogBody(
                     }
                     val lineColor = palette.primary
                     val grid = palette.cardBorder
-                    Canvas(Modifier.weight(1f).height(if (expanded) 150.dp else 56.dp)) {
+                    val tapModifier = if (expanded) Modifier.testTag("health_weight_chart_canvas")
+                        .trainPilotChartTap(pts.size, { x, w -> com.example.ui.components.chartNearestIndex(x, w, pts.size) }) { selectedPoint = it }
+                    else Modifier
+                    Canvas(Modifier.weight(1f).height(if (expanded) 150.dp else 56.dp).then(tapModifier)) {
                         val inset = 6.dp.toPx()
                         val h = size.height - inset * 2
                         val offsets = pts.mapIndexed { idx, w ->
@@ -3658,8 +3689,14 @@ private fun WeightLogBody(
                             drawPath(fill, androidx.compose.ui.graphics.Brush.verticalGradient(listOf(lineColor.copy(alpha = 0.25f), lineColor.copy(alpha = 0f))))
                         }
                         drawPath(path, lineColor, style = Stroke(width = (if (expanded) 3f else 2.5f).dp.toPx(), cap = StrokeCap.Round))
-                        if (expanded) offsets.forEach { drawCircle(lineColor, radius = 3.5.dp.toPx(), center = it) }
-                        else drawCircle(lineColor, radius = 3.5.dp.toPx(), center = offsets.last())
+                        if (expanded) {
+                            offsets.forEach { drawCircle(lineColor, radius = 3.5.dp.toPx(), center = it) }
+                            offsets.getOrNull(selectedPoint)?.let { o ->
+                                drawLine(lineColor.copy(alpha = 0.45f), Offset(o.x, 0f), Offset(o.x, size.height), strokeWidth = 1.5.dp.toPx())
+                                drawCircle(lineColor, radius = 6.5.dp.toPx(), center = o)
+                                drawCircle(selectedDotCenter, radius = 3.dp.toPx(), center = o)
+                            }
+                        } else drawCircle(lineColor, radius = 3.5.dp.toPx(), center = offsets.last())
                     }
                 }
                 val dates = if (expanded) chronological.takeLast(5) else listOfNotNull(chronological.firstOrNull(),
@@ -3668,6 +3705,10 @@ private fun WeightLogBody(
                     dates.forEach { entry ->
                         Text(entry.parsedDate.format(dateFormatter), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
                     }
+                }
+                if (expanded) chronological.getOrNull(selectedPoint)?.let { entry ->
+                    com.example.ui.components.TrainPilotChartInfoLine("${entry.dateLabel} · ${entry.weightLabel}",
+                        Modifier.padding(top = 4.dp).testTag("health_weight_chart_info"))
                 }
             }
         }
@@ -3721,6 +3762,35 @@ private fun WeightLogBody(
     }
 }
 
+/** 2785: horizontal positions (0..1) of pulse readings on their own time axis. */
+internal fun pulseTimeFractions(readings: List<com.repforge.app.NativeDailyHealthDetails.PulsePoint>): List<Float> {
+    val times = readings.map { runCatching { java.time.Instant.parse(it.timeIso).toEpochMilli() }.getOrDefault(0L) }
+    val first = times.firstOrNull() ?: return emptyList()
+    val delta = ((times.lastOrNull() ?: first) - first).coerceAtLeast(1L).toFloat()
+    return times.map { ((it - first) / delta).coerceIn(0f, 1f) }
+}
+
+/** Local clock time of a reading ("14:32"). */
+internal fun pulseClockLabel(timeIso: String, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String =
+    runCatching { java.time.Instant.parse(timeIso).atZone(zone).toLocalTime().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) }
+        .getOrDefault("—")
+
+/** 2785: "nov. 18. · 8 432 lépés"; a missing day says "nincs adat" (never 0). */
+internal fun todayTileWeekLabel(key: String, date: java.time.LocalDate, value: Double?, lang: String): String {
+    val l = lang.take(2)
+    val locale = java.util.Locale.forLanguageTag(l)
+    val day = com.example.ui.components.chartDateLabel(date, l)
+    if (value == null) return "$day · " + when (l) { "en" -> "no data"; "de" -> "keine Daten"; "ro" -> "fără date"; else -> "nincs adat" }
+    val number = java.text.NumberFormat.getIntegerInstance(locale).format(Math.round(value))
+    val unit = when (key) {
+        "steps" -> when (l) { "en" -> "steps"; "de" -> "Schritte"; "ro" -> "pași"; else -> "lépés" }
+        "calories" -> "kcal"
+        "pulse" -> "bpm"
+        else -> when (l) { "en" -> "min"; "de" -> "Min."; "ro" -> "min"; else -> "perc" }
+    }
+    return "$day · $number $unit"
+}
+
 /** 2784: last 7 days (missing day = empty slot) and today's own records of the tile's type. */
 @Composable
 private fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today: java.time.LocalDate) {
@@ -3738,17 +3808,22 @@ private fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today:
     if (values != null && values.any { it != null }) {
         Text(tr(lang, "Utolsó 7 nap", "Last 7 days", "Letzte 7 Tage", "Ultimele 7 zile"), style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
         val max = values.filterNotNull().maxOrNull()?.coerceAtLeast(1.0) ?: 1.0
+        // 2785: every day column is tappable; the selected one is highlighted and named in the info line.
+        var sel by remember(key, today) { androidx.compose.runtime.mutableIntStateOf(values.lastIndex) }
         Row(Modifier.fillMaxWidth().height(56.dp).testTag("health_today_tile_week_$key"), horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.Bottom) {
             values.forEachIndexed { i, v ->
-                val on = i == values.lastIndex
-                Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.BottomCenter) {
-                    if (v == null) Box(Modifier.fillMaxWidth().height(2.dp).background(palette.cardBorder))
+                val on = i == sel
+                Box(Modifier.weight(1f).fillMaxHeight().trainPilotClickable(RoundedCornerShape(6.dp)) { sel = i }
+                    .testTag("health_today_tile_week_${key}_$i"), contentAlignment = Alignment.BottomCenter) {
+                    if (v == null) Box(Modifier.fillMaxWidth().height(2.dp).background(if (on) palette.primary else palette.cardBorder))
                     else Box(Modifier.fillMaxWidth().fillMaxHeight((v / max).toFloat().coerceIn(0.05f, 1f))
                         .background(if (on) palette.primary else palette.primary.copy(alpha = 0.45f), RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)))
                 }
             }
         }
+        com.example.ui.components.TrainPilotChartInfoLine(todayTileWeekLabel(key, java.time.LocalDate.parse(days[sel]), values.getOrNull(sel), lang.name.lowercase()),
+            Modifier.testTag("health_today_tile_week_info_$key"))
     }
     val type = when (key) {
         "sleep" -> "SleepSessionRecord"

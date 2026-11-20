@@ -45,15 +45,24 @@ internal fun exerciseTrend(record: SavedExerciseBest, workouts: List<LoggedWorko
     }.sortedBy { it.date }
 }
 
+internal fun exerciseTrendUnit(kind: ExerciseTrendKind, lang: String): String = when (kind) {
+    ExerciseTrendKind.E1RM -> "kg"
+    ExerciseTrendKind.SECONDS -> when (lang.take(2)) { "en", "ro" -> "s"; "de" -> "Sek."; else -> "mp" }
+    else -> when (lang.take(2)) { "en" -> "reps"; "de" -> "Wdh."; "ro" -> "rep."; else -> "ism." }
+}
+
+/** 2785: chart info line, e.g. "2026. nov. 18. · 92,5 kg". */
+internal fun exerciseTrendPointLabel(point: ExerciseTrendPoint, kind: ExerciseTrendKind, lang: String): String {
+    val rounded = Math.round(point.value * 10) / 10.0
+    val value = (if (kind == ExerciseTrendKind.E1RM && rounded % 1.0 != 0.0) "%.1f" else "%.0f").format(rounded).replace('.', ',')
+    return "${com.example.ui.components.chartDateLabel(point.date, lang)} · $value ${exerciseTrendUnit(kind, lang)}"
+}
+
 /** "▲ +2,5 kg", "± 0", "▼ −3 ism." – first vs last of the shown points; null with fewer than two. */
 internal fun exerciseTrendChange(points: List<ExerciseTrendPoint>, kind: ExerciseTrendKind, lang: String): String? {
     if (points.size < 2) return null
     val delta = points.last().value - points.first().value
-    val unit = when (kind) {
-        ExerciseTrendKind.E1RM -> "kg"
-        ExerciseTrendKind.SECONDS -> when (lang.take(2)) { "en", "ro" -> "s"; "de" -> "Sek."; else -> "mp" }
-        else -> when (lang.take(2)) { "en" -> "reps"; "de" -> "Wdh."; "ro" -> "rep."; else -> "ism." }
-    }
+    val unit = exerciseTrendUnit(kind, lang)
     val rounded = Math.round(delta * 10) / 10.0
     if (rounded == 0.0) return "± 0"
     val text = (if (rounded % 1.0 == 0.0) "%.0f" else "%.1f").format(kotlin.math.abs(rounded)).replace('.', ',')

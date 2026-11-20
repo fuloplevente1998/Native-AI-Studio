@@ -1082,7 +1082,7 @@ fun GoalsEditDialog(
                             color = palette.textPrimary,
                             modifier = Modifier.weight(1f)
                         )
-                        OutlinedTextField(
+                        com.example.ui.components.TrainPilotTextField(
                             value = workoutsInputText,
                             onValueChange = { input ->
                                 workoutsInputText = input.filter { it.isDigit() }.take(2)
@@ -1131,7 +1131,7 @@ fun GoalsEditDialog(
                             color = palette.textPrimary,
                             modifier = Modifier.weight(1f)
                         )
-                        OutlinedTextField(
+                        com.example.ui.components.TrainPilotTextField(
                             value = stepsInputText,
                             onValueChange = { input ->
                                 stepsInputText = input.filter { it.isDigit() }.take(5)

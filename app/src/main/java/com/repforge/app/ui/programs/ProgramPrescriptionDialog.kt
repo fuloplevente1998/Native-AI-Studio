@@ -48,11 +48,11 @@ internal fun ProgramPrescriptionDialog(name: String, initial: JSONObject, langua
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(strings.getString(R.string.program_rx_scope), color = colors.muted)
-                OutlinedTextField(fields.sets, { fields = fields.copy(sets = it); invalid = false },
+                com.example.ui.components.TrainPilotTextField(fields.sets, { fields = fields.copy(sets = it); invalid = false },
                     modifier = Modifier.fillMaxWidth().testTag("program_rx_sets"), singleLine = true, enabled = !saving,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     label = { Text(strings.getString(R.string.program_rx_sets)) })
-                OutlinedTextField(fields.reps, { fields = fields.copy(reps = it); invalid = false },
+                com.example.ui.components.TrainPilotTextField(fields.reps, { fields = fields.copy(reps = it); invalid = false },
                     modifier = Modifier.fillMaxWidth().testTag("program_rx_reps"), singleLine = true, enabled = !saving,
                     label = { Text(strings.getString(targetLabel)) })
                 if (loadType != "bodyweight") {
@@ -63,13 +63,13 @@ internal fun ProgramPrescriptionDialog(name: String, initial: JSONObject, langua
                         "assisted" -> R.string.program_rx_weight_assisted
                         else -> R.string.program_rx_weight
                     }
-                    OutlinedTextField(fields.weight, { fields = fields.copy(weight = it); invalid = false },
+                    com.example.ui.components.TrainPilotTextField(fields.weight, { fields = fields.copy(weight = it); invalid = false },
                         modifier = Modifier.fillMaxWidth().testTag("program_rx_weight"), singleLine = true, enabled = !saving,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         label = { Text(strings.getString(weightLabel)) })
                     if (NativeProgramPrescription.allowsTrial(loadType)) Text(strings.getString(R.string.program_rx_trial), color = colors.muted)
                 }
-                OutlinedTextField(fields.rest, { fields = fields.copy(rest = it); invalid = false },
+                com.example.ui.components.TrainPilotTextField(fields.rest, { fields = fields.copy(rest = it); invalid = false },
                     modifier = Modifier.fillMaxWidth().testTag("program_rx_rest"), singleLine = true, enabled = !saving,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     label = { Text(strings.getString(R.string.program_rx_rest)) })

@@ -163,7 +163,7 @@ internal fun WeightJournalOverview(state: WeightJournalUiState, onRange: (String
                 modifier = Modifier.testTag("weight_journal_action")) { Text(resources.getString(actionLabel)) }
             LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("weight_range_choices")) {
                 items(listOf("7", "30", "90", "365", "all")) { range ->
-                    FilterChip(selected = state.range == range, enabled = !state.writing, onClick = { onRange(range) },
+                    com.example.ui.components.TrainPilotFilterChip(selected = state.range == range, enabled = !state.writing, onClick = { onRange(range) },
                         modifier = Modifier.testTag("weight_range_$range"),
                         label = { Text(if (range == "all") resources.getString(R.string.weight_all)
                             else resources.getString(R.string.weight_days, range.toInt())) })
@@ -202,12 +202,12 @@ private fun WeightEntryDialog(state: WeightJournalUiState, entry: BodyWeightEntr
         title = { Text(resources.getString(if (entry == null) R.string.weight_add else R.string.weight_edit)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = weight, onValueChange = { weight = it }, enabled = !state.writing,
+                com.example.ui.components.TrainPilotTextField(value = weight, onValueChange = { weight = it }, enabled = !state.writing,
                     modifier = Modifier.testTag("weight_input"), singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     label = { Text(resources.getString(R.string.weight_kg)) }, isError = !validWeight,
                     supportingText = { if (!validWeight) Text(resources.getString(R.string.weight_invalid)) })
-                if (entry == null) OutlinedTextField(value = date, onValueChange = { date = it }, enabled = !state.writing,
+                if (entry == null) com.example.ui.components.TrainPilotTextField(value = date, onValueChange = { date = it }, enabled = !state.writing,
                     modifier = Modifier.testTag("weight_date"), singleLine = true, isError = !validDate,
                     label = { Text(resources.getString(R.string.weight_date)) })
                 else Text(entry.dayKey, color = colors.muted)

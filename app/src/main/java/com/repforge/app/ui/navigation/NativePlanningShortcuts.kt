@@ -28,7 +28,7 @@ internal fun NativePlanningShortcuts(language: String, enabled: Boolean,
                 "calendar" -> Icons.Default.DateRange
                 else -> Icons.Default.AutoAwesome
             }
-            AssistChip(onClick = callback, enabled = enabled,
+            com.example.ui.components.TrainPilotFilterChip(selected = false, onClick = callback, enabled = enabled,
                 modifier = Modifier.heightIn(min = 48.dp).testTag("shortcut_$route"),
                 label = { Text(NativeMainMenu.title(route, language)) },
                 leadingIcon = { Icon(icon, contentDescription = null) })

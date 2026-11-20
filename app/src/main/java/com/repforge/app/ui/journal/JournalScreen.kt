@@ -76,7 +76,7 @@ fun JournalScreen(navController: NavController, language: String = "hu", viewMod
     LaunchedEffect(state.query, state.month) { listState.scrollToItem(0) }
     Column(Modifier.fillMaxSize().background(colors.bg).padding(horizontal = 16.dp)) {
         TrainPilotSectionSurface(Modifier.fillMaxWidth().testTag("journal_filters")) {
-        OutlinedTextField(state.query, viewModel::setSearch, modifier = Modifier.fillMaxWidth().testTag("journal_search"),
+        com.example.ui.components.TrainPilotTextField(state.query, viewModel::setSearch, modifier = Modifier.fillMaxWidth().testTag("journal_search"),
             label = { Text(text.getString(R.string.journal_search)) }, singleLine = true)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
             IconButton(onClick = { viewModel.setMonth((state.month ?: YearMonth.now()).minusMonths(1)) }) {

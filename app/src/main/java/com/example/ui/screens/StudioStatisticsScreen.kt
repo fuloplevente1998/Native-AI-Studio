@@ -33,6 +33,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.localization.TrainPilotStrings
 import com.example.ui.components.LocalSyncDailyHealth
+import com.example.ui.components.TrainPilotChartInfoLine
+import com.example.ui.components.chartNearestIndex
+import com.example.ui.components.trainPilotChartTap
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.viewmodel.TrainPilotUiState
 import com.repforge.app.HealthJournalStore
@@ -119,7 +122,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                 val subTabLabels = listOf(statsTr(lang, "Gyakorlatok", "Exercises", "Übungen", "Exerciții"), statsTr(lang, "Kardió", "Cardio", "Cardio", "Cardio"),
                     statsTr(lang, "Lépések", "Steps", "Schritte", "Pași"))
                 subTabLabels.forEachIndexed { index, label ->
-                    FilterChip(selected = visibleTab == index, onClick = {
+                    com.example.ui.components.TrainPilotFilterChip(selected = visibleTab == index, onClick = {
                         when (index) {
                             0 -> onSelectTab(0)
                             1 -> { onSelectTab(1); onStepsMode(false) }
@@ -181,13 +184,20 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                         listOf(30 to statsTr(lang, "30 nap", "30 days", "30 Tage", "30 zile"), 90 to statsTr(lang, "90 nap", "90 days", "90 Tage", "90 zile"),
                                             0 to statsTr(lang, "Mind", "All", "Alle", "Toate")).forEach { (days, label) ->
-                                            FilterChip(selected = periodDays == days, onClick = { periodDays = days }, label = { Text(label) },
+                                            com.example.ui.components.TrainPilotFilterChip(selected = periodDays == days, onClick = { periodDays = days }, label = { Text(label) },
                                                 modifier = Modifier.heightIn(min = 48.dp).testTag("statistics_record_period_${record.exerciseId}_$days"))
                                         }
                                     }
                                     val shown = if (periodDays == 0) trend else trend.filter { !it.date.isBefore(LocalDate.now().minusDays(periodDays.toLong() - 1)) }
-                                    if (shown.size >= 2) Box(Modifier.fillMaxWidth().height(160.dp).testTag("statistics_record_chart_${record.exerciseId}")) {
-                                        TrendCanvas(shown.map { it.value })
+                                    if (shown.size >= 2) {
+                                        // 2785: tap a point → highlighted, info line shows date + value (default: latest).
+                                        var sel by remember(record.exerciseId, periodDays, shown.size) { mutableIntStateOf(shown.lastIndex) }
+                                        Box(Modifier.fillMaxWidth().height(160.dp).testTag("statistics_record_chart_${record.exerciseId}")
+                                            .trainPilotChartTap(shown.size, { x, w -> chartNearestIndex(x, w, shown.size) }) { sel = it }) {
+                                            TrendCanvas(shown.map { it.value }, sel)
+                                        }
+                                        TrainPilotChartInfoLine(exerciseTrendPointLabel(shown.getOrElse(sel) { shown.last() }, trendKind, lang.name.lowercase()),
+                                            Modifier.testTag("statistics_record_chart_info_${record.exerciseId}"))
                                     } else Text(statsTr(lang, "Ebben az időszakban kevés a mérés.", "Too few entries in this period.", "Zu wenige Messungen in diesem Zeitraum.", "Prea puține măsurători în această perioadă."),
                                         color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
                                     Text(when (trendKind) {
@@ -205,9 +215,16 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                                         else if (native.exercise1RmTrend.isEmpty()) Text(statsTr(lang, "Nincs érvényes súly/ismétlés alapú 1RM-adat.", "No valid weight/reps 1RM data.", "Keine gültigen 1RM-Daten vorhanden.", "Fără date 1RM valide bazate pe greutate/repetări."), color = palette.textSecondary)
                                         else {
                                             Text(statsTr(lang, "Legutóbbi becslés: ${number.format(native.exercise1RmTrend.last().e1rmKg)} kg", "Latest estimate: ${number.format(native.exercise1RmTrend.last().e1rmKg)} kg", "Letzte Schätzung: ${number.format(native.exercise1RmTrend.last().e1rmKg)} kg", "Ultima estimare: ${number.format(native.exercise1RmTrend.last().e1rmKg)} kg"), color = palette.textPrimary)
+                                            val points = native.exercise1RmTrend
+                                            var sel by remember(record.exerciseId, points.size) { mutableIntStateOf(points.lastIndex) }
                                             Box(Modifier.fillMaxWidth().height(160.dp)
-                                                .testTag("statistics_record_chart_${record.exerciseId}")) {
-                                                TrendCanvas(native.exercise1RmTrend.map { it.e1rmKg })
+                                                .testTag("statistics_record_chart_${record.exerciseId}")
+                                                .trainPilotChartTap(points.size, { x, w -> chartNearestIndex(x, w, points.size) }) { sel = it }) {
+                                                TrendCanvas(points.map { it.e1rmKg }, sel)
+                                            }
+                                            points.getOrNull(sel)?.let { pt ->
+                                                TrainPilotChartInfoLine("${pt.date} · ${number.format(pt.e1rmKg)} kg",
+                                                    Modifier.testTag("statistics_record_chart_info_${record.exerciseId}"))
                                             }
                                         }
                                     } else if (record.distanceMeters != null || record.measurementType == "distance" || record.repUnit in listOf("km", "m")) {

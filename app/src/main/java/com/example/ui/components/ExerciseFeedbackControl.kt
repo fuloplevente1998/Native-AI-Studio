@@ -57,7 +57,7 @@ internal fun ExerciseFeedbackControl(effort: String?, note: String, language: St
                     modifier = Modifier.testTag("${tag}_clear")) {
                     Text(when (language) { "en" -> "Clear answer"; "de" -> "Antwort löschen"; "ro" -> "Șterge răspunsul"; else -> "Válasz törlése" })
                 }
-                OutlinedTextField(note, { onNote(it.take(3000)) }, enabled = enabled,
+                com.example.ui.components.TrainPilotTextField(note, { onNote(it.take(3000)) }, enabled = enabled,
                     label = { Text(when (language) { "en" -> "Exercise note"; "de" -> "Übungsnotiz"; "ro" -> "Notiță exercițiu"; else -> "Gyakorlatjegyzet" }) },
                     shape = RoundedCornerShape(12.dp), textStyle = MaterialTheme.typography.bodyMedium,
                     colors = com.repforge.app.ui.journal.journalEditorFieldColors(),

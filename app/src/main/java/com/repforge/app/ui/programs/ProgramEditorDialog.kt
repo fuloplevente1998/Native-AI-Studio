@@ -110,10 +110,10 @@ internal fun ProgramEditorDialog(
             Column(Modifier.heightIn(max = 510.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(9.dp)) {
                 if (opened?.program?.builtin == true) Text(labels.cloneHint)
-                OutlinedTextField(draft.name, { draft = draft.copy(name = it) }, singleLine = true,
+                com.example.ui.components.TrainPilotTextField(draft.name, { draft = draft.copy(name = it) }, singleLine = true,
                     modifier = Modifier.fillMaxWidth().testTag("program_editor_name"),
                     label = { Text(labels.name) })
-                OutlinedTextField(draft.description, { draft = draft.copy(description = it) },
+                com.example.ui.components.TrainPilotTextField(draft.description, { draft = draft.copy(description = it) },
                     modifier = Modifier.fillMaxWidth(), maxLines = 3,
                     label = { Text(labels.description) })
                 draft.days.forEachIndexed { index, day ->
@@ -144,7 +144,7 @@ internal fun ProgramEditorDialog(
                 }, enabled = draft.days.size < 31 && !saving,
                     modifier = Modifier.fillMaxWidth().testTag("program_editor_add_day")) { Text(labels.addDay) }
                 if (active != null) {
-                    OutlinedTextField(active.name, { editDay(active.copy(name = it)) },
+                    com.example.ui.components.TrainPilotTextField(active.name, { editDay(active.copy(name = it)) },
                         modifier = Modifier.fillMaxWidth().testTag("program_editor_day_name"), singleLine = true,
                         label = { Text(labels.day) })
                     if (draft.days.size > 1) com.repforge.app.ui.theme.TrainPilotNegativeButton(onClick = {
@@ -176,7 +176,7 @@ internal fun ProgramEditorDialog(
                             }
                         }
                     }
-                    OutlinedTextField(search, { search = it }, singleLine = true,
+                    com.example.ui.components.TrainPilotTextField(search, { search = it }, singleLine = true,
                         modifier = Modifier.fillMaxWidth().testTag("program_editor_search"),
                         label = { Text(labels.exerciseSearch) })
                     LazyColumn(Modifier.fillMaxWidth().heightIn(max = 148.dp).testTag("program_editor_choices")) {

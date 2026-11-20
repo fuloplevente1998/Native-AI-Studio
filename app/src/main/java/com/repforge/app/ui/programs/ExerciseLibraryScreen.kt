@@ -214,16 +214,16 @@ internal fun ExerciseLibraryScreen(language: String, model: ExerciseLibraryViewM
             }
             Text("${state.rows.size} ${labels.count}", color = colors.muted,
                 modifier = Modifier.testTag("exercise_library_count"))
-            OutlinedTextField(value = query, onValueChange = { query = it }, singleLine = true,
+            com.example.ui.components.TrainPilotTextField(value = query, onValueChange = { query = it }, singleLine = true,
                 label = { Text(labels.search) }, modifier = Modifier.fillMaxWidth().testTag("exercise_library_search"))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                FilterChip(selected = favoritesOnly, onClick = { favoritesOnly = !favoritesOnly },
+                com.example.ui.components.TrainPilotFilterChip(selected = favoritesOnly, onClick = { favoritesOnly = !favoritesOnly },
                     label = { Text(labels.favorites) }, modifier = Modifier.testTag("exercise_library_favorites"))
                 Text("${visible.size} / ${state.rows.size}", color = colors.muted)
             }
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = muscle.isEmpty(), onClick = { muscle = "" }, label = { Text(labels.all) })
-                for (part in muscles) FilterChip(selected = muscle == part, onClick = { muscle = part },
+                com.example.ui.components.TrainPilotFilterChip(selected = muscle.isEmpty(), onClick = { muscle = "" }, label = { Text(labels.all) })
+                for (part in muscles) com.example.ui.components.TrainPilotFilterChip(selected = muscle == part, onClick = { muscle = part },
                     label = { Text(muscleName(part, strings)) }, modifier = Modifier.testTag("exercise_library_muscle_$part"))
             }
             if (state.writeFailed) Text(labels.saveError, color = colors.danger,
