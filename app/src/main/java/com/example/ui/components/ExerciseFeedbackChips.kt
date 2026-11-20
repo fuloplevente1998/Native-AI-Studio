@@ -73,7 +73,7 @@ internal fun ExerciseFeedbackChips(effort: String?, note: String, language: Stri
                 Text(feedbackText(language, "Válasz törlése", "Clear answer", "Antwort löschen", "Șterge răspunsul"))
             }
         }
-        if (showNote) OutlinedTextField(note, { onNote(it.take(3000)) }, enabled = enabled,
+        if (showNote) com.example.ui.components.TrainPilotTextField(note, { onNote(it.take(3000)) }, enabled = enabled,
             label = { Text(noteTitle ?: feedbackText(language, "Gyakorlatjegyzet", "Exercise note", "Übungsnotiz", "Notiță exercițiu")) },
             modifier = Modifier.fillMaxWidth().testTag("${tag}_note"), maxLines = 3,
             shape = RoundedCornerShape(12.dp), textStyle = MaterialTheme.typography.bodyMedium,

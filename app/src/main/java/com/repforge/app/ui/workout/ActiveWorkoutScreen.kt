@@ -904,11 +904,11 @@ internal fun IntervalOptions(
         if (expanded) {
             Text(text.getString(com.repforge.app.R.string.interval_scope), color = colors.muted, fontSize = 12.sp)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (singleTimed) OutlinedTextField(value = work, onValueChange = { work = it }, label = { Text(text.getString(com.repforge.app.R.string.interval_work)) },
+                if (singleTimed) com.example.ui.components.TrainPilotTextField(value = work, onValueChange = { work = it }, label = { Text(text.getString(com.repforge.app.R.string.interval_work)) },
                     modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), enabled = editable)
-                OutlinedTextField(value = rest, onValueChange = { rest = it }, label = { Text(text.getString(com.repforge.app.R.string.interval_rest)) },
+                com.example.ui.components.TrainPilotTextField(value = rest, onValueChange = { rest = it }, label = { Text(text.getString(com.repforge.app.R.string.interval_rest)) },
                     modifier = Modifier.weight(1f).testTag("interval_rest"), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), enabled = editable)
-                if (singleTimed) OutlinedTextField(value = rounds, onValueChange = { rounds = it }, label = { Text(text.getString(com.repforge.app.R.string.interval_rounds)) },
+                if (singleTimed) com.example.ui.components.TrainPilotTextField(value = rounds, onValueChange = { rounds = it }, label = { Text(text.getString(com.repforge.app.R.string.interval_rounds)) },
                     modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), enabled = editable)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1019,7 +1019,7 @@ fun SetRowItem(
         Text("${set.setNumber}", color = colors.text, fontSize = 13.sp, modifier = Modifier.width(24.dp), fontWeight = FontWeight.Bold)
 
         // Súly beviteli mező
-        OutlinedTextField(
+        com.example.ui.components.TrainPilotTextField(
             value = if (isDistance) (set.distanceMeters / 1000.0).takeIf { it > 0.0 }?.toString().orEmpty() else set.weight,
             onValueChange = if (isDistance) onDistanceChange else onWeightChange,
             enabled = !set.isCompleted,
@@ -1040,7 +1040,7 @@ fun SetRowItem(
         // Ismétlés vagy Kétoldali idő mező
         if (isBilateral) {
             Row(modifier = Modifier.weight(1.2f)) {
-                OutlinedTextField(
+                com.example.ui.components.TrainPilotTextField(
                     value = if (set.leftSeconds > 0) set.leftSeconds.toString() else "",
                     onValueChange = onLeftChange,
                     enabled = !set.isCompleted,
@@ -1051,7 +1051,7 @@ fun SetRowItem(
                     modifier = Modifier.weight(1f).height(44.dp)
                 )
                 Spacer(Modifier.width(4.dp))
-                OutlinedTextField(
+                com.example.ui.components.TrainPilotTextField(
                     value = if (set.rightSeconds > 0) set.rightSeconds.toString() else "",
                     onValueChange = onRightChange,
                     enabled = !set.isCompleted,
@@ -1063,7 +1063,7 @@ fun SetRowItem(
                 )
             }
         } else {
-            OutlinedTextField(
+            com.example.ui.components.TrainPilotTextField(
                 value = set.reps,
                 onValueChange = onRepsChange,
                 enabled = !set.isCompleted,
@@ -1084,7 +1084,7 @@ fun SetRowItem(
         // #229 RIR mező (ha be van kapcsolva)
         if (showRir) {
             Spacer(Modifier.width(6.dp))
-            OutlinedTextField(
+            com.example.ui.components.TrainPilotTextField(
                 value = set.actualRir?.toString() ?: "",
                 onValueChange = { onRirChange(it.toIntOrNull()?.coerceIn(0, 10)) },
                 enabled = !set.isCompleted,

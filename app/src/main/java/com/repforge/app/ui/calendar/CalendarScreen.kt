@@ -152,9 +152,9 @@ private fun CalendarEditor(state: CalendarUiState, row: CalendarScheduleEntity?,
     }.ifBlank { hu }
     AlertDialog(onDismissRequest = { if (!busy) onDismiss() }, title = { Text(if (row == null) words[3] else words[11]) }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedTextField(value = date, onValueChange = { date = it }, label = { Text(words[17] + " (YYYY-MM-DD)") }, enabled = !busy, singleLine = true)
-            OutlinedTextField(value = time, onValueChange = { time = it }, label = { Text(words[18] + " (HH:mm)") }, enabled = !busy, singleLine = true)
-            OutlinedTextField(value = minutes, onValueChange = { minutes = it }, label = { Text(words[19] + " (10–240)") }, enabled = !busy, singleLine = true)
+            com.example.ui.components.TrainPilotTextField(value = date, onValueChange = { date = it }, label = { Text(words[17] + " (YYYY-MM-DD)") }, enabled = !busy, singleLine = true)
+            com.example.ui.components.TrainPilotTextField(value = time, onValueChange = { time = it }, label = { Text(words[18] + " (HH:mm)") }, enabled = !busy, singleLine = true)
+            com.example.ui.components.TrainPilotTextField(value = minutes, onValueChange = { minutes = it }, label = { Text(words[19] + " (10–240)") }, enabled = !busy, singleLine = true)
             Box {
                 TrainPilotOutlinedButton(onClick = { programMenu = true }, enabled = !busy) { Text(program?.program?.let { name(it.nameHu, it.nameEn, it.nameDe, it.nameRo) } ?: words[20]) }
                 DropdownMenu(expanded = programMenu, onDismissRequest = { programMenu = false }) {
@@ -244,7 +244,7 @@ private fun CalendarPlannerDialog(state: CalendarUiState, busy: Boolean, strings
                     }
                 }
                 @Composable fun field(value: String, label: Int, tag: String, change: (String) -> Unit) {
-                    OutlinedTextField(value, change, label = { Text(strings.getString(label)) }, enabled = !busy,
+                    com.example.ui.components.TrainPilotTextField(value, change, label = { Text(strings.getString(label)) }, enabled = !busy,
                         modifier = Modifier.fillMaxWidth().testTag(tag), singleLine = true)
                 }
                 field(date, R.string.calendar_planner_date, "calendar_planner_date") { date = it }

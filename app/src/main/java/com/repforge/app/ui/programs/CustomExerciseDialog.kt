@@ -105,41 +105,41 @@ internal fun CustomExerciseDialog(
         text = {
             Column(Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(draft.name, { draft = draft.copy(name = it) },
+                com.example.ui.components.TrainPilotTextField(draft.name, { draft = draft.copy(name = it) },
                     label = { Text(words[2]) }, singleLine = true,
                     modifier = Modifier.fillMaxWidth().testTag("custom_exercise_name"))
-                OutlinedTextField(draft.note, { draft = draft.copy(note = it) },
+                com.example.ui.components.TrainPilotTextField(draft.note, { draft = draft.copy(note = it) },
                     label = { Text(words[3]) }, minLines = 2, maxLines = 4,
                     modifier = Modifier.fillMaxWidth().testTag("custom_exercise_note"))
                 Text(words[4])
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    for (key in muscles) FilterChip(selected = draft.muscle == key,
+                    for (key in muscles) com.example.ui.components.TrainPilotFilterChip(selected = draft.muscle == key,
                         onClick = { draft = draft.copy(muscle = key) },
                         label = { Text(muscleLabels[muscles.indexOf(key)]) }, modifier = Modifier.testTag("custom_exercise_muscle_$key"))
                 }
                 Text(words[5])
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    for (key in measurements) FilterChip(selected = draft.measurement == key,
+                    for (key in measurements) com.example.ui.components.TrainPilotFilterChip(selected = draft.measurement == key,
                         onClick = { draft = draft.copy(measurement = key) },
                         label = { Text(measureLabels[measurements.indexOf(key)]) }, modifier = Modifier.testTag("custom_exercise_measure_$key"))
                 }
                 Text(words[6])
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    for (key in loads) FilterChip(selected = draft.load == key,
+                    for (key in loads) com.example.ui.components.TrainPilotFilterChip(selected = draft.load == key,
                         onClick = { draft = draft.copy(load = key) },
                         label = { Text(loadLabels[loads.indexOf(key)]) }, modifier = Modifier.testTag("custom_exercise_load_$key"))
                 }
-                OutlinedTextField(draft.repUnit, { draft = draft.copy(repUnit = it) },
+                com.example.ui.components.TrainPilotTextField(draft.repUnit, { draft = draft.copy(repUnit = it) },
                     label = { Text(words[7]) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(setsText, { setsText = it }, label = { Text(words[8]) },
+                com.example.ui.components.TrainPilotTextField(setsText, { setsText = it }, label = { Text(words[8]) },
                     singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(draft.reps, { draft = draft.copy(reps = it) },
+                com.example.ui.components.TrainPilotTextField(draft.reps, { draft = draft.copy(reps = it) },
                     label = { Text(words[9]) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(weightText, { weightText = it }, label = { Text(words[10]) },
+                com.example.ui.components.TrainPilotTextField(weightText, { weightText = it }, label = { Text(words[10]) },
                     singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(restText, { restText = it }, label = { Text(words[11]) },
+                com.example.ui.components.TrainPilotTextField(restText, { restText = it }, label = { Text(words[11]) },
                     singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(draft.videoUrl, { draft = draft.copy(videoUrl = it) },
+                com.example.ui.components.TrainPilotTextField(draft.videoUrl, { draft = draft.copy(videoUrl = it) },
                     label = { Text(words[12]) }, singleLine = true,
                     modifier = Modifier.fillMaxWidth().testTag("custom_exercise_video"))
                 if (error != null) {

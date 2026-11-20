@@ -78,7 +78,7 @@ internal val LocalOpenWorkoutHealth = staticCompositionLocalOf<() -> Unit> { {} 
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 for (source in listOf(HealthJournalStore.SAMSUNG, HealthJournalStore.HC)) {
-                    FilterChip(selected = provider == source, enabled = !busy,
+                    com.example.ui.components.TrainPilotFilterChip(selected = provider == source, enabled = !busy,
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                         onClick = { provider = source; result = null; message = "" },
                         label = { Text(NativeWorkoutHealthSource.label(source)) })

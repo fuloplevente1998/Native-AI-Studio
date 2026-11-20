@@ -324,7 +324,7 @@ fun HealthJournalTabContent(
                         items(listOf("journal", "health_connect", "samsung_health", "legacy", com.repforge.app.HealthJournalStore.BLE)) { channel ->
                             val label = when (channel) { "journal" -> text.getString(com.repforge.app.R.string.health_history_auto)
                                 "health_connect" -> "Health Connect"; "samsung_health" -> "Samsung Health"; com.repforge.app.HealthJournalStore.BLE -> "BLE"; else -> text.getString(com.repforge.app.R.string.health_history_legacy) }
-                            androidx.compose.material3.FilterChip(selected = state.historyChannel == channel, onClick = { onChannel(channel) }, label = { Text(label) })
+                            com.example.ui.components.TrainPilotFilterChip(selected = state.historyChannel == channel, onClick = { onChannel(channel) }, label = { Text(label) })
                         }
                     }
                     if (state.historyLoading) Text(text.getString(com.repforge.app.R.string.health_history_loading), color = colors.muted)
@@ -376,7 +376,7 @@ fun HealthJournalTabContent(
                         Text(text.getString(com.repforge.app.R.string.health_daily_source_title), color = colors.text)
                         androidx.compose.foundation.lazy.LazyRow(modifier = Modifier.testTag("health_daily_sources_row"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(listOf("auto", "priority") + state.dailySourceOptions, key = { it }) { choice ->
-                                androidx.compose.material3.FilterChip(selected = state.dailySourcePreference == choice,
+                                com.example.ui.components.TrainPilotFilterChip(selected = state.dailySourcePreference == choice,
                                     enabled = !state.sourceSaving && !state.historyLoading,
                                     onClick = { onDailySource(choice) }, modifier = Modifier.testTag("health_daily_$choice"),
                                     label = { Text(when (choice) {

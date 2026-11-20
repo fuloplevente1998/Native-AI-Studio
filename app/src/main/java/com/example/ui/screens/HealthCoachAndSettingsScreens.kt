@@ -308,13 +308,13 @@ fun HealthTabScreen(
                             "Greutate (kg) și data măsurătorii (ordonate cronologic pe grafic):"
                         )
                     )
-                    OutlinedTextField(
+                    com.example.ui.components.TrainPilotTextField(
                         value = weightText,
                         onValueChange = { weightText = it },
                         singleLine = true,
                         label = { Text(tr(uiState.language, "Testsúly (kg)", "Weight (kg)", "Gewicht (kg)", "Greutate (kg)")) }
                     )
-                    OutlinedTextField(
+                    com.example.ui.components.TrainPilotTextField(
                         value = dateText,
                         onValueChange = { dateText = it },
                         singleLine = true,
@@ -3614,7 +3614,7 @@ private fun WeightLogBody(
             tr(lang, "3 hó", "3 mo", "3 Mon.", "3 luni"), tr(lang, "1 év", "1 yr", "1 Jahr", "1 an"), tr(lang, "Mind", "All", "Alle", "Toate"))
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             labels.forEachIndexed { idx, label ->
-                FilterChip(selected = uiState.selectedWeightRangeIndex == idx, onClick = { onSelectRange(idx) }, label = { Text(label, maxLines = 1) },
+                com.example.ui.components.TrainPilotFilterChip(selected = uiState.selectedWeightRangeIndex == idx, onClick = { onSelectRange(idx) }, label = { Text(label, maxLines = 1) },
                     modifier = Modifier.heightIn(min = 48.dp).testTag("health_weight_range_$idx"))
             }
         }

@@ -83,7 +83,7 @@ internal fun PersonalProgramPreviewDialog(
                 .testTag("personal_preview"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     for ((id, name) in listOf("home-basic" to label[1], "home-level2" to label[2])) {
-                        FilterChip(selected = choice == id, enabled = !saving,
+                        com.example.ui.components.TrainPilotFilterChip(selected = choice == id, enabled = !saving,
                             onClick = { choice = id }, label = { Text(name) },
                             modifier = Modifier.testTag("personal_template_$id"))
                     }

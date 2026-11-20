@@ -83,7 +83,7 @@ internal fun NativeTimerDefaultsDialog(opened: String, language: String, saving:
 
 @Composable
 private fun TimerNumber(value: String, onChange: (String) -> Unit, label: Int, tag: String, enabled: Boolean, language: String) {
-    OutlinedTextField(value = value, onValueChange = { if (it.length <= 6) onChange(it) },
+    com.example.ui.components.TrainPilotTextField(value = value, onValueChange = { if (it.length <= 6) onChange(it) },
         label = { Text(nativeResources(LocalContext.current, language).getString(label)) },
         enabled = enabled, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         modifier = Modifier.fillMaxWidth().testTag("settings_timer_$tag"))

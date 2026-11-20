@@ -181,7 +181,7 @@ internal fun cardioActivityName(language: String, activity: CardioActivityOption
 
 @Composable
 private fun CardioChoice(label: String, selected: Boolean, tag: String, onClick: () -> Unit) {
-    FilterChip(selected = selected, onClick = onClick, label = { Text(label) },
+    com.example.ui.components.TrainPilotFilterChip(selected = selected, onClick = onClick, label = { Text(label) },
         modifier = Modifier.heightIn(min = 48.dp).testTag(tag))
 }
 

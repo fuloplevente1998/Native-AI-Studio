@@ -65,7 +65,7 @@ internal fun StudioProgramManagementControls(
             "delete-day" -> word("Edzésnap törlése?", "Delete workout day?", "Trainingstag löschen?", "Ștergi ziua de antrenament?")
             else -> word("Program törlése?", "Delete program?", "Programm löschen?", "Ștergi programul?")
         }) }, text = {
-            if (operation == "add-day") OutlinedTextField(dayName, { dayName = it.take(120) },
+            if (operation == "add-day") com.example.ui.components.TrainPilotTextField(dayName, { dayName = it.take(120) },
                 label = { Text(word("Edzésnap neve", "Workout day name", "Name des Trainingstags", "Numele zilei de antrenament")) }, singleLine = true,
                 modifier = Modifier.testTag("studio_program_day_name"))
             else Text(if (operation == "delete-day")

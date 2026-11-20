@@ -1058,14 +1058,14 @@ fun ActiveBilateralWorkoutScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        androidx.compose.material3.OutlinedTextField(
+                        com.example.ui.components.TrainPilotTextField(
                             value = editLeftText,
                             onValueChange = { editLeftText = it.filter { ch -> ch.isDigit() } },
                             label = { Text(tr(lang, "Bal oldal (mp)", "Left side (s)", "Linke Seite (Sek.)", "Partea stângă (sec)")) },
                             singleLine = true,
                             modifier = Modifier.weight(1f)
                         )
-                        androidx.compose.material3.OutlinedTextField(
+                        com.example.ui.components.TrainPilotTextField(
                             value = editRightText,
                             onValueChange = { editRightText = it.filter { ch -> ch.isDigit() } },
                             label = { Text(tr(lang, "Jobb oldal (mp)", "Right side (s)", "Rechte Seite (Sek.)", "Partea dreaptă (sec)")) },
@@ -1079,7 +1079,7 @@ fun ActiveBilateralWorkoutScreen(
                         StudioCompactAction(tr(lang, "Jobb −5 $secWord", "Right −5 $secWord", "Rechts −5 $secWord", "Dr. −5 $secWord")) { editRightText = ((editRightText.toIntOrNull() ?: 30) - 5).coerceAtLeast(1).toString() },
                         StudioCompactAction(tr(lang, "Jobb +5 $secWord", "Right +5 $secWord", "Rechts +5 $secWord", "Dr. +5 $secWord")) { editRightText = ((editRightText.toIntOrNull() ?: 30) + 5).coerceAtMost(600).toString() }
                     ))
-                    androidx.compose.material3.OutlinedTextField(
+                    com.example.ui.components.TrainPilotTextField(
                         value = editRirText,
                         onValueChange = { editRirText = it.filter { ch -> ch.isDigit() } },
                         label = { Text(tr(lang, "RIR (Tartalék: 0–10)", "RIR (Reserve: 0–10)", "RIR (Reserve: 0–10)", "RIR (Rezervă: 0–10)")) },

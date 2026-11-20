@@ -119,7 +119,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                 val subTabLabels = listOf(statsTr(lang, "Gyakorlatok", "Exercises", "Übungen", "Exerciții"), statsTr(lang, "Kardió", "Cardio", "Cardio", "Cardio"),
                     statsTr(lang, "Lépések", "Steps", "Schritte", "Pași"))
                 subTabLabels.forEachIndexed { index, label ->
-                    FilterChip(selected = visibleTab == index, onClick = {
+                    com.example.ui.components.TrainPilotFilterChip(selected = visibleTab == index, onClick = {
                         when (index) {
                             0 -> onSelectTab(0)
                             1 -> { onSelectTab(1); onStepsMode(false) }
@@ -181,7 +181,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                         listOf(30 to statsTr(lang, "30 nap", "30 days", "30 Tage", "30 zile"), 90 to statsTr(lang, "90 nap", "90 days", "90 Tage", "90 zile"),
                                             0 to statsTr(lang, "Mind", "All", "Alle", "Toate")).forEach { (days, label) ->
-                                            FilterChip(selected = periodDays == days, onClick = { periodDays = days }, label = { Text(label) },
+                                            com.example.ui.components.TrainPilotFilterChip(selected = periodDays == days, onClick = { periodDays = days }, label = { Text(label) },
                                                 modifier = Modifier.heightIn(min = 48.dp).testTag("statistics_record_period_${record.exerciseId}_$days"))
                                         }
                                     }

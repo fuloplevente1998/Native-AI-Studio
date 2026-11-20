@@ -184,7 +184,7 @@ fun ProgressScreen(
                                 NativeStrengthRange.YEAR -> R.string.native_progress_strength_year
                                 NativeStrengthRange.ALL -> R.string.native_progress_strength_all
                             }
-                            FilterChip(
+                            com.example.ui.components.TrainPilotFilterChip(
                                 selected = state.selectedStrengthRange == range,
                                 onClick = { viewModel.selectStrengthRange(range) },
                                 label = { Text(strings.getString(title)) },

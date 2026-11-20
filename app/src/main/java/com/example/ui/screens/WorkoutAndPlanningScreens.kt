@@ -654,7 +654,7 @@ fun ProgramsListScreen(
             containerColor = palette.surface,
             title = { Text(trW(state.language, "Program átnevezése", "Rename program", "Programm umbenennen", "Redenumește programul"), color = palette.textPrimary) },
             text = {
-                OutlinedTextField(
+                com.example.ui.components.TrainPilotTextField(
                     value = newName,
                     onValueChange = { newName = it },
                     singleLine = true,
@@ -882,14 +882,14 @@ fun ProgramsListScreen(
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(
+                    com.example.ui.components.TrainPilotTextField(
                         value = customProgName,
                         onValueChange = { customProgName = it },
                         label = { Text(trW(state.language, "Program neve (pl. Kör futás & Erő)", "Program name", "Programmname", "Numele programului")) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    OutlinedTextField(
+                    com.example.ui.components.TrainPilotTextField(
                         value = customProgSub,
                         onValueChange = { customProgSub = it },
                         label = { Text(trW(state.language, "Rövid leírás / megjegyzés", "Short description / note", "Kurzbeschreibung / Notiz", "Descriere scurtă / notiță")) },
@@ -1567,7 +1567,7 @@ internal fun ProgramEditorContent(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
     ) {
-        if (showNameField) OutlinedTextField(
+        if (showNameField) com.example.ui.components.TrainPilotTextField(
             value = programName,
             onValueChange = { programName = it },
             modifier = Modifier.fillMaxWidth().testTag("studio_program_name"),
@@ -3084,7 +3084,7 @@ fun ExerciseLibraryScreen(
                 trW(state.language, "Gyakorlatok keresése…", "Search exercises…", "Übungen suchen…", "Caută exerciții…"))
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            FilterChip(selected = state.favoriteExercisesOnly, onClick = onToggleFavoritesOnly,
+            com.example.ui.components.TrainPilotFilterChip(selected = state.favoriteExercisesOnly, onClick = onToggleFavoritesOnly,
                 label = { Text(trW(state.language, "Kedvencek (${state.favoriteExerciseIds.size})", "Favorites (${state.favoriteExerciseIds.size})", "Favoriten (${state.favoriteExerciseIds.size})", "Favorite (${state.favoriteExerciseIds.size})")) },
                 modifier = Modifier.testTag("studio_library_favorites_only"))
                 Button(onClick = onOpenAddCustomExercise,
@@ -3702,7 +3702,7 @@ fun AddCustomExerciseModalDialog(
                 Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceElevated,
                     modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(
+                com.example.ui.components.TrainPilotTextField(
                     value = nameHu,
                     onValueChange = { nameHu = it },
                     label = { Text(trW(lang, "Gyakorlat neve (pl. Kör futás)", "Exercise name (e.g. Track run)", "Übungsname (z. B. Bahnlauf)", "Numele exercițiului (ex. Alergare pe pistă)")) },
@@ -3813,7 +3813,7 @@ fun AddCustomExerciseModalDialog(
                     }
                 }
 
-                OutlinedTextField(
+                com.example.ui.components.TrainPilotTextField(
                     value = descriptionHu,
                     onValueChange = { descriptionHu = it },
                     label = { Text(trW(lang, "Leírás / Végrehajtási lépések", "Description / Execution steps", "Beschreibung / Ausführungsschritte", "Descriere / Pași de execuție")) },
@@ -3826,7 +3826,7 @@ fun AddCustomExerciseModalDialog(
                         .testTag("custom_exercise_description_input")
                 )
 
-                OutlinedTextField(
+                com.example.ui.components.TrainPilotTextField(
                     value = videoUrl,
                     onValueChange = { videoUrl = it },
                     label = { Text(trW(lang, "Videó link vagy YouTube azonosító (opcionális)", "Video URL or YouTube ID (optional)", "Video-Link oder YouTube-ID (optional)", "Link video sau ID YouTube (opțional)")) },

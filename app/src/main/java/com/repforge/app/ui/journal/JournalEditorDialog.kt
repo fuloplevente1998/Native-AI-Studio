@@ -79,7 +79,7 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }) {
         JournalEditorFrame(text.getString(R.string.journal_edit_title), state.saving, onCancel, topSafeAreaPx = topSafeAreaPx) {
                 if (choosing) {
-                    OutlinedTextField(search, { search = it }, modifier = Modifier.fillMaxWidth().testTag("journal_editor_search"),
+                    com.example.ui.components.TrainPilotTextField(search, { search = it }, modifier = Modifier.fillMaxWidth().testTag("journal_editor_search"),
                         singleLine = true, label = { Text(text.getString(R.string.journal_search)) })
                     val available = state.catalog.filter { source -> draft.exercises.none { it.id == source.id } &&
                         (search.isBlank() || listOf(source.nameHu, source.nameEn, source.nameDe, source.nameRo, source.id)
@@ -118,7 +118,7 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                                     choices.map { (key, label) -> key to text.getString(label) },
                                     text.getString(R.string.journal_feedback), !state.saving && !feedbackLocked,
                                     onSelect = { onChange(draft.copy(feedbackEffort = it)) })
-                                OutlinedTextField(draft.note, { onChange(draft.copy(note = it)) },
+                                com.example.ui.components.TrainPilotTextField(draft.note, { onChange(draft.copy(note = it)) },
                                     label = { Text(when (language) {
                                         "en" -> "Workout note"; "de" -> "Trainingsnotiz"; "ro" -> "Notiță antrenament"; else -> "Edzésjegyzet"
                                     }) }, enabled = !state.saving, minLines = 1, maxLines = 3,
@@ -261,7 +261,7 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
 @Composable
 private fun JournalEditField(value: String, change: (String) -> Unit, label: String, tag: String,
     enabled: Boolean, keyboard: KeyboardType = KeyboardType.Decimal) {
-    OutlinedTextField(value, change, label = { Text(label) }, singleLine = true, enabled = enabled,
+    com.example.ui.components.TrainPilotTextField(value, change, label = { Text(label) }, singleLine = true, enabled = enabled,
         shape = RoundedCornerShape(12.dp), textStyle = MaterialTheme.typography.bodyMedium,
         colors = journalEditorFieldColors(),
         keyboardOptions = KeyboardOptions(keyboardType = keyboard), modifier = Modifier.fillMaxWidth().testTag(tag))
