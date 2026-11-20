@@ -501,7 +501,10 @@ fun HealthTabScreen(
                             coroutineScope.launch { healthListState.animateScrollToItem(2) }
                         } else {
                             expandedTodayTileKey = if (expandedTodayTileKey == key) null else key
-                            if (key == "pulse" && !uiState.expandedHealthPulseTrend) onToggleHealthSection("pulse")
+                            when (key) {
+                                "sleep", "steps" -> onToggleHealthSection("journal")
+                                "pulse" -> onToggleHealthSection("pulse")
+                            }
                         }
                     }
 
@@ -3880,7 +3883,6 @@ internal fun todayTileJournalType(key: String, state: com.example.ui.viewmodel.T
         .takeIf { "activeCalories" in state.dailyHealthAvailableFields }
     "steps" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("steps")
         .takeIf { "steps" in state.dailyHealthAvailableFields }
-    "pulse" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("averageHeartRate")
-        .takeIf { state.todayPulseReading?.let { it.averageBpm != null || it.lastBpm != null || it.restingBpm != null } == true }
+    // Pulse keeps its own daily pulse-trend view.
     else -> null
 }

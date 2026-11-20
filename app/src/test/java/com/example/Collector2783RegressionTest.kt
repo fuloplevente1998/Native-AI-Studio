@@ -42,7 +42,7 @@ class Collector2783RegressionTest {
         assertEquals("SleepSessionRecord", todayTileJournalType("sleep", withData))
         assertEquals("StepsRecord", todayTileJournalType("steps", withData))
         assertEquals("ActiveCaloriesBurnedRecord", todayTileJournalType("calories", withData))
-        assertNull(todayTileJournalType("pulse", withData)) // no pulse reading today
+        assertNull(todayTileJournalType("pulse", withData)) // pulse keeps its own trend view
         assertNull(todayTileJournalType("workout", withData))
         assertNull(todayTileJournalType("recovery", withData))
         assertNull(todayTileJournalType("sleep", TrainPilotUiState(sleepHoursDecimal = "—")))
