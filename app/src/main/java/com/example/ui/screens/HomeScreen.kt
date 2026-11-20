@@ -94,11 +94,11 @@ fun HomeScreen(
     onOpenHealthSteps: () -> Unit,
     onOpenCoachReadiness: () -> Unit,
     onOpenGoalsDialog: () -> Unit,
-    /** 2786: Home weekly goals → Health with the weekly view open. */
-    onOpenWeeklyGoals: () -> Unit = onOpenGoalsDialog,
     onOpenPersonalPlanner: () -> Unit,
     onDiscardWorkout: (String) -> Unit = {},
     onOpenHealthToday: () -> Unit = onOpenHealthSteps,
+    /** 2786: Home weekly goals → Health with the weekly view open. */
+    onOpenWeeklyGoals: () -> Unit = onOpenGoalsDialog,
     inlineProgramEditor: (@Composable () -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
