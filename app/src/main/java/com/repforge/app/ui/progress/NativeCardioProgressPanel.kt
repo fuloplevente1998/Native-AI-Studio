@@ -2,6 +2,7 @@ package com.repforge.app.ui.progress
 
 import com.repforge.app.ui.theme.TrainPilotFrames
 import com.repforge.app.ui.theme.trainPilotBorder
+import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Surface
@@ -191,7 +192,7 @@ private fun CardioEightWeekChart(weeks: List<CardioWeekStats>, selected: Int, on
     Row(Modifier.fillMaxWidth().height(110.dp).testTag("progress_cardio_chart"), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         weeks.forEachIndexed { i, w ->
             val on = i == selected
-            Column(Modifier.weight(1f).fillMaxHeight().clickable { onSelect(i) }.testTag("progress_cardio_week_$i"),
+            Column(Modifier.weight(1f).fillMaxHeight().trainPilotClickable(RoundedCornerShape(6.dp)) { onSelect(i) }.testTag("progress_cardio_week_$i"),
                 horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.BottomCenter) {
                     // An empty week stays an empty slot, never a 0 bar.
