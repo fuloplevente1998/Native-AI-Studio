@@ -56,7 +56,7 @@ data class WeeklyGoalSummary(
     val workoutFraction: Float get() = if (workoutsTarget <= 0) 0f else (workoutsDone.toFloat() / workoutsTarget).coerceIn(0f, 1f)
     val stepFraction: Float get() = steps?.let { (it.toFloat() / stepsTarget.coerceAtLeast(1)).coerceIn(0f, 1f) } ?: 0f
     /** Actual progress may exceed 100%; only the visual bar is capped. */
-    val stepPercent: Int? get() = steps?.let { (it.toDouble() * 100.0 / stepsTarget.coerceAtLeast(1)).toInt() }
+    val stepPercent: Int? get() = steps?.let { kotlin.math.round(it.toDouble() * 100.0 / stepsTarget.coerceAtLeast(1)).toInt() }
 }
 
 fun weeklyGoalSummary(state: TrainPilotUiState, today: LocalDate = LocalDate.now()): WeeklyGoalSummary {
