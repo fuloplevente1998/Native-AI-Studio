@@ -2,8 +2,8 @@
 
 > **Használat:** az alábbi teljes szöveget másold be az auditor ügynöknek (AI Studio / ChatGPT / Codex /
 > Claude), és add mellé a repót: `fuloplevente1998/Native-AI-Studio`, ág `main`.
-> Kiinduló állapot: `main` @ `d795593` = **1.4.1 · telefon 278700 · óra 278702**.
-> Hatókör: **a teljes app**. A legutóbbi kör (PR #290–#304) csak elsőbbséget kap.
+> Kiinduló állapot: `main` @ `e73dc51` = **1.4.1 · telefon 278800 · óra 278802** (2788 kör, PR #306).
+> Hatókör: **a teljes app**. A legutóbbi kör (PR #290–#306) csak elsőbbséget kap.
 
 ---
 
@@ -103,18 +103,22 @@ egy tesztben. Az ilyesmi ember szemmel könnyen elsiklik, ezért módszeresen ke
 
 ## 4. Kockázati térkép – ezzel kezdd
 
-### 4.1 Már igazolt hiba (erősítsd meg, és mérd fel a hatását)
-- **Testsúly szerkesztése új rekordot ír.**
-  - A lap `HealthCoachAndSettingsScreens.kt` ~384. sorában `onSaveNewWeight(kg, dátum)`-ot hív, azonosító nélkül.
-  - A `TrainPilotViewModel.saveNewBodyWeight` (~4499) mindig `UUID.randomUUID()` azonosítót ad (~4538), majd `upsertWeight`-et hív.
-  - Következmény: a szerkesztett mérés mellett a régi is megmarad a DB-ben. Újraindítás után mindkettő látszik, dátummódosításnál biztosan.
-  - Nézd meg a törlést (`deleteBodyWeightLog` ~4583) és a tombstone-okat (`NativeWeightTombstones18`) is.
-  - Ellenőrizd a felhőszinkron-összefésülést (`NativeCloudMergeGuard`): visszahozhatja-e a törölt mérést.
+### 4.1 Nemrég javított hiba – ellenőrizd, hogy a javítás teljes-e
+- **Testsúly szerkesztése új rekordot írt** (javítva a 2788-ban, PR #306).
+  - Most: a lap a szerkesztett mérés azonosítójával hívja `onUpdateWeight(id, kg, dátum)`-ot
+    (`HealthCoachAndSettingsScreens.kt` ~390), a `TrainPilotViewModel.saveNewBodyWeight(kg, dátum, editingId)`
+    (~4503) pedig ugyanazzal az azonosítóval ír (~4542).
+  - **Nyitott kérdés:** az `updatedAt` a *mérés dátuma* (nap eleje), nem a módosítás ideje. Ha a felhőszinkron-
+    összefésülés (`NativeCloudMergeGuard`, `BackupRestoreManager`) az `updatedAt` alapján dönt, egy visszadátumozott
+    szerkesztést felülírhat a régi felhőpéldány. Ellenőrizd.
+  - Ellenőrizd még: a helyben hozzáadott, még `w_…` azonosítójú sor szerkesztése (frissítés előtt), a törlés
+    (`deleteBodyWeightLog`) és a tombstone-ok (`NativeWeightTombstones18`).
 
 ### 4.2 Ismert hibaosztályok – keresd mindenhol
-1. **Egy mutató, több számítás.** Példa: a heti lépés % kétszer van kiszámolva, egyszer
-   `weeklyGoalSummary()`-ben (`WeeklyGoals.kt`), egyszer `HealthWeeklyGoalsPanel`-ben
-   (`HealthCoachAndSettingsScreens.kt` ~3453). Eltérő forráslistából, eltérő napokra számolhatnak.
+1. **Egy mutató, több számítás.** Még mindig nyitott példa: a heti lépés % kétszer van kiszámolva, egyszer
+   `weeklyGoalSummary().stepPercent`-ben (`WeeklyGoals.kt` ~59), egyszer a `HealthWeeklyGoalsPanel`-ben
+   (`HealthCoachAndSettingsScreens.kt` ~3477, `weeklyStepsPct`). Mindkettő a `weeklyHealthDays`-ből dolgozik,
+   de két kódúton: mutasd meg, el tud-e térni (pl. duplikált `dateIso`, napváltás), és javasolj egyetlen forrást.
    Ugyanígy nézd meg:
    - a Mai állapot csempéket (Kezdőlap és Egészség);
    - a Statisztikák Lépések fülét;
@@ -133,7 +137,25 @@ egy tesztben. Az ilyesmi ember szemmel könnyen elsiklik, ezért módszeresen ke
 7. **Elnyelt hiba.** `runCatching { }.getOrDefault(...)`, üres `catch`, olyan „siker” üzenet, ami nem tartós írás után jön.
 8. **Tesztminőség.** Instabil görgetési célpont, indokolatlan `useUnmergedTree`, olyan teszt, ami csak azt nézi, hogy egy node létezik.
 
-### 4.3 Kiemelt gyanús pontok
+### 4.3 A 2788-as kör változásai (friss kód, nézd át kiemelten)
+- **Teljes kalória napi oszlopon:** új mezők a `WeeklyHealthDaySummary`-ben: `totalCaloriesKcal` és
+  `activeCaloriesMeasured` (null = nem mért). A régi `activeCaloriesKcal` 0-ra esik vissza, ha nincs adat:
+  keresd meg, hol használja még valami a régi mezőt úgy, mintha a 0 mért érték lenne.
+  - Rajzolás: `TodayTileSheetExtras` (kalória ág). Felirat: `calorieDayLabel()`.
+  - Szabály: aktív + teljes soha nem adható össze, a nyugalmi rész = teljes − aktív, csak ha mindkettő mért.
+- **Mai lap vs. heti nézet:** a lépés és a Mai edzés csempe lapja csak a MAI napot mutatja; a 7 napos előzmény
+  csak a Heti célokban van (`HealthWeeklyGoalsPanel`, két rész: Edzések, Lépések).
+  - A „Heti … és előzmények ›” gomb bezárja a lapot, lenyitja a Heti célokat, és a `weeklyAnchor`
+    (`LayoutCoordinates`) alapján odagörget. Nézd meg, mi történik, ha a koordináták még nincsenek meg vagy le vannak választva.
+- **Edzéscél vs. 7 nap:** az edzéscél a naptári hetet/hónapot számolja, az oszlopok az utolsó 7 napot.
+  A feliratok ezt külön mondják – egyezik-e minden nyelven?
+- **„nincs edzés”** (`todayTileWeekLabel`, `workout` ág): a 0 itt valós, mert az edzésnapló teljes. Más helyen sem jelenhet meg „nincs adat” edzésre.
+- **Üres rekordblokk:** `HealthRecordDayDetails(title, hideWhenEmpty)`. Üres első oldalon nincs lapozó.
+  A napló (`StudioHealthMetricsBrowser`) viselkedése nem változott-e?
+- **Csempe-feliratok:** `MainTodayStatusTile` → `TrainPilotFitText` (min. 8 sp). A Kezdőlap kompakt csempéit is érinti:
+  nem lett-e magasabb a csempe, és nem csúszott-e el a Kezdőlap elrendezése?
+
+### 4.4 Kiemelt gyanús pontok
 - **Room v1, sémaexport nélkül.** Változott-e bármely entitás az első kiadás óta? Ha igen, frissítéskor
   összeomlás vagy adatvesztés jöhet. A `HealthJournalStore` és a `PhoneWorkoutExecutionStore` minden más
   verzióváltásra kivételt dob: mi történik ilyenkor a felhasználónál?
@@ -151,7 +173,7 @@ egy tesztben. Az ilyesmi ember szemmel könnyen elsiklik, ezért módszeresen ke
 - Folyamat kilövése, forgatás vagy akkumulátor-kímélő mód után nincs elveszett aktív edzés (`ActiveWorkoutStore`, foreground service).
 - Biztonsági mentés és visszaállítás (Drive, JSON, archív): teljes, nem duplikál, verzióváltáskor kompatibilis.
   Az egészségadat-mentés hozzájárulás nélkül nem kerül bele.
-- Frissítés 1.3 → 1.4.0 → 1.4.1 → 278700: minden adatbázis és DataStore-kulcs megmarad.
+- Frissítés 1.3 → 1.4.0 → 1.4.1 (278600 → 278700 → 278800): minden adatbázis és DataStore-kulcs megmarad.
 
 **B. Telefon ↔ óra**
 - Egy tulajdonos: nincs két párhuzamosan futó időzítő.
