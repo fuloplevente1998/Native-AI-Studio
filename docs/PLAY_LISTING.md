@@ -60,20 +60,20 @@ TrainPilot: workout planner and training log for your phone and Wear OS watch.
 • GPS routes and photos in private storage; health data is only included in backups with explicit consent
 • Multiple light and dark themes; Hungarian, English, German and Romanian
 
-## Újdonságok – Play kibocsátási megjegyzések (276500/276502 óta → 1.4.0, 278200/278202)
+## Újdonságok – Play kibocsátási megjegyzések (276500/276502 óta → 1.4.0, 278300/278302)
 
 Szabály: mindig **4 nyelv** Play-címkékkel (`<hu-HU>`, `<de-DE>`, `<en-US>`, `<ro>`), nyelvenként ≤500 karakter,
 **külön telefonos és órás** szöveg; a chatben egy másolható kódblokkban küldjük. Az összegzés mindig a Playen lévő
 utolsó kiadás (most 276500/276502) óta összes újítást tartalmazza.
 
-### Telefon (278200)
+### Telefon (278300)
 ```
 <hu-HU>
 • Edzés közben: egységes fejléc, gyakorlatsor, Videó · Coach · Részletek, pihenő mindenhol, kész sorozat zöld, előző érték
 • Edzés fül: minden nap dátummal; Gyors edzés 1 lapon
 • Programok: kompakt kártyák, szerkesztő, húzható sorrend
-• Fejlődés: PR rekordok, teljes listák; Statisztikák: Erő · Kardió · Lépések
-• Egészségnapló: tömör napi nézet, szűrők
+• Fejlődés: PR rekordok, teljes listák; Statisztikák: Gyakorlatok · Kardió · Lépések
+• Egészségnapló: tömör nézet, szűrők
 • Dizájn: alulról nyíló lapok, új Coach ikon, világos témák
 • Óra: kerek kijelzőre igazítva
 • Javítások: Otthoni A/B, villogás, Health Connect
@@ -82,7 +82,7 @@ utolsó kiadás (most 276500/276502) óta összes újítást tartalmazza.
 • Im Training: ein Kopfbereich, Übungsleiste, Video · Coach · Details, Pause überall, fertige Sätze grün, letzte Werte
 • Training: jeder Tag mit Datum; Schnelltraining auf einem Blatt
 • Programme: kompakte Karten, Editor, Reihenfolge ziehen
-• Fortschritt: PR-Rekorde, volle Listen; Statistik: Kraft · Cardio · Schritte
+• Fortschritt: PR-Rekorde, volle Listen; Statistik: Übungen · Cardio · Schritte
 • Gesundheit: kompakte Tagesansicht, Filter
 • Design: Bottom Sheets, neues Coach-Symbol, helle Themes
 • Uhr: für runde Displays
@@ -92,7 +92,7 @@ utolsó kiadás (most 276500/276502) óta összes újítást tartalmazza.
 • During workouts: one header, exercise strip, Video · Coach · Details, rest everywhere, done sets green, last values
 • Workout tab: every day with its date; Quick workout in one sheet
 • Programs: compact cards, editor, drag to reorder
-• Progress: PR records, full lists; Statistics: Strength · Cardio · Steps
+• Progress: PR records, full lists; Statistics: Exercises · Cardio · Steps
 • Health journal: compact day view, filters
 • Design: bottom sheets, new Coach icon, light themes
 • Watch: fits the round screen
@@ -102,7 +102,7 @@ utolsó kiadás (most 276500/276502) óta összes újítást tartalmazza.
 • În antrenament: antet unic, bară de exerciții, Video · Coach · Detalii, pauză peste tot, serii gata verzi, ultimele valori
 • Antrenament: fiecare zi cu data; antrenament rapid pe o foaie
 • Programe: carduri compacte, editor, ordine prin tragere
-• Progres: recorduri PR, liste complete; Statistici: Forță · Cardio · Pași
+• Progres: recorduri PR, liste complete; Statistici: Exerciții · Cardio · Pași
 • Sănătate: vizualizare zilnică compactă, filtre
 • Design: foi glisante, icon Coach nou, teme luminoase
 • Ceas: ecran rotund
@@ -110,7 +110,7 @@ utolsó kiadás (most 276500/276502) óta összes újítást tartalmazza.
 </ro>
 ```
 
-### Óra (278202)
+### Óra (278302)
 ```
 <hu-HU>
 • Kerek kijelzőre igazított menük, gombok és szövegek (Galaxy Watch 7 40 mm-en is)

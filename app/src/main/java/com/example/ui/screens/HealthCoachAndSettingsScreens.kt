@@ -404,6 +404,9 @@ fun HealthTabScreen(
     }
 
     val healthListState = androidx.compose.foundation.lazy.rememberLazyListState()
+    // 2783: a Today tile with data opens the journal at today's records of that type.
+    var journalFocus by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var journalFocusKey by remember { androidx.compose.runtime.mutableIntStateOf(0) }
 
     com.example.ui.components.TrainPilotScrollableListBox(
         lazyListState = healthListState,
@@ -490,10 +493,18 @@ fun HealthTabScreen(
                     var expandedTodayTileKey by remember { mutableStateOf<String?>(null) }
 
                     StudioTodayStatusGrid(uiState) { key ->
-                        expandedTodayTileKey = if (expandedTodayTileKey == key) null else key
-                        when (key) {
-                            "sleep", "steps" -> onToggleHealthSection("journal")
-                            "pulse" -> onToggleHealthSection("pulse")
+                        val journalType = todayTileJournalType(key, uiState)
+                        if (journalType != null) {
+                            journalFocus = today.toString() to journalType
+                            journalFocusKey++
+                            if (!uiState.expandedHealthJournal) onToggleHealthSection("journal")
+                            coroutineScope.launch { healthListState.animateScrollToItem(2) }
+                        } else {
+                            expandedTodayTileKey = if (expandedTodayTileKey == key) null else key
+                            when (key) {
+                                "sleep", "steps" -> onToggleHealthSection("journal")
+                                "pulse" -> onToggleHealthSection("pulse")
+                            }
                         }
                     }
 
@@ -1540,7 +1551,8 @@ fun HealthTabScreen(
                     refreshKey = "${uiState.healthRefreshRevision}:${uiState.healthSyncBusy}",
                     onRefreshProvider = onReadHealthSource,
                     refreshBusy = uiState.healthSyncBusy,
-                    refreshError = uiState.healthSyncMessage.takeIf { uiState.healthSyncFailed })
+                    refreshError = uiState.healthSyncMessage.takeIf { uiState.healthSyncFailed },
+                    focus = journalFocus, focusKey = journalFocusKey)
             }
         }
 
@@ -3862,4 +3874,15 @@ fun PrivatePhotosScreen(
     onShowBanner: (String) -> Unit
 ) {
     com.example.ui.components.StudioPrivatePhotos(uiState, strings, onBack, onOpenSettings)
+}
+
+/** 2783: Today tile → journal record type to open directly, or null when the tile has no data (or no journal type). */
+internal fun todayTileJournalType(key: String, state: com.example.ui.viewmodel.TrainPilotUiState): String? = when (key) {
+    "sleep" -> "SleepSessionRecord".takeIf { state.sleepHoursDecimal != "—" }
+    "calories" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("activeCalories")
+        .takeIf { "activeCalories" in state.dailyHealthAvailableFields }
+    "steps" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("steps")
+        .takeIf { "steps" in state.dailyHealthAvailableFields }
+    // Pulse keeps its own daily pulse-trend view.
+    else -> null
 }

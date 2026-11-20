@@ -44,7 +44,10 @@ internal fun StudioHealthMetricsBrowser(
     refreshKey: String,
     onRefreshProvider: ((String) -> Unit)? = null,
     refreshBusy: Boolean = false,
-    refreshError: String? = null
+    refreshError: String? = null,
+    /** 2783: (day ISO, record type) to open directly, e.g. from a Today tile; [focusKey] repeats it. */
+    focus: Pair<String, String>? = null,
+    focusKey: Int = 0
 ) {
     val context = LocalContext.current.applicationContext
     val palette = LocalTrainPilotPalette.current
@@ -130,6 +133,9 @@ internal fun StudioHealthMetricsBrowser(
             var type by rememberSaveable(provider, source, date) { mutableStateOf("") }
             // 2778: detailed records start folded; the header opens/closes them.
             var recordsOpen by rememberSaveable(provider, source, date) { mutableStateOf(false) }
+            androidx.compose.runtime.LaunchedEffect(focusKey) {
+                if (focus != null && focus.first == date.toString()) { expanded = true; type = focus.second; recordsOpen = true }
+            }
             Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceElevated,
                 border = TrainPilotFrames.stroke(1.dp, palette.cardBorder), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

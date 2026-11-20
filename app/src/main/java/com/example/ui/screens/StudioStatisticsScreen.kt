@@ -115,7 +115,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                 else -> 1
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf(statsTr(lang, "Erő", "Strength", "Kraft", "Forță"), statsTr(lang, "Kardió", "Cardio", "Cardio", "Cardio"),
+                listOf(statsTr(lang, "Gyakorlatok", "Exercises", "Übungen", "Exerciții"), statsTr(lang, "Kardió", "Cardio", "Cardio", "Cardio"),
                     statsTr(lang, "Lépések", "Steps", "Schritte", "Pași")).forEachIndexed { index, label ->
                     FilterChip(selected = visibleTab == index, onClick = {
                         when (index) {
@@ -137,6 +137,9 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                     state.savedExerciseBests.isEmpty() -> Text(statsTr(lang, "Még nincs mentett, befejezett sorozat.", "No saved completed sets yet.", "Noch keine gespeicherten Sätze.", "Nicio serie finalizată salvată încă."), color = palette.textSecondary)
                     else -> state.savedExerciseBests.forEach { record ->
                         val expanded = selectedRecord == record.exerciseId
+                        // 2783: mini trend (last 8 workouts) on every card, the big chart with periods when opened.
+                        val trendKind = exerciseTrendKind(record)
+                        val trend = remember(record, state.loggedWorkouts) { exerciseTrend(record, state.loggedWorkouts) }
                         Surface(shape = MaterialTheme.shapes.large, color = palette.surfaceCard,
                             modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
                                 .testTag("statistics_record_${record.exerciseId}")) {
@@ -154,9 +157,42 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                                         Text(savedRecordLabel(record, number, lang), color = palette.textSecondary,
                                             style = MaterialTheme.typography.bodySmall)
                                     }
+                                    if (trendKind != ExerciseTrendKind.NONE) {
+                                        val mini = trend.takeLast(8)
+                                        if (mini.size >= 2) Column(horizontalAlignment = Alignment.End,
+                                            modifier = Modifier.padding(end = 4.dp).testTag("statistics_record_mini_${record.exerciseId}")) {
+                                            ExerciseSparkline(mini, palette.primary)
+                                            val change = exerciseTrendChange(mini, trendKind, lang.name.lowercase()).orEmpty()
+                                            Text(change, style = MaterialTheme.typography.labelSmall,
+                                                color = if (change.startsWith("▲")) palette.success else if (change.startsWith("▼")) palette.danger else palette.textSecondary,
+                                                modifier = Modifier.testTag("statistics_record_change_${record.exerciseId}"))
+                                        } else if (mini.size == 1) Text(statsTr(lang, "1 mérés", "1 entry", "1 Messung", "1 măsurătoare"),
+                                            style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, modifier = Modifier.padding(end = 4.dp))
+                                    }
                                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.primary)
                                 }
-                                if (expanded) {
+                                if (expanded && trendKind != ExerciseTrendKind.NONE && trend.size >= 2) {
+                                    HorizontalDivider(color = palette.cardBorder)
+                                    var periodDays by rememberSaveable(record.exerciseId) { mutableStateOf(90) }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        listOf(30 to statsTr(lang, "30 nap", "30 days", "30 Tage", "30 zile"), 90 to statsTr(lang, "90 nap", "90 days", "90 Tage", "90 zile"),
+                                            0 to statsTr(lang, "Mind", "All", "Alle", "Toate")).forEach { (days, label) ->
+                                            FilterChip(selected = periodDays == days, onClick = { periodDays = days }, label = { Text(label) },
+                                                modifier = Modifier.heightIn(min = 48.dp).testTag("statistics_record_period_${record.exerciseId}_$days"))
+                                        }
+                                    }
+                                    val shown = if (periodDays == 0) trend else trend.filter { !it.date.isBefore(LocalDate.now().minusDays(periodDays.toLong() - 1)) }
+                                    if (shown.size >= 2) Box(Modifier.fillMaxWidth().height(160.dp).testTag("statistics_record_chart_${record.exerciseId}")) {
+                                        TrendCanvas(shown.map { it.value })
+                                    } else Text(statsTr(lang, "Ebben az időszakban kevés a mérés.", "Too few entries in this period.", "Zu wenige Messungen in diesem Zeitraum.", "Prea puține măsurători în această perioadă."),
+                                        color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
+                                    Text(when (trendKind) {
+                                        ExerciseTrendKind.E1RM -> statsTr(lang, "Becsült 1RM (Epley), kg", "Estimated 1RM (Epley), kg", "Geschätztes 1RM (Epley), kg", "1RM estimat (Epley), kg")
+                                        ExerciseTrendKind.SECONDS -> statsTr(lang, "Legjobb idő edzésenként, mp", "Best time per workout, s", "Beste Zeit je Training, Sek.", "Cel mai bun timp pe antrenament, sec")
+                                        else -> statsTr(lang, "Legtöbb ismétlés edzésenként", "Most reps per workout", "Meiste Wdh. je Training", "Cele mai multe repetări pe antrenament")
+                                    } + exerciseTrendChange(shown, trendKind, lang.name.lowercase())?.let { " · $it" }.orEmpty(),
+                                        color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
+                                } else if (expanded) {
                                     HorizontalDivider(color = palette.cardBorder)
                                     if (record.weightKg != null && native.selectedExerciseId == record.exerciseId) {
                                         Text(statsTr(lang, "Becsült 1RM • Epley • utolsó 90 nap", "Estimated 1RM • Epley • last 90 days", "Geschätztes 1RM • Epley • letzte 90 Tage", "1RM estimat • Epley • ultimele 90 de zile"), color = palette.textSecondary)
