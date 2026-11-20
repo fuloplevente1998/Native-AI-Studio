@@ -55,6 +55,8 @@ data class WeeklyGoalSummary(
 ) {
     val workoutFraction: Float get() = if (workoutsTarget <= 0) 0f else (workoutsDone.toFloat() / workoutsTarget).coerceIn(0f, 1f)
     val stepFraction: Float get() = steps?.let { (it.toFloat() / stepsTarget.coerceAtLeast(1)).coerceIn(0f, 1f) } ?: 0f
+    /** Actual progress may exceed 100%; only the visual bar is capped. */
+    val stepPercent: Int? get() = steps?.let { (it.toDouble() * 100.0 / stepsTarget.coerceAtLeast(1)).toInt() }
 }
 
 fun weeklyGoalSummary(state: TrainPilotUiState, today: LocalDate = LocalDate.now()): WeeklyGoalSummary {
@@ -113,7 +115,7 @@ fun WeeklyGoalsCompact(
                         else wgTr(lang, "Edzés", "Workouts", "Trainings", "Antrenamente")
                     WeeklyGoalBar(period, "${s.workoutsDone} / ${s.workoutsTarget}", s.workoutFraction, Modifier.weight(1f).testTag("weekly_goals_workouts"))
                     WeeklyGoalBar(wgTr(lang, "Lépés · 7 nap", "Steps · 7 days", "Schritte · 7 Tage", "Pași · 7 zile"),
-                        s.steps?.let { "${(s.stepFraction * 100).toInt()}%" } ?: "—", s.stepFraction, Modifier.weight(1f).testTag("weekly_goals_steps"))
+                        s.stepPercent?.let { "$it%" } ?: "—", s.stepFraction, Modifier.weight(1f).testTag("weekly_goals_steps"))
                 }
             }
             if (onGoals != null) Surface(shape = RoundedCornerShape(12.dp), color = p.primary.copy(alpha = 0.12f),
