@@ -863,6 +863,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     },
                                     onOpenQuickWorkout = { viewModel.toggleQuickWorkoutSheet(true) },
                                     onOpenHealthToday = { viewModel.selectTab(MainTab.HEALTH) },
+                                    onOpenWeeklyGoals = { viewModel.openHealthAndExpand(weeklyGoals = true) },
                                     onOpenWatchAndSync = { viewModel.requestWatchDeviceInfo(); viewModel.navigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
                                     onOpenHealthSleep = {
                                         viewModel.openHealthAndExpand(journal = true)

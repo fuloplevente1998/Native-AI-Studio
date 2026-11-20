@@ -487,6 +487,14 @@ fun HealthTabScreen(
                         if (key == "pulse") onToggleHealthSection("pulse")
                     }
 
+                    // 2786: weekly goals live in "Today": compact bars, tap opens the big view below them.
+                    com.example.ui.components.WeeklyGoalsCompact(uiState, framed = false,
+                        onOpen = { onToggleHealthSection("weekly") }, onGoals = onOpenGoalsDialog,
+                        expanded = uiState.expandedHealthWeeklyGoals, modifier = Modifier.testTag("health_weekly_goals_compact"))
+                    AnimatedVisibility(visible = uiState.expandedHealthWeeklyGoals) {
+                        HealthWeeklyGoalsPanel(uiState, strings, onToggleHealthSection, onOpenGoalsDialog)
+                    }
+
                     // Expandable Detail Dropdown Card when any of the 6 "Mai állapot" tiles is tapped
                     // 2771: tile details open from the bottom instead of pushing the page down.
                     if (expandedTodayTileKey != null) com.example.ui.components.TrainPilotScreenSheet(
@@ -948,297 +956,111 @@ fun HealthTabScreen(
             }
         }
 
-        // 2. SCREENSHOT 9: "Heti egészség & edzés célok" CONTAINER (with Heti lépésszám, Aktív edzésidő, Expandable Weekly Source & 7-Day Breakdown, 24 órás pulzustrend & Testsúlynapló)
+        // 2786: the weight log is its own card right under "Today" (weekly goals moved into "Today").
         item {
-            val today = java.time.LocalDate.now()
-            val cachedDays = uiState.weeklyHealthDays.associateBy { it.dateIso }
-            val goalDays = (6 downTo 0).map { offset ->
-                val date = today.minusDays(offset.toLong())
-                val workouts = uiState.loggedWorkouts.filter { it.localWorkoutDate() == date }
-                val cached = cachedDays[date.toString()]
-                    ?: com.example.ui.viewmodel.WeeklyHealthDaySummary(dateIso = date.toString(), dayLabelHu = date.toString(), steps = 0, activeCaloriesKcal = 0, sleepLabel = "—", workoutMinutes = 0, workoutCount = 0, sourceLabelHu = "Nincs rögzített adat")
-                cached.copy(workoutMinutes = workouts.sumOf { it.durationMinutes.coerceAtLeast(0) }, workoutCount = workouts.size)
-            }
-            val weeklyStepsTarget = (uiState.stepsGoal.coerceAtLeast(1) * 7)
-            val weeklyStepsCurrent = goalDays.filter { it.stepsAvailable }.sumOf { it.steps }
-            val weeklyStepsPct = ((weeklyStepsCurrent.toFloat() / weeklyStepsTarget.toFloat()) * 100f).toInt().coerceIn(0, 100)
-            val weeklyMinutesTarget = (uiState.userScheduleDaysPerWeek * uiState.userWorkoutDurationMin).coerceAtLeast(150)
-            val weeklyMinutesCurrent = goalDays.sumOf { it.workoutMinutes }
-            val weeklyMinutesPct = ((weeklyMinutesCurrent.toFloat() / weeklyMinutesTarget.toFloat()) * 100f).toInt().coerceIn(0, 100)
-            val primaryProviderName = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"
-
             Surface(
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(20.dp),
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .trainPilotBorder(1.2.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(24.dp))
-                    .testTag("health_weekly_status_card")
+                    .testTag("health_weight_card")
+                    .trainPilotBorder(
+                        width = 1.dp,
+                        color = if (uiState.expandedHealthWeightLog) palette.primary.copy(alpha = 0.55f) else palette.cardBorder,
+                        shape = RoundedCornerShape(20.dp)
+                    )
             ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
-                ) {
-                    // Header row: "Heti egészség & edzés célok" + "🎯 Célok" pill button
+                Column(modifier = Modifier.padding(12.dp)) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .trainPilotClickable(RoundedCornerShape(14.dp)) { onToggleHealthSection("weight") }
+                            .testTag("health_weight_log_header"),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .trainPilotClickable(RoundedCornerShape(10.dp)) { onToggleHealthSection("weekly") }
+                        Surface(
+                            shape = CircleShape,
+                            color = palette.primary.copy(alpha = 0.16f),
+                            modifier = Modifier.size(40.dp)
                         ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.MonitorWeight,
+                                    contentDescription = null,
+                                    tint = palette.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = if (uiState.workoutGoalPeriod == com.example.model.WorkoutGoalPeriod.MONTHLY) {
-                                    tr(uiState.language, "Egészség & edzéscélok", "Health & Workout Goals", "Gesundheits- & Trainingsziele", "Obiective sănătate și antrenament")
-                                } else {
-                                    tr(uiState.language, "Heti egészség & edzés célok", "Weekly Health & Workout Goals", "Wöchentliche Gesundheits- & Trainingsziele", "Obiective săptămânale sănătate și antrenament")
-                                },
-                                style = MaterialTheme.typography.titleLarge,
+                                text = tr(uiState.language, "Testsúlynapló & Trend", "Weight Log & Trend", "Gewichtsprotokoll & Trend", "Jurnal greutate și tendință"),
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = palette.textPrimary
+                                color = palette.textPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
+                            val latestWeightLabel = if (latestChronologicalEntry != null) {
+                                "${tr(uiState.language, "Legújabb", "Latest", "Neueste", "Ultima")} (${latestChronologicalEntry.dateLabel}): ${latestChronologicalEntry.weightLabel}"
+                            } else if (uiState.currentBodyWeightKg > 0f) {
+                                "${tr(uiState.language, "Legújabb", "Latest", "Neueste", "Ultima")}: ${"%.1f".format(uiState.currentBodyWeightKg).replace('.', ',')} kg"
+                            } else {
+                                tr(uiState.language, "Legújabb: nincs rögzített mérés", "Latest: no recorded measurement", "Neueste: keine Messung erfasst", "Ultima: nicio măsurătoare înregistrată")
+                            }
                             Text(
-                                text = tr(
-                                    uiState.language,
-                                    "$primaryProviderName & Room edzésnapló (Koppints a forrásokhoz)",
-                                    "$primaryProviderName & Room workout log (Tap for sources)",
-                                    "$primaryProviderName & Room-Trainingsprotokoll (Tippen für Quellen)",
-                                    "$primaryProviderName și jurnal Room (Atinge pentru surse)"
-                                ),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
+                                text = latestWeightLabel,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold,
                                 color = palette.primary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
                         Surface(
-                            shape = RoundedCornerShape(18.dp),
-                            color = palette.background.copy(alpha = 0.65f),
-                            modifier = Modifier
-                                .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                                .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenGoalsDialog() }
-                                .testTag("health_weekly_goals_button")
+                            shape = RoundedCornerShape(16.dp),
+                            color = palette.surfaceCard,
+                            modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Text("🎯", fontSize = 13.sp)
                                 Text(
-                                    text = tr(uiState.language, "Célok", "Goals", "Ziele", "Obiective"),
-                                    style = MaterialTheme.typography.labelMedium,
+                                    text = strings.detailsAction,
+                                    style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.primary
+                                )
+                                Icon(
+                                    imageVector = if (uiState.expandedHealthWeightLog) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = null,
+                                    tint = palette.primary,
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                         }
                     }
 
-                    val minUnit = tr(uiState.language, "perc", "min", "Min.", "min")
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        for (steps in listOf(true, false)) {
-                            val expanded = if (steps) uiState.expandedWeeklySteps else uiState.expandedWeeklyWorkouts
-                            val tag = if (steps) "steps" else "minutes"
-                            Surface(shape = RoundedCornerShape(18.dp), color = palette.background.copy(alpha = 0.55f),
-                                modifier = Modifier.weight(1f).trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onToggleHealthSection(if (steps) "weekly_steps" else "weekly_workouts") }
-                                    .testTag("health_weekly_${tag}_card")) {
-                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            if (steps) tr(uiState.language, "Heti lépésszám", "Weekly Steps", "Wöchentliche Schritte", "Pași săptămânali")
-                                            else tr(uiState.language, "Aktív edzésidő", "Active Workout Time", "Aktive Trainingszeit", "Timp activ antrenament"),
-                                            modifier = Modifier.weight(1f),
-                                            style = MaterialTheme.typography.labelLarge, color = palette.textPrimary
-                                        )
-                                        Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.primary)
-                                    }
-                                    Text(if (steps) { if (goalDays.none { it.stepsAvailable }) "—" else "%,d".format(java.util.Locale.US, weeklyStepsCurrent).replace(',', ' ') }
-                                        else "$weeklyMinutesCurrent $minUnit", style = MaterialTheme.typography.headlineMedium,
-                                        color = palette.textPrimary, modifier = Modifier.testTag("health_weekly_${tag}_total"))
-                                    Text(
-                                        if (steps) strings.stepsGoalWithCount(weeklyStepsTarget)
-                                        else "${strings.stepsGoalWithCount(weeklyMinutesTarget)} $minUnit",
-                                        style = MaterialTheme.typography.labelSmall, color = palette.textSecondary
-                                    )
-                                    LinearProgressIndicator(progress = { (if (steps) weeklyStepsPct else weeklyMinutesPct) / 100f },
-                                        modifier = Modifier.fillMaxWidth(), color = palette.primary, trackColor = palette.surfaceElevated)
-                                    if (steps) Text(
-                                        tr(
-                                            uiState.language,
-                                            "${goalDays.count { it.stepsAvailable }}/7 napi adat • $primaryProviderName",
-                                            "${goalDays.count { it.stepsAvailable }}/7 daily records • $primaryProviderName",
-                                            "${goalDays.count { it.stepsAvailable }}/7 Tagesdaten • $primaryProviderName",
-                                            "${goalDays.count { it.stepsAvailable }}/7 zile cu date • $primaryProviderName"
-                                        ),
-                                        style = MaterialTheme.typography.labelSmall, color = palette.textSecondary
-                                    )
-                                }
-                            }
+                    // 2784: compact curved chart when closed; large chart with periods, fitness tiles,
+                    // compact rows (edit/delete in a ⋮ menu) when open.
+                    WeightLogBody(
+                        uiState = uiState,
+                        strings = strings,
+                        chronological = chronologicalMeasurements,
+                        newestFirst = recentMeasurements,
+                        dateFormatter = shortChartDateFormatter,
+                        onToggle = { onToggleHealthSection("weight") },
+                        onSelectRange = onSelectWeightRange,
+                        onAdd = { onToggleAddWeightDialog(true) },
+                        onEdit = { editingMeasurement = it },
+                        onDelete = { entry ->
+                            recentMeasurements = recentMeasurements.filterNot { it.id == entry.id }
+                            onDeleteWeightLog(entry.id)
                         }
-                    }
-
-                    // Details reserve a full-width row beneath both summary cards.
-                    for (steps in listOf(true, false)) {
-                        val expanded = if (steps) uiState.expandedWeeklySteps else uiState.expandedWeeklyWorkouts
-                        val tag = if (steps) "steps" else "minutes"
-                        AnimatedVisibility(visible = expanded) {
-                            Surface(shape = RoundedCornerShape(18.dp), color = palette.surfaceElevated,
-                                modifier = Modifier.fillMaxWidth().testTag("health_weekly_${tag}_days")
-                                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))) {
-                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text(
-                                        if (steps) tr(uiState.language, "Heti lépésszám • napi bontás", "Weekly Steps • Daily Breakdown", "Wöchentliche Schritte • Tagesübersicht", "Pași săptămânali • Detaliere zilnică")
-                                        else tr(uiState.language, "Aktív edzésidő • napi bontás", "Active Workout Time • Daily Breakdown", "Aktive Trainingszeit • Tagesübersicht", "Timp activ • Detaliere zilnică"),
-                                        style = MaterialTheme.typography.titleMedium, color = palette.textPrimary
-                                    )
-                                    for (day in goalDays) {
-                                        val dayWorkouts = if (steps) emptyList() else
-                                            uiState.loggedWorkouts.filter { it.localWorkoutDate()?.toString() == day.dateIso }
-                                        HorizontalDivider(color = palette.cardBorder)
-                                        Row(Modifier.fillMaxWidth().padding(vertical = 3.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                                                Text(day.dayLabelHu, style = MaterialTheme.typography.labelLarge,
-                                                    color = palette.textPrimary)
-                                                Text(if (steps) day.stepsSourceLabelHu else
-                                                    if (dayWorkouts.isEmpty()) tr(uiState.language, "Room edzésnapló • nincs mai edzés", "Room workout log • no workout", "Room-Protokoll • kein Training", "Jurnal Room • fără antrenament")
-                                                    else "Room • " + dayWorkouts.joinToString(" · ") {
-                                                        "${it.titleHu}: ${it.durationMinutes} $minUnit"
-                                                    },
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = palette.textSecondary, maxLines = 2,
-                                                    overflow = TextOverflow.Ellipsis)
-                                            }
-                                            Text(
-                                                if (steps) {
-                                                    if (day.stepsAvailable) "${day.steps} ${tr(uiState.language, "lépés", "steps", "Schritte", "pași")}" else "—"
-                                                } else {
-                                                    "${day.workoutMinutes} $minUnit • ${day.workoutCount} ${tr(uiState.language, "edzés", "workouts", "Trainings", "antr.")}"
-                                                },
-                                                modifier = Modifier.testTag("health_weekly_${tag}_${day.dateIso}"),
-                                                style = MaterialTheme.typography.bodySmall, color = palette.textPrimary
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Expandable Inner Card 2 inside Weekly Section: "Testsúlynapló & Trend" (Screenshot 9 style + full expanded details)
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = palette.background.copy(alpha = 0.55f),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .trainPilotBorder(
-                                width = 1.dp,
-                                color = if (uiState.expandedHealthWeightLog) palette.primary.copy(alpha = 0.55f) else palette.cardBorder,
-                                shape = RoundedCornerShape(20.dp)
-                            )
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .trainPilotClickable(RoundedCornerShape(14.dp)) { onToggleHealthSection("weight") }
-                                    .testTag("health_weight_log_header"),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = palette.primary.copy(alpha = 0.16f),
-                                    modifier = Modifier.size(40.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = Icons.Default.MonitorWeight,
-                                            contentDescription = null,
-                                            tint = palette.primary,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = tr(uiState.language, "Testsúlynapló & Trend", "Weight Log & Trend", "Gewichtsprotokoll & Trend", "Jurnal greutate și tendință"),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = palette.textPrimary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    val latestWeightLabel = if (latestChronologicalEntry != null) {
-                                        "${tr(uiState.language, "Legújabb", "Latest", "Neueste", "Ultima")} (${latestChronologicalEntry.dateLabel}): ${latestChronologicalEntry.weightLabel}"
-                                    } else if (uiState.currentBodyWeightKg > 0f) {
-                                        "${tr(uiState.language, "Legújabb", "Latest", "Neueste", "Ultima")}: ${"%.1f".format(uiState.currentBodyWeightKg).replace('.', ',')} kg"
-                                    } else {
-                                        tr(uiState.language, "Legújabb: nincs rögzített mérés", "Latest: no recorded measurement", "Neueste: keine Messung erfasst", "Ultima: nicio măsurătoare înregistrată")
-                                    }
-                                    Text(
-                                        text = latestWeightLabel,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = palette.primary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = palette.surfaceCard,
-                                    modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Text(
-                                            text = strings.detailsAction,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = palette.primary
-                                        )
-                                        Icon(
-                                            imageVector = if (uiState.expandedHealthWeightLog) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                            contentDescription = null,
-                                            tint = palette.primary,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                }
-                            }
-
-                            // 2784: compact curved chart when closed; large chart with periods, fitness tiles,
-                            // compact rows (edit/delete in a ⋮ menu) when open.
-                            WeightLogBody(
-                                uiState = uiState,
-                                strings = strings,
-                                chronological = chronologicalMeasurements,
-                                newestFirst = recentMeasurements,
-                                dateFormatter = shortChartDateFormatter,
-                                onToggle = { onToggleHealthSection("weight") },
-                                onSelectRange = onSelectWeightRange,
-                                onAdd = { onToggleAddWeightDialog(true) },
-                                onEdit = { editingMeasurement = it },
-                                onDelete = { entry ->
-                                    recentMeasurements = recentMeasurements.filterNot { it.id == entry.id }
-                                    onDeleteWeightLog(entry.id)
-                                }
-                            )
-                        }
-                    }
+                    )
                 }
             }
         }
@@ -1268,8 +1090,12 @@ fun HealthTabScreen(
         item {
             ExpandableHealthSectionCard(
                 icon = Icons.Default.Link,
-                title = tr(uiState.language, "Egészségadat-források", "Health Data Sources", "Gesundheitsdatenquellen", "Surse date de sănătate"),
-                subtitle = tr(uiState.language, "Adatforrások, engedélyek és szinkron", "Data sources, permissions & sync", "Datenquellen, Berechtigungen & Sync", "Surse de date, permisiuni și sincronizare"),
+                title = tr(uiState.language, "Források, óra és szinkron", "Sources, watch & sync", "Quellen, Uhr & Sync", "Surse, ceas și sincronizare"),
+                subtitle = listOf(
+                    "Samsung Health " + if (uiState.samsungGrantedCount > 0) "✓" else "—",
+                    "Health Connect " + if (uiState.healthGrantedCount > 0) "✓" else "—",
+                    tr(uiState.language, "Óra", "Watch", "Uhr", "Ceas") + " " + if (uiState.watchAppAvailable) "✓" else "—"
+                ).joinToString(" · "),
                 expanded = uiState.expandedHealthConnect,
                 onToggle = { onToggleHealthSection("connect") },
                 customLeadingBadge = {
@@ -1326,151 +1152,147 @@ fun HealthTabScreen(
                         }
                     }
                 }
-            }
-        }
-
-        // 4b. Direct Óra és szinkron (Wear OS) card on Egészség tab so it's 1-tap reachable
-        item {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
-                    .trainPilotClickable(RoundedCornerShape(20.dp)) { onNavigateToSubScreen(SubScreen.WATCH_AND_SYNC) }
-                    .testTag("health_open_watch_sync_card")
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                // 2786: one card for sources, watch and sync (was three).
+                Spacer(Modifier.height(10.dp))
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = palette.surfaceCard,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                        .trainPilotClickable(RoundedCornerShape(20.dp)) { onNavigateToSubScreen(SubScreen.WATCH_AND_SYNC) }
+                        .testTag("health_open_watch_sync_card")
                 ) {
-                    MockupWatchGraphicBadge(size = 46.dp)
-                    Column(modifier = Modifier.weight(1f)) {
-                        val wearTitle = tr(uiState.language, "TrainPilot Wear OS – edzésmérések", "TrainPilot Wear OS – workout measurements",
-                            "TrainPilot Wear OS – Trainingsmessungen", "TrainPilot Wear OS – măsurători antrenament")
-                        val watchTitle = if (uiState.watchAppAvailable) "$wearTitle (${uiState.watchName})" else wearTitle
-                        Text(
-                            text = watchTitle,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = palette.textPrimary
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        MockupWatchGraphicBadge(size = 46.dp)
+                        Column(modifier = Modifier.weight(1f)) {
+                            val wearTitle = tr(uiState.language, "TrainPilot Wear OS – edzésmérések", "TrainPilot Wear OS – workout measurements",
+                                "TrainPilot Wear OS – Trainingsmessungen", "TrainPilot Wear OS – măsurători antrenament")
+                            val watchTitle = if (uiState.watchAppAvailable) "$wearTitle (${uiState.watchName})" else wearTitle
+                            Text(
+                                text = watchTitle,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = palette.textPrimary
+                            )
+                            Text(
+                                text = when {
+                                    uiState.watchAppAvailable -> tr(uiState.language, "● Óra csatlakoztatva", "● Watch connected", "● Uhr verbunden", "● Ceas conectat")
+                                    uiState.watchConnected -> tr(uiState.language, "Wear OS rendszerkapcsolat • TrainPilot óraapp nincs telepítve", "Wear OS system connection • TrainPilot watch app not installed", "Wear OS-Systemverbindung • TrainPilot-Uhren-App nicht installiert", "Conexiune sistem Wear OS • Aplicația de ceas TrainPilot nu este instalată")
+                                    else -> tr(uiState.language, "Nincs csatlakoztatott óra", "No watch connected", "Keine Uhr verbunden", "Niciun ceas conectat")
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (uiState.watchAppAvailable) palette.success else palette.textSecondary
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = palette.primary
                         )
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = palette.primary.copy(alpha = 0.42f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp)
+                                .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(16.dp))
+                                .trainPilotClickable(RoundedCornerShape(16.dp), enabled = !uiState.healthSyncBusy) { onTriggerHealthSync() }
+                                .testTag("health_sync_button")
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = if (uiState.healthSyncBusy) tr(uiState.language, "Szinkronizálás…", "Syncing…", "Synchronisiere…", "Se sincronizează…") else strings.syncAction,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.textPrimary
+                                )
+                            }
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = palette.surfaceCard,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp)
+                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                                .trainPilotClickable(RoundedCornerShape(16.dp)) { onRequestHealthPermissions() }
+                                .testTag("health_open_permissions_button")
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = strings.permissionsAction,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.textPrimary
+                                )
+                            }
+                        }
+                    }
+
+                    listOf(com.repforge.app.HealthJournalStore.SAMSUNG, com.repforge.app.HealthJournalStore.HC).forEach { provider ->
+                        val lastSuccess = uiState.healthLastSyncByProvider[provider]
+                        val time = runCatching {
+                            java.time.format.DateTimeFormatter.ofPattern("yyyy.MM.dd. HH:mm")
+                                .withZone(java.time.ZoneId.systemDefault()).format(java.time.Instant.parse(lastSuccess))
+                        }.getOrDefault(tr(uiState.language, "Még nincs sikeres szinkron", "No successful sync yet", "Noch kein erfolgreicher Sync", "Nicio sincronizare reușită încă"))
+                        Text("${com.repforge.app.NativeWorkoutHealthSource.label(provider)} • ${tr(uiState.language, "Utolsó sikeres szinkron", "Last successful sync", "Letzter erfolgreicher Sync", "Ultima sincronizare reușită")}: $time",
+                            style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
+                            modifier = Modifier.testTag("health_last_sync_$provider"))
+                    }
+                    if (uiState.healthSyncMessage.isNotBlank()) Text(uiState.healthSyncMessage,
+                        color = if (uiState.healthSyncFailed) palette.danger else if (uiState.healthSyncPartial) palette.warning else palette.textPrimary,
+                        modifier = Modifier.testTag("health_sync_result"))
+                    TrainPilotOutlinedButton(onClick = { syncDetailsExpanded = !syncDetailsExpanded },
+                        modifier = Modifier.fillMaxWidth().testTag("health_sync_details_toggle")) {
+                        Text(tr(uiState.language, "Szinkron részletei", "Sync details", "Sync-Details", "Detalii sincronizare"),
+                            modifier = Modifier.weight(1f))
+                        Icon(if (syncDetailsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null)
+                    }
+                    if (syncDetailsExpanded) {
                         Text(
-                            text = when {
-                                uiState.watchAppAvailable -> tr(uiState.language, "● Óra csatlakoztatva", "● Watch connected", "● Uhr verbunden", "● Ceas conectat")
-                                uiState.watchConnected -> tr(uiState.language, "Wear OS rendszerkapcsolat • TrainPilot óraapp nincs telepítve", "Wear OS system connection • TrainPilot watch app not installed", "Wear OS-Systemverbindung • TrainPilot-Uhren-App nicht installiert", "Conexiune sistem Wear OS • Aplicația de ceas TrainPilot nu este instalată")
-                                else -> tr(uiState.language, "Nincs csatlakoztatott óra", "No watch connected", "Keine Uhr verbunden", "Niciun ceas conectat")
-                            },
+                            if (uiState.healthAutoOnOpen) tr(uiState.language,
+                                "Automatikus frissítés appnyitáskor és előtérben 5 percenként.",
+                                "Automatic refresh on app opening and every 5 minutes in the foreground.",
+                                "Automatische Aktualisierung beim App-Start und im Vordergrund alle 5 Minuten.",
+                                "Actualizare automată la deschiderea aplicației și la fiecare 5 minute în prim-plan.")
+                            else tr(uiState.language, "Automatikus frissítés kikapcsolva.", "Automatic refresh is off.", "Automatische Aktualisierung deaktiviert.", "Actualizarea automată este oprită."),
+                            style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
+                            modifier = Modifier.testTag("health_auto_refresh_status"))
+                        Text(
+                            when {
+                                uiState.healthBackgroundOptedIn && uiState.healthBackgroundScheduled -> tr(uiState.language,
+                                    "Health Connect háttérfrissítés: kb. 15 percenként; az Android késleltetheti.",
+                                    "Health Connect background refresh: about every 15 minutes; Android may delay it.",
+                                    "Health Connect im Hintergrund: etwa alle 15 Minuten; Android kann dies verzögern.",
+                                    "Health Connect în fundal: aproximativ la fiecare 15 minute; Android poate întârzia actualizarea.")
+                                uiState.healthBackgroundOptedIn -> tr(uiState.language, "Health Connect háttérfrissítés nincs ütemezve; ellenőrizd az engedélyeket.", "Health Connect background refresh is not scheduled; check permissions.", "Health Connect-Hintergrundaktualisierung nicht geplant; Berechtigungen prüfen.", "Actualizarea Health Connect în fundal nu este programată; verifică permisiunile.")
+                                else -> tr(uiState.language, "Health Connect háttérfrissítés kikapcsolva.", "Health Connect background refresh is off.", "Health Connect-Hintergrundaktualisierung deaktiviert.", "Actualizarea Health Connect în fundal este oprită.")
+                            }, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
+                            modifier = Modifier.testTag("health_background_refresh_status"))
+                        Text("${tr(uiState.language, "Utolsó adatolvasás", "Last data read", "Letzter Datenabruf", "Ultima citire date")}: ${uiState.lastHealthReadLabel}", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                        Text(
+                            text = uiState.healthProviderStatus,
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (uiState.watchAppAvailable) palette.success else palette.textSecondary
+                            color = palette.textSecondary
                         )
                     }
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = palette.primary
-                    )
                 }
             }
         }
 
-        // 5. Bottom Action Row: Szinkronizálás & Engedélyek + Sync Status Footer (Screenshot 1)
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = palette.primary.copy(alpha = 0.42f),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(52.dp)
-                            .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(16.dp))
-                            .trainPilotClickable(RoundedCornerShape(16.dp), enabled = !uiState.healthSyncBusy) { onTriggerHealthSync() }
-                            .testTag("health_sync_button")
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = if (uiState.healthSyncBusy) tr(uiState.language, "Szinkronizálás…", "Syncing…", "Synchronisiere…", "Se sincronizează…") else strings.syncAction,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.textPrimary
-                            )
-                        }
-                    }
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = palette.surfaceCard,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(52.dp)
-                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                            .trainPilotClickable(RoundedCornerShape(16.dp)) { onRequestHealthPermissions() }
-                            .testTag("health_open_permissions_button")
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = strings.permissionsAction,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.textPrimary
-                            )
-                        }
-                    }
-                }
-
-                listOf(com.repforge.app.HealthJournalStore.SAMSUNG, com.repforge.app.HealthJournalStore.HC).forEach { provider ->
-                    val lastSuccess = uiState.healthLastSyncByProvider[provider]
-                    val time = runCatching {
-                        java.time.format.DateTimeFormatter.ofPattern("yyyy.MM.dd. HH:mm")
-                            .withZone(java.time.ZoneId.systemDefault()).format(java.time.Instant.parse(lastSuccess))
-                    }.getOrDefault(tr(uiState.language, "Még nincs sikeres szinkron", "No successful sync yet", "Noch kein erfolgreicher Sync", "Nicio sincronizare reușită încă"))
-                    Text("${com.repforge.app.NativeWorkoutHealthSource.label(provider)} • ${tr(uiState.language, "Utolsó sikeres szinkron", "Last successful sync", "Letzter erfolgreicher Sync", "Ultima sincronizare reușită")}: $time",
-                        style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
-                        modifier = Modifier.testTag("health_last_sync_$provider"))
-                }
-                if (uiState.healthSyncMessage.isNotBlank()) Text(uiState.healthSyncMessage,
-                    color = if (uiState.healthSyncFailed) palette.danger else if (uiState.healthSyncPartial) palette.warning else palette.textPrimary,
-                    modifier = Modifier.testTag("health_sync_result"))
-                TrainPilotOutlinedButton(onClick = { syncDetailsExpanded = !syncDetailsExpanded },
-                    modifier = Modifier.fillMaxWidth().testTag("health_sync_details_toggle")) {
-                    Text(tr(uiState.language, "Szinkron részletei", "Sync details", "Sync-Details", "Detalii sincronizare"),
-                        modifier = Modifier.weight(1f))
-                    Icon(if (syncDetailsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null)
-                }
-                if (syncDetailsExpanded) {
-                    Text(
-                        if (uiState.healthAutoOnOpen) tr(uiState.language,
-                            "Automatikus frissítés appnyitáskor és előtérben 5 percenként.",
-                            "Automatic refresh on app opening and every 5 minutes in the foreground.",
-                            "Automatische Aktualisierung beim App-Start und im Vordergrund alle 5 Minuten.",
-                            "Actualizare automată la deschiderea aplicației și la fiecare 5 minute în prim-plan.")
-                        else tr(uiState.language, "Automatikus frissítés kikapcsolva.", "Automatic refresh is off.", "Automatische Aktualisierung deaktiviert.", "Actualizarea automată este oprită."),
-                        style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
-                        modifier = Modifier.testTag("health_auto_refresh_status"))
-                    Text(
-                        when {
-                            uiState.healthBackgroundOptedIn && uiState.healthBackgroundScheduled -> tr(uiState.language,
-                                "Health Connect háttérfrissítés: kb. 15 percenként; az Android késleltetheti.",
-                                "Health Connect background refresh: about every 15 minutes; Android may delay it.",
-                                "Health Connect im Hintergrund: etwa alle 15 Minuten; Android kann dies verzögern.",
-                                "Health Connect în fundal: aproximativ la fiecare 15 minute; Android poate întârzia actualizarea.")
-                            uiState.healthBackgroundOptedIn -> tr(uiState.language, "Health Connect háttérfrissítés nincs ütemezve; ellenőrizd az engedélyeket.", "Health Connect background refresh is not scheduled; check permissions.", "Health Connect-Hintergrundaktualisierung nicht geplant; Berechtigungen prüfen.", "Actualizarea Health Connect în fundal nu este programată; verifică permisiunile.")
-                            else -> tr(uiState.language, "Health Connect háttérfrissítés kikapcsolva.", "Health Connect background refresh is off.", "Health Connect-Hintergrundaktualisierung deaktiviert.", "Actualizarea Health Connect în fundal este oprită.")
-                        }, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
-                        modifier = Modifier.testTag("health_background_refresh_status"))
-                    Text("${tr(uiState.language, "Utolsó adatolvasás", "Last data read", "Letzter Datenabruf", "Ultima citire date")}: ${uiState.lastHealthReadLabel}", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
-                    Text(
-                        text = uiState.healthProviderStatus,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.textSecondary
-                    )
-                }
-            }
-        }
     }
 }
 }
@@ -3605,6 +3427,161 @@ internal fun weightMeasurementsInRange(entries: List<WeightMeasurementEntry>, ra
         else -> null
     }
     return entries.filter { cutoff == null || !it.parsedDate.isBefore(cutoff) }.sortedBy { it.parsedDate }
+}
+
+/** 2786: the big weekly goals view (opened from the compact block in "Today" or from Home). Real data only. */
+@Composable
+private fun HealthWeeklyGoalsPanel(
+    uiState: TrainPilotUiState,
+    strings: com.example.localization.LocalizedStrings,
+    onToggleHealthSection: (String) -> Unit,
+    onOpenGoalsDialog: () -> Unit
+) {
+    val palette = LocalTrainPilotPalette.current
+  Column(verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)) {
+    val today = java.time.LocalDate.now()
+    val cachedDays = uiState.weeklyHealthDays.associateBy { it.dateIso }
+    val goalDays = (6 downTo 0).map { offset ->
+        val date = today.minusDays(offset.toLong())
+        val workouts = uiState.loggedWorkouts.filter { it.localWorkoutDate() == date }
+        val cached = cachedDays[date.toString()]
+            ?: com.example.ui.viewmodel.WeeklyHealthDaySummary(dateIso = date.toString(), dayLabelHu = date.toString(), steps = 0, activeCaloriesKcal = 0, sleepLabel = "—", workoutMinutes = 0, workoutCount = 0, sourceLabelHu = "Nincs rögzített adat")
+        cached.copy(workoutMinutes = workouts.sumOf { it.durationMinutes.coerceAtLeast(0) }, workoutCount = workouts.size)
+    }
+    val weeklyStepsTarget = (uiState.stepsGoal.coerceAtLeast(1) * 7)
+    val weeklyStepsCurrent = goalDays.filter { it.stepsAvailable }.sumOf { it.steps }
+    val weeklyStepsPct = ((weeklyStepsCurrent.toFloat() / weeklyStepsTarget.toFloat()) * 100f).toInt().coerceIn(0, 100)
+    val weeklyMinutesTarget = (uiState.userScheduleDaysPerWeek * uiState.userWorkoutDurationMin).coerceAtLeast(150)
+    val weeklyMinutesCurrent = goalDays.sumOf { it.workoutMinutes }
+    val weeklyMinutesPct = ((weeklyMinutesCurrent.toFloat() / weeklyMinutesTarget.toFloat()) * 100f).toInt().coerceIn(0, 100)
+    val primaryProviderName = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"
+
+    // 2786: workout goal of the period (calendar week/month, from the saved workout log).
+    val goal = com.example.ui.components.weeklyGoalSummary(uiState, today)
+    Surface(shape = RoundedCornerShape(18.dp), color = palette.background.copy(alpha = 0.55f),
+        modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+            .testTag("health_weekly_workout_goal")) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(if (goal.monthly) tr(uiState.language, "Edzések ebben a hónapban", "Workouts this month", "Trainings diesen Monat", "Antrenamente luna aceasta")
+                else tr(uiState.language, "Edzések ezen a héten", "Workouts this week", "Trainings diese Woche", "Antrenamente săptămâna aceasta"),
+                style = MaterialTheme.typography.labelLarge, color = palette.textPrimary)
+            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("${goal.workoutsDone}", style = MaterialTheme.typography.headlineMedium, color = palette.textPrimary)
+                Text("/ ${goal.workoutsTarget} ${tr(uiState.language, "edzés", "workouts", "Trainings", "antrenamente")}",
+                    style = MaterialTheme.typography.bodySmall, color = palette.textSecondary, modifier = Modifier.padding(bottom = 4.dp))
+            }
+            LinearProgressIndicator(progress = { goal.workoutFraction }, modifier = Modifier.fillMaxWidth(),
+                color = palette.primary, trackColor = palette.surfaceElevated)
+        }
+    }
+
+    val minUnit = tr(uiState.language, "perc", "min", "Min.", "min")
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        for (steps in listOf(true, false)) {
+            val expanded = if (steps) uiState.expandedWeeklySteps else uiState.expandedWeeklyWorkouts
+            val tag = if (steps) "steps" else "minutes"
+            Surface(shape = RoundedCornerShape(18.dp), color = palette.background.copy(alpha = 0.55f),
+                modifier = Modifier.weight(1f).trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onToggleHealthSection(if (steps) "weekly_steps" else "weekly_workouts") }
+                    .testTag("health_weekly_${tag}_card")) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            if (steps) tr(uiState.language, "Heti lépésszám", "Weekly Steps", "Wöchentliche Schritte", "Pași săptămânali")
+                            else tr(uiState.language, "Aktív edzésidő", "Active Workout Time", "Aktive Trainingszeit", "Timp activ antrenament"),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.labelLarge, color = palette.textPrimary
+                        )
+                        Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.primary)
+                    }
+                    Text(if (steps) { if (goalDays.none { it.stepsAvailable }) "—" else "%,d".format(java.util.Locale.US, weeklyStepsCurrent).replace(',', ' ') }
+                        else "$weeklyMinutesCurrent $minUnit", style = MaterialTheme.typography.headlineMedium,
+                        color = palette.textPrimary, modifier = Modifier.testTag("health_weekly_${tag}_total"))
+                    Text(
+                        if (steps) strings.stepsGoalWithCount(weeklyStepsTarget)
+                        else "${strings.stepsGoalWithCount(weeklyMinutesTarget)} $minUnit",
+                        style = MaterialTheme.typography.labelSmall, color = palette.textSecondary
+                    )
+                    LinearProgressIndicator(progress = { (if (steps) weeklyStepsPct else weeklyMinutesPct) / 100f },
+                        modifier = Modifier.fillMaxWidth(), color = palette.primary, trackColor = palette.surfaceElevated)
+                    if (steps) Text(
+                        tr(
+                            uiState.language,
+                            "${goalDays.count { it.stepsAvailable }}/7 napi adat • $primaryProviderName",
+                            "${goalDays.count { it.stepsAvailable }}/7 daily records • $primaryProviderName",
+                            "${goalDays.count { it.stepsAvailable }}/7 Tagesdaten • $primaryProviderName",
+                            "${goalDays.count { it.stepsAvailable }}/7 zile cu date • $primaryProviderName"
+                        ),
+                        style = MaterialTheme.typography.labelSmall, color = palette.textSecondary
+                    )
+                }
+            }
+        }
+    }
+
+    // Details reserve a full-width row beneath both summary cards.
+    for (steps in listOf(true, false)) {
+        val expanded = if (steps) uiState.expandedWeeklySteps else uiState.expandedWeeklyWorkouts
+        val tag = if (steps) "steps" else "minutes"
+        AnimatedVisibility(visible = expanded) {
+            Surface(shape = RoundedCornerShape(18.dp), color = palette.surfaceElevated,
+                modifier = Modifier.fillMaxWidth().testTag("health_weekly_${tag}_days")
+                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        if (steps) tr(uiState.language, "Heti lépésszám • napi bontás", "Weekly Steps • Daily Breakdown", "Wöchentliche Schritte • Tagesübersicht", "Pași săptămânali • Detaliere zilnică")
+                        else tr(uiState.language, "Aktív edzésidő • napi bontás", "Active Workout Time • Daily Breakdown", "Aktive Trainingszeit • Tagesübersicht", "Timp activ • Detaliere zilnică"),
+                        style = MaterialTheme.typography.titleMedium, color = palette.textPrimary
+                    )
+                    // 2786: tappable day columns with an info line (real values; missing day = "nincs adat").
+                    com.example.ui.components.WeeklyDayBars(
+                        days = goalDays.map { java.time.LocalDate.parse(it.dateIso) },
+                        values = goalDays.map { d -> if (steps) d.steps.toDouble().takeIf { d.stepsAvailable } else d.workoutMinutes.takeIf { it > 0 }?.toDouble() },
+                        label = { date, v -> todayTileWeekLabel(if (steps) "steps" else "workout", date, v, uiState.language.name.lowercase()) },
+                        tag = "health_weekly_${tag}_bars")
+                    for (day in goalDays) {
+                        val dayWorkouts = if (steps) emptyList() else
+                            uiState.loggedWorkouts.filter { it.localWorkoutDate()?.toString() == day.dateIso }
+                        HorizontalDivider(color = palette.cardBorder)
+                        Row(Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                                Text(day.dayLabelHu, style = MaterialTheme.typography.labelLarge,
+                                    color = palette.textPrimary)
+                                Text(if (steps) day.stepsSourceLabelHu else
+                                    if (dayWorkouts.isEmpty()) tr(uiState.language, "Room edzésnapló • nincs mai edzés", "Room workout log • no workout", "Room-Protokoll • kein Training", "Jurnal Room • fără antrenament")
+                                    else "Room • " + dayWorkouts.joinToString(" · ") {
+                                        "${it.titleHu}: ${it.durationMinutes} $minUnit"
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = palette.textSecondary, maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis)
+                            }
+                            Text(
+                                if (steps) {
+                                    if (day.stepsAvailable) "${day.steps} ${tr(uiState.language, "lépés", "steps", "Schritte", "pași")}" else "—"
+                                } else {
+                                    "${day.workoutMinutes} $minUnit • ${day.workoutCount} ${tr(uiState.language, "edzés", "workouts", "Trainings", "antr.")}"
+                                },
+                                modifier = Modifier.testTag("health_weekly_${tag}_${day.dateIso}"),
+                                style = MaterialTheme.typography.bodySmall, color = palette.textPrimary
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceCard,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+            .trainPilotClickable(RoundedCornerShape(14.dp)) { onOpenGoalsDialog() }.testTag("health_weekly_goals_button")) {
+        Box(Modifier.padding(12.dp), contentAlignment = Alignment.Center) {
+            Text(strings.goalsSetupTitle, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.primary)
+        }
+    }
+  }
 }
 
 @Composable
