@@ -65,7 +65,7 @@ class Collector2783RegressionTest {
         assertEquals(listOf(LocalDate.parse("2026-11-01"), LocalDate.parse("2026-11-10")), points.map { it.date }) // oldest first
         assertEquals(10.0 * (1 + 12 / 30.0), points.first().value, 1e-6) // uncompleted heavier set ignored
         val kind = com.example.ui.screens.exerciseTrendKind(record)
-        assertEquals("▲ +3 kg", com.example.ui.screens.exerciseTrendChange(points, kind, "hu"))
+        assertEquals("▲ +3,5 kg", com.example.ui.screens.exerciseTrendChange(points, kind, "hu"))
         assertNull(com.example.ui.screens.exerciseTrendChange(points.take(1), kind, "hu"))
         val bodyweight = record.copy(weightKg = null)
         assertEquals("± 0", com.example.ui.screens.exerciseTrendChange(
