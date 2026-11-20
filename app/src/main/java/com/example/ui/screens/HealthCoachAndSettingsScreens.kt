@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -54,6 +55,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.Watch
 import androidx.compose.material.icons.Icons
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
@@ -492,20 +497,10 @@ fun HealthTabScreen(
 
                     var expandedTodayTileKey by remember { mutableStateOf<String?>(null) }
 
+                    // 2784: every tile opens its own detail sheet; the page below does not move.
                     StudioTodayStatusGrid(uiState) { key ->
-                        val journalType = todayTileJournalType(key, uiState)
-                        if (journalType != null) {
-                            journalFocus = today.toString() to journalType
-                            journalFocusKey++
-                            if (!uiState.expandedHealthJournal) onToggleHealthSection("journal")
-                            coroutineScope.launch { healthListState.animateScrollToItem(2) }
-                        } else {
-                            expandedTodayTileKey = if (expandedTodayTileKey == key) null else key
-                            when (key) {
-                                "sleep", "steps" -> onToggleHealthSection("journal")
-                                "pulse" -> onToggleHealthSection("pulse")
-                            }
-                        }
+                        expandedTodayTileKey = if (expandedTodayTileKey == key) null else key
+                        if (key == "pulse") onToggleHealthSection("pulse")
                     }
 
                     // Expandable Detail Dropdown Card when any of the 6 "Mai állapot" tiles is tapped
@@ -528,6 +523,8 @@ fun HealthTabScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                                // 2784: opens to its content, at most ~2/3 of the screen.
+                                .heightIn(max = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.66f).dp)
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
                                 .testTag("health_today_tile_expanded_card")
                         ) {
@@ -565,7 +562,7 @@ fun HealthTabScreen(
                                                 "Noch keine aktiven Kalorien von ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} geladen. Ruheenergie wird separat berechnet.",
                                                 "Fără calorii active de la ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} azi. Energia de repaus este calculată separat.")
                                         },
-                                        tr(uiState.language, "Egészségnapló megnyitása lent", "Open Health Journal below", "Gesundheitstagebuch unten öffnen", "Deschide jurnalul de sănătate mai jos")
+                                        tr(uiState.language, "Teljes egészségnapló", "Full health journal", "Gesamtes Gesundheitstagebuch", "Jurnalul de sănătate complet")
                                     ) to openHealthJournalAndScroll
                                     "pulse" -> {
                                         val pulseReading = uiState.todayPulseReading
@@ -596,8 +593,8 @@ fun HealthTabScreen(
                                                 "Noch keine Schrittdaten von ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} geladen. Tagesziel: ${uiState.stepsGoal} Schritte.",
                                                 "Fără date despre pași de la ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} azi. Obiectiv zilnic: ${uiState.stepsGoal} pași.")
                                         },
-                                        tr(uiState.language, "Célok módosítása >", "Edit Goals >", "Ziele ändern >", "Modifică obiectivele >")
-                                    ) to { onOpenGoalsDialog() }
+                                        tr(uiState.language, "Teljes egészségnapló", "Full health journal", "Gesamtes Gesundheitstagebuch", "Jurnalul de sănătate complet")
+                                    ) to openHealthJournalAndScroll
                                     "workout" -> {
                                         val todaysWorkouts = uiState.loggedWorkouts.workoutsOn(today)
                                         val latestTodayTitle = todaysWorkouts.firstOrNull()?.localizedTitle(uiState.language, uiState.programs, uiState.exercises)
@@ -655,7 +652,7 @@ fun HealthTabScreen(
                                         listOf(
                                             tr(uiState.language, "Alvás részletek • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})", "Sleep Details • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})", "Schlaf Details • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})", "Detalii somn • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})"),
                                             stageInfo,
-                                            tr(uiState.language, "Egészségnapló megnyitása lent", "Open Health Journal below", "Gesundheitstagebuch unten öffnen", "Deschide jurnalul de sănătate mai jos")
+                                            tr(uiState.language, "Teljes egészségnapló", "Full health journal", "Gesamtes Gesundheitstagebuch", "Jurnalul de sănătate complet")
                                         ) to openHealthJournalAndScroll
                                     }
                                 }
@@ -807,11 +804,15 @@ fun HealthTabScreen(
                                                         val spread = (readings.maxOf { it.bpm } - readings.minOf { it.bpm })
                                                             .toFloat().coerceAtLeast(1f)
                                                         val line = Path()
-                                                        readings.forEachIndexed { index, sample ->
+                                                        var prev: Offset? = null
+                                                        readings.forEach { sample ->
                                                             val time = java.time.Instant.parse(sample.timeIso).toEpochMilli()
                                                             val x = ((time - first) / delta).coerceIn(0f, 1f) * size.width
                                                             val y = size.height - (sample.bpm - lowest) / spread * size.height
-                                                            if (index == 0) line.moveTo(x, y) else line.lineTo(x, y)
+                                                            // 2784: curved 24 h line.
+                                                            val p = prev
+                                                            if (p == null) line.moveTo(x, y) else { val mx = (p.x + x) / 2f; line.cubicTo(mx, p.y, mx, y, x, y) }
+                                                            prev = Offset(x, y)
                                                         }
                                                         drawPath(line, color = Color(0xFFEF4444),
                                                             style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
@@ -905,6 +906,7 @@ fun HealthTabScreen(
                                         }
                                     }
                                 }
+                                TodayTileSheetExtras(activeKey, uiState, today)
                                 if (activeKey != "pulse") Surface(
                                     shape = RoundedCornerShape(10.dp),
                                     color = palette.primary.copy(alpha = 0.16f),
@@ -1214,320 +1216,23 @@ fun HealthTabScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            // Full-width trend box with curve AND user-entered X-axis dates
-                            Surface(
-                                shape = RoundedCornerShape(14.dp),
-                                color = palette.surfaceCard.copy(alpha = 0.7f),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .trainPilotBorder(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
-                                    .trainPilotClickable(RoundedCornerShape(14.dp)) { onToggleHealthSection("weight") }
-                            ) {
-                                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                                    val lineColor = palette.primary
-                                    if (chronologicalMeasurements.isEmpty()) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(48.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = tr(uiState.language, "Még nincs rögzített testsúlymérés.", "No weight entries recorded yet.", "Noch keine Gewichtsmessung erfasst.", "Nicio măsurătoare de greutate înregistrată."),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = palette.textSecondary
-                                            )
-                                        }
-                                    } else {
-                                        val pts = chronologicalMeasurements.map { it.weightValue }
-                                        Canvas(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(48.dp)
-                                        ) {
-                                            val minW = (pts.minOrNull() ?: 0f) - 0.5f
-                                            val maxW = (pts.maxOrNull() ?: 1f) + 0.5f
-                                            val offsets = pts.mapIndexed { idx, w ->
-                                                val x = if (pts.size > 1) {
-                                                    (idx.toFloat() / (pts.size - 1).coerceAtLeast(1)) * size.width
-                                                } else {
-                                                    size.width / 2f
-                                                }
-                                                val y = size.height - ((w - minW) / (maxW - minW).coerceAtLeast(0.1f)) * size.height
-                                                Offset(x, y)
-                                            }
-                                            val path = Path()
-                                            offsets.forEachIndexed { i, pt ->
-                                                if (i == 0) path.moveTo(pt.x, pt.y)
-                                                else {
-                                                    val prev = offsets[i - 1]
-                                                    val cx = (prev.x + pt.x) / 2f
-                                                    path.cubicTo(cx, prev.y, cx, pt.y, pt.x, pt.y)
-                                                }
-                                            }
-                                            drawPath(path, lineColor, style = Stroke(width = 2.6.dp.toPx(), cap = StrokeCap.Round))
-                                            offsets.forEach { pt ->
-                                                drawCircle(color = lineColor, radius = 3.5.dp.toPx(), center = pt)
-                                            }
-                                        }
-                                    }
-                                    if (chronologicalMeasurements.isNotEmpty()) {
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            chronologicalMeasurements.takeLast(5).forEach { entry ->
-                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                    Text(
-                                                        text = entry.parsedDate.format(shortChartDateFormatter),
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        color = palette.textSecondary,
-                                                        fontWeight = FontWeight.SemiBold
-                                                    )
-                                                    Text(
-                                                        text = "${"%.1f".format(entry.weightValue).replace('.', ',')}kg",
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        color = palette.primary,
-                                                        fontWeight = FontWeight.Bold
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
+                            // 2784: compact curved chart when closed; large chart with periods, fitness tiles,
+                            // compact rows (edit/delete in a ⋮ menu) when open.
+                            WeightLogBody(
+                                uiState = uiState,
+                                strings = strings,
+                                chronological = chronologicalMeasurements,
+                                newestFirst = recentMeasurements,
+                                dateFormatter = shortChartDateFormatter,
+                                onToggle = { onToggleHealthSection("weight") },
+                                onSelectRange = onSelectWeightRange,
+                                onAdd = { onToggleAddWeightDialog(true) },
+                                onEdit = { editingMeasurement = it },
+                                onDelete = { entry ->
+                                    recentMeasurements = recentMeasurements.filterNot { it.id == entry.id }
+                                    onDeleteWeightLog(entry.id)
                                 }
-                            }
-
-                            if (uiState.expandedHealthWeightLog) {
-                                Spacer(modifier = Modifier.height(12.dp))
-                                HorizontalDivider(color = palette.cardBorder)
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                // Sub-card: Test és fittség (Testzsír, SpO2, VO2max)
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = palette.surfaceCard,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(14.dp),
-                                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                                    ) {
-                                        Column {
-                                            Text(
-                                                text = strings.bodyAndFitnessTitle,
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = palette.primary
-                                            )
-                                            Text(
-                                                text = tr(uiState.language, "Testzsír, SpO₂, VO₂max", "Body fat, SpO₂, VO₂max", "Körperfett, SpO₂, VO₂max", "Grăsime corporală, SpO₂, VO₂max"),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = palette.textSecondary
-                                            )
-                                        }
-
-                                        Surface(
-                                            shape = RoundedCornerShape(14.dp),
-                                            color = palette.background.copy(alpha = 0.45f),
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
-                                        ) {
-                                            Column(
-                                                modifier = Modifier.padding(12.dp),
-                                                verticalArrangement = Arrangement.spacedBy(3.dp)
-                                            ) {
-                                                Text(
-                                                    text = tr(uiState.language, "Testsúly (legutóbbi dátum szerint)", "Body weight (by latest date)", "Körpergewicht (nach letztem Datum)", "Greutate (după ultima dată)"),
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = palette.textSecondary
-                                                )
-                                                Text(
-                                                    text = latestChronologicalEntry?.weightLabel
-                                                        ?: if (uiState.currentBodyWeightKg > 0f) "${uiState.currentBodyWeightKg} kg" else "—",
-                                                    style = MaterialTheme.typography.titleLarge,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = palette.textPrimary
-                                                )
-                                                Text(
-                                                    text = "${tr(uiState.language, "Rögzített dátum", "Recorded date", "Erfasstes Datum", "Data înregistrată")}: ${latestChronologicalEntry?.dateLabel ?: todayHuLabel}",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = palette.textSecondary
-                                                )
-                                            }
-                                        }
-
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            PulseInnerBox(
-                                                label = tr(uiState.language, "Testzsír", "Body fat", "Körperfett", "Grăsime"),
-                                                value = if (uiState.bodyFatPercent > 0f) "${uiState.bodyFatPercent} %" else "—",
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                            PulseInnerBox(
-                                                label = "SpO₂",
-                                                value = if (uiState.spo2Percent > 0f) "${uiState.spo2Percent} %" else "—",
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                            PulseInnerBox(
-                                                label = "VO₂max",
-                                                value = if (uiState.vo2Max > 0f) "${uiState.vo2Max}" else "—",
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                        }
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(10.dp))
-
-                                // Full-width "+ Új mérés >" card
-                                Surface(
-                                    shape = RoundedCornerShape(14.dp),
-                                    color = palette.surfaceCard,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
-                                        .trainPilotClickable(RoundedCornerShape(14.dp)) { onToggleAddWeightDialog(true) }
-                                        .testTag("health_add_weight_button")
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = strings.newMeasurementAction,
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = palette.primary
-                                        )
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                            contentDescription = null,
-                                            tint = palette.primary
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(10.dp))
-
-                                val wRanges = listOf("7d", "30d", "3m", "1y", "All")
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    wRanges.forEachIndexed { idx, r ->
-                                        val sel = uiState.selectedWeightRangeIndex == idx
-                                        Surface(
-                                            shape = RoundedCornerShape(12.dp),
-                                            color = if (sel) palette.primary.copy(alpha = 0.25f) else palette.surfaceCard,
-                                            modifier = Modifier
-                                                .trainPilotBorder(
-                                                    width = 1.dp,
-                                                    color = if (sel) palette.primary else palette.cardBorder,
-                                                    shape = RoundedCornerShape(12.dp)
-                                                )
-                                                .trainPilotClickable(RoundedCornerShape(12.dp)) { onSelectWeightRange(idx) }
-                                        ) {
-                                            Text(
-                                                text = r,
-                                                style = MaterialTheme.typography.labelMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (sel) palette.primary else palette.textPrimary,
-                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
-                                            )
-                                        }
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                if (recentMeasurements.isEmpty()) {
-                                    Text(
-                                        text = strings.notEnoughRecentData,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = palette.textSecondary,
-                                        modifier = Modifier.padding(vertical = 8.dp)
-                                    )
-                                } else {
-                                    Text(
-                                        text = strings.recentMeasurementsTitle,
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color = palette.textSecondary
-                                    )
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        recentMeasurements.forEach { entry ->
-                                            Surface(
-                                                shape = RoundedCornerShape(14.dp),
-                                                color = palette.surfaceCard,
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
-                                            ) {
-                                                Row(
-                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.SpaceBetween
-                                                ) {
-                                                    Column(modifier = Modifier.weight(1f)) {
-                                                        Text(
-                                                            text = entry.weightLabel,
-                                                            style = MaterialTheme.typography.titleMedium,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = palette.textPrimary
-                                                        )
-                                                        Text(
-                                                            text = entry.dateLabel,
-                                                            style = MaterialTheme.typography.bodySmall,
-                                                            color = palette.textSecondary
-                                                        )
-                                                    }
-                                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                                        Surface(
-                                                            shape = RoundedCornerShape(10.dp),
-                                                            color = palette.primary.copy(alpha = 0.12f),
-                                                            modifier = Modifier
-                                                                .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(10.dp))
-                                                                .trainPilotClickable(RoundedCornerShape(10.dp)) { editingMeasurement = entry }
-                                                        ) {
-                                                            Text(
-                                                                text = strings.editAction,
-                                                                style = MaterialTheme.typography.labelMedium,
-                                                                fontWeight = FontWeight.Bold,
-                                                                color = palette.textPrimary,
-                                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
-                                                            )
-                                                        }
-                                                        Surface(
-                                                            shape = RoundedCornerShape(10.dp),
-                                                            color = Color(0xFFEF4444).copy(alpha = 0.14f),
-                                                            modifier = Modifier
-                                                                .border(1.dp, Color(0xFFEF4444).copy(alpha = 0.55f), RoundedCornerShape(10.dp))
-                                                                .trainPilotClickable(RoundedCornerShape(10.dp)) {
-                                                                    recentMeasurements = recentMeasurements.filterNot { it.id == entry.id }
-                                                                    onDeleteWeightLog(entry.id)
-                                                                }
-                                                        ) {
-                                                            Text(
-                                                                text = strings.deleteAction,
-                                                                style = MaterialTheme.typography.labelMedium,
-                                                                fontWeight = FontWeight.Bold,
-                                                                color = palette.textPrimary,
-                                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                            )
                             }
                         }
                     }
@@ -3885,4 +3590,180 @@ internal fun todayTileJournalType(key: String, state: com.example.ui.viewmodel.T
         .takeIf { "steps" in state.dailyHealthAvailableFields }
     // Pulse keeps its own daily pulse-trend view.
     else -> null
+}
+
+@Composable
+private fun WeightLogBody(
+    uiState: TrainPilotUiState,
+    strings: com.example.localization.LocalizedStrings,
+    chronological: List<WeightMeasurementEntry>,
+    newestFirst: List<WeightMeasurementEntry>,
+    dateFormatter: java.time.format.DateTimeFormatter,
+    onToggle: () -> Unit,
+    onSelectRange: (Int) -> Unit,
+    onAdd: () -> Unit,
+    onEdit: (WeightMeasurementEntry) -> Unit,
+    onDelete: (WeightMeasurementEntry) -> Unit
+) {
+    val palette = LocalTrainPilotPalette.current
+    val lang = uiState.language
+    val expanded = uiState.expandedHealthWeightLog
+    val kg: (Float) -> String = { "${"%.1f".format(it).replace('.', ',')}" }
+    Spacer(Modifier.height(8.dp))
+    if (expanded) {
+        val labels = listOf(tr(lang, "7 nap", "7 days", "7 Tage", "7 zile"), tr(lang, "30 nap", "30 days", "30 Tage", "30 zile"),
+            tr(lang, "3 hó", "3 mo", "3 Mon.", "3 luni"), tr(lang, "1 év", "1 yr", "1 Jahr", "1 an"), tr(lang, "Mind", "All", "Alle", "Toate"))
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            labels.forEachIndexed { idx, label ->
+                FilterChip(selected = uiState.selectedWeightRangeIndex == idx, onClick = { onSelectRange(idx) }, label = { Text(label, maxLines = 1) },
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("health_weight_range_$idx"))
+            }
+        }
+    }
+    Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceCard.copy(alpha = 0.7f),
+        modifier = Modifier.fillMaxWidth().trainPilotBorder(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+            .trainPilotClickable(RoundedCornerShape(14.dp)) { if (!expanded) onToggle() }
+            .testTag(if (expanded) "health_weight_chart_large" else "health_weight_chart_compact")) {
+        Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+            if (chronological.isEmpty()) {
+                Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
+                    Text(tr(lang, "Még nincs rögzített testsúlymérés.", "No weight entries recorded yet.", "Noch keine Gewichtsmessung.", "Nicio greutate înregistrată."),
+                        style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                }
+            } else {
+                val pts = chronological.map { it.weightValue }
+                val minW = (pts.minOrNull() ?: 0f) - 0.5f
+                val maxW = (pts.maxOrNull() ?: 1f) + 0.5f
+                Row(Modifier.fillMaxWidth()) {
+                    if (expanded) Column(Modifier.height(150.dp).padding(end = 6.dp), verticalArrangement = Arrangement.SpaceBetween) {
+                        listOf(maxW, (maxW + minW) / 2f, minW).forEach {
+                            Text(kg(it), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                        }
+                    }
+                    val lineColor = palette.primary
+                    val grid = palette.cardBorder
+                    Canvas(Modifier.weight(1f).height(if (expanded) 150.dp else 56.dp)) {
+                        val inset = 6.dp.toPx()
+                        val h = size.height - inset * 2
+                        val offsets = pts.mapIndexed { idx, w ->
+                            val x = if (pts.size > 1) idx.toFloat() / (pts.size - 1) * size.width else size.width / 2f
+                            Offset(x, inset + h - ((w - minW) / (maxW - minW).coerceAtLeast(0.1f)) * h)
+                        }
+                        if (expanded) for (i in 0..2) { val y = inset + h * i / 2f; drawLine(grid, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx()) }
+                        val path = Path()
+                        offsets.forEachIndexed { i, pt ->
+                            if (i == 0) path.moveTo(pt.x, pt.y) else { val prev = offsets[i - 1]; val cx = (prev.x + pt.x) / 2f; path.cubicTo(cx, prev.y, cx, pt.y, pt.x, pt.y) }
+                        }
+                        if (offsets.size > 1) {
+                            val fill = Path().apply { addPath(path); lineTo(offsets.last().x, size.height); lineTo(offsets.first().x, size.height); close() }
+                            drawPath(fill, androidx.compose.ui.graphics.Brush.verticalGradient(listOf(lineColor.copy(alpha = 0.25f), lineColor.copy(alpha = 0f))))
+                        }
+                        drawPath(path, lineColor, style = Stroke(width = (if (expanded) 3f else 2.5f).dp.toPx(), cap = StrokeCap.Round))
+                        if (expanded) offsets.forEach { drawCircle(lineColor, radius = 3.5.dp.toPx(), center = it) }
+                        else drawCircle(lineColor, radius = 3.5.dp.toPx(), center = offsets.last())
+                    }
+                }
+                val dates = if (expanded) chronological.takeLast(5) else listOfNotNull(chronological.firstOrNull(),
+                    chronological.getOrNull(chronological.size / 2), chronological.lastOrNull()).distinct()
+                Row(Modifier.fillMaxWidth().padding(start = if (expanded) 30.dp else 0.dp, top = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    dates.forEach { entry ->
+                        Text(entry.parsedDate.format(dateFormatter), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                    }
+                }
+            }
+        }
+    }
+    if (!expanded) return
+    Spacer(Modifier.height(10.dp))
+    Text(strings.bodyAndFitnessTitle, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = palette.textSecondary)
+    Spacer(Modifier.height(6.dp))
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        PulseInnerBox(tr(lang, "Testzsír", "Body fat", "Körperfett", "Grăsime"), if (uiState.bodyFatPercent > 0f) "${uiState.bodyFatPercent} %" else "—", Modifier.weight(1f))
+        PulseInnerBox("SpO₂", if (uiState.spo2Percent > 0f) "${uiState.spo2Percent} %" else "—", Modifier.weight(1f))
+        PulseInnerBox("VO₂max", if (uiState.vo2Max > 0f) "${uiState.vo2Max}" else "—", Modifier.weight(1f))
+    }
+    Spacer(Modifier.height(10.dp))
+    if (newestFirst.isEmpty()) {
+        Text(strings.notEnoughRecentData, style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary)
+    } else {
+        var all by rememberSaveable { mutableStateOf(false) }
+        Text(strings.recentMeasurementsTitle, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = palette.textSecondary)
+        (if (all) newestFirst else newestFirst.take(3)).forEach { entry ->
+            var menu by remember(entry.id) { mutableStateOf(false) }
+            HorizontalDivider(color = palette.cardBorder)
+            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("health_weight_row_${entry.id}"), verticalAlignment = Alignment.CenterVertically) {
+                Text(entry.weightLabel, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary, modifier = Modifier.weight(1f))
+                Text(entry.dateLabel, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                Box {
+                    IconButton(onClick = { menu = true }, modifier = Modifier.testTag("health_weight_menu_${entry.id}")) {
+                        Icon(Icons.Default.MoreVert, contentDescription = tr(lang, "Műveletek", "Actions", "Aktionen", "Acțiuni"), tint = palette.textSecondary)
+                    }
+                    androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                        androidx.compose.material3.DropdownMenuItem(text = { Text(strings.editAction) }, onClick = { menu = false; onEdit(entry) },
+                            modifier = Modifier.testTag("health_weight_edit_${entry.id}"))
+                        androidx.compose.material3.DropdownMenuItem(text = { Text(strings.deleteAction, color = palette.danger) }, onClick = { menu = false; onDelete(entry) },
+                            modifier = Modifier.testTag("health_weight_delete_${entry.id}"))
+                    }
+                }
+            }
+        }
+        if (newestFirst.size > 3) TextButton(onClick = { all = !all }, modifier = Modifier.heightIn(min = 48.dp).testTag("health_weight_all_toggle")) {
+            Text(if (all) tr(lang, "▴ Kevesebb", "▴ Less", "▴ Weniger", "▴ Mai puțin")
+                else tr(lang, "▾ Összes mérés (${newestFirst.size})", "▾ All entries (${newestFirst.size})", "▾ Alle Messungen (${newestFirst.size})", "▾ Toate (${newestFirst.size})"))
+        }
+    }
+    Spacer(Modifier.height(6.dp))
+    Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceCard,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+            .trainPilotClickable(RoundedCornerShape(14.dp)) { onAdd() }.testTag("health_add_weight_button")) {
+        Box(Modifier.padding(12.dp), contentAlignment = Alignment.Center) {
+            Text(strings.newMeasurementAction, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.primary)
+        }
+    }
+}
+
+/** 2784: last 7 days (missing day = empty slot) and today's own records of the tile's type. */
+@Composable
+private fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today: java.time.LocalDate) {
+    val palette = LocalTrainPilotPalette.current
+    val lang = uiState.language
+    val days = (6 downTo 0).map { today.minusDays(it.toLong()).toString() }
+    val weekly = (uiState.weeklyHealthDays + uiState.dailyActivityDays).associateBy { it.dateIso }
+    val values: List<Double?>? = when (key) {
+        "steps" -> days.map { d -> weekly[d]?.takeIf { it.stepsAvailable }?.steps?.toDouble() }
+        "calories" -> days.map { d -> weekly[d]?.activeCaloriesKcal?.takeIf { it > 0 }?.toDouble() }
+        "pulse" -> days.map { d -> weekly[d]?.pulse?.averageBpm }
+        "workout" -> days.map { d -> weekly[d]?.workoutMinutes?.takeIf { it > 0 }?.toDouble() }
+        else -> null
+    }
+    if (values != null && values.any { it != null }) {
+        Text(tr(lang, "Utolsó 7 nap", "Last 7 days", "Letzte 7 Tage", "Ultimele 7 zile"), style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
+        val max = values.filterNotNull().maxOrNull()?.coerceAtLeast(1.0) ?: 1.0
+        Row(Modifier.fillMaxWidth().height(56.dp).testTag("health_today_tile_week_$key"), horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalAlignment = Alignment.Bottom) {
+            values.forEachIndexed { i, v ->
+                val on = i == values.lastIndex
+                Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.BottomCenter) {
+                    if (v == null) Box(Modifier.fillMaxWidth().height(2.dp).background(palette.cardBorder))
+                    else Box(Modifier.fillMaxWidth().fillMaxHeight((v / max).toFloat().coerceIn(0.05f, 1f))
+                        .background(if (on) palette.primary else palette.primary.copy(alpha = 0.45f), RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)))
+                }
+            }
+        }
+    }
+    val type = when (key) {
+        "sleep" -> "SleepSessionRecord"
+        "steps" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("steps")
+        "calories" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("activeCalories")
+        else -> null
+    } ?: return
+    val context = androidx.compose.ui.platform.LocalContext.current.applicationContext
+    val provider = if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG else com.repforge.app.HealthJournalStore.HC
+    val generation by androidx.compose.runtime.produceState<Long?>(null, uiState.healthRefreshRevision) {
+        value = runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.repforge.app.HealthJournalStore.get(context).generation() } }.getOrNull()
+    }
+    val g = generation ?: return
+    Text(tr(lang, "Mai rekordok", "Today's records", "Heutige Einträge", "Înregistrările de azi"), style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
+    com.repforge.app.ui.health.HealthRecordDayDetails(today, provider, "", type, lang.name.lowercase(), g,
+        "${uiState.healthRefreshRevision}", visible = true)
 }

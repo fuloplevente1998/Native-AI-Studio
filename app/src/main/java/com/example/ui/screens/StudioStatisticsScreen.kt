@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -115,15 +116,17 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                 else -> 1
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf(statsTr(lang, "Gyakorlatok", "Exercises", "Übungen", "Exerciții"), statsTr(lang, "Kardió", "Cardio", "Cardio", "Cardio"),
-                    statsTr(lang, "Lépések", "Steps", "Schritte", "Pași")).forEachIndexed { index, label ->
+                val subTabLabels = listOf(statsTr(lang, "Gyakorlatok", "Exercises", "Übungen", "Exerciții"), statsTr(lang, "Kardió", "Cardio", "Cardio", "Cardio"),
+                    statsTr(lang, "Lépések", "Steps", "Schritte", "Pași"))
+                subTabLabels.forEachIndexed { index, label ->
                     FilterChip(selected = visibleTab == index, onClick = {
                         when (index) {
                             0 -> onSelectTab(0)
                             1 -> { onSelectTab(1); onStepsMode(false) }
                             else -> { onSelectTab(1); onStepsMode(true) }
                         }
-                    }, label = { Text(label, maxLines = 1) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                    }, label = { com.example.ui.components.TrainPilotFitText(label, modifier = Modifier.testTag("statistics_subtab_label_$index")) },
+                        modifier = Modifier.weight(com.example.ui.components.trainPilotLabelWeight(label, subTabLabels)).heightIn(min = 48.dp)
                         .testTag("statistics_subtab_$index"))
                 }
             }
@@ -151,11 +154,12 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                                     Column(Modifier.weight(1f)) {
                                         val recordTitle = state.exercises.firstOrNull { it.id == record.exerciseId }?.localizedName(lang)
                                             ?: if (lang == com.example.model.AppLanguage.HU) record.nameHu else record.nameEn.ifBlank { record.nameHu }
+                                        // 2784: explicit line height + a gap, so a two-line name never covers the subtitle.
                                         Text(recordTitle,
-                                            color = palette.textPrimary, style = MaterialTheme.typography.titleMedium,
+                                            color = palette.textPrimary, style = MaterialTheme.typography.titleMedium.copy(lineHeight = 22.sp),
                                             maxLines = 2, overflow = TextOverflow.Ellipsis)
                                         Text(savedRecordLabel(record, number, lang), color = palette.textSecondary,
-                                            style = MaterialTheme.typography.bodySmall)
+                                            style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp))
                                     }
                                     if (trendKind != ExerciseTrendKind.NONE) {
                                         val mini = trend.takeLast(8)
@@ -370,7 +374,8 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
                 }
             }
             val ordered = days.reversed()
-            (if (listOpen) ordered else ordered.take(2)).forEach { day ->
+            // 2784: the chart selection filters the list (only that day); "Napi lista" shows every day.
+            (if (listOpen) ordered else ordered.filter { it.dateIso == selectedDate.toString() }).forEach { day ->
                 HorizontalDivider(color = palette.cardBorder)
                 Row(Modifier.fillMaxWidth().background(if (day.dateIso == selectedDate.toString()) palette.primary.copy(alpha = 0.12f)
                     else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(8.dp))
@@ -386,7 +391,7 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
                         "${number.format(day.steps)} / ${if (day.workoutCount == 0) number.format(day.steps) else "—"}", color = palette.textPrimary)
                 }
             }
-            if (ordered.size > 2) TextButton(onClick = { listOpen = !listOpen },
+            if (ordered.size > 1) TextButton(onClick = { listOpen = !listOpen },
                 modifier = Modifier.heightIn(min = 48.dp).testTag("statistics_steps_list_toggle")) {
                 Text(if (listOpen) statsTr(lang, "▴ Napi lista bezárása", "▴ Hide daily list", "▴ Tagesliste schließen", "▴ Închide lista zilnică")
                     else statsTr(lang, "▾ Napi lista (${ordered.size})", "▾ Daily list (${ordered.size})", "▾ Tagesliste (${ordered.size})", "▾ Listă zilnică (${ordered.size})"))

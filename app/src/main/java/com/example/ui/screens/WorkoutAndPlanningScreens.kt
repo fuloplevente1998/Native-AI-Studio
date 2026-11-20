@@ -179,8 +179,8 @@ private fun WorkoutModeTile(
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             // 2776: the arrow sits next to the title so subtitle and badge can use the full width (no "14…").
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
-                    color = palette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                com.example.ui.components.TrainPilotFitText(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+                    color = palette.textPrimary, modifier = Modifier.weight(1f).testTag("${testTag}_title"))
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.textSecondary, modifier = Modifier.size(18.dp))
             }
             // 2779: the subtitle always reserves two lines and the badge one, so the three big

@@ -68,7 +68,12 @@ internal fun ExerciseSparkline(points: List<ExerciseTrendPoint>, color: Color, m
         val span = (max - min).takeIf { it > 0.0 } ?: 1.0
         val step = size.width / (points.size - 1)
         val pos = points.mapIndexed { i, p -> Offset(i * step, (size.height - 3f) - ((p.value - min) / span).toFloat() * (size.height - 6f)) }
-        pos.zipWithNext().forEach { (a, b) -> drawLine(color, a, b, strokeWidth = 2.5.dp.toPx(), cap = StrokeCap.Round) }
+        // 2784: curved line (controls stay inside each pair's range, no invented peaks).
+        val path = androidx.compose.ui.graphics.Path()
+        pos.forEachIndexed { i, o ->
+            if (i == 0) path.moveTo(o.x, o.y) else { val p = pos[i - 1]; val mx = (p.x + o.x) / 2f; path.cubicTo(mx, p.y, mx, o.y, o.x, o.y) }
+        }
+        drawPath(path, color, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round))
         drawCircle(color, radius = 3.dp.toPx(), center = pos.last())
     }
 }

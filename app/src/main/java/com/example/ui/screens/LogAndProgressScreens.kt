@@ -1314,7 +1314,7 @@ fun ProgressTabScreen(
                         shape = RoundedCornerShape(10.dp),
                         color = if (selected) palette.primary.copy(alpha = 0.22f) else Color.Transparent,
                         modifier = Modifier
-                            .weight(1f)
+                            .weight(com.example.ui.components.trainPilotLabelWeight(label, sections))
                             .trainPilotBorder(
                                 width = if (selected) 1.dp else 0.dp,
                                 color = if (selected) palette.primary else Color.Transparent,
@@ -1327,13 +1327,12 @@ fun ProgressTabScreen(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp)
                         ) {
-                            Text(
+                            com.example.ui.components.TrainPilotFitText(
                                 text = label,
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (selected) palette.primary else palette.textSecondary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                modifier = Modifier.testTag("progress_section_label_$idx")
                             )
                         }
                     }
