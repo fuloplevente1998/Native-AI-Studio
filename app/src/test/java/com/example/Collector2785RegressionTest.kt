@@ -92,22 +92,22 @@ class Collector2785RegressionTest {
     }
 
     @Test fun todayTileBarsAreTappableAndTheInfoLineFollowsTheSelection() {
+        // 2788: the 7-day workout history lives in Weekly goals (with day names); the tile sheet links there.
         val days = listOf(6 to 30, 0 to 45).map { (back, minutes) ->
             val d = today.minusDays(back.toLong()).toString()
             WeeklyHealthDaySummary(dateIso = d, dayLabelHu = d, steps = 0, activeCaloriesKcal = 0, sleepLabel = "—",
                 workoutMinutes = minutes, workoutCount = 1, sourceLabelHu = "")
         }
+        val toggled = mutableListOf<String>()
         compose.setContent { TrainPilotTheme {
             HealthTabScreen(TrainPilotUiState(weeklyHealthDays = days), TrainPilotStrings.forLanguage(AppLanguage.HU),
-                {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
+                { toggled += it }, {}, {}, { _, _ -> }, {}, {}, {}, {})
         } }
         compose.onNodeWithTag("health_today_workout").performClick()
-        val info = compose.onNodeWithTag("health_today_tile_week_info_workout", useUnmergedTree = true)
-        info.assertTextContains("45 perc", substring = true)
-        compose.onNodeWithTag("health_today_tile_week_workout_0").performClick()
-        info.assertTextContains("30 perc", substring = true)
-        compose.onNodeWithTag("health_today_tile_week_workout_3").performClick()
-        info.assertTextContains("nincs adat", substring = true)
+        compose.onNodeWithTag("health_today_tile_week_workout").assertDoesNotExist()
+        compose.onNodeWithTag("health_today_tile_open_weekly_workout").performClick()
+        compose.onNodeWithTag("health_today_tile_sheet").assertDoesNotExist()
+        compose.runOnIdle { assertEquals(listOf("weekly"), toggled) }
     }
 
     @Test fun exerciseChartTapSelectsAnEarlierPoint() {

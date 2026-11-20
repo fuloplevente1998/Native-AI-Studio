@@ -61,7 +61,8 @@ internal fun StudioTodayStatusGrid(state: TrainPilotUiState, compact: Boolean = 
                 val (key, title, value) = values[i]
                 MainTodayStatusTile(icons[i], title, value, { onSelect(key) },
                     modifier = Modifier.weight(1f).heightIn(min = if (compact) 52.dp else 76.dp)
-                        .testTag("${if (compact) "home" else "health"}_today_$key"), compact = compact)
+                        .testTag("${if (compact) "home" else "health"}_today_$key"), compact = compact,
+                    titleTag = "${if (compact) "home" else "health"}_today_${key}_title")
             }
         }
     }

@@ -4496,7 +4496,11 @@ class TrainPilotViewModel : ViewModel() {
         return LocalDate.now()
     }
 
-    fun saveNewBodyWeight(weightKg: Float, dateStr: String = "") {
+    /**
+     * Saves a body weight entry. [editingId] = the existing entry's ID when editing (2788): the row is
+     * replaced in place (same primary key), so an edit never leaves the old measurement behind.
+     */
+    fun saveNewBodyWeight(weightKg: Float, dateStr: String = "", editingId: String? = null) {
         if (weightKg <= 20f || weightKg >= 350f) {
             _uiState.update {
                 it.copy(
@@ -4535,7 +4539,7 @@ class TrainPilotViewModel : ViewModel() {
         scope.launch(Dispatchers.IO) {
             try {
                 val entry = BodyWeightEntryEntity(
-                    id = UUID.randomUUID().toString(),
+                    id = editingId?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString(),
                     date = isoDate,
                     dayKey = dayKey,
                     kg = weightKg.toDouble(),
@@ -4816,6 +4820,9 @@ class TrainPilotViewModel : ViewModel() {
                     val stepsAvailable = dStepsRaw.isFinite() && dStepsRaw >= 0
                     val dSteps = if (stepsAvailable) dStepsRaw.toInt() else 0
                     val dKcal = dayObj?.optDouble("activeCalories", Double.NaN)?.takeIf { it.isFinite() && it >= 0 }?.toInt() ?: 0
+                    // 2788: measured total energy of the day (resting + active); null when not measured (never 0).
+                    val dTotalKcal = dayObj?.optDouble("totalCalories", Double.NaN)?.takeIf { it.isFinite() && it > 0 }?.toInt()
+                    val dActiveKcal = dayObj?.optDouble("activeCalories", Double.NaN)?.takeIf { it.isFinite() && it >= 0 }?.toInt()
                     val dDistM = dayObj?.optDouble("distanceMeters", Double.NaN)?.takeIf { it.isFinite() && it >= 0 } ?: 0.0
                     val dSleepMin = com.repforge.app.NativeDailyHealthDetails.sleepMinutes(
                         dayObj, d, java.time.ZoneId.systemDefault(), Instant.now()) ?: Double.NaN
@@ -4859,6 +4866,8 @@ class TrainPilotViewModel : ViewModel() {
                             dayLabelHu = if (d == today) "Ma (${d.format(dayFmt)})" else d.format(dayFmt),
                             steps = dSteps,
                             activeCaloriesKcal = dKcal,
+                            activeCaloriesMeasured = dActiveKcal,
+                            totalCaloriesKcal = dTotalKcal,
                             sleepLabel = dSleepLabel,
                             workoutMinutes = workoutMinForDay,
                             workoutCount = workoutCountForDay,

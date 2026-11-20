@@ -151,7 +151,8 @@ private fun WeeklyGoalBar(label: String, value: String, fraction: Float, modifie
  * 2786: 7 tappable day columns with a fixed info line (default: today). [values] null = no data that day.
  */
 @Composable
-fun WeeklyDayBars(days: List<LocalDate>, values: List<Double?>, label: (LocalDate, Double?) -> String, tag: String) {
+fun WeeklyDayBars(days: List<LocalDate>, values: List<Double?>, label: (LocalDate, Double?) -> String, tag: String,
+    lang: String = "hu") {
     val p = LocalTrainPilotPalette.current
     if (values.none { it != null }) return
     val max = values.filterNotNull().maxOrNull()?.coerceAtLeast(1.0) ?: 1.0
@@ -165,6 +166,15 @@ fun WeeklyDayBars(days: List<LocalDate>, values: List<Double?>, label: (LocalDat
                 else Box(Modifier.fillMaxWidth().fillMaxHeight((v / max).toFloat().coerceIn(0.05f, 1f))
                     .background(if (on) p.primary else p.primary.copy(alpha = 0.45f), RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)))
             }
+        }
+    }
+    // 2788: short day names under the columns (H, K, Sze … / Mon, Tue …).
+    val locale = java.util.Locale.forLanguageTag(lang.take(2))
+    Row(Modifier.fillMaxWidth().padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        days.forEachIndexed { i, d ->
+            Text(d.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, locale).trimEnd('.'),
+                style = MaterialTheme.typography.labelSmall, color = if (i == sel) p.primary else p.textSecondary,
+                maxLines = 1, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.weight(1f))
         }
     }
     Spacer(Modifier.height(2.dp))

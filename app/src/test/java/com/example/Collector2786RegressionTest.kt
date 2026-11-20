@@ -89,8 +89,7 @@ class Collector2786RegressionTest {
         compose.onNodeWithTag("health_weekly_goals_compact").performClick()
         compose.runOnIdle { assertTrue(state.expandedHealthWeeklyGoals) }
         val list = compose.onNodeWithTag("health_tab_screen")
-        list.performScrollToNode(hasTestTag("health_weekly_steps_card"))
-        compose.onNodeWithTag("health_weekly_steps_card").performClick()
+        // 2788: one steps section, no second card to open.
         list.performScrollToNode(hasTestTag("health_weekly_steps_bars_info"))
         val info = compose.onNodeWithTag("health_weekly_steps_bars_info", useUnmergedTree = true)
         info.assertTextContains("lépés", substring = true)
@@ -117,8 +116,8 @@ class Collector2786RegressionTest {
         compose.onNodeWithTag("health_weekly_workout_goal").assertDoesNotExist()
         compose.onNodeWithTag("health_weekly_goals_button").assertDoesNotExist()
         compose.onNodeWithTag("weekly_goals_settings").assertExists()
-        list.performScrollToNode(hasTestTag("health_weekly_steps_card"))
-        compose.onNodeWithText("119%").assertExists()
+        list.performScrollToNode(hasTestTag("health_weekly_steps_section"))
+        compose.onNodeWithTag("health_weekly_steps_section_summary", useUnmergedTree = true).assertTextContains("119%", substring = true)
     }
 
     @Test fun sourcesWatchAndSyncAreOneCard() {
