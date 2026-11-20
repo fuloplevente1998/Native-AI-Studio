@@ -73,7 +73,7 @@ utolsó kiadás (most 276500/276502) óta összes újítást tartalmazza.
 • Edzés fül: minden nap dátummal; Gyors edzés 1 lapon
 • Programok: kompakt kártyák, szerkesztő, húzható sorrend
 • Fejlődés: PR rekordok, teljes listák; Statisztikák: Gyakorlatok · Kardió · Lépések
-• Egészségnapló: tömör napi nézet, szűrők
+• Egészségnapló: tömör nézet, szűrők
 • Dizájn: alulról nyíló lapok, új Coach ikon, világos témák
 • Óra: kerek kijelzőre igazítva
 • Javítások: Otthoni A/B, villogás, Health Connect
