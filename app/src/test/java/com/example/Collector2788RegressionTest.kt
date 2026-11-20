@@ -1,0 +1,135 @@
+package com.example
+
+import androidx.compose.runtime.*
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.text.TextLayoutResult
+import com.example.localization.TrainPilotStrings
+import com.example.model.AppLanguage
+import com.example.model.BodyWeightLogItem
+import com.example.ui.screens.HealthTabScreen
+import com.example.ui.screens.calorieDayLabel
+import com.example.ui.screens.todayTileWeekLabel
+import com.example.ui.theme.TrainPilotTheme
+import com.example.ui.viewmodel.TrainPilotUiState
+import com.example.ui.viewmodel.WeeklyHealthDaySummary
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import org.junit.Assert.*
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import org.robolectric.annotation.LooperMode
+
+/** 2788: total calories per day, weight edit keeps its ID, today vs weekly split, wording, whole tile titles. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], qualifiers = "w360dp-h900dp-xxhdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@LooperMode(LooperMode.Mode.PAUSED)
+class Collector2788RegressionTest {
+    @get:Rule val compose = createComposeRule()
+    private val today = LocalDate.now()
+    private val hu = TrainPilotStrings.forLanguage(AppLanguage.HU)
+
+    private fun kcalDay(back: Long, active: Int?, total: Int?) = today.minusDays(back).toString().let {
+        WeeklyHealthDaySummary(dateIso = it, dayLabelHu = it, steps = 0, activeCaloriesKcal = active ?: 0, sleepLabel = "—",
+            workoutMinutes = 0, workoutCount = 0, sourceLabelHu = "", activeCaloriesMeasured = active, totalCaloriesKcal = total)
+    }
+
+    private fun plain(s: String) = s.replace(' ', ' ').replace(' ', ' ')
+
+    @Test fun calorieLabelNeverAddsActiveToTotalAndNeverInventsAValue() {
+        val d = LocalDate.parse("2026-11-20")
+        assertTrue(plain(calorieDayLabel(d, 2180, 177, "hu")).endsWith("teljes 2 180 kcal · ebből aktív 177"))
+        assertTrue(plain(calorieDayLabel(d, 2180, null, "hu")).endsWith("teljes 2 180 kcal · aktív: nincs adat"))
+        assertTrue(plain(calorieDayLabel(d, null, 177, "en")).endsWith("active 177 kcal · total: no data"))
+        assertTrue(calorieDayLabel(d, null, null, "hu").endsWith("nincs adat"))
+        assertFalse(plain(calorieDayLabel(d, 2180, 177, "hu")).contains("2 357"))
+    }
+
+    @Test fun aDayWithoutWorkoutIsNoWorkoutNotNoData() {
+        val d = LocalDate.parse("2026-11-20")
+        assertTrue(todayTileWeekLabel("workout", d, null, "hu").endsWith("nincs edzés"))
+        assertTrue(todayTileWeekLabel("workout", d, null, "en").endsWith("no workout"))
+        assertTrue(todayTileWeekLabel("steps", d, null, "hu").endsWith("nincs adat"))
+    }
+
+    @Test fun calorieSheetShowsTotalWithActivePartPerDay() {
+        val days = listOf(kcalDay(0, 177, 2180), kcalDay(1, 412, null))
+        compose.setContent { TrainPilotTheme {
+            HealthTabScreen(TrainPilotUiState(weeklyHealthDays = days), hu, {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
+        } }
+        compose.onNodeWithTag("health_today_calories").performClick()
+        val info = compose.onNodeWithTag("health_today_tile_week_info_calories", useUnmergedTree = true)
+        info.assertTextContains("ebből aktív 177", substring = true)
+        compose.onNodeWithTag("health_today_tile_week_calories_5").performClick()
+        info.assertTextContains("teljes: nincs adat", substring = true)
+    }
+
+    @Test fun stepsSheetIsAboutTodayAndLinksToTheWeeklyHistory() {
+        val toggled = mutableListOf<String>()
+        compose.setContent { TrainPilotTheme {
+            HealthTabScreen(TrainPilotUiState(dailySteps = 6261, dailyHealthAvailableFields = setOf("steps"),
+                dailyHealthDate = today.toString(), dailyHealthSourceLabel = "Samsung Health"),
+                hu, { toggled += it }, {}, {}, { _, _ -> }, {}, {}, {}, {})
+        } }
+        compose.onNodeWithTag("health_today_steps").performClick()
+        compose.onNodeWithTag("health_today_tile_week_steps").assertDoesNotExist()
+        compose.onNodeWithText("deduplikált", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Mai rekordok").assertDoesNotExist()
+        compose.onNodeWithText("1. oldal", substring = true).assertDoesNotExist()
+        compose.onNodeWithTag("health_today_tile_open_weekly_steps").performClick()
+        compose.runOnIdle { assertEquals(listOf("weekly"), toggled) }
+    }
+
+    @Test fun workoutSheetHasNoTechnicalWording() {
+        compose.setContent { TrainPilotTheme {
+            HealthTabScreen(TrainPilotUiState(), hu, {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
+        } }
+        compose.onNodeWithTag("health_today_workout").performClick()
+        compose.onNodeWithText("Room", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Ma még nincs elmentett edzés.").assertExists()
+    }
+
+    @Test fun editingAWeightKeepsItsIdInsteadOfAddingANewEntry() {
+        val dot = DateTimeFormatter.ofPattern("yyyy. MM. dd.")
+        val d = today.minusDays(3)
+        val saved = mutableListOf<Pair<Float, String>>()
+        val updated = mutableListOf<Triple<String, Float, String>>()
+        compose.setContent { TrainPilotTheme {
+            HealthTabScreen(TrainPilotUiState(expandedHealthWeightLog = true,
+                bodyWeightLogs = listOf(BodyWeightLogItem("w-original", 82f, d.toString(), d.format(dot)))),
+                hu, {}, {}, {}, { kg, label -> saved += kg to label }, {}, {}, {}, {},
+                onUpdateWeight = { id, kg, label -> updated += Triple(id, kg, label) })
+        } }
+        val list = compose.onNodeWithTag("health_tab_screen")
+        list.performScrollToNode(hasTestTag("health_weight_menu_w-original"))
+        compose.onNodeWithTag("health_weight_menu_w-original").performClick()
+        compose.onNodeWithTag("health_weight_edit_w-original").performClick()
+        compose.onNodeWithTag("health_weight_date_preset_1").performClick() // Tegnap
+        compose.onNodeWithTag("health_weight_save").performClick()
+        compose.runOnIdle {
+            assertTrue("an edit must not create a new entry", saved.isEmpty())
+            assertEquals(listOf(Triple("w-original", 82f, today.minusDays(1).format(dot))), updated)
+        }
+    }
+
+    @Test fun todayTileTitlesAreWholeWords() {
+        compose.setContent { TrainPilotTheme {
+            HealthTabScreen(TrainPilotUiState(), hu, {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
+        } }
+        for (key in listOf("calories", "pulse", "recovery", "workout")) {
+            val node = compose.onNodeWithTag("health_today_${key}_title", useUnmergedTree = true)
+            val layouts = mutableListOf<TextLayoutResult>()
+            node.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+            val layout = layouts.single()
+            assertFalse("$key title is cut", layout.didOverflowWidth || layout.hasVisualOverflow)
+            assertEquals("$key title has every character", layout.layoutInput.text.length,
+                layout.getLineEnd(layout.lineCount - 1, visibleEnd = true))
+        }
+    }
+}

@@ -143,7 +143,11 @@ data class WeeklyHealthDaySummary(
     val stepOriginPackage: String = "",
     val stepsAvailable: Boolean = false,
     val stepsSourceLabelHu: String = "Nincs napi lépésadat",
-    val pulse: PulseDayReading? = null
+    val pulse: PulseDayReading? = null,
+    /** 2788: measured active energy (null = not measured; [activeCaloriesKcal] keeps its old 0 fallback). */
+    val activeCaloriesMeasured: Int? = null,
+    /** 2788: measured total daily energy incl. resting (null = not measured). */
+    val totalCaloriesKcal: Int? = null
 )
 
 /** Read-only comparison for the exact saved native program and mode proposal. */

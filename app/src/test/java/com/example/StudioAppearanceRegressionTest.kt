@@ -115,41 +115,31 @@ class StudioAppearanceRegressionTest {
         compose.onNodeWithTag("settings_google_login_btn").assertDoesNotExist()
     }
 
-    @Test fun weeklyGoalCardsExpandIndependentlyAndNeverShowTheRemovedCombinedSummary() {
-        var steps by mutableStateOf(false)
-        var workouts by mutableStateOf(false)
+    @Test fun weeklyGoalSectionsShowEveryDayWithoutNestedToggles() {
+        // 2788: Workouts and Steps are full-width sections in one column; nothing extra to open.
         compose.setContent {
             TrainPilotTheme {
                 com.example.ui.screens.HealthTabScreen(
-                    uiState = TrainPilotUiState(expandedHealthWeeklyGoals = true, expandedWeeklySteps = steps, expandedWeeklyWorkouts = workouts),
+                    uiState = TrainPilotUiState(expandedHealthWeeklyGoals = true),
                     strings = TrainPilotStrings.forLanguage(AppLanguage.HU),
-                    onToggleHealthSection = {
-                        if (it == "weekly_steps") steps = !steps
-                        if (it == "weekly_workouts") workouts = !workouts
-                    }, onSelectWeightRange = {}, onToggleAddWeightDialog = {}, onSaveNewWeight = { _, _ -> },
+                    onToggleHealthSection = {}, onSelectWeightRange = {}, onToggleAddWeightDialog = {}, onSaveNewWeight = { _, _ -> },
                     onTogglePrimaryHealthSource = {}, onTriggerHealthSync = {}, onNavigateToSubScreen = {},
                     onOpenPalettePicker = {}, onOpenGoalsDialog = {})
             }
         }
         val list = compose.onNodeWithTag("health_tab_screen")
-        list.performScrollToNode(hasTestTag("health_weekly_steps_card"))
+        list.performScrollToNode(hasTestTag("health_weekly_workouts_section"))
         compose.onNodeWithTag("health_weekly_summary_toggle").assertDoesNotExist()
-        compose.onNodeWithTag("health_weekly_steps_card").performClick()
-        compose.onNodeWithTag("health_weekly_steps_days", useUnmergedTree = true).assertExists()
-        compose.onNodeWithTag("health_weekly_minutes_days", useUnmergedTree = true).assertDoesNotExist()
-        list.performScrollToNode(hasTestTag("health_weekly_minutes_card"))
-        compose.onNodeWithTag("health_weekly_minutes_card").performClick()
-        compose.onNodeWithTag("health_weekly_minutes_days", useUnmergedTree = true).assertExists()
-        val left = compose.onNodeWithTag("health_weekly_steps_card").getUnclippedBoundsInRoot()
-        val right = compose.onNodeWithTag("health_weekly_minutes_card").getUnclippedBoundsInRoot()
-        for (tag in listOf("steps", "minutes")) {
-            val panel = compose.onNodeWithTag("health_weekly_${tag}_days", useUnmergedTree = true).getUnclippedBoundsInRoot()
-            assertEquals(left.left, panel.left)
-            assertEquals(right.right, panel.right)
-            assertTrue((panel.right - panel.left) > (left.right - left.left) * 1.8f)
-        }
-        compose.onNodeWithTag("health_weekly_steps_total", useUnmergedTree = true).assertTextEquals("—")
-        compose.runOnIdle { assertTrue(steps); assertTrue(workouts) }
+        compose.onNodeWithTag("health_weekly_steps_card").assertDoesNotExist()
+        compose.onNodeWithTag("health_weekly_minutes_card").assertDoesNotExist()
+        val workouts = compose.onNodeWithTag("health_weekly_workouts_section").getUnclippedBoundsInRoot()
+        list.performScrollToNode(hasTestTag("health_weekly_steps_section"))
+        val steps = compose.onNodeWithTag("health_weekly_steps_section").getUnclippedBoundsInRoot()
+        assertEquals(workouts.left, steps.left)
+        assertEquals(workouts.right, steps.right)
+        // No measured step: "—", never 0, and every day says "nincs adat".
+        compose.onNodeWithTag("health_weekly_steps_section_summary", useUnmergedTree = true).assertTextEquals("—")
+        compose.onNodeWithTag("health_weekly_steps_${java.time.LocalDate.now()}", useUnmergedTree = true).assertTextEquals("nincs adat")
     }
 
     @Test fun privacyPolicyAccuratelyDescribesHealthSourcesAndOpensFromStudioSettingsInAllFourLanguages() {
