@@ -1,0 +1,7 @@
+# 2784 – gyűjtő (1.4.0 / 278300 után)
+
+| # | Hol | Visszajelzés | Javaslat | Állapot |
+|---|-----|--------------|----------|---------|
+| 1 | Statisztikák – Lépések | Oszlopra koppintva alul is csak az a nap jelenjen meg (mint egy szűrő) | A napi lista a kiválasztott nap sorát mutatja; „Napi lista (14)” kinyitva az összeset | kódolandó |
+| 2 | Statisztikák – fülek | „Gyakorlato” – levágva | A fülfelirat kisebb betűvel / szűkebb belső margóval, a teljes „Gyakorlatok” kiférjen (teszt: nincs ellipszis 393 dp szélességen) | kódolandó |
+| 3 | Statisztikák – Gyakorlatok kártya | Kétsoros gyakorlatnévnél a „Legnagyobb súly” L-je nem látszik rendesen | Cím sormagasság + alcím felső térköz, a két szöveg ne fedje egymást | kódolandó |
