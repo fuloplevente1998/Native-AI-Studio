@@ -64,7 +64,7 @@ fun QuickWorkoutHubSheet(
             }
             // Segmented tabs: Strength · Timed · Outdoor.
             val tabs = listOf(
-                qw(language, "💪 Ismétléses", "💪 Reps", "💪 Wiederh.", "💪 Repetări"),
+                qw(language, "💪 Ismétléses", "💪 Reps", "💪 Wiederholungen", "💪 Repetări"),
                 qw(language, "⏱ Időzített", "⏱ Timed", "⏱ Zeit", "⏱ Cronometrat"),
                 qw(language, "🗺 Kültéri", "🗺 Outdoor", "🗺 Outdoor", "🗺 Exterior")
             )
@@ -77,12 +77,15 @@ fun QuickWorkoutHubSheet(
                         val selected = i == tab
                         val shape = RoundedCornerShape(11.dp)
                         Surface(shape = shape, color = if (selected) palette.primary else palette.surfaceCard,
-                            modifier = Modifier.weight(1f).heightIn(min = 44.dp)
+                            // 2784: longer labels get more room; the whole word always shows (font steps down if needed).
+                            modifier = Modifier.weight(trainPilotLabelWeight(label, tabs)).heightIn(min = 44.dp)
                                 .trainPilotClickable(shape) { onSelectTab(i) }.testTag("quick_tab_$i")) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(label, maxLines = 1, style = MaterialTheme.typography.labelLarge,
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 4.dp)) {
+                                TrainPilotFitText(label, style = MaterialTheme.typography.labelLarge,
                                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (selected) palette.onPrimary else palette.textPrimary)
+                                    color = if (selected) palette.onPrimary else palette.textPrimary,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    modifier = Modifier.testTag("quick_tab_label_$i"))
                             }
                         }
                     }
