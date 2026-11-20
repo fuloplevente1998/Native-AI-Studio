@@ -102,6 +102,25 @@ class Collector2786RegressionTest {
         compose.onNodeWithTag("health_weight_card").assertExists()
     }
 
+    @Test fun expandedWeeklyGoalsReplacesCompactBarsWithoutDuplicateGoalControls() {
+        val state = TrainPilotUiState(stepsGoal = 10000, workoutGoalTarget = 3,
+            workoutGoalCompleted = 2, expandedHealthWeeklyGoals = true,
+            weeklyHealthDays = listOf(day(0, 83273)))
+        compose.setContent { TrainPilotTheme {
+            HealthTabScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU),
+                {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
+        } }
+        val list = compose.onNodeWithTag("health_tab_screen")
+        list.performScrollToNode(hasTestTag("health_weekly_goals_compact"))
+        compose.onNodeWithTag("weekly_goals_workouts", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("weekly_goals_steps", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("health_weekly_workout_goal").assertDoesNotExist()
+        compose.onNodeWithTag("health_weekly_goals_button").assertDoesNotExist()
+        compose.onNodeWithTag("weekly_goals_settings").assertExists()
+        list.performScrollToNode(hasTestTag("health_weekly_steps_percent"))
+        compose.onNodeWithText("119%").assertExists()
+    }
+
     @Test fun sourcesWatchAndSyncAreOneCard() {
         var state by mutableStateOf(TrainPilotUiState(expandedHealthConnect = false))
         compose.setContent { TrainPilotTheme {
