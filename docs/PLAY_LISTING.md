@@ -60,13 +60,13 @@ TrainPilot: workout planner and training log for your phone and Wear OS watch.
 • GPS routes and photos in private storage; health data is only included in backups with explicit consent
 • Multiple light and dark themes; Hungarian, English, German and Romanian
 
-## Újdonságok – Play kibocsátási megjegyzések (276500/276502 óta → 1.4.0, 278100/278102)
+## Újdonságok – Play kibocsátási megjegyzések (276500/276502 óta → 1.4.0, 278200/278202)
 
 Szabály: mindig **4 nyelv** Play-címkékkel (`<hu-HU>`, `<de-DE>`, `<en-US>`, `<ro>`), nyelvenként ≤500 karakter,
 **külön telefonos és órás** szöveg; a chatben egy másolható kódblokkban küldjük. Az összegzés mindig a Playen lévő
 utolsó kiadás (most 276500/276502) óta összes újítást tartalmazza.
 
-### Telefon (278100)
+### Telefon (278200)
 ```
 <hu-HU>
 • Edzés közben: egységes fejléc, gyakorlatsor, Videó · Coach · Részletek, pihenő mindenhol, kész sorozat zöld, előző érték
@@ -110,7 +110,7 @@ utolsó kiadás (most 276500/276502) óta összes újítást tartalmazza.
 </ro>
 ```
 
-### Óra (278102)
+### Óra (278202)
 ```
 <hu-HU>
 • Kerek kijelzőre igazított menük, gombok és szövegek (Galaxy Watch 7 40 mm-en is)

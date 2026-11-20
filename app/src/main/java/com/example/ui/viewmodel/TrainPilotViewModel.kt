@@ -1790,6 +1790,15 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
+    /**
+     * 2782: a sheet route closes back to the screen it was opened from. Ignored when that sheet is
+     * no longer the current route (a duplicate dismiss used to pop one level further, often to Home).
+     */
+    fun dismissSheetRoute(route: SubScreen, depth: Int) {
+        val state = _uiState.value
+        if (state.currentSubScreen == route && state.backStack.size == depth) navigateBack()
+    }
+
     fun navigateBack(): Boolean {
         _uiState.update { it.copy(pendingIntervalStart = null) }
         if (_uiState.value.currentSubScreen == SubScreen.EXERCISE_LIBRARY) {

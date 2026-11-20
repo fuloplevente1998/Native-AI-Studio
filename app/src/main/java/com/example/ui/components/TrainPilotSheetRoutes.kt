@@ -22,6 +22,13 @@ internal val TrainPilotSheetRoutes: Set<SubScreen> = setOf(
     SubScreen.PRIVATE_PHOTOS
 )
 
+/** 2782: sheets with tabs / filters open at full height, so their height does not jump. */
+internal val TrainPilotFullHeightSheetRoutes: Set<SubScreen> = setOf(
+    SubScreen.LOG_WORKOUT_DETAIL,
+    SubScreen.EXERCISE_LIBRARY,
+    SubScreen.EXERCISE_DETAIL
+)
+
 /** The route rendered underneath an open sheet route: the latest non-sheet entry of the back stack. */
 internal fun TrainPilotUiState.sheetHostState(): TrainPilotUiState {
     if (currentSubScreen !in TrainPilotSheetRoutes) return this

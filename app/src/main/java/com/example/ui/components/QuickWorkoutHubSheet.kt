@@ -54,7 +54,7 @@ fun QuickWorkoutHubSheet(
 ) {
     val palette = LocalTrainPilotPalette.current
     val height = LocalConfiguration.current.screenHeightDp.dp * 0.86f
-    TrainPilotScreenSheet(onDismiss = onDismiss, testTag = "quick_workout_sheet") {
+    TrainPilotScreenSheet(onDismiss = onDismiss, testTag = "quick_workout_sheet", fillHeight = true) {
         Column(Modifier.fillMaxWidth().height(height)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(qw(language, "Gyors edzés", "Quick workout", "Schnelltraining", "Antrenament rapid"),

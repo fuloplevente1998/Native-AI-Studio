@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
@@ -43,6 +44,8 @@ fun sheetAwareFillMaxSize(): Modifier =
 fun TrainPilotScreenSheet(
     onDismiss: () -> Unit,
     testTag: String,
+    /** 2782: tabbed sheets open at full height so switching tabs never changes the sheet height. */
+    fillHeight: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
@@ -64,7 +67,8 @@ fun TrainPilotScreenSheet(
         }
     ) {
         androidx.compose.runtime.CompositionLocalProvider(LocalTrainPilotInSheet provides true) {
-            androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth()) { content() }
+            androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth()
+                .then(if (fillHeight) Modifier.fillMaxHeight().testTag("${testTag}_full") else Modifier)) { content() }
         }
     }
 }
@@ -80,6 +84,7 @@ fun TrainPilotRouteSheet(
     routeKey: Any,
     onDismiss: () -> Unit,
     testTag: String,
+    fillHeight: Boolean = false,
     content: @Composable () -> Unit
 ) {
     var generation by remember { mutableIntStateOf(0) }
@@ -90,6 +95,7 @@ fun TrainPilotRouteSheet(
                 onDismiss()
             },
             testTag = testTag,
+            fillHeight = fillHeight,
             content = content
         )
     }
