@@ -117,7 +117,7 @@ class Collector2786RegressionTest {
         compose.onNodeWithTag("health_weekly_workout_goal").assertDoesNotExist()
         compose.onNodeWithTag("health_weekly_goals_button").assertDoesNotExist()
         compose.onNodeWithTag("weekly_goals_settings").assertExists()
-        list.performScrollToNode(hasTestTag("health_weekly_steps_percent"))
+        list.performScrollToNode(hasTestTag("health_weekly_steps_card"))
         compose.onNodeWithText("119%").assertExists()
     }
 
