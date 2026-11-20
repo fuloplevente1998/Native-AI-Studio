@@ -184,14 +184,16 @@ private fun WorkoutModeTile(
                     color = palette.textPrimary, modifier = Modifier.weight(1f).testTag("${testTag}_title"))
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.textSecondary, modifier = Modifier.size(18.dp))
             }
-            // 303: reserve two subtitle lines, but allow a third at narrow widths or larger font scales.
-            // Badges can wrap rather than truncate a count or GPS status.
-            Text(subtitle, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary,
-                minLines = 2, maxLines = 3, overflow = TextOverflow.Clip, modifier = Modifier.fillMaxWidth().testTag("${testTag}_subtitle"))
+            // 303: reuse the app-wide adaptive text component instead of forcing multiple lines.
+            // It shrinks the font to fit the tile and only wraps as a last resort.
+            com.example.ui.components.TrainPilotFitText(subtitle, style = MaterialTheme.typography.labelSmall,
+                color = palette.textSecondary, minSize = 9.sp,
+                modifier = Modifier.fillMaxWidth().testTag("${testTag}_subtitle"))
             Box(Modifier.fillMaxWidth().weight(1f).testTag("${testTag}_graphic"), contentAlignment = Alignment.TopCenter) { graphic() }
             Surface(shape = RoundedCornerShape(8.dp), color = tint.copy(alpha = 0.16f)) {
-                Text(badge, style = MaterialTheme.typography.labelSmall, color = tint, fontWeight = FontWeight.Bold,
-                    maxLines = 2, softWrap = true, overflow = TextOverflow.Clip, modifier = Modifier.padding(horizontal = 4.dp, vertical = 3.dp).testTag("${testTag}_badge"))
+                com.example.ui.components.TrainPilotFitText(badge, style = MaterialTheme.typography.labelSmall,
+                    color = tint, fontWeight = FontWeight.Bold, minSize = 9.sp,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 3.dp).testTag("${testTag}_badge"))
             }
         }
     }
