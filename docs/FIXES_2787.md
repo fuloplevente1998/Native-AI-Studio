@@ -11,3 +11,16 @@ Mockup: [`docs/mockups/2787_health_weekly_goals.png`](mockups/2787_health_weekly
 | 5 | Heti célok – lépés % | 83 273 / 70 000 mellett „100%” látszik | Valós % (pl. 119%), a csík tele marad | jóváhagyásra vár |
 | 6 | Egészségnapló kártya | Az ikon furcsán néz ki | A többi kártyához igazított kerek ikon, napló jelkép (nem szív) | jóváhagyásra vár |
 | 7 | Testsúlynapló fejléc | (mockupban észrevett) cím és alcím levágódik | „Testsúlynapló”, alatta „64,2 kg · dátum” | jóváhagyásra vár |
+
+| 8 | Edzés fül – Erő / Időzített / Kültéri csempék | A három csempe feliratai még levágódnak | Teljes szavak és jelvények megjelenítése; több sor, megfelelő magasság, kisebb képernyő és nagyobb betűméret tesztje | implementálandó |
+
+## Kiadási ellenőrzőlista – PR #303
+
+- [ ] A nyolc UI-javítás implementálva és tesztelve (a korábbi #2776 csempejavítás regresszióját is ellenőrizni).
+- [ ] Android és Wear OS build/tesztek zöldek; verziókódok egyediek, verziónév egyezik.
+- [ ] PR #303 csak ezután kerülhet `main` ágba.
+- [ ] Aláírt APK/AAB artefaktumok és ellenőrzött metaadatok, majd Drive-feltöltés.
+- [ ] Play Console „Mi az új?” lokalizált `<hu-HU>` és `<en-US>` blokkokkal; csak valós változásokkal.
+- [ ] Play Áruház rövid/hosszú leírásának felülvizsgálata és szükség szerinti frissítése.
+- [ ] `fuloplevente1998/TrainPilot.io`: kiadott verzió, újdonságok, funkcióleírás és letöltési hivatkozások szinkronizálása.
+- [ ] Weboldal és Play listing ellenőrzése, kiadási átadó frissítése.
