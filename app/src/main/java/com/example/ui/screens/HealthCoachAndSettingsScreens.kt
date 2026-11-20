@@ -995,12 +995,12 @@ fun HealthTabScreen(
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = tr(uiState.language, "Testsúlynapló & Trend", "Weight Log & Trend", "Gewichtsprotokoll & Trend", "Jurnal greutate și tendință"),
+                                text = tr(uiState.language, "Testsúlynapló", "Weight log", "Gewichtsprotokoll", "Jurnal de greutate"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.textPrimary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                maxLines = 2,
+                                overflow = TextOverflow.Clip
                             )
                             val latestWeightLabel = if (latestChronologicalEntry != null) {
                                 "${tr(uiState.language, "Legújabb", "Latest", "Neueste", "Ultima")} (${latestChronologicalEntry.dateLabel}): ${latestChronologicalEntry.weightLabel}"
@@ -1014,8 +1014,8 @@ fun HealthTabScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = palette.primary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                maxLines = 2,
+                                overflow = TextOverflow.Clip
                             )
                         }
                         Surface(
@@ -3450,10 +3450,10 @@ private fun HealthWeeklyGoalsPanel(
     }
     val weeklyStepsTarget = (uiState.stepsGoal.coerceAtLeast(1) * 7)
     val weeklyStepsCurrent = goalDays.filter { it.stepsAvailable }.sumOf { it.steps }
-    val weeklyStepsPct = ((weeklyStepsCurrent.toFloat() / weeklyStepsTarget.toFloat()) * 100f).toInt().coerceIn(0, 100)
+    val weeklyStepsPct = ((weeklyStepsCurrent.toDouble() / weeklyStepsTarget.toDouble()) * 100.0).toInt()
     val weeklyMinutesTarget = (uiState.userScheduleDaysPerWeek * uiState.userWorkoutDurationMin).coerceAtLeast(150)
     val weeklyMinutesCurrent = goalDays.sumOf { it.workoutMinutes }
-    val weeklyMinutesPct = ((weeklyMinutesCurrent.toFloat() / weeklyMinutesTarget.toFloat()) * 100f).toInt().coerceIn(0, 100)
+    val weeklyMinutesPct = ((weeklyMinutesCurrent.toDouble() / weeklyMinutesTarget.toDouble()) * 100.0).toInt()
     val primaryProviderName = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"
 
     // 2786: workout goal of the period (calendar week/month, from the saved workout log).
@@ -3502,7 +3502,7 @@ private fun HealthWeeklyGoalsPanel(
                         else "${strings.stepsGoalWithCount(weeklyMinutesTarget)} $minUnit",
                         style = MaterialTheme.typography.labelSmall, color = palette.textSecondary
                     )
-                    LinearProgressIndicator(progress = { (if (steps) weeklyStepsPct else weeklyMinutesPct) / 100f },
+                    LinearProgressIndicator(progress = { ((if (steps) weeklyStepsPct else weeklyMinutesPct) / 100f).coerceIn(0f, 1f) },
                         modifier = Modifier.fillMaxWidth(), color = palette.primary, trackColor = palette.surfaceElevated)
                     if (steps) Text(
                         tr(
