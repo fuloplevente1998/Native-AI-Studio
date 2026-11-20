@@ -184,14 +184,16 @@ private fun WorkoutModeTile(
                     color = palette.textPrimary, modifier = Modifier.weight(1f).testTag("${testTag}_title"))
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.textSecondary, modifier = Modifier.size(18.dp))
             }
-            // 2779: the subtitle always reserves two lines and the badge one, so the three big
-            // graphics start on the same line in every tile.
-            Text(subtitle, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary,
-                minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("${testTag}_subtitle"))
+            // 303: reuse the app-wide adaptive text component instead of forcing multiple lines.
+            // It shrinks the font to fit the tile and only wraps as a last resort.
+            com.example.ui.components.TrainPilotFitText(subtitle, style = MaterialTheme.typography.labelSmall,
+                color = palette.textSecondary, minSize = 9.sp,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 30.dp).testTag("${testTag}_subtitle"))
             Box(Modifier.fillMaxWidth().weight(1f).testTag("${testTag}_graphic"), contentAlignment = Alignment.TopCenter) { graphic() }
             Surface(shape = RoundedCornerShape(8.dp), color = tint.copy(alpha = 0.16f)) {
-                Text(badge, style = MaterialTheme.typography.labelSmall, color = tint, fontWeight = FontWeight.Bold,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp).testTag("${testTag}_badge"))
+                com.example.ui.components.TrainPilotFitText(badge, style = MaterialTheme.typography.labelSmall,
+                    color = tint, fontWeight = FontWeight.Bold, minSize = 9.sp,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 3.dp).testTag("${testTag}_badge"))
             }
         }
     }
