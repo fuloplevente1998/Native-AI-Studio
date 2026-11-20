@@ -15,6 +15,10 @@ import com.repforge.app.ui.theme.TrainPilotOutlinedButton as OutlinedButton
 import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -63,37 +67,80 @@ internal fun StudioCoachRecommendations(
         if (state.initialLoading) CircularProgressIndicator(Modifier.size(24.dp).testTag("studio_coach_initial_loading"))
         if (state.error) Text(coachTr(lang, "A Coach adatai nem frissíthetők. A korábbi kijelzés nem friss mérés.", "Coach data could not be refreshed. Previous values are not a fresh measurement.", "Coach-Daten konnten nicht aktualisiert werden.", "Datele Coach nu pot fi actualizate."), color = palette.danger)
         if (showTarget) StudioCoachNextTrainingCard(state, onStart, onWorkout)
-        state.exercises.forEach { row ->
-            Surface(color = palette.surfaceCard, shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.fillMaxWidth().testTag("studio_coach_advice_${row.id}")
-                    .trainPilotBorder(0.75.dp, palette.cardBorder, RoundedCornerShape(14.dp))) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(row.name, style = MaterialTheme.typography.titleSmall, color = palette.textPrimary,
-                        modifier = Modifier.trainPilotClickable(RoundedCornerShape(12.dp)) { onExercise(row.id) })
-                    Text(NativeCoachAdviceText.label(text, row.advice.action), color = palette.primary)
-                    Text(NativeCoachAdviceText.reason(text, row.advice.reason), color = palette.textSecondary)
-                    Text(coachTr(lang, "Megfelelő előzmény: ${row.advice.historyCount}", "Matching history: ${row.advice.historyCount}", "Passender Verlauf: ${row.advice.historyCount}", "Istoric relevant: ${row.advice.historyCount}"), color = palette.textSecondary)
-                    if (row.advice.target.text.isNotBlank()) Text("${coachTr(lang, "Cél", "Target", "Ziel", "Țintă")}: ${coachTargetText(row.advice.target, row.repUnit, lang)}", color = palette.textSecondary)
-                    if (row.advice.action in setOf("increase", "reduce", "start") && row.advice.weight > 0)
-                        Text("${coachTr(lang, "Javasolt súly", "Suggested weight", "Empfohlenes Gewicht", "Greutate recomandată")}: ${row.advice.weight} kg" + when (row.loadType) {
-                            "per_hand" -> coachTr(lang, " kézenként", " per hand", " pro Hand", " pe mână")
-                            "total" -> coachTr(lang, " összesen", " total", " gesamt", " total")
-                            "single_dumbbell" -> coachTr(lang, " egy súlyzóval", " single dumbbell", " mit einer Kurzhantel", " cu o ganteră")
-                            else -> ""
-                        }, color = palette.textPrimary)
-                    if (row.advice.action == "reps" && row.advice.nextReps.isNotEmpty())
-                        Text("${coachTr(lang, "Javasolt ismétlések", "Suggested reps", "Empfohlene Wdh.", "Repetări recomandate")}: ${row.advice.nextReps.joinToString(" / ")}", color = palette.textPrimary)
-                    row.modePreview?.let { preview ->
-                        val style = if (preview.trainingStyle == "hit") coachTr(lang, "HIT-inspirált", "HIT-inspired", "HIT-inspiriert", "Inspirat HIT") else coachTr(lang, "Normál", "Normal", "Normal", "Normal")
-                        val mode = when (preview.mode) {
-                            "linear" -> coachTr(lang, "Lineáris", "Linear", "Linear", "Liniar")
-                            "rir" -> "RIR/Coach"
-                            else -> coachTr(lang, "Dupla progresszió", "Double progression", "Doppelte Progression", "Progresie dublă")
-                        }
-                        Text("$style / $mode • ${preview.workingSets} ${coachTr(lang, "munkasorozat", "working sets", "Arbeitssätze", "serii de lucru")}", color = palette.textSecondary)
+        // 2783: one compact card, one row per exercise (name · action chip · target · sets); the reason
+        // shared by every exercise is shown once on top, the rest opens per row.
+        if (state.exercises.isNotEmpty()) {
+            val reasons = state.exercises.map { it.advice.reason }.distinct()
+            val sharedReason = reasons.singleOrNull()?.let { NativeCoachAdviceText.reason(text, it) }?.takeIf { it.isNotBlank() }
+            var openRow by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf<String?>(null) }
+            Surface(color = palette.surfaceCard, shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth().testTag("studio_coach_advice_list")
+                    .trainPilotBorder(0.75.dp, palette.cardBorder, RoundedCornerShape(16.dp))) {
+                Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                    Text(coachTr(lang, "Mai javaslat gyakorlatonként", "Today's advice per exercise", "Heutige Empfehlung je Übung", "Recomandarea de azi pe exerciții"),
+                        style = MaterialTheme.typography.titleSmall, color = palette.textPrimary)
+                    if (sharedReason != null) Surface(color = palette.warning.copy(alpha = 0.14f), shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp).testTag("studio_coach_shared_reason")) {
+                        Text(sharedReason, color = palette.textPrimary, style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp))
                     }
-                    if (row.advice.action == "variation") TextButton(onClick = { onPreviewVariation(row.id) },
-                        enabled = !state.variationBusy && !state.loading && !state.error) { Text(coachTr(lang, "Változat előnézete", "Preview Variation", "Variante ansehen", "Previzualizează varianta")) }
+                    state.exercises.forEach { row ->
+                        val open = openRow == row.id
+                        val chipColor = when (row.advice.action) {
+                            "increase", "start", "reps" -> palette.success
+                            "reduce", "easy", "pain" -> palette.danger
+                            else -> palette.primary
+                        }
+                        androidx.compose.material3.HorizontalDivider(color = palette.cardBorder)
+                        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                            .trainPilotClickable(RoundedCornerShape(10.dp)) { openRow = if (open) null else row.id }
+                            .testTag("studio_coach_advice_${row.id}"),
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(row.name, style = MaterialTheme.typography.bodyMedium, color = palette.textPrimary,
+                                maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                            Surface(color = chipColor.copy(alpha = 0.16f), shape = RoundedCornerShape(8.dp)) {
+                                Text(NativeCoachAdviceText.label(text, row.advice.action), color = chipColor,
+                                    style = MaterialTheme.typography.labelSmall, maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp).testTag("studio_coach_action_${row.id}"))
+                            }
+                            val target = if (row.advice.target.text.isNotBlank()) coachTargetText(row.advice.target, row.repUnit, lang) else ""
+                            val sets = row.modePreview?.workingSets?.let { "$it×" }.orEmpty()
+                            Text(listOf(target, sets).filter { it.isNotBlank() }.joinToString(" · "), color = palette.textSecondary,
+                                style = MaterialTheme.typography.labelMedium, maxLines = 1, modifier = Modifier.testTag("studio_coach_target_${row.id}"))
+                            Icon(if (open) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.textSecondary, modifier = Modifier.size(18.dp))
+                        }
+                        if (open) Column(Modifier.fillMaxWidth().padding(bottom = 8.dp).testTag("studio_coach_details_${row.id}"),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            if (sharedReason == null) Text(NativeCoachAdviceText.reason(text, row.advice.reason), color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
+                            Text(coachTr(lang, "Megfelelő előzmény: ${row.advice.historyCount}", "Matching history: ${row.advice.historyCount}", "Passender Verlauf: ${row.advice.historyCount}", "Istoric relevant: ${row.advice.historyCount}"),
+                                color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
+                            if (row.advice.action in setOf("increase", "reduce", "start") && row.advice.weight > 0)
+                                Text("${coachTr(lang, "Javasolt súly", "Suggested weight", "Empfohlenes Gewicht", "Greutate recomandată")}: ${row.advice.weight} kg" + when (row.loadType) {
+                                    "per_hand" -> coachTr(lang, " kézenként", " per hand", " pro Hand", " pe mână")
+                                    "total" -> coachTr(lang, " összesen", " total", " gesamt", " total")
+                                    "single_dumbbell" -> coachTr(lang, " egy súlyzóval", " single dumbbell", " mit einer Kurzhantel", " cu o ganteră")
+                                    else -> ""
+                                }, color = palette.textPrimary, style = MaterialTheme.typography.bodySmall)
+                            if (row.advice.action == "reps" && row.advice.nextReps.isNotEmpty())
+                                Text("${coachTr(lang, "Javasolt ismétlések", "Suggested reps", "Empfohlene Wdh.", "Repetări recomandate")}: ${row.advice.nextReps.joinToString(" / ")}",
+                                    color = palette.textPrimary, style = MaterialTheme.typography.bodySmall)
+                            row.modePreview?.let { preview ->
+                                val style = if (preview.trainingStyle == "hit") coachTr(lang, "HIT-inspirált", "HIT-inspired", "HIT-inspiriert", "Inspirat HIT") else coachTr(lang, "Normál", "Normal", "Normal", "Normal")
+                                val mode = when (preview.mode) {
+                                    "linear" -> coachTr(lang, "Lineáris", "Linear", "Linear", "Liniar")
+                                    "rir" -> "RIR/Coach"
+                                    else -> coachTr(lang, "Dupla progresszió", "Double progression", "Doppelte Progression", "Progresie dublă")
+                                }
+                                Text("$style / $mode • ${preview.workingSets} ${coachTr(lang, "munkasorozat", "working sets", "Arbeitssätze", "serii de lucru")}",
+                                    color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
+                            }
+                            TextButton(onClick = { onExercise(row.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                                Text(coachTr(lang, "Gyakorlat részletei", "Exercise details", "Übungsdetails", "Detalii exercițiu"))
+                            }
+                            if (row.advice.action == "variation") TextButton(onClick = { onPreviewVariation(row.id) },
+                                enabled = !state.variationBusy && !state.loading && !state.error) { Text(coachTr(lang, "Változat előnézete", "Preview Variation", "Variante ansehen", "Previzualizează varianta")) }
+                        }
+                    }
                 }
             }
         }
@@ -351,6 +398,11 @@ internal fun coachChipTone(advice: NativeCoachExerciseAdvice.Advice?): CoachChip
 /** 2779: the target with its unit ("25 mp", "8–12 ism."); a text that already names a unit is kept. */
 internal fun coachTargetText(target: com.repforge.app.ui.coach.NativeCoachExerciseAdvice.Target, repUnit: String, lang: String): String {
     val text = target.text.trim()
+    // 2783: "10 /kar" (per-arm target without the rep word) → "10 ism./kar".
+    Regex("^(\\d+(?:[.,]\\d+)?)\\s*/\\s*(\\p{L}+)$").find(text)?.let { m ->
+        val word = if (target.kind == "time") coachTr(lang, "mp", "s", "Sek.", "sec") else coachTr(lang, "ism.", "reps", "Wdh.", "rep.")
+        return "${m.groupValues[1]} $word/${m.groupValues[2]}"
+    }
     if (text.isEmpty() || Regex("[a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ]").containsMatchIn(text)) return text
     val unit = repUnit.trim().ifBlank {
         when (target.kind) {

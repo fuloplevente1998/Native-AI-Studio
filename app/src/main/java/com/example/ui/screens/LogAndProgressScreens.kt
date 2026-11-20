@@ -1415,9 +1415,11 @@ internal fun MainProgressVolumeAndMuscleSection(
     val totalVolumeText = "%,d kg".format(java.util.Locale.US, loggedTotalKg).replace(',', ' ')
     val dateSubtitle = "${period.start.format(huFmt)} – ${period.end.format(huFmt)}"
     val prRecords = remember(uiState.loggedWorkouts) { loggedPrRecords(uiState.loggedWorkouts) }
-    val prCountValue = prRecords.count {
+    // 2783: the sheet lists exactly the records the tile counts (selected period only).
+    val periodPrRecords = prRecords.filter {
         period.contains(runCatching { java.time.LocalDate.parse(it.dateLabel.take(10)) }.getOrNull())
-    }.toString()
+    }
+    val prCountValue = periodPrRecords.size.toString()
     val workoutCountValue = periodWorkouts.size.toString()
     val avgVolumeValue = if (periodWorkouts.isEmpty()) "0 kg" else
         "${"%.1f".format(loggedTotalKg.toFloat() / periodWorkouts.size).replace('.', ',')} kg"
@@ -1766,14 +1768,14 @@ internal fun MainProgressVolumeAndMuscleSection(
                                     Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
                                 }
                             }
-                            if (prRecords.isEmpty()) {
+                            if (periodPrRecords.isEmpty()) {
                                 Text(
                                     text = trL(uiState.language, "Még nincs rögzített PR rekord. Fejezz be egy edzést a PR-ek számításához!", "No PR records logged yet. Finish a workout to calculate PRs!", "Noch keine PR-Rekorde erfasst. Beende ein Training zur PR-Berechnung!", "Niciun record PR înregistrat încă. Finalizează un antrenament pentru calculul PR-urilor!"),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.textSecondary
                                 )
                             } else {
-                                prRecords.forEach { pr ->
+                                periodPrRecords.forEach { pr ->
                                     val locPrName = pr.localizedExerciseName(uiState.language, uiState.exercises)
                                     Row(
                                         modifier = Modifier
