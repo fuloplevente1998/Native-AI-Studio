@@ -3456,25 +3456,8 @@ private fun HealthWeeklyGoalsPanel(
     val weeklyMinutesPct = ((weeklyMinutesCurrent.toDouble() / weeklyMinutesTarget.toDouble()) * 100.0).toInt()
     val primaryProviderName = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"
 
-    // 2786: workout goal of the period (calendar week/month, from the saved workout log).
+    // 303: the compact header already shows the workout goal; do not repeat it in a third card.
     val goal = com.example.ui.components.weeklyGoalSummary(uiState, today)
-    Surface(shape = RoundedCornerShape(18.dp), color = palette.background.copy(alpha = 0.55f),
-        modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-            .testTag("health_weekly_workout_goal")) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(if (goal.monthly) tr(uiState.language, "Edzések ebben a hónapban", "Workouts this month", "Trainings diesen Monat", "Antrenamente luna aceasta")
-                else tr(uiState.language, "Edzések ezen a héten", "Workouts this week", "Trainings diese Woche", "Antrenamente săptămâna aceasta"),
-                style = MaterialTheme.typography.labelLarge, color = palette.textPrimary)
-            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("${goal.workoutsDone}", style = MaterialTheme.typography.headlineMedium, color = palette.textPrimary)
-                Text("/ ${goal.workoutsTarget} ${tr(uiState.language, "edzés", "workouts", "Trainings", "antrenamente")}",
-                    style = MaterialTheme.typography.bodySmall, color = palette.textSecondary, modifier = Modifier.padding(bottom = 4.dp))
-            }
-            LinearProgressIndicator(progress = { goal.workoutFraction }, modifier = Modifier.fillMaxWidth(),
-                color = palette.primary, trackColor = palette.surfaceElevated)
-        }
-    }
-
     val minUnit = tr(uiState.language, "perc", "min", "Min.", "min")
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         for (steps in listOf(true, false)) {
@@ -3495,15 +3478,18 @@ private fun HealthWeeklyGoalsPanel(
                         Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = palette.primary)
                     }
                     Text(if (steps) { if (goalDays.none { it.stepsAvailable }) "—" else "%,d".format(java.util.Locale.US, weeklyStepsCurrent).replace(',', ' ') }
-                        else "$weeklyMinutesCurrent $minUnit", style = MaterialTheme.typography.headlineMedium,
+                        else "${goal.workoutsDone} / ${goal.workoutsTarget} ${tr(uiState.language, "edzés", "workouts", "Trainings", "antrenamente")}", style = MaterialTheme.typography.headlineMedium,
                         color = palette.textPrimary, modifier = Modifier.testTag("health_weekly_${tag}_total"))
                     Text(
                         if (steps) strings.stepsGoalWithCount(weeklyStepsTarget)
-                        else "${strings.stepsGoalWithCount(weeklyMinutesTarget)} $minUnit",
+                        else "$weeklyMinutesCurrent $minUnit ${tr(uiState.language, "összesen", "total", "gesamt", "total")}",
                         style = MaterialTheme.typography.labelSmall, color = palette.textSecondary
                     )
                     LinearProgressIndicator(progress = { ((if (steps) weeklyStepsPct else weeklyMinutesPct) / 100f).coerceIn(0f, 1f) },
                         modifier = Modifier.fillMaxWidth(), color = palette.primary, trackColor = palette.surfaceElevated)
+                    if (steps && goalDays.any { it.stepsAvailable }) Text("$weeklyStepsPct%",
+                        style = MaterialTheme.typography.labelMedium, color = palette.primary,
+                        modifier = Modifier.testTag("health_weekly_steps_percent"))
                     if (steps) Text(
                         tr(
                             uiState.language,
@@ -3574,13 +3560,7 @@ private fun HealthWeeklyGoalsPanel(
         }
     }
 
-    Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceCard,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
-            .trainPilotClickable(RoundedCornerShape(14.dp)) { onOpenGoalsDialog() }.testTag("health_weekly_goals_button")) {
-        Box(Modifier.padding(12.dp), contentAlignment = Alignment.Center) {
-            Text(strings.goalsSetupTitle, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.primary)
-        }
-    }
+
   }
 }
 
