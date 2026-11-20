@@ -178,7 +178,8 @@ private fun WorkoutModeTile(
     ) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             // 2776: the arrow sits next to the title so subtitle and badge can use the full width (no "14…").
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            // 2784: fixed title row height, so a smaller fitted font never moves the graphics below.
+            Row(Modifier.fillMaxWidth().heightIn(min = 28.dp), verticalAlignment = Alignment.CenterVertically) {
                 com.example.ui.components.TrainPilotFitText(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
                     color = palette.textPrimary, modifier = Modifier.weight(1f).testTag("${testTag}_title"))
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.textSecondary, modifier = Modifier.size(18.dp))
