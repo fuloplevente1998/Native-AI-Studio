@@ -97,6 +97,8 @@ fun HomeScreen(
     onOpenPersonalPlanner: () -> Unit,
     onDiscardWorkout: (String) -> Unit = {},
     onOpenHealthToday: () -> Unit = onOpenHealthSteps,
+    /** 2786: Home weekly goals → Health with the weekly view open. */
+    onOpenWeeklyGoals: () -> Unit = onOpenGoalsDialog,
     inlineProgramEditor: (@Composable () -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
@@ -451,67 +453,10 @@ fun HomeScreen(
         // 8. MAIN BRANCH HOME CARDS (Célok beállítása, Mai javaslat / Coach, Személyes edzéstervező, Aktív kalória)
         Column {
             Column(verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)) {
-                // Célok beállítása (1/15 edzés >) from main Home screenshot
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = palette.surface,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 48.dp)
-                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                        .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenGoalsDialog() }
-                        .testTag("home_goals_row_card")
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 7.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = strings.goalsSetupTitle,
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = palette.textPrimary
-                            )
-                            val periodSub = if (state.workoutGoalPeriod == com.example.model.WorkoutGoalPeriod.MONTHLY) {
-                                tr("Havi cél: ${state.workoutGoalTarget} edzés", "Monthly goal: ${state.workoutGoalTarget} workouts", "Monatsziel: ${state.workoutGoalTarget} Trainings", "Obiectiv lunar: ${state.workoutGoalTarget} antrenamente")
-                            } else {
-                                tr("Heti cél: ${state.workoutGoalTarget} edzés", "Weekly goal: ${state.workoutGoalTarget} workouts", "Wochenziel: ${state.workoutGoalTarget} Trainings", "Obiectiv săpt.: ${state.workoutGoalTarget} antrenamente")
-                            }
-                            Text(
-                                text = if ("activeCalories" in state.dailyHealthAvailableFields)
-                                    "$periodSub • ${strings.activeCaloriesAndWorkoutsToday(state.activeCaloriesKcal,
-                                        state.loggedWorkouts.count { it.localWorkoutDate() == java.time.LocalDate.now() })}"
-                                    else "$periodSub • ${state.stepsGoal} ${tr("lépés/nap", "steps/day", "Schritte/Tag", "pași/zi")}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = palette.textSecondary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            val periodBadge = if (state.workoutGoalPeriod == com.example.model.WorkoutGoalPeriod.MONTHLY) {
-                                tr("hó", "mo", "Mt.", "lună")
-                            } else {
-                                tr("hét", "wk", "Wo.", "săpt.")
-                            }
-                            Text(
-                                text = "${state.workoutGoalCompleted}/${state.workoutGoalTarget} ($periodBadge)",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = palette.primary
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = null,
-                                tint = palette.primary
-                            )
-                        }
-                    }
-                }
-
+                // 2786: shared weekly goals (same data as Health); tap opens Health with the big view.
+                com.example.ui.components.WeeklyGoalsCompact(state, framed = true,
+                    onOpen = onOpenWeeklyGoals, onGoals = onOpenGoalsDialog,
+                    modifier = Modifier.testTag("home_goals_row_card"))
 
             }
         }

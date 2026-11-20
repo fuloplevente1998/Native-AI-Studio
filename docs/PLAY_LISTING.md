@@ -60,57 +60,57 @@ TrainPilot: workout planner and training log for your phone and Wear OS watch.
 • GPS routes and photos in private storage; health data is only included in backups with explicit consent
 • Multiple light and dark themes; Hungarian, English, German and Romanian
 
-## Újdonságok – Play kibocsátási megjegyzések (276500/276502 óta → 1.4.0, 278500/278502)
+## Újdonságok – Play kibocsátási megjegyzések (276500/276502 óta → 1.4.1, 278600/278602)
 
 Szabály: mindig **4 nyelv** Play-címkékkel (`<hu-HU>`, `<de-DE>`, `<en-US>`, `<ro>`), nyelvenként ≤500 karakter,
 **külön telefonos és órás** szöveg; a chatben egy másolható kódblokkban küldjük. Az összegzés mindig a Playen lévő
 utolsó kiadás (most 276500/276502) óta összes újítást tartalmazza.
 
-### Telefon (278500)
+### Telefon (278600)
 ```
 <hu-HU>
 • Edzés közben: egységes fejléc, gyakorlatsor, Videó · Coach · Részletek, pihenő mindenhol, kész sorozat zöld, előző érték
 • Edzés fül: minden nap dátummal; Gyors edzés 1 lapon
 • Programok: kompakt kártyák, szerkesztő, húzható sorrend
 • Fejlődés: PR rekordok, teljes listák; Statisztikák: Gyakorlatok · Kardió · Lépések
-• Egészségnapló: tömör nézet, szűrők
+• Egészség: heti célok, testsúly, tömör napló
 • Dizájn: alsó lapok, koppintható grafikonok, világos témák
 • Óra: kerek kijelzőre igazítva
-• Javítások: Otthoni A/B, villogás, Health Connect
+• Javítások: Otthoni A/B, Health Connect
 </hu-HU>
 <de-DE>
 • Im Training: ein Kopfbereich, Übungsleiste, Video · Coach · Details, Pause überall, fertige Sätze grün, letzte Werte
 • Training: jeder Tag mit Datum; Schnelltraining auf einem Blatt
 • Programme: kompakte Karten, Editor, Reihenfolge ziehen
 • Fortschritt: PR-Rekorde, volle Listen; Statistik: Übungen · Cardio · Schritte
-• Gesundheit: kompakte Tagesansicht, Filter
+• Gesundheit: Wochenziele, Gewicht, kompaktes Journal
 • Design: Bottom Sheets, antippbare Diagramme, helle Themes
 • Uhr: für runde Displays
-• Fixes: Home A/B, Flackern, Health Connect
+• Fixes: Home A/B, Health Connect
 </de-DE>
 <en-US>
 • During workouts: one header, exercise strip, Video · Coach · Details, rest everywhere, done sets green, last values
 • Workout tab: every day with its date; Quick workout in one sheet
 • Programs: compact cards, editor, drag to reorder
 • Progress: PR records, full lists; Statistics: Exercises · Cardio · Steps
-• Health journal: compact day view, filters
+• Health: shared weekly goals, own weight card, compact journal
 • Design: bottom sheets, tappable charts, light themes
 • Watch: fits the round screen
-• Fixes: Home A/B, flicker, Health Connect
+• Fixes: Home A/B, Health Connect
 </en-US>
 <ro>
 • În antrenament: antet unic, bară de exerciții, Video · Coach · Detalii, pauză peste tot, serii gata verzi, ultimele valori
 • Antrenament: fiecare zi cu data; antrenament rapid pe o foaie
 • Programe: carduri compacte, editor, ordine prin tragere
 • Progres: recorduri PR, liste complete; Statistici: Exerciții · Cardio · Pași
-• Sănătate: vizualizare zilnică compactă, filtre
+• Sănătate: obiective, greutate separată, jurnal compact
 • Design: foi glisante, grafice interactive, teme
 • Ceas: ecran rotund
-• Remedieri: Home A/B, pâlpâire, Health Connect
+• Remedieri: Home A/B, Health Connect
 </ro>
 ```
 
-### Óra (278502)
+### Óra (278602)
 ```
 <hu-HU>
 • Kerek kijelzőre igazított menük, gombok és szövegek (Galaxy Watch 7 40 mm-en is)

@@ -121,7 +121,7 @@ class StudioAppearanceRegressionTest {
         compose.setContent {
             TrainPilotTheme {
                 com.example.ui.screens.HealthTabScreen(
-                    uiState = TrainPilotUiState(expandedWeeklySteps = steps, expandedWeeklyWorkouts = workouts),
+                    uiState = TrainPilotUiState(expandedHealthWeeklyGoals = true, expandedWeeklySteps = steps, expandedWeeklyWorkouts = workouts),
                     strings = TrainPilotStrings.forLanguage(AppLanguage.HU),
                     onToggleHealthSection = {
                         if (it == "weekly_steps") steps = !steps

@@ -398,6 +398,8 @@ data class TrainPilotUiState(
 
     // Health / Egészség State (Mockup 3/4 #5 + full main Egészség)
     val expandedWeeklySteps: Boolean = false,
+    /** 2786: the big weekly goals view inside Health "Today". */
+    val expandedHealthWeeklyGoals: Boolean = false,
     val expandedWeeklyWorkouts: Boolean = false,
     val expandedHealthPulseTrend: Boolean = false,
     val expandedHealthWeightLog: Boolean = false,

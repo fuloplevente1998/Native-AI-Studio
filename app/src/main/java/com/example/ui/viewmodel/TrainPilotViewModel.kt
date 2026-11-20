@@ -4440,7 +4440,8 @@ class TrainPilotViewModel : ViewModel() {
         weight: Boolean = false,
         extra: Boolean = false,
         journal: Boolean = false,
-        connect: Boolean = false
+        connect: Boolean = false,
+        weeklyGoals: Boolean = false
     ) {
         _uiState.update { state ->
             val back = (state.backStack + state.navigationRoute()).takeLast(16)
@@ -4450,6 +4451,7 @@ class TrainPilotViewModel : ViewModel() {
                 backStack = back,
                 expandedHealthPulseTrend = pulse || state.expandedHealthPulseTrend,
                 expandedHealthWeightLog = weight || state.expandedHealthWeightLog,
+                expandedHealthWeeklyGoals = weeklyGoals || state.expandedHealthWeeklyGoals,
                 expandedHealthExtraData = extra || state.expandedHealthExtraData,
                 expandedHealthJournal = journal || state.expandedHealthJournal,
                 expandedHealthConnect = connect || state.expandedHealthConnect
@@ -4460,6 +4462,7 @@ class TrainPilotViewModel : ViewModel() {
     fun toggleHealthSection(section: String) {
         _uiState.update { state ->
             when (section) {
+                "weekly" -> state.copy(expandedHealthWeeklyGoals = !state.expandedHealthWeeklyGoals)
                 "weekly_steps" -> state.copy(expandedWeeklySteps = !state.expandedWeeklySteps)
                 "weekly_workouts" -> state.copy(expandedWeeklyWorkouts = !state.expandedWeeklyWorkouts)
                 "pulse" -> state.copy(expandedHealthPulseTrend = !state.expandedHealthPulseTrend)
