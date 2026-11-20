@@ -188,7 +188,7 @@ private fun WorkoutModeTile(
             // It shrinks the font to fit the tile and only wraps as a last resort.
             com.example.ui.components.TrainPilotFitText(subtitle, style = MaterialTheme.typography.labelSmall,
                 color = palette.textSecondary, minSize = 9.sp,
-                modifier = Modifier.fillMaxWidth().testTag("${testTag}_subtitle"))
+                modifier = Modifier.fillMaxWidth().heightIn(min = 30.dp).testTag("${testTag}_subtitle"))
             Box(Modifier.fillMaxWidth().weight(1f).testTag("${testTag}_graphic"), contentAlignment = Alignment.TopCenter) { graphic() }
             Surface(shape = RoundedCornerShape(8.dp), color = tint.copy(alpha = 0.16f)) {
                 com.example.ui.components.TrainPilotFitText(badge, style = MaterialTheme.typography.labelSmall,
