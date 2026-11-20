@@ -72,7 +72,7 @@ utolsó kiadás (most 276500/276502) óta összes újítást tartalmazza.
 • Edzés közben: egységes fejléc, gyakorlatsor, Videó · Coach · Részletek, pihenő mindenhol, kész sorozat zöld, előző érték
 • Edzés fül: minden nap dátummal; Gyors edzés 1 lapon
 • Programok: kompakt kártyák, szerkesztő, húzható sorrend
-• Fejlődés: PR rekordok, teljes listák; Statisztikák: Erő · Kardió · Lépések
+• Fejlődés: PR rekordok, teljes listák; Statisztikák: Gyakorlatok · Kardió · Lépések
 • Egészségnapló: tömör napi nézet, szűrők
 • Dizájn: alulról nyíló lapok, új Coach ikon, világos témák
 • Óra: kerek kijelzőre igazítva
@@ -82,7 +82,7 @@ utolsó kiadás (most 276500/276502) óta összes újítást tartalmazza.
 • Im Training: ein Kopfbereich, Übungsleiste, Video · Coach · Details, Pause überall, fertige Sätze grün, letzte Werte
 • Training: jeder Tag mit Datum; Schnelltraining auf einem Blatt
 • Programme: kompakte Karten, Editor, Reihenfolge ziehen
-• Fortschritt: PR-Rekorde, volle Listen; Statistik: Kraft · Cardio · Schritte
+• Fortschritt: PR-Rekorde, volle Listen; Statistik: Übungen · Cardio · Schritte
 • Gesundheit: kompakte Tagesansicht, Filter
 • Design: Bottom Sheets, neues Coach-Symbol, helle Themes
 • Uhr: für runde Displays
@@ -92,7 +92,7 @@ utolsó kiadás (most 276500/276502) óta összes újítást tartalmazza.
 • During workouts: one header, exercise strip, Video · Coach · Details, rest everywhere, done sets green, last values
 • Workout tab: every day with its date; Quick workout in one sheet
 • Programs: compact cards, editor, drag to reorder
-• Progress: PR records, full lists; Statistics: Strength · Cardio · Steps
+• Progress: PR records, full lists; Statistics: Exercises · Cardio · Steps
 • Health journal: compact day view, filters
 • Design: bottom sheets, new Coach icon, light themes
 • Watch: fits the round screen
@@ -102,7 +102,7 @@ utolsó kiadás (most 276500/276502) óta összes újítást tartalmazza.
 • În antrenament: antet unic, bară de exerciții, Video · Coach · Detalii, pauză peste tot, serii gata verzi, ultimele valori
 • Antrenament: fiecare zi cu data; antrenament rapid pe o foaie
 • Programe: carduri compacte, editor, ordine prin tragere
-• Progres: recorduri PR, liste complete; Statistici: Forță · Cardio · Pași
+• Progres: recorduri PR, liste complete; Statistici: Exerciții · Cardio · Pași
 • Sănătate: vizualizare zilnică compactă, filtre
 • Design: foi glisante, icon Coach nou, teme luminoase
 • Ceas: ecran rotund
