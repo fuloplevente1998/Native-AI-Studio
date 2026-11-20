@@ -1,29 +1,23 @@
 # HANDOFF – aktuális állapot
 
-Frissítve: 2026-11-19 00:20 UTC. Rövid, felülírandó pillanatkép. Előzmény: git log / PR-ek.
+Frissítve: 2026-11-20 20:30 UTC. Rövid, felülírandó pillanatkép. Előzmény: git log / PR-ek.
 
-## Main – utolsó kiadás 2769 · 1.3-beta (`6d24f78`)
-- Telefon 276900 / Wear 276902, signed #80, 876/0 teszt; APK+AAB chatben átadva.
-- Play Console-ban még 276500/276502 – feltöltés a felhasználónál; „Újdonságok” szöveg
-  (HU/EN, ≤500 kar) chatben átadva.
+## Main – `b76e2f0` (2787 merge), utolsó kiadott build 1.4.1 · 278600/278602
+- 2785: koppintható grafikonok + infósor, testsúly csak az időszak mérései, app-stílusú chip/mező (palette).
+- 2786: közös Heti célok (Kezdőlap kompakt, Egészség lenyitva), külön Testsúly kártya,
+  egy „Források, óra és szinkron” kártya, 1.4.1.
+- 2787 (#303): lenyitva a kompakt blokk alakul nagy nézetté, duplikáció nélkül; valós lépés %;
+  Edzés fül 3 csempe FitText; Egészségnapló ikon; testsúly fejléc.
 
-## Folyamatban: 2770 · 1.3-beta – PR #284 (`fix/collector-2770`, head `827a941`)
-- Lista `docs/FIXES_2770.md`, 11 pont kész, CI fut: Mentés lap állandó magasság; Privát
-  fotók lap; Beállítások→Edzés beállításai = Edzés fül ablaka; Gyors edzés legördülők;
-  gyakorlatválasztó „▶ Indítás + ⋮” (B változat); Gyors edzés lap tartalom-magasság;
-  sorrend csak ═ fogantyú hosszú nyomás+húzás (▲▼ megszűnt, `TrainPilotReorder.kt`);
-  naptár 6 sor + kisebb nyilak + aljára rögzített tervező; forgatáskor nincs logó-animáció
-  (`StartupScreen.install(restored)`); Edzés fül kijelölve marad; kompakt szerkesztő-sorok.
-- Jóváhagyva: zöld CI → merge → APK+AAB (277000/277002) → 4 fájl + Play szöveg.
+## Folyamatban
+- PR #304: versionCode 278700/278702 (név 1.4.1) – zöld CI → merge → aláírt APK+AAB → weboldal.
+- Audit: `docs/AUDIT_HANDOFF_PROMPT.md` (másik ügynöknek). Gyanú: testsúly szerkesztés ID nélkül ment.
 
 ## Fontos döntések (ne kérdezd újra)
-- Programkártya koppintás = kártyán belüli szerkesztő (1 nyitva), külön szerkesztőoldal megszűnt.
-- Lapok: a beágyazott lap fagyását a route-onkénti új példány javítja (#283, ne vond vissza).
-- Adatvédelmi tájékoztató marad középső ablak. Privát fotók teljes képe maradhat teljes képernyő.
+- Csempe-koppintás saját alsó lapot nyit (max ~2/3), nem ugrik a naplóba.
+- Ívelt grafikonok, nincs rövidítés: TrainPilotFitText. UI-változás előtt mockup.
+- Belső azonosító minden buildnél nő; név csak kérésre. Weboldal verziósora = legutolsó build.
+- Play-szöveg 4 nyelv, ≤500 kar., 276500/276502 óta minden újítás.
 
 ## CI (mérve)
-- PR CI ~4–6 perc; signed APK+AAB ~7–7,5 perc. `[skip ci]` a push utolsó commitján a
-  PR CI-t is kihagyja → ilyenkor workflow_dispatch az ágra.
-
-## Nyitott
-- #269 maradék elfogadási pontjai; #208 Wear HRV; #271/#272 régi draftok; #279 ez a doksi-PR.
+- PR CI ~5–7 perc; signed APK+AAB ~9–10 perc. Fájlokat egyenként küldjük (ZIP nem tölthető le).
