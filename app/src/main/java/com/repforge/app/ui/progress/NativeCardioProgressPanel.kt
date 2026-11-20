@@ -45,7 +45,7 @@ internal fun NativeCardioProgressPanel(state: ProgressUiState,
     val context = LocalContext.current
     val strings = remember(context, state.language) { nativeResources(context, state.language) }
     val model = state.cardio
-    var visibleRecordCount by remember(state.selectedCardioId) { mutableIntStateOf(12) }
+    var recordsOpen by remember(state.selectedCardioId) { mutableStateOf(false) }
     Card(Modifier.fillMaxWidth().testTag("progress_cardio"),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = colors.card),
@@ -84,26 +84,42 @@ internal fun NativeCardioProgressPanel(state: ProgressUiState,
                         color = colors.muted, modifier = Modifier.testTag("progress_cardio_empty"))
                 }
                 else -> {
-                    Text(strings.getString(R.string.cardio_progress_all_time),
-                        color = colors.text, fontWeight = FontWeight.SemiBold)
-                    CardioMetrics(kilometers(model.totals.meters, state.language),
-                        cardioDuration(model.totals.seconds), NativeCardioModel.tp107FormatPace(model.totals.pace),
-                        "progress_cardio_total")
-                    Text(strings.getString(R.string.cardio_progress_current_week),
-                        color = colors.text, fontWeight = FontWeight.SemiBold)
-                    CardioMetrics(kilometers(model.currentWeek.meters, state.language),
-                        cardioDuration(model.currentWeek.seconds),
-                        NativeCardioModel.tp107FormatPace(model.currentWeek.pace),
-                        "progress_cardio_week")
-                    Text(strings.getString(R.string.cardio_progress_previous_week),
-                        color = colors.text, fontWeight = FontWeight.SemiBold)
-                    CardioMetrics(kilometers(model.previousWeek.meters, state.language),
-                        cardioDuration(model.previousWeek.seconds),
-                        NativeCardioModel.tp107FormatPace(model.previousWeek.pace),
-                        "progress_cardio_previous_week")
-                    Text(strings.getString(R.string.cardio_progress_eight_weeks),
-                        color = colors.text, fontWeight = FontWeight.SemiBold)
-                    CardioEightWeekChart(model.weeks)
+                    // 2782: same layout as Steps – three tiles, a tappable 8-week chart with a fixed
+                    // selected-week line, then the records (two rows, the rest on demand).
+                    fun tr(hu: String, en: String, de: String, ro: String) = when (state.language.lowercase(Locale.ROOT).take(2)) {
+                        "en" -> en; "de" -> de; "ro" -> ro; else -> hu }
+                    val current = model.weeks.lastOrNull()
+                    val previous = model.weeks.getOrNull(model.weeks.size - 2)
+                    fun sessions(n: Int?) = n?.let { tr("$it edzés", "$it workouts", "$it Trainings", "$it antrenamente") } ?: "—"
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        StatisticsMetricTile(tr("Ez a hét", "This week", "Diese Woche", "Săpt. aceasta") + " · " + sessions(current?.workoutCount),
+                            "${kilometers(model.currentWeek.meters, state.language)} km", Modifier.weight(1f), "progress_cardio_week_distance")
+                        StatisticsMetricTile(tr("Előző hét", "Previous week", "Vorwoche", "Săpt. trecută") + " · " + sessions(previous?.workoutCount),
+                            "${kilometers(model.previousWeek.meters, state.language)} km", Modifier.weight(1f), "progress_cardio_previous_week_distance")
+                        StatisticsMetricTile(tr("Összesen", "Total", "Gesamt", "Total"),
+                            "${kilometers(model.totals.meters, state.language)} km", Modifier.weight(1f), "progress_cardio_total_distance")
+                    }
+                    Text(strings.getString(R.string.cardio_progress_eight_weeks), color = colors.muted, fontSize = 13.sp)
+                    if (model.weeks.isNotEmpty()) {
+                        var selectedWeek by remember(state.selectedCardioId, model.weeks.size) { mutableIntStateOf(model.weeks.lastIndex) }
+                        val week = model.weeks[selectedWeek.coerceIn(0, model.weeks.lastIndex)]
+                        val end = week.weekStartDate.plusDays(6)
+                        Column(Modifier.fillMaxWidth().background(colors.card2, RoundedCornerShape(10.dp))
+                            .padding(horizontal = 10.dp, vertical = 6.dp).testTag("progress_cardio_selected_week")) {
+                            Row(Modifier.fillMaxWidth()) {
+                                Text("${week.weekStartDate.monthValue}.${"%02d".format(week.weekStartDate.dayOfMonth)}.–" +
+                                    "${end.monthValue}.${"%02d".format(end.dayOfMonth)}.", color = colors.text,
+                                    fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                                Text(if (week.meters > 0.0) "${kilometers(week.meters, state.language)} km"
+                                    else tr("nincs edzés", "no workout", "kein Training", "fără antrenament"),
+                                    color = if (week.meters > 0.0) colors.accentText else colors.muted,
+                                    fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.testTag("progress_cardio_selected_week_value"))
+                            }
+                            if (week.workoutCount > 0) Text("${sessions(week.workoutCount)} · ${cardioDuration(week.seconds)} · " +
+                                "${NativeCardioModel.tp107FormatPace(week.pace)} min/km", color = colors.muted, fontSize = 11.sp)
+                        }
+                        CardioEightWeekChart(model.weeks, selectedWeek) { selectedWeek = it }
+                    }
                     if (model.totals.timeOnlySeconds > 0) {
                         Text(strings.getString(R.string.cardio_progress_time_only,
                             cardioDuration(model.totals.timeOnlySeconds)),
@@ -118,7 +134,7 @@ internal fun NativeCardioProgressPanel(state: ProgressUiState,
                     val activityNames = model.activities.associate { activity ->
                         activity.exerciseId to cardioActivityName(state.language, activity)
                     }
-                    val displayedRecords = model.records.take(visibleRecordCount)
+                    val displayedRecords = if (recordsOpen) model.records else model.records.take(2)
                     displayedRecords.forEach { record ->
                         Column(Modifier.fillMaxWidth()
                             .background(colors.card2, MaterialTheme.shapes.large)
@@ -139,12 +155,12 @@ internal fun NativeCardioProgressPanel(state: ProgressUiState,
                             }
                         }
                     }
-                    if (model.records.size > visibleRecordCount) TextButton(
-                        onClick = { visibleRecordCount = (visibleRecordCount + 12).coerceAtMost(model.records.size) },
+                    if (model.records.size > 2) TextButton(
+                        onClick = { recordsOpen = !recordsOpen },
                         modifier = Modifier.defaultMinSize(minHeight = 48.dp)
                             .testTag("progress_cardio_expand")) {
-                        Text(strings.getString(R.string.cardio_progress_more,
-                            (model.records.size - visibleRecordCount).coerceAtMost(12)))
+                        Text(if (recordsOpen) "▴ " + strings.getString(R.string.cardio_progress_records)
+                            else "▾ " + strings.getString(R.string.cardio_progress_records) + " (${model.records.size})")
                     }
                 }
             }
@@ -169,47 +185,22 @@ private fun CardioChoice(label: String, selected: Boolean, tag: String, onClick:
 }
 
 @Composable
-private fun CardioMetrics(distance: String, duration: String, pace: String, tag: String) {
-    val labels = listOf("km", "hh:mm:ss", "min/km")
-    val values = listOf(distance, duration, pace)
-    val tags = listOf("distance", "duration", "pace")
-    BoxWithConstraints(Modifier.fillMaxWidth().testTag(tag)) {
-        val columns = if (maxWidth < 420.dp) 2 else 3
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            values.indices.toList().chunked(columns).forEach { row ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    row.forEach { i ->
-                        StatisticsMetricTile(labels[i], values[i], Modifier.weight(1f), "${tag}_${tags[i]}")
-                    }
-                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CardioEightWeekChart(weeks: List<CardioWeekStats>) {
+private fun CardioEightWeekChart(weeks: List<CardioWeekStats>, selected: Int, onSelect: (Int) -> Unit) {
     val c = LocalTrainPilotColors.current
-    Column(Modifier.fillMaxWidth().testTag("progress_cardio_chart")) {
-        Canvas(Modifier.fillMaxWidth().height(124.dp)) {
-            if (weeks.isEmpty()) return@Canvas
-            val upper = (weeks.maxOfOrNull { it.meters } ?: 0.0).coerceAtLeast(1.0)
-            val width = size.width / weeks.size
-            weeks.forEachIndexed { i, week ->
-                val height = (week.meters / upper).coerceIn(0.0, 1.0).toFloat() * size.height
-                if (height > 0f) drawRoundRect(
-                    color = if (i == weeks.lastIndex) c.accentText else c.accent2,
-                    topLeft = Offset(width * (i + 0.2f), size.height - height),
-                    size = Size(width * 0.6f, height),
-                    cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx()))
-            }
-        }
-        Row(Modifier.fillMaxWidth()) {
-            weeks.forEach { w ->
-                Text("${w.weekStartDate.dayOfMonth}.${w.weekStartDate.monthValue}.",
-                    modifier = Modifier.weight(1f), color = c.muted,
-                    fontSize = 9.sp, textAlign = TextAlign.Center)
+    val upper = (weeks.maxOfOrNull { it.meters } ?: 0.0).coerceAtLeast(1.0)
+    Row(Modifier.fillMaxWidth().height(110.dp).testTag("progress_cardio_chart"), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        weeks.forEachIndexed { i, w ->
+            val on = i == selected
+            Column(Modifier.weight(1f).fillMaxHeight().clickable { onSelect(i) }.testTag("progress_cardio_week_$i"),
+                horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.BottomCenter) {
+                    // An empty week stays an empty slot, never a 0 bar.
+                    if (w.meters <= 0.0) Box(Modifier.fillMaxWidth().height(2.dp).background(if (on) c.accentText else c.line))
+                    else Box(Modifier.fillMaxWidth().fillMaxHeight((w.meters / upper).toFloat().coerceIn(0.04f, 1f))
+                        .background(if (on) c.accentText else c.accent2.copy(alpha = 0.55f), RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)))
+                }
+                Text("${w.weekStartDate.dayOfMonth}.${w.weekStartDate.monthValue}.", color = if (on) c.accentText else c.muted,
+                    fontSize = 9.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, textAlign = TextAlign.Center, maxLines = 1)
             }
         }
     }

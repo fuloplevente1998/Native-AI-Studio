@@ -1063,10 +1063,15 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                 }
                 com.example.ui.components.TrainPilotRouteContent(routeHostState) { renderRoute(routeHostState) }
                 if (sheetRouteActive) {
+                    val sheetRoute = uiState.currentSubScreen
+                    val sheetDepth = uiState.backStack.size
                     com.example.ui.components.TrainPilotRouteSheet(
-                        routeKey = uiState.currentSubScreen to uiState.backStack.size,
-                        onDismiss = { viewModel.navigateBack() },
-                        testTag = "route_sheet_${uiState.currentSubScreen.name.lowercase()}"
+                        routeKey = sheetRoute to sheetDepth,
+                        // 2782: closes only this sheet; a second dismiss (system back + sheet) no longer
+                        // pops further and lands on Home.
+                        onDismiss = { viewModel.dismissSheetRoute(sheetRoute, sheetDepth) },
+                        testTag = "route_sheet_${uiState.currentSubScreen.name.lowercase()}",
+                        fillHeight = sheetRoute in com.example.ui.components.TrainPilotFullHeightSheetRoutes
                     ) { renderRoute(uiState) } // retained browsing route content
                 }
             }
