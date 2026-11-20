@@ -110,12 +110,14 @@ fun WeeklyGoalsCompact(
                     if (expanded != null) Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null,
                         tint = p.primary, modifier = Modifier.size(18.dp))
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    val period = if (s.monthly) wgTr(lang, "Edzés (hó)", "Workouts (mo)", "Trainings (Mon.)", "Antr. (lună)")
-                        else wgTr(lang, "Edzés", "Workouts", "Trainings", "Antrenamente")
-                    WeeklyGoalBar(period, "${s.workoutsDone} / ${s.workoutsTarget}", s.workoutFraction, Modifier.weight(1f).testTag("weekly_goals_workouts"))
-                    WeeklyGoalBar(wgTr(lang, "Lépés · 7 nap", "Steps · 7 days", "Schritte · 7 Tage", "Pași · 7 zile"),
-                        s.stepPercent?.let { "$it%" } ?: "—", s.stepFraction, Modifier.weight(1f).testTag("weekly_goals_steps"))
+                if (expanded != true) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        val period = if (s.monthly) wgTr(lang, "Edzés (hó)", "Workouts (mo)", "Trainings (Mon.)", "Antr. (lună)")
+                            else wgTr(lang, "Edzés", "Workouts", "Trainings", "Antrenamente")
+                        WeeklyGoalBar(period, "${s.workoutsDone} / ${s.workoutsTarget}", s.workoutFraction, Modifier.weight(1f).testTag("weekly_goals_workouts"))
+                        WeeklyGoalBar(wgTr(lang, "Lépés · 7 nap", "Steps · 7 days", "Schritte · 7 Tage", "Pași · 7 zile"),
+                            s.stepPercent?.let { "$it%" } ?: "—", s.stepFraction, Modifier.weight(1f).testTag("weekly_goals_steps"))
+                    }
                 }
             }
             if (onGoals != null) Surface(shape = RoundedCornerShape(12.dp), color = p.primary.copy(alpha = 0.12f),
