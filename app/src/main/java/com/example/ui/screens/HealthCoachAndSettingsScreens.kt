@@ -1233,7 +1233,6 @@ fun HealthTabScreen(
                                     onDeleteWeightLog(entry.id)
                                 }
                             )
-                            }
                         }
                     }
                 }
