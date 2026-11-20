@@ -1068,7 +1068,7 @@ fun HealthTabScreen(
         // One journal: the selected provider/day projection supplies summaries and inline details.
         item {
             ExpandableHealthSectionCard(
-                icon = Icons.Default.Favorite,
+                icon = Icons.Default.DateRange,
                 title = strings.healthJournalTitle,
                 subtitle = null,
                 expanded = uiState.expandedHealthJournal,
