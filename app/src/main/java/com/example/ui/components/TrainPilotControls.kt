@@ -22,6 +22,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
@@ -62,7 +64,8 @@ fun TrainPilotFilterChip(
         shape = shape,
         color = if (selected) p.primary.copy(alpha = 0.16f) else p.surfaceCard,
         border = BorderStroke(1.dp, if (selected) p.primary else p.cardBorder),
-        modifier = modifier.heightIn(min = 40.dp).trainPilotClickable(shape, enabled = enabled) { onClick() }
+        modifier = modifier.heightIn(min = 40.dp).semantics { this.selected = selected }
+            .trainPilotClickable(shape, enabled = enabled) { onClick() }
     ) {
         CompositionLocalProvider(
             LocalContentColor provides content,
@@ -168,4 +171,32 @@ fun TrainPilotTextField(
         visualTransformation = visualTransformation, keyboardOptions = keyboardOptions, keyboardActions = keyboardActions,
         singleLine = singleLine, maxLines = maxLines, minLines = minLines, interactionSource = interactionSource,
         shape = RoundedCornerShape(14.dp), colors = trainPilotFieldColors())
+}
+
+/** 2785: main action of a form (theme accent fill, e.g. gold "Mentés"). */
+@Composable
+fun TrainPilotPrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    val p = LocalTrainPilotPalette.current
+    val shape = RoundedCornerShape(14.dp)
+    Surface(shape = shape, color = if (enabled) p.primary else p.primary.copy(alpha = 0.4f),
+        modifier = modifier.heightIn(min = 48.dp).trainPilotClickable(shape, enabled = enabled) { onClick() }) {
+        androidx.compose.foundation.layout.Box(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
+            androidx.compose.material3.Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
+                color = p.onPrimary, maxLines = 1)
+        }
+    }
+}
+
+/** 2785: secondary action of a form (dark/elevated surface, e.g. "Mégse"). */
+@Composable
+fun TrainPilotSecondaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    val p = LocalTrainPilotPalette.current
+    val shape = RoundedCornerShape(14.dp)
+    Surface(shape = shape, color = p.surfaceElevated, border = BorderStroke(1.dp, p.cardBorder),
+        modifier = modifier.heightIn(min = 48.dp).trainPilotClickable(shape, enabled = enabled) { onClick() }) {
+        androidx.compose.foundation.layout.Box(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
+            androidx.compose.material3.Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
+                color = if (enabled) p.textPrimary else p.textSecondary, maxLines = 1)
+        }
+    }
 }
