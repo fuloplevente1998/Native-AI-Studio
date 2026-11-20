@@ -49,6 +49,21 @@ class Collector2786RegressionTest {
         assertTrue(s.monthly)
     }
 
+    @Test fun weeklyStepPercentCanExceedHundredWhileBarRemainsCapped() {
+        val summary = weeklyGoalSummary(TrainPilotUiState(stepsGoal = 10000,
+            weeklyHealthDays = listOf(day(0, 83273))), today)
+        assertEquals(83273, summary.steps)
+        assertEquals(119, summary.stepPercent)
+        assertEquals(1f, summary.stepFraction)
+
+        compose.setContent { TrainPilotTheme {
+            WeeklyGoalsCompact(TrainPilotUiState(stepsGoal = 10000,
+                weeklyHealthDays = listOf(day(0, 83273))), framed = true,
+                onOpen = {}, onGoals = null)
+        } }
+        compose.onNodeWithText("119%").assertExists()
+    }
+
     @Test fun compactBlockOpensTheBigViewAndItsGoalsButtonOpensTheGoalsDialog() {
         var opened = 0; var goals = 0
         compose.setContent { TrainPilotTheme {
