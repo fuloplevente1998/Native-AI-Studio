@@ -184,14 +184,14 @@ private fun WorkoutModeTile(
                     color = palette.textPrimary, modifier = Modifier.weight(1f).testTag("${testTag}_title"))
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.textSecondary, modifier = Modifier.size(18.dp))
             }
-            // 2779: the subtitle always reserves two lines and the badge one, so the three big
-            // graphics start on the same line in every tile.
+            // 303: reserve two subtitle lines, but allow a third at narrow widths or larger font scales.
+            // Badges can wrap rather than truncate a count or GPS status.
             Text(subtitle, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary,
-                minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("${testTag}_subtitle"))
+                minLines = 2, maxLines = 3, overflow = TextOverflow.Clip, modifier = Modifier.fillMaxWidth().testTag("${testTag}_subtitle"))
             Box(Modifier.fillMaxWidth().weight(1f).testTag("${testTag}_graphic"), contentAlignment = Alignment.TopCenter) { graphic() }
             Surface(shape = RoundedCornerShape(8.dp), color = tint.copy(alpha = 0.16f)) {
                 Text(badge, style = MaterialTheme.typography.labelSmall, color = tint, fontWeight = FontWeight.Bold,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp).testTag("${testTag}_badge"))
+                    maxLines = 2, softWrap = true, overflow = TextOverflow.Clip, modifier = Modifier.padding(horizontal = 4.dp, vertical = 3.dp).testTag("${testTag}_badge"))
             }
         }
     }
