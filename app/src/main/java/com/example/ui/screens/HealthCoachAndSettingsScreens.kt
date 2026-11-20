@@ -3450,7 +3450,7 @@ private fun HealthWeeklyGoalsPanel(
     }
     val weeklyStepsTarget = (uiState.stepsGoal.coerceAtLeast(1) * 7)
     val weeklyStepsCurrent = goalDays.filter { it.stepsAvailable }.sumOf { it.steps }
-    val weeklyStepsPct = ((weeklyStepsCurrent.toDouble() / weeklyStepsTarget.toDouble()) * 100.0).toInt()
+    val weeklyStepsPct = kotlin.math.round((weeklyStepsCurrent.toDouble() / weeklyStepsTarget.toDouble()) * 100.0).toInt()
     val weeklyMinutesCurrent = goalDays.sumOf { it.workoutMinutes }
     val primaryProviderName = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"
 
