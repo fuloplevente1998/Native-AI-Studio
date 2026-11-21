@@ -72,7 +72,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton as OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
@@ -606,7 +605,7 @@ fun PalettePickerBottomSheet(
         }
     }
 
-    ModalBottomSheet(
+    TrainPilotModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = palette.surface,
