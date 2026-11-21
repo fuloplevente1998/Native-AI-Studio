@@ -509,63 +509,14 @@ class GoogleSyncRepository internal constructor(
         }
     }
 
-    private suspend fun ensureCalendarScheduleMaterializedFromStateDoc() {
-        if (database.calendarScheduleDao().getAllEntries().isNotEmpty()) return
-        val doc = database.keyValueDocumentDao().getDocument("native:calendarState") ?: return
-        val events = runCatching { JSONObject(doc.json).optJSONArray("events") }.getOrNull() ?: return
-        if (events.length() == 0) return
-        val defaultMonth = java.time.YearMonth.from(Instant.ofEpochMilli(doc.updatedAt).atZone(java.time.ZoneId.systemDefault()))
-        val rows = mutableListOf<com.repforge.app.data.db.CalendarScheduleEntity>()
-        for (i in 0 until events.length()) {
-            val o = events.optJSONObject(i) ?: continue
-            val id = o.optString("id").takeIf { it.isNotBlank() } ?: continue
-            val dayOfMonth = o.optInt("dayOfMonth", 1).coerceIn(1, defaultMonth.lengthOfMonth())
-            val dateStr = o.optString("dateIso").takeIf { it.isNotBlank() }
-                ?: defaultMonth.atDay(dayOfMonth).toString()
-            val timeLabel = o.optString("timeLabel", "10:00")
-            val durationMin = o.optInt("durationMinutes", 60).coerceAtLeast(15)
-            val parsedDate = runCatching { java.time.LocalDate.parse(dateStr) }.getOrNull() ?: continue
-            val parts = timeLabel.split(":")
-            val hour = parts.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 10
-            val minute = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
-            val startInstant = parsedDate.atTime(hour, minute).atZone(java.time.ZoneId.systemDefault()).toInstant()
-            val endInstant = startInstant.plusSeconds(durationMin * 60L)
-            val rawStatus = o.optString("status", "PLANNED").uppercase(Locale.ROOT)
-            val statusStr = when (rawStatus) {
-                "COMPLETED" -> "completed"
-                "MISSED", "SKIPPED" -> "skipped"
-                else -> "planned"
-            }
-            val titleHu = o.optString("titleHu", "Edzés")
-            val splitBadge = o.optString("splitBadge", "A")
-            rows.add(
-                com.repforge.app.data.db.CalendarScheduleEntity(
-                    id = id,
-                    googleEventId = "",
-                    date = parsedDate.toString(),
-                    startIso = startInstant.toString(),
-                    endIso = endInstant.toString(),
-                    programId = "program_default",
-                    programName = titleHu,
-                    dayId = splitBadge,
-                    dayName = titleHu,
-                    status = statusStr,
-                    updatedAt = doc.updatedAt,
-                    rawJson = o.toString()
-                )
-            )
-        }
-        if (rows.isNotEmpty()) {
-            database.calendarScheduleDao().upsertEntries(rows)
-        }
-    }
-
     private suspend fun syncCalendarCloudInternal(accessToken: String,
         dataTicket: NativeDataReplacement.Continuation = NativeDataReplacement.continuationForCurrentData(appContext)): Int {
         verifyAndFetchProfile(accessToken)
         currentCoroutineContext().ensureActive()
-        dataTicket.requireCurrent(appContext)
-        ensureCalendarScheduleMaterializedFromStateDoc()
+        NativeDataReplacement.mutate(appContext) {
+            dataTicket.requireCurrent(appContext)
+            NativeCalendarBackup.materializeLegacyRows(database)
+        }
         val calendarId = ensureManagedCalendar(accessToken, dataTicket)
         val entries = database.calendarScheduleDao().getAllEntries()
         val base = "https://www.googleapis.com/calendar/v3/calendars/${enc(calendarId)}/events"

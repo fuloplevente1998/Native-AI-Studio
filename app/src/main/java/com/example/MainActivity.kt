@@ -147,6 +147,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
     val googleConsent by nativeSettings.googleConsent.collectAsStateWithLifecycle()
     com.repforge.app.ui.settings.NativeGoogleConsentLauncher(googleConsent, nativeSettings::takeGoogleConsent,
         nativeSettings::completeGoogleConsent, nativeSettings::failGoogleConsent)
+    val cloudInstallRevision by com.repforge.app.NativeCloudMergeGuard.localInstallRevision.collectAsStateWithLifecycle()
+    LaunchedEffect(cloudInstallRevision) {
+        if (cloudInstallRevision > 0) viewModel.refreshAfterCloudSync(context)
+    }
     val activity = context as? android.app.Activity
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     androidx.compose.runtime.DisposableEffect(lifecycleOwner, activity) {

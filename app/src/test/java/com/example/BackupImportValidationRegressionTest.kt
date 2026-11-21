@@ -439,6 +439,7 @@ class BackupImportValidationRegressionTest {
             val local = migrator.exportBackupJson(includeHealthJournal = false)
             val merged = GoogleSyncRepository(context).mergeSync18(local, listOf(remote), null,
                 emptyList(), emptySet(), emptySet(), preferLocalOnConflict = true)
+            val installationBefore = NativeCloudMergeGuard.localInstallRevision.value
             var published = false
             NativeCloudPhotoStage(context, merged).use { photos ->
                 photos.prepare(upload = { _, _ -> error("Unexpected photo upload") },
@@ -447,6 +448,7 @@ class BackupImportValidationRegressionTest {
                     assertRecoveredGoalsAndCalendar(db)
                     assertFalse(accepted.has("nativeHealthJournal"))
                     assertFalse(NativeReplacementJournal(context).exists())
+                    assertEquals(installationBefore + 1, NativeCloudMergeGuard.localInstallRevision.value)
                     published = true
                 }
             }
@@ -471,6 +473,8 @@ class BackupImportValidationRegressionTest {
             "{\"history\":{},\"workouts\":[]}", "{\"history\":\"broken\"}", "{\"history\":[{}]}", "{\"history\":[null]}",
             """{"history":[],"calendarScheduleVersion":1}""",
             """{"history":[],"calendarScheduleVersion":1,"scheduled":[{"date":"invalid"}]}""",
+            """{"history":[],"calendarScheduleVersion":1,"scheduled":[{"date":"2026-12-10","timeLabel":"invalid"}]}""",
+            """{"history":[],"calendarScheduleVersion":1,"scheduled":[{"date":"2026-12-10","durationMinutes":1441}]}""",
             """{"history":[],"native:userGoals":{"stepsGoal":"invalid"}}""",
             "{\"history\":[{\"started\":\"2026-11-01T10:00:00Z\",\"photos\":[{\"id\":\"invalid-photo\"}]}]}")) {
             val file = File(context.cacheDir, "selected-backup.json").apply { writeText(payload) }

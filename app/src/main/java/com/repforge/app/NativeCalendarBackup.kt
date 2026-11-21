@@ -12,6 +12,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.UUID
 
@@ -31,6 +32,12 @@ internal object NativeCalendarBackup {
                 require(runCatching { LocalDate.parse(scheduleDate(row)) }.isSuccess) {
                     "Invalid backup calendar entry."
                 }
+                require(row.isNull("timeLabel") || parseCalendarTime(row.optString("timeLabel")) != null) {
+                    "Invalid backup calendar time."
+                }
+                require(row.isNull("durationMinutes") || row.optInt("durationMinutes") in 1..1440) {
+                    "Invalid backup calendar duration."
+                }
             }
         }
     }
@@ -38,13 +45,23 @@ internal object NativeCalendarBackup {
     suspend fun exportInto(database: TrainPilotDatabase, out: JSONObject) {
         val rows = database.withTransaction { persistedRows(database) }.sortedWith(compareBy({ it.startIso }, { it.id }))
         out.put(VERSION_KEY, VERSION).put("scheduled", JSONArray(rows.map { row ->
+            val display = NativeCalendarCleanup202611.toCalendarStateEvent(row)
             runCatching { JSONObject(row.rawJson) }.getOrElse { JSONObject() }
                 .put("id", row.id).put("scheduleId", row.id).put("googleEventId", row.googleEventId)
                 .put("date", row.date).put("start", row.startIso).put("plannedStart", row.startIso)
                 .put("end", row.endIso).put("programId", row.programId).put("programName", row.programName)
                 .put("dayId", row.dayId).put("dayName", row.dayName).put("status", row.status)
                 .put("updatedAt", row.updatedAt)
+                .put("timeLabel", display.getString("timeLabel")).put("durationMinutes", display.getInt("durationMinutes"))
         }))
+    }
+
+    suspend fun materializeLegacyRows(database: TrainPilotDatabase) = database.withTransaction {
+        val dao = database.calendarScheduleDao()
+        if (dao.getAllEntries().isEmpty()) {
+            val rows = persistedRows(database)
+            if (rows.isNotEmpty()) dao.upsertEntries(rows)
+        }
     }
 
     /** Caller holds the same Room transaction used to install the backup. */
@@ -120,8 +137,8 @@ internal object NativeCalendarBackup {
             if (stored.isNotBlank()) LocalDate.parse(stored)
             else month.atDay(event.getInt("dayOfMonth").coerceIn(1, month.lengthOfMonth()))
         }.getOrNull() ?: return null
-        val time = runCatching { LocalTime.parse(event.getString("timeLabel")) }.getOrNull() ?: return null
-        val duration = event.optInt("durationMinutes").takeIf { it > 0 } ?: return null
+        val time = parseCalendarTime(event.optString("timeLabel")) ?: LocalTime.of(10, 0)
+        val duration = event.optInt("durationMinutes", 60).takeIf { it in 1..1440 } ?: 60
         val start = date.atTime(time).atZone(zone).toInstant()
         val status = when (event.optString("status").uppercase(Locale.ROOT)) {
             "COMPLETED" -> "completed"
@@ -137,6 +154,13 @@ internal object NativeCalendarBackup {
             status = status, updatedAt = stamp, rawJson = event.toString()
         )
     }
+
+    private val legacyTimeFormat = DateTimeFormatter.ofPattern("H:mm", Locale.ROOT)
+    internal fun parseCalendarTime(value: String): LocalTime? = runCatching {
+        LocalTime.parse(value.trim())
+    }.recoverCatching {
+        LocalTime.parse(value.trim(), legacyTimeFormat)
+    }.getOrNull()
 
     private fun scheduleDate(raw: JSONObject): String =
         raw.optString("date").ifBlank { raw.optString("start", raw.optString("plannedStart")).take(10) }.trim()

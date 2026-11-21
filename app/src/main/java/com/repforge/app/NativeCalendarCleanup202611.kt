@@ -214,13 +214,13 @@ internal object NativeCalendarCleanup202611 {
         val date = runCatching { LocalDate.parse(row.date) }.getOrNull()
         val startInstant = parseInstant(row.startIso)
         val endInstant = parseInstant(row.endIso)
-        val timeLabel = raw.optString("timeLabel").ifBlank {
-            startInstant?.atZone(ZoneId.systemDefault())?.format(DateTimeFormatter.ofPattern("HH:mm"))
-                ?: row.startIso.substringAfter('T', "").take(5).takeIf { it.length == 5 } ?: "10:00"
-        }
-        val duration = raw.optInt("durationMinutes", 0).takeIf { it > 0 }
+        val timeLabel = (NativeCalendarBackup.parseCalendarTime(raw.optString("timeLabel"))
+            ?: startInstant?.atZone(ZoneId.systemDefault())?.toLocalTime()
+            ?: NativeCalendarBackup.parseCalendarTime(row.startIso.substringAfter('T', "").take(5)))
+            ?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "10:00"
+        val duration = raw.optInt("durationMinutes", 0).takeIf { it in 1..1440 }
             ?: if (startInstant != null && endInstant != null && endInstant.isAfter(startInstant))
-                Duration.between(startInstant, endInstant).toMinutes().toInt().coerceAtLeast(1)
+                Duration.between(startInstant, endInstant).toMinutes().coerceIn(1L, 1440L).toInt()
             else 60
         val status = when (row.status.lowercase()) {
             "completed" -> "COMPLETED"
