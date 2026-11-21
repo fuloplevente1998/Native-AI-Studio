@@ -1,5 +1,8 @@
 package com.repforge.app.ui.progress
 
+import com.example.ui.components.chartDateLabel
+import com.example.ui.components.trainPilotChartMarkColor
+import com.example.ui.components.trainPilotChartSelection
 import com.repforge.app.ui.theme.TrainPilotFrames
 import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -102,7 +105,12 @@ internal fun NativeCardioProgressPanel(state: ProgressUiState,
                     }
                     Text(strings.getString(R.string.cardio_progress_eight_weeks), color = colors.muted, fontSize = 13.sp)
                     if (model.weeks.isNotEmpty()) {
-                        var selectedWeek by remember(state.selectedCardioId, model.weeks.size) { mutableIntStateOf(model.weeks.lastIndex) }
+                        var selectedWeek by remember(state.selectedCardioId, model.weeks.size, model.weeks.last().weekStartDate) {
+                            mutableIntStateOf(model.weeks.lastIndex)
+                        }
+                        fun distanceLabel(week: CardioWeekStats) =
+                            if (week.meters > 0.0) "${kilometers(week.meters, state.language)} km"
+                            else tr("nincs edzés", "no workout", "kein Training", "fără antrenament")
                         val week = model.weeks[selectedWeek.coerceIn(0, model.weeks.lastIndex)]
                         val end = week.weekStartDate.plusDays(6)
                         Column(Modifier.fillMaxWidth().background(colors.card2, RoundedCornerShape(10.dp))
@@ -111,15 +119,14 @@ internal fun NativeCardioProgressPanel(state: ProgressUiState,
                                 Text("${week.weekStartDate.monthValue}.${"%02d".format(week.weekStartDate.dayOfMonth)}.–" +
                                     "${end.monthValue}.${"%02d".format(end.dayOfMonth)}.", color = colors.text,
                                     fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                                Text(if (week.meters > 0.0) "${kilometers(week.meters, state.language)} km"
-                                    else tr("nincs edzés", "no workout", "kein Training", "fără antrenament"),
+                                Text(distanceLabel(week),
                                     color = if (week.meters > 0.0) colors.accentText else colors.muted,
                                     fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.testTag("progress_cardio_selected_week_value"))
                             }
                             if (week.workoutCount > 0) Text("${sessions(week.workoutCount)} · ${cardioDuration(week.seconds)} · " +
                                 "${NativeCardioModel.tp107FormatPace(week.pace)} min/km", color = colors.muted, fontSize = 11.sp)
                         }
-                        CardioEightWeekChart(model.weeks, selectedWeek) { selectedWeek = it }
+                        CardioEightWeekChart(model.weeks, selectedWeek, state.language, ::distanceLabel) { selectedWeek = it }
                     }
                     if (model.totals.timeOnlySeconds > 0) {
                         Text(strings.getString(R.string.cardio_progress_time_only,
@@ -186,19 +193,28 @@ private fun CardioChoice(label: String, selected: Boolean, tag: String, onClick:
 }
 
 @Composable
-private fun CardioEightWeekChart(weeks: List<CardioWeekStats>, selected: Int, onSelect: (Int) -> Unit) {
+private fun CardioEightWeekChart(
+    weeks: List<CardioWeekStats>,
+    selected: Int,
+    language: String,
+    distanceLabel: (CardioWeekStats) -> String,
+    onSelect: (Int) -> Unit
+) {
     val c = LocalTrainPilotColors.current
     val upper = (weeks.maxOfOrNull { it.meters } ?: 0.0).coerceAtLeast(1.0)
     Row(Modifier.fillMaxWidth().height(110.dp).testTag("progress_cardio_chart"), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         weeks.forEachIndexed { i, w ->
             val on = i == selected
-            Column(Modifier.weight(1f).fillMaxHeight().trainPilotClickable(RoundedCornerShape(6.dp)) { onSelect(i) }.testTag("progress_cardio_week_$i"),
+            val mark = trainPilotChartMarkColor(on, c.accentText, c.muted)
+            val label = "${chartDateLabel(w.weekStartDate, language)} – ${chartDateLabel(w.weekStartDate.plusDays(6), language)} · ${distanceLabel(w)}"
+            Column(Modifier.weight(1f).fillMaxHeight().trainPilotClickable(RoundedCornerShape(6.dp)) { onSelect(i) }
+                .trainPilotChartSelection(on, label).testTag("progress_cardio_week_$i"),
                 horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.BottomCenter) {
                     // An empty week stays an empty slot, never a 0 bar.
-                    if (w.meters <= 0.0) Box(Modifier.fillMaxWidth().height(2.dp).background(if (on) c.accentText else c.line))
+                    if (w.meters <= 0.0) Box(Modifier.fillMaxWidth().height(2.dp).background(mark))
                     else Box(Modifier.fillMaxWidth().fillMaxHeight((w.meters / upper).toFloat().coerceIn(0.04f, 1f))
-                        .background(if (on) c.accentText else c.accent2.copy(alpha = 0.55f), RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)))
+                        .background(mark, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)))
                 }
                 Text("${w.weekStartDate.dayOfMonth}.${w.weekStartDate.monthValue}.", color = if (on) c.accentText else c.muted,
                     fontSize = 9.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, textAlign = TextAlign.Center, maxLines = 1)

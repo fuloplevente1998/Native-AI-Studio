@@ -2,21 +2,35 @@ package com.example.ui.components
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.LocalTrainPilotPalette
 
-/**
- * 2785: every chart is tappable. The tapped bar/point is highlighted and a fixed-height info line shows
- * its date/time, value and unit; the default selection is the latest point.
- */
+/** Use the active palette's contrast for a neutral measurement and its accent for selection. */
+fun trainPilotChartMarkColor(isSelected: Boolean, accent: Color, neutral: Color): Color {
+    if (isSelected) return accent
+    val gray = 0.2126f * neutral.red + 0.7152f * neutral.green + 0.0722f * neutral.blue
+    return Color(gray, gray, gray, neutral.alpha * 0.7f)
+}
+
+fun Modifier.trainPilotChartSelection(isSelected: Boolean, label: String): Modifier = semantics {
+    selected = isSelected
+    contentDescription = label
+}
 
 /** Nearest of [count] evenly spaced points (first at x = 0, last at x = width) to the tap at [x]. */
 fun chartNearestIndex(x: Float, width: Float, count: Int): Int {
@@ -32,18 +46,31 @@ fun chartNearestByFraction(x: Float, width: Float, fractions: List<Float>): Int 
 }
 
 /** Tap on a line chart selects the nearest point; [nearest] maps (x, width) to an index. */
-fun Modifier.trainPilotChartTap(key: Any?, nearest: (Float, Float) -> Int, onSelect: (Int) -> Unit): Modifier =
-    pointerInput(key) { detectTapGestures { o -> onSelect(nearest(o.x, size.width.toFloat())) } }
+@Composable
+fun Modifier.trainPilotChartTap(
+    key: Any?,
+    nearest: (Float, Float) -> Int,
+    selectedLabel: String? = null,
+    onSelect: (Int) -> Unit
+): Modifier {
+    val currentNearest = rememberUpdatedState(nearest)
+    val currentOnSelect = rememberUpdatedState(onSelect)
+    return pointerInput(key) {
+        detectTapGestures { tap -> currentOnSelect.value(currentNearest.value(tap.x, size.width.toFloat())) }
+    }.semantics {
+        if (selectedLabel != null) stateDescription = selectedLabel
+    }
+}
 
 /** Localised medium date for chart info lines ("2026. nov. 18.", "Nov 18, 2026"). */
 fun chartDateLabel(date: java.time.LocalDate, lang: String): String =
     date.format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM)
         .withLocale(java.util.Locale.forLanguageTag(lang.lowercase().take(2))))
 
-/** Fixed-height, one-line info line under a chart (the layout never jumps when the selection changes). */
+/** Keep a compact minimum while allowing selected measurements to wrap at large text sizes. */
 @Composable
 fun TrainPilotChartInfoLine(text: String, modifier: Modifier = Modifier) {
     val p = LocalTrainPilotPalette.current
     Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = p.primary,
-        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = modifier.fillMaxWidth().height(22.dp))
+        modifier = modifier.fillMaxWidth().heightIn(min = 22.dp).semantics { liveRegion = LiveRegionMode.Polite })
 }

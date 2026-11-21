@@ -31,11 +31,16 @@ class Collector2780RegressionTest {
         } }
         // Today is selected by default, so the line is always there (no jump when tapping).
         compose.onNodeWithTag("statistics_steps_selected_value", useUnmergedTree = true).assertTextContains("711", substring = true)
-        compose.onNodeWithTag("statistics_steps_column_12").performClick()
+        val todayColumn = compose.onNodeWithTag("statistics_steps_column_13").assertIsSelected()
+        val yesterdayColumn = compose.onNodeWithTag("statistics_steps_column_12").assertIsNotSelected()
+        yesterdayColumn.performTouchInput { click() }
+        yesterdayColumn.assertIsSelected()
+        todayColumn.assertIsNotSelected()
         compose.onNodeWithTag("statistics_steps_selected_value", useUnmergedTree = true).assertTextContains("189", substring = true)
-        compose.onNodeWithTag("statistics_steps_column_11").performClick()
+        compose.onNodeWithTag("statistics_steps_column_11").performTouchInput { click() }.assertIsSelected()
+        yesterdayColumn.assertIsNotSelected()
         compose.onNodeWithTag("statistics_steps_selected_value", useUnmergedTree = true).assertTextEquals("nincs szinkronizálva")
-        compose.onNodeWithTag("statistics_steps_column_0").performClick()
+        compose.onNodeWithTag("statistics_steps_column_0").performTouchInput { click() }.assertIsSelected()
         compose.onNodeWithTag("statistics_steps_selected_value", useUnmergedTree = true).assertTextEquals("nincs szinkronizálva")
     }
 
