@@ -197,6 +197,57 @@ class LegacyRestoreEvidenceRegressionTest {
         com.repforge.app.data.migration.NativeBackupPrivacy.preserveLocalWorkoutHealth(changed, listOf(local))
         assertFalse(changed.getJSONArray("history").getJSONObject(0).has("healthWear129"))
     }
+    @Test fun healthBackupConsentDoesNotSuppressDriveSyncedWeightOrLoosePhotos() {
+        val weightId = "weight-1"
+        val localWeightPhoto = "12345678-1234-1234-1234-123456789abc"
+        val loosePhoto = "32345678-1234-1234-1234-123456789abc"
+        val data = JSONObject()
+            .put("history", JSONArray().put(raw()))
+            .put("weights", JSONArray().put(JSONObject().put("id", weightId).put("date", "2026-11-21").put("kg", 82.5)
+                .put("photos", JSONArray().put(JSONObject().put("id", localWeightPhoto))))
+            .put("loosePhotos", JSONArray().put(JSONObject().put("id", loosePhoto).put("label", "other")))
+        val drive = com.repforge.app.data.migration.NativeBackupPrivacy.sanitize(data, includeHealth = false)
+        assertFalse(drive.getJSONArray("history").getJSONObject(0).has("healthWear129"))
+        assertEquals(localWeightPhoto, drive.getJSONArray("weights").getJSONObject(0)
+            .getJSONArray("photos").getJSONObject(0).getString("id"))
+        assertEquals(loosePhoto, drive.getJSONArray("loosePhotos").getJSONObject(0).getString("id"))
+    }
+    @Test fun driveMergeCombinesWeightAttachmentsAndLoosePhotosAcrossDevices() {
+        val localWeightPhoto = "12345678-1234-1234-1234-123456789abc"
+        val remoteWeightPhoto = "22345678-1234-1234-1234-123456789abc"
+        val localLoosePhoto = "32345678-1234-1234-1234-123456789abc"
+        val remoteLoosePhoto = "42345678-1234-1234-1234-123456789abc"
+        val weightId = "weight-entry"
+        val local = JSONObject()
+            .put("history", JSONArray())
+            .put("weights", JSONArray().put(JSONObject().put("id", weightId).put("date", "2026-11-21").put("kg", 82.5)
+                .put("photos", JSONArray().put(JSONObject().put("id", localWeightPhoto)))))
+            .put("scheduled", JSONArray())
+            .put("loosePhotos", JSONArray().put(JSONObject().put("id", localLoosePhoto).put("label", "other")))
+        val remote = JSONObject()
+            .put("history", JSONArray())
+            .put("weights", JSONArray().put(JSONObject().put("id", weightId).put("date", "2026-11-21").put("kg", 82.5)
+                .put("photos", JSONArray().put(JSONObject().put("id", remoteWeightPhoto).put("driveFileId", "remote-drive-photo")))))
+            .put("scheduled", JSONArray())
+            .put("loosePhotos", JSONArray().put(JSONObject().put("id", remoteLoosePhoto).put("label", "other")))
+
+        val merged = GoogleSyncRepository.mergeSync18(
+            local = local,
+            remotes = listOf(remote),
+            base = null,
+            archives = emptyList(),
+            deletedHistoryIds = emptySet(),
+            deletedHistoryKeys = emptySet(),
+            preferLocalOnConflict = true
+        )
+        val photos = merged.getJSONArray("weights").getJSONObject(0).getJSONArray("photos")
+        assertEquals(setOf(localWeightPhoto, remoteWeightPhoto),
+            (0 until photos.length()).map { photos.getJSONObject(it).getString("id") }.toSet())
+        assertEquals("remote-drive-photo", photos.getJSONObject(1).optString("driveFileId"))
+        assertEquals(setOf(localLoosePhoto, remoteLoosePhoto),
+            (0 until merged.getJSONArray("loosePhotos").length())
+                .map { merged.getJSONArray("loosePhotos").getJSONObject(it).getString("id") }.toSet())
+    }
     @Test fun watchIdentityCanReferenceOriginalIdAfterCloudAddsANewSyncId() {
         val row = raw()
         row.getJSONObject("healthWear129").put("workoutId", row.getString("id"))

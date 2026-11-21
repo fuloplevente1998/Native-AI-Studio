@@ -114,6 +114,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -164,7 +165,8 @@ data class WeightMeasurementEntry(
     val weightLabel: String,
     val weightValue: Float,
     val dateLabel: String,
-    val parsedDate: java.time.LocalDate = java.time.LocalDate.now()
+    val parsedDate: java.time.LocalDate = java.time.LocalDate.now(),
+    val photoCount: Int = 0
 )
 
 private fun tr(lang: AppLanguage, hu: String, en: String, de: String, ro: String): String = when (lang) {
@@ -224,7 +226,8 @@ fun HealthTabScreen(
     onOpenLoggedWorkout: (String) -> Unit = { onNavigateToSubScreen(SubScreen.LOG_WORKOUT_DETAIL) },
     onReadHealthSource: ((String) -> Unit)? = null,
     /** 2788: edit an existing weight entry in place (id, kg, date label). */
-    onUpdateWeight: (String, Float, String) -> Unit = { _, kg, date -> onSaveNewWeight(kg, date) }
+    onUpdateWeight: (String, Float, String) -> Unit = { _, kg, date -> onSaveNewWeight(kg, date) },
+    onWeightPhotosUpdated: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val today = remember { java.time.LocalDate.now() }
@@ -253,7 +256,8 @@ fun HealthTabScreen(
                         weightLabel = "${"%.1f".format(item.kg).replace('.', ',')} kg",
                         weightValue = item.kg,
                         dateLabel = item.dateLabelHu,
-                        parsedDate = parsed
+                        parsedDate = parsed,
+                        photoCount = item.photoCount
                     )
                 }.sortedByDescending { it.parsedDate }
             )
@@ -270,6 +274,45 @@ fun HealthTabScreen(
         recentMeasurements.maxByOrNull { it.parsedDate }
     }
     var editingMeasurement by remember { mutableStateOf<WeightMeasurementEntry?>(null) }
+    var photoMeasurement by remember { mutableStateOf<WeightMeasurementEntry?>(null) }
+    var pendingWeightPhoto by remember { mutableStateOf<com.repforge.app.NativeWeightPhotos.Request?>(null) }
+    var weightPhotoError by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val photoRepo = remember(context) { com.repforge.app.WorkoutPhotoRepository(context) }
+    val weightDb = remember(context) { com.repforge.app.data.db.TrainPilotDatabase.getInstance(context) }
+
+    fun receiveWeightPhoto(importPhoto: suspend () -> Result<com.repforge.app.StoredPhotoMetadata?>) {
+        val request = pendingWeightPhoto ?: return
+        pendingWeightPhoto = null
+        coroutineScope.launch {
+            try {
+                val photo = importPhoto().getOrThrow() ?: return@launch
+                com.repforge.app.NativeWeightPhotos.attach(context, weightDb, request, photo)
+                recentMeasurements = recentMeasurements.map {
+                    if (it.id == request.weightId) it.copy(photoCount = it.photoCount + 1) else it
+                }
+                onWeightPhotosUpdated()
+                weightPhotoError = false
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                weightPhotoError = true
+            }
+        }
+    }
+
+    val weightCameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result -> receiveWeightPhoto { photoRepo.handleCameraResult(result.resultCode, result.data) } }
+
+    val weightGalleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        receiveWeightPhoto {
+            if (uri != null) photoRepo.importPickedUri(uri)
+            else Result.success(null)
+        }
+    }
 
     if (uiState.showAddWeightDialog || editingMeasurement != null) {
         val initialVal = editingMeasurement?.weightValue?.toString()
@@ -395,6 +438,89 @@ fun HealthTabScreen(
                         }
                     })
               }
+            }
+        )
+    }
+
+    photoMeasurement?.let { measurement ->
+        com.example.ui.components.TrainPilotFormSheet(
+            onDismissRequest = { photoMeasurement = null; pendingWeightPhoto = null },
+            containerColor = palette.surfaceCard,
+            titleContentColor = palette.textPrimary,
+            textContentColor = palette.textSecondary,
+            title = {
+                Text(
+                    tr(uiState.language, "Fotó a súlyméréshez", "Photo for weight entry", "Foto für Gewichtsmessung", "Fotografie pentru greutate"),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "${measurement.dateLabel} · ${measurement.weightLabel}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = palette.textSecondary
+                    )
+                    if (weightPhotoError) {
+                        Text(
+                            tr(uiState.language, "A fotó hozzáadása nem sikerült. Próbáld újra.",
+                                "Could not add photo. Please try again.",
+                                "Foto konnte nicht hinzugefügt werden. Bitte erneut versuchen.",
+                                "Fotografia nu a putut fi adăugată. Încearcă din nou."),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = palette.danger,
+                            modifier = Modifier.testTag("health_weight_photo_error")
+                        )
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = {
+                                try {
+                                    pendingWeightPhoto = com.repforge.app.NativeWeightPhotos.prepare(context, measurement.id)
+                                    weightPhotoError = false
+                                    weightCameraLauncher.launch(photoRepo.prepareCameraCaptureIntent())
+                                } catch (_: Exception) {
+                                    pendingWeightPhoto = null
+                                    weightPhotoError = true
+                                }
+                            },
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("health_weight_photo_camera"),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = palette.surfaceElevated, contentColor = palette.textPrimary)
+                        ) {
+                            Icon(Icons.Default.PhotoCamera, contentDescription = null, tint = palette.primary)
+                            Spacer(Modifier.width(6.dp))
+                            Text(tr(uiState.language, "Kamera", "Camera", "Kamera", "Cameră"))
+                        }
+                        Button(
+                            onClick = {
+                                try {
+                                    pendingWeightPhoto = com.repforge.app.NativeWeightPhotos.prepare(context, measurement.id)
+                                    weightPhotoError = false
+                                    weightGalleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                } catch (_: Exception) {
+                                    pendingWeightPhoto = null
+                                    weightPhotoError = true
+                                }
+                            },
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("health_weight_photo_gallery"),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = palette.surfaceElevated, contentColor = palette.textPrimary)
+                        ) {
+                            Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = palette.primary)
+                            Spacer(Modifier.width(6.dp))
+                            Text(tr(uiState.language, "Galéria", "Gallery", "Galerie", "Galerie"))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                com.example.ui.components.TrainPilotPrimaryButton(
+                    strings.closeAction,
+                    onClick = { photoMeasurement = null; pendingWeightPhoto = null; weightPhotoError = false },
+                    modifier = Modifier.fillMaxWidth().testTag("health_weight_photo_close")
+                )
             }
         )
     }
@@ -1078,6 +1204,7 @@ fun HealthTabScreen(
                         onSelectRange = onSelectWeightRange,
                         onAdd = { onToggleAddWeightDialog(true) },
                         onEdit = { editingMeasurement = it },
+                        onPhoto = { photoMeasurement = it },
                         onDelete = { entry ->
                             recentMeasurements = recentMeasurements.filterNot { it.id == entry.id }
                             onDeleteWeightLog(entry.id)
@@ -2238,7 +2365,7 @@ fun SettingsMainScreen(
         item {
             SettingsActionRowCard(
                 title = strings.privatePhotosTitle,
-                subtitle = tr(uiState.language, "Csak ezen az eszközön tárolva • Nem kerül felhőbe", "Stored on this device only • Never uploaded by default", "Nur auf diesem Gerät gespeichert • Nicht in der Cloud", "Stocate doar pe acest dispozitiv • Nu ajung în cloud implicit"),
+                subtitle = tr(uiState.language, "Privát galéria • Drive-szinkronnal felhőbe kerül", "Private gallery • included in Drive sync", "Private Galerie • wird mit Drive synchronisiert", "Galerie privată • inclusă în sincronizarea Drive"),
                 badgeText = "${uiState.privatePhotoCount} ${tr(uiState.language, "fotó", "photos", "Fotos", "foto")}",
                 onClick = { onNavigateToSubScreen(SubScreen.PRIVATE_PHOTOS) },
                 testTag = "settings_open_photos_row"
@@ -3425,9 +3552,12 @@ fun PrivatePhotosScreen(
     strings: LocalizedStrings,
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
-    onShowBanner: (String) -> Unit
+    onShowBanner: (String) -> Unit,
+    onPhotosUpdated: () -> Unit = {}
 ) {
-    com.example.ui.components.StudioPrivatePhotos(uiState, strings, onBack, onOpenSettings)
+    com.example.ui.components.StudioPrivatePhotos(
+        uiState, strings, onBack, onOpenSettings, onPhotosUpdated = onPhotosUpdated
+    )
 }
 
 /** 2783: Today tile → journal record type to open directly, or null when the tile has no data (or no journal type). */
@@ -3564,6 +3694,7 @@ private fun WeightLogBody(
     onSelectRange: (Int) -> Unit,
     onAdd: () -> Unit,
     onEdit: (WeightMeasurementEntry) -> Unit,
+    onPhoto: (WeightMeasurementEntry) -> Unit,
     onDelete: (WeightMeasurementEntry) -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
@@ -3680,6 +3811,17 @@ private fun WeightLogBody(
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("health_weight_row_${entry.id}"), verticalAlignment = Alignment.CenterVertically) {
                 Text(entry.weightLabel, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary, modifier = Modifier.weight(1f))
                 Text(entry.dateLabel, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                if (entry.photoCount > 0) {
+                    Icon(
+                        Icons.Default.PhotoLibrary,
+                        contentDescription = tr(lang, "Csatolt fotó", "Attached photo", "Angehängtes Foto", "Fotografie atașată"),
+                        tint = palette.primary,
+                        modifier = Modifier.size(18.dp).testTag("health_weight_photo_count_${entry.id}")
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text("${entry.photoCount}", style = MaterialTheme.typography.labelSmall, color = palette.primary)
+                    Spacer(Modifier.width(4.dp))
+                }
                 Box {
                     IconButton(onClick = { menu = true }, modifier = Modifier.testTag("health_weight_menu_${entry.id}")) {
                         Icon(Icons.Default.MoreVert, contentDescription = tr(lang, "Műveletek", "Actions", "Aktionen", "Acțiuni"), tint = palette.textSecondary)
@@ -3687,6 +3829,11 @@ private fun WeightLogBody(
                     androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         androidx.compose.material3.DropdownMenuItem(text = { Text(strings.editAction) }, onClick = { menu = false; onEdit(entry) },
                             modifier = Modifier.testTag("health_weight_edit_${entry.id}"))
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = { Text(tr(lang, "Fotó hozzáadása", "Add photo", "Foto hinzufügen", "Adaugă fotografie")) },
+                            onClick = { menu = false; onPhoto(entry) },
+                            modifier = Modifier.testTag("health_weight_photo_${entry.id}")
+                        )
                         androidx.compose.material3.DropdownMenuItem(text = { Text(strings.deleteAction, color = palette.danger) }, onClick = { menu = false; onDelete(entry) },
                             modifier = Modifier.testTag("health_weight_delete_${entry.id}"))
                     }

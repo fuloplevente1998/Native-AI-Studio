@@ -71,10 +71,10 @@ data class LocalizedStrings(
 
     val privatePhotosTitle: String
         get() = when (language) {
-            AppLanguage.HU -> "Privát edzésfotók"
-            AppLanguage.EN -> "Private Workout Photos"
-            AppLanguage.DE -> "Private Trainingsfotos"
-            AppLanguage.RO -> "Fotografii private"
+            AppLanguage.HU -> "Privát fotógaléria"
+            AppLanguage.EN -> "Private Photo Gallery"
+            AppLanguage.DE -> "Private Fotogalerie"
+            AppLanguage.RO -> "Galerie foto privată"
         }
 
     val logSearchHint: String

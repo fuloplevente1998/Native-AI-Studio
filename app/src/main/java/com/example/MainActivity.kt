@@ -828,7 +828,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             strings = strings,
                             onBack = { viewModel.navigateBack() },
                             onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
-                            onShowBanner = { viewModel.showBannerMessage(it) }
+                            onShowBanner = { viewModel.showBannerMessage(it) },
+                            onPhotosUpdated = viewModel::refreshPrivatePhotoCount
                         )
                     }
 
@@ -993,7 +994,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
                                     onSearchChange = { viewModel.updateLogSearch(it) },
-                                    onOpenRouteMap = { viewModel.navigateToSubScreen(SubScreen.LOG_ROUTE_MAP) }
+                                    onOpenRouteMap = { viewModel.navigateToSubScreen(SubScreen.LOG_ROUTE_MAP) },
+                                    onOpenPhotos = { viewModel.navigateToSubScreen(SubScreen.PRIVATE_PHOTOS) }
                                 )
                             }
 
@@ -1013,7 +1015,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
                                     onSearchChange = { viewModel.updateLogSearch(it) },
-                                    onOpenRouteMap = { viewModel.navigateToSubScreen(SubScreen.LOG_ROUTE_MAP) }
+                                    onOpenRouteMap = { viewModel.navigateToSubScreen(SubScreen.LOG_ROUTE_MAP) },
+                                    onOpenPhotos = { viewModel.navigateToSubScreen(SubScreen.PRIVATE_PHOTOS) }
                                 )
                             }
 
@@ -1042,6 +1045,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onToggleAddWeightDialog = { viewModel.toggleAddWeightDialog(it) },
                                     onSaveNewWeight = { kg, dateStr -> viewModel.saveNewBodyWeight(kg, dateStr) },
                                     onUpdateWeight = { id, kg, dateStr -> viewModel.saveNewBodyWeight(kg, dateStr, editingId = id) },
+                                    onWeightPhotosUpdated = viewModel::refreshPrivatePhotoCount,
                                     onTogglePrimaryHealthSource = { nativeHealth.setProvider(
                                         if (health.provider == com.repforge.app.HealthJournalStore.SAMSUNG) com.repforge.app.HealthJournalStore.HC
                                         else com.repforge.app.HealthJournalStore.SAMSUNG, activity) },

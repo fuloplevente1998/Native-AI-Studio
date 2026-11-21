@@ -6,9 +6,12 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.repforge.app.*
 import com.repforge.app.data.db.*
+import com.repforge.app.data.migration.NativeBackupPrivacy
 import com.repforge.app.data.migration.LegacyWebViewMigrator
 import com.repforge.app.data.store.TrainPilotSettingsStore
+import com.repforge.app.ui.progress.NativeProgressPhotoData
 import com.repforge.app.data.store.TrainPilotUserSettings
+import com.repforge.app.ui.progress.NativeWeightJournalRepository
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
@@ -19,6 +22,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
+import java.io.File
 import java.util.UUID
 import java.util.concurrent.*
 
@@ -112,6 +116,120 @@ class JournalPhotoAttachmentRegressionTest {
         assertTrue(runCatching { attach(second.workout.id, shared) }.isFailure)
         assertEquals(second, detail(second.workout.id))
         assertTrue(detail(first.workout.id).photos.any { it.id == shared.id })
+    }
+
+    @Test fun weightPhotoStaysAttachedToTheSameMeasurementAndCannotBeDuplicated() {
+        val id = UUID.randomUUID().toString()
+        val weight = native {
+            val raw = JSONObject()
+                .put("id", id)
+                .put("date", "2026-11-21")
+                .put("dayKey", "2026-11-21")
+                .put("kg", 82.5)
+            db.bodyWeightDao().upsertWeight(BodyWeightEntryEntity(
+                id, "2026-11-21", "2026-11-21", 82.5, 1L, raw.toString()
+            ))
+            db.bodyWeightDao().getWeightById(id)!!
+        }
+        val added = photo()
+        native {
+            NativeWeightPhotos.attach(
+                context,
+                db,
+                NativeWeightPhotos.prepare(context, weight.id),
+                added
+            )
+        }
+        val attached = native { db.bodyWeightDao().getWeightById(id)!! }
+        val photos = JSONObject(attached.rawJson).getJSONArray("photos")
+        assertEquals(1, photos.length())
+        assertEquals(added.id, photos.getJSONObject(0).getString("id"))
+        assertEquals("other", photos.getJSONObject(0).getString("label"))
+        val projected = native { NativeProgressPhotoData.load(db) }
+        assertEquals(1, projected.count { it.id == added.id && it.kind == "weight" })
+        assertTrue(runCatching {
+            native {
+                NativeWeightPhotos.attach(
+                    context,
+                    db,
+                    NativeWeightPhotos.prepare(context, weight.id),
+                    added
+                )
+            }
+        }.isFailure)
+    }
+
+    @Test fun weightJournalEditsAreFencedAndDeletionTombstonesOnlyTheExactMeasurement() = native {
+        val firstId = UUID.randomUUID().toString()
+        val secondId = UUID.randomUUID().toString()
+        val firstRaw = JSONObject().put("id", firstId).put("date", "2026-11-21")
+            .put("dayKey", "2026-11-21").put("kg", 82.5).put("portableNote", "preserve")
+        db.bodyWeightDao().upsertWeight(BodyWeightEntryEntity(
+            firstId, "2026-11-21", "2026-11-21", 82.5, 1L, firstRaw.toString()
+        ))
+        db.bodyWeightDao().upsertWeight(BodyWeightEntryEntity(
+            secondId, "2026-11-21", "2026-11-21", 83.0, 2L,
+            JSONObject().put("id", secondId).put("date", "2026-11-21").put("kg", 83.0).toString()
+        ))
+
+        val repository = NativeWeightJournalRepository(context, db, now = { 100L })
+        val expected = db.bodyWeightDao().getWeightById(firstId)!!
+        repository.edit(expected, 23.4, "2026-11-20")
+        val edited = db.bodyWeightDao().getWeightById(firstId)!!
+        assertEquals(23.4, edited.kg, 0.0)
+        assertEquals("2026-11-20", edited.dayKey)
+        assertEquals("preserve", JSONObject(edited.rawJson).getString("portableNote"))
+        assertTrue("edit timestamp must advance beyond the old record", edited.updatedAt > expected.updatedAt)
+
+        repository.delete(edited)
+        assertNull(db.bodyWeightDao().getWeightById(firstId))
+        assertNotNull("a second measurement on the same day must remain", db.bodyWeightDao().getWeightById(secondId))
+        val index = NativeWeightTombstones18.Index(NativeWeightTombstones18.load(db))
+        assertTrue(index.deleted(JSONObject().put("id", firstId).put("date", edited.date).put("kg", edited.kg)))
+
+        repository.add(20.5, "2026-11-21")
+        assertTrue(db.bodyWeightDao().getAllWeights().any { it.kg == 20.5 })
+    }
+
+    @Test fun weightAndLoosePhotosAreUploadedThroughAuthorizedDriveSync() {
+        val added = photo()
+        val loose = photo()
+        val row = JSONObject().put("id", UUID.randomUUID().toString()).put("date", "2026-11-21")
+            .put("kg", 82.5).put("photos", JSONArray().put(JSONObject().put("id", added.id).put("label", "other")))
+        val looseRow = JSONObject().put("id", loose.id).put("label", "other")
+            .put("createdAt", "2026-11-21T10:00:00Z")
+        val data = JSONObject().put("history", JSONArray()).put("weights", JSONArray().put(row))
+            .put("loosePhotos", JSONArray().put(looseRow))
+        val stage = NativeCloudPhotoStage(context, data)
+        var uploads = 0
+        try {
+            stage.prepare(
+                upload = { _, _ -> uploads++; "drive-photo-$uploads" },
+                download = { _, _, _ -> fail("Local photos should upload, not download.") }
+            )
+            assertEquals(2, uploads)
+            assertTrue(File(stage.photos, "${added.id}.jpg").isFile)
+            assertTrue(File(stage.photos, "${loose.id}.jpg").isFile)
+            stage.requireUnchanged()
+            val drive = NativeBackupPrivacy.sanitize(data, includeHealth = false)
+            assertTrue(drive.getJSONArray("weights").getJSONObject(0).has("photos"))
+            assertTrue(drive.has("loosePhotos"))
+        } finally {
+            stage.close()
+        }
+    }
+
+    @Test fun loosePhotoPersistsInTheGlobalGalleryAndManualBackup() = native {
+        val added = photo()
+        NativeLoosePhotos.attach(context, db, NativeLoosePhotos.prepare(context), added)
+
+        val projected = NativeProgressPhotoData.load(db)
+        assertTrue(projected.any { it.id == added.id && it.kind == "other" })
+        val backup = LegacyWebViewMigrator(context, db, TrainPilotSettingsStore(context))
+            .exportBackupJson(includeHealthJournal = false)
+        val backupPhotos = NativeCloudPhotoStage.photoRows(backup)
+        assertTrue(backupPhotos.any { it.optString("id") == added.id && it.optString("label") == "other" })
+        assertEquals(1, NativeLoosePhotos.count(db))
     }
 
     @Test fun deletedWorkoutCannotBeResurrectedByLateCameraResult() {

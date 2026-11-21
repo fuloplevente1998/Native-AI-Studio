@@ -1279,7 +1279,8 @@ fun ProgressTabScreen(
     onSearchChange: (String) -> Unit = {},
     onOpenRouteMap: () -> Unit = {},
     onRefreshRecords: () -> Unit = {},
-    onDeletedWorkout: (String) -> Unit = {}
+    onDeletedWorkout: (String) -> Unit = {},
+    onOpenPhotos: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     // 3 al-oldal a Fejlődés oldalon belül: 1. 📈 Fejlődés | 2. 📄 Napló | 3. 📊 Statisztikák
@@ -1348,6 +1349,49 @@ fun ProgressTabScreen(
                     contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 2.dp, bottom = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
+                    item {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = palette.surfaceCard,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 64.dp)
+                                .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
+                                .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenPhotos() }
+                                .testTag("progress_open_private_photos")
+                        ) {
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = palette.primary)
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        trL(uiState.language, "Fotógaléria", "Photo gallery", "Fotogalerie", "Galerie foto"),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = palette.textPrimary
+                                    )
+                                    Text(
+                                        trL(uiState.language, "Edzés- és testsúlyfotók egy helyen",
+                                            "Workout and weight photos in one place",
+                                            "Trainings- und Gewichtsfotos an einem Ort",
+                                            "Fotografii de antrenament și greutate într-un singur loc"),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = palette.textSecondary
+                                    )
+                                }
+                                Text(
+                                    "${uiState.privatePhotoCount}",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.primary,
+                                    modifier = Modifier.testTag("progress_private_photos_count")
+                                )
+                            }
+                        }
+                    }
                     item {
                         MainProgressVolumeAndMuscleSection(
                             uiState = uiState,

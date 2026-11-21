@@ -25,6 +25,7 @@ internal object NativeBackupPrivacy {
                 row.put(key, old.get(key))
         }
     }
+
     private fun copy(value: Any, includeHealth: Boolean): Any = when (value) {
         is JSONObject -> JSONObject().also { target ->
             for (key in value.keys()) {

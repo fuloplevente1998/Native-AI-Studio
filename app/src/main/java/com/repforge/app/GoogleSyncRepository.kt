@@ -777,6 +777,12 @@ class GoogleSyncRepository internal constructor(
                 preferLocalOnConflict, NativeWeightTombstones18.Index(mergedWeightMarkers)
             )
         )
+        out.put("loosePhotos", mergeLoosePhotoRows18(
+            local.optJSONArray("loosePhotos"),
+            remotes.map { it.optJSONArray("loosePhotos") },
+            base?.optJSONArray("loosePhotos"),
+            archives.map { it.optJSONArray("loosePhotos") }
+        ))
         out.put(
             "scheduled",
             mergeScheduledRows18(
@@ -965,7 +971,8 @@ class GoogleSyncRepository internal constructor(
             if (xId.isNotEmpty()) {
                 val byId = items.indexOfFirst { it.optString("id") == xId }
                 if (byId >= 0) {
-                    if (!archiveOnly && !preferLocal) items[byId] = x
+                    val chosen = if (!archiveOnly && !preferLocal) x else items[byId]
+                    items[byId] = mergeWeightPhotoMetadata(chosen, if (chosen === x) items[byId] else x)
                     return
                 }
             }
@@ -976,6 +983,7 @@ class GoogleSyncRepository internal constructor(
                 val real = listOf(items[sameIdx].optString("id"), xId)
                     .firstOrNull { it.isNotEmpty() && !LegacySyncIdentity18.isSyntheticId("weights", it) }
                 val merged = if (preferLocal) items[sameIdx] else x
+                mergeWeightPhotoMetadata(merged, if (merged === x) items[sameIdx] else x)
                 merged.put("id", real ?: LegacySyncIdentity18.legacyWeightId(merged))
                 items[sameIdx] = merged
                 return
@@ -993,6 +1001,69 @@ class GoogleSyncRepository internal constructor(
         val out = JSONArray()
         items.forEach { out.put(it) }
         return out
+    }
+
+    private fun mergeWeightPhotoMetadata(primary: JSONObject, secondary: JSONObject): JSONObject {
+       val photos = mergePhotoRows18(primary.optJSONArray("photos"), secondary.optJSONArray("photos"))
+       if (photos.length() > 0) primary.put("photos", photos) else primary.remove("photos")
+       return primary
+    }
+
+    private fun mergeLoosePhotoRows18(
+       localRows: JSONArray?,
+       remoteSets: List<JSONArray?>,
+       baseRows: JSONArray?,
+       archiveSets: List<JSONArray?>
+    ): JSONArray {
+       val rows = linkedMapOf<String, JSONObject>()
+       fun add(source: JSONArray?) {
+           if (source == null) return
+           for (index in 0 until source.length()) {
+               val incoming = source.optJSONObject(index) ?: throw IllegalArgumentException("Invalid loose photo.")
+               val id = incoming.optString("id")
+               require(id.isNotBlank()) { "Missing loose photo ID." }
+               val existing = rows[id]
+               rows[id] = if (existing == null) JSONObject(incoming.toString())
+                   else mergePhotoRows18(JSONArray().put(existing), JSONArray().put(incoming)).getJSONObject(0)
+           }
+       }
+       add(localRows)
+       remoteSets.forEach(::add)
+       add(baseRows)
+       archiveSets.forEach(::add)
+       return JSONArray(rows.values.toList())
+    }
+
+    private fun mergePhotoRows18(first: JSONArray?, second: JSONArray?): JSONArray {
+       val rows = linkedMapOf<String, JSONObject>()
+       fun add(source: JSONArray?) {
+           if (source == null) return
+           for (index in 0 until source.length()) {
+               val incoming = source.optJSONObject(index) ?: throw IllegalArgumentException("Invalid photo metadata.")
+               val id = incoming.optString("id")
+               require(id.isNotBlank()) { "Missing photo ID." }
+               val existing = rows[id]
+               if (existing == null) {
+                   rows[id] = JSONObject(incoming.toString())
+               } else {
+                   val merged = JSONObject(existing.toString())
+                   val keys = incoming.keys()
+                   while (keys.hasNext()) {
+                       val key = keys.next()
+                       val value = incoming.get(key)
+                       if (key == "driveFileId") {
+                           if (!incoming.isNull(key) && value.toString().isNotBlank()) merged.put(key, value)
+                       } else if (!merged.has(key) || merged.opt(key).toString().isBlank()) {
+                           merged.put(key, value)
+                       }
+                   }
+                   rows[id] = merged
+               }
+           }
+       }
+       add(first)
+       add(second)
+       return JSONArray(rows.values.toList())
     }
 
     private fun mergeScheduledRows18(

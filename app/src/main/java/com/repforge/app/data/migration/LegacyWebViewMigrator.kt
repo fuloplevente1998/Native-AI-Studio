@@ -296,7 +296,7 @@ class LegacyWebViewMigrator(
             // The immutable file archive holds the whole source; avoid duplicating full
             // normalized history/catalog collections again in the key-value table.
             val projected = setOf("history", "exercises", "programs", "weights", "scheduled",
-                NativeExerciseFavorites.KEY, NativeWeightTombstones18.KEY, "legacyStorageRaw", "nativeHealthJournal")
+                NativeExerciseFavorites.KEY, NativeWeightTombstones18.KEY, "legacyStorageRaw", "nativeHealthJournal", "loosePhotos")
             // HealthJournalStore owns this snapshot and its rollback receipt. Storing the
             // entire journal a second time as one Room TEXT row exhausts the Android heap
             // and later exceeds CursorWindow capacity. The staged source remains intact.
@@ -305,6 +305,13 @@ class LegacyWebViewMigrator(
             for (key in data.keys()) if (key !in projected) database.keyValueDocumentDao().putDocument(
                 KeyValueDocumentEntity(key = "legacy:$key", json = JSONObject().put("value", data.get(key)).toString(), updatedAt = System.currentTimeMillis())
             )
+            if (data.has("loosePhotos")) {
+                val loosePhotos = data.optJSONArray("loosePhotos") ?: throw IllegalArgumentException("Invalid loose photos.")
+                database.keyValueDocumentDao().putDocument(KeyValueDocumentEntity(
+                    com.repforge.app.NativeLoosePhotos.KEY, loosePhotos.toString(), System.currentTimeMillis()))
+            } else if (replaceAll) {
+                database.keyValueDocumentDao().deleteDocument(com.repforge.app.NativeLoosePhotos.KEY)
+            }
             // Canonical v144 favorites: portable, replaceable and never reconstructed from a stale legacy alias.
             if (incomingFavorites != null) {
                 database.keyValueDocumentDao().putDocument(KeyValueDocumentEntity(
@@ -736,6 +743,9 @@ class LegacyWebViewMigrator(
                 database.keyValueDocumentDao().getDocument(key)?.let { doc ->
                     out.put(key, org.json.JSONTokener(doc.json).nextValue())
                 }
+            }
+            database.keyValueDocumentDao().getDocument(com.repforge.app.NativeLoosePhotos.KEY)?.let { doc ->
+                out.put("loosePhotos", JSONArray(doc.json))
             }
 
             // Canonical v144 export and Drive snapshots must include favorites, even when empty.
