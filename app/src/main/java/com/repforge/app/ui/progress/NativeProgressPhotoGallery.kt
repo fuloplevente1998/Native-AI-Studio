@@ -1,6 +1,7 @@
 package com.repforge.app.ui.progress
 
 import com.repforge.app.ui.theme.trainPilotClickable
+import com.repforge.app.ui.theme.trainPilotBorder
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
@@ -56,6 +57,8 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
+import org.json.JSONArray
+import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -67,7 +70,10 @@ data class NativeProgressPhoto(
     val programName: String,
     val dayName: String,
     val originDevice: String,
-    val workoutId: String = ""
+    val workoutId: String = "",
+    val kind: String = "workout",
+    val weightId: String = "",
+    val weightKg: Double? = null
 )
 
 /** Read-only, metadata-first projection. Never accepts private-dir contents as an index. */
@@ -75,7 +81,7 @@ internal object NativeProgressPhotoData {
     private const val PAGE = 256
     private val privatePhotoId = Regex("[a-f0-9-]{36}")
 
-    fun load(db: TrainPilotDatabase): List<NativeProgressPhoto> {
+    suspend fun load(db: TrainPilotDatabase): List<NativeProgressPhoto> {
         val photos = ArrayList<NativeProgressPhoto>()
         var offset = 0
         var count: Int
@@ -115,6 +121,46 @@ internal object NativeProgressPhotoData {
             }
             offset += count
         } while (count == PAGE)
+        for (weight in db.bodyWeightDao().getAllWeights()) {
+            val raw = runCatching { JSONObject(weight.rawJson) }.getOrElse { JSONObject() }
+            val weightPhotos = raw.optJSONArray("photos") ?: JSONArray()
+            for (index in 0 until weightPhotos.length()) {
+                val photo = weightPhotos.optJSONObject(index) ?: continue
+                val id = photo.optString("id")
+                if (!privatePhotoId.matches(id) || photo.optBoolean("deleted", false)) continue
+                val createdAt = runCatching { Instant.parse(photo.optString("createdAt")).toEpochMilli() }
+                    .getOrElse { weight.updatedAt }
+                photos.add(NativeProgressPhoto(
+                    id = id,
+                    label = "weight",
+                    workoutStartedEpochMs = createdAt,
+                    programName = "",
+                    dayName = weight.dayKey,
+                    originDevice = "",
+                    workoutId = "",
+                    kind = "weight",
+                    weightId = weight.id,
+                    weightKg = weight.kg
+                ))
+            }
+        }
+        val loosePhotos = db.keyValueDocumentDao().getDocument(com.repforge.app.NativeLoosePhotos.KEY)
+            ?.let { JSONArray(it.json) } ?: JSONArray()
+        for (index in 0 until loosePhotos.length()) {
+            val photo = loosePhotos.optJSONObject(index) ?: continue
+            val id = photo.optString("id")
+            if (!privatePhotoId.matches(id) || photo.optBoolean("deleted", false)) continue
+            val createdAt = runCatching { Instant.parse(photo.optString("createdAt")).toEpochMilli() }.getOrDefault(0L)
+            photos.add(NativeProgressPhoto(
+                id = id,
+                label = "other",
+                workoutStartedEpochMs = createdAt,
+                programName = "",
+                dayName = "",
+                originDevice = "",
+                kind = "other"
+            ))
+        }
         return photos
     }
 }
@@ -198,7 +244,10 @@ internal fun NativeProgressPhotoGallery(
             .withZone(ZoneId.systemDefault())
     }
     Card(
-        modifier = Modifier.fillMaxWidth().testTag("progress_photo_gallery"),
+        modifier = Modifier
+            .fillMaxWidth()
+            .trainPilotBorder(1.dp, colors.line, RoundedCornerShape(18.dp))
+            .testTag("progress_photo_gallery"),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = colors.card)
     ) {
@@ -229,9 +278,20 @@ internal fun NativeProgressPhotoGallery(
                                     Modifier.size(112.dp).background(colors.card2, RoundedCornerShape(12.dp)))
                                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text(date.format(Instant.ofEpochMilli(photo.workoutStartedEpochMs)), color = colors.text)
-                                    val label = when (photo.label) {
+                                    val label = if (photo.kind == "weight") {
+                                        val weightLabel = photo.weightKg?.let { "${it.toString().replace('.', ',')} kg" }.orEmpty()
+                                        when (state.language) {
+                                            "hu" -> listOf("Testsúlynapló", weightLabel).filter { it.isNotBlank() }.joinToString(" · ")
+                                            "de" -> listOf("Gewichtslog", weightLabel).filter { it.isNotBlank() }.joinToString(" · ")
+                                            "ro" -> listOf("Jurnal greutate", weightLabel).filter { it.isNotBlank() }.joinToString(" · ")
+                                            else -> listOf("Weight log", weightLabel).filter { it.isNotBlank() }.joinToString(" · ")
+                                        }
+                                    } else when (photo.label) {
                                         "before" -> strings.getString(R.string.native_progress_photo_before)
                                         "after" -> strings.getString(R.string.native_progress_photo_after)
+                                        "other" -> when (state.language) {
+                                            "hu" -> "Egyéb"; "de" -> "Sonstiges"; "ro" -> "Altele"; else -> "Other"
+                                        }
                                         else -> photo.label
                                     }
                                     if (label.isNotBlank()) Text(label, color = colors.muted)
@@ -253,10 +313,21 @@ internal fun NativeProgressPhotoGallery(
                             ) {
                                 PrivateProgressPhoto(photo.id, 256, state.language,
                                     Modifier.size(112.dp).background(colors.card2, RoundedCornerShape(12.dp)))
-                                val label = when (photo.label) {
-                                    "before" -> strings.getString(R.string.native_progress_photo_before)
-                                    "after" -> strings.getString(R.string.native_progress_photo_after)
-                                    else -> photo.label
+                            val label = if (photo.kind == "weight") {
+                                val weightLabel = photo.weightKg?.let { "${it.toString().replace('.', ',')} kg" }.orEmpty()
+                                when (state.language) {
+                                    "hu" -> listOf("Testsúlynapló", weightLabel).filter { it.isNotBlank() }.joinToString(" · ")
+                                    "de" -> listOf("Gewichtslog", weightLabel).filter { it.isNotBlank() }.joinToString(" · ")
+                                    "ro" -> listOf("Jurnal greutate", weightLabel).filter { it.isNotBlank() }.joinToString(" · ")
+                                    else -> listOf("Weight log", weightLabel).filter { it.isNotBlank() }.joinToString(" · ")
+                                }
+                            } else when (photo.label) {
+                                "before" -> strings.getString(R.string.native_progress_photo_before)
+                                "after" -> strings.getString(R.string.native_progress_photo_after)
+                                "other" -> when (state.language) {
+                                    "hu" -> "Egyéb"; "de" -> "Sonstiges"; "ro" -> "Altele"; else -> "Other"
+                                }
+                                else -> photo.label
                                 }
                                 Text(label.ifBlank { date.format(Instant.ofEpochMilli(photo.workoutStartedEpochMs)) },
                                     color = colors.text, maxLines = 1)
@@ -282,12 +353,23 @@ internal fun NativeProgressPhotoGallery(
                             tint = colors.text)
                     }
                 }
-                Text(
-                    "${strings.getString(R.string.native_progress_photo_workout)}: " +
-                        listOf(selected.programName, selected.dayName, selected.originDevice)
-                            .filter { it.isNotBlank() }.joinToString(" · "),
-                    color = colors.muted
-                )
+                if (selected.kind == "weight") {
+                    val heading = when (state.language) {
+                        "hu" -> "Testsúlynapló"
+                        "de" -> "Gewichtslog"
+                        "ro" -> "Jurnal greutate"
+                        else -> "Weight log"
+                    }
+                    val weight = selected.weightKg?.let { "${it.toString().replace('.', ',')} kg" }.orEmpty()
+                    Text(listOf(heading, selected.dayName, weight).filter { it.isNotBlank() }.joinToString(" · "), color = colors.muted)
+                } else {
+                    Text(
+                        "${strings.getString(R.string.native_progress_photo_workout)}: " +
+                            listOf(selected.programName, selected.dayName, selected.originDevice)
+                                .filter { it.isNotBlank() }.joinToString(" · "),
+                        color = colors.muted
+                    )
+                }
                 Text(date.format(Instant.ofEpochMilli(selected.workoutStartedEpochMs)),
                     color = colors.muted)
                 PrivateProgressPhoto(selected.id, 1600, state.language,

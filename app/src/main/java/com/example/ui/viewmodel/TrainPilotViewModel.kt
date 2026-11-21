@@ -324,11 +324,21 @@ class TrainPilotViewModel : ViewModel() {
             .map { e ->
                 val cleanDayKey = e.dayKey.ifBlank { e.date.take(10) }
                 val parsedDate = runCatching { LocalDate.parse(cleanDayKey.take(10)) }.getOrElse { LocalDate.now() }
+                val photoCount = runCatching {
+                    val raw = JSONObject(e.rawJson)
+                    val photos = raw.optJSONArray("photos")
+                    if (photos == null) 0 else (0 until photos.length()).count { index ->
+                        val photo = photos.optJSONObject(index)
+                        val id = photo?.optString("id").orEmpty()
+                        id.isNotBlank() && !photo.optBoolean("deleted", false)
+                    }
+                }.getOrDefault(0)
                 BodyWeightLogItem(
                     id = e.id,
                     kg = e.kg.toFloat(),
                     dayKey = parsedDate.toString(),
-                    dateLabelHu = parsedDate.format(dotFormatter)
+                    dateLabelHu = parsedDate.format(dotFormatter),
+                    photoCount = photoCount
                 )
             }
     }
@@ -1254,12 +1264,14 @@ class TrainPilotViewModel : ViewModel() {
         scope.launch(Dispatchers.IO) {
             try {
                 val workouts = readNativeWorkoutHistory(database, exercises)
+                val loosePhotoCount = com.repforge.app.NativeLoosePhotos.count(database)
                 withContext(Dispatchers.Main.immediate) {
                     ticket.requireCurrent(context)
                     // A newer local save/edit or explicit rebind owns its own projection.
                     if (nativeDatabase !== database || _uiState.value.loggedWorkouts != previous) return@withContext
                     _uiState.update { it.copy(loggedWorkouts = workouts,
-                        privatePhotoCount = workouts.sumOf { entry -> entry.photoCount },
+                        privatePhotoCount = workouts.sumOf { entry -> entry.photoCount } +
+                            it.bodyWeightLogs.sumOf { weight -> weight.photoCount } + loosePhotoCount,
                         workoutGoalCompleted = workouts.workoutsInPeriodToDate(it.workoutGoalPeriod, LocalDate.now()).size,
                         weeklyGoalCompleted = workouts.workoutsInCalendarWeekToDate(LocalDate.now()).size) }
                 }
@@ -1403,12 +1415,14 @@ class TrainPilotViewModel : ViewModel() {
             // 4. Read all body weight entries from Room sorted by user-entered dayKey
             var loadedWeightLogs = emptyList<BodyWeightLogItem>()
             var latestWeightKg = 0f
+            var loadedLoosePhotoCount = 0
             try {
                 val allWeights = database.bodyWeightDao().getAllWeights()
                 loadedWeightLogs = mapBodyWeightEntitiesToLogItems(allWeights)
                 val latestByDayKey = loadedWeightLogs.lastOrNull()?.kg
                 val weightSummary = database.bodyWeightDao().getWeightJournalSummary()
                 latestWeightKg = latestByDayKey ?: weightSummary.currentKg?.toFloat() ?: 0f
+                loadedLoosePhotoCount = com.repforge.app.NativeLoosePhotos.count(database)
             } catch (_: Throwable) {}
 
             var loadedWeeklyGoal = 0
@@ -1646,7 +1660,8 @@ class TrainPilotViewModel : ViewModel() {
                         activeSets = activeSetsForCurrent,
                         activeSetsByExerciseId = if (restoredSetsMap.isNotEmpty()) restoredSetsMap else st.activeSetsByExerciseId,
                         loggedWorkouts = mappedWorkouts,
-                        privatePhotoCount = mappedWorkouts.sumOf { it.photoCount },
+                        privatePhotoCount = mappedWorkouts.sumOf { it.photoCount } +
+                            loadedWeightLogs.sumOf { it.photoCount } + loadedLoosePhotoCount,
                         workoutGoalPeriod = loadedGoalPeriod,
                         workoutGoalTarget = if (loadedWeeklyGoal > 0) loadedWeeklyGoal else st.workoutGoalTarget,
                         workoutGoalCompleted = mappedWorkouts.workoutsInPeriodToDate(loadedGoalPeriod, LocalDate.now()).size,
@@ -4517,19 +4532,17 @@ class TrainPilotViewModel : ViewModel() {
         }
         val parsedLocalDate = parseUserEnteredDateToLocalDate(dateStr)
         val dayKey = parsedLocalDate.toString()
-        val isoDate = parsedLocalDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toString()
         val db = nativeDatabase
         val scope = nativeScope
-        if (db == null || scope == null) {
+        val context = nativeContext
+        if (db == null || scope == null || context == null) {
             _uiState.update {
                 it.copy(
-                    currentBodyWeightKg = weightKg,
-                    showAddWeightDialog = false,
                     statusBannerMessage = tr(
-                        "Testsúlymérés rögzítve ($dayKey): $weightKg kg",
-                        "Body weight recorded ($dayKey): $weightKg kg",
-                        "Körpergewicht erfasst ($dayKey): $weightKg kg",
-                        "Greutate corporală înregistrată ($dayKey): $weightKg kg",
+                        "A testsúly-adatbázis nem érhető el.",
+                        "Body weight database is unavailable.",
+                        "Körpergewichts-Datenbank nicht verfügbar.",
+                        "Baza de date pentru greutate nu este disponibilă.",
                         it.language
                     )
                 )
@@ -4538,17 +4551,18 @@ class TrainPilotViewModel : ViewModel() {
         }
         scope.launch(Dispatchers.IO) {
             try {
-                val entry = BodyWeightEntryEntity(
-                    id = editingId?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString(),
-                    date = isoDate,
-                    dayKey = dayKey,
-                    kg = weightKg.toDouble(),
-                    updatedAt = parsedLocalDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(),
-                    rawJson = JSONObject().put("kg", weightKg.toDouble()).put("date", isoDate).put("dayKey", dayKey).toString()
-                )
-                db.bodyWeightDao().upsertWeight(entry)
+                val repository = com.repforge.app.ui.progress.NativeWeightJournalRepository(context, db)
+                val editId = editingId?.takeIf { it.isNotBlank() }
+                if (editId == null) {
+                    repository.add(weightKg.toDouble(), dayKey)
+                } else {
+                    val expected = db.bodyWeightDao().getWeightById(editId)
+                        ?: throw com.repforge.app.ui.progress.NativeWeightJournalRepository.ChangedEntry()
+                    repository.edit(expected, weightKg.toDouble(), dayKey)
+                }
                 val allWeights = db.bodyWeightDao().getAllWeights()
                 val mappedLogs = mapBodyWeightEntitiesToLogItems(allWeights)
+                val loosePhotoCount = com.repforge.app.NativeLoosePhotos.count(db)
                 val verified = db.bodyWeightDao().getWeightJournalSummary()
                 val latestByDayKey = mappedLogs.lastOrNull()?.kg ?: verified.currentKg?.toFloat() ?: weightKg
                 withContext(Dispatchers.Main) {
@@ -4556,6 +4570,8 @@ class TrainPilotViewModel : ViewModel() {
                         it.copy(
                             currentBodyWeightKg = latestByDayKey,
                             bodyWeightLogs = mappedLogs,
+                            privatePhotoCount = it.loggedWorkouts.sumOf { workout -> workout.photoCount } +
+                                mappedLogs.sumOf { weight -> weight.photoCount } + loosePhotoCount,
                             showAddWeightDialog = false,
                             statusBannerMessage = tr(
                                 "Testsúlymérés sikeresen elmentve ($dayKey): $weightKg kg",
@@ -4568,6 +4584,7 @@ class TrainPilotViewModel : ViewModel() {
                     }
                 }
             } catch (e: Throwable) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.e("TrainPilotViewModel", "Failed to save body weight to Room", e)
                 withContext(Dispatchers.Main) {
                     _uiState.update {
@@ -4587,7 +4604,8 @@ class TrainPilotViewModel : ViewModel() {
     fun deleteBodyWeightLog(id: String) {
         val db = nativeDatabase
         val scope = nativeScope
-        if (db == null || scope == null) {
+        val context = nativeContext
+        if (db == null || scope == null || context == null) {
             _uiState.update {
                 it.copy(
                     statusBannerMessage = tr(
@@ -4603,10 +4621,12 @@ class TrainPilotViewModel : ViewModel() {
         }
         scope.launch(Dispatchers.IO) {
             try {
-                db.bodyWeightDao().deleteWeightById(id)
-                db.bodyWeightDao().deleteByDateOrId(id)
+                val expected = db.bodyWeightDao().getWeightById(id)
+                    ?: throw com.repforge.app.ui.progress.NativeWeightJournalRepository.ChangedEntry()
+                com.repforge.app.ui.progress.NativeWeightJournalRepository(context, db).delete(expected)
                 val allWeights = db.bodyWeightDao().getAllWeights()
                 val mappedLogs = mapBodyWeightEntitiesToLogItems(allWeights)
+                val loosePhotoCount = com.repforge.app.NativeLoosePhotos.count(db)
                 val summary = db.bodyWeightDao().getWeightJournalSummary()
                 val latestKg = mappedLogs.lastOrNull()?.kg ?: summary.currentKg?.toFloat() ?: 0f
                 withContext(Dispatchers.Main) {
@@ -4614,6 +4634,8 @@ class TrainPilotViewModel : ViewModel() {
                         it.copy(
                             bodyWeightLogs = mappedLogs,
                             currentBodyWeightKg = latestKg,
+                            privatePhotoCount = it.loggedWorkouts.sumOf { workout -> workout.photoCount } +
+                                mappedLogs.sumOf { weight -> weight.photoCount } + loosePhotoCount,
                             statusBannerMessage = tr(
                                 "Testsúlymérés törölve.",
                                 "Body weight entry deleted.",
@@ -4638,6 +4660,42 @@ class TrainPilotViewModel : ViewModel() {
                     )
                 }
                 android.util.Log.e("TrainPilotViewModel", "Failed to delete body weight log from Room", e)
+            }
+        }
+    }
+
+    fun refreshPrivatePhotoCount() {
+        val db = nativeDatabase ?: return
+        val scope = nativeScope ?: return
+        val exercises = _uiState.value.exercises.associateBy { it.id }
+        scope.launch(Dispatchers.IO) {
+            try {
+                val mappedWorkouts = readNativeWorkoutHistory(db, exercises)
+                val mappedLogs = mapBodyWeightEntitiesToLogItems(db.bodyWeightDao().getAllWeights())
+                val loosePhotoCount = com.repforge.app.NativeLoosePhotos.count(db)
+                withContext(Dispatchers.Main) {
+                    if (nativeDatabase !== db) return@withContext
+                    _uiState.update {
+                        it.copy(
+                            loggedWorkouts = mappedWorkouts,
+                            bodyWeightLogs = mappedLogs,
+                            privatePhotoCount = mappedWorkouts.sumOf { workout -> workout.photoCount } +
+                                mappedLogs.sumOf { weight -> weight.photoCount } + loosePhotoCount
+                        )
+                    }
+                }
+            } catch (e: Throwable) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                android.util.Log.e("TrainPilotViewModel", "Failed to refresh body weight photo count", e)
+                _uiState.update {
+                    it.copy(statusBannerMessage = tr(
+                        "A testsúlyfotók listáját nem sikerült frissíteni.",
+                        "Could not refresh body weight photos.",
+                        "Körpergewichtsfotos konnten nicht aktualisiert werden.",
+                        "Fotografiile greutății nu au putut fi actualizate.",
+                        it.language
+                    ))
+                }
             }
         }
     }

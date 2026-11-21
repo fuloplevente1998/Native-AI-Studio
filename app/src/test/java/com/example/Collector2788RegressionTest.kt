@@ -1,5 +1,7 @@
 package com.example
 
+import android.app.Application
+import androidx.test.core.app.ApplicationProvider
 import androidx.compose.runtime.*
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
@@ -9,11 +11,13 @@ import com.example.localization.TrainPilotStrings
 import com.example.model.AppLanguage
 import com.example.model.BodyWeightLogItem
 import com.example.ui.screens.HealthTabScreen
+import com.example.ui.components.StudioPrivatePhotos
 import com.example.ui.screens.calorieDayLabel
 import com.example.ui.screens.todayTileWeekLabel
 import com.example.ui.theme.TrainPilotTheme
 import com.example.ui.viewmodel.TrainPilotUiState
 import com.example.ui.viewmodel.WeeklyHealthDaySummary
+import com.repforge.app.ui.progress.ProgressViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import org.junit.Assert.*
@@ -34,6 +38,7 @@ class Collector2788RegressionTest {
     @get:Rule val compose = createComposeRule()
     private val today = LocalDate.now()
     private val hu = TrainPilotStrings.forLanguage(AppLanguage.HU)
+    private val dot = DateTimeFormatter.ofPattern("yyyy. MM. dd.")
 
     private fun kcalDay(back: Long, active: Int?, total: Int?) = today.minusDays(back).toString().let {
         WeeklyHealthDaySummary(dateIso = it, dayLabelHu = it, steps = 0, activeCaloriesKcal = active ?: 0, sleepLabel = "—",
@@ -96,7 +101,6 @@ class Collector2788RegressionTest {
     }
 
     @Test fun editingAWeightKeepsItsIdInsteadOfAddingANewEntry() {
-        val dot = DateTimeFormatter.ofPattern("yyyy. MM. dd.")
         val d = today.minusDays(3)
         val saved = mutableListOf<Pair<Float, String>>()
         val updated = mutableListOf<Triple<String, Float, String>>()
@@ -116,6 +120,33 @@ class Collector2788RegressionTest {
             assertTrue("an edit must not create a new entry", saved.isEmpty())
             assertEquals(listOf(Triple("w-original", 82f, today.minusDays(1).format(dot))), updated)
         }
+    }
+
+    @Test fun weightMeasurementMenuOffersPhotoAttachment() {
+        val d = today.minusDays(1)
+        compose.setContent { TrainPilotTheme {
+            HealthTabScreen(TrainPilotUiState(expandedHealthWeightLog = true,
+                bodyWeightLogs = listOf(BodyWeightLogItem("w-photo", 82f, d.toString(), d.format(dot)))),
+                hu, {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
+        } }
+        val list = compose.onNodeWithTag("health_tab_screen")
+        list.performScrollToNode(hasTestTag("health_weight_menu_w-photo"))
+        compose.onNodeWithTag("health_weight_menu_w-photo").performClick()
+        compose.onNodeWithTag("health_weight_photo_w-photo").performClick()
+        compose.onNodeWithTag("health_weight_photo_camera").assertExists()
+        compose.onNodeWithTag("health_weight_photo_gallery").assertExists()
+        compose.onNodeWithTag("health_weight_photo_close").performClick()
+    }
+
+    @Test fun globalPhotoGalleryOffersAnUnattachedOtherPhotoInTheCurrentTheme() {
+        val model = ProgressViewModel(ApplicationProvider.getApplicationContext<Application>())
+        compose.setContent { TrainPilotTheme {
+            StudioPrivatePhotos(TrainPilotUiState(), hu, {}, {}, model)
+        } }
+        compose.onNodeWithTag("other_photo_attach_card").assertExists()
+        compose.onNodeWithTag("other_camera_button").assertExists()
+        compose.onNodeWithTag("other_gallery_button").assertExists()
+        compose.onNodeWithText("Nem edzéshez vagy méréshez kötött fotó", substring = true).assertExists()
     }
 
     @Test fun todayTileTitlesAreWholeWords() {

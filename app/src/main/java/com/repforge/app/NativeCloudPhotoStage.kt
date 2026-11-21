@@ -16,7 +16,7 @@ internal class NativeCloudPhotoStage(private val context: Context, data: JSONObj
     companion object {
         private val ID = Regex("[a-f0-9-]{36}")
         private val DRIVE_ID = Regex("[A-Za-z0-9_-]+")
-        /** Supported workout-photo roots: journal plus the resumable imported draft, not library assets. */
+        /** Supported portable roots: workout history, weights and explicitly backed-up loose photos. */
         internal fun photoRows(data: JSONObject): List<JSONObject> {
             val rows = ArrayList<JSONObject>()
             fun append(workout: JSONObject) {
@@ -25,9 +25,17 @@ internal class NativeCloudPhotoStage(private val context: Context, data: JSONObj
             }
             val history = data.getJSONArray("history")
             for (index in 0 until history.length()) append(history.getJSONObject(index))
+            val weights = data.optJSONArray("weights")
+            if (weights != null) {
+                for (index in 0 until weights.length()) append(weights.getJSONObject(index))
+            }
             data.optJSONObject("draft")?.let { draft ->
                 append(draft)
                 draft.optJSONObject("session")?.let(::append)
+            }
+            val loosePhotos = data.optJSONArray("loosePhotos")
+            if (loosePhotos != null) {
+                for (index in 0 until loosePhotos.length()) rows.add(loosePhotos.getJSONObject(index))
             }
             return rows
         }

@@ -1,10 +1,10 @@
-# Play Console – áruházi adatlap (tervezet, 2780 · 1.4.0 alapján)
+# Play Console – áruházi adatlap (tervezet, 2789 · 1.4.1 alapján)
 
 Csak meglévő, az appban működő funkciók. Egészségügyi állítás nincs.
 
 ## Rövid leírás (≤80 karakter)
-- HU: `Edzésnapló, programok, Wear OS óra és GPS-futás egy helyen.`
-- EN: `Workout log, programs, Wear OS watch and GPS runs in one place.`
+- HU: `Edzésnapló, fotógaléria, programok, Wear OS óra és GPS-futás egy helyen.`
+- EN: `Workout log, photo gallery, programs, Wear OS watch and GPS runs in one place.`
 
 ## Teljes leírás – HU
 TrainPilot: edzéstervező és edzésnapló telefonra és Wear OS órára.
@@ -60,88 +60,52 @@ TrainPilot: workout planner and training log for your phone and Wear OS watch.
 • GPS routes and photos in private storage; health data is only included in backups with explicit consent
 • Multiple light and dark themes; Hungarian, English, German and Romanian
 
-## Újdonságok – Play kibocsátási megjegyzések (276500/276502 óta → 1.4.1, 278800/278802)
+## Újdonságok – Play kibocsátási megjegyzések (278800/278802 óta → belső kód 278900/278902, versionName 1.4.1)
 
 Szabály: mindig **4 nyelv** Play-címkékkel (`<hu-HU>`, `<de-DE>`, `<en-US>`, `<ro>`), nyelvenként ≤500 karakter,
 **külön telefonos és órás** szöveg; a chatben egy másolható kódblokkban küldjük. Az összegzés mindig a Playen lévő
-utolsó kiadás (most 276500/276502) óta összes újítást tartalmazza.
+utolsó kiadás (278800/278802) óta készült, javított funkciókat írja le tömören.
 
-### Telefon (278800)
+### Telefon (278900)
 ```
 <hu-HU>
-• Edzés közben: egységes fejléc, gyakorlatsor, Videó · Coach · Részletek, pihenő mindenhol, kész sorozat zöld, előző érték
-• Edzés fül: minden nap dátummal; Gyors edzés 1 lapon
-• Programok: kompakt kártyák, szerkesztő, húzható sorrend
-• Fejlődés: PR rekordok, teljes listák; Statisztikák: Gyakorlatok · Kardió · Lépések
-• Egészség: heti célok, testsúly, tömör napló
-• Dizájn: alsó lapok, koppintható grafikonok, világos témák
-• Óra: kerek kijelzőre igazítva
-• Javítások: Otthoni A/B, Health Connect
+• Testsúlynapló: pontos mérés-szerkesztés és -törlés.
+• Közös privát galéria edzés-, testsúly- és egyéb fotóknak.
+• Fotók Drive-hozzáféréssel szinkronizálódnak, az egészségadat-mentési kapcsolótól függetlenül.
+• A Progress galériabelépő kis kijelzőn is elfér.
 </hu-HU>
 <de-DE>
-• Im Training: ein Kopfbereich, Übungsleiste, Video · Coach · Details, Pause überall, fertige Sätze grün, letzte Werte
-• Training: jeder Tag mit Datum; Schnelltraining auf einem Blatt
-• Programme: kompakte Karten, Editor, Reihenfolge ziehen
-• Fortschritt: PR-Rekorde, volle Listen; Statistik: Übungen · Cardio · Schritte
-• Gesundheit: Wochenziele, Gewicht, kompaktes Journal
-• Design: Bottom Sheets, antippbare Diagramme, helle Themes
-• Uhr: für runde Displays
-• Fixes: Home A/B, Health Connect
+• Gewichtsprotokoll: einzelne Messungen gezielt bearbeiten und löschen.
+• Gemeinsame private Galerie für Trainings-, Gewichts- und weitere Fotos.
+• Fotos synchronisieren mit Drive-Zugriff, unabhängig von der Gesundheitssicherung.
+• Der Galerie-Einstieg bleibt auf kleinen Bildschirmen sichtbar.
 </de-DE>
 <en-US>
-• During workouts: one header, exercise strip, Video · Coach · Details, rest everywhere, done sets green, last values
-• Workout tab: every day with its date; Quick workout in one sheet
-• Programs: compact cards, editor, drag to reorder
-• Progress: PR records, full lists; Statistics: Exercises · Cardio · Steps
-• Health: shared weekly goals, own weight card, compact journal
-• Design: bottom sheets, tappable charts, light themes
-• Watch: fits the round screen
-• Fixes: Home A/B, Health Connect
+• Edit and delete individual weight entries reliably.
+• One private gallery for workout, weight and other photos.
+• Photos sync with Drive access, independently of the health-backup setting.
+• Compact Progress gallery entry fits small screens.
 </en-US>
 <ro>
-• În antrenament: antet unic, bară de exerciții, Video · Coach · Detalii, pauză peste tot, serii gata verzi, ultimele valori
-• Antrenament: fiecare zi cu data; antrenament rapid pe o foaie
-• Programe: carduri compacte, editor, ordine prin tragere
-• Progres: recorduri PR, liste complete; Statistici: Exerciții · Cardio · Pași
-• Sănătate: obiective, greutate separată, jurnal compact
-• Design: foi glisante, grafice interactive, teme
-• Ceas: ecran rotund
-• Remedieri: Home A/B, Health Connect
+• Jurnal greutate: editarea și ștergerea precisă a măsurătorilor.
+• Galerie privată comună pentru fotografii de antrenament, greutate și altele.
+• Fotografiile se sincronizează cu acces Drive, independent de backupul datelor de sănătate.
+• Accesul la galerie încape și pe ecrane mici.
 </ro>
 ```
 
-### Óra (278802)
+### Óra (278902)
 ```
 <hu-HU>
-• Kerek kijelzőre igazított menük, gombok és szövegek (Galaxy Watch 7 40 mm-en is)
-• Egyszerűbb főmenü, „Beállítás” külön
-• Naptár: Programnapok sor, vissza gomb
-• Edzés közben: ikonos léptetés, új Befejezés gomb, „Részletek”
-• Pulzus és mérés a kezdőképernyőn
-• Javítás: levágott sorok, tördelés
+• Ebben a frissítésben nincs új, óraspecifikus funkció; a javítások a telefonos testsúlynaplót és fotógalériát érintik.
 </hu-HU>
 <de-DE>
-• Menüs, Tasten und Texte für runde Displays (auch Galaxy Watch 7 40 mm)
-• Einfacheres Hauptmenü, eigene „Einstellungen“
-• Kalender: Zeile Programmtage, Zurück-Taste
-• Im Training: Pfeil-Symbole, neue Beenden-Taste, „Details“
-• Puls und Messung auf dem Startbildschirm
-• Fixes: abgeschnittene Zeilen, Umbruch
+• Dieses Update enthält keine neuen Uhrfunktionen; die Korrekturen betreffen das Gewichtsprotokoll und die Fotogalerie auf dem Smartphone.
 </de-DE>
 <en-US>
-• Menus, buttons and text fitted to round screens (incl. Galaxy Watch 7 40 mm)
-• Simpler main menu, separate Settings
-• Calendar: Program days row, back button
-• During workouts: icon arrows, new Finish button, Details
-• Heart rate and measurement on the home screen
-• Fixes: clipped rows, text wrapping
+• No watch-specific features in this update; fixes apply to the phone weight log and photo gallery.
 </en-US>
 <ro>
-• Meniuri, butoane și texte adaptate ecranului rotund (inclusiv Galaxy Watch 7 40 mm)
-• Meniu principal mai simplu, Setări separat
-• Calendar: rând Zile program, buton înapoi
-• În antrenament: săgeți cu iconițe, buton nou Finalizare, Detalii
-• Puls și măsurare pe ecranul principal
-• Remedieri: rânduri tăiate, încadrare text
+• Această actualizare nu adaugă funcții specifice ceasului; remedierile vizează jurnalul de greutate și galeria foto de pe telefon.
 </ro>
 ```

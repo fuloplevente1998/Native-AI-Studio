@@ -1179,5 +1179,6 @@ data class BodyWeightLogItem(
     val id: String,
     val kg: Float,
     val dayKey: String, // YYYY-MM-DD (user-entered measurement date)
-    val dateLabelHu: String // YYYY. MM. DD.
+    val dateLabelHu: String, // YYYY. MM. DD.
+    val photoCount: Int = 0
 )

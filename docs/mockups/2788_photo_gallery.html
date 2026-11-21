@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TrainPilot fotógaléria mockup</title>
+  <style>
+    :root {
+      --bg:#171713; --card:#24241f; --elev:#30302a; --border:#5f5a48;
+      --accent:#d4b45f; --text:#f4f1e8; --muted:#aaa69b;
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:#0f0f0d; color:var(--text);
+      font-family:Inter,Segoe UI,sans-serif; display:grid; place-items:center; }
+    .stage { display:flex; gap:28px; align-items:flex-start; padding:28px; }
+    .phone { width:390px; height:844px; border:1px solid #555; border-radius:28px;
+      background:var(--bg); overflow:hidden; box-shadow:0 24px 70px #0009; }
+    .status { height:28px; display:flex; align-items:center; justify-content:flex-end;
+      gap:5px; padding:0 18px; color:var(--muted); font-size:11px; }
+    .status:before { content:""; width:6px; height:6px; border-radius:50%;
+      background:var(--accent); margin-right:auto; }
+    .tabs { margin:8px 12px 10px; height:48px; display:flex; gap:6px; padding:5px;
+      border:1px solid var(--border); border-radius:14px; background:var(--card); }
+    .tab { flex:1; display:grid; place-items:center; border-radius:10px;
+      color:var(--muted); font-size:12px; }
+    .tab.active { color:var(--accent); background:#d4b45f22; border:1px solid #d4b45f99; }
+    .content { height:720px; overflow:hidden; padding:4px 12px 24px; }
+    .gallery-entry { min-height:48px; border:1px solid #d4b45f99; border-radius:14px;
+      background:var(--card); display:flex; align-items:center; gap:10px;
+      padding:4px 12px; margin-bottom:4px; }
+    .icon { width:30px; height:30px; border-radius:10px; display:grid; place-items:center;
+      background:#d4b45f1f; color:var(--accent); font-size:18px; }
+    .entry-copy { flex:1; font-size:15px; font-weight:700; }
+    .count { color:var(--accent); font-size:17px; font-weight:800; }
+    .section { border:1px solid var(--border); border-radius:16px; background:var(--card);
+      min-height:118px; margin-top:8px; padding:14px; color:var(--muted); }
+    .section-title { color:var(--text); font-weight:700; margin-bottom:12px; }
+    .bars { height:64px; display:flex; align-items:flex-end; gap:8px; }
+    .bar { flex:1; border-radius:5px 5px 2px 2px; background:#d4b45f55; }
+    .bar:nth-child(1){height:35%}.bar:nth-child(2){height:58%}.bar:nth-child(3){height:44%}
+    .bar:nth-child(4){height:72%}.bar:nth-child(5){height:52%}.bar:nth-child(6){height:86%}
+    .bar:nth-child(7){height:68%}.bar:nth-child(8){height:78%}
+    .gallery-header { display:flex; align-items:center; gap:10px; margin:8px 0 12px; }
+    .back { width:42px; height:42px; border-radius:12px; border:1px solid var(--border);
+      display:grid; place-items:center; color:var(--text); }
+    .gallery-header strong { flex:1; font-size:16px; }
+    .summary { color:var(--muted); font-size:12px; margin:0 4px 10px; }
+    .photo-card { border:1px solid var(--accent); border-radius:18px; background:var(--card); padding:12px; }
+    .photo-row { display:grid; grid-template-columns:86px 1fr; gap:10px; align-items:center;
+      border-radius:13px; min-height:86px; }
+    .photo-row + .photo-row { margin-top:8px; }
+    .photo { width:86px; height:86px; border-radius:12px; border:1px solid var(--border);
+      background:linear-gradient(145deg,#3b3b32,#1d1d19); position:relative; overflow:hidden; }
+    .photo:before { content:""; position:absolute; width:46px; height:46px; border:4px solid #d4b45f88;
+      border-radius:50%; left:18px; top:16px; }
+    .photo.weight:before { width:34px; height:34px; left:24px; top:22px; border-width:3px; }
+    .photo-copy strong { display:block; font-size:14px; }
+    .photo-copy span { display:block; color:var(--muted); font-size:12px; margin-top:5px; }
+    .label { display:inline-block; margin-top:7px; padding:5px 8px; border-radius:8px;
+      color:var(--accent); background:#d4b45f18; border:1px solid #d4b45f55; font-size:11px; }
+    .phone-name { text-align:center; color:#c9c6bc; font-size:13px; margin-bottom:10px; }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <section>
+      <div class="phone-name">Fejlődés nézet</div>
+      <div class="phone">
+        <div class="status">09:42  ●  ●  ▰</div>
+        <div class="tabs">
+          <div class="tab active">📈 Fejlődés</div>
+          <div class="tab">📄 Napló</div>
+          <div class="tab">📊 Statisztika</div>
+        </div>
+        <div class="content">
+          <div class="gallery-entry">
+            <div class="icon">▧</div>
+            <div class="entry-copy">Fotógaléria</div>
+            <div class="count">5</div>
+          </div>
+          <div class="section">
+            <div class="section-title">Teljes volumen</div>
+            <div class="bars">
+              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            </div>
+          </div>
+          <div class="section"><div class="section-title">Izomcsoport-terhelés</div></div>
+        </div>
+      </div>
+    </section>
+    <section>
+      <div class="phone-name">Közös fotógaléria</div>
+      <div class="phone">
+        <div class="status">09:42  ●  ●  ▰</div>
+        <div class="gallery-header">
+          <div class="back">‹</div><strong>Privát fotógaléria</strong><div class="back">⚙</div>
+        </div>
+        <div class="content" style="height:770px;padding-top:4px">
+          <div class="summary">5 • Privát fotógaléria</div>
+          <div class="photo-card">
+            <div class="photo-row">
+              <div class="photo"></div>
+              <div class="photo-copy"><strong>2026. 11. 21.</strong><span>Felsőtest edzés</span><div class="label">Edzés után</div></div>
+            </div>
+            <div class="photo-row">
+              <div class="photo weight"></div>
+              <div class="photo-copy"><strong>2026. 11. 19.</strong><span>Testsúlynapló · 82,5 kg</span><div class="label">Testsúlynapló</div></div>
+            </div>
+            <div class="photo-row">
+              <div class="photo"></div>
+              <div class="photo-copy"><strong>2026. 11. 16.</strong><span>Guggolás</span><div class="label">Edzés előtt</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

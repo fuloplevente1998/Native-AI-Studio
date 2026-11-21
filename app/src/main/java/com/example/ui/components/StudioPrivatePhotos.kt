@@ -43,6 +43,7 @@ import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.WorkoutPhotoRepository
 import com.repforge.app.data.db.TrainPilotDatabase
 import com.repforge.app.NativeJournalPhotos
+import com.repforge.app.NativeLoosePhotos
 import com.repforge.app.StoredPhotoMetadata
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -60,7 +61,8 @@ private fun trL(lang: com.example.model.AppLanguage, hu: String, en: String, de:
 @Composable
 internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStrings,
     back: () -> Unit, settings: () -> Unit,
-    model: ProgressViewModel = viewModel(key = "studio-private-photos")) {
+    model: ProgressViewModel = viewModel(key = "studio-private-photos"),
+    onPhotosUpdated: () -> Unit = {}) {
     val all by model.uiState.collectAsStateWithLifecycle()
     val owner = LocalLifecycleOwner.current
     val context = LocalContext.current
@@ -71,15 +73,36 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
     var selectedCategory by remember { mutableStateOf("after") } // "before", "after", "other"
 
     var pendingPhoto by remember { mutableStateOf<NativeJournalPhotos.Request?>(null) }
+    var pendingLoosePhoto by remember { mutableStateOf<NativeLoosePhotos.Request?>(null) }
     var photoError by remember { mutableStateOf(false) }
 
     fun receivePhoto(importPhoto: suspend () -> Result<StoredPhotoMetadata?>) {
+        val looseRequest = pendingLoosePhoto
+        if (looseRequest != null) {
+            pendingLoosePhoto = null
+            scope.launch {
+                try {
+                    val photo = importPhoto().getOrThrow() ?: return@launch
+                    withContext(Dispatchers.IO) { NativeLoosePhotos.attach(context, db, looseRequest, photo) }
+                    photoError = false
+                    onPhotosUpdated()
+                    model.loadProgressData()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    photoError = true
+                }
+            }
+            return
+        }
         val request = pendingPhoto ?: return
         pendingPhoto = null
         scope.launch {
             try {
                 val photo = importPhoto().getOrThrow() ?: return@launch
                 withContext(Dispatchers.IO) { NativeJournalPhotos.attach(context, db, request, photo) }
+                photoError = false
+                onPhotosUpdated()
                 model.loadProgressData()
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -114,7 +137,9 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
             accent = palette.primary, accent2 = palette.secondary, onAccent = palette.onPrimary,
             dangerText = palette.danger, success = palette.success, emphasisBorder = palette.sectionBorder)
     }
-    val photos = all.progressPhotos.filter { state.privatePhotoWorkoutId == null || it.workoutId == state.privatePhotoWorkoutId }
+    val photos = all.progressPhotos.filter {
+        state.privatePhotoWorkoutId == null || (it.kind == "workout" && it.workoutId == state.privatePhotoWorkoutId)
+    }
     val lang = state.language
     CompositionLocalProvider(LocalTrainPilotColors provides nativeColors) {
         LazyColumn(Modifier.then(sheetAwareFillMaxSize()).background(palette.background).testTag("private_photos_screen"),
@@ -128,6 +153,93 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
                 ) {
                     Text("${photos.size} • ${strings.privatePhotosTitle}", color = palette.textSecondary,
                         modifier = Modifier.testTag("private_photos_count"))
+                }
+            }
+
+            if (state.privatePhotoWorkoutId == null) {
+                item {
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = palette.surfaceCard,
+                        modifier = Modifier.fillMaxWidth()
+                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(18.dp))
+                            .testTag("other_photo_attach_card")
+                    ) {
+                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                trL(lang, "Egyéb fotó hozzáadása", "Add an other photo", "Sonstiges Foto hinzufügen", "Adaugă o fotografie"),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = palette.textPrimary
+                            )
+                            Text(
+                                trL(lang, "Nem edzéshez vagy méréshez kötött fotó • Drive-szinkronnal mentődik",
+                                    "Unattached photo • included when Drive sync runs",
+                                    "Nicht zugeordnetes Foto • wird mit Drive synchronisiert",
+                                    "Fotografie neasociată • inclusă în sincronizarea Drive"),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = palette.textSecondary
+                            )
+                            if (photoError) {
+                                Text(
+                                    trL(lang, "A fotó hozzáadása nem sikerült. Próbáld újra.",
+                                        "Could not add photo. Please try again.",
+                                        "Foto konnte nicht hinzugefügt werden. Bitte erneut versuchen.",
+                                        "Fotografia nu a putut fi adăugată. Încearcă din nou."),
+                                    color = palette.danger,
+                                    modifier = Modifier.testTag("other_photo_error")
+                                )
+                            }
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = {
+                                        try {
+                                            pendingLoosePhoto = NativeLoosePhotos.prepare(context)
+                                            photoError = false
+                                            cameraLauncher.launch(photoRepo.prepareCameraCaptureIntent())
+                                        } catch (_: Exception) {
+                                            pendingLoosePhoto = null
+                                            photoError = true
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = palette.surfaceElevated,
+                                        contentColor = palette.textPrimary
+                                    ),
+                                    modifier = Modifier.weight(1f).height(42.dp).testTag("other_camera_button")
+                                ) {
+                                    Icon(Icons.Default.CameraAlt, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(trL(lang, "Kamera", "Camera", "Kamera", "Cameră"),
+                                        style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                                }
+                                Button(
+                                    onClick = {
+                                        try {
+                                            pendingLoosePhoto = NativeLoosePhotos.prepare(context)
+                                            photoError = false
+                                            galleryLauncher.launch(photoRepo.createPickImageIntent())
+                                        } catch (_: Exception) {
+                                            pendingLoosePhoto = null
+                                            photoError = true
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = palette.surfaceElevated,
+                                        contentColor = palette.textPrimary
+                                    ),
+                                    modifier = Modifier.weight(1f).height(42.dp).testTag("other_gallery_button")
+                                ) {
+                                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = palette.primary, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(trL(lang, "Galéria", "Gallery", "Galerie", "Galerie"),
+                                        style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                        }
+                    }
                 }
             }
 

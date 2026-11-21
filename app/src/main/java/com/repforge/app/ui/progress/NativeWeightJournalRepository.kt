@@ -59,22 +59,36 @@ internal class NativeWeightJournalRepository(
         NativeDataReplacement.mutate(context) {
             val id = UUID.randomUUID().toString()
             val time = now()
-            val raw = JSONObject().put("id", id).put("date", day).put("kg", value).put("updatedAt", time)
+            val raw = JSONObject().put("id", id).put("date", day).put("dayKey", day)
+                .put("kg", value).put("updatedAt", time)
             database.bodyWeightDao().upsertWeight(BodyWeightEntryEntity(id, day, day, value, time, raw.toString()))
         }
     }
 
-    suspend fun edit(expected: BodyWeightEntryEntity, kg: Double) {
+    suspend fun edit(expected: BodyWeightEntryEntity, kg: Double, date: String? = null) {
         val value = normalizedWeight(kg)
+        val day = date?.let { LocalDate.parse(it).toString() }
         // Lock order is metadata admission -> Room transaction, including restore races.
         NativeDataReplacement.mutate(context) {
             database.withTransaction {
                 val current = database.bodyWeightDao().getWeightById(expected.id) ?: throw ChangedEntry()
                 if (current != expected) throw ChangedEntry()
-                // Preserve original measurement date, identity and unknown portable fields.
+                // Preserve identity and unknown portable fields while honoring an edited date.
                 val time = maxOf(now(), current.updatedAt + 1)
-                val raw = JSONObject(current.rawJson).put("kg", value).put("updatedAt", time)
-                database.bodyWeightDao().upsertWeight(current.copy(kg = value, updatedAt = time, rawJson = raw.toString()))
+                val dateValue = day ?: current.date
+                val dayKeyValue = day ?: current.dayKey
+                val raw = JSONObject(current.rawJson)
+                    .put("kg", value)
+                    .put("date", dateValue)
+                    .put("dayKey", dayKeyValue)
+                    .put("updatedAt", time)
+                database.bodyWeightDao().upsertWeight(current.copy(
+                    date = dateValue,
+                    dayKey = dayKeyValue,
+                    kg = value,
+                    updatedAt = time,
+                    rawJson = raw.toString()
+                ))
             }
         }
     }
@@ -87,11 +101,20 @@ internal class NativeWeightJournalRepository(
                 // Day-based deletion would also remove distinct measurements from the same day.
                 check(database.bodyWeightDao().deleteWeightById(expected.id) == 1)
             }
+            val raw = runCatching { JSONObject(expected.rawJson) }.getOrNull()
+            val photos = raw?.optJSONArray("photos")
+            if (photos != null) {
+                val repository = com.repforge.app.WorkoutPhotoRepository(context)
+                for (index in 0 until photos.length()) {
+                    val id = photos.optJSONObject(index)?.optString("id").orEmpty()
+                    if (id.isNotBlank()) repository.delete(id)
+                }
+            }
         }
     }
 
     private fun normalizedWeight(kg: Double): Double {
-        require(kg.isFinite() && kg in 30.0..300.0)
+        require(kg.isFinite() && kg > 20.0 && kg < 350.0)
         return (kg * 10.0).roundToInt() / 10.0
     }
 }

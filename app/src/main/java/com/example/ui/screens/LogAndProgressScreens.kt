@@ -1279,7 +1279,8 @@ fun ProgressTabScreen(
     onSearchChange: (String) -> Unit = {},
     onOpenRouteMap: () -> Unit = {},
     onRefreshRecords: () -> Unit = {},
-    onDeletedWorkout: (String) -> Unit = {}
+    onDeletedWorkout: (String) -> Unit = {},
+    onOpenPhotos: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     // 3 al-oldal a Fejlődés oldalon belül: 1. 📈 Fejlődés | 2. 📄 Napló | 3. 📊 Statisztikák
@@ -1299,7 +1300,7 @@ fun ProgressTabScreen(
             color = palette.surfaceCard,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .padding(horizontal = 12.dp, vertical = 2.dp)
                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
         ) {
             Row(
@@ -1345,9 +1346,44 @@ fun ProgressTabScreen(
             0 -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().testTag("progress_overview_list"),
-                    contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 2.dp, bottom = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                    contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 0.dp, bottom = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
+                    item {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = palette.surfaceCard,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 48.dp)
+                                .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
+                                .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenPhotos() }
+                                .testTag("progress_open_private_photos")
+                        ) {
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = palette.primary, modifier = Modifier.size(20.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        trL(uiState.language, "Fotógaléria", "Photo gallery", "Fotogalerie", "Galerie foto"),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = palette.textPrimary
+                                    )
+                                }
+                                Text(
+                                    "${uiState.privatePhotoCount}",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.primary,
+                                    modifier = Modifier.testTag("progress_private_photos_count")
+                                )
+                            }
+                        }
+                    }
                     item {
                         MainProgressVolumeAndMuscleSection(
                             uiState = uiState,
