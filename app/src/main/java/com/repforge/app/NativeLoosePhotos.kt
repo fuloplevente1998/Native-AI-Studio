@@ -17,6 +17,15 @@ internal object NativeLoosePhotos {
     fun prepare(context: Context): Request =
         Request(NativeDataReplacement.continuationForCurrentData(context))
 
+    suspend fun importAndAttach(
+        context: Context,
+        database: TrainPilotDatabase,
+        request: Request,
+        importPhoto: suspend () -> Result<StoredPhotoMetadata?>
+    ): Boolean = importAndStorePrivatePhoto(context, importPhoto) { photo ->
+        attach(context, database, request, photo)
+    }
+
     suspend fun attach(
         context: Context,
         database: TrainPilotDatabase,
