@@ -98,7 +98,7 @@ class Collector2788RegressionTest {
     }
 
     @Test fun todayTileHandsOffToTheJournalAndItsProviderSelectionSurvivesReopening() {
-        var state by mutableStateOf(TrainPilotUiState())
+        var state by mutableStateOf(TrainPilotUiState(primaryHealthSourceSamsung = false))
         compose.setContent { TrainPilotTheme {
             HealthTabScreen(state, hu,
                 { section -> if (section == "journal") state = state.copy(expandedHealthJournal = !state.expandedHealthJournal) },
