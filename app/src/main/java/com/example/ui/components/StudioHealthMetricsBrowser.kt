@@ -67,6 +67,14 @@ internal fun StudioHealthMetricsBrowser(
     var calendarMonth by rememberSaveable { mutableStateOf(java.time.YearMonth.from(LocalDate.parse(to)).toString()) }
     var reload by rememberSaveable { mutableIntStateOf(0) }
     val range = HealthJournalRange(LocalDate.parse(from), LocalDate.parse(to), LocalDate.parse(end))
+    LaunchedEffect(focus, focusKey) {
+        val day = focus?.first?.let(LocalDate::parse) ?: return@LaunchedEffect
+        if (day !in range.days) {
+            if (day.isBefore(range.from)) from = day.toString()
+            if (day.isAfter(range.to)) to = day.toString()
+            end = day.toString()
+        }
+    }
     val revision = "$refreshKey:$reload"
     var snapshotJson by remember(provider, source, from, to, end, revision) { mutableStateOf<String?>(null) }
     var failed by remember(provider, source, from, to, end, revision) { mutableStateOf(false) }
