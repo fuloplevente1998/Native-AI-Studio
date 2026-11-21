@@ -393,7 +393,8 @@ class BackupImportValidationRegressionTest {
         awaitNative { seedGoalsAndCalendar(db) }
         val legacy = JSONObject().put("history", JSONArray()).put("scheduled", JSONArray()
             .put(JSONObject().put("id", "legacy-added").put("date", "2026-12-10").put("start", "2026-12-10T10:00:00Z"))
-            .put(JSONObject().put("id", "legacy-same-slot").put("date", "2026-12-01").put("start", "2026-12-01T07:05:00Z")))
+            .put(JSONObject().put("id", "legacy-same-slot").put("date", "2026-12-01").put("start", "2026-12-01T07:05:00Z"))
+            .put(JSONObject().put("id", "cancelled").put("date", "2026-12-10").put("start", "2026-12-10T07:00:00Z")))
         val file = File(context.cacheDir, "legacy-goals-and-calendar.json").apply { writeText(legacy.toString()) }
         awaitNative { BackupRestoreManager(context).importBackupFromUri(Uri.fromFile(file)).getOrThrow() }
         awaitNative {
@@ -406,6 +407,8 @@ class BackupImportValidationRegressionTest {
                 db.calendarScheduleDao().getAllEntries().map { it.id }.toSet())
             val events = JSONObject(requireNotNull(docs.getDocument(stateKey)).json).getJSONArray("events")
             assertEquals(5, events.length())
+            assertTrue(JSONObject(requireNotNull(db.calendarScheduleDao().getEntry("cancelled")).rawJson)
+                .getBoolean("cancelled"))
             val partial = JSONObject().put(goalsKey, JSONObject()
                 .put("weeklyGoalTarget", 30).put("stepsGoal", JSONObject.NULL))
             LegacyWebViewMigrator(context, db, TrainPilotSettingsStore(context)).importBackupJson(partial, replaceAll = true)

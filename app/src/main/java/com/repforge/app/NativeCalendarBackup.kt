@@ -53,7 +53,7 @@ internal object NativeCalendarBackup {
         val fullSnapshot = replaceAll && data.optInt(VERSION_KEY) == VERSION
         val stamp = System.currentTimeMillis()
         val cleaned = NativeCalendarCleanup202611.cleanScheduledJson(scheduled, preserveCancellations = true)
-        val incoming = (0 until cleaned.length()).mapNotNull { readScheduleRow(cleaned.getJSONObject(it), stamp) }
+        val incoming = (0 until cleaned.length()).mapNotNull { readScheduleRow(cleaned.getJSONObject(it)) }
             .sortedBy { it.updatedAt }.associateBy { it.id }.values
         if (!fullSnapshot && incoming.isEmpty()) return
         val dao = database.calendarScheduleDao()
@@ -141,7 +141,7 @@ internal object NativeCalendarBackup {
     private fun scheduleDate(raw: JSONObject): String =
         raw.optString("date").ifBlank { raw.optString("start", raw.optString("plannedStart")).take(10) }.trim()
 
-    private fun readScheduleRow(raw: JSONObject, stamp: Long): CalendarScheduleEntity? {
+    private fun readScheduleRow(raw: JSONObject): CalendarScheduleEntity? {
         val start = raw.optString("start", raw.optString("plannedStart", "")).trim()
         val date = scheduleDate(raw)
         if (runCatching { LocalDate.parse(date) }.isFailure) return null
@@ -166,7 +166,9 @@ internal object NativeCalendarBackup {
                 "completed" -> "completed"
                 "skipped", "missed", "cancelled" -> "skipped"
                 else -> "planned"
-            }, updatedAt = raw.optLong("updatedAt", stamp),
+            },
+            // A legacy row without a revision is older than a known local edit or cancellation.
+            updatedAt = raw.optLong("updatedAt"),
             rawJson = raw.toString()
         )
     }
