@@ -101,6 +101,9 @@ class TrainPilotViewModel : ViewModel() {
     @Volatile private var calendarWriteRevision = 0L
     private var calendarWriteJob: Job? = null
     @Volatile private var calendarWriteError: String? = null
+    private val plannerSettingsWriteMutex = Mutex()
+    @Volatile private var plannerSettingsRevision = 0L
+    @Volatile private var plannerSettingsWriteJob: Job? = null
     private var nativeSettingsStore: TrainPilotSettingsStore? = null
     private var nativeDatabase: TrainPilotDatabase? = null
     private var nativeScope: CoroutineScope? = null
@@ -522,6 +525,12 @@ class TrainPilotViewModel : ViewModel() {
     private fun persistCalendarStateToRoomAsync() {
         val db = nativeDatabase ?: return
         val scope = nativeScope ?: return
+        val context = nativeContext ?: return
+        val ticket = runCatching { NativeDataReplacement.continuationForCurrentData(context) }.getOrElse {
+            calendarWriteError = it.message
+            _uiState.update { state -> state.copy(statusBannerMessage = it.message) }
+            return
+        }
         val state = _uiState.value
         val events = state.calendarEvents
         val undoStack = state.calendarUndoStack
@@ -535,6 +544,8 @@ class TrainPilotViewModel : ViewModel() {
                 if (revision != calendarWriteRevision) return@withLock
                 programWriteJob?.join()
                 check(programWriteError == null) { requireNotNull(programWriteError) }
+                NativeDataReplacement.mutate(context) {
+                ticket.requireCurrent(context)
                 db.withTransaction {
                 val oldDocument = db.keyValueDocumentDao().getDocument("native:calendarState")
                 val previous = oldDocument?.json?.let { JSONObject(it).optJSONArray("events") } ?: JSONArray()
@@ -544,12 +555,13 @@ class TrainPilotViewModel : ViewModel() {
                     val id = previous.getJSONObject(i).getString("id")
                     if (id !in retainedIds) {
                         val existing = db.calendarScheduleDao().getEntry(id)
-                        if (existing != null) {
-                            if (existing.googleEventId.isBlank()) {
-                                db.calendarScheduleDao().deleteEntry(id)
-                            } else {
-                                db.calendarScheduleDao().upsertEntry(existing.copy(status = "skipped", updatedAt = nowMs))
-                            }
+                        if (existing != null && !existing.status.equals("completed", ignoreCase = true) &&
+                            !db.workoutHistoryDao().hasScheduleHistory(id)) {
+                            val stamp = maxOf(nowMs, existing.updatedAt + 1)
+                            val cancelled = JSONObject(existing.rawJson).put("status", "skipped")
+                                .put("cancelled", true).put("updatedAt", stamp)
+                            db.calendarScheduleDao().upsertEntry(existing.copy(status = "skipped",
+                                updatedAt = stamp, rawJson = cancelled.toString()))
                         }
                     }
                 }
@@ -601,7 +613,7 @@ class TrainPilotViewModel : ViewModel() {
                         programId = programId, programName = programName,
                         dayId = dayId, dayName = dayName,
                         status = statusStr,
-                        updatedAt = nowMs,
+                        updatedAt = maxOf(nowMs, (existing?.updatedAt ?: 0L) + 1),
                         rawJson = rawEv.toString()
                     )
                 }
@@ -661,11 +673,47 @@ class TrainPilotViewModel : ViewModel() {
                     )
                 )
                 }
+                }
               }
             }.onFailure { error ->
                 if (error is kotlinx.coroutines.CancellationException) throw error
                 if (revision == calendarWriteRevision) calendarWriteError = error.message ?: "A naptármódosítás nem menthető."
                 _uiState.update { it.copy(statusBannerMessage = "A naptármódosítás nem menthető. Próbáld újra.") }
+            }
+        }
+    }
+
+    private fun persistStudioPlannerSettings() {
+        val context = nativeContext ?: return
+        val db = nativeDatabase ?: return
+        val scope = nativeScope ?: return
+        val state = _uiState.value
+        val revision = ++plannerSettingsRevision
+        plannerSettingsWriteJob = scope.launch(Dispatchers.IO, start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
+            try {
+                val ticket = NativeDataReplacement.continuationForCurrentData(context)
+                withContext(Dispatchers.IO) {
+                    plannerSettingsWriteMutex.withLock {
+                        if (revision != plannerSettingsRevision) return@withLock
+                        NativeDataReplacement.mutate(context) {
+                            ticket.requireCurrent(context)
+                            val dao = db.keyValueDocumentDao()
+                            val key = "native:studioPlannerSettings"
+                            val stamp = maxOf(System.currentTimeMillis(), (dao.getDocument(key)?.updatedAt ?: 0L) + 1)
+                            val payload = JSONObject().put("cadenceHu", state.planningCadenceHu)
+                                .put("firstDayHu", state.planningFirstDayHu).put("startDate", state.planningStartDate)
+                                .put("time", state.planningTime).put("durationMin", state.planningDurationMin)
+                                .put("weeksCount", state.planningWeeksCount).put("updatedAt", stamp)
+                            dao.putDocument(KeyValueDocumentEntity(key, payload.toString(), stamp))
+                        }
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                if (revision == plannerSettingsRevision) _uiState.update { it.copy(statusBannerMessage = studioModesText(
+                    "A tervezési beállítások nem menthetők.", "Could not save planner settings.",
+                    "Planungseinstellungen konnten nicht gespeichert werden.", "Setările planificatorului nu au putut fi salvate.")) }
             }
         }
     }
@@ -1363,6 +1411,8 @@ class TrainPilotViewModel : ViewModel() {
         nativeReloadJob?.cancel()
         nativeReloadJob = scope.launch(Dispatchers.IO) {
             val calendarRevisionAtRead = calendarWriteRevision
+            val plannerRevisionAtRead = plannerSettingsRevision
+            plannerSettingsWriteJob?.join()
             // Seed catalog into Room DB
             try {
                 TrainPilotDatabase.ensureBuiltinCatalogSeeded(database, context)
@@ -1445,6 +1495,8 @@ class TrainPilotViewModel : ViewModel() {
             } catch (_: Throwable) {}
 
             // 4b. Read persisted calendar schedule & undo stack from Room
+            val plannerSettings = database.keyValueDocumentDao().getDocument("native:studioPlannerSettings")
+                ?.json?.let { runCatching { JSONObject(it) }.getOrNull() }
             var loadedCalendarEvents = emptyList<CalendarDayEvent>()
             var loadedCalendarUndo = emptyList<List<CalendarDayEvent>>()
             try {
@@ -1645,6 +1697,18 @@ class TrainPilotViewModel : ViewModel() {
                             else activeProg?.id ?: st.editingProgramId,
                         calendarEvents = if (calendarWriteRevision == calendarRevisionAtRead) loadedCalendarEvents else st.calendarEvents,
                         calendarUndoStack = if (calendarWriteRevision == calendarRevisionAtRead) loadedCalendarUndo else st.calendarUndoStack,
+                        planningCadenceHu = if (plannerSettingsRevision == plannerRevisionAtRead)
+                            plannerSettings?.optString("cadenceHu", st.planningCadenceHu) ?: st.planningCadenceHu else st.planningCadenceHu,
+                        planningFirstDayHu = if (plannerSettingsRevision == plannerRevisionAtRead)
+                            plannerSettings?.optString("firstDayHu", st.planningFirstDayHu) ?: st.planningFirstDayHu else st.planningFirstDayHu,
+                        planningStartDate = if (plannerSettingsRevision == plannerRevisionAtRead)
+                            plannerSettings?.optString("startDate", st.planningStartDate) ?: st.planningStartDate else st.planningStartDate,
+                        planningTime = if (plannerSettingsRevision == plannerRevisionAtRead)
+                            plannerSettings?.optString("time", st.planningTime) ?: st.planningTime else st.planningTime,
+                        planningDurationMin = if (plannerSettingsRevision == plannerRevisionAtRead)
+                            plannerSettings?.optInt("durationMin", st.planningDurationMin) ?: st.planningDurationMin else st.planningDurationMin,
+                        planningWeeksCount = if (plannerSettingsRevision == plannerRevisionAtRead)
+                            plannerSettings?.optInt("weeksCount", st.planningWeeksCount) ?: st.planningWeeksCount else st.planningWeeksCount,
                         isWorkoutSessionActive = restoredActiveSnap != null,
                         outdoorRouteKey = restoredActiveSnap?.optString("studioGpsKey") ?: st.outdoorRouteKey,
                         outdoorGpsEnabled = restoredActiveSnap?.takeIf { it.has("studioIndoor") }?.let { !it.optBoolean("studioIndoor") } ?: st.outdoorGpsEnabled,
@@ -1701,6 +1765,10 @@ class TrainPilotViewModel : ViewModel() {
                 state.copy(
                     currentTab = tab,
                     currentSubScreen = SubScreen.NONE,
+                    expandedHealthWeeklyGoals = state.expandedHealthWeeklyGoals &&
+                        !(tab == MainTab.HEALTH && state.currentTab != MainTab.HEALTH),
+                    expandedHealthJournal = state.expandedHealthJournal && tab != MainTab.HEALTH,
+                    expandedHealthConnect = state.expandedHealthConnect && tab != MainTab.HEALTH,
                     backStack = updatedStack
                 )
             }
@@ -2811,6 +2879,7 @@ class TrainPilotViewModel : ViewModel() {
                 planningWeeksCount = weeksCount
             )
         }
+        persistStudioPlannerSettings()
     }
 
     fun selectCalendarMonth(month: String) {
@@ -2838,6 +2907,7 @@ class TrainPilotViewModel : ViewModel() {
                 planningFirstDayHu = firstDayHu
             )).copy(showReplanModal = false)
         }
+        persistStudioPlannerSettings()
         persistCalendarStateToRoomAsync()
     }
 
@@ -4293,6 +4363,7 @@ class TrainPilotViewModel : ViewModel() {
             it.copy(
                 selectedLogWorkoutId = workoutId,
                 logWorkoutMuscleLoads = emptyList(),
+                expandedLogExerciseIndex = -1,
                 currentTab = MainTab.PROGRESS,
                 progressMainSection = 1,
                 currentSubScreen = SubScreen.LOG_WORKOUT_DETAIL,
@@ -4466,10 +4537,11 @@ class TrainPilotViewModel : ViewModel() {
                 backStack = back,
                 expandedHealthPulseTrend = pulse || state.expandedHealthPulseTrend,
                 expandedHealthWeightLog = weight || state.expandedHealthWeightLog,
-                expandedHealthWeeklyGoals = weeklyGoals || state.expandedHealthWeeklyGoals,
+                expandedHealthWeeklyGoals = weeklyGoals ||
+                    (state.currentTab == MainTab.HEALTH && state.expandedHealthWeeklyGoals),
                 expandedHealthExtraData = extra || state.expandedHealthExtraData,
-                expandedHealthJournal = journal || state.expandedHealthJournal,
-                expandedHealthConnect = connect || state.expandedHealthConnect
+                expandedHealthJournal = journal,
+                expandedHealthConnect = connect && !journal
             )
         }
     }
@@ -4483,8 +4555,8 @@ class TrainPilotViewModel : ViewModel() {
                 "pulse" -> state.copy(expandedHealthPulseTrend = !state.expandedHealthPulseTrend)
                 "weight" -> state.copy(expandedHealthWeightLog = !state.expandedHealthWeightLog)
                 "extra" -> state.copy(expandedHealthExtraData = !state.expandedHealthExtraData)
-                "journal" -> state.copy(expandedHealthJournal = !state.expandedHealthJournal)
-                "connect" -> state.copy(expandedHealthConnect = !state.expandedHealthConnect)
+                "journal" -> state.copy(expandedHealthJournal = !state.expandedHealthJournal, expandedHealthConnect = false)
+                "connect" -> state.copy(expandedHealthJournal = false, expandedHealthConnect = !state.expandedHealthConnect)
                 else -> state
             }
         }

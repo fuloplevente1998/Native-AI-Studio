@@ -380,7 +380,7 @@ data class TrainPilotUiState(
     val loggedWorkouts: List<LoggedWorkoutEntry> = emptyList(),
     val selectedLogWorkoutId: String = "",
     val logDetailTabIndex: Int = 0, // 0 = Gyakorlatok, 1 = Statisztikák, 2 = Forrás
-    val expandedLogExerciseIndex: Int = 0,
+    val expandedLogExerciseIndex: Int = -1,
 
     // Progress / Fejlődés State (Mockup 3/4 #4 + full main Fejlődés & Statisztikák)
     val progressMainSection: Int = 0, // 0 = Fejlődés, 1 = Napló, 2 = Statisztikák
