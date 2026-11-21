@@ -1300,7 +1300,7 @@ fun ProgressTabScreen(
             color = palette.surfaceCard,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .padding(horizontal = 12.dp, vertical = 2.dp)
                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
         ) {
             Row(
@@ -1346,8 +1346,8 @@ fun ProgressTabScreen(
             0 -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().testTag("progress_overview_list"),
-                    contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 2.dp, bottom = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                    contentPadding = PaddingValues(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, top = 0.dp, bottom = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     item {
                         Surface(
@@ -1355,31 +1355,23 @@ fun ProgressTabScreen(
                             color = palette.surfaceCard,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 64.dp)
+                                .heightIn(min = 48.dp)
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
                                 .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenPhotos() }
                                 .testTag("progress_open_private_photos")
                         ) {
                             Row(
-                                Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
+                                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = palette.primary)
+                                Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = palette.primary, modifier = Modifier.size(20.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text(
                                         trL(uiState.language, "Fotógaléria", "Photo gallery", "Fotogalerie", "Galerie foto"),
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = palette.textPrimary
-                                    )
-                                    Text(
-                                        trL(uiState.language, "Edzés- és testsúlyfotók egy helyen",
-                                            "Workout and weight photos in one place",
-                                            "Trainings- und Gewichtsfotos an einem Ort",
-                                            "Fotografii de antrenament și greutate într-un singur loc"),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = palette.textSecondary
                                     )
                                 }
                                 Text(

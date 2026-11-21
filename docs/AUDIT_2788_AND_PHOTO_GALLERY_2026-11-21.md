@@ -8,7 +8,7 @@ Módszer: forráskód- és tesztlefedettség-vizsgálat, majd a jóváhagyott ja
 
 ## Vezetői összefoglaló
 
-Az első statikus ellenőrzés fordítási blokkolót, védtelen testsúly-írási/törlési útvonalat, elavuló fotószámlálót és hiányzó önálló „Egyéb” fotó-hozzáadást talált; ezekre javítások és célzott regressziós tesztek készültek. Tulajdonosi tisztázás alapján az egészségadat-mentési kapcsoló nem korlátozza a Drive-ra feltöltött fotókat: a fotószinkron a Google Drive-hozzáféréshez kötött.
+Az első statikus ellenőrzés fordítási blokkolót, védtelen testsúly-írási/törlési útvonalat, elavuló fotószámlálót és hiányzó önálló „Egyéb” fotó-hozzáadást talált; ezekre javítások és célzott regressziós tesztek készültek. A teljes CI első tesztfordítása után egy új, Progress nézetbeli magasságregresszió is előjött; a galériabelépő most 48 dp-esre tömörült, hogy a viewport-követelmény megmaradjon. Tulajdonosi tisztázás alapján az egészségadat-mentési kapcsoló nem korlátozza a Drive-ra feltöltött fotókat: a fotószinkron a Google Drive-hozzáféréshez kötött.
 
 ## Hatókör és teljesség
 
@@ -27,6 +27,7 @@ Még nincs végigellenőrizve a teljes telefon–óra helyreállítási mátrix,
 | A5 | Közepes – javítva | Igazolt feltétel, feltételes előfordulás | A törlés az ID szerinti törlés után dátum alapján is törölt, így dátumformátumú ID több azonos napi mérést érinthetett. | A dátum szerinti törlés kikerült; regresszió ellenőrzi az azonos napi külön rekord megmaradását. |
 | A6 | Közepes – javítva | Igazolt | Fotócsatolás után a Health Compose sor frissült, de a közös ViewModel fotószámlálója elavult maradhatott. | A tartós csatolás után frissül a súlynapló- és privát fotószám-projekció. |
 | A7 | Közepes – javítva | Igazolt követelményrés | A globális galériában nem lehetett edzéstől és testsúlyméréstől független fotót hozzáadni. | Az „Egyéb fotó” hozzáadás kamerával/galériából elérhető; a metaadat backupba kerül, a Drive-fotószinkron kezeli. |
+| A8 | Közepes – javítva | CI-vel igazolt | A Progress oldal új, két soros galériakártyája 24 dp-rel a 620 dp-es ellenőrzött viewport alá tolta a Fejlődési javaslat kártyát. | A felső galériabelépő 48 dp-es, egysoros változat; a meglévő `UiUx219RegressionTest` ezt az elrendezési követelményt védi. |
 
 ## Ellenőrzött területek – külön hibát nem találtam
 
@@ -43,7 +44,9 @@ Még nincs végigellenőrizve a teljes telefon–óra helyreállítási mátrix,
 - `git diff --check`: sikeres.
 - A JDK 17, Gradle 9.3.1, Android Platform 36 és Build Tools 36.0.0 hordozható telepítése a `H:\GitHub Copilot\.tools` alatt elkészült.
 - A helyi Gradle-fordítás még a forráskód előtt, függőséglekérésnél állt meg: a JVM-en keresztüli Foojay/Android Gradle Plugin letöltés nem sikerült, bár ugyanazon végpontokat a PowerShell eléri. A módosított források fordításig és a regressziós tesztek futásáig még nem jutottak.
-- A célzott regressziós tesztek elkészültek, de nyers XML/JUnit eredmény még nincs; GitHub Actions-ellenőrzés szükséges.
+- GitHub Actions `44846049059`: az R8 minifikáció sikerült, a unit tesztforrások fordítása két új tesztírási hibán állt meg; ezek javítva.
+- GitHub Actions `44846732312`: alkalmazás/Wear fordítás sikeres; nyers XML összesítése 972 teszt, 1 failure, 0 error, 0 skipped. Az egyetlen failure a Progress viewport-regresszió volt (24 dp túlcsordulás), amelyet a legutóbbi, még nem CI-zöldített módosítás javít. Az R8 minifikáció sikerült.
+- A végleges, legutóbbi forrás SHA-hoz még szükséges egy teljes GitHub Actions-futás zöld eredménye és annak nyers XML-számai.
 - Kamera/galéria OEM-viselkedés, Drive-hálózati payload tényleges futása, fizikai telefon–óra átadás és teljes készülékes vizuális elfogadás nem történt.
 - A munkafa auditkor módosított állapotban volt; a fenti SHA a commit-alap, nem a nem commitolt változások teljes azonosítója.
 - Repo verzióadata: telefon `versionCode 278800`, `versionName 1.4.1`.
