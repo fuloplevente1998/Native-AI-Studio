@@ -10,6 +10,8 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 /**
  * Repair and resurrection guard for the 2026 calendar duplication incident.
@@ -79,7 +81,7 @@ internal object NativeCalendarCleanup202611 {
         }
     }
 
-    fun cleanScheduledJson(rows: JSONArray?): JSONArray {
+    fun cleanScheduledJson(rows: JSONArray?, preserveCancellations: Boolean = false): JSONArray {
         if (rows == null) return JSONArray()
         data class Item(val raw: JSONObject, val date: LocalDate?, val slot: String?)
         val outside = ArrayList<Item>()
@@ -93,7 +95,9 @@ internal object NativeCalendarCleanup202611 {
             if (date != null && !date.isAfter(deleteThrough)) continue
             val slot = slotKey(dateText, start)
             val item = Item(copy, date, slot)
-            if (slot == null) outside.add(item) else bySlot.getOrPut(slot) { ArrayList() }.add(item)
+            val cancelled = copy.optBoolean("cancelled") || copy.optString("status").equals("cancelled", true)
+            if (slot == null || preserveCancellations && cancelled) outside.add(item)
+            else bySlot.getOrPut(slot) { ArrayList() }.add(item)
         }
         val selected = ArrayList<Item>()
         selected.addAll(outside)
@@ -167,7 +171,7 @@ internal object NativeCalendarCleanup202611 {
         Report(beforeRows.size, keptRows.size, beforeRows.size - keptRows.size)
     }
 
-    private fun slotKey(date: String, start: String): String? {
+    internal fun slotKey(date: String, start: String): String? {
         val instant = parseInstant(start)
         if (instant != null) return "i:" + (instant.epochSecond / 60L)
         if (date.isBlank() || start.isBlank()) return null
@@ -205,13 +209,14 @@ internal object NativeCalendarCleanup202611 {
         else -> 0
     }
 
-    private fun toCalendarStateEvent(row: CalendarScheduleEntity): JSONObject {
+    internal fun toCalendarStateEvent(row: CalendarScheduleEntity): JSONObject {
         val raw = runCatching { JSONObject(row.rawJson) }.getOrElse { JSONObject() }
         val date = runCatching { LocalDate.parse(row.date) }.getOrNull()
         val startInstant = parseInstant(row.startIso)
         val endInstant = parseInstant(row.endIso)
         val timeLabel = raw.optString("timeLabel").ifBlank {
-            row.startIso.substringAfter('T', "").take(5).takeIf { it.length == 5 } ?: "10:00"
+            startInstant?.atZone(ZoneId.systemDefault())?.format(DateTimeFormatter.ofPattern("HH:mm"))
+                ?: row.startIso.substringAfter('T', "").take(5).takeIf { it.length == 5 } ?: "10:00"
         }
         val duration = raw.optInt("durationMinutes", 0).takeIf { it > 0 }
             ?: if (startInstant != null && endInstant != null && endInstant.isAfter(startInstant))
@@ -226,6 +231,7 @@ internal object NativeCalendarCleanup202611 {
             .put("id", row.id)
             .put("dayOfMonth", date?.dayOfMonth ?: raw.optInt("dayOfMonth", 1))
             .put("dateIso", row.date)
+            .put("programId", row.programId).put("dayId", row.dayId)
             .put("timeLabel", timeLabel)
             .put("titleHu", raw.optString("titleHu").ifBlank {
                 row.dayName.ifBlank { row.programName.ifBlank { "Edzés" } }

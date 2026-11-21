@@ -800,10 +800,19 @@ class GoogleSyncRepository internal constructor(
                 preferLocalOnConflict
             )
         )
-        for (key in arrayOf("settings", "exercises", "plan", "programs", "activeProgramId", "plannerSettings", "exerciseFavorites")) {
+        val plannerAndGoalsKeys = setOf("plan", "plannerSettings", NativeCalendarBackup.STUDIO_SETTINGS_KEY,
+            LegacyWebViewMigrator.USER_GOALS_KEY)
+        for (key in listOf("settings", "exercises", "programs", "activeProgramId", "exerciseFavorites") + plannerAndGoalsKeys) {
             var selected = local.opt(key)
             for (remote in remotes) {
                 val x = remote.opt(key) ?: continue
+                if (key in plannerAndGoalsKeys) {
+                    if (remote.isNull(key)) continue
+                    if (selected == null || selected == JSONObject.NULL) {
+                        selected = x
+                        continue
+                    }
+                }
                 if (LegacySyncIdentity18.canonical(selected) == LegacySyncIdentity18.canonical(x)) continue
                 val baseVal = base?.opt(key)
                 if (baseVal != null && LegacySyncIdentity18.canonical(x) == LegacySyncIdentity18.canonical(baseVal)) continue
@@ -814,6 +823,9 @@ class GoogleSyncRepository internal constructor(
                 } else {
                     x
                 }
+            }
+            if (key == LegacyWebViewMigrator.USER_GOALS_KEY && selected is JSONObject) {
+                selected = LegacyWebViewMigrator.overlayGoals(local.optJSONObject(key), selected)
             }
             if (selected != null) out.put(key, selected)
         }
@@ -1112,7 +1124,7 @@ class GoogleSyncRepository internal constructor(
         val out = JSONArray()
         sorted.forEach { out.put(it) }
         // Never let an older Drive snapshot resurrect the fixed 2026-11 calendar incident.
-        return NativeCalendarCleanup202611.cleanScheduledJson(out)
+        return NativeCalendarCleanup202611.cleanScheduledJson(out, preserveCancellations = true)
     }
 
     // =========================================================================
