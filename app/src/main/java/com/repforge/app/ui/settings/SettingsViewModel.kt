@@ -2,8 +2,8 @@ package com.repforge.app.ui.settings
 
 import android.app.Activity
 import android.app.Application
-import android.content.Intent
 import android.net.Uri
+import androidx.activity.result.ActivityResult
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.repforge.app.ActiveWorkoutStore
@@ -103,7 +103,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private var timerEdit: Pair<String, NativeDataReplacement.Continuation>? = null
 
     internal fun takeGoogleConsent(id: String) = googleConsentBridge.takeForLaunch(id)
-    internal fun completeGoogleConsent(id: String, data: Intent?) { googleConsentBridge.complete(id, data) }
+    internal fun completeGoogleConsent(id: String, result: ActivityResult) { googleConsentBridge.complete(id, result) }
     internal fun failGoogleConsent(id: String) {
         googleConsentBridge.fail(id, java.io.IOException(nativeResources(context, _uiState.value.settings.language)
             .getString(R.string.native_google_launch_failed)))

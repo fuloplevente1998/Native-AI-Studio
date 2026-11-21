@@ -3,7 +3,12 @@
     <string name="native_google_authorizing">Checking Google access…</string>
     <string name="native_google_waiting">Waiting for Google consent…</string>
     <string name="native_google_launch_failed">Could not open Google consent. Please retry.</string>
-    <string name="native_google_cancelled">Google consent cancelled. No sync was started.</string>
+    <string name="native_google_consent_incomplete">Google authorization did not complete. No sync started.</string>
+    <string name="native_google_consent_missing_result">The Google consent screen returned without a result. Please try again.</string>
+    <string name="native_google_auth_network">Google authorization failed because of a network error. Check your connection and try again.</string>
+    <string name="native_google_auth_configuration">Google did not accept the app’s sign-in configuration. Contact app support.</string>
+    <string name="native_google_auth_failed">Google could not verify the authorization. Please try again.</string>
+    <string name="native_google_missing_scopes">Google did not grant all required permissions. No sync started.</string>
     <string name="native_google_no_token">Google did not grant access. Please request access again.</string>
     <string name="native_google_connected">Google account connected.</string>
     <string name="native_google_drive_done">Drive sync completed.</string>

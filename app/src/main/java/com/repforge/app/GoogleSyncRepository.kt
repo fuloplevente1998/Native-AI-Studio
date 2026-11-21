@@ -1,17 +1,18 @@
 package com.repforge.app
 
+import androidx.activity.result.ActivityResult
 import androidx.room.withTransaction
 import com.repforge.app.ui.settings.NativeGoogleMaintenance
 import android.accounts.Account
 import android.app.Activity
 import android.app.PendingIntent
-import android.content.Intent
 import android.content.Context
 import android.content.SharedPreferences
 import com.google.android.gms.auth.api.identity.AuthorizationRequest
 import com.google.android.gms.auth.api.identity.ClearTokenRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.RevokeAccessRequest
+import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.Scope
 import com.repforge.app.data.db.KeyValueDocumentEntity
 import com.repforge.app.data.db.TrainPilotDatabase
@@ -133,13 +134,7 @@ class GoogleSyncRepository internal constructor(
             Scope("https://www.googleapis.com/auth/userinfo.email"),
             Scope("https://www.googleapis.com/auth/userinfo.profile")
         )
-        if (op.startsWith("drive")) {
-            scopes.add(Scope("https://www.googleapis.com/auth/drive.appdata"))
-        }
-        if (op.startsWith("calendar")) {
-            scopes.add(Scope("https://www.googleapis.com/auth/calendar.app.created"))
-            scopes.add(Scope("https://www.googleapis.com/auth/calendar.calendarlist.readonly"))
-        }
+        scopes.addAll(requiredGoogleCloudScopes(op).map(::Scope))
         return scopes
     }
 
@@ -179,7 +174,7 @@ class GoogleSyncRepository internal constructor(
     internal suspend fun authorizeAndRun(
         activity: Activity,
         action: GoogleSyncAction,
-        resolve: suspend (PendingIntent) -> Intent?,
+        resolve: suspend (PendingIntent) -> ActivityResult,
         recoverEarlier: Boolean = false,
         maintenance: NativeGoogleMaintenance.Request? = null
     ): Result<GoogleSyncCompletion> = withContext(Dispatchers.IO) {
@@ -191,22 +186,36 @@ class GoogleSyncRepository internal constructor(
             val email = prefs().getString("email", "").orEmpty()
             if (action != GoogleSyncAction.CONNECT)
                 NativeGoogleAccountPolicy.requireConnected(prefs().getString("sub", "").orEmpty(), email)
-            val authorization = withContext(Dispatchers.Main) {
-                val builder = AuthorizationRequest.builder().setRequestedScopes(scopesForOperation(maintenance?.kind?.key ?: action.key) +
-                    if (maintenance?.kind == NativeGoogleMaintenance.Kind.REVOKE)
-                        scopesForOperation("drive") + scopesForOperation("calendar") else emptyList())
-                if (email.isNotBlank()) builder.setAccount(Account(email, "com.google"))
-                Identity.getAuthorizationClient(activity).authorize(builder.build()).await()
+            val operation = maintenance?.kind?.key ?: action.key
+            val result = try {
+                val authorization = withContext(Dispatchers.Main) {
+                    val builder = AuthorizationRequest.builder().setRequestedScopes(scopesForOperation(operation) +
+                        if (maintenance?.kind == NativeGoogleMaintenance.Kind.REVOKE)
+                            scopesForOperation("drive") + scopesForOperation("calendar") else emptyList())
+                    if (email.isNotBlank()) builder.setAccount(Account(email, "com.google"))
+                    Identity.getAuthorizationClient(activity).authorize(builder.build()).await()
+                }
+                if (authorization.hasResolution()) {
+                    val pending = authorization.pendingIntent ?: throw IOException(strings.getString(R.string.native_google_launch_failed))
+                    _uiState.update { it.copy(stageMessage = strings.getString(R.string.native_google_waiting)) }
+                    val response = resolve(pending)
+                    currentCoroutineContext().ensureActive()
+                    parseGoogleConsentResult(response, strings) { data ->
+                        Identity.getAuthorizationClient(appContext).getAuthorizationResultFromIntent(data)
+                    }
+                } else authorization
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: ApiException) {
+                throw IOException(strings.getString(googleAuthorizationErrorMessage(error.statusCode)))
+            } catch (_: RuntimeException) {
+                throw IOException(strings.getString(R.string.native_google_auth_failed))
             }
-            val result = if (authorization.hasResolution()) {
-                val pending = authorization.pendingIntent ?: throw IOException(strings.getString(R.string.native_google_launch_failed))
-                _uiState.update { it.copy(stageMessage = strings.getString(R.string.native_google_waiting)) }
-                val data = resolve(pending) ?: throw IOException(strings.getString(R.string.native_google_cancelled))
-                currentCoroutineContext().ensureActive()
-                Identity.getAuthorizationClient(appContext).getAuthorizationResultFromIntent(data)
-            } else authorization
             val token = result.accessToken?.takeIf { it.isNotBlank() }
                 ?: throw IOException(strings.getString(R.string.native_google_no_token))
+            if (!hasRequiredGoogleCloudScopes(operation, result.grantedScopes)) {
+                throw IOException(strings.getString(R.string.native_google_missing_scopes))
+            }
             currentCoroutineContext().ensureActive()
             dataTicket.requireCurrent(appContext)
             if (maintenance != null) {
