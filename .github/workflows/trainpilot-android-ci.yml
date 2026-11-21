@@ -1,6 +1,20 @@
 name: TrainPilot Native Android Regression Tests
 
 on:
+  # Main pushes run the full gate before an automatically signed release pair.
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'wear/**'
+      - 'shared/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'scripts/**'
+      - '.github/workflows/trainpilot-android-ci.yml'
+      - '.github/workflows/trainpilot-persistent-signing.yml'
   pull_request:
     paths:
       - 'app/**'
