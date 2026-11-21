@@ -44,7 +44,7 @@ result["mapsApiKeyConfigured"] = (
     and not key.startswith("@string/0x")
     and key not in {"YOUR_API_KEY", "DEFAULT_API_KEY"}
 )
-result["ciCheckout"] = os.environ.get("GITHUB_SHA")
+result["ciCheckout"] = os.environ.get("TRAINPILOT_SOURCE_SHA") or os.environ.get("GITHUB_SHA")
 wear_debug = pathlib.Path("wear/build/outputs/apk/debug/wear-debug.apk")
 wear = pathlib.Path("wear/build/outputs/apk/release/wear-release.apk" if release else "wear/build/outputs/apk/optimized/wear-optimized.apk")
 optimized = wear.is_file()

@@ -23,10 +23,11 @@ on:
         description: 'Also build Play Console AABs (disable for a device-test APK pair)'
         type: boolean
         default: true
-  push:
+  # Only a completed full regression on trusted main can start automatic signing.
+  workflow_run:
+    workflows: ['TrainPilot Native Android Regression Tests']
+    types: [completed]
     branches: [main]
-    paths:
-      - '.github/workflows/trainpilot-persistent-signing.yml'
 
 permissions:
   contents: read
@@ -36,12 +37,80 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  release-source:
+    name: Verify trusted full regression source
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'workflow_run' &&
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.head_branch == 'main' &&
+          github.event.workflow_run.head_repository.full_name == github.repository &&
+          (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch')
+        )
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      source_sha: ${{ steps.validate.outputs.source_sha }}
+    steps:
+      - name: Validate original main SHA and required full CI steps
+        id: validate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (context.eventName === 'workflow_dispatch') {
+              core.setOutput('source_sha', context.sha);
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const run = context.payload.workflow_run;
+            const { data: main } = await github.rest.repos.getBranch({
+              owner, repo, branch: 'main'
+            });
+            if (main.commit.sha !== run.head_sha) {
+              core.notice('Skipping outdated CI source: main advanced since the regression.');
+              return;
+            }
+
+            const { data } = await github.rest.actions.listJobsForWorkflowRun({
+              owner, repo, run_id: run.id, per_page: 100
+            });
+            const jvm = data.jobs.find(job =>
+              job.name === 'Compile and full JVM regressions' &&
+              job.conclusion === 'success' &&
+              job.steps?.some(step =>
+                step.name === 'Verify raw phone, Wear and shared JUnit XML test results' &&
+                step.conclusion === 'success'
+              )
+            );
+            const r8 = data.jobs.find(job =>
+              job.name === 'Release R8 minification check' &&
+              job.conclusion === 'success' &&
+              job.steps?.some(step =>
+                step.name === 'Run release R8 minification' &&
+                step.conclusion === 'success'
+              )
+            );
+            if (!jvm || !r8) {
+              core.notice('No signed build: full JVM verification and release R8 must both pass.');
+              return;
+            }
+            core.setOutput('source_sha', run.head_sha);
+
   signed-pair:
-    if: github.ref == 'refs/heads/main'
+    needs: [release-source]
+    if: ${{ github.ref == 'refs/heads/main' && needs.release-source.outputs.source_sha != '' }}
     environment: android-signing
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
+      TRAINPILOT_SOURCE_SHA: ${{ needs.release-source.outputs.source_sha }}
       TRAINPILOT_MAPS_API_KEY: ${{ secrets.TRAINPILOT_MAPS_API_KEY || secrets.MAPS_API_KEY }}
       TRAINPILOT_REQUIRE_WEAR_PAIR: 'true'
       TRAINPILOT_VERIFY_RELEASE: 'true'
@@ -50,7 +119,7 @@ jobs:
       - name: Checkout trusted main
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.release-source.outputs.source_sha }}
           persist-credentials: false
 
       - name: Validate release APK verification script syntax
@@ -158,7 +227,7 @@ jobs:
           phone = pathlib.Path('app/build/outputs/bundle/release/app-release.aab')
           wear = pathlib.Path('wear/build/outputs/bundle/release/wear-release.aab')
           meta = {
-              'commit': __import__('os').environ.get('GITHUB_SHA'),
+              'commit': __import__('os').environ.get('TRAINPILOT_SOURCE_SHA'),
               'applicationId': 'com.TrainPilot.com',
               'versionName': field('app', 'versionName'),
               'mobileVersionCode': int(field('app', 'versionCode')),
@@ -216,16 +285,18 @@ jobs:
     # Full JVM regression on its own runner, in parallel with the signed build.
     # Signed outputs are published only after both jobs succeed.
     name: Full JVM regressions
-    if: github.ref == 'refs/heads/main'
+    needs: [release-source]
+    if: ${{ github.ref == 'refs/heads/main' && needs.release-source.outputs.source_sha != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
+      TRAINPILOT_SOURCE_SHA: ${{ needs.release-source.outputs.source_sha }}
       TRAINPILOT_MAPS_API_KEY: ${{ secrets.TRAINPILOT_MAPS_API_KEY || secrets.MAPS_API_KEY }}
     steps:
       - name: Checkout trusted main
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.release-source.outputs.source_sha }}
           persist-credentials: false
 
       - name: Set up JDK 17
@@ -273,7 +344,7 @@ jobs:
       - name: Verify raw phone, Wear and shared JUnit XML test results
         if: always()
         env:
-          TRAINPILOT_SOURCE_SHA: ${{ github.sha }}
+          TRAINPILOT_SOURCE_SHA: ${{ needs.release-source.outputs.source_sha }}
         run: python3 scripts/verify_junit_xml.py
 
       - name: Upload JVM test results
@@ -300,8 +371,8 @@ jobs:
 
   publish:
     name: Publish verified signed pair
-    needs: [jvm-tests, signed-pair]
-    if: github.ref == 'refs/heads/main'
+    needs: [release-source, jvm-tests, signed-pair]
+    if: ${{ github.ref == 'refs/heads/main' && needs.release-source.outputs.source_sha != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
