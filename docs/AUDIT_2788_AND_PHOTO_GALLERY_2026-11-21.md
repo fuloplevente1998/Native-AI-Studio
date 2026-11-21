@@ -14,7 +14,7 @@ Az első statikus ellenőrzés fordítási blokkolót, védtelen testsúly-írá
 
 Az átadó a teljes `app`/`wear`/`shared` alkalmazást kéri; a PR #290–#306 csak kiemelt prioritás. Ez a fájl jelenleg **részjelentés**: a 2788-as változások, a testsúly-/fotónapló és néhány kapcsolódó adat-, egészség-, óra- és CI-útvonal szerepel benne.
 
-Még nincs végigellenőrizve a teljes telefon–óra helyreállítási mátrix, minden egészségforrás- és engedélyállapot, az aktív edzés/GPS teljes háttér- és eszközviselkedése, a teljes UI/lokalizációs/akadálymentességi mátrix, az app-szintű coroutine/állapotversenyek, az exportált komponensek és titokkezelés, valamint a kiadási metaadatok és webes/Play-listing egyezése. A `shared` modulhoz a jelenlegi fán nem találtam tesztfájlokat. Ezekről a jelentés nem állítja, hogy hibamentesek; az audit lezárásához külön ellenőrzés kell.
+Még nincs végigellenőrizve a teljes telefon–óra helyreállítási mátrix, minden egészségforrás- és engedélyállapot, az aktív edzés/GPS teljes háttér- és eszközviselkedése, a teljes UI/lokalizációs/akadálymentességi mátrix, az app-szintű coroutine/állapotversenyek, az összes exportált komponens permission-mátrixa, valamint a kiadási metaadatok és webes/Play-listing egyezése. A `shared` modulhoz a jelenlegi fán nem találtam tesztfájlokat. Ezekről a jelentés nem állítja, hogy hibamentesek; az audit lezárásához külön ellenőrzés kell.
 
 ## Megállapítások
 
@@ -32,11 +32,13 @@ Még nincs végigellenőrizve a teljes telefon–óra helyreállítási mátrix,
 ## Ellenőrzött területek – külön hibát nem találtam
 
 - **Room-séma:** a Room entitások már az első séma-verzióban szerepeltek; a jelenlegi `version = 1` önmagában nem mutat új entitás miatti migrációs hibát.
-- **2788 heti lépések:** az adatbetöltés dátumonként egy bejegyzést állít elő; a kompakt és részletes összesítés a mért napokat használja, hiányzó adatot nem alakít nullává.
+- **2788 heti lépések:** a ViewModel naponta egy `WeeklyHealthDaySummary` elemet állít elő; a kompakt és részletes nézet ugyanazt a hét napot, mért napokat és célt használja. 100% alatt a kerekített felirat és az arányos csík között legfeljebb 0,5 százalékpont kerekítési eltérés lehet; cél felett a felirat a valós, 100% feletti értéket mutatja, a csík szándékosan teljes marad.
 - **2788 kalória:** a teljes és aktív energia külön mező marad; a kijelzés nem adja össze őket, és a hiányzó értéket nem becsüli.
 - **Telefon–óra ownership:** az átnézett 193-as átadási protokoll eszközazonosítót, epochot, átadási állapotot és egyező workoutot ellenőriz; az elavult üzenetek elutasítottak. Fizikai eszközös átadás nem volt tesztelve.
 - **GPS:** az útvonal privát fájlban tárolódik, korlátozott méretű és pontszámú, a bemenet ellenőrzött, a törlés explicit felhasználói művelethez kötött.
 - **Egészségforrás:** a vizsgált vetítés forrást választ, nem összegez átfedő Samsung/Health Connect értékeket.
+- **Közös Compose-vezérlők:** a `TrainPilotFilterChip` saját palette-stílusa minden hívónál megőrzi a `selected`/`enabled` állapotot; az átadott `colors`/`border` csak megjelenés, nem hibajelzés. A szövegmezőknél az `isError` marad az érvényesített hibajelzés, a hívók egyedi színei a közös palettával egyeznek.
+- **Szűkített intent-/titokellenőrzés:** a telefonos Wear deep link csak navigál vagy kifejezetten ellenőrzött edzés-/epoch-/kulcs-/frissesség-adatokkal továbbít parancsot; a Health Connect exportált activity-jei a platform permission intentjeihez kötöttek. A kódban nem találtam illesztést token/API-kulcs titokmintákra, sem tokeneket kiíró `Log`/`println` hívást. Ez nem helyettesíti a teljes manifest/web-adatvédelmi auditot.
 - **CI-kapu:** a repository workflow app, Wear és shared unit teszteket futtat, majd nyers JUnit XML-t ellenőriz.
 
 ## Ellenőrzés és korlátok
@@ -44,9 +46,10 @@ Még nincs végigellenőrizve a teljes telefon–óra helyreállítási mátrix,
 - `git diff --check`: sikeres.
 - A JDK 17, Gradle 9.3.1, Android Platform 36 és Build Tools 36.0.0 hordozható telepítése a `H:\GitHub Copilot\.tools` alatt elkészült.
 - A helyi Gradle-fordítás még a forráskód előtt, függőséglekérésnél állt meg: a JVM-en keresztüli Foojay/Android Gradle Plugin letöltés nem sikerült, bár ugyanazon végpontokat a PowerShell eléri. A módosított források fordításig és a regressziós tesztek futásáig még nem jutottak.
-- GitHub Actions `44846049059`: az R8 minifikáció sikerült, a unit tesztforrások fordítása két új tesztírási hibán állt meg; ezek javítva.
-- GitHub Actions `44846732312`: alkalmazás/Wear fordítás sikeres; nyers XML összesítése 972 teszt, 1 failure, 0 error, 0 skipped. Az egyetlen failure a Progress viewport-regresszió volt (24 dp túlcsordulás), amelyet a legutóbbi, még nem CI-zöldített módosítás javít. Az R8 minifikáció sikerült.
-- A végleges, legutóbbi forrás SHA-hoz még szükséges egy teljes GitHub Actions-futás zöld eredménye és annak nyers XML-számai.
+- Tesztelt forráskód SHA: `ab6f3afe8993d405b71b5917178a6370310fac30` a `fix/2788-audit` ágon.
+- GitHub Actions [`44847587335`](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/44847587335): sikeres teljes Android/Wear JVM-regresszió és release R8 minifikáció.
+- Nyers JUnit XML (`verify_junit_xml.py`): telefon 151 fájl / 768 teszt; Wear 38 fájl / 204 teszt; `shared` no-source. Összesen 972 teszt, 0 failure, 0 error, 0 skipped.
+- Az előző körökben a két új teszt fordítási hibái és a Progress 24 dp-es viewport-túlcsordulása előjött; mind javítva, a fenti teljes futás zöld.
 - Kamera/galéria OEM-viselkedés, Drive-hálózati payload tényleges futása, fizikai telefon–óra átadás és teljes készülékes vizuális elfogadás nem történt.
 - A munkafa auditkor módosított állapotban volt; a fenti SHA a commit-alap, nem a nem commitolt változások teljes azonosítója.
 - Repo verzióadata: telefon `versionCode 278800`, `versionName 1.4.1`.
