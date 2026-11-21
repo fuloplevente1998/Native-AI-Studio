@@ -169,8 +169,13 @@ class Collector2788RegressionTest {
         list.performScrollToNode(hasTestTag("health_weight_chart_compact"))
         compact.assertExists()
         compose.onNodeWithTag("health_weight_log_header").performClick()
-        compose.onNodeWithTag("health_weight_range_empty", useUnmergedTree = true)
-            .assertTextContains("Nincs mérés ebben az időszakban", substring = true)
+        list.performScrollToNode(hasTestTag("health_weight_range_empty"))
+        compose.onNode(
+            hasAnyAncestor(hasTestTag("health_weight_range_empty")) and
+                hasText("Nincs mérés ebben az időszakban", substring = true),
+            useUnmergedTree = true
+        ).assertIsDisplayed()
+        list.performScrollToNode(hasTestTag("health_weight_log_header"))
         compose.onNodeWithTag("health_weight_log_header").performClick()
         compact.assertExists()
         compose.runOnIdle { state = state.copy(bodyWeightLogs = state.bodyWeightLogs.takeLast(1)) }
