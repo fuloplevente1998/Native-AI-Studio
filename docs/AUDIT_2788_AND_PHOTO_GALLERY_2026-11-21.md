@@ -10,6 +10,12 @@ Módszer: forráskód- és tesztlefedettség-vizsgálat, majd a jóváhagyott ja
 
 Az első statikus ellenőrzés fordítási blokkolót, védtelen testsúly-írási/törlési útvonalat, elavuló fotószámlálót és hiányzó önálló „Egyéb” fotó-hozzáadást talált; ezekre javítások és célzott regressziós tesztek készültek. Tulajdonosi tisztázás alapján az egészségadat-mentési kapcsoló nem korlátozza a Drive-ra feltöltött fotókat: a fotószinkron a Google Drive-hozzáféréshez kötött.
 
+## Hatókör és teljesség
+
+Az átadó a teljes `app`/`wear`/`shared` alkalmazást kéri; a PR #290–#306 csak kiemelt prioritás. Ez a fájl jelenleg **részjelentés**: a 2788-as változások, a testsúly-/fotónapló és néhány kapcsolódó adat-, egészség-, óra- és CI-útvonal szerepel benne.
+
+Még nincs végigellenőrizve a teljes telefon–óra helyreállítási mátrix, minden egészségforrás- és engedélyállapot, az aktív edzés/GPS teljes háttér- és eszközviselkedése, a teljes UI/lokalizációs/akadálymentességi mátrix, az app-szintű coroutine/állapotversenyek, az exportált komponensek és titokkezelés, valamint a kiadási metaadatok és webes/Play-listing egyezése. A `shared` modulhoz a jelenlegi fán nem találtam tesztfájlokat. Ezekről a jelentés nem állítja, hogy hibamentesek; az audit lezárásához külön ellenőrzés kell.
+
 ## Megállapítások
 
 | ID | Súlyosság | Bizonyosság | Megállapítás és bizonyíték | Javasolt javítás és regresszió |

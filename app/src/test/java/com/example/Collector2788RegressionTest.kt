@@ -38,6 +38,7 @@ class Collector2788RegressionTest {
     @get:Rule val compose = createComposeRule()
     private val today = LocalDate.now()
     private val hu = TrainPilotStrings.forLanguage(AppLanguage.HU)
+    private val dot = DateTimeFormatter.ofPattern("yyyy. MM. dd.")
 
     private fun kcalDay(back: Long, active: Int?, total: Int?) = today.minusDays(back).toString().let {
         WeeklyHealthDaySummary(dateIso = it, dayLabelHu = it, steps = 0, activeCaloriesKcal = active ?: 0, sleepLabel = "—",
@@ -100,7 +101,6 @@ class Collector2788RegressionTest {
     }
 
     @Test fun editingAWeightKeepsItsIdInsteadOfAddingANewEntry() {
-        val dot = DateTimeFormatter.ofPattern("yyyy. MM. dd.")
         val d = today.minusDays(3)
         val saved = mutableListOf<Pair<Float, String>>()
         val updated = mutableListOf<Triple<String, Float, String>>()

@@ -204,7 +204,7 @@ class LegacyRestoreEvidenceRegressionTest {
         val data = JSONObject()
             .put("history", JSONArray().put(raw()))
             .put("weights", JSONArray().put(JSONObject().put("id", weightId).put("date", "2026-11-21").put("kg", 82.5)
-                .put("photos", JSONArray().put(JSONObject().put("id", localWeightPhoto))))
+                .put("photos", JSONArray().put(JSONObject().put("id", localWeightPhoto)))))
             .put("loosePhotos", JSONArray().put(JSONObject().put("id", loosePhoto).put("label", "other")))
         val drive = com.repforge.app.data.migration.NativeBackupPrivacy.sanitize(data, includeHealth = false)
         assertFalse(drive.getJSONArray("history").getJSONObject(0).has("healthWear129"))
@@ -231,7 +231,7 @@ class LegacyRestoreEvidenceRegressionTest {
             .put("scheduled", JSONArray())
             .put("loosePhotos", JSONArray().put(JSONObject().put("id", remoteLoosePhoto).put("label", "other")))
 
-        val merged = GoogleSyncRepository.mergeSync18(
+        val merged = GoogleSyncRepository(context).mergeSync18(
             local = local,
             remotes = listOf(remote),
             base = null,
