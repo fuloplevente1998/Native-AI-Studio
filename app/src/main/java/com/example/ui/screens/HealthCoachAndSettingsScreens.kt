@@ -1167,9 +1167,7 @@ fun HealthTabScreen(
                                 text = latestWeightLabel,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.SemiBold,
-                                color = palette.primary,
-                                maxLines = 2,
-                                overflow = TextOverflow.Clip
+                                color = palette.primary
                             )
                         }
                         Icon(
