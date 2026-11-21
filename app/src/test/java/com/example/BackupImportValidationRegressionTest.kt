@@ -3,14 +3,21 @@ package com.example
 import android.content.Context
 import android.net.Uri
 import android.os.Looper
+import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.repforge.app.BackupRestoreManager
+import com.repforge.app.GoogleSyncRepository
+import com.repforge.app.NativeCalendarBackup
+import com.repforge.app.NativeCloudMergeGuard
+import com.repforge.app.NativeCloudPhotoStage
 import com.repforge.app.NativeDataReplacement
 import com.repforge.app.NativeReplacementJournal
 import com.repforge.app.HealthJournalStore
 import com.repforge.app.NativeHealthBackupGate
 import com.repforge.app.data.db.TrainPilotDatabase
 import com.repforge.app.data.db.BodyWeightEntryEntity
+import com.repforge.app.data.db.CalendarScheduleEntity
+import com.repforge.app.data.db.KeyValueDocumentEntity
 import com.repforge.app.data.migration.LegacyWebViewMigrator
 import com.repforge.app.data.store.TrainPilotSettingsStore
 import kotlinx.coroutines.runBlocking
@@ -236,6 +243,84 @@ class BackupImportValidationRegressionTest {
         assertEquals("private-health", records.getJSONObject(0).getString("recordId"))
     }
 
+    private val scheduledRows = listOf(
+        scheduled("dec-morning", "2026-12-01", "07:05", "completed", 45),
+        scheduled("dec-evening", "2026-12-01", "19:15", "planned", 90),
+        scheduled("nov-last", "2026-11-30", "08:00", "skipped", 30),
+        scheduled("cancelled", "2026-12-01", "19:15", "skipped", 90, cancelled = true)
+    )
+    private val goalsKey = LegacyWebViewMigrator.USER_GOALS_KEY
+    private val stateKey = NativeCalendarBackup.STATE_KEY
+    private val studioPlannerKey = NativeCalendarBackup.STUDIO_SETTINGS_KEY
+    private val goals = JSONObject().put("workoutGoalPeriod", "monthly")
+        .put("weeklyGoalTarget", 26).put("workoutGoalTarget", 26).put("stepsGoal", 8450)
+    private val legacyPlanner = JSONObject().put("mode", "weekly").put("nativeWeeks", 5)
+    private val studioPlanner = JSONObject().put("testPlannerPreference", "personal calendar settings")
+    private val plan = JSONObject().put("programId", "program-1")
+
+    private fun scheduled(id: String, date: String, time: String, status: String, minutes: Int,
+        cancelled: Boolean = false): CalendarScheduleEntity {
+        val start = java.time.Instant.parse("${date}T${time}:00Z")
+        return CalendarScheduleEntity(id, "", date, start.toString(), start.plusSeconds(minutes * 60L).toString(),
+            "program-1", "My program", "day-1", "Day one", status, 10L,
+            JSONObject().put("timeLabel", time).put("durationMinutes", minutes)
+                .put("titleHu", "Named workout").put("cancelled", cancelled).toString())
+    }
+
+    private suspend fun seedGoalsAndCalendar(db: TrainPilotDatabase) {
+        val documents = db.keyValueDocumentDao()
+        documents.putDocument(KeyValueDocumentEntity(goalsKey, goals.toString(), 11L))
+        documents.putDocument(KeyValueDocumentEntity("plannerSettings", legacyPlanner.toString(), 11L))
+        documents.putDocument(KeyValueDocumentEntity(studioPlannerKey, studioPlanner.toString(), 11L))
+        documents.putDocument(KeyValueDocumentEntity("plan", plan.toString(), 11L))
+        db.calendarScheduleDao().upsertEntries(scheduledRows)
+        val oldDisplayOnly = JSONObject().put("id", "legacy-display-only").put("dateIso", "2027-01-03")
+            .put("timeLabel", "11:15").put("durationMinutes", 75).put("status", "PLANNED")
+            .put("titleHu", "Existing Studio event").put("programId", "program-1").put("dayId", "day-2")
+        val state = JSONObject().put("events", JSONArray().put(oldDisplayOnly))
+            .put("undoStack", JSONArray().put(JSONArray().put(JSONObject().put("id", "undone-old-event"))))
+        documents.putDocument(KeyValueDocumentEntity(stateKey, state.toString(), 12L))
+    }
+
+    private suspend fun assertRecoveredGoalsAndCalendar(db: TrainPilotDatabase) {
+        val documents = db.keyValueDocumentDao()
+        val restoredGoals = JSONObject(requireNotNull(documents.getDocument(goalsKey)).json)
+        assertEquals("monthly", restoredGoals.getString("workoutGoalPeriod"))
+        assertEquals(26, restoredGoals.getInt("workoutGoalTarget"))
+        assertEquals(8450, restoredGoals.getInt("stepsGoal"))
+        assertEquals(legacyPlanner.toString(), documents.getDocument("plannerSettings")?.json)
+        assertEquals(studioPlanner.toString(), documents.getDocument(studioPlannerKey)?.json)
+        assertEquals(plan.toString(), documents.getDocument("plan")?.json)
+
+        val rows = db.calendarScheduleDao().getAllEntries().associateBy { it.id }
+        val state = JSONObject(requireNotNull(documents.getDocument(stateKey)).json)
+        val events = state.getJSONArray("events")
+        val eventsById = (0 until events.length()).map(events::getJSONObject).associateBy { it.getString("id") }
+        assertEquals(setOf("dec-morning", "dec-evening", "nov-last", "legacy-display-only"), eventsById.keys)
+        assertEquals(eventsById.keys + "cancelled", rows.keys)
+        assertEquals(eventsById.size, events.length())
+        assertFalse(state.has("undoStack"))
+        assertTrue(JSONObject(rows.getValue("cancelled").rawJson).getBoolean("cancelled"))
+        for (original in scheduledRows.filterNot { it.id == "cancelled" }) {
+            assertEquals(original, rows.getValue(original.id).copy(rawJson = original.rawJson))
+            val event = eventsById.getValue(original.id)
+            assertEquals(original.date, event.getString("dateIso"))
+            assertEquals(original.programId, event.getString("programId"))
+            assertEquals(original.dayId, event.getString("dayId"))
+            val raw = JSONObject(original.rawJson)
+            assertEquals(raw.getString("timeLabel"), event.getString("timeLabel"))
+            assertEquals(raw.getInt("durationMinutes"), event.getInt("durationMinutes"))
+            assertEquals(raw.getString("titleHu"), event.getString("titleHu"))
+        }
+        assertEquals("COMPLETED", eventsById.getValue("dec-morning").getString("status"))
+        assertEquals("PLANNED", eventsById.getValue("dec-evening").getString("status"))
+        assertEquals("MISSED", eventsById.getValue("nov-last").getString("status"))
+        assertEquals("2027-01-03", eventsById.getValue("legacy-display-only").getString("dateIso"))
+        assertEquals("11:15", eventsById.getValue("legacy-display-only").getString("timeLabel"))
+        assertEquals(75, eventsById.getValue("legacy-display-only").getInt("durationMinutes"))
+        assertEquals("day-2", rows.getValue("legacy-display-only").dayId)
+    }
+
     @Test fun canonicalJsonExportAndRestorePreserveWorkoutWeightAndSettings() = roundTrip(false)
 
     @Test fun canonicalZipExportAndRestorePreserveWorkoutWeightAndSettings() = roundTrip(true)
@@ -252,6 +337,7 @@ class BackupImportValidationRegressionTest {
                 .put("started", "2026-11-01T10:00:00Z").put("finished", "2026-11-01T10:45:00Z")
                 .put("exercises", JSONArray()))
             db.bodyWeightDao().upsertWeight(weight)
+            seedGoalsAndCalendar(db)
             settings.setLanguage("de")
             settings.ensureCloudDeviceId()
         }
@@ -264,9 +350,20 @@ class BackupImportValidationRegressionTest {
         }
         assertTrue(exported.exceptionOrNull()?.message ?: "export failed", exported.isSuccess)
         val originalBytes = file.readBytes()
+        val payload = if (zip) ZipFile(file).use { archive ->
+            JSONObject(archive.getInputStream(archive.getEntry("backup.json")).reader().use { it.readText() })
+        } else JSONObject(file.readText())
+        assertEquals(8450, payload.getJSONObject(goalsKey).getInt("stepsGoal"))
+        assertEquals(5, payload.getJSONArray("scheduled").length())
+        assertFalse(payload.has(stateKey))
         awaitNative {
             db.workoutHistoryDao().deleteAllWorkouts()
             db.bodyWeightDao().deleteAllWeights()
+            db.keyValueDocumentDao().deleteAllDocuments()
+            db.calendarScheduleDao().deleteAllEntries()
+            db.calendarScheduleDao().upsertEntry(scheduled("stale-local", "2026-12-02", "09:30", "planned", 60))
+            db.keyValueDocumentDao().putDocument(KeyValueDocumentEntity(stateKey,
+                """{"events":[{"id":"stale-local"}],"undoStack":[[]]}""", 999L))
             settings.setLanguage("hu")
         }
         val restored = awaitNative { manager.importBackupFromUri(Uri.fromFile(file)) }
@@ -277,6 +374,11 @@ class BackupImportValidationRegressionTest {
         assertEquals(80.5, awaitNative { db.bodyWeightDao().getWeightById(weight.id) }!!.kg, 0.0)
         val restoredSettings = awaitNative { settings.current() }
         assertEquals("de", restoredSettings.language)
+        awaitNative {
+            val reopened = Room.databaseBuilder(context, TrainPilotDatabase::class.java,
+                TrainPilotDatabase.DATABASE_NAME).build()
+            try { assertRecoveredGoalsAndCalendar(reopened) } finally { reopened.close() }
+        }
         assertEquals(identity, restoredSettings.cloudDeviceId)
         // Profile serialization may acquire canonical defaults, so compare verified objects.
         assertEquals(com.repforge.app.NativeTrainingProfile.verified(JSONObject(originalProfile)).toString(),
@@ -284,6 +386,76 @@ class BackupImportValidationRegressionTest {
         assertFalse(NativeDataReplacement.blocked(context))
         assertFalse(NativeReplacementJournal(context).exists())
         assertArrayEquals(originalBytes, file.readBytes())
+    }
+
+    @Test fun legacyBackupPreservesAbsentGoalsAndLocalCalendarEntries() {
+        val db = TrainPilotDatabase.getInstance(context)
+        awaitNative { seedGoalsAndCalendar(db) }
+        val legacy = JSONObject().put("history", JSONArray()).put("scheduled", JSONArray()
+            .put(JSONObject().put("id", "legacy-added").put("date", "2026-12-10").put("start", "2026-12-10T10:00:00Z"))
+            .put(JSONObject().put("id", "legacy-same-slot").put("date", "2026-12-01").put("start", "2026-12-01T07:05:00Z"))
+            .put(JSONObject().put("id", "cancelled").put("date", "2026-12-10").put("start", "2026-12-10T07:00:00Z")))
+        val file = File(context.cacheDir, "legacy-goals-and-calendar.json").apply { writeText(legacy.toString()) }
+        awaitNative { BackupRestoreManager(context).importBackupFromUri(Uri.fromFile(file)).getOrThrow() }
+        awaitNative {
+            val docs = db.keyValueDocumentDao()
+            assertEquals(goals.toString(), docs.getDocument(goalsKey)?.json)
+            assertEquals(legacyPlanner.toString(), docs.getDocument("plannerSettings")?.json)
+            assertEquals(studioPlanner.toString(), docs.getDocument(studioPlannerKey)?.json)
+            assertEquals(plan.toString(), docs.getDocument("plan")?.json)
+            assertEquals(scheduledRows.map { it.id }.toSet() + setOf("legacy-added", "legacy-display-only"),
+                db.calendarScheduleDao().getAllEntries().map { it.id }.toSet())
+            val events = JSONObject(requireNotNull(docs.getDocument(stateKey)).json).getJSONArray("events")
+            assertEquals(5, events.length())
+            assertTrue(JSONObject(requireNotNull(db.calendarScheduleDao().getEntry("cancelled")).rawJson)
+                .getBoolean("cancelled"))
+            val partial = JSONObject().put(goalsKey, JSONObject()
+                .put("weeklyGoalTarget", 30).put("stepsGoal", JSONObject.NULL))
+            LegacyWebViewMigrator(context, db, TrainPilotSettingsStore(context)).importBackupJson(partial, replaceAll = true)
+            val updated = JSONObject(requireNotNull(docs.getDocument(goalsKey)).json)
+            assertEquals(30, updated.getInt("workoutGoalTarget"))
+            assertEquals("monthly", updated.getString("workoutGoalPeriod"))
+            assertEquals(8450, updated.getInt("stepsGoal"))
+            assertEquals(events.toString(), JSONObject(requireNotNull(docs.getDocument(stateKey)).json)
+                .getJSONArray("events").toString())
+        }
+    }
+
+    @Test fun driveMergeInstallsPortableGoalsAndCalendarWithoutDailyHealth() {
+        val db = TrainPilotDatabase.getInstance(context)
+        val settings = TrainPilotSettingsStore(context)
+        val migrator = LegacyWebViewMigrator(context, db, settings)
+        awaitNative {
+            seedGoalsAndCalendar(db)
+            settings.setHealthBackupConsent(true)
+            val remote = migrator.exportBackupJson(includeHealthJournal = false,
+                healthSnapshot = JSONObject().put("records", JSONArray().put(healthRecord("steps", 6820))))
+            assertFalse(remote.has("nativeHealthJournal"))
+            // Even an older or external snapshot with a daily journal cannot inject it into Drive merge.
+            remote.put("nativeHealthJournal", JSONObject().put("records", JSONArray().put(healthRecord("remote-steps", 6820))))
+            db.keyValueDocumentDao().deleteAllDocuments()
+            db.calendarScheduleDao().deleteAllEntries()
+            settings.setHealthBackupConsent(false)
+            val local = migrator.exportBackupJson(includeHealthJournal = false)
+            val merged = GoogleSyncRepository(context).mergeSync18(local, listOf(remote), null,
+                emptyList(), emptySet(), emptySet(), preferLocalOnConflict = true)
+            val installationBefore = NativeCloudMergeGuard.localInstallRevision.value
+            var published = false
+            NativeCloudPhotoStage(context, merged).use { photos ->
+                photos.prepare(upload = { _, _ -> error("Unexpected photo upload") },
+                    download = { _, _, _ -> error("Unexpected photo download") })
+                NativeCloudMergeGuard.installAndPublish(context, local, merged, photos, "fixture-owner") { accepted ->
+                    assertRecoveredGoalsAndCalendar(db)
+                    assertFalse(accepted.has("nativeHealthJournal"))
+                    assertFalse(NativeReplacementJournal(context).exists())
+                    assertEquals(installationBefore + 1, NativeCloudMergeGuard.localInstallRevision.value)
+                    published = true
+                }
+            }
+            assertTrue(published)
+            assertNotNull(db.keyValueDocumentDao().getDocument("cloudBase:fixture-owner"))
+            assertFalse(settings.current().healthBackupConsent)
+        }
     }
 
     @Test fun unrelatedAndDamagedJsonCannotEraseExistingWorkoutHistory() {
@@ -299,6 +471,11 @@ class BackupImportValidationRegressionTest {
         assertEquals(1, original.size)
         for (payload in listOf("{}", "{\"settings\":{}}", "{\"history\":null}",
             "{\"history\":{},\"workouts\":[]}", "{\"history\":\"broken\"}", "{\"history\":[{}]}", "{\"history\":[null]}",
+            """{"history":[],"calendarScheduleVersion":1}""",
+            """{"history":[],"calendarScheduleVersion":1,"scheduled":[{"date":"invalid"}]}""",
+            """{"history":[],"calendarScheduleVersion":1,"scheduled":[{"date":"2026-12-10","timeLabel":"invalid"}]}""",
+            """{"history":[],"calendarScheduleVersion":1,"scheduled":[{"date":"2026-12-10","durationMinutes":1441}]}""",
+            """{"history":[],"native:userGoals":{"stepsGoal":"invalid"}}""",
             "{\"history\":[{\"started\":\"2026-11-01T10:00:00Z\",\"photos\":[{\"id\":\"invalid-photo\"}]}]}")) {
             val file = File(context.cacheDir, "selected-backup.json").apply { writeText(payload) }
             val result = awaitNative { BackupRestoreManager(context).importBackupFromUri(Uri.fromFile(file)) }

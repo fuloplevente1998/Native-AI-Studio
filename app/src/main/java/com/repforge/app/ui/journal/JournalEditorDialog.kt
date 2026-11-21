@@ -1,5 +1,6 @@
 package com.repforge.app.ui.journal
 
+import com.example.ui.components.TrainPilotModalBottomSheet
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 import com.example.ui.components.trainPilotSheetTopPadding
 import com.example.ui.components.trainPilotSheetTopSafeArea
@@ -72,7 +73,7 @@ internal fun JournalEditorDialog(state: JournalEditState, language: String,
                 false // A drag/scrim must not silently discard the journal draft.
             } else true
         })
-    ModalBottomSheet(onDismissRequest = { if (!savingNow) confirmDiscard = true }, sheetState = sheetState,
+    TrainPilotModalBottomSheet(onDismissRequest = { if (!savingNow) confirmDiscard = true }, sheetState = sheetState,
         modifier = Modifier.trainPilotSheetTopSafeArea().fillMaxHeight().testTag("journal_editor_sheet"), dragHandle = null,
         containerColor = colors.card, contentColor = colors.text,
         // JournalEditorFrame already handles the visible window, IME and navigation insets.

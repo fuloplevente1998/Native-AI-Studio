@@ -101,6 +101,11 @@ class TrainPilotViewModel : ViewModel() {
     @Volatile private var calendarWriteRevision = 0L
     private var calendarWriteJob: Job? = null
     @Volatile private var calendarWriteError: String? = null
+    @Volatile private var calendarProjectionTicket: NativeDataReplacement.Continuation? = null
+    private val plannerSettingsWriteMutex = Mutex()
+    @Volatile private var plannerSettingsRevision = 0L
+    @Volatile private var plannerSettingsWriteJob: Job? = null
+    @Volatile private var plannerSettingsWriteError: String? = null
     private var nativeSettingsStore: TrainPilotSettingsStore? = null
     private var nativeDatabase: TrainPilotDatabase? = null
     private var nativeScope: CoroutineScope? = null
@@ -522,6 +527,8 @@ class TrainPilotViewModel : ViewModel() {
     private fun persistCalendarStateToRoomAsync() {
         val db = nativeDatabase ?: return
         val scope = nativeScope ?: return
+        val context = nativeContext ?: return
+        val ticket = calendarProjectionTicket ?: return
         val state = _uiState.value
         val events = state.calendarEvents
         val undoStack = state.calendarUndoStack
@@ -529,143 +536,137 @@ class TrainPilotViewModel : ViewModel() {
         val nowMs = System.currentTimeMillis()
         val revision = ++calendarWriteRevision
         calendarWriteError = null
+
+        fun calendarUiJson(event: CalendarDayEvent) = JSONObject()
+            .put("id", event.id).put("dayOfMonth", event.dayOfMonth).put("dateIso", event.dateIso)
+            .put("timeLabel", event.timeLabel).put("titleHu", event.titleHu).put("exerciseCount", event.exerciseCount)
+            .put("durationMinutes", event.durationMinutes).put("status", event.status.name)
+            .put("splitBadge", event.splitBadge).put("programId", event.programId).put("dayId", event.dayId)
+
         calendarWriteJob = scope.launch(Dispatchers.IO) {
-            runCatching {
-              calendarWriteMutex.withLock {
-                if (revision != calendarWriteRevision) return@withLock
-                programWriteJob?.join()
-                check(programWriteError == null) { requireNotNull(programWriteError) }
-                db.withTransaction {
-                val oldDocument = db.keyValueDocumentDao().getDocument("native:calendarState")
-                val previous = oldDocument?.json?.let { JSONObject(it).optJSONArray("events") } ?: JSONArray()
-                val fallbackMonth = runCatching { YearMonth.parse(state.calendarYearMonth) }.getOrDefault(YearMonth.now())
-                val retainedIds = events.map { it.id }.toSet()
-                for (i in 0 until previous.length()) {
-                    val id = previous.getJSONObject(i).getString("id")
-                    if (id !in retainedIds) {
-                        val existing = db.calendarScheduleDao().getEntry(id)
-                        if (existing != null) {
-                            if (existing.googleEventId.isBlank()) {
-                                db.calendarScheduleDao().deleteEntry(id)
-                            } else {
-                                db.calendarScheduleDao().upsertEntry(existing.copy(status = "skipped", updatedAt = nowMs))
+            try {
+                calendarWriteMutex.withLock {
+                    if (revision != calendarWriteRevision) return@withLock
+                    programWriteJob?.join()
+                    check(programWriteError == null) { requireNotNull(programWriteError) }
+                    NativeDataReplacement.mutate(context) {
+                        ticket.requireCurrent(context)
+                        db.withTransaction {
+                            val stateKey = com.repforge.app.NativeCalendarBackup.STATE_KEY
+                            val oldDocument = db.keyValueDocumentDao().getDocument(stateKey)
+                            val previous = oldDocument?.json?.let { JSONObject(it).optJSONArray("events") } ?: JSONArray()
+                            val previousById = (0 until previous.length()).mapNotNull { previous.optJSONObject(it) }
+                                .associateBy { it.optString("id") }
+                            val fallbackMonth = YearMonth.parse(state.calendarYearMonth)
+                            val currentRows = events.associateBy({ it.id }, ::calendarUiJson)
+                            for (id in previousById.keys - currentRows.keys) {
+                                val existing = db.calendarScheduleDao().getEntry(id) ?: continue
+                                if (existing.status.equals("completed", ignoreCase = true) ||
+                                    db.workoutHistoryDao().hasScheduleHistory(id)) continue
+                                val stamp = maxOf(nowMs, existing.updatedAt + 1)
+                                val cancelled = runCatching { JSONObject(existing.rawJson) }.getOrElse { JSONObject() }
+                                    .put("status", "skipped").put("cancelled", true).put("updatedAt", stamp)
+                                db.calendarScheduleDao().upsertEntry(existing.copy(status = "skipped",
+                                    updatedAt = stamp, rawJson = cancelled.toString()))
                             }
+                            val changedRows = events.mapNotNull { event ->
+                                val existing = db.calendarScheduleDao().getEntry(event.id)
+                                val rawUi = currentRows.getValue(event.id)
+                                val previousUi = previousById[event.id]
+                                if (existing != null && previousUi != null &&
+                                    rawUi.keys().asSequence().all { rawUi.opt(it) == previousUi.opt(it) }
+                                ) return@mapNotNull null
+
+                                val fallbackDate = fallbackMonth.atDay(event.dayOfMonth.coerceIn(1, fallbackMonth.lengthOfMonth()))
+                                val resolvedDate = event.dateIso.ifBlank { existing?.date.orEmpty() }
+                                val date = runCatching { LocalDate.parse(resolvedDate) }.getOrDefault(fallbackDate).toString()
+                                val (start, end) = com.example.model.StudioCalendarDates.window(
+                                    event.copy(dateIso = date), ZoneId.systemDefault())
+                                val status = when (event.status) {
+                                    CalendarEventStatus.COMPLETED -> "completed"
+                                    CalendarEventStatus.MISSED -> "skipped"
+                                    else -> "planned"
+                                }
+                                val programId = event.programId.ifBlank { existing?.programId.orEmpty() }.ifBlank { activeProg?.id.orEmpty() }
+                                val program = state.programs.firstOrNull { it.id == programId }
+                                val requestedDayId = event.dayId.ifBlank { existing?.dayId.orEmpty() }.ifBlank { event.splitBadge }
+                                val day = program?.days?.firstOrNull { it.id.removePrefix("$programId:").equals(requestedDayId, true) }
+                                val dayId = day?.id?.removePrefix("$programId:") ?: requestedDayId
+                                val programName = program?.nameHu ?: existing?.programName ?: event.titleHu
+                                val dayName = day?.titleHu ?: existing?.dayName ?: event.titleHu
+                                val stamp = maxOf(nowMs, (existing?.updatedAt ?: 0L) + 1)
+                                val raw = JSONObject(rawUi.toString()).put("dateIso", date).put("programId", programId)
+                                    .put("programName", programName).put("dayId", dayId).put("dayName", dayName)
+                                    .put("updatedAt", stamp)
+                                CalendarScheduleEntity(
+                                    id = event.id, googleEventId = existing?.googleEventId.orEmpty(), date = date,
+                                    startIso = start.toString(), endIso = end.toString(), programId = programId,
+                                    programName = programName, dayId = dayId, dayName = dayName, status = status,
+                                    updatedAt = stamp, rawJson = raw.toString()
+                                )
+                            }
+                            if (changedRows.isNotEmpty()) db.calendarScheduleDao().upsertEntries(changedRows)
+                            val document = JSONObject().put("events", JSONArray(currentRows.values.toList()))
+                                .put("undoStack", JSONArray(undoStack.map { snapshot -> JSONArray(snapshot.map(::calendarUiJson)) }))
+                                .put("updatedAt", nowMs)
+                            db.keyValueDocumentDao().putDocument(KeyValueDocumentEntity(stateKey, document.toString(), nowMs))
                         }
                     }
                 }
-                val scheduleEntities = events.map { ev ->
-                    val existing = db.calendarScheduleDao().getEntry(ev.id)
-                    val resolvedIso = ev.dateIso.takeIf { it.isNotBlank() }
-                        ?: existing?.date?.takeIf { it.isNotBlank() }
-                        ?: fallbackMonth.atDay(ev.dayOfMonth.coerceIn(1, fallbackMonth.lengthOfMonth())).toString()
-                    val date = runCatching { LocalDate.parse(resolvedIso) }
-                        .getOrDefault(fallbackMonth.atDay(ev.dayOfMonth.coerceIn(1, fallbackMonth.lengthOfMonth())))
-                    val dateStr = date.toString()
-                    val normalizedEv = if (ev.dateIso.isNotBlank()) ev else ev.copy(dateIso = dateStr)
-                    val (start, end) = com.example.model.StudioCalendarDates.window(normalizedEv, ZoneId.systemDefault())
-                    val statusStr = when (ev.status) {
-                        CalendarEventStatus.COMPLETED -> "completed"
-                        CalendarEventStatus.MISSED -> "skipped"
-                        else -> "planned"
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                if (revision == calendarWriteRevision) {
+                    calendarWriteError = error.message ?: "A naptármódosítás nem menthető."
+                    _uiState.update { it.copy(statusBannerMessage = "A naptármódosítás nem menthető. Próbáld újra.") }
+                }
+            }
+        }
+    }
+
+    private fun calendarProjectionCurrent(): Boolean {
+        val context = nativeContext ?: return true
+        val ticket = calendarProjectionTicket
+        if (ticket != null && runCatching { ticket.requireCurrent(context) }.isSuccess) return true
+        showBannerMessage(studioModesText(
+            "Várd meg, amíg a naptár frissül.", "Wait for the calendar to finish refreshing.",
+            "Warte, bis der Kalender aktualisiert ist.", "Așteaptă actualizarea calendarului."))
+        return false
+    }
+
+    private fun persistStudioPlannerSettings() {
+        val context = nativeContext ?: return
+        val db = nativeDatabase ?: return
+        val scope = nativeScope ?: return
+        val state = _uiState.value
+        val revision = ++plannerSettingsRevision
+        val ticket = calendarProjectionTicket ?: return
+        plannerSettingsWriteError = null
+        plannerSettingsWriteJob = scope.launch(Dispatchers.IO) {
+            try {
+                plannerSettingsWriteMutex.withLock {
+                    if (revision != plannerSettingsRevision) return@withLock
+                    NativeDataReplacement.mutate(context) {
+                        ticket.requireCurrent(context)
+                        val dao = db.keyValueDocumentDao()
+                        val key = com.repforge.app.NativeCalendarBackup.STUDIO_SETTINGS_KEY
+                        val stamp = maxOf(System.currentTimeMillis(), (dao.getDocument(key)?.updatedAt ?: 0L) + 1)
+                        val payload = JSONObject().put("cadenceHu", state.planningCadenceHu)
+                            .put("firstDayHu", state.planningFirstDayHu).put("startDate", state.planningStartDate)
+                            .put("time", state.planningTime).put("durationMin", state.planningDurationMin)
+                            .put("weeksCount", state.planningWeeksCount).put("updatedAt", stamp)
+                        dao.putDocument(KeyValueDocumentEntity(key, payload.toString(), stamp))
                     }
-                    val programId = ev.programId.ifBlank { existing?.programId.orEmpty() }.ifBlank { activeProg?.id.orEmpty() }
-                    val program = state.programs.firstOrNull { it.id == programId }
-                    val requestedDayId = ev.dayId.ifBlank { existing?.dayId.orEmpty() }.ifBlank { ev.splitBadge }
-                    val day = program?.days?.firstOrNull {
-                        it.id.removePrefix("$programId:").equals(requestedDayId, true)
-                    }
-                    val dayId = day?.id?.removePrefix("$programId:") ?: requestedDayId
-                    val programName = program?.nameHu ?: existing?.programName ?: ev.titleHu
-                    val dayName = day?.titleHu ?: existing?.dayName ?: ev.titleHu
-                    val rawEv = JSONObject().apply {
-                        put("id", ev.id)
-                        put("dayOfMonth", ev.dayOfMonth)
-                        put("dateIso", dateStr)
-                        put("timeLabel", ev.timeLabel)
-                        put("titleHu", ev.titleHu)
-                        put("exerciseCount", ev.exerciseCount)
-                        put("durationMinutes", ev.durationMinutes)
-                        put("status", ev.status.name)
-                        put("splitBadge", ev.splitBadge)
-                        put("programId", programId)
-                        put("programName", programName)
-                        put("dayId", dayId)
-                        put("dayName", dayName)
-                    }
-                    CalendarScheduleEntity(
-                        id = ev.id,
-                        googleEventId = existing?.googleEventId.orEmpty(),
-                        date = dateStr,
-                        startIso = start.toString(),
-                        endIso = end.toString(),
-                        programId = programId, programName = programName,
-                        dayId = dayId, dayName = dayName,
-                        status = statusStr,
-                        updatedAt = nowMs,
-                        rawJson = rawEv.toString()
-                    )
                 }
-                if (scheduleEntities.isNotEmpty()) {
-                    db.calendarScheduleDao().upsertEntries(scheduleEntities)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                if (revision == plannerSettingsRevision) {
+                    val message = studioModesText("A tervezési beállítások nem menthetők.", "Could not save planner settings.",
+                        "Planungseinstellungen konnten nicht gespeichert werden.", "Setările planificatorului nu au putut fi salvate.")
+                    plannerSettingsWriteError = error.message ?: message
+                    showBannerMessage(message)
                 }
-                val undoJsonArr = JSONArray()
-                undoStack.forEach { snapshot ->
-                    val snapArr = JSONArray()
-                    snapshot.forEach { ev ->
-                        snapArr.put(
-                            JSONObject().apply {
-                                put("id", ev.id)
-                                put("dayOfMonth", ev.dayOfMonth)
-                        put("dateIso", ev.dateIso)
-                                put("timeLabel", ev.timeLabel)
-                                put("titleHu", ev.titleHu)
-                                put("exerciseCount", ev.exerciseCount)
-                                put("durationMinutes", ev.durationMinutes)
-                                put("status", ev.status.name)
-                                put("splitBadge", ev.splitBadge)
-                                put("programId", ev.programId)
-                                put("dayId", ev.dayId)
-                            }
-                        )
-                    }
-                    undoJsonArr.put(snapArr)
-                }
-                val currentArr = JSONArray()
-                events.forEach { ev ->
-                    currentArr.put(
-                        JSONObject().apply {
-                            put("id", ev.id)
-                            put("dayOfMonth", ev.dayOfMonth)
-                        put("dateIso", ev.dateIso)
-                            put("timeLabel", ev.timeLabel)
-                            put("titleHu", ev.titleHu)
-                            put("exerciseCount", ev.exerciseCount)
-                            put("durationMinutes", ev.durationMinutes)
-                            put("status", ev.status.name)
-                            put("splitBadge", ev.splitBadge)
-                            put("programId", ev.programId)
-                            put("dayId", ev.dayId)
-                        }
-                    )
-                }
-                val docJson = JSONObject().apply {
-                    put("events", currentArr)
-                    put("undoStack", undoJsonArr)
-                    put("updatedAt", nowMs)
-                }
-                db.keyValueDocumentDao().putDocument(
-                    KeyValueDocumentEntity(
-                        key = "native:calendarState",
-                        json = docJson.toString(),
-                        updatedAt = nowMs
-                    )
-                )
-                }
-              }
-            }.onFailure { error ->
-                if (error is kotlinx.coroutines.CancellationException) throw error
-                if (revision == calendarWriteRevision) calendarWriteError = error.message ?: "A naptármódosítás nem menthető."
-                _uiState.update { it.copy(statusBannerMessage = "A naptármódosítás nem menthető. Próbáld újra.") }
             }
         }
     }
@@ -1362,7 +1363,11 @@ class TrainPilotViewModel : ViewModel() {
     ) {
         nativeReloadJob?.cancel()
         nativeReloadJob = scope.launch(Dispatchers.IO) {
+            val projectionTicket = runCatching { NativeDataReplacement.continuationForCurrentData(context) }.getOrNull() ?: return@launch
             val calendarRevisionAtRead = calendarWriteRevision
+            calendarWriteJob?.join()
+            val plannerRevisionAtRead = plannerSettingsRevision
+            plannerSettingsWriteJob?.join()
             // Seed catalog into Room DB
             try {
                 TrainPilotDatabase.ensureBuiltinCatalogSeeded(database, context)
@@ -1445,6 +1450,12 @@ class TrainPilotViewModel : ViewModel() {
             } catch (_: Throwable) {}
 
             // 4b. Read persisted calendar schedule & undo stack from Room
+            val plannerSettings = runCatching {
+                database.keyValueDocumentDao().getDocument(com.repforge.app.NativeCalendarBackup.STUDIO_SETTINGS_KEY)?.json?.let(::JSONObject)
+            }.getOrElse { error ->
+                if (error is CancellationException) throw error
+                null
+            }
             var loadedCalendarEvents = emptyList<CalendarDayEvent>()
             var loadedCalendarUndo = emptyList<List<CalendarDayEvent>>()
             try {
@@ -1542,6 +1553,7 @@ class TrainPilotViewModel : ViewModel() {
             } catch (_: Throwable) {}
 
             withContext(Dispatchers.Main) {
+                if (nativeDatabase !== database || runCatching { projectionTicket.requireCurrent(context) }.isFailure) return@withContext
                 val restoredActiveSnap = runCatching {
                     ActiveWorkoutStore.current(context)?.takeIf { it.optBoolean("active", false) }
                         ?: PhoneWorkoutExecution.store(context).snapshot()?.takeIf { it.optBoolean("active", false) }
@@ -1614,6 +1626,7 @@ class TrainPilotViewModel : ViewModel() {
                     } else st.activeSets
 
                     val computedPrs = computePrRecordsFromWorkouts(mappedWorkouts)
+                    val currentPlannerSettings = plannerSettings.takeIf { plannerSettingsRevision == plannerRevisionAtRead }
                     val sameHealthSource = HealthJournalStore.get(context).generation() == healthGenerationAtBind &&
                         HealthJournalStore.get(context).preferences().optString("provider", HealthJournalStore.HC) == healthProviderAtBind
                     st.copy(
@@ -1645,6 +1658,12 @@ class TrainPilotViewModel : ViewModel() {
                             else activeProg?.id ?: st.editingProgramId,
                         calendarEvents = if (calendarWriteRevision == calendarRevisionAtRead) loadedCalendarEvents else st.calendarEvents,
                         calendarUndoStack = if (calendarWriteRevision == calendarRevisionAtRead) loadedCalendarUndo else st.calendarUndoStack,
+                        planningCadenceHu = currentPlannerSettings?.optString("cadenceHu", st.planningCadenceHu) ?: st.planningCadenceHu,
+                        planningFirstDayHu = currentPlannerSettings?.optString("firstDayHu", st.planningFirstDayHu) ?: st.planningFirstDayHu,
+                        planningStartDate = currentPlannerSettings?.optString("startDate", st.planningStartDate) ?: st.planningStartDate,
+                        planningTime = currentPlannerSettings?.optString("time", st.planningTime) ?: st.planningTime,
+                        planningDurationMin = currentPlannerSettings?.optInt("durationMin", st.planningDurationMin) ?: st.planningDurationMin,
+                        planningWeeksCount = currentPlannerSettings?.optInt("weeksCount", st.planningWeeksCount) ?: st.planningWeeksCount,
                         isWorkoutSessionActive = restoredActiveSnap != null,
                         outdoorRouteKey = restoredActiveSnap?.optString("studioGpsKey") ?: st.outdoorRouteKey,
                         outdoorGpsEnabled = restoredActiveSnap?.takeIf { it.has("studioIndoor") }?.let { !it.optBoolean("studioIndoor") } ?: st.outdoorGpsEnabled,
@@ -1678,6 +1697,11 @@ class TrainPilotViewModel : ViewModel() {
                         sleepHoursDecimal = if (sameHealthSource) sleepDecimal else st.sleepHoursDecimal
                     )
                 }
+                if (calendarProjectionTicket?.let { runCatching { it.requireCurrent(context) }.isSuccess } != true) {
+                    calendarWriteError = null
+                    plannerSettingsWriteError = null
+                }
+                calendarProjectionTicket = projectionTicket
             }
 
             withContext(Dispatchers.Main) { reloadHealthJournal() }
@@ -1701,6 +1725,10 @@ class TrainPilotViewModel : ViewModel() {
                 state.copy(
                     currentTab = tab,
                     currentSubScreen = SubScreen.NONE,
+                    expandedHealthWeeklyGoals = state.expandedHealthWeeklyGoals &&
+                        !(tab == MainTab.HEALTH && state.currentTab != MainTab.HEALTH),
+                    expandedHealthJournal = state.expandedHealthJournal && tab != MainTab.HEALTH,
+                    expandedHealthConnect = state.expandedHealthConnect && tab != MainTab.HEALTH,
                     backStack = updatedStack
                 )
             }
@@ -1734,6 +1762,8 @@ class TrainPilotViewModel : ViewModel() {
             state.copy(
                 currentTab = targetTab ?: state.currentTab,
                 currentSubScreen = subScreen,
+                localBackupStatus = if (subScreen == SubScreen.BACKUP_RESTORE && state.localBackupStatus?.busy != true)
+                    null else state.localBackupStatus,
                 privatePhotoWorkoutId = if (subScreen == SubScreen.PRIVATE_PHOTOS) null else state.privatePhotoWorkoutId,
                 // A route is a preview until the native engine has committed a session.
                 isWorkoutSessionActive = state.isWorkoutSessionActive,
@@ -2725,7 +2755,7 @@ class TrainPilotViewModel : ViewModel() {
         val context = nativeContext ?: return
         val db = nativeDatabase ?: return
         val scope = nativeScope ?: return
-        if (_uiState.value.calendarClearBusy) return
+        if (_uiState.value.calendarClearBusy || !calendarProjectionCurrent()) return
         val ticket = runCatching { NativeDataReplacement.continuationForCurrentData(context) }.getOrElse {
             showBannerMessage(com.example.localization.CalendarFeedback.clearFailed(_uiState.value.language)); return
         }
@@ -2801,6 +2831,7 @@ class TrainPilotViewModel : ViewModel() {
         durationMin: Int = _uiState.value.planningDurationMin,
         weeksCount: Int = _uiState.value.planningWeeksCount
     ) {
+        if (!calendarProjectionCurrent()) return
         _uiState.update {
             it.copy(
                 planningCadenceHu = cadenceHu,
@@ -2811,6 +2842,7 @@ class TrainPilotViewModel : ViewModel() {
                 planningWeeksCount = weeksCount
             )
         }
+        persistStudioPlannerSettings()
     }
 
     fun selectCalendarMonth(month: String) {
@@ -2822,13 +2854,14 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun planMonthlyWorkouts() {
-        if (_uiState.value.calendarClearBusy) return
+        if (_uiState.value.calendarClearBusy || !calendarProjectionCurrent()) return
         _uiState.update { com.example.model.StudioCalendarPlanning.plan(it) }
+        persistStudioPlannerSettings()
         persistCalendarStateToRoomAsync()
     }
 
     fun applyCalendarReplan(newStartDate: String, firstDayHu: String, programId: String? = null) {
-        if (_uiState.value.calendarClearBusy) return
+        if (_uiState.value.calendarClearBusy || !calendarProjectionCurrent()) return
         val current = _uiState.value
         if (current.libraryMutationBusy || (programId != null && current.programs.none { it.id == programId })) return
         if (programId != null) activateProgram(programId)
@@ -2838,6 +2871,7 @@ class TrainPilotViewModel : ViewModel() {
                 planningFirstDayHu = firstDayHu
             )).copy(showReplanModal = false)
         }
+        persistStudioPlannerSettings()
         persistCalendarStateToRoomAsync()
     }
 
@@ -2848,7 +2882,7 @@ class TrainPilotViewModel : ViewModel() {
         newTimeLabel: String,
         newDurationMin: Int
     ) {
-        if (_uiState.value.calendarClearBusy) return
+        if (_uiState.value.calendarClearBusy || !calendarProjectionCurrent()) return
         _uiState.update { state ->
             val updated = state.calendarEvents.map { ev ->
                 if (ev.id == eventId) {
@@ -2873,7 +2907,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun moveCalendarEvent(eventId: String, targetDay: Int, shiftFollowingPlanned: Boolean = true) {
-        if (_uiState.value.calendarClearBusy) return
+        if (_uiState.value.calendarClearBusy || !calendarProjectionCurrent()) return
         _uiState.update { state ->
             val target = state.calendarEvents.firstOrNull { it.id == eventId } ?: return@update state
             val month = YearMonth.from(LocalDate.parse(target.dateIso))
@@ -2901,9 +2935,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun deleteCalendarEvent(eventId: String) {
-        if (_uiState.value.calendarClearBusy) return
-        val db = nativeDatabase
-        val scope = nativeScope
+        if (_uiState.value.calendarClearBusy || !calendarProjectionCurrent()) return
         _uiState.update { state ->
             val updated = state.calendarEvents.filterNot { it.id == eventId }
             state.copy(
@@ -2916,7 +2948,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun addPlannedWorkoutOnDay(day: Int, splitBadge: String, timeLabel: String, durationMin: Int) {
-        if (_uiState.value.calendarClearBusy) return
+        if (_uiState.value.calendarClearBusy || !calendarProjectionCurrent()) return
         _uiState.update { state ->
             val program = state.programs.firstOrNull { it.isActive }
             val selectedDay = program?.days?.firstOrNull { it.dayCode.substringBefore(' ').equals(splitBadge, true) }
@@ -2943,7 +2975,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun undoCalendarAction() {
-        if (_uiState.value.calendarClearBusy) return
+        if (_uiState.value.calendarClearBusy || !calendarProjectionCurrent()) return
         _uiState.update { state ->
             val previous = state.calendarUndoStack.lastOrNull() ?: return@update state.copy(
                 statusBannerMessage = com.example.localization.CalendarFeedback.undoEmpty(state.language)
@@ -4293,6 +4325,7 @@ class TrainPilotViewModel : ViewModel() {
             it.copy(
                 selectedLogWorkoutId = workoutId,
                 logWorkoutMuscleLoads = emptyList(),
+                expandedLogExerciseIndex = -1,
                 currentTab = MainTab.PROGRESS,
                 progressMainSection = 1,
                 currentSubScreen = SubScreen.LOG_WORKOUT_DETAIL,
@@ -4466,10 +4499,11 @@ class TrainPilotViewModel : ViewModel() {
                 backStack = back,
                 expandedHealthPulseTrend = pulse || state.expandedHealthPulseTrend,
                 expandedHealthWeightLog = weight || state.expandedHealthWeightLog,
-                expandedHealthWeeklyGoals = weeklyGoals || state.expandedHealthWeeklyGoals,
+                expandedHealthWeeklyGoals = weeklyGoals ||
+                    (state.currentTab == MainTab.HEALTH && state.expandedHealthWeeklyGoals),
                 expandedHealthExtraData = extra || state.expandedHealthExtraData,
-                expandedHealthJournal = journal || state.expandedHealthJournal,
-                expandedHealthConnect = connect || state.expandedHealthConnect
+                expandedHealthJournal = journal,
+                expandedHealthConnect = connect && !journal
             )
         }
     }
@@ -4483,8 +4517,8 @@ class TrainPilotViewModel : ViewModel() {
                 "pulse" -> state.copy(expandedHealthPulseTrend = !state.expandedHealthPulseTrend)
                 "weight" -> state.copy(expandedHealthWeightLog = !state.expandedHealthWeightLog)
                 "extra" -> state.copy(expandedHealthExtraData = !state.expandedHealthExtraData)
-                "journal" -> state.copy(expandedHealthJournal = !state.expandedHealthJournal)
-                "connect" -> state.copy(expandedHealthConnect = !state.expandedHealthConnect)
+                "journal" -> state.copy(expandedHealthJournal = !state.expandedHealthJournal, expandedHealthConnect = false)
+                "connect" -> state.copy(expandedHealthJournal = false, expandedHealthConnect = !state.expandedHealthConnect)
                 else -> state
             }
         }
@@ -4667,16 +4701,22 @@ class TrainPilotViewModel : ViewModel() {
     fun refreshPrivatePhotoCount() {
         val db = nativeDatabase ?: return
         val scope = nativeScope ?: return
-        val exercises = _uiState.value.exercises.associateBy { it.id }
+        val context = nativeContext ?: return
+        val ticket = runCatching { NativeDataReplacement.continuationForCurrentData(context) }.getOrNull() ?: return
+        val previous = _uiState.value
+        val exercises = previous.exercises.associateBy { it.id }
         scope.launch(Dispatchers.IO) {
             try {
                 val mappedWorkouts = readNativeWorkoutHistory(db, exercises)
                 val mappedLogs = mapBodyWeightEntitiesToLogItems(db.bodyWeightDao().getAllWeights())
                 val loosePhotoCount = com.repforge.app.NativeLoosePhotos.count(db)
-                withContext(Dispatchers.Main) {
+                withContext(Dispatchers.Main.immediate) {
                     if (nativeDatabase !== db) return@withContext
-                    _uiState.update {
-                        it.copy(
+                    if (runCatching { ticket.requireCurrent(context) }.isFailure) return@withContext
+                    _uiState.update { state ->
+                        if (state.loggedWorkouts !== previous.loggedWorkouts || state.bodyWeightLogs !== previous.bodyWeightLogs)
+                            return@update state
+                        state.copy(
                             loggedWorkouts = mappedWorkouts,
                             bodyWeightLogs = mappedLogs,
                             privatePhotoCount = mappedWorkouts.sumOf { workout -> workout.photoCount } +
@@ -5149,58 +5189,45 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun exportBackup(context: Context, uri: Uri, format: String) {
-        val scope = nativeScope ?: return
-        scope.launch(Dispatchers.IO) {
-            try {
-                val mgr = BackupRestoreManager(context)
-                val result = if (format.lowercase().contains("zip")) {
-                    mgr.exportZipArchiveToUri(uri).map { "${it.first} (${it.second / 1024} KB)" }
-                } else {
-                    mgr.exportJsonBackupToUri(uri).map { "${it.first} (${it.second} bájt)" }
-                }
-                withContext(Dispatchers.Main) {
-                    _uiState.update {
-                        it.copy(
-                            statusBannerMessage = if (result.isSuccess) "Biztonsági mentés sikeresen elkészült: ${result.getOrNull()}"
-                            else "Hiba a mentés során: ${result.exceptionOrNull()?.localizedMessage}"
-                        )
-                    }
-                }
-            } catch (e: Throwable) {
-                withContext(Dispatchers.Main) {
-                    _uiState.update {
-                        it.copy(statusBannerMessage = "Nem sikerült a mentés: ${e.localizedMessage ?: "fájlírási hiba"}")
-                    }
-                }
-            }
+        val busy = studioModesText("Mentés készül…", "Creating backup…", "Sicherung wird erstellt…", "Se creează backup-ul…")
+        val failed = studioModesText("A mentés nem sikerült.", "Backup failed.", "Sicherung fehlgeschlagen.", "Backup-ul a eșuat.")
+        runLocalBackup(busy, failed) {
+            check(calendarWriteError == null) { requireNotNull(calendarWriteError) }
+            check(plannerSettingsWriteError == null) { requireNotNull(plannerSettingsWriteError) }
+            val manager = BackupRestoreManager(context)
+            if (format.equals("ZIP", ignoreCase = true)) manager.exportZipArchiveToUri(uri).getOrThrow()
+            else manager.exportJsonBackupToUri(uri).getOrThrow()
+            studioModesText("A mentés elkészült.", "Backup saved.", "Sicherung gespeichert.", "Backup-ul a fost salvat.")
         }
     }
 
     fun importBackup(context: Context, uri: Uri) {
+        val busy = studioModesText("Visszaállítás folyamatban…", "Restoring backup…", "Sicherung wird eingespielt…", "Se restaurează backup-ul…")
+        val failed = studioModesText("A visszaállítás nem sikerült.", "Restore failed.", "Wiederherstellung fehlgeschlagen.", "Restaurarea a eșuat.")
+        runLocalBackup(busy, failed) {
+            BackupRestoreManager(context).importBackupFromUri(uri, recoverInterrupted = false).getOrThrow()
+            withContext(Dispatchers.Main.immediate) { refreshAfterCloudSync(context) }
+            studioModesText("A visszaállítás sikerült.", "Backup restored.", "Sicherung wiederhergestellt.", "Backup-ul a fost restaurat.")
+        }
+    }
+
+    private fun runLocalBackup(busy: String, failed: String, operation: suspend () -> String) {
         val scope = nativeScope ?: return
+        if (_uiState.value.localBackupStatus?.busy == true) return
+        _uiState.update { it.copy(localBackupStatus = LocalBackupStatus(busy, busy = true)) }
         scope.launch(Dispatchers.IO) {
             try {
-                val mgr = BackupRestoreManager(context)
-                val result = mgr.importBackupFromUri(uri, recoverInterrupted = false)
-                withContext(Dispatchers.Main) {
-                    _uiState.update {
-                        it.copy(
-                            statusBannerMessage = if (result.isSuccess) "Biztonsági mentés sikeresen visszaállítva!"
-                            else "Hiba a visszaállítás során: ${result.exceptionOrNull()?.localizedMessage}"
-                        )
-                    }
-                }
-                nativeDatabase?.let { db ->
-                    nativeSettingsStore?.let { store ->
-                        bindNativeEnvironment(context, store, db, scope)
-                    }
-                }
-            } catch (e: Throwable) {
-                withContext(Dispatchers.Main) {
-                    _uiState.update {
-                        it.copy(statusBannerMessage = "Nem sikerült a visszaállítás: ${e.localizedMessage ?: "olvasási hiba"}")
-                    }
-                }
+                calendarWriteJob?.join()
+                plannerSettingsWriteJob?.join()
+                val message = operation()
+                _uiState.update { it.copy(localBackupStatus = LocalBackupStatus(message)) }
+            } catch (cancelled: CancellationException) {
+                _uiState.update { it.copy(localBackupStatus = null) }
+                throw cancelled
+            } catch (error: Exception) {
+                val detail = error.localizedMessage?.takeIf { it.isNotBlank() }
+                _uiState.update { it.copy(localBackupStatus = LocalBackupStatus(
+                    listOfNotNull(failed, detail).joinToString("\n"), failed = true)) }
             }
         }
     }

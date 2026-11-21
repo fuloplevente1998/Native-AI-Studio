@@ -82,8 +82,7 @@ internal fun StudioPrivatePhotos(state: TrainPilotUiState, strings: LocalizedStr
             pendingLoosePhoto = null
             scope.launch {
                 try {
-                    val photo = importPhoto().getOrThrow() ?: return@launch
-                    withContext(Dispatchers.IO) { NativeLoosePhotos.attach(context, db, looseRequest, photo) }
+                    if (!NativeLoosePhotos.importAndAttach(context, db, looseRequest, importPhoto)) return@launch
                     photoError = false
                     onPhotosUpdated()
                     model.loadProgressData()

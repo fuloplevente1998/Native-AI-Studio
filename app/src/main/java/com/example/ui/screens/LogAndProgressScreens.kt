@@ -102,6 +102,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -807,7 +809,7 @@ fun LogWorkoutDetailScreen(
             .background(palette.background)
             .testTag("log_workout_detail_screen"),
         contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+        verticalArrangement = Arrangement.spacedBy(if (uiState.logDetailTabIndex == 0) 4.dp else TrainPilotCardSpacing.CardGap)
     ) {
         // Summary Header Card
         item {
@@ -898,24 +900,33 @@ fun LogWorkoutDetailScreen(
             items(details.size) { index ->
                 val exDetail = details[index]
                 val expanded = uiState.expandedLogExerciseIndex == index
+                val shape = RoundedCornerShape(18.dp)
+                val exerciseName = exDetail.localizedName(uiState.language, uiState.exercises)
+                val expansionState = if (expanded) {
+                    trL(uiState.language, "Kinyitva", "Expanded", "Ausgeklappt", "Extins")
+                } else {
+                    trL(uiState.language, "Összecsukva", "Collapsed", "Eingeklappt", "Restrâns")
+                }
                 Surface(
-                    shape = RoundedCornerShape(18.dp),
+                    shape = shape,
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                        .trainPilotClickable(RoundedCornerShape(18.dp)) { onToggleExpandedExercise(index) }
+                        .trainPilotBorder(1.25.dp, palette.sectionBorder, shape)
+                        .trainPilotClickable(shape) { onToggleExpandedExercise(index) }
+                        .semantics { stateDescription = expansionState }
+                        .testTag("log_exercise_card_$index")
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 3.dp)) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = exDetail.localizedName(uiState.language, uiState.exercises),
-                                    style = MaterialTheme.typography.titleMedium,
+                                    text = exerciseName,
+                                    style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary
                                 )
@@ -925,20 +936,15 @@ fun LogWorkoutDetailScreen(
                                     color = palette.textSecondary
                                 )
                             }
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                SmallExerciseVideoButton(
-                                    exerciseName = exDetail.localizedName(uiState.language, uiState.exercises),
-                                    exerciseId = uiState.exercises.firstOrNull { it.nameHu.equals(exDetail.nameHu, ignoreCase = true) }?.id
-                                )
-                                Icon(
-                                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                    contentDescription = null,
-                                    tint = palette.textSecondary
-                                )
-                            }
+                            SmallExerciseVideoButton(
+                                exerciseName = exerciseName,
+                                exerciseId = uiState.exercises.firstOrNull { it.nameHu.equals(exDetail.nameHu, ignoreCase = true) }?.id
+                            )
+                            Icon(
+                                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null,
+                                tint = palette.textSecondary
+                            )
                         }
 
                         if (expanded) {
@@ -1549,6 +1555,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                 )
 
                 if (expandedVolumeDetails) {
+                    val isWeeklyBucket = period.days >= 30
                     // SCREENSHOT 6: EXPANDED FULL-WIDTH "Volumen trend" VIEW
                     // 1. Horizontal 4-button Period Selector Row (1 nap | 7 nap | 30 nap | 3 hó)
                     Row(
@@ -1603,7 +1610,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                             modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(12.dp))
                         ) {
                             Text(
-                                text = if (period.days >= 30) trL(uiState.language, "Heti bontás", "Weekly breakdown", "Wöchentlich", "Săptămânal") else trL(uiState.language, "Napi bontás", "Daily breakdown", "Täglich", "Zilnic"),
+                                text = if (isWeeklyBucket) trL(uiState.language, "Heti bontás", "Weekly breakdown", "Wöchentlich", "Săptămânal") else trL(uiState.language, "Napi bontás", "Daily breakdown", "Täglich", "Zilnic"),
                                 modifier = Modifier.testTag("progress_volume_bucket_unit").padding(horizontal = 12.dp, vertical = 6.dp),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = palette.textSecondary
@@ -1622,10 +1629,10 @@ internal fun MainProgressVolumeAndMuscleSection(
                         text = if (selectedBar != null) {
                             trL(
                                 uiState.language,
-                                "Kiválasztott ${if (period.days == 90) "hét" else "nap"} (${selectedBar.first}): ${selectedBar.second} kg összvolumen",
-                                "Selected ${if (period.days == 90) "week" else "day"} (${selectedBar.first}): ${selectedBar.second} kg total volume",
-                                "Ausgewählte(r) ${if (period.days == 90) "Woche" else "Tag"} (${selectedBar.first}): ${selectedBar.second} kg Gesamtvolumen",
-                                "${if (period.days == 90) "Săptămâna selectată" else "Ziua selectată"} (${selectedBar.first}): ${selectedBar.second} kg volum total"
+                                "Kiválasztott ${if (isWeeklyBucket) "hét" else "nap"} (${selectedBar.first}): ${selectedBar.second} kg összvolumen",
+                                "Selected ${if (isWeeklyBucket) "week" else "day"} (${selectedBar.first}): ${selectedBar.second} kg total volume",
+                                "Ausgewählte(r) ${if (isWeeklyBucket) "Woche" else "Tag"} (${selectedBar.first}): ${selectedBar.second} kg Gesamtvolumen",
+                                "${if (isWeeklyBucket) "Săptămâna selectată" else "Ziua selectată"} (${selectedBar.first}): ${selectedBar.second} kg volum total"
                             )
                         } else {
                             trL(uiState.language, "Válassz egy oszlopot a részletekhez.", "Select a bar for details.", "Wähle einen Balken für Details.", "Selectează o coloană pentru detalii.")

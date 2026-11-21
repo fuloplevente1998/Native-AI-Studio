@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,6 +39,7 @@ import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.viewmodel.TrainPilotUiState
 import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.ui.theme.trainPilotClickable
+import com.repforge.app.ui.theme.trainPilotCombinedClickable
 import java.time.LocalDate
 
 /**
@@ -76,11 +78,26 @@ private fun wgTr(lang: AppLanguage, hu: String, en: String, de: String, ro: Stri
     AppLanguage.HU -> hu; AppLanguage.EN -> en; AppLanguage.DE -> de; AppLanguage.RO -> ro
 }
 
+@Composable
+internal fun Modifier.healthDetailsToggle(
+    expanded: Boolean,
+    language: AppLanguage,
+    shape: Shape,
+    onClick: () -> Unit
+): Modifier {
+    val action = if (expanded) {
+        wgTr(language, "Részletek bezárása", "Close details", "Details schließen", "Închide detaliile")
+    } else {
+        wgTr(language, "Részletek megnyitása", "Open details", "Details öffnen", "Deschide detaliile")
+    }
+    return trainPilotCombinedClickable(shape, onClickLabel = action, onClick = onClick)
+}
+
 internal fun weeklyGoalNumber(value: Int, lang: AppLanguage): String =
     java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag(lang.code)).format(value)
 
 /**
- * Compact two-bar weekly goals. [framed] = its own card (Home); otherwise a block inside the Today card.
+ * Home landing card with goal bars, or a collapsible goals header when [expanded] is provided.
  * The whole block is one tap target ([onOpen]); [onGoals] opens the existing goals dialog.
  */
 @Composable
@@ -94,23 +111,28 @@ fun WeeklyGoalsCompact(
 ) {
     val p = LocalTrainPilotPalette.current
     val lang = state.language
-    val s = weeklyGoalSummary(state)
+    val monthly = state.workoutGoalPeriod == WorkoutGoalPeriod.MONTHLY
     val shape = RoundedCornerShape(if (framed) 16.dp else 12.dp)
     Surface(shape = shape, color = if (framed) p.surface else p.surfaceElevated.copy(alpha = 0.6f),
         modifier = modifier.fillMaxWidth().heightIn(min = 48.dp)
             .then(if (framed) Modifier.trainPilotBorder(1.dp, p.cardBorder, shape) else Modifier)
-            .trainPilotClickable(shape) { onOpen() }) {
+            .then(
+                if (expanded == null) Modifier.trainPilotClickable(shape, onClick = onOpen)
+                else Modifier.healthDetailsToggle(expanded, lang, shape, onOpen)
+            )) {
         Row(Modifier.padding(start = 12.dp, end = 6.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(if (s.monthly) wgTr(lang, "Célok", "Goals", "Ziele", "Obiective") else wgTr(lang, "Heti célok", "Weekly goals", "Wochenziele", "Obiective săptămânale"),
+                    Text(if (monthly) wgTr(lang, "Havi célok", "Monthly goals", "Monatsziele", "Obiective lunare")
+                        else wgTr(lang, "Heti célok", "Weekly goals", "Wochenziele", "Obiective săptămânale"),
                         style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = p.textPrimary,
                         modifier = Modifier.weight(1f))
                     if (expanded != null) Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null,
                         tint = p.primary, modifier = Modifier.size(18.dp))
                 }
-                if (expanded != true) {
+                if (expanded == null) {
+                    val s = weeklyGoalSummary(state)
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         val period = if (s.monthly) wgTr(lang, "Edzés (hó)", "Workouts (mo)", "Trainings (Mon.)", "Antr. (lună)")
                             else wgTr(lang, "Edzés", "Workouts", "Trainings", "Antrenamente")
@@ -120,8 +142,8 @@ fun WeeklyGoalsCompact(
                     }
                 }
             }
-            if (onGoals != null) Surface(shape = RoundedCornerShape(12.dp), color = p.primary.copy(alpha = 0.12f),
-                modifier = Modifier.size(44.dp).trainPilotBorder(1.dp, p.primary.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+            if (onGoals != null && expanded != false) Surface(shape = RoundedCornerShape(12.dp), color = p.primary.copy(alpha = 0.12f),
+                modifier = Modifier.size(if (expanded == null) 44.dp else 48.dp).trainPilotBorder(1.dp, p.primary.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                     .trainPilotClickable(RoundedCornerShape(12.dp)) { onGoals() }.testTag("weekly_goals_settings")) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(Icons.Default.Tune, contentDescription = wgTr(lang, "Célok beállítása", "Set goals", "Ziele festlegen", "Setează obiective"),
@@ -160,11 +182,17 @@ fun WeeklyDayBars(days: List<LocalDate>, values: List<Double?>, label: (LocalDat
     Row(Modifier.fillMaxWidth().height(64.dp).testTag(tag), horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.Bottom) {
         values.forEachIndexed { i, v ->
             val on = i == sel
-            Box(Modifier.weight(1f).fillMaxHeight().trainPilotClickable(RoundedCornerShape(6.dp)) { sel = i }.testTag("${tag}_$i"),
-                contentAlignment = Alignment.BottomCenter) {
-                if (v == null) Box(Modifier.fillMaxWidth().height(2.dp).background(if (on) p.primary else p.cardBorder))
+            val color = trainPilotChartMarkColor(on, p.primary, p.textSecondary)
+            Box(
+                Modifier.weight(1f).fillMaxHeight()
+                    .trainPilotClickable(RoundedCornerShape(6.dp)) { sel = i }
+                    .trainPilotChartSelection(on, label(days[i], v))
+                    .testTag("${tag}_$i"),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                if (v == null) Box(Modifier.fillMaxWidth().height(2.dp).background(color))
                 else Box(Modifier.fillMaxWidth().fillMaxHeight((v / max).toFloat().coerceIn(0.05f, 1f))
-                    .background(if (on) p.primary else p.primary.copy(alpha = 0.45f), RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)))
+                    .background(color, RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)))
             }
         }
     }

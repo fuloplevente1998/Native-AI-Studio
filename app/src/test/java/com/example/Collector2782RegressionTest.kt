@@ -64,9 +64,13 @@ class Collector2782RegressionTest {
             com.repforge.app.ui.progress.NativeCardioProgressPanel(ProgressUiState(cardio = model, cardioLoading = false), {}, {})
         } }
         compose.onNodeWithTag("progress_cardio_selected_week_value", useUnmergedTree = true).assertTextContains("km", substring = true)
-        compose.onNodeWithTag("progress_cardio_week_4").performClick()
+        val latest = compose.onNodeWithTag("progress_cardio_week_7").assertIsSelected()
+        val empty = compose.onNodeWithTag("progress_cardio_week_4").assertIsNotSelected()
+        empty.performTouchInput { click() }.assertIsSelected()
+        latest.assertIsNotSelected()
         compose.onNodeWithTag("progress_cardio_selected_week_value", useUnmergedTree = true).assertTextEquals("nincs edzés")
-        compose.onNodeWithTag("progress_cardio_week_7").performClick()
+        latest.performTouchInput { click() }.assertIsSelected()
+        empty.assertIsNotSelected()
         compose.onNodeWithTag("progress_cardio_selected_week_value", useUnmergedTree = true).assertTextContains("5", substring = true)
     }
 }

@@ -44,7 +44,8 @@ class StudioProgressUiRegressionTest {
                 Column(Modifier.width(360.dp).verticalScroll(rememberScrollState())) {
                     MainProgressVolumeAndMuscleSection(state,
                         onSelectRange = { state = state.copy(selectedProgressRangeIndex = it) },
-                        onSelectVolumeBar = {}, onSelectExpandedStatsCard = {}, onOpenWorkoutDetail = {})
+                        onSelectVolumeBar = { state = state.copy(selectedVolumeBarIndex = it) },
+                        onSelectExpandedStatsCard = {}, onOpenWorkoutDetail = {})
                 }
             }
         }
@@ -61,6 +62,14 @@ class StudioProgressUiRegressionTest {
         compose.onNodeWithTag("progress_range_0").performClick()
         compose.onNodeWithTag("progress_volume_bucket_unit").assertTextEquals("Napi bontás")
         compose.onNodeWithTag("progress_volume_total", useUnmergedTree = true).assertTextEquals("100 kg")
+        compose.onNodeWithTag("progress_range_1").performClick()
+        val earlier = compose.onNodeWithTag("progress_expanded_column_3", useUnmergedTree = true)
+        val today = compose.onNodeWithTag("progress_expanded_column_6", useUnmergedTree = true)
+        earlier.performScrollTo().performTouchInput { click() }.assertIsSelected()
+        compose.onNodeWithText("200 kg összvolumen", substring = true).assertIsDisplayed()
+        today.performTouchInput { click() }.assertIsSelected()
+        earlier.assertIsNotSelected()
+        compose.onNodeWithText("100 kg összvolumen", substring = true).assertIsDisplayed()
         compose.onNodeWithTag("progress_range_2").performClick()
         compose.onNodeWithTag("progress_volume_bucket_unit").assertTextEquals("Heti bontás")
     }
@@ -97,6 +106,26 @@ class StudioProgressUiRegressionTest {
         compose.onNodeWithTag("progress_anatomy_layer_chest", useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag("progress_anatomy_layer_legs", useUnmergedTree = true).assertExists()
     }
+    @Test fun tappingMuscleBarsReplacesTheSelectionAndItsExerciseBreakdown() {
+        val loads = listOf(
+            MuscleLoadItem("chest", "Mell", "3 sorozat", 70, 0.7f, "Nagyobb", listOf("Fekvőtámasz" to "3 sorozat"), "", setsCount = 3),
+            MuscleLoadItem("legs", "Láb", "1 sorozat", 30, 0.3f, "Kisebb", listOf("Guggolás" to "1 sorozat"), "", setsCount = 1)
+        )
+        compose.setContent {
+            TrainPilotTheme { AnatomicalMuscleHeatmapCard(realMuscleLoads = loads, periodDays = null) }
+        }
+        val chest = compose.onNodeWithTag("muscle_chip_chest")
+        val legs = compose.onNodeWithTag("muscle_chip_legs")
+        chest.performTouchInput { click() }.assertIsSelected()
+        compose.onNodeWithText("• Fekvőtámasz", useUnmergedTree = true).assertIsDisplayed()
+        legs.performTouchInput { click() }.assertIsSelected()
+        chest.assertIsNotSelected()
+        compose.onNodeWithText("• Fekvőtámasz", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithText("• Guggolás", useUnmergedTree = true).assertIsDisplayed()
+        legs.performTouchInput { click() }.assertIsNotSelected()
+        compose.onNodeWithText("• Guggolás", useUnmergedTree = true).assertDoesNotExist()
+    }
+
     @Test fun sixMuscleLabelsRemainOneLineAndAdviceHasCompactRoom() {
         val labels = listOf(
             "chest" to "Mellizom", "back" to "Hátizom", "shoulders" to "Vállizom",

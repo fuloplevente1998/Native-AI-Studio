@@ -30,7 +30,6 @@ class HealthProviderUiRegressionTest {
         var syncRequests = 0
         val partialMessage = "Samsung Health: részleges hozzáférés"
         var state by mutableStateOf(TrainPilotUiState(
-            expandedHealthConnect = true,
             primaryHealthSourceSamsung = true,
             dailyHealthSourceLabel = "Samsung Health",
             dailyHealthDate = LocalDate.now().toString(),
@@ -44,7 +43,8 @@ class HealthProviderUiRegressionTest {
         ))
         compose.setContent { TrainPilotTheme {
             HealthTabScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU),
-                {}, {}, {}, { _, _ -> }, {}, { syncRequests++ }, {}, {})
+                { if (it == "connect") state = state.copy(expandedHealthConnect = !state.expandedHealthConnect) },
+                {}, {}, { _, _ -> }, {}, { syncRequests++ }, {}, {})
         } }
         val list = compose.onNodeWithTag("health_tab_screen")
         compose.onNodeWithTag("studio_daily_health_status").assertDoesNotExist()
@@ -57,28 +57,26 @@ class HealthProviderUiRegressionTest {
         compose.onNodeWithTag("health_today_header_sync").performClick()
         assertEquals(1, syncRequests)
 
-        list.performScrollToNode(hasTestTag("health_last_sync_${HealthJournalStore.SAMSUNG}"))
+        list.performScrollToNode(hasText("Források, óra és szinkron"))
+        compose.onNodeWithText("Források, óra és szinkron").performClick()
         compose.onNodeWithTag("health_last_sync_${HealthJournalStore.SAMSUNG}")
-            .assertTextContains("Samsung Health • Utolsó sikeres szinkron:", substring = true)
+            .performScrollTo().assertTextContains("Samsung Health • Utolsó sikeres szinkron:", substring = true)
         compose.onNodeWithTag("health_last_sync_${HealthJournalStore.HC}")
             .assertTextContains("Még nincs sikeres szinkron", substring = true)
-        list.performScrollToNode(hasTestTag("health_sync_button"))
-        compose.onNodeWithTag("health_sync_button").performClick()
+        compose.onNodeWithTag("health_sync_button").performScrollTo().performClick()
         assertEquals(2, syncRequests)
         compose.runOnIdle { state = state.copy(healthSyncBusy = true) }
         compose.onNodeWithTag("health_sync_button").assertIsNotEnabled()
         assertEquals(2, syncRequests)
-        list.performScrollToNode(hasTestTag("health_today_header_sync"))
-        compose.onNodeWithTag("health_today_header_sync").assertIsNotEnabled()
-        compose.runOnIdle { state = state.copy(healthSyncBusy = false) }
-        list.performScrollToNode(hasTestTag("health_provider_samsung"))
         compose.onNodeWithTag("health_provider_samsung").assertExists()
-        list.performScrollToNode(hasTestTag("health_sync_result"))
-        compose.onNodeWithTag("health_sync_result").assertTextEquals(partialMessage)
+        compose.onNodeWithTag("health_sync_result").assertIsDisplayed().assertTextEquals(partialMessage)
 
         compose.runOnIdle { state = state.copy(healthSyncFailed = true, healthSyncPartial = false,
             healthSyncMessage = "Samsung Health: PERMISSION_DENIED") }
-        compose.onNodeWithTag("health_sync_result").assertTextEquals("Samsung Health: PERMISSION_DENIED")
+        compose.onNodeWithTag("health_sync_result").assertIsDisplayed().assertTextEquals("Samsung Health: PERMISSION_DENIED")
+        compose.onNodeWithTag("health_connect_close").performClick()
+        list.performScrollToNode(hasTestTag("health_today_header_sync"))
+        compose.onNodeWithTag("health_today_header_sync").assertIsNotEnabled()
     }
     @Test fun selectingCurrentSourceIsIdempotentAndSyncResultPersistsWithoutFakeGrantCounts() {
         val selected = mutableListOf<Boolean>()
@@ -89,15 +87,12 @@ class HealthProviderUiRegressionTest {
             HealthTabScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU), {}, {}, {}, { _, _ -> }, {}, {}, {}, {},
                 onSelectHealthSource = { selected.add(it); state = state.copy(primaryHealthSourceSamsung = it) })
         } }
-        val list = compose.onNodeWithTag("health_tab_screen")
-        list.performScrollToNode(hasTestTag("health_provider_samsung"))
         compose.onNodeWithTag("health_provider_samsung").performClick()
         compose.onNodeWithTag("health_provider_samsung").performClick()
         assertEquals(listOf(true, true), selected)
         compose.onNodeWithText("● Közvetlen (1/2)").assertDoesNotExist()
         compose.onNodeWithTag("health_provider_connect").performClick()
         assertEquals(false, selected.last())
-        list.performScrollToNode(hasTestTag("health_sync_result"))
         compose.onNodeWithTag("health_sync_result").assertTextEquals("Samsung Health: PERMISSION_DENIED")
         compose.runOnIdle { state = state.copy(healthSyncFailed = false, healthSyncMessage = "Health Connect: sikeres szinkron") }
         compose.onNodeWithTag("health_sync_result").assertTextEquals("Health Connect: sikeres szinkron")

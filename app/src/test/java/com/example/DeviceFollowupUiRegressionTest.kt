@@ -71,7 +71,30 @@ class DeviceFollowupUiRegressionTest {
         assertEquals(newest.left, oldest.left)
         assertTrue(newest.bottom <= oldest.top)
         compose.onNodeWithTag("progress_photo_new").performClick()
-        assertEquals("new", selected)
+        assertEquals(photos.last().galleryKey, selected)
+    }
+
+    @Test fun sharedPhotoOpensTheMeasurementWhoseGalleryRowWasTapped() {
+        val first = NativeProgressPhoto("shared", "weight", 1_700_000_000_000, "", "2026-11-19", "",
+            kind = "weight", weightId = "first", weightKg = 82.5)
+        val second = first.copy(weightId = "second", dayName = "2026-11-20", weightKg = 83.0)
+        var selectedKey by mutableStateOf<String?>(null)
+        var vertical by mutableStateOf(false)
+        compose.setContent { TrainPilotTheme {
+            Box(Modifier.width(355.dp)) {
+                NativeProgressPhotoGallery(ProgressUiState(progressPhotos = listOf(first, second),
+                    selectedPhotoKey = selectedKey, photosLoading = false),
+                    { selectedKey = it }, { selectedKey = null }, vertical)
+            }
+        } }
+
+        compose.onNodeWithText("Testsúlynapló · 83,0 kg").performClick()
+        compose.onNodeWithText("Testsúlynapló · 2026-11-20 · 83,0 kg").assertExists()
+        compose.onNodeWithTag("progress_photo_close").performClick()
+
+        compose.runOnIdle { vertical = true }
+        compose.onNodeWithText("Testsúlynapló · 82,5 kg").performClick()
+        compose.onNodeWithText("Testsúlynapló · 2026-11-19 · 82,5 kg").assertExists()
     }
 
     @Test fun editorAndExerciseDetailHeadersRemainBelowGlobalNavWhileTheirBodyScrolls() {

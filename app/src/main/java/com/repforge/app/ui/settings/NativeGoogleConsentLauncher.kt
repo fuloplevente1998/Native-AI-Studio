@@ -1,8 +1,7 @@
 package com.repforge.app.ui.settings
 
-import android.app.Activity
-import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -15,12 +14,12 @@ import com.repforge.app.NativeGoogleConsentBridge
 internal fun NativeGoogleConsentLauncher(
     prompt: NativeGoogleConsentBridge.Prompt?,
     take: (String) -> NativeGoogleConsentBridge.Prompt?,
-    complete: (String, Intent?) -> Unit,
+    complete: (String, ActivityResult) -> Unit,
     fail: (String) -> Unit
 ) {
     if (prompt != null) key(prompt.id) {
         val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
-            complete(prompt.id, if (result.resultCode == Activity.RESULT_OK) result.data else null)
+            complete(prompt.id, result)
         }
         LaunchedEffect(prompt.id) {
             val pending = take(prompt.id) ?: return@LaunchedEffect

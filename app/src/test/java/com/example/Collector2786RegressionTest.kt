@@ -86,7 +86,12 @@ class Collector2786RegressionTest {
         } }
         compose.onNodeWithTag("health_weekly_status_card").assertDoesNotExist()
         compose.onNodeWithTag("health_weekly_steps_card").assertDoesNotExist()
-        compose.onNodeWithTag("health_weekly_goals_compact").performClick()
+        val header = compose.onNodeWithTag("health_weekly_goals_compact")
+        header.assertTextContains("Heti célok")
+        compose.onNodeWithTag("weekly_goals_workouts", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("weekly_goals_steps", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("health_weekly_workouts_section").assertDoesNotExist()
+        header.performClick()
         compose.runOnIdle { assertTrue(state.expandedHealthWeeklyGoals) }
         val list = compose.onNodeWithTag("health_tab_screen")
         // 2788: one steps section, no second card to open.
@@ -99,6 +104,18 @@ class Collector2786RegressionTest {
         info.assertTextContains("nincs adat", substring = true)
         list.performScrollToNode(hasTestTag("health_weight_card"))
         compose.onNodeWithTag("health_weight_card").assertExists()
+        list.performScrollToNode(hasTestTag("health_weekly_goals_compact"))
+        header.performClick()
+        compose.runOnIdle {
+            assertFalse(state.expandedHealthWeeklyGoals)
+            state = state.copy(workoutGoalPeriod = WorkoutGoalPeriod.MONTHLY, workoutGoalTarget = 12, workoutGoalCompleted = 5)
+        }
+        header.assertTextContains("Havi célok")
+        compose.onNodeWithTag("health_weekly_workouts_section").assertDoesNotExist()
+        header.performClick()
+        list.performScrollToNode(hasTestTag("health_weekly_workouts_section_summary"))
+        compose.onNodeWithTag("health_weekly_workouts_section_summary", useUnmergedTree = true)
+            .assertTextContains("5 / 12 ebben a hónapban")
     }
 
     @Test fun expandedWeeklyGoalsReplacesCompactBarsWithoutDuplicateGoalControls() {
@@ -131,9 +148,15 @@ class Collector2786RegressionTest {
         list.performScrollToNode(hasText("Források, óra és szinkron"))
         compose.onNodeWithTag("health_sync_button").assertDoesNotExist()
         compose.onNodeWithTag("health_open_watch_sync_card").assertDoesNotExist()
-        compose.onNodeWithText("Források, óra és szinkron").performClick()
-        list.performScrollToNode(hasTestTag("health_open_watch_sync_card"))
-        list.performScrollToNode(hasTestTag("health_sync_button"))
-        compose.onNodeWithTag("health_sync_button").assertExists()
+        val launcher = compose.onNodeWithText("Források, óra és szinkron")
+        val before = launcher.getUnclippedBoundsInRoot()
+        launcher.performClick()
+        val sheet = compose.onNodeWithTag("health_connect_sheet")
+        sheet.assertExists()
+        compose.onNodeWithTag("health_open_watch_sync_card").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("health_sync_button").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("health_connect_close").performClick()
+        sheet.assertDoesNotExist()
+        assertEquals(before, launcher.getUnclippedBoundsInRoot())
     }
 }

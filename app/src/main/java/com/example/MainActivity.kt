@@ -143,6 +143,14 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
     val requestPlatformPermission = com.example.ui.components.rememberStudioPermissionRequest(context, viewModel)
     val nativeHealth: com.repforge.app.ui.health.HealthDashboardViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
     val health by nativeHealth.uiState.collectAsStateWithLifecycle()
+    val nativeSettings: com.repforge.app.ui.settings.SettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val googleConsent by nativeSettings.googleConsent.collectAsStateWithLifecycle()
+    com.repforge.app.ui.settings.NativeGoogleConsentLauncher(googleConsent, nativeSettings::takeGoogleConsent,
+        nativeSettings::completeGoogleConsent, nativeSettings::failGoogleConsent)
+    val cloudInstallRevision by com.repforge.app.NativeCloudMergeGuard.localInstallRevision.collectAsStateWithLifecycle()
+    LaunchedEffect(cloudInstallRevision) {
+        if (cloudInstallRevision > 0) viewModel.refreshAfterCloudSync(context)
+    }
     val activity = context as? android.app.Activity
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     androidx.compose.runtime.DisposableEffect(lifecycleOwner, activity) {
@@ -156,9 +164,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
         onDispose { lifecycle.removeObserver(observer); nativeHealth.appHidden(activity) }
     }
     androidx.compose.runtime.LaunchedEffect(health.healthRefreshing, health.syncMessage, health.syncFailed, health.syncPartial) {
-        if (health.healthRefreshing || health.syncMessage.isNotBlank())
-            viewModel.updateHealthSyncStatus(health.healthRefreshing, partial = health.syncPartial,
-                failed = health.syncFailed, message = health.syncMessage)
+        viewModel.updateHealthSyncStatus(health.healthRefreshing, partial = health.syncPartial,
+            failed = health.syncFailed, message = health.syncMessage)
     }
     androidx.compose.runtime.LaunchedEffect(health.refreshRevision, health.provider) {
         if (!health.healthRefreshing) viewModel.reloadHealthJournal()

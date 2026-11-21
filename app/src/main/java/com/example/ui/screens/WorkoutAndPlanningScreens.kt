@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.components.TrainPilotModalBottomSheet
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotCombinedClickable
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
@@ -80,7 +81,6 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconToggleButton
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -688,7 +688,7 @@ fun ProgramsListScreen(
             skipPartiallyExpanded = true,
             confirmValueChange = { it != SheetValue.Hidden || !state.libraryMutationBusy }
         )
-        ModalBottomSheet(
+        TrainPilotModalBottomSheet(
             onDismissRequest = { if (!state.libraryMutationBusy) actionSheetProgramId = null },
             sheetState = sheetState,
             containerColor = palette.surface,

@@ -124,9 +124,15 @@ class Collector2785RegressionTest {
         } }
         compose.onNodeWithText("Pullover").performClick()
         val info = compose.onNodeWithTag("statistics_record_chart_info_pullover", useUnmergedTree = true)
+        val chart = compose.onNodeWithTag("statistics_record_chart_pullover", useUnmergedTree = true)
+        val stateDescription = androidx.compose.ui.semantics.SemanticsProperties.StateDescription
         info.performScrollTo().assertTextContains("2026-11-03", substring = true)
-        compose.onNodeWithTag("statistics_record_chart_pullover", useUnmergedTree = true).performTouchInput { click(Offset(2f, centerY)) }
+        chart.assert(SemanticsMatcher("latest selection") { it.config[stateDescription].startsWith("2026-11-03") })
+        chart.performTouchInput { click(Offset(2f, centerY)) }
         info.assertTextContains("2026-11-01", substring = true)
+        chart.assert(SemanticsMatcher("earlier selection") { it.config[stateDescription].startsWith("2026-11-01") })
+        chart.performTouchInput { click(Offset(right - 2f, centerY)) }
+        info.assertTextContains("2026-11-03", substring = true)
     }
 
     // ---- 2. weight periods show only their own measurements ----

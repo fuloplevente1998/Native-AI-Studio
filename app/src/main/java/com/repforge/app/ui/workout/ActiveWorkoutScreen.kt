@@ -1,5 +1,6 @@
 package com.repforge.app.ui.workout
 
+import com.example.ui.components.TrainPilotModalBottomSheet
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.example.ui.components.WorkoutControlAppearance
 import androidx.compose.foundation.layout.heightIn
@@ -80,7 +81,6 @@ import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton as OutlinedButton
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -552,10 +552,11 @@ fun ActiveWorkoutScreen(
     // Gyakorlat választó BottomSheet
     if (state.showExercisePicker) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
+        TrainPilotModalBottomSheet(
             onDismissRequest = { viewModel.closeExercisePicker() },
             sheetState = sheetState,
-            containerColor = colors.card
+            containerColor = colors.card,
+            outlineColor = colors.text
         ) {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Text(strings.getString(R.string.native_workout_add_exercise), color = colors.text, fontSize = 18.sp, fontWeight = FontWeight.Bold)

@@ -1,7 +1,7 @@
 package com.repforge.app
 
 import android.app.PendingIntent
-import android.content.Intent
+import androidx.activity.result.ActivityResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +13,7 @@ import java.util.UUID
 internal class NativeGoogleConsentBridge {
     data class Prompt(val id: String, val pendingIntent: PendingIntent)
     private class Attempt(val prompt: Prompt) {
-        val result = CompletableDeferred<Intent?>()
+        val result = CompletableDeferred<ActivityResult>()
         var launched = false
     }
     private val lock = Any()
@@ -21,7 +21,7 @@ internal class NativeGoogleConsentBridge {
     private val _prompt = MutableStateFlow<Prompt?>(null)
     val prompt = _prompt.asStateFlow()
 
-    suspend fun resolve(pendingIntent: PendingIntent): Intent? {
+    suspend fun resolve(pendingIntent: PendingIntent): ActivityResult {
         val current = synchronized(lock) {
             check(attempt == null) { "Google consent already pending" }
             Attempt(Prompt(UUID.randomUUID().toString(), pendingIntent)).also {
@@ -45,7 +45,7 @@ internal class NativeGoogleConsentBridge {
         current.prompt
     }
 
-    fun complete(id: String, result: Intent?): Boolean = synchronized(lock) {
+    fun complete(id: String, result: ActivityResult): Boolean = synchronized(lock) {
         val current = attempt ?: return@synchronized false
         if (current.prompt.id != id || !current.launched) return@synchronized false
         current.result.complete(result)

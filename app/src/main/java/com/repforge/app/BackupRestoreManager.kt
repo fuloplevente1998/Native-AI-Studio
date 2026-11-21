@@ -149,6 +149,7 @@ class BackupRestoreManager(context: Context) {
             val history = normalized.optJSONArray(legacyKey) ?: throw IOException("Invalid backup history.")
             normalized.put("history", history)
         }
+        LegacyWebViewMigrator.validatePortableDocuments(normalized)
         return normalized
     }
 
@@ -268,6 +269,7 @@ class BackupRestoreManager(context: Context) {
     /** Reuse the same staged redo path for an already merged Drive payload, under its caller's lease. */
     internal suspend fun installCloudMerge(data: JSONObject, stagedPhotos: NativeCloudPhotoStage? = null) {
         check(NativeDataReplacement.blocked(appContext)) { "Cloud import requires the replacement lease" }
+        LegacyWebViewMigrator.validatePortableDocuments(data)
         val ids = photoIds(data)
         val token = UUID.randomUUID().toString()
         val dir = transactionDir(token); mkdir(dir)

@@ -14,15 +14,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.StudioProgressWindow
 import com.example.model.volumeAxisMaximum
+import com.example.ui.components.trainPilotChartMarkColor
+import com.example.ui.components.trainPilotChartSelection
 import com.example.ui.theme.LocalTrainPilotPalette
 
 /** Same measured buckets in both sizes. The old app opens a scrollable chart at its right edge. */
@@ -61,18 +61,21 @@ internal fun StudioVolumeChart(bars: List<Pair<String, Int>>, period: StudioProg
                         verticalAlignment = Alignment.Bottom) {
                         bars.forEachIndexed { index, (date, kg) ->
                             val ratio = (kg.toFloat() / axisMax.toFloat()).coerceIn(0f, 1f)
+                            val isSelected = selected == index
+                            val mark = trainPilotChartMarkColor(isSelected, palette.primary, palette.textSecondary)
                             Column(Modifier.weight(1f).fillMaxHeight().clickable { onSelect(index) }
-                                .semantics { contentDescription = "$date • $kg kg" },
+                                .testTag("progress_${mode}_column_$index")
+                                .trainPilotChartSelection(isSelected, "$date · $kg kg"),
                                 verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
                                 Box(Modifier.widthIn(max = if (expanded) 48.dp else 32.dp).fillMaxWidth()
-                                    .height(plotHeight * ratio)
+                                    .height(if (ratio == 0f) 2.dp else plotHeight * ratio)
                                     .testTag("progress_${mode}_bar_$index")
                                     .clip(RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp))
-                                    .background(Brush.verticalGradient(listOf(
-                                        palette.primaryBright.copy(alpha = if (selected == index) 1f else 0.88f),
-                                        palette.primary.copy(alpha = if (selected == index) 1f else 0.82f)))))
+                                    .background(mark))
                                 Box(Modifier.height(labelHeight), contentAlignment = Alignment.Center) {
-                                    Text(date.substring(3, 5).trimStart('0'), color = palette.textSecondary,
+                                    Text(date.substring(3, 5).trimStart('0'),
+                                        color = if (isSelected) palette.primary else palette.textSecondary,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                         style = MaterialTheme.typography.labelSmall.copy(fontSize = labelSize), maxLines = 1)
                                 }
                             }

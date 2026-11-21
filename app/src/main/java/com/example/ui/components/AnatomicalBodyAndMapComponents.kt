@@ -251,6 +251,24 @@ fun AnatomicalMuscleHeatmapCard(
     val smallHeatColor = Color(0xFFE5B842)   // Yellow-Gold (Kisebb)
     val mediumHeatColor = Color(0xFFE68A2E)  // Warm Orange (Közepes)
     val highHeatColor = Color(0xFFE25555)    // Coral Red (Nagyobb)
+    val legendSmall = when (lang) {
+        AppLanguage.HU -> "Kisebb"
+        AppLanguage.EN -> "Lower"
+        AppLanguage.DE -> "Geringer"
+        AppLanguage.RO -> "Mică"
+    }
+    val legendMedium = when (lang) {
+        AppLanguage.HU -> "Közepes"
+        AppLanguage.EN -> "Moderate"
+        AppLanguage.DE -> "Mittel"
+        AppLanguage.RO -> "Medie"
+    }
+    val legendHigh = when (lang) {
+        AppLanguage.HU -> "Nagyobb"
+        AppLanguage.EN -> "Higher"
+        AppLanguage.DE -> "Höher"
+        AppLanguage.RO -> "Mare"
+    }
 
     Surface(
         shape = RoundedCornerShape(20.dp),
@@ -316,19 +334,6 @@ fun AnatomicalMuscleHeatmapCard(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 // Left half: Dual Front & Back Anatomical Muscular Figures
-                val baseSilhouette = Color(0xFF434A56)
-                val outlineCol = Color(0xFF9EA7B8).copy(alpha = 0.55f)
-
-                fun colorForMuscle(id: String, defaultHeat: Color): Color {
-                    return if (selectedMuscleId == "all") {
-                        defaultHeat
-                    } else if (selectedMuscleId == id) {
-                        highHeatColor
-                    } else {
-                        baseSilhouette.copy(alpha = 0.55f)
-                    }
-                }
-
                 Box(
                     modifier = Modifier
                         .weight(0.42f)
@@ -360,17 +365,19 @@ fun AnatomicalMuscleHeatmapCard(
                 ) {
                     muscleLoads.forEach { m ->
                         val isSel = selectedMuscleId == m.id
-                        val barColor = when {
-                            m.percentage >= 70 -> highHeatColor
-                            m.percentage >= 40 -> mediumHeatColor
-                            else -> smallHeatColor
+                        val (levelColor, level) = when {
+                            m.percentage >= 70 -> highHeatColor to legendHigh
+                            m.percentage >= 40 -> mediumHeatColor to legendMedium
+                            else -> smallHeatColor to legendSmall
                         }
+                        val barColor = trainPilotChartMarkColor(isSel, palette.primary, palette.textSecondary)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .trainPilotClickable(RoundedCornerShape(6.dp)) {
                                     selectedMuscleId = if (selectedMuscleId == m.id) "all" else m.id
                                 }
+                                .trainPilotChartSelection(isSel, "${m.localizedName(lang)} · ${m.percentage}% · $level")
                                 .padding(vertical = 1.dp)
                                 .testTag("muscle_chip_${m.id}"),
                             verticalAlignment = Alignment.CenterVertically,
@@ -400,6 +407,7 @@ fun AnatomicalMuscleHeatmapCard(
                                         .background(barColor)
                                 )
                             }
+                            Box(Modifier.size(5.dp).background(levelColor, CircleShape))
                             Text(
                                 text = "${m.percentage}%",
                                 style = MaterialTheme.typography.labelSmall,
@@ -414,25 +422,6 @@ fun AnatomicalMuscleHeatmapCard(
             }
 
             Spacer(modifier = Modifier.height(2.dp))
-
-            val legendSmall = when (lang) {
-                AppLanguage.HU -> "Kisebb"
-                AppLanguage.EN -> "Lower"
-                AppLanguage.DE -> "Geringer"
-                AppLanguage.RO -> "Mică"
-            }
-            val legendMedium = when (lang) {
-                AppLanguage.HU -> "Közepes"
-                AppLanguage.EN -> "Moderate"
-                AppLanguage.DE -> "Mittel"
-                AppLanguage.RO -> "Medie"
-            }
-            val legendHigh = when (lang) {
-                AppLanguage.HU -> "Nagyobb"
-                AppLanguage.EN -> "Higher"
-                AppLanguage.DE -> "Höher"
-                AppLanguage.RO -> "Mare"
-            }
 
             // Legend Row: 🟡 Kisebb   🟠 Közepes   🔴 Nagyobb
             Row(

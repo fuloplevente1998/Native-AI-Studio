@@ -6,6 +6,8 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.repforge.app.NativeDataReplacement
+import com.repforge.app.NativeWeightPhotos
+import com.repforge.app.WorkoutPhotoRepository
 import com.repforge.app.data.db.BodyWeightEntryEntity
 import com.repforge.app.data.db.TrainPilotDatabase
 import com.repforge.app.data.db.WeightJournalSummary
@@ -95,21 +97,23 @@ internal class NativeWeightJournalRepository(
 
     suspend fun delete(expected: BodyWeightEntryEntity) {
         NativeDataReplacement.mutate(context) {
-            database.withTransaction {
+            val unreferenced = database.withTransaction {
                 if (database.bodyWeightDao().getWeightById(expected.id) != expected) throw ChangedEntry()
                 com.repforge.app.NativeWeightTombstones18.record(database, expected, now())
                 // Day-based deletion would also remove distinct measurements from the same day.
                 check(database.bodyWeightDao().deleteWeightById(expected.id) == 1)
-            }
-            val raw = runCatching { JSONObject(expected.rawJson) }.getOrNull()
-            val photos = raw?.optJSONArray("photos")
-            if (photos != null) {
-                val repository = com.repforge.app.WorkoutPhotoRepository(context)
-                for (index in 0 until photos.length()) {
-                    val id = photos.optJSONObject(index)?.optString("id").orEmpty()
-                    if (id.isNotBlank()) repository.delete(id)
+
+                val photos = runCatching { JSONObject(expected.rawJson).optJSONArray("photos") }.getOrNull()
+                val photoIds = mutableSetOf<String>()
+                if (photos != null) {
+                    for (index in 0 until photos.length()) {
+                        val id = photos.optJSONObject(index)?.optString("id").orEmpty()
+                        if (id.isNotBlank()) photoIds.add(id)
+                    }
                 }
+                NativeWeightPhotos.unreferencedFiles(database, photoIds)
             }
+            unreferenced.forEach(WorkoutPhotoRepository(context)::delete)
         }
     }
 

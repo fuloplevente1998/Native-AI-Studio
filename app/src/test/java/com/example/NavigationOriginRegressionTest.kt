@@ -13,6 +13,25 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class NavigationOriginRegressionTest {
+    @Test fun healthPanelsAreExclusiveAndGoalsOpenOnlyOnAnExplicitEntry() {
+        val model = TrainPilotViewModel()
+        model.openHealthAndExpand(weeklyGoals = true)
+        assertTrue(model.uiState.value.expandedHealthWeeklyGoals)
+        model.toggleHealthSection("journal")
+        assertTrue(model.uiState.value.expandedHealthJournal)
+        model.openHealthAndExpand(connect = true)
+        assertTrue(model.uiState.value.expandedHealthConnect)
+        assertFalse(model.uiState.value.expandedHealthJournal)
+        model.toggleHealthSection("journal")
+        assertTrue(model.uiState.value.expandedHealthJournal)
+        assertFalse(model.uiState.value.expandedHealthConnect)
+        model.selectTab(MainTab.HOME)
+        model.selectTab(MainTab.HEALTH)
+        assertFalse(model.uiState.value.expandedHealthWeeklyGoals)
+        assertFalse(model.uiState.value.expandedHealthJournal)
+        assertFalse(model.uiState.value.expandedHealthConnect)
+    }
+
     @Test fun logDetailsRestoreTheOriginSectionAndNestedWorkoutPhotoAndMapFocus() {
         for (section in 0..2) {
             val model = TrainPilotViewModel()

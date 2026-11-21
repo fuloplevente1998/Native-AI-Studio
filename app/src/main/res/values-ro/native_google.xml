@@ -3,7 +3,12 @@
     <string name="native_google_authorizing">Se verifică accesul Google…</string>
     <string name="native_google_waiting">Se așteaptă aprobarea Google…</string>
     <string name="native_google_launch_failed">Aprobarea Google nu a putut fi deschisă. Încearcă din nou.</string>
-    <string name="native_google_cancelled">Aprobarea Google a fost anulată. Sincronizarea nu a pornit.</string>
+    <string name="native_google_consent_incomplete">Autorizarea Google nu s-a finalizat. Sincronizarea nu a pornit.</string>
+    <string name="native_google_consent_missing_result">Solicitarea de autorizare Google s-a încheiat fără rezultat. Încearcă din nou.</string>
+    <string name="native_google_auth_network">Autorizarea Google a eșuat din cauza unei erori de rețea. Verifică conexiunea și încearcă din nou.</string>
+    <string name="native_google_auth_configuration">Google nu a acceptat configurația de conectare a aplicației. Contactează serviciul de asistență al aplicației.</string>
+    <string name="native_google_auth_failed">Google nu a putut verifica autorizarea. Încearcă din nou.</string>
+    <string name="native_google_missing_scopes">Google nu a acordat toate permisiunile necesare. Sincronizarea nu a pornit.</string>
     <string name="native_google_no_token">Google nu a acordat acces. Solicită din nou accesul.</string>
     <string name="native_google_connected">Contul Google este conectat.</string>
     <string name="native_google_drive_done">Sincronizarea Drive s-a încheiat.</string>

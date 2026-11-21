@@ -34,7 +34,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.localization.TrainPilotStrings
 import com.example.ui.components.LocalSyncDailyHealth
 import com.example.ui.components.TrainPilotChartInfoLine
+import com.example.ui.components.chartDateLabel
 import com.example.ui.components.chartNearestIndex
+import com.example.ui.components.trainPilotChartMarkColor
+import com.example.ui.components.trainPilotChartSelection
 import com.example.ui.components.trainPilotChartTap
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.viewmodel.TrainPilotUiState
@@ -191,12 +194,13 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                                     val shown = if (periodDays == 0) trend else trend.filter { !it.date.isBefore(LocalDate.now().minusDays(periodDays.toLong() - 1)) }
                                     if (shown.size >= 2) {
                                         // 2785: tap a point → highlighted, info line shows date + value (default: latest).
-                                        var sel by remember(record.exerciseId, periodDays, shown.size) { mutableIntStateOf(shown.lastIndex) }
+                                        var sel by remember(record.exerciseId, periodDays, shown) { mutableIntStateOf(shown.lastIndex) }
+                                        val selectedLabel = exerciseTrendPointLabel(shown[sel], trendKind, lang.code)
                                         Box(Modifier.fillMaxWidth().height(160.dp).testTag("statistics_record_chart_${record.exerciseId}")
-                                            .trainPilotChartTap(shown.size, { x, w -> chartNearestIndex(x, w, shown.size) }) { sel = it }) {
+                                            .trainPilotChartTap(shown, { x, w -> chartNearestIndex(x, w, shown.size) }, selectedLabel) { sel = it }) {
                                             TrendCanvas(shown.map { it.value }, sel)
                                         }
-                                        TrainPilotChartInfoLine(exerciseTrendPointLabel(shown.getOrElse(sel) { shown.last() }, trendKind, lang.name.lowercase()),
+                                        TrainPilotChartInfoLine(selectedLabel,
                                             Modifier.testTag("statistics_record_chart_info_${record.exerciseId}"))
                                     } else Text(statsTr(lang, "Ebben az időszakban kevés a mérés.", "Too few entries in this period.", "Zu wenige Messungen in diesem Zeitraum.", "Prea puține măsurători în această perioadă."),
                                         color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
@@ -216,16 +220,16 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                                         else {
                                             Text(statsTr(lang, "Legutóbbi becslés: ${number.format(native.exercise1RmTrend.last().e1rmKg)} kg", "Latest estimate: ${number.format(native.exercise1RmTrend.last().e1rmKg)} kg", "Letzte Schätzung: ${number.format(native.exercise1RmTrend.last().e1rmKg)} kg", "Ultima estimare: ${number.format(native.exercise1RmTrend.last().e1rmKg)} kg"), color = palette.textPrimary)
                                             val points = native.exercise1RmTrend
-                                            var sel by remember(record.exerciseId, points.size) { mutableIntStateOf(points.lastIndex) }
+                                            var sel by remember(record.exerciseId, points) { mutableIntStateOf(points.lastIndex) }
+                                            val point = points[sel]
+                                            val selectedLabel = "${point.date} · ${number.format(point.e1rmKg)} kg"
                                             Box(Modifier.fillMaxWidth().height(160.dp)
                                                 .testTag("statistics_record_chart_${record.exerciseId}")
-                                                .trainPilotChartTap(points.size, { x, w -> chartNearestIndex(x, w, points.size) }) { sel = it }) {
+                                                .trainPilotChartTap(points, { x, w -> chartNearestIndex(x, w, points.size) }, selectedLabel) { sel = it }) {
                                                 TrendCanvas(points.map { it.e1rmKg }, sel)
                                             }
-                                            points.getOrNull(sel)?.let { pt ->
-                                                TrainPilotChartInfoLine("${pt.date} · ${number.format(pt.e1rmKg)} kg",
-                                                    Modifier.testTag("statistics_record_chart_info_${record.exerciseId}"))
-                                            }
+                                            TrainPilotChartInfoLine(selectedLabel,
+                                                Modifier.testTag("statistics_record_chart_info_${record.exerciseId}"))
                                         }
                                     } else if (record.distanceMeters != null || record.measurementType == "distance" || record.repUnit in listOf("km", "m")) {
                                         NativeCardioProgressPanel(native, onActivity, onRetry)
@@ -341,7 +345,11 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
             val max = bars.filterNotNull().maxOrNull()?.coerceAtLeast(1) ?: 1
             // 2780: every column is tappable; the selected day's line has a fixed place above the chart
             // (today by default), so nothing appears or disappears and the card never jumps.
-            var selectedBar by rememberSaveable { mutableStateOf(bars.lastIndex) }
+            var selectedBar by rememberSaveable(today.toString()) { mutableStateOf(bars.lastIndex) }
+            fun stepValueLabel(value: Int?): String = value?.let {
+                val formatted = number.format(it)
+                statsTr(lang, "$formatted lépés", "$formatted steps", "$formatted Schritte", "$formatted pași")
+            } ?: statsTr(lang, "nincs szinkronizálva", "not synced", "nicht synchronisiert", "nesincronizat")
             val selectedDate = today.minusDays((bars.lastIndex - selectedBar).toLong())
             val selectedDay = days.firstOrNull { it.dateIso == selectedDate.toString() }
             val locale = Locale.forLanguageTag(lang.name.lowercase())
@@ -352,9 +360,7 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
                     Text("${selectedDate.monthValue}.${"%02d".format(selectedDate.dayOfMonth)}. (${selectedDate.format(weekdayFmt)})",
                         color = palette.textPrimary, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(bars[selectedBar]?.let { statsTr(lang, "${number.format(it)} lépés", "${number.format(it)} steps",
-                        "${number.format(it)} Schritte", "${number.format(it)} pași") }
-                        ?: statsTr(lang, "nincs szinkronizálva", "not synced", "nicht synchronisiert", "nesincronizat"),
+                    Text(stepValueLabel(bars[selectedBar]),
                         color = if (bars[selectedBar] != null) palette.primary else palette.textSecondary,
                         style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold,
                         modifier = Modifier.testTag("statistics_steps_selected_value"))
@@ -371,19 +377,22 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
                 horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 bars.forEachIndexed { index, value ->
                     val selected = index == selectedBar
+                    val date = today.minusDays((bars.lastIndex - index).toLong())
+                    val label = "${chartDateLabel(date, lang.code)} · ${stepValueLabel(value)}"
+                    val mark = trainPilotChartMarkColor(selected, palette.primary, palette.textSecondary)
                     Column(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(6.dp))
                         .trainPilotClickable(RoundedCornerShape(6.dp)) { selectedBar = index }
+                        .trainPilotChartSelection(selected, label)
                         .testTag("statistics_steps_column_$index"), horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.BottomCenter) {
                             if (value == null) Box(Modifier.fillMaxWidth().height(2.dp)
-                                .background(if (selected) palette.primary else palette.cardBorder, RoundedCornerShape(1.dp))
+                                .background(mark, RoundedCornerShape(1.dp))
                                 .testTag("statistics_steps_bar_missing_$index"))
                             else Box(Modifier.fillMaxWidth().fillMaxHeight((value.toFloat() / max).coerceIn(0.04f, 1f))
-                                .background(if (selected) palette.primary else palette.primary.copy(alpha = 0.45f),
-                                    RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                .background(mark, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
                                 .testTag("statistics_steps_bar_$index"))
                         }
-                        Text(today.minusDays((bars.lastIndex - index).toLong()).format(letters),
+                        Text(date.format(letters),
                             color = if (selected) palette.primary else palette.textSecondary,
                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                             style = MaterialTheme.typography.labelSmall, maxLines = 1)
