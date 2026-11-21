@@ -3308,6 +3308,7 @@ fun BackupRestoreScreen(
     val activity = LocalActivity.current
     val lang = uiState.language
     val drive = uiState.selectedBackupFormat == "DRIVE"
+    val inSheet = com.example.ui.components.LocalTrainPilotInSheet.current
     val localStatus = uiState.localBackupStatus
     var pickerMessage by remember { mutableStateOf<String?>(null) }
     val driveFeedback = settingsState.googleActionFeedback?.takeIf { it.action == "drive" || it.action == "connect" }
@@ -3379,10 +3380,10 @@ fun BackupRestoreScreen(
     Column(Modifier.then(com.example.ui.components.sheetAwareFillMaxSize()).background(palette.background)) {
         LazyColumn(
             modifier = Modifier
-                .fillMaxWidth().weight(1f, fill = false)
+                .fillMaxWidth().weight(1f, fill = !inSheet)
                 // In the sheet the JSON / ZIP / DRIVE tabs share one stable height (the tallest, Drive),
                 // so switching tabs never makes the sheet jump.
-                .then(if (com.example.ui.components.LocalTrainPilotInSheet.current)
+                .then(if (inSheet)
                     Modifier.heightIn(min = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp * 0.78f)
                     else Modifier)
                 .background(palette.background)
@@ -3457,7 +3458,8 @@ fun BackupRestoreScreen(
                             }
                             Switch(checked = uiState.includeHealthInBackup, enabled = !uiState.backupHealthConsentSaving, onCheckedChange = onToggleIncludeHealth, modifier = Modifier.heightIn(min = 48.dp).testTag("backup_health_switch"))
                         }
-                        if (drive) Text(driveHealthBackupSummary(lang), color = palette.textSecondary,
+                        if (drive) Text(tr(lang, "Napi lépések: helyi JSON/ZIP.", "Daily steps: local JSON/ZIP.",
+                            "Tagesschritte: lokal als JSON/ZIP.", "Pași zilnici: JSON/ZIP local."), color = palette.textSecondary,
                             style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("backup_drive_health_scope"))
                     }
                 }
