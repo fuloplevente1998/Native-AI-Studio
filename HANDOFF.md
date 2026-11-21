@@ -1,5 +1,13 @@
 # HANDOFF – aktuális állapot
 
+## Health Connect engedélykérés javítása (2026-11-21)
+- Ág: `fix/health-connect-permission-launch` (alap `aed077be`), felhasználói reprodukció: `ACTION_MANAGE_HEALTH_PERMISSIONS` indításkor `GRANT_RUNTIME_PERMISSIONS` SecurityException.
+- A Beállítások és Egészség oldali engedélygomb már nem indít HC szinkront; a hiányzó olvasási engedélyeket közvetlenül a látható Activityből kéri, megadott engedélyeket megőrzi.
+- A privilegizált `hc_manage` intent eltűnt; minden megadott jog esetén általános HC beállítási intent, sikertelen megnyitáskor saját alkalmazásbeállítások a tartalék út.
+- Külön ActivityResult launcher és jogosultsági callback; nulla/részleges/teljes jogosultságra regressziós teszt.
+- Nem érinti a napló/backup/Room/HC adatok tartalmát, aláírást és verziókódot.
+- Állapot: PR/CI/fizikai Samsung Android 17 ellenőrzés szükséges; `main` integráció, APK/AAB csak új jóváhagyás után.
+
 Frissítve: 2026-11-21 UTC. Rövid, felülírandó pillanatkép. Korábbi állapot: git log, PR-ek, docs/CURRENT_STATUS.md.
 
 ## Main és jelenlegi regresszió
