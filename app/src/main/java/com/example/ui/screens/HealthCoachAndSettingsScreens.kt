@@ -3364,6 +3364,7 @@ fun BackupRestoreScreen(
 
     if (showHealthInfo) {
         com.example.ui.components.TrainPilotFormSheet(scrollText = false,
+            testTag = "backup_health_info_sheet",
             onDismissRequest = { showHealthInfo = false },
             title = { Text(tr(uiState.language, "Egészségadatok", "Health data", "Gesundheitsdaten", "Date de sănătate")) },
             text = { Text(modifier = Modifier.verticalScroll(rememberScrollState()), text = tr(uiState.language,

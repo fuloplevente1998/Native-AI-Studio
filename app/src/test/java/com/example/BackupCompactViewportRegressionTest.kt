@@ -135,12 +135,14 @@ class BackupCompactViewportRegressionTest {
             compose.onNodeWithTag("backup_health_switch").performClick()
             compose.runOnIdle { assertTrue(health) }
             compose.onNodeWithTag("backup_health_info").performClick()
-            compose.onNodeWithText("JSON/ZIP", substring = true).assertIsDisplayed()
+            val inHealthInfo = hasAnyAncestor(hasTestTag("backup_health_info_sheet"))
+            compose.onNode(inHealthInfo and hasText("JSON/ZIP", substring = true)).assertIsDisplayed()
             if (lang == AppLanguage.EN) {
-                compose.onNodeWithText("workout-attached health summaries only", substring = true).assertExists()
-                compose.onNodeWithText("does not delete local data or existing backups", substring = true).assertExists()
+                compose.onNode(inHealthInfo and hasText("workout-attached health summaries only", substring = true)).assertExists()
+                compose.onNode(inHealthInfo and hasText("does not delete local data or existing backups", substring = true)).assertExists()
             }
-            compose.onNodeWithText("OK").performClick()
+            compose.onNode(inHealthInfo and hasText("OK")).performClick()
+            compose.onNodeWithTag("backup_health_info_sheet").assertDoesNotExist()
             compose.onNodeWithTag("backup_health_switch").performClick()
             compose.runOnIdle { assertFalse(health) }
             compose.onNodeWithTag("backup_format_DRIVE").performClick()
