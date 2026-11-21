@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.repforge.app.NativeLoosePhotos
 import com.repforge.app.R
 import com.repforge.app.WorkoutPhotoRepository
 import com.repforge.app.data.db.TrainPilotDatabase
@@ -74,7 +75,11 @@ data class NativeProgressPhoto(
     val kind: String = "workout",
     val weightId: String = "",
     val weightKg: Double? = null
-)
+) {
+    // A restored file can be referenced by more than one measurement or photo category.
+    internal val galleryKey: String
+        get() = "$kind:$id:${workoutId.ifEmpty { weightId }}"
+}
 
 /** Read-only, metadata-first projection. Never accepts private-dir contents as an index. */
 internal object NativeProgressPhotoData {
@@ -144,12 +149,8 @@ internal object NativeProgressPhotoData {
                 ))
             }
         }
-        val loosePhotos = db.keyValueDocumentDao().getDocument(com.repforge.app.NativeLoosePhotos.KEY)
-            ?.let { JSONArray(it.json) } ?: JSONArray()
-        for (index in 0 until loosePhotos.length()) {
-            val photo = loosePhotos.optJSONObject(index) ?: continue
+        for (photo in NativeLoosePhotos.visibleRows(db)) {
             val id = photo.optString("id")
-            if (!privatePhotoId.matches(id) || photo.optBoolean("deleted", false)) continue
             val createdAt = runCatching { Instant.parse(photo.optString("createdAt")).toEpochMilli() }.getOrDefault(0L)
             photos.add(NativeProgressPhoto(
                 id = id,
@@ -161,7 +162,7 @@ internal object NativeProgressPhotoData {
                 kind = "other"
             ))
         }
-        return photos
+        return photos.distinctBy { it.galleryKey }
     }
 }
 
@@ -267,9 +268,9 @@ internal fun NativeProgressPhotoGallery(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.heightIn(max = 600.dp).testTag("progress_photo_choices")
                     ) {
-                        items(state.progressPhotos.sortedByDescending { it.workoutStartedEpochMs }, key = { it.id }) { photo ->
+                        items(state.progressPhotos.sortedByDescending { it.workoutStartedEpochMs }, key = { it.galleryKey }) { photo ->
                             Row(
-                                modifier = Modifier.fillMaxWidth().trainPilotClickable(RoundedCornerShape(12.dp)) { open(photo.id) }
+                                modifier = Modifier.fillMaxWidth().trainPilotClickable(RoundedCornerShape(12.dp)) { open(photo.galleryKey) }
                                     .testTag("progress_photo_${photo.id}"),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
@@ -305,9 +306,9 @@ internal fun NativeProgressPhotoGallery(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.testTag("progress_photo_choices")
                     ) {
-                        items(state.progressPhotos, key = { it.id }) { photo ->
+                        items(state.progressPhotos, key = { it.galleryKey }) { photo ->
                             Column(
-                                modifier = Modifier.trainPilotClickable(RoundedCornerShape(12.dp)) { open(photo.id) }
+                                modifier = Modifier.trainPilotClickable(RoundedCornerShape(12.dp)) { open(photo.galleryKey) }
                                     .testTag("progress_photo_${photo.id}").size(140.dp),
                                 verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
@@ -338,7 +339,7 @@ internal fun NativeProgressPhotoGallery(
             }
         }
     }
-    val selected = state.progressPhotos.firstOrNull { it.id == state.selectedPhotoId }
+    val selected = state.progressPhotos.firstOrNull { it.galleryKey == state.selectedPhotoKey }
     if (selected != null) {
         Dialog(onDismissRequest = close, properties = DialogProperties(usePlatformDefaultWidth = false)) {
             Column(Modifier.fillMaxSize().background(colors.bg).systemBarsPadding().padding(16.dp),

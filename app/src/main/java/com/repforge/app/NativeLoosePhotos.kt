@@ -11,6 +11,7 @@ import java.time.Instant
 /** Photos added outside a workout or weight entry live in the shared private gallery. */
 internal object NativeLoosePhotos {
     const val KEY = "native:loosePhotos"
+    private val privatePhotoId = Regex("[a-f0-9-]{36}")
 
     data class Request(val ticket: NativeDataReplacement.Continuation)
 
@@ -55,8 +56,19 @@ internal object NativeLoosePhotos {
         }
     }
 
-    suspend fun count(database: TrainPilotDatabase): Int =
-        database.keyValueDocumentDao().getDocument(KEY)?.let { document ->
-            JSONArray(document.json).length()
-        } ?: 0
+    suspend fun visibleRows(database: TrainPilotDatabase): List<JSONObject> {
+        val document = database.keyValueDocumentDao().getDocument(KEY) ?: return emptyList()
+        val photos = JSONArray(document.json)
+        return buildList {
+            val addedIds = mutableSetOf<String>()
+            for (index in 0 until photos.length()) {
+                val photo = photos.optJSONObject(index) ?: continue
+                val id = photo.optString("id")
+                if (privatePhotoId.matches(id) && !photo.optBoolean("deleted", false) &&
+                    !BackupRestoreManager.photoDeleted(photo) && addedIds.add(id)) add(photo)
+            }
+        }
+    }
+
+    suspend fun count(database: TrainPilotDatabase): Int = visibleRows(database).size
 }

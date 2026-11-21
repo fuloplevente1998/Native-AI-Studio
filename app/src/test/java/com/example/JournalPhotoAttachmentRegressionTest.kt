@@ -291,6 +291,19 @@ class JournalPhotoAttachmentRegressionTest {
         assertEquals(1, NativeLoosePhotos.count(db))
     }
 
+    @Test fun loosePhotoCountUsesTheSameValidatedRowsAsTheGallery() = native {
+        val live = JSONObject().put("id", UUID.randomUUID().toString())
+        val removed = JSONObject().put("id", UUID.randomUUID().toString()).put("deleted", true)
+        val tombstone = JSONObject().put("id", UUID.randomUUID().toString()).put("deletedAt", "2026-11-21T10:00:00Z")
+        val malformed = JSONObject().put("id", "unexpected/file")
+        val rows = JSONArray().put(live).put(live).put(removed).put(tombstone).put(malformed).put("invalid")
+        db.keyValueDocumentDao().putDocument(KeyValueDocumentEntity(NativeLoosePhotos.KEY, rows.toString(), 1L))
+
+        val photos = NativeProgressPhotoData.load(db).filter { it.kind == "other" }
+        assertEquals(listOf(live.getString("id")), photos.map { it.id })
+        assertEquals(photos.size, NativeLoosePhotos.count(db))
+    }
+
     @Test fun deletedWorkoutCannotBeResurrectedByLateCameraResult() {
         val before = seed()
         val request = NativeJournalPhotos.prepare(context, before.workout.id, "after")

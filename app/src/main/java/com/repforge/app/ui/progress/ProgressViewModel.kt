@@ -45,7 +45,7 @@ data class ProgressUiState(
     val strengthLoading: Boolean = true,
     val strengthError: Boolean = false,
     val progressPhotos: List<NativeProgressPhoto> = emptyList(),
-    val selectedPhotoId: String? = null,
+    val selectedPhotoKey: String? = null,
     val photosLoading: Boolean = true,
     val photosError: Boolean = false,
     val language: String = "hu",
@@ -154,8 +154,8 @@ class ProgressViewModel(application: Application) : AndroidViewModel(application
                 _uiState.update { it.copy(
                     language = language, exercises = exercises, muscleLoads = muscle,
                     progressPhotos = result.second.getOrDefault(emptyList()),
-                    selectedPhotoId = it.selectedPhotoId?.takeIf { photoId ->
-                        result.second.getOrNull()?.any { photo -> photo.id == photoId } == true
+                    selectedPhotoKey = it.selectedPhotoKey?.takeIf { key ->
+                        result.second.getOrNull()?.any { photo -> photo.galleryKey == key } == true
                     },
                     photosLoading = false, photosError = result.second.isFailure,
                     selectedExerciseId = id, loading = false, loadError = false
@@ -180,13 +180,13 @@ class ProgressViewModel(application: Application) : AndroidViewModel(application
 
     fun retryStrength() = reloadStrength()
 
-    fun openPhoto(id: String) {
+    fun openPhoto(key: String) {
         _uiState.update { current ->
-            if (current.progressPhotos.any { it.id == id }) current.copy(selectedPhotoId = id) else current
+            if (current.progressPhotos.any { it.galleryKey == key }) current.copy(selectedPhotoKey = key) else current
         }
     }
 
-    fun closePhoto() { _uiState.update { it.copy(selectedPhotoId = null) } }
+    fun closePhoto() { _uiState.update { it.copy(selectedPhotoKey = null) } }
 
     private fun reloadStrength() {
         trendJob?.cancel()
