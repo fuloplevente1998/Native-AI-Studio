@@ -16,6 +16,10 @@ Az átadó a teljes `app`/`wear`/`shared` alkalmazást kéri; a PR #290–#306 c
 
 Még nincs végigellenőrizve a teljes telefon–óra helyreállítási mátrix, minden egészségforrás- és engedélyállapot, az aktív edzés/GPS teljes háttér- és eszközviselkedése, a teljes UI/lokalizációs/akadálymentességi mátrix, az app-szintű coroutine/állapotversenyek, az összes exportált komponens permission-mátrixa, valamint a kiadási metaadatok és webes/Play-listing egyezése. A `shared` modulhoz a jelenlegi fán nem találtam tesztfájlokat. Ezekről a jelentés nem állítja, hogy hibamentesek; az audit lezárásához külön ellenőrzés kell.
 
+## Play Console állapot
+
+A felhasználó megerősítette, hogy a 278800/278802 verziók már fent vannak a Play Console-ban; ezért a következő belső kódpár 278900/278902, a látható `versionName` 1.4.1 marad. Ehhez a körhöz csak a rövid leírás tartozik; a magyar és angol változat a `docs/PLAY_LISTING.md` fájlban 72, illetve 78 karakter. A Play Internal workflow signed AAB-párt épít és GitHub-artifactként adja át, de nem publikál közvetlenül a Console-ba.
+
 ## Megállapítások
 
 | ID | Súlyosság | Bizonyosság | Megállapítás és bizonyíték | Javasolt javítás és regresszió |
