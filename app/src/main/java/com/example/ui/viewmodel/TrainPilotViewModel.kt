@@ -689,23 +689,21 @@ class TrainPilotViewModel : ViewModel() {
         val scope = nativeScope ?: return
         val state = _uiState.value
         val revision = ++plannerSettingsRevision
-        plannerSettingsWriteJob = scope.launch(Dispatchers.IO, start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
+        val ticket = runCatching { NativeDataReplacement.continuationForCurrentData(context) }.getOrNull() ?: return
+        plannerSettingsWriteJob = scope.launch(Dispatchers.IO) {
             try {
-                val ticket = NativeDataReplacement.continuationForCurrentData(context)
-                withContext(Dispatchers.IO) {
-                    plannerSettingsWriteMutex.withLock {
-                        if (revision != plannerSettingsRevision) return@withLock
-                        NativeDataReplacement.mutate(context) {
-                            ticket.requireCurrent(context)
-                            val dao = db.keyValueDocumentDao()
-                            val key = "native:studioPlannerSettings"
-                            val stamp = maxOf(System.currentTimeMillis(), (dao.getDocument(key)?.updatedAt ?: 0L) + 1)
-                            val payload = JSONObject().put("cadenceHu", state.planningCadenceHu)
-                                .put("firstDayHu", state.planningFirstDayHu).put("startDate", state.planningStartDate)
-                                .put("time", state.planningTime).put("durationMin", state.planningDurationMin)
-                                .put("weeksCount", state.planningWeeksCount).put("updatedAt", stamp)
-                            dao.putDocument(KeyValueDocumentEntity(key, payload.toString(), stamp))
-                        }
+                plannerSettingsWriteMutex.withLock {
+                    if (revision != plannerSettingsRevision) return@withLock
+                    NativeDataReplacement.mutate(context) {
+                        ticket.requireCurrent(context)
+                        val dao = db.keyValueDocumentDao()
+                        val key = "native:studioPlannerSettings"
+                        val stamp = maxOf(System.currentTimeMillis(), (dao.getDocument(key)?.updatedAt ?: 0L) + 1)
+                        val payload = JSONObject().put("cadenceHu", state.planningCadenceHu)
+                            .put("firstDayHu", state.planningFirstDayHu).put("startDate", state.planningStartDate)
+                            .put("time", state.planningTime).put("durationMin", state.planningDurationMin)
+                            .put("weeksCount", state.planningWeeksCount).put("updatedAt", stamp)
+                        dao.putDocument(KeyValueDocumentEntity(key, payload.toString(), stamp))
                     }
                 }
             } catch (cancelled: CancellationException) {
@@ -1495,8 +1493,12 @@ class TrainPilotViewModel : ViewModel() {
             } catch (_: Throwable) {}
 
             // 4b. Read persisted calendar schedule & undo stack from Room
-            val plannerSettings = database.keyValueDocumentDao().getDocument("native:studioPlannerSettings")
-                ?.json?.let { runCatching { JSONObject(it) }.getOrNull() }
+            val plannerSettings = runCatching {
+                database.keyValueDocumentDao().getDocument("native:studioPlannerSettings")?.json?.let(::JSONObject)
+            }.getOrElse { error ->
+                if (error is CancellationException) throw error
+                null
+            }
             var loadedCalendarEvents = emptyList<CalendarDayEvent>()
             var loadedCalendarUndo = emptyList<List<CalendarDayEvent>>()
             try {
@@ -1666,6 +1668,7 @@ class TrainPilotViewModel : ViewModel() {
                     } else st.activeSets
 
                     val computedPrs = computePrRecordsFromWorkouts(mappedWorkouts)
+                    val currentPlannerSettings = plannerSettings.takeIf { plannerSettingsRevision == plannerRevisionAtRead }
                     val sameHealthSource = HealthJournalStore.get(context).generation() == healthGenerationAtBind &&
                         HealthJournalStore.get(context).preferences().optString("provider", HealthJournalStore.HC) == healthProviderAtBind
                     st.copy(
@@ -1697,18 +1700,12 @@ class TrainPilotViewModel : ViewModel() {
                             else activeProg?.id ?: st.editingProgramId,
                         calendarEvents = if (calendarWriteRevision == calendarRevisionAtRead) loadedCalendarEvents else st.calendarEvents,
                         calendarUndoStack = if (calendarWriteRevision == calendarRevisionAtRead) loadedCalendarUndo else st.calendarUndoStack,
-                        planningCadenceHu = if (plannerSettingsRevision == plannerRevisionAtRead)
-                            plannerSettings?.optString("cadenceHu", st.planningCadenceHu) ?: st.planningCadenceHu else st.planningCadenceHu,
-                        planningFirstDayHu = if (plannerSettingsRevision == plannerRevisionAtRead)
-                            plannerSettings?.optString("firstDayHu", st.planningFirstDayHu) ?: st.planningFirstDayHu else st.planningFirstDayHu,
-                        planningStartDate = if (plannerSettingsRevision == plannerRevisionAtRead)
-                            plannerSettings?.optString("startDate", st.planningStartDate) ?: st.planningStartDate else st.planningStartDate,
-                        planningTime = if (plannerSettingsRevision == plannerRevisionAtRead)
-                            plannerSettings?.optString("time", st.planningTime) ?: st.planningTime else st.planningTime,
-                        planningDurationMin = if (plannerSettingsRevision == plannerRevisionAtRead)
-                            plannerSettings?.optInt("durationMin", st.planningDurationMin) ?: st.planningDurationMin else st.planningDurationMin,
-                        planningWeeksCount = if (plannerSettingsRevision == plannerRevisionAtRead)
-                            plannerSettings?.optInt("weeksCount", st.planningWeeksCount) ?: st.planningWeeksCount else st.planningWeeksCount,
+                        planningCadenceHu = currentPlannerSettings?.optString("cadenceHu", st.planningCadenceHu) ?: st.planningCadenceHu,
+                        planningFirstDayHu = currentPlannerSettings?.optString("firstDayHu", st.planningFirstDayHu) ?: st.planningFirstDayHu,
+                        planningStartDate = currentPlannerSettings?.optString("startDate", st.planningStartDate) ?: st.planningStartDate,
+                        planningTime = currentPlannerSettings?.optString("time", st.planningTime) ?: st.planningTime,
+                        planningDurationMin = currentPlannerSettings?.optInt("durationMin", st.planningDurationMin) ?: st.planningDurationMin,
+                        planningWeeksCount = currentPlannerSettings?.optInt("weeksCount", st.planningWeeksCount) ?: st.planningWeeksCount,
                         isWorkoutSessionActive = restoredActiveSnap != null,
                         outdoorRouteKey = restoredActiveSnap?.optString("studioGpsKey") ?: st.outdoorRouteKey,
                         outdoorGpsEnabled = restoredActiveSnap?.takeIf { it.has("studioIndoor") }?.let { !it.optBoolean("studioIndoor") } ?: st.outdoorGpsEnabled,
@@ -1802,6 +1799,8 @@ class TrainPilotViewModel : ViewModel() {
             state.copy(
                 currentTab = targetTab ?: state.currentTab,
                 currentSubScreen = subScreen,
+                localBackupStatus = if (subScreen == SubScreen.BACKUP_RESTORE && state.localBackupStatus?.busy != true)
+                    null else state.localBackupStatus,
                 privatePhotoWorkoutId = if (subScreen == SubScreen.PRIVATE_PHOTOS) null else state.privatePhotoWorkoutId,
                 // A route is a preview until the native engine has committed a session.
                 isWorkoutSessionActive = state.isWorkoutSessionActive,
@@ -4739,16 +4738,22 @@ class TrainPilotViewModel : ViewModel() {
     fun refreshPrivatePhotoCount() {
         val db = nativeDatabase ?: return
         val scope = nativeScope ?: return
-        val exercises = _uiState.value.exercises.associateBy { it.id }
+        val context = nativeContext ?: return
+        val ticket = runCatching { NativeDataReplacement.continuationForCurrentData(context) }.getOrNull() ?: return
+        val previous = _uiState.value
+        val exercises = previous.exercises.associateBy { it.id }
         scope.launch(Dispatchers.IO) {
             try {
                 val mappedWorkouts = readNativeWorkoutHistory(db, exercises)
                 val mappedLogs = mapBodyWeightEntitiesToLogItems(db.bodyWeightDao().getAllWeights())
                 val loosePhotoCount = com.repforge.app.NativeLoosePhotos.count(db)
-                withContext(Dispatchers.Main) {
+                withContext(Dispatchers.Main.immediate) {
                     if (nativeDatabase !== db) return@withContext
-                    _uiState.update {
-                        it.copy(
+                    if (runCatching { ticket.requireCurrent(context) }.isFailure) return@withContext
+                    _uiState.update { state ->
+                        if (state.loggedWorkouts !== previous.loggedWorkouts || state.bodyWeightLogs !== previous.bodyWeightLogs)
+                            return@update state
+                        state.copy(
                             loggedWorkouts = mappedWorkouts,
                             bodyWeightLogs = mappedLogs,
                             privatePhotoCount = mappedWorkouts.sumOf { workout -> workout.photoCount } +
@@ -5221,58 +5226,43 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun exportBackup(context: Context, uri: Uri, format: String) {
-        val scope = nativeScope ?: return
-        scope.launch(Dispatchers.IO) {
-            try {
-                val mgr = BackupRestoreManager(context)
-                val result = if (format.lowercase().contains("zip")) {
-                    mgr.exportZipArchiveToUri(uri).map { "${it.first} (${it.second / 1024} KB)" }
-                } else {
-                    mgr.exportJsonBackupToUri(uri).map { "${it.first} (${it.second} bájt)" }
-                }
-                withContext(Dispatchers.Main) {
-                    _uiState.update {
-                        it.copy(
-                            statusBannerMessage = if (result.isSuccess) "Biztonsági mentés sikeresen elkészült: ${result.getOrNull()}"
-                            else "Hiba a mentés során: ${result.exceptionOrNull()?.localizedMessage}"
-                        )
-                    }
-                }
-            } catch (e: Throwable) {
-                withContext(Dispatchers.Main) {
-                    _uiState.update {
-                        it.copy(statusBannerMessage = "Nem sikerült a mentés: ${e.localizedMessage ?: "fájlírási hiba"}")
-                    }
-                }
-            }
+        val busy = studioModesText("Mentés készül…", "Creating backup…", "Sicherung wird erstellt…", "Se creează backup-ul…")
+        val failed = studioModesText("A mentés nem sikerült.", "Backup failed.", "Sicherung fehlgeschlagen.", "Backup-ul a eșuat.")
+        runLocalBackup(busy, failed) {
+            val manager = BackupRestoreManager(context)
+            if (format.equals("ZIP", ignoreCase = true)) manager.exportZipArchiveToUri(uri).getOrThrow()
+            else manager.exportJsonBackupToUri(uri).getOrThrow()
+            studioModesText("A mentés elkészült.", "Backup saved.", "Sicherung gespeichert.", "Backup-ul a fost salvat.")
         }
     }
 
     fun importBackup(context: Context, uri: Uri) {
+        val busy = studioModesText("Visszaállítás folyamatban…", "Restoring backup…", "Sicherung wird eingespielt…", "Se restaurează backup-ul…")
+        val failed = studioModesText("A visszaállítás nem sikerült.", "Restore failed.", "Wiederherstellung fehlgeschlagen.", "Restaurarea a eșuat.")
+        runLocalBackup(busy, failed) {
+            BackupRestoreManager(context).importBackupFromUri(uri, recoverInterrupted = false).getOrThrow()
+            withContext(Dispatchers.Main.immediate) { refreshAfterCloudSync(context) }
+            studioModesText("A visszaállítás sikerült.", "Backup restored.", "Sicherung wiederhergestellt.", "Backup-ul a fost restaurat.")
+        }
+    }
+
+    private fun runLocalBackup(busy: String, failed: String, operation: suspend () -> String) {
         val scope = nativeScope ?: return
+        if (_uiState.value.localBackupStatus?.busy == true) return
+        _uiState.update { it.copy(localBackupStatus = LocalBackupStatus(busy, busy = true)) }
         scope.launch(Dispatchers.IO) {
             try {
-                val mgr = BackupRestoreManager(context)
-                val result = mgr.importBackupFromUri(uri, recoverInterrupted = false)
-                withContext(Dispatchers.Main) {
-                    _uiState.update {
-                        it.copy(
-                            statusBannerMessage = if (result.isSuccess) "Biztonsági mentés sikeresen visszaállítva!"
-                            else "Hiba a visszaállítás során: ${result.exceptionOrNull()?.localizedMessage}"
-                        )
-                    }
-                }
-                nativeDatabase?.let { db ->
-                    nativeSettingsStore?.let { store ->
-                        bindNativeEnvironment(context, store, db, scope)
-                    }
-                }
-            } catch (e: Throwable) {
-                withContext(Dispatchers.Main) {
-                    _uiState.update {
-                        it.copy(statusBannerMessage = "Nem sikerült a visszaállítás: ${e.localizedMessage ?: "olvasási hiba"}")
-                    }
-                }
+                calendarWriteJob?.join()
+                plannerSettingsWriteJob?.join()
+                val message = operation()
+                _uiState.update { it.copy(localBackupStatus = LocalBackupStatus(message)) }
+            } catch (cancelled: CancellationException) {
+                _uiState.update { it.copy(localBackupStatus = null) }
+                throw cancelled
+            } catch (error: Exception) {
+                val detail = error.localizedMessage?.takeIf { it.isNotBlank() }
+                _uiState.update { it.copy(localBackupStatus = LocalBackupStatus(
+                    listOfNotNull(failed, detail).joinToString("\n"), failed = true)) }
             }
         }
     }

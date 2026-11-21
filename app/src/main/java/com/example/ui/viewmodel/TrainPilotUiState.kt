@@ -91,6 +91,8 @@ data class NavRoute(
     val view: NavViewState? = null
 )
 
+data class LocalBackupStatus(val message: String, val busy: Boolean = false, val failed: Boolean = false)
+
 /** Navigation focus only: never store workout execution, records or settings here. */
 data class NavViewState(
     val progressMainSection: Int,
@@ -440,7 +442,8 @@ data class TrainPilotUiState(
     val privatePhotoWorkoutId: String? = null,
 
     // Toast / Feedback banner for immediate visual confirmation of actions
-    val statusBannerMessage: String? = null
+    val statusBannerMessage: String? = null,
+    val localBackupStatus: LocalBackupStatus? = null
 )
 
 const val INLINE_EDITOR_HOST_PROGRAMS = "programs"
