@@ -6,6 +6,7 @@ import android.health.connect.HealthConnectManager
 import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
 import com.example.ui.components.StudioHealthPermissionRouting
+import com.repforge.app.HealthJournalStore
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -42,11 +43,9 @@ class StudioHealthPermissionRoutingRegressionTest {
         assertFalse(intent.hasExtra(Intent.EXTRA_PACKAGE_NAME))
     }
 
-    @Test fun samsungPermissionManagementUsesTheSupportedAppDetailsRoute() {
-        val intent = StudioHealthPermissionRouting.appDetailsIntent("com.sec.android.app.shealth")
-        assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, intent.action)
-        assertEquals("package:com.sec.android.app.shealth", intent.data.toString())
-        assertFalse(intent.action == HealthConnectManager.ACTION_MANAGE_HEALTH_PERMISSIONS)
+    @Test fun healthSourcesUseTheirProviderPermissionManager() {
+        assertEquals("samsung_manage", StudioHealthPermissionRouting.sourceManageAction(HealthJournalStore.SAMSUNG))
+        assertEquals("hc_manage", StudioHealthPermissionRouting.sourceManageAction(HealthJournalStore.HC))
     }
 
     @Test fun generalPermissionManagementOpensOwnAppSettings() {

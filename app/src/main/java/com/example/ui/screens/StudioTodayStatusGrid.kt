@@ -52,12 +52,12 @@ internal fun StudioTodayStatusGrid(state: TrainPilotUiState, compact: Boolean = 
         Icons.AutoMirrored.Filled.DirectionsWalk, Icons.Default.FitnessCenter, Icons.Default.Eco)
     val tiles = values.map { (id, title, _) -> PageLayoutBlock(id, title) }
     val legacy = tiles.map { it.id }.chunked(3).mapIndexed { row, ids -> "daily_$row" to ids }.toMap()
-    PageLayoutGrid(layout, "daily", tiles, if (compact) 5.dp else 8.dp, legacy,
-        modifier = Modifier.testTag(if (compact) "home_today_status_grid" else "health_today_status_grid")) { id, modifier ->
+    PageLayoutGrid(layout, "daily", tiles, if (compact) 5.dp else 6.dp, legacy,
+        modifier = Modifier.testTag(if (compact) "home_today_status_grid" else "health_today_status_grid"), compactEditor = !compact) { id, modifier ->
         val index = values.indexOfFirst { it.first == id }
         val (key, title, value) = values[index]
         MainTodayStatusTile(icons[index], title, value, { onSelect(key) },
-            modifier = modifier.heightIn(min = if (compact) 52.dp else 76.dp)
+            modifier = modifier.heightIn(min = if (compact) 52.dp else 60.dp)
                 .testTag("${if (compact) "home" else "health"}_today_$key"), compact = compact,
             titleTag = "${if (compact) "home" else "health"}_today_${key}_title")
     }

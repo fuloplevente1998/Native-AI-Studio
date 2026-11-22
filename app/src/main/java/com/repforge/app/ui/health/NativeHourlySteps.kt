@@ -1,5 +1,6 @@
 package com.repforge.app.ui.health
 
+import com.repforge.app.HealthJournalStore
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -53,26 +54,17 @@ private fun stepHourWindows(day: LocalDate, zone: ZoneId): List<Pair<Instant, In
     return boundaries.zipWithNext()
 }
 
-internal fun elapsedStepHourWindows(day: LocalDate, zone: ZoneId, now: Instant): List<Pair<Instant, Instant>> =
-    stepHourWindows(day, zone).mapNotNull { (from, to) ->
-        val measuredEnd = minOf(now, to)
-        if (from < measuredEnd) from to measuredEnd else null
-    }
-
-/** A repeated DST hour is the sum of its disjoint windows, provided both were measured. */
-internal fun measuredStepHours(
-    windows: List<Pair<Instant, Instant>>, values: List<Long?>, zone: ZoneId
-): Map<Int, Long> {
-    require(windows.size == values.size)
-    return windows.zip(values).groupBy { (window, _) -> window.first.atZone(zone).hour }
-        .mapNotNull { (hour, entries) ->
-            var total = 0L
-            for ((_, count) in entries) {
-                if (count == null || count < 0 || count > Long.MAX_VALUE - total) return@mapNotNull null
-                total += count
-            }
-            hour to total
-        }.toMap()
+/** Use one source of observed intervals, without prorating multi-hour totals or combining apps. */
+internal fun observedHealthConnectStepHours(
+    day: LocalDate, zone: ZoneId, now: Instant, bySource: Map<String, List<HourlyStepReading>>
+): List<HourlySteps> {
+    val windows = stepHourWindows(day, zone)
+    return bySource.toSortedMap().values.map { rows ->
+        hourlySteps(day, zone, now, rows.filter { reading ->
+            windows.any { (from, to) -> reading.start >= from && reading.start < to && reading.end <= to }
+        })
+    }.maxByOrNull { hours -> hours.count { it.count != null } }
+        ?: hourlySteps(day, zone, now, emptyList())
 }
 
 internal fun readHourlySteps(
@@ -85,8 +77,7 @@ internal fun readHourlySteps(
 ): List<HourlySteps> {
     // Include records beginning before midnight, so their unresolved portion is not counted twice.
     var query = HealthRecordQuery(day.minusDays(1), provider, origin, "StepsRecord", endDay = day)
-    val sources = linkedSetOf<String>()
-    val values = mutableListOf<HourlyStepReading>()
+    val valuesBySource = linkedMapOf<String, MutableList<HourlyStepReading>>()
     val start = day.atStartOfDay(zone).toInstant()
     repeat(200) {
         val page = records.load(query)
@@ -96,10 +87,14 @@ internal fun readHourlySteps(
                 NativeHealthRecords.number(JSONObject(row.data), "value")
                     ?.takeIf { it >= 0 && it < Long.MAX_VALUE.toDouble() && it % 1.0 == 0.0 }?.toLong() ?: continue)
             if (reading.end < start || (reading.end == start && reading.start < start)) continue
-            sources += row.source
-            values += reading
+            valuesBySource.getOrPut(row.source) { mutableListOf() }.add(reading)
         }
-        val next = page.next ?: return hourlySteps(day, zone, now, if (sources.size <= 1) values else emptyList())
+        val next = page.next
+        if (next == null) {
+            if (provider == HealthJournalStore.HC)
+                return observedHealthConnectStepHours(day, zone, now, valuesBySource)
+            return hourlySteps(day, zone, now, valuesBySource.values.singleOrNull().orEmpty())
+        }
         query = query.copy(cursor = next, generation = page.generation)
     }
     // The first 5,000 records alone cannot prove there are no overlapping older rows.

@@ -12,9 +12,6 @@ import androidx.health.connect.client.time.TimeRangeFilter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Duration
@@ -444,31 +441,5 @@ internal object HealthConnectLegacyBridge {
             .put("maxSpeedMps",speedReadings.maxOrNull() ?: JSONObject.NULL)
         guard()
         out
-    }
-
-    suspend fun readHourlySteps(
-        context: Context, day: LocalDate, origin: String, guard: () -> Unit
-    ): Map<Int,Long> = withContext(Dispatchers.IO) {
-        check(available(context))
-        check("READ_STEPS" in refreshGrants(context))
-        val zone = ZoneId.systemDefault()
-        val windows = com.repforge.app.ui.health.elapsedStepHourWindows(day, zone, Instant.now())
-        val client = HealthConnectClient.getOrCreate(context)
-        val origins = if (origin.isBlank()) emptySet() else setOf(DataOrigin(origin))
-        val values = windows.chunked(4).flatMap { batch ->
-            coroutineScope {
-                batch.map { (from, to) ->
-                    async {
-                        guard()
-                        client.aggregate(AggregateRequest(
-                            metrics = setOf(StepsRecord.COUNT_TOTAL),
-                            timeRangeFilter = TimeRangeFilter.between(from, to),
-                            dataOriginFilter = origins
-                        ))[StepsRecord.COUNT_TOTAL].also { guard() }
-                    }
-                }.awaitAll()
-            }
-        }
-        com.repforge.app.ui.health.measuredStepHours(windows, values, zone)
     }
 }

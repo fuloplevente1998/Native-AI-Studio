@@ -113,13 +113,14 @@ internal fun StudioBodyFitnessTiles(state: TrainPilotUiState, layout: PageLayout
         PageLayoutBlock("vo2", "VO₂max")
     )
     Column(Modifier.fillMaxWidth().testTag("health_body_fitness_section"),
-        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Text(
             tr("Test és fittség", "Body & Fitness", "Körper & Fitness", "Corp și fitness"),
             style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
-            color = palette.textPrimary
+            color = palette.textPrimary,
+            modifier = Modifier.padding(end = if (layout?.draft != null) 32.dp else 0.dp)
         )
-        PageLayoutGrid(layout, "body_fitness_values", tiles, 6.dp) { key, modifier ->
+        PageLayoutGrid(layout, "body_fitness_values", tiles, 6.dp, compactEditor = true) { key, modifier ->
             val title = tiles.first { it.id == key }.title
             val readPermission = when (key) {
                 "bodyFat" -> "READ_BODY_FAT"
@@ -140,12 +141,12 @@ internal fun StudioBodyFitnessTiles(state: TrainPilotUiState, layout: PageLayout
             Surface(
                 shape = shape,
                 color = palette.surfaceCard,
-                modifier = modifier.heightIn(min = 104.dp)
+                modifier = modifier.heightIn(min = 70.dp)
                     .trainPilotBorder(1.dp, palette.cardBorder, shape)
                     .trainPilotClickable(shape) { onSelect(key, reading) }
                     .testTag("health_body_fitness_$key")
             ) {
-                Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Column(Modifier.padding(horizontal = 7.dp, vertical = 5.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                         val icon = when (key) {
                             "bodyFat" -> Icons.Default.MonitorWeight
@@ -163,12 +164,10 @@ internal fun StudioBodyFitnessTiles(state: TrainPilotUiState, layout: PageLayout
                         else if (permissionMissing) tr(
                             "Engedély szükséges", "Permission required",
                             "Berechtigung erforderlich", "Permisiune necesară")
-                        else tr("Nincs naplózott adat", "No recorded data",
-                            "Keine gespeicherten Daten", "Fără date salvate"),
+                        else tr("Nincs adat", "No data", "Keine Daten", "Fără date"),
                         color = palette.textSecondary, fontSize = 10.sp,
-                        maxLines = 3, overflow = TextOverflow.Ellipsis
+                        maxLines = 2, overflow = TextOverflow.Ellipsis
                     )
-                    if (key == "vo2") Text("ml/kg/min", fontSize = 10.sp, color = palette.textSecondary)
                 }
             }
         }

@@ -3,11 +3,15 @@ package com.example
 import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.PageLayoutBlock
 import com.example.ui.components.PageLayoutFrame
 import com.example.ui.components.PageLayoutGrid
+import com.example.ui.components.PageLayoutTile
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
@@ -82,6 +86,32 @@ class TrainPilotPageLayoutRegressionTest {
         val children = org.json.JSONObject(prefs.getString("${page}_children", "{}")!!)
         val stored = children.getJSONArray("daily")
         assertEquals(expected, List(stored.length()) { stored.getString(it) })
+    }
+
+    @Test fun healthEditorKeepsTheThreeColumnGridWhenTheOuterHandleWouldNarrowIt() {
+        val ids = listOf("sleep", "calories", "steps")
+        val blocks = ids.map { PageLayoutBlock(it, it) }
+        val layout = PageLayoutState("health_test", listOf("today"), listOf("today"))
+        layout.open()
+        compose.setContent {
+            TrainPilotTheme {
+                Box(Modifier.width(344.dp)) {
+                    PageLayoutFrame(layout, AppLanguage.HU, listOf(PageLayoutBlock("today", "Mai állapot")),
+                        rememberScrollState(), 8.dp) {
+                        PageLayoutTile(layout, "today", hasHorizontalTiles = true, overlayHandle = true) {
+                            Box(Modifier.padding(horizontal = 14.dp)) {
+                                PageLayoutGrid(layout, "daily", blocks, 8.dp, compactEditor = true) { _, modifier ->
+                                    Box(modifier.height(52.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        val handles = ids.map { compose.onNodeWithTag("page_layout_grid_daily_$it").getUnclippedBoundsInRoot() }
+        assertEquals(1, handles.map { it.top }.distinct().size)
+        assertTrue(handles.zipWithNext().all { (left, right) -> left.left < right.left })
     }
 
     @Test fun dragUsesTheMeasuredSpacingOfUnequalCards() {

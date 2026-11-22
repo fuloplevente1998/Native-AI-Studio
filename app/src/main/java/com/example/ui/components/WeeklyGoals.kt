@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +29,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -124,7 +125,8 @@ fun WeeklyGoalsCompact(
                 if (expanded == null) Modifier.trainPilotClickable(shape, onClick = onOpen)
                 else Modifier.healthDetailsToggle(expanded, lang, shape, onOpen)
             )) {
-        Row(Modifier.padding(start = 12.dp, end = 6.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically,
+        Row(Modifier.padding(start = 12.dp, end = 6.dp, top = if (expanded == null) 6.dp else 3.dp,
+            bottom = if (expanded == null) 6.dp else 3.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -194,44 +196,59 @@ fun WeeklyDayBars(days: List<LocalDate>, values: List<Double?>, label: (LocalDat
         else -> 5.0
     }
     val scaleMax = if (showScale) (kotlin.math.ceil(max / tick) * tick).coerceAtLeast(tick) else max
-    val axisFormatter = remember(lang) { NumberFormat.getIntegerInstance(Locale.forLanguageTag(lang.take(2))) }
+    val axisFormatter = remember(lang) { NumberFormat.getNumberInstance(Locale.forLanguageTag(lang.take(2))).apply {
+        maximumFractionDigits = 1
+    } }
     var sel by remember(tag, days.lastOrNull()) { mutableIntStateOf(values.lastIndex) }
     val selectedIndex = sel.coerceIn(0, values.lastIndex)
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+    val locale = Locale.forLanguageTag(lang.take(2))
+    val chartHeight = if (showScale) 78.dp else 64.dp
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
         if (showScale) {
-            Column(Modifier.width(48.dp).height(64.dp),
+            Column(Modifier.padding(end = 8.dp).height(chartHeight),
                 verticalArrangement = Arrangement.SpaceBetween, horizontalAlignment = Alignment.End) {
-                Text(axisFormatter.format(scaleMax), style = MaterialTheme.typography.labelSmall, color = p.textSecondary)
-                Text(axisFormatter.format(scaleMax / 2), style = MaterialTheme.typography.labelSmall, color = p.textSecondary)
-                Text("0", style = MaterialTheme.typography.labelSmall, color = p.textSecondary)
-            }
-        }
-        Row(Modifier.weight(1f).height(64.dp).testTag(tag),
-            horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.Bottom) {
-            values.forEachIndexed { i, v ->
-                val on = i == selectedIndex
-                val color = trainPilotChartMarkColor(on, p.primary, p.textSecondary)
-                Box(
-                    Modifier.weight(1f).fillMaxHeight()
-                        .trainPilotClickable(RoundedCornerShape(6.dp)) { sel = i }
-                        .trainPilotChartSelection(on, label(days[i], v))
-                        .testTag("${tag}_$i"),
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    if (v == null) Box(Modifier.fillMaxWidth().height(2.dp).background(color))
-                    else Box(Modifier.fillMaxWidth().fillMaxHeight((v / scaleMax).toFloat().coerceIn(0.05f, 1f))
-                        .background(color, RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)))
+                listOf(scaleMax, scaleMax / 2, 0.0).forEach { tickValue ->
+                    Text(axisFormatter.format(tickValue), style = MaterialTheme.typography.labelSmall,
+                        color = p.textSecondary, maxLines = 1)
                 }
             }
         }
-    }
-    val locale = Locale.forLanguageTag(lang.take(2))
-    Row(Modifier.fillMaxWidth().padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-        if (showScale) Spacer(Modifier.width(48.dp))
-        days.forEachIndexed { i, d ->
-            Text(d.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, locale).trimEnd('.'),
-                style = MaterialTheme.typography.labelSmall, color = if (i == selectedIndex) p.primary else p.textSecondary,
-                maxLines = 1, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.weight(1f))
+        Column(Modifier.weight(1f)) {
+            Row(Modifier.fillMaxWidth().height(chartHeight)
+                .padding(vertical = if (showScale) 8.dp else 0.dp)
+                .drawBehind {
+                    if (showScale) {
+                        val lineColor = p.textSecondary.copy(alpha = .16f)
+                        for (y in listOf(.5f, size.height / 2f, size.height - .5f)) {
+                            drawLine(lineColor, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
+                        }
+                    }
+                }.testTag(tag),
+                horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Bottom) {
+                values.forEachIndexed { i, v ->
+                    val selected = i == selectedIndex
+                    val color = trainPilotChartMarkColor(selected, p.primary, p.textSecondary)
+                    Box(
+                        Modifier.weight(1f).fillMaxHeight()
+                            .trainPilotClickable(RoundedCornerShape(6.dp)) { sel = i }
+                            .trainPilotChartSelection(selected, label(days[i], v))
+                            .testTag("${tag}_$i"),
+                        contentAlignment = Alignment.BottomCenter
+                    ) {
+                        if (v != null && v > 0) {
+                            Box(Modifier.fillMaxWidth(.64f).fillMaxHeight((v / scaleMax).toFloat().coerceAtMost(1f))
+                                .background(color, RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)))
+                        }
+                    }
+                }
+            }
+            Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                days.forEachIndexed { i, d ->
+                    Text(d.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, locale).trimEnd('.'),
+                        style = MaterialTheme.typography.labelSmall, color = if (i == selectedIndex) p.primary else p.textSecondary,
+                        maxLines = 1, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.weight(1f))
+                }
+            }
         }
     }
     Spacer(Modifier.height(2.dp))

@@ -580,7 +580,8 @@ fun HealthTabScreen(
     }
 
     val healthBlock: @Composable (String) -> Unit = { id ->
-    PageLayoutTile(layout, id, hasHorizontalTiles = id == "today" || id == "body_fitness") {
+    val hasGrid = id == "today" || id == "body_fitness"
+    PageLayoutTile(layout, id, hasHorizontalTiles = hasGrid, overlayHandle = hasGrid) {
         when (id) {
             "today" -> {
                 Surface(
@@ -592,8 +593,8 @@ fun HealthTabScreen(
                         .trainPilotBorder(1.2.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(24.dp))
                 ) {
                     Column(
-                        modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
                         PageLayoutCard {
                         Row(
@@ -605,7 +606,7 @@ fun HealthTabScreen(
                                 shape = RoundedCornerShape(14.dp),
                                 color = palette.primary.copy(alpha = 0.14f),
                                 modifier = Modifier
-                                    .size(48.dp)
+                                    .size(38.dp)
                                     .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
@@ -621,7 +622,7 @@ fun HealthTabScreen(
                                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     Text(
                                         text = strings.todayStateTitle,
-                                        style = MaterialTheme.typography.titleLarge,
+                                        style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = palette.textPrimary
                                     )
@@ -633,7 +634,8 @@ fun HealthTabScreen(
                                     )
                                 }
                             }
-                            IconButton(
+                            if (layout.draft != null) Spacer(Modifier.width(24.dp))
+                            else IconButton(
                                 onClick = onTriggerHealthSync,
                                 enabled = !uiState.healthSyncBusy,
                                 modifier = Modifier.testTag("health_today_header_sync")
@@ -697,7 +699,7 @@ fun HealthTabScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier.fillMaxWidth().trainPilotBorder(1.dp, palette.cardBorder, shape)
                 ) {
-                    Box(Modifier.padding(14.dp)) {
+                    Box(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                         StudioBodyFitnessTiles(uiState, layout) { key, reading ->
                             selectedFitnessReading = reading
                             expandedTodayTileKey = key
@@ -719,7 +721,7 @@ fun HealthTabScreen(
                             shape = RoundedCornerShape(20.dp)
                         )
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -812,7 +814,7 @@ fun HealthTabScreen(
                         tr(uiState.language, "Óra", "Watch", "Uhr", "Ceas") + " " + if (uiState.watchAppAvailable) "✓" else "—"
                     ).joinToString(" · "),
                     onOpen = { onToggleHealthSection("connect") },
-                    customLeadingBadge = { MockupHealthConnectBadge(size = 44.dp) }
+                    customLeadingBadge = { MockupHealthConnectBadge(size = 34.dp) }
                 )
             }
         }
@@ -1007,8 +1009,7 @@ internal fun StudioTodayStatusDetailSheet(
                 val openHealthJournal: () -> Unit = {
                     val recordType = when (activeKey) {
                         "sleep" -> "SleepSessionRecord"
-                        "steps" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("steps")
-                        "calories" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("activeCalories")
+                                        "calories" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("activeCalories")
                         "bodyFat" -> "BodyFatRecord"
                         "spo2" -> "OxygenSaturationRecord"
                         "vo2" -> "Vo2MaxRecord"
@@ -1651,8 +1652,8 @@ internal fun MainTodayStatusTile(
             .trainPilotClickable(RoundedCornerShape(16.dp)) { onClick() }
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = if (compact) 8.dp else 10.dp, vertical = if (compact) 5.dp else 10.dp),
-            verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 8.dp)
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = if (compact) 5.dp else 6.dp),
+            verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 4.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -1737,12 +1738,12 @@ private fun HealthSectionLauncher(
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
             .trainPilotClickable(RoundedCornerShape(20.dp), onClick = onOpen)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 48.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (customLeadingBadge != null) {
@@ -1752,7 +1753,7 @@ private fun HealthSectionLauncher(
                         shape = RoundedCornerShape(14.dp),
                         color = palette.primary.copy(alpha = 0.14f),
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(34.dp)
                             .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -1760,7 +1761,7 @@ private fun HealthSectionLauncher(
                                 imageVector = icon,
                                 contentDescription = null,
                                 tint = palette.primary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
@@ -3862,16 +3863,29 @@ private fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
     val weekWorkouts = goalDays.sumOf { it.workoutCount }
 
     @Composable
-    fun Section(title: String, summary: String, tag: String, content: @Composable () -> Unit) {
+    fun Section(title: String, tag: String, content: @Composable () -> Unit) {
         Surface(shape = RoundedCornerShape(18.dp), color = palette.background.copy(alpha = 0.55f),
             modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp)).testTag(tag)) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary, modifier = Modifier.weight(1f))
-                    Text(summary, style = MaterialTheme.typography.labelMedium, color = palette.textSecondary, modifier = Modifier.testTag("${tag}_summary"))
-                }
+                Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                 content()
             }
+        }
+    }
+
+    @Composable
+    fun GoalProgress(summary: String, fraction: Float, tag: String) {
+        Column(Modifier.fillMaxWidth().padding(top = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(tr(lang, "Célteljesítés", "Goal progress", "Zielfortschritt", "Progresul obiectivului"),
+                    style = MaterialTheme.typography.labelMedium, color = palette.textSecondary,
+                    modifier = Modifier.weight(1f))
+                Text(summary, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
+                    color = palette.textPrimary, modifier = Modifier.testTag(tag))
+            }
+            LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth(),
+                color = palette.primary, trackColor = palette.surfaceElevated)
         }
     }
 
@@ -3880,16 +3894,18 @@ private fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
     val workouts = uiState.loggedWorkouts.filter { w -> w.localWorkoutDate()?.let { it in dates } == true }
         .sortedByDescending { it.localWorkoutDate() }
     var historySheet by rememberSaveable { mutableStateOf<String?>(null) }
-    Section(tr(lang, "Edzések", "Workouts", "Trainings", "Antrenamente"),
-        "${goal.workoutsDone} / ${goal.workoutsTarget} " + (if (goal.monthly) tr(lang, "ebben a hónapban", "this month", "diesen Monat", "luna aceasta")
-            else tr(lang, "ezen a héten", "this week", "diese Woche", "săptămâna aceasta")), "health_weekly_workouts_section") {
-        LinearProgressIndicator(progress = { goal.workoutFraction }, modifier = Modifier.fillMaxWidth(), color = palette.primary, trackColor = palette.surfaceElevated)
+    Section(tr(lang, "Edzések", "Workouts", "Trainings", "Antrenamente"), "health_weekly_workouts_section") {
         Text(tr(lang, "Utolsó 7 nap: $weekWorkouts edzés · $weeklyMinutesCurrent perc", "Last 7 days: $weekWorkouts workouts · $weeklyMinutesCurrent min",
                 "Letzte 7 Tage: $weekWorkouts Trainings · $weeklyMinutesCurrent Min.", "Ultimele 7 zile: $weekWorkouts antrenamente · $weeklyMinutesCurrent min"),
             style = MaterialTheme.typography.labelMedium, color = palette.textPrimary, modifier = Modifier.testTag("health_weekly_minutes_total"))
         com.example.ui.components.WeeklyDayBars(dates, goalDays.map { d -> d.workoutMinutes.toDouble().takeIf { d.workoutCount > 0 } },
             label = { date, v -> todayTileWeekLabel("workout", date, v, langCode) }, tag = "health_weekly_minutes_bars",
             lang = langCode, showScale = true, detailIcon = Icons.Default.FitnessCenter)
+        GoalProgress(
+            "${goal.workoutsDone} / ${goal.workoutsTarget} " +
+                if (goal.monthly) tr(lang, "ebben a hónapban", "this month", "diesen Monat", "luna aceasta")
+                else tr(lang, "ezen a héten", "this week", "diese Woche", "săptămâna aceasta"),
+            goal.workoutFraction, "health_weekly_workouts_section_summary")
         if (workouts.isEmpty()) {
             Text(tr(lang, "Az elmúlt 7 napban nincs edzés.", "No workouts in the last 7 days.", "Keine Trainings in den letzten 7 Tagen.", "Niciun antrenament în ultimele 7 zile."),
                 style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
@@ -3902,10 +3918,7 @@ private fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
     }
 
     val measuredDays = goalDays.count { it.stepsAvailable }
-    Section(tr(lang, "Lépések", "Steps", "Schritte", "Pași"),
-        if (measuredDays == 0) "—" else "${nf.format(weeklyStepsCurrent)} / ${nf.format(weeklyStepsTarget)} · $weeklyStepsPct%", "health_weekly_steps_section") {
-        LinearProgressIndicator(progress = { if (measuredDays == 0) 0f else (weeklyStepsPct / 100f).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth(),
-            color = palette.primary, trackColor = palette.surfaceElevated)
+    Section(tr(lang, "Lépések", "Steps", "Schritte", "Pași"), "health_weekly_steps_section") {
         Text(tr(lang, "Utolsó 7 nap · $measuredDays/7 nap adat · $primaryProviderName", "Last 7 days · $measuredDays/7 days of data · $primaryProviderName",
                 "Letzte 7 Tage · $measuredDays/7 Tage mit Daten · $primaryProviderName", "Ultimele 7 zile · $measuredDays/7 zile cu date · $primaryProviderName"),
             style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, modifier = Modifier.testTag("health_weekly_steps_total"))
@@ -3918,6 +3931,12 @@ private fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
                 label = { date, v -> todayTileWeekLabel("steps", date, v, langCode) + if (date == today) " · " + tr(lang, "napi cél", "daily goal", "Tagesziel", "obiectiv zilnic") + " ${nf.format(uiState.stepsGoal)}" else "" },
                 tag = "health_weekly_steps_bars", lang = langCode, showScale = true,
                 detailIcon = Icons.AutoMirrored.Filled.DirectionsWalk)
+        }
+        GoalProgress(
+            if (measuredDays == 0) "—" else "${nf.format(weeklyStepsCurrent)} / ${nf.format(weeklyStepsTarget)} · $weeklyStepsPct%",
+            if (measuredDays == 0) 0f else (weeklyStepsPct / 100f).coerceIn(0f, 1f),
+            "health_weekly_steps_section_summary")
+        if (measuredDays > 0) {
             TextButton(onClick = { historySheet = "steps" },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("health_weekly_steps_history")) {
                 Text(tr(lang, "Lépéselőzmények megtekintése ›", "View step history ›", "Schrittverlauf anzeigen ›", "Vezi istoricul pașilor ›"))
@@ -4042,7 +4061,7 @@ private fun WeightLogBody(
                             selectedLabel = selectedLabel) { selectedPoint = it }
                     else Modifier
                     Canvas(
-                        Modifier.weight(1f).height(if (expanded) 150.dp else 56.dp)
+                        Modifier.weight(1f).height(if (expanded) 150.dp else 44.dp)
                             .then(if (expanded) tapModifier else Modifier.testTag("health_weight_chart_compact_canvas"))
                     ) {
                         val inset = 6.dp.toPx()
@@ -4197,7 +4216,7 @@ internal fun calorieDayLabel(date: java.time.LocalDate, total: Int?, active: Int
 /**
  * 2784/2788: extras of a Today tile sheet. The sheet is about TODAY: steps and workouts link to the 7-day
  * history in Weekly goals (no second copy of that chart here); calories show total vs active per day;
- * pulse keeps its 7-day averages. Today's own records appear only when there are any.
+ * pulse keeps its 7-day averages. Sleep and calories can show the day's raw records.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
