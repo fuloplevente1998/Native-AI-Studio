@@ -113,12 +113,16 @@ object SamsungHealthRepository {
     suspend fun requestReadPermissions(activity: Activity, force: Boolean = false): Result<Unit> = withContext(Dispatchers.Main) {
         runCatching {
             check(isInstalled(activity) && isSdkAvailable()) { "Samsung Health nem érhető el." }
-            if (!force && readGrantedKeys(activity) {
-                check(!activity.isFinishing && !activity.isDestroyed) { "Samsung Health Activity closed" }
-            }.size == PERMISSION_KEYS.size) return@runCatching
+            val requested = SamsungSdkReader.permissions()
+            val missing = if (force) requested else requested - withContext(Dispatchers.IO) {
+                SamsungSdkReader.open(activity) {
+                    check(!activity.isFinishing && !activity.isDestroyed) { "Samsung Health Activity closed" }
+                }.granted
+            }
+            if (missing.isEmpty()) return@runCatching
             suspendCancellableCoroutine<Unit> { continuation ->
                 try {
-                    HealthDataService.getStore(activity).requestPermissionsAsync(SamsungSdkReader.permissions(), activity)
+                    HealthDataService.getStore(activity).requestPermissionsAsync(missing, activity)
                         .setCallback(Looper.getMainLooper(), {
                             if (continuation.isActive) continuation.resume(Unit)
                         }, { error -> if (continuation.isActive) continuation.resumeWithException(error) })
