@@ -347,6 +347,103 @@ internal object HealthConnectLegacyBridge {
         out
     }
 
+    /**
+     * Bounded workout-window read for pre-14 devices; it is NOT a daily sync, so it must
+     * never overwrite the full-day journal. External session-specific calories remain
+     * distinct from the aggregate daily energy and from TrainPilot's own exercise writes.
+     */
+    suspend fun readTrainingWindow(
+        context: Context, start: Instant, end: Instant, guard: () -> Unit
+    ): JSONObject = withContext(Dispatchers.IO) {
+        check(available(context))
+        check(end.isAfter(start) && Duration.between(start,end) <= Duration.ofHours(24))
+        val keys = refreshGrants(context)
+        check(keys.isNotEmpty()) { "Health Connect read permission required" }
+        val client = HealthConnectClient.getOrCreate(context)
+        val warnings = JSONArray()
+        val out = JSONObject().put("provider",HealthJournalStore.HC)
+            .put("source","health_connect").put("start",start.toString())
+            .put("end",end.toString()).put("warnings",warnings)
+        val timeRange = TimeRangeFilter.between(start,end)
+        suspend fun <T> value(metric: androidx.health.connect.client.aggregate.AggregateMetric<T>): T? {
+            guard()
+            return client.aggregate(AggregateRequest(setOf(metric),timeRange))[metric]
+        }
+        suspend fun measure(permission: String, key: String, block: suspend () -> Any?) {
+            if (permission !in keys) { out.put(key,JSONObject.NULL); return }
+            try { out.put(key, block() ?: JSONObject.NULL) }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (e: Exception) { out.put(key,JSONObject.NULL)
+                warnings.put("$permission: "+(e.message ?: e.javaClass.simpleName)) }
+        }
+        measure("READ_STEPS","steps") { value(StepsRecord.COUNT_TOTAL) }
+        measure("READ_HEART_RATE","averageHeartRate") { value(HeartRateRecord.BPM_AVG) }
+        measure("READ_HEART_RATE","minHeartRate") { value(HeartRateRecord.BPM_MIN) }
+        measure("READ_HEART_RATE","maxHeartRate") { value(HeartRateRecord.BPM_MAX) }
+        measure("READ_HEART_RATE","heartRateSamples") { value(HeartRateRecord.MEASUREMENTS_COUNT) }
+        measure("READ_ACTIVE_CALORIES_BURNED","activeCalories") {
+            value(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL)?.inKilocalories
+        }
+        measure("READ_TOTAL_CALORIES_BURNED","totalCalories") {
+            value(TotalCaloriesBurnedRecord.ENERGY_TOTAL)?.inKilocalories
+        }
+        measure("READ_DISTANCE","distanceMeters") { value(DistanceRecord.DISTANCE_TOTAL)?.inMeters }
+        suspend fun <T : Record> safeRaw(permission: String, type: KClass<T>): List<T> {
+            if (permission !in keys) return emptyList()
+            return try { readAll(client,type,start,end,guard)
+                .filter { originalSource(it) != context.packageName } }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch(e: Exception) {
+                warnings.put("$permission: "+(e.message ?: e.javaClass.simpleName))
+                emptyList()
+            }
+        }
+        val exercises = safeRaw("READ_EXERCISE",ExerciseSessionRecord::class)
+        val active = safeRaw("READ_ACTIVE_CALORIES_BURNED",ActiveCaloriesBurnedRecord::class)
+        val total = safeRaw("READ_TOTAL_CALORIES_BURNED",TotalCaloriesBurnedRecord::class)
+        val speeds = safeRaw("READ_SPEED",SpeedRecord::class)
+        val sessionsJson = JSONArray()
+        val rawSessions = exercises.map { record ->
+            sessionsJson.put(JSONObject().put("start",record.startTime.toString())
+                .put("end",record.endTime.toString())
+                .put("source",originalSource(record))
+                .put("exerciseType",record.exerciseType))
+            HealthWorkoutEnergy.Session(originalSource(record),
+                record.startTime.toEpochMilli(),record.endTime.toEpochMilli())
+        }
+        val rawEnergy = (active.map { row ->
+            HealthWorkoutEnergy.EnergyRow(row.metadata.id,originalSource(row),
+                row.startTime.toEpochMilli(),row.endTime.toEpochMilli(),
+                row.energy.inKilocalories,false,row.metadata.lastModifiedTime.toEpochMilli())
+        } + total.map { row ->
+            HealthWorkoutEnergy.EnergyRow(row.metadata.id,originalSource(row),
+                row.startTime.toEpochMilli(),row.endTime.toEpochMilli(),
+                row.energy.inKilocalories,true,row.metadata.lastModifiedTime.toEpochMilli())
+        })
+        val energy = HealthWorkoutEnergy.match(rawSessions,rawEnergy,start.toEpochMilli(),
+            end.toEpochMilli(),context.packageName)
+        out.put("exerciseSessions",sessionsJson)
+            .put("exerciseSessionCount",exercises.size)
+            .put("exerciseMinutes",exercises.sumOf {
+                maxOf(0L,Duration.between(maxOf(start,it.startTime),minOf(end,it.endTime)).toMinutes())
+            })
+            .put("workoutEnergyVersion",1)
+            .put("workoutEnergyProvider",HealthJournalStore.HC)
+            .put("workoutCalories",energy.calories ?: JSONObject.NULL)
+            .put("workoutEnergyCoverageMs",energy.coverageMs)
+            .put("workoutEnergyProrated",energy.prorated)
+            .put("workoutEnergySources",JSONArray(energy.sources))
+            .put("workoutEnergyTypes",JSONArray(energy.types))
+            .put("workoutEnergyRecordIds",JSONArray(energy.recordIds))
+        val speedReadings = speeds.flatMap { it.samples }.filter {
+            !it.time.isBefore(start) && it.time.isBefore(end)
+        }.map { it.speed.inMetersPerSecond }.filter { it.isFinite() && it >= 0 }
+        out.put("averageSpeedMps",speedReadings.takeIf { it.isNotEmpty() }?.average() ?: JSONObject.NULL)
+            .put("maxSpeedMps",speedReadings.maxOrNull() ?: JSONObject.NULL)
+        guard()
+        out
+    }
+
     suspend fun readHourlySteps(
         context: Context, day: LocalDate, origin: String, guard: () -> Unit
     ): Map<Int,Long> = withContext(Dispatchers.IO) {
