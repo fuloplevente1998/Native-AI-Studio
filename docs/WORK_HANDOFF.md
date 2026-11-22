@@ -4,7 +4,7 @@
 - A számítás a kiválasztott engedélyezett forrásból indul, és a másik engedélyezett forrásból pótolja a hiányzó alvás- vagy HRV-jelet. A Health Connect által átadott méréseket minden adatforrásból fogadja. Az egymást tükröző alvásintervallumok egyszer számítanak. Készülékes ellenőrzés Samsung és más, Health Connectbe exportáló órákkal hátravan.
 - A Kezdőlap és az Egészség Regeneráció csempéje, valamint a Coach és az edzésjavaslatok közös végeredményt használnak. Önmagában a Samsung-pont külön látszik. Az ág `172d977` forrásán az R8 és 841 telefonos, 204 Wear-teszt sikeres, 0 hibával és kihagyással. [Actions](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45074793789)
 
-- A [telefonos Play-jegyzet](releases/2800-phone-play-notes.txt) a 279600 óta megjelent változásokat foglalja össze négy nyelven. A 278902 óta a Wear OS alkalmazás és a közös modul forrása egyezik.
+- A [telefonos Play-jegyzet](releases/2801-phone-play-notes.txt) a 279600 óta megjelent változásokat foglalja össze négy nyelven. Telefon 280100, megjelenő verzió 1.4.3. Az ellenőrző aláírt párban a Wear 280102, az órás alkalmazás és a közös modul forrása a 278902 óta egyezik.
 
 ---
 
