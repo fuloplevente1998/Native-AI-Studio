@@ -2092,14 +2092,8 @@ internal fun CoachDetailScreen(
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(tr(uiState.language, "Kulcsjelek", "Key Signals", "Schlüsselsignale", "Semnale cheie"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                        Text(when (nativeState.provider) {
-                            com.repforge.app.HealthJournalStore.SAMSUNG -> "Samsung Health"
-                            com.repforge.app.HealthJournalStore.HC -> "Health Connect"
-                            else -> tr(uiState.language, "Adatok betöltése…", "Loading data…", "Daten werden geladen…", "Se încarcă datele…")
-                        }, style = MaterialTheme.typography.labelMedium, color = palette.primary)
-                    }
+                    Text(tr(uiState.language, "Kulcsjelek", "Key Signals", "Schlüsselsignale", "Semnale cheie"),
+                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                     CoachSignalRow(
                         strings.sleepTitle,
                         readiness?.sleepMinutes?.let {
