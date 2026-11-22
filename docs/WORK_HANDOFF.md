@@ -1,3 +1,12 @@
+# TrainPilot 2794 · 1.4.1
+
+- Kiadási forrás `fd32af64f1c8c624d648527a66f33f9924b242e4` (#325). A Kezdőlap, Edzés, Fejlődés áttekintő és Egészség fő blokkjainak sorrendje oldalanként állítható.
+- A [main CI](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45034933045) és az [aláírt futás](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45035375937) sikerült. Nyers JUnit XML: 814 telefonos és 204 Wear teszt, 0 hiba és 0 kihagyás.
+- Telefon 279400, Wear 279402. A négy APK/AAB SHA-256-ja és aláírása ellenőrizve, a telefonos APK tartalmazza az oldal testreszabásának kódját. A négy csomag és az ellenőrzési JSON a [TrainPilot Native Drive mappában](https://drive.google.com/drive/folders/1ywHgrManynjV9uNvZfVncOmCr3SbHIb9) van.
+- A rendezés fizikai készülékes és vizuális ellenőrzése hátravan. A lépésadat-forrás feliratának javítása külön draft (#324).
+
+---
+
 # TrainPilot 2793 · 1.4.1
 
 - A kiadás forrása `a60241974de4abf5425f59efc88631df04c2396a`. Benne van a #322 heti és napi grafikonos munkája és a #323 kompakt időszakválasztója, rendezett engedélylistája és kihagyható első indítási beállítása.
