@@ -10,6 +10,7 @@ import com.repforge.app.ui.theme.TrainPilotFrames
 import com.example.model.workoutsOn
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
+import com.example.ui.components.trainPilotAnimatedExpansion
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotBorder
 
@@ -644,6 +645,7 @@ fun HealthTabScreen(
                         Modifier
                             .fillMaxWidth()
                             .onGloballyPositioned { weeklyAnchor[1] = it }
+                            .trainPilotAnimatedExpansion()
                             .trainPilotBorder(1.dp, palette.sectionBorder, goalShape)
                             .clip(goalShape)
                     ) {
@@ -655,7 +657,7 @@ fun HealthTabScreen(
                             expanded = uiState.expandedHealthWeeklyGoals,
                             modifier = Modifier.testTag("health_weekly_goals_compact")
                         )
-                        AnimatedVisibility(visible = uiState.expandedHealthWeeklyGoals) {
+                        com.example.ui.components.TrainPilotAnimatedDisclosure(visible = uiState.expandedHealthWeeklyGoals) {
                             Column(Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
                                 HealthWeeklyGoalsPanel(uiState)
                             }
@@ -3854,7 +3856,7 @@ private fun WeightLogBody(
         }
     }
     Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceCard.copy(alpha = 0.7f),
-        modifier = Modifier.fillMaxWidth().trainPilotBorder(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+        modifier = Modifier.fillMaxWidth().trainPilotAnimatedExpansion().trainPilotBorder(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
             .trainPilotClickable(RoundedCornerShape(14.dp)) { if (!expanded) onToggle() }
             .testTag(if (expanded) "health_weight_chart_large" else "health_weight_chart_compact")) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
