@@ -264,7 +264,6 @@ fun ProgressScreen(
         item(key = "progress_cardio") {
             NativeCardioProgressPanel(
                 state = state,
-                onSelectActivity = viewModel::selectCardioActivity,
                 onRetry = viewModel::retryCardio
             )
         }

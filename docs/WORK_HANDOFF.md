@@ -1,3 +1,13 @@
+# #312/9 Kardió – egyoldalas áttekintés (2026-11-22)
+
+- Alap: main `d57bd17585d77feab0c0dfa37d7295738083fce6`; külön ág: `fix/312-cardio-one-page`, [draft PR #317](https://github.com/fuloplevente1998/Native-AI-Studio/pull/317). Main-merge és kiadás nincs.
+- A Kardió belső aktivitásválasztója megszűnt. A heti/előző heti/összes távolság, 8 hetes kijelölhető grafikon, azonos távú rekordok és az eredeti aktivitástípus-címkék megmaradtak.
+- A Statisztikák Kardió fülén a korábban gyakorlatra szűrt állapot automatikusan visszaáll összes aktivitásra; a Gyakorlatok és Lépések fülek, valamint a gyakorlat-részlet eredeti szűrése nem változik.
+- Két célzott Robolectric/Compose + natív adatmodell regresszió került a meglévő Collector2782RegressionTest.kt osztályba; ellenőrzés: forrás-/diff-audit. GitHub Actions/JVM, készülékes vizuális ellenőrzés és integráció külön hátravan.
+- Verzió, Room/DataStore, Wear, aláírás és forrásadatok nem változtak; a többi #312 javítással a main-integrátor illessze össze.
+
+---
+
 # Kész programok felülvizsgálata és személyre szabás — PR268
 
 13 kész program és 29 nap ellenőrizve. Négy gyári programban hat naplista

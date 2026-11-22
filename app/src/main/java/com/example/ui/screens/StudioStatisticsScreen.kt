@@ -68,16 +68,18 @@ internal fun StudioStatisticsScreen(state: TrainPilotUiState, onSelectTab: (Int)
         onDispose { owner.lifecycle.removeObserver(observer) }
     }
     LaunchedEffect(native.dataRevision) { onRefreshRecords() }
+    // The Cardio overview always covers every saved activity, including when
+    // Statistics is restored after an exercise-scoped record was viewed.
+    LaunchedEffect(state.statsSubTab, state.cardioFilterStepsMode, native.selectedCardioId) {
+        if (state.statsSubTab == 1 && !state.cardioFilterStepsMode &&
+            native.selectedCardioId != NativeCardioModel.ALL_ACTIVITIES) {
+            model.selectCardioActivity(NativeCardioModel.ALL_ACTIVITIES)
+        }
+    }
     LaunchedEffect(model) {
         while (true) { delay(60_000); model.onCardioCalendarTick() }
     }
-    StudioStatisticsContent(state, native, { index ->
-        if (index == 1) {
-            model.selectCardioActivity(NativeCardioModel.ALL_ACTIVITIES)
-            onStepsMode(true)
-        }
-        onSelectTab(index)
-    }, onStepsMode,
+    StudioStatisticsContent(state, native, onSelectTab, onStepsMode,
         onExercise = { id -> model.selectExercise(id); model.selectCardioActivity(id) },
         onActivity = model::selectCardioActivity, onRetry = model::retryCardio,
         onRefreshRecords = onRefreshRecords)
@@ -128,7 +130,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                     com.example.ui.components.TrainPilotFilterChip(selected = visibleTab == index, onClick = {
                         when (index) {
                             0 -> onSelectTab(0)
-                            1 -> { onSelectTab(1); onStepsMode(false) }
+                            1 -> { onActivity(NativeCardioModel.ALL_ACTIVITIES); onSelectTab(1); onStepsMode(false) }
                             else -> { onSelectTab(1); onStepsMode(true) }
                         }
                     }, label = { com.example.ui.components.TrainPilotFitText(label, modifier = Modifier.testTag("statistics_subtab_label_$index")) },
@@ -232,7 +234,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                                                 Modifier.testTag("statistics_record_chart_info_${record.exerciseId}"))
                                         }
                                     } else if (record.distanceMeters != null || record.measurementType == "distance" || record.repUnit in listOf("km", "m")) {
-                                        NativeCardioProgressPanel(native, onActivity, onRetry)
+                                        NativeCardioProgressPanel(native, onRetry)
                                     } else Text(savedRecordLabel(record, number, lang), color = palette.textPrimary)
                                 }
                             }
@@ -241,7 +243,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                 }
             } else {
                 if (state.cardioFilterStepsMode) DailyActivityStatistics(state, number)
-                else NativeCardioProgressPanel(native, onActivity, onRetry)
+                else NativeCardioProgressPanel(native, onRetry)
             }
         }
     }

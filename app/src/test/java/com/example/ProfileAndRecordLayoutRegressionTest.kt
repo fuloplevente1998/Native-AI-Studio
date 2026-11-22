@@ -93,7 +93,13 @@ class ProfileAndRecordLayoutRegressionTest {
                 onExercise = {}, onActivity = { selected.value = it }, onRetry = {}, onRefreshRecords = {})
         } }
         compose.onNodeWithTag("statistics_daily_activity").assertDoesNotExist()
-        compose.onNodeWithTag("progress_cardio_all").performClick()
+        compose.onNodeWithTag("statistics_subtab_0").assertExists()
+        compose.onNodeWithTag("statistics_subtab_1").assertExists()
+        compose.onNodeWithTag("statistics_subtab_2").assertExists()
+        compose.onNodeWithTag("progress_cardio_choices").assertDoesNotExist()
+        compose.onNodeWithTag("progress_cardio_all").assertDoesNotExist()
+        compose.onNodeWithTag("statistics_subtab_1").performClick()
+        compose.runOnIdle { assertEquals("", selected.value) }
         compose.onNodeWithTag("statistics_daily_activity").assertDoesNotExist()
         compose.onNodeWithTag("statistics_subtab_2").performClick()
         compose.onNodeWithTag("statistics_daily_activity").assertExists()
