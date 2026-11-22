@@ -6,6 +6,9 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.ui.components.StudioPlatformAccess
 import com.repforge.app.HealthJournalStore
 import com.repforge.app.NativePrivacyControls
+import com.repforge.app.HealthConnectRepository
+import com.repforge.app.data.store.TrainPilotSettingsStore
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
@@ -55,17 +58,29 @@ class PrivacyControls312RegressionTest {
         }
     }
 
-    @Test fun readAndWriteConsentAreIndependentOfHealthProviderOptIn() {
+    @Test fun workoutWriteOptInCannotBypassTheDisabledProviderAndSurvivesItsToggle() = runBlocking {
         val feature = NativePrivacyControls.HEALTH_CONNECT
+        val settings = TrainPilotSettingsStore(app, publishTheme = {})
+        val oldWrite = settings.current().autoWriteWorkoutToHealthConnect
         try {
+            settings.setAutoWriteWorkoutToHealthConnect(true)
             NativePrivacyControls.set(app, feature, false)
             val status = StudioPlatformAccess.snapshot(app)
             assertFalse(status.getBoolean("healthConnect"))
             assertNotNull(status.get("healthReadGranted"))
             assertNotNull(status.get("healthGranted"))
             assertNotNull(status.get("healthTotal"))
+            assertTrue(settings.current().autoWriteWorkoutToHealthConnect)
+            val failure = runCatching {
+                HealthConnectRepository.writeWorkoutSuspend(app, "2026-11-18T09:00:00Z",
+                    "2026-11-18T10:00:00Z", "Test workout")
+            }.exceptionOrNull()
+            assertTrue(failure is IllegalStateException)
+            NativePrivacyControls.set(app, feature, true)
+            assertTrue(settings.current().autoWriteWorkoutToHealthConnect)
         } finally {
             NativePrivacyControls.set(app, feature, true)
+            settings.setAutoWriteWorkoutToHealthConnect(oldWrite)
         }
     }
 }
