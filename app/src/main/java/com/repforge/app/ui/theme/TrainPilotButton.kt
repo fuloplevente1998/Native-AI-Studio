@@ -9,9 +9,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonElevation
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.dp
 
 /** Shared compact insets leave more space for translated labels without changing touch targets. */
@@ -35,10 +38,36 @@ fun TrainPilotButton(
     content: @Composable RowScope.() -> Unit,
 ) {
     val palette = com.example.ui.theme.LocalTrainPilotPalette.current
-    val surface = if (enabled && colors.containerColor == palette.primary)
-        modifier.trainPilotSoftGlow(palette.primary, shape) else modifier
-    TrainPilotPressFeedback(colors, enabled, interactionSource) { feedbackColors, source ->
-        Button(onClick, surface, enabled, shape, feedbackColors, elevation, border, contentPadding, source, content)
+    val paintedGlow = enabled && palette.hasGlow && colors.containerColor == palette.primary
+    val minimumTouchSize = LocalMinimumInteractiveComponentSize.current
+    // Material's minimum touch target is larger than its painted 40 dp button. Put that
+    // reserved space OUTSIDE the glow; otherwise the outline follows the 48 dp hit box
+    // and leaves dark strips above and below the actual painted pill.
+    val surface = if (paintedGlow) {
+        modifier.layout { measurable, constraints ->
+            val painted = measurable.measure(constraints)
+            val minimumPx = if (minimumTouchSize.isSpecified) minimumTouchSize.roundToPx().coerceAtLeast(0) else 0
+            val width = constraints.constrainWidth(maxOf(painted.width, minimumPx))
+            val height = constraints.constrainHeight(maxOf(painted.height, minimumPx))
+            layout(width, height) {
+                painted.placeRelative((width - painted.width) / 2, (height - painted.height) / 2)
+            }
+        }.trainPilotSoftGlow(palette.primary, shape)
+    } else modifier
+
+    val materialButton: @Composable () -> Unit = {
+        TrainPilotPressFeedback(colors, enabled, interactionSource) { feedbackColors, source ->
+            Button(onClick, surface, enabled, shape, feedbackColors, elevation, border, contentPadding, source, content)
+        }
+    }
+    if (paintedGlow) {
+        // The parent layout above reserves the same touch space, while the glow and
+        // Material surface now measure the identical visual size and shape.
+        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+            materialButton()
+        }
+    } else {
+        materialButton()
     }
 }
 
