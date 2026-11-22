@@ -1432,8 +1432,7 @@ internal fun MainProgressVolumeAndMuscleSection(
     var expandedAdviceDetails by remember { mutableStateOf(false) }
 
     val today = remember { java.time.LocalDate.now() }
-    val huFmt = remember(uiState.language) { java.time.format.DateTimeFormatter.ofPattern("yyyy. MMM d.", com.example.localization.StudioLocale.forLanguage(uiState.language)) }
-    val shortFmt = remember(uiState.language) { java.time.format.DateTimeFormatter.ofPattern("MMM d.", com.example.localization.StudioLocale.forLanguage(uiState.language)) }
+    val compactDateFmt = remember { java.time.format.DateTimeFormatter.ofPattern("MM.dd.") }
 
     val period = StudioProgressWindow(progressPeriodDays(uiState.selectedProgressRangeIndex), today)
     val periodWorkouts = remember(uiState.loggedWorkouts, period) { period.workouts(uiState.loggedWorkouts) }
@@ -1442,7 +1441,7 @@ internal fun MainProgressVolumeAndMuscleSection(
     val loggedTotalKg = periodWorkouts.sumOf { it.totalVolumeKg }
     val volumeChange = period.volumeChangePercent(uiState.loggedWorkouts)
     val totalVolumeText = "%,d kg".format(java.util.Locale.US, loggedTotalKg).replace(',', ' ')
-    val dateSubtitle = "${period.start.format(huFmt)} – ${period.end.format(huFmt)}"
+    val dateSubtitle = "${period.start.format(compactDateFmt)} – ${period.end.format(compactDateFmt)}"
     val prRecords = remember(uiState.loggedWorkouts) { loggedPrRecords(uiState.loggedWorkouts) }
     // 2783: the sheet lists exactly the records the tile counts (selected period only).
     val periodPrRecords = prRecords.filter {
@@ -1456,7 +1455,7 @@ internal fun MainProgressVolumeAndMuscleSection(
         "${periodWorkouts.sumOf { it.durationMinutes } / periodWorkouts.size} min"
 
     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        // 1. ÖSSZES VOLUMEN CARD: transforms into full-width Screenshot 6 "Volumen trend" chart when expanded!
+        // 1. EDZÉSVOLUMEN: compact trend + one-row periods; full trend expands in place.
         Surface(
             shape = RoundedCornerShape(18.dp),
             color = palette.surfaceCard,
@@ -1521,15 +1520,25 @@ internal fun MainProgressVolumeAndMuscleSection(
                                 modifier = Modifier.size(18.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = strings.comparedToPrevPeriod,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = palette.textSecondary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        if (expandedVolumeDetails) {
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = strings.comparedToPrevPeriod,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = palette.textSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        } else {
+                            // The chart sits beside the total. A selected bar opens the full trend.
+                            Box(Modifier.width(128.dp).height(52.dp).testTag("progress_volume_chart_open")) {
+                                StudioVolumeChart(volumeBars, period, uiState.selectedVolumeBarIndex, false) { index ->
+                                    onSelectVolumeBar(index)
+                                    expandedVolumeDetails = true
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -1629,84 +1638,33 @@ internal fun MainProgressVolumeAndMuscleSection(
                         color = if (selectedBar != null) palette.primary else palette.textSecondary
                     )
                 } else {
-                    // COMPACT SIDE-BY-SIDE VIEW: Left = 2x2 Period Buttons, Right = Mini Y-Axis + Bar Chart
+                    // Period selection must not expand the chart; retain a 48dp touch area.
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        modifier = Modifier.fillMaxWidth().testTag("progress_compact_ranges"),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.weight(0.45f),
-                            verticalArrangement = Arrangement.spacedBy(5.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        rangeLabels.forEachIndexed { rIdx, label ->
+                            val isSel = uiState.selectedProgressRangeIndex == rIdx
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (isSel) palette.primary else palette.surfaceElevated,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .trainPilotBorder(1.dp,
+                                        if (isSel) palette.primary else palette.cardBorder,
+                                        RoundedCornerShape(10.dp))
+                                    .testTag("progress_range_$"+"rIdx")
+                                    .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectRange(rIdx) }
                             ) {
-                                listOf(0, 1).forEach { rIdx ->
-                                    val isSel = uiState.selectedProgressRangeIndex == rIdx
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = if (isSel) palette.primary else palette.surfaceElevated,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(48.dp)
-                                            .trainPilotBorder(
-                                                width = 1.dp,
-                                                color = if (isSel) palette.primary else palette.cardBorder,
-                                                shape = RoundedCornerShape(10.dp)
-                                            )
-                                            .testTag("progress_range_$rIdx")
-                                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectRange(rIdx) }
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Text(
-                                                text = rangeLabels[rIdx],
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isSel) palette.onPrimary else palette.textPrimary
-                                            )
-                                        }
-                                    }
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSel) palette.onPrimary else palette.textPrimary
+                                    )
                                 }
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(5.dp)
-                            ) {
-                                listOf(2, 3).forEach { rIdx ->
-                                    val isSel = uiState.selectedProgressRangeIndex == rIdx
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = if (isSel) palette.primary else palette.surfaceElevated,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(48.dp)
-                                            .trainPilotBorder(
-                                                width = 1.dp,
-                                                color = if (isSel) palette.primary else palette.cardBorder,
-                                                shape = RoundedCornerShape(10.dp)
-                                            )
-                                            .testTag("progress_range_$rIdx")
-                                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectRange(rIdx) }
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Text(
-                                                text = rangeLabels[rIdx],
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isSel) palette.onPrimary else palette.textPrimary
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Box(Modifier.weight(0.55f).height(76.dp)) {
-                            StudioVolumeChart(volumeBars, period, uiState.selectedVolumeBarIndex, false) { index ->
-                                onSelectVolumeBar(index)
-                                expandedVolumeDetails = true
                             }
                         }
                     }
@@ -1772,15 +1730,27 @@ internal fun MainProgressVolumeAndMuscleSection(
             onDismiss = { onSelectExpandedStatsCard(uiState.expandedStatsCardIndex) },
             testTag = "stats_details_sheet"
         ) {
+            val compactPrPanel = uiState.expandedStatsCardIndex == 0
+            val prPanelMaxHeight = minOf(420.dp,
+                (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.66f).dp)
             Surface(
                 shape = RoundedCornerShape(18.dp),
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, bottom = 16.dp)
+                    .padding(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter,
+                        bottom = if (compactPrPanel) 8.dp else 16.dp)
                     .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(18.dp))
             ) {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(12.dp).testTag("stats_details_sheet_content"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(
+                    modifier = Modifier
+                        .then(if (compactPrPanel) Modifier.heightIn(max = prPanelMaxHeight) else Modifier)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = if (compactPrPanel) 10.dp else 12.dp,
+                            vertical = if (compactPrPanel) 6.dp else 12.dp)
+                        .testTag("stats_details_sheet_content"),
+                    verticalArrangement = Arrangement.spacedBy(if (compactPrPanel) 4.dp else 6.dp)
+                ) {
                     when (uiState.expandedStatsCardIndex) {
                         0 -> {
                             Row(
@@ -1792,7 +1762,10 @@ internal fun MainProgressVolumeAndMuscleSection(
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                    modifier = Modifier.trainPilotClickable(RoundedCornerShape(8.dp)) { onSelectExpandedStatsCard(0) }
+                                    modifier = Modifier
+                                        .widthIn(min = 48.dp).heightIn(min = 48.dp)
+                                        .testTag("stats_pr_close")
+                                        .trainPilotClickable(RoundedCornerShape(8.dp)) { onSelectExpandedStatsCard(0) }
                                 ) {
                                     Text(trL(uiState.language, "Bezárás", "Close", "Schließen", "Închide"), style = MaterialTheme.typography.labelSmall, color = palette.primary)
                                     Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
@@ -1812,7 +1785,8 @@ internal fun MainProgressVolumeAndMuscleSection(
                                             .fillMaxWidth()
                                             .clip(RoundedCornerShape(10.dp))
                                             .background(palette.surfaceElevated)
-                                            .padding(8.dp),
+                                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                                            .testTag("stats_pr_record_row"),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
