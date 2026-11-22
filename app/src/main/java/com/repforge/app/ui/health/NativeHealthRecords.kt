@@ -48,24 +48,65 @@ internal class NativeHealthRecords(private val store: HealthJournalStore) {
         val generation = store.generation()
         if (store.pendingRestore().isNotEmpty() || (query.generation != null && query.generation != generation))
             throw ReplacedJournal()
+        // A small scan-ahead keeps each sleep page full even if old SDK-parent IDs
+        // produced duplicate observations. Advance the raw cursor past the duplicates,
+        // but never delete persisted source records or collapse different sleep stages.
+        if (query.type == "SleepSessionRecord") {
+            val seen = HashSet<String>()
+            val distinct = mutableListOf<HealthRecordRow>()
+            var cursor = query.cursor
+            var origins = emptyList<HealthRecordOrigin>()
+            var next: HealthRecordCursor? = null
+            var hasAnother = false
+            while (true) {
+                val result = store.page(query.fromDay.toString(), query.toDay.toString(), query.channel,
+                    query.source, cursor?.id ?: 0L, cursor?.time ?: 0L, 50, query.type, false)
+                if (origins.isEmpty()) origins = originsFrom(result)
+                val records = result.getJSONArray("records")
+                for (index in 0 until records.length()) {
+                    val json = records.getJSONObject(index)
+                    val row = recordFrom(json)
+                    val signature = NativeSleepRecordPresentation.duplicateKey(row)
+                    if (signature != null && !seen.add(signature)) {
+                        cursor = HealthRecordCursor(json.getLong("cursor"), json.getLong("cursorTime"))
+                        continue
+                    }
+                    if (distinct.size == PAGE_SIZE) {
+                        // Do not consume the 26th unique item: the next page starts here.
+                        next = cursor
+                        hasAnother = true
+                        break
+                    }
+                    distinct.add(row)
+                    cursor = HealthRecordCursor(json.getLong("cursor"), json.getLong("cursorTime"))
+                }
+                if (hasAnother) break
+                if (result.getLong("nextCursor") <= 0L || records.length() == 0) break
+            }
+            if (generation != store.generation() || store.pendingRestore().isNotEmpty()) throw ReplacedJournal()
+            return HealthRecordPage(distinct, origins, next, generation)
+        }
         val result = store.page(query.fromDay.toString(), query.toDay.toString(), query.channel, query.source,
             query.cursor?.id ?: 0L, query.cursor?.time ?: 0L, PAGE_SIZE, query.type, false)
         if (generation != store.generation() || store.pendingRestore().isNotEmpty()) throw ReplacedJournal()
         val records = result.getJSONArray("records")
-        val rows = (0 until records.length()).map { index ->
-            val row = records.getJSONObject(index)
-            HealthRecordRow(row.getString("recordId"), row.getString("channel"), row.getString("source"),
-                row.getString("type"), row.getLong("startMs"), row.getLong("endMs"),
-                row.getLong("lastModifiedMs"), row.getJSONObject("data").toString())
-        }
+        val rows = (0 until records.length()).map { recordFrom(records.getJSONObject(it)) }
+        val nextId = result.getLong("nextCursor")
+        val next = if (nextId > 0) HealthRecordCursor(nextId, result.getLong("nextTime")) else null
+        return HealthRecordPage(rows, originsFrom(result), next, generation)
+    }
+
+    private fun recordFrom(row: JSONObject): HealthRecordRow =
+        HealthRecordRow(row.getString("recordId"), row.getString("channel"), row.getString("source"),
+            row.getString("type"), row.getLong("startMs"), row.getLong("endMs"),
+            row.getLong("lastModifiedMs"), row.getJSONObject("data").toString())
+
+    private fun originsFrom(result: JSONObject): List<HealthRecordOrigin> {
         val sources = result.getJSONArray("sources")
-        val origins = (0 until sources.length()).map { index ->
+        return (0 until sources.length()).map { index ->
             val source = sources.getJSONObject(index)
             HealthRecordOrigin(source.getString("source"), source.optString("name"))
         }.distinctBy { it.source }
-        val nextId = result.getLong("nextCursor")
-        val next = if (nextId > 0) HealthRecordCursor(nextId, result.getLong("nextTime")) else null
-        return HealthRecordPage(rows, origins, next, generation)
     }
 
     companion object {

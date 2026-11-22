@@ -15,6 +15,7 @@ internal object NativeCoachAdviceText {
         if (reason.startsWith("mode197:")) {
             val parts = reason.split(":", limit = 3)
             val description = text.getString(when (parts.getOrNull(2)) {
+            "repeated-underperformance", "rir-repeated-overexertion" -> R.string.coach_reason_declining
             "double-stable-top" -> R.string.native_modes_reason_double_stable_top
             "linear-stable-performance" -> R.string.native_modes_reason_linear_stable_performance
             "rir-stable-reserve" -> R.string.native_modes_reason_rir_stable_reserve

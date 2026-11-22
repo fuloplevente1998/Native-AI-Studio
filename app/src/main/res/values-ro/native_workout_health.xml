@@ -13,7 +13,7 @@
     <string name="journal_health_refreshing">Se actualizează…</string>
     <string name="journal_health_refresh_error">Actualizarea a eșuat. Antrenamentul sau datele de sănătate s-ar fi putut modifica; încearcă din nou.</string>
     <string name="journal_health_permission">Permite accesul la datele de antrenament din Health Connect în ecranul Sănătate.</string>
-    <string name="journal_health_unavailable">Actualizarea necesită Android 14 sau o versiune ulterioară și un serviciu Health Connect disponibil.</string>
+    <string name="journal_health_unavailable">Actualizarea necesită Android 9 sau o versiune mai nouă și Health Connect (pe Android 9–13, instalează aplicația Health Connect).</string>
     <string name="journal_health_workout_energy">Energie asociată antrenamentului</string>
     <string name="journal_health_distance">Distanță</string>
     <string name="journal_health_active_duration">Timp activ de măsurare</string>

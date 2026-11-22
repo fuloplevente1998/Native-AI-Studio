@@ -36,30 +36,69 @@ internal object NativeTrainingModeProgression {
         target: NativeCoachExerciseAdvice.Target, recent: List<NativeCoachExerciseAdvice.Occurrence>,
         readiness: NativeCoachReadiness.Result, step: Double): Preview? {
         if (!mode.explicitChoice || mode.source !in setOf("global", "program")) return null
-        val rows = recent.take(4)
-        val latest = rows.firstOrNull()
-        val base = latest?.weight ?: 0.0
         val body = lib.optString("loadType") == "bodyweight"
         val sets = if (mode.trainingStyle == "hit") minOf(target.sets, if (lib.optString("id") in
             setOf("lateral-raise", "db-reverse-fly", "face-pull", "db-curl", "hammer-curl",
                 "cable-curl", "oh-triceps", "cable-triceps", "leg-extension", "leg-curl", "calf-raise"))
             1 else 2) else target.sets
+        // A successful HIT session has fewer prescribed working sets. The canonical
+        // history parser checks the original program sets; normalize completion for
+        // this selected mode only, without modifying the persisted exercise/history.
+        val rows = recent.take(4).map { occurrence ->
+            if (mode.trainingStyle != "hit" || occurrence.allDone) occurrence
+            else {
+                val saved = occurrence.exercise.optJSONArray("sets")
+                val actual = (0 until (saved?.length() ?: 0))
+                    .mapNotNull { saved?.optJSONObject(it) }
+                val complete = actual.size >= sets && sets > 0 &&
+                    actual.all { it.optBoolean("done") }
+                occurrence.copy(
+                    allDone = complete,
+                    hitTop = complete && target.max != null && occurrence.reps.isNotEmpty() &&
+                        occurrence.reps.min() >= target.max
+                )
+            }
+        }
+        val latest = rows.firstOrNull()
+        val base = latest?.weight ?: 0.0
         fun result(action: String, reason: String, weight: Double = base,
             reps: List<Double> = emptyList()) = Preview(action, reason, base, weight,
                 sets.coerceAtLeast(0), reps, rows.size, mode.progressionMode, mode.trainingStyle)
+        val rirOnlyTarget = mode.progressionMode == "rir" && target.kind == "rir"
         if (lib.optString("measurementType") in setOf("distance", "time", "gps") ||
             lib.optString("repUnit").trim().lowercase() in setOf("km", "m", "mp", "sec", "second", "s") ||
-            target.kind != "reps") return result("hold", "non-strength-activity")
+            target.kind != "reps" && !rirOnlyTarget) return result("hold", "non-strength-activity")
         val lo = target.min
         val hi = target.max
-        if (target.sets <= 0 || lo == null || hi == null || lo <= 0 || hi < lo)
+        if (target.sets <= 0 || (!rirOnlyTarget && (lo == null || hi == null || lo <= 0 || hi < lo)))
             return result("hold", "invalid-target")
-        if (latest == null) return result("hold", "insufficient-history")
+        if (latest == null) {
+            // A newly selected mode cannot infer progress without workouts; show
+            // the existing prescribed starting load instead of an artificial 0 kg.
+            val start = lib.optDouble("weight", 0.0).takeIf { it.isFinite() && it > 0.0 } ?: 0.0
+            return result("start", "insufficient-history", if (body) 0.0 else start)
+        }
         fun hasPain(item: NativeCoachExerciseAdvice.Occurrence) =
             item.effort == "pain" || item.workout.optJSONObject("feedback")?.optString("rating") == "pain"
         if (readiness.pain || rows.take(3).any(::hasPain)) return result("hold", "pain")
         if (readiness.mode == "light" || readiness.mode == "reduced") return result("hold", "low-readiness")
         if (!latest.allDone) return result("hold", "incomplete")
+        val difficult = rows.take(3)
+        val repeatedlyBelowTarget = difficult.size == 3 &&
+            difficult.all { it.allDone && it.weight > 0 &&
+                kotlin.math.abs(it.weight - base) < .01 &&
+                (it.belowMin || it.effort in setOf("challenging", "hard") ||
+                    it.workout.optJSONObject("feedback")?.optString("rating") == "hard") }
+        fun decrease(reason: String): Preview {
+            if (body || base <= 0 || !step.isFinite() || step !in .25..10.0)
+                return result("hold", "missing-load-step")
+            val next = round((base - step) * 4) / 4.0
+            return if (next > 0 && next < base) result("reduce", reason, next)
+                else result("hold", "missing-load-step")
+        }
+        // Previously the early high-effort/below-target guards made every deload path
+        // unreachable. Reduce only after repeated completed sessions at the same load.
+        if (repeatedlyBelowTarget) return decrease("repeated-underperformance")
         if (latest.adverse || latest.workout.optJSONObject("feedback")?.optString("rating") == "hard")
             return result("hold", "high-effort")
         if (latest.belowMin) return result("hold", "below-target")
@@ -93,16 +132,29 @@ internal object NativeTrainingModeProgression {
             }
             "linear" -> {
                 val low = lo ?: return result("hold", "invalid-target")
-                return if (streak(2) { it.reps.isNotEmpty() && it.reps.min() >= low })
+                // Linear progression advances after ONE fully completed, safe workout
+                // meeting the lower repetition bound (not an undocumented 2-workout wait).
+                return if (safe(latest) && latest.reps.isNotEmpty() &&
+                    latest.reps.min() >= low)
                     increase("linear-stable-performance") else result("hold", "linear-await-stability")
             }
             "rir" -> {
-                val rirLow = target.rirMin
-                val rirHigh = target.rirMax
+                // Repetition prescriptions usually say "8–12" without a separate RIR
+                // range. In RIR mode use a conservative 2–3 target ONLY when actual RIR
+                // was recorded; never infer an observed RIR from repetitions.
+                val rirLow = target.rirMin ?: 2.0
+                val rirHigh = target.rirMax ?: 3.0
                 if (rirLow == null || rirHigh == null || rirLow < 0 || rirHigh > 10 || rirLow > rirHigh)
                     return result("hold", "rir-target-missing")
                 val actual = observedRir(latest.exercise) ?: return result("hold", "rir-feedback-missing")
-                if (actual < rirLow) return result("hold", "rir-overexertion")
+                if (actual < rirLow) {
+                    val twice = rows.size >= 2 && rows.take(2).all { item ->
+                        item.allDone && same(item) && !hasPain(item) &&
+                            (observedRir(item.exercise)?.let { it < rirLow } == true)
+                    }
+                    return if (twice) decrease("rir-repeated-overexertion")
+                        else result("hold", "rir-overexertion")
+                }
                 if (streak(2) {
                     val observed = observedRir(it.exercise)
                     observed != null && observed > rirHigh + 1 &&

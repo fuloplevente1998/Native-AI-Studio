@@ -164,7 +164,9 @@ data class StudioTrainingModeRow(
     val restSeconds: Int?,
     val beforeWeight: Double?,
     val afterWeight: Double?,
-    val rir: String
+    val rir: String,
+    /** Explanation from the exact read-only Coach comparison, not a fabricated mode effect. */
+    val reason: String = ""
 )
 
 data class StudioTrainingModeReview(

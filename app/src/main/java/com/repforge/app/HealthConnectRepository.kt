@@ -88,13 +88,20 @@ object HealthConnectRepository {
     const val WRITE_EXERCISE_PERMISSION: String = "android.permission.health.WRITE_EXERCISE"
     const val BACKGROUND_READ_PERMISSION: String = "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND"
 
-    fun isSupported(context: Context): Boolean {
-        return Build.VERSION.SDK_INT >= 34 && context.getSystemService(HealthConnectManager::class.java) != null
-    }
+    fun isSupported(context: Context): Boolean =
+        if (Build.VERSION.SDK_INT >= 34) context.getSystemService(HealthConnectManager::class.java) != null
+        else HealthConnectLegacyBridge.available(context)
 
-    fun isAllowed(context: Context, suffix: String): Boolean {
-        return context.checkSelfPermission("android.permission.health.$suffix") == PackageManager.PERMISSION_GRANTED
-    }
+    fun isAllowed(context: Context, suffix: String): Boolean =
+        if (Build.VERSION.SDK_INT >= 34)
+            context.checkSelfPermission("android.permission.health.$suffix") == PackageManager.PERMISSION_GRANTED
+        else HealthConnectLegacyBridge.available(context) && HealthConnectLegacyBridge.cachedAllowed(suffix)
+
+    /** Refresh live APK grants on Android 9–13; the platform reports current grants directly. */
+    suspend fun currentlyGrantedReadKeys(context: Context): Set<String> =
+        if (Build.VERSION.SDK_INT >= 34)
+            READ_PERMS.filter { isAllowed(context, it) }.toSet()
+        else HealthConnectLegacyBridge.refreshGrants(context)
 
     fun anyReadAllowed(context: Context): Boolean {
         return READ_PERMS.any { isAllowed(context, it) }
@@ -123,7 +130,9 @@ object HealthConnectRepository {
         return r
     }
 
-    fun settingsIntent(): Intent = Intent("android.health.connect.action.HEALTH_HOME_SETTINGS")
+    fun settingsIntent(): Intent =
+        if (Build.VERSION.SDK_INT >= 34) Intent("android.health.connect.action.HEALTH_HOME_SETTINGS")
+        else Intent(androidx.health.connect.client.HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS)
 
     private class ObsoleteReadPublication(cause: Throwable) : IllegalStateException("Health read publication invalidated", cause)
 
@@ -235,6 +244,18 @@ object HealthConnectRepository {
             cause = cause.cause
         }
         return false
+    }
+
+    /**
+     * Read the same Health Connect-prioritized steps as the daily aggregate, grouped
+     * into real elapsed hours. Raw multi-app StepsRecord rows must not be summed.
+     * Safe to call only on API 34+ with a currently visible Health view.
+     */
+    @RequiresApi(34)
+    suspend fun readHourlyStepsSuspend(
+        context: Context, day: LocalDate, origin: String = "", guard: () -> Unit = {}
+    ): Map<Int, Long> = withContext(Dispatchers.IO) {
+        Api34.readHourlySteps(Access(context, null, Runnable { guard() }), day, origin)
     }
 
     @RequiresApi(34)
@@ -410,29 +431,41 @@ object HealthConnectRepository {
             return f.get(30, TimeUnit.SECONDS).get(type)
         }
 
-        private fun mostCompleteStepOrigin(
-            p: Access,
-            m: HealthConnectManager,
-            time: TimeInstantRangeFilter,
-            origins: Set<String>
-        ): String {
-            if (!p.allowed("READ_STEPS") || origins.isEmpty()) return ""
-            val original = p.origin
-            val totals = HashMap<String?, Long?>()
-            try {
-                for (origin in TreeSet(origins)) {
-                    if (origin.isEmpty() || origin == p.getContext().packageName) continue
-                    p.origin = origin
-                    try {
-                        val value = aggregate(p, m, time, StepsRecord.STEPS_COUNT_TOTAL)
-                        if (value != null) totals[origin] = value
-                    } catch (_: Exception) {
-                    }
-                }
-            } finally {
-                p.origin = original
+        /** Health Connect's aggregate honors the user's Activity-app priority per bucket. */
+        fun readHourlySteps(p: Access, day: LocalDate, origin: String): Map<Int, Long> {
+            require(origin.isEmpty() || ORIGIN_REGEX.matches(origin)) { "Invalid Health Connect step origin" }
+            p.requireForeground()
+            if (!p.allowed("READ_STEPS")) return emptyMap()
+            val zone = ZoneId.systemDefault()
+            val from = day.atStartOfDay(zone).toInstant()
+            val to = minOf(day.plusDays(1).atStartOfDay(zone).toInstant(), Instant.now())
+            if (!to.isAfter(from)) return emptyMap()
+            val filter = TimeInstantRangeFilter.Builder().setStartTime(from).setEndTime(to).build()
+            val builder = AggregateRecordsRequest.Builder<Long>(filter)
+                .addAggregationType(StepsRecord.STEPS_COUNT_TOTAL)
+            if (origin.isNotEmpty()) {
+                builder.addDataOriginsFilter(DataOrigin.Builder().setPackageName(origin).build())
             }
-            return HealthDailySource.mostComplete(totals)
+            val future = CompletableFuture<List<android.health.connect.AggregateRecordsGroupedByDurationResponse<Long>>>()
+            p.getContext().getSystemService(HealthConnectManager::class.java)
+                .aggregateGroupByDuration(builder.build(), Duration.ofHours(1), DIRECT, receiver(future))
+            val rows = future.get(30, TimeUnit.SECONDS)
+            p.requireForeground()
+            val seen = HashSet<Pair<Instant, Instant>>()
+            val counts = linkedMapOf<Int, Long>()
+            for (bucket in rows) {
+                val a = bucket.startTime
+                val b = bucket.endTime
+                if (!a.isBefore(b) || a.isBefore(from) || b.isAfter(to) || !seen.add(a to b)) continue
+                val count = bucket.get(StepsRecord.STEPS_COUNT_TOTAL) ?: continue
+                if (count < 0L) continue
+                val hour = a.atZone(zone).hour
+                val old = counts[hour] ?: 0L
+                // Repeated wall-clock hour during DST is two disjoint measured buckets.
+                if (Long.MAX_VALUE - old < count) throw IllegalStateException("Health step count overflow")
+                counts[hour] = old + count
+            }
+            return counts
         }
 
         private fun putLongAgg(
@@ -777,11 +810,11 @@ object HealthConnectRepository {
             val requested = p.origin
             val preferred = HealthJournalStore.get(p.getContext()).preferences().optString("hcDailySource", "auto")
             val stepOrigins = steps.map { src(it) }.toSet()
-            var activityOrigin = HealthDailySource.choose(requested, preferred, stepOrigins)
-            if (requested.isEmpty() && "auto" == preferred) {
-                val complete = mostCompleteStepOrigin(p, m, time, stepOrigins)
-                if (complete.isNotEmpty()) activityOrigin = complete
-            }
+            // Automatic/priority mode must let Health Connect resolve overlapping step sources
+            // using the user's configured priority. Choosing the largest individual origin
+            // silently ignores that priority and can diverge from the Health Connect total.
+            // An explicitly chosen origin still applies a single-source filter.
+            val activityOrigin = HealthDailySource.choose(requested, preferred, stepOrigins)
             p.origin = activityOrigin
             putLongAgg(out, "steps", p, m, time, "READ_STEPS", StepsRecord.STEPS_COUNT_TOTAL, warnings)
             p.origin = requested
@@ -816,8 +849,7 @@ object HealthConnectRepository {
                 .put(
                     "aggregateOrigin",
                     if (requested.isEmpty()) {
-                        if ("auto" == preferred && activityOrigin.isNotEmpty()) "health_connect_most_complete_steps"
-                        else "health_connect_priority"
+                        "health_connect_priority"
                     } else {
                         "health_connect_source"
                     }

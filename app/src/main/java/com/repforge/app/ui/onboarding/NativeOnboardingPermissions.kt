@@ -7,6 +7,7 @@ import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.health.connect.client.PermissionController
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -111,13 +112,18 @@ internal fun NativeOnboardingPermissions(
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         permissionResult?.complete(Unit)
     }
+    val legacyHealthLauncher = rememberLauncherForActivityResult(
+        PermissionController.createRequestPermissionResultContract()
+    ) { _ -> permissionResult?.complete(Unit) }
 
-    suspend fun request(permissions: List<String>) {
+    suspend fun request(permissions: List<String>, healthConnect: Boolean = false) {
         if (permissions.isEmpty()) return
         val result = CompletableDeferred<Unit>()
         permissionResult = result
         try {
-            launcher.launch(permissions.toTypedArray())
+            if (healthConnect && Build.VERSION.SDK_INT < 34)
+                legacyHealthLauncher.launch(permissions.toSet())
+            else launcher.launch(permissions.toTypedArray())
             result.await()
         } finally {
             permissionResult = null
@@ -138,9 +144,11 @@ internal fun NativeOnboardingPermissions(
                 for (feature in features.filter { it in selected }) {
                     lifecycle.currentStateFlow.first { it.isAtLeast(Lifecycle.State.RESUMED) }
                     when (feature) {
-                        healthConnect -> request(StudioHealthPermissionRouting.missingReads(readPermissions) {
-                            context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
-                        })
+                        healthConnect -> {
+                            val granted = HealthConnectRepository.currentlyGrantedReadKeys(context)
+                            request(readPermissions.filter { it.substringAfterLast('.') !in granted },
+                                healthConnect = true)
+                        }
                         samsung -> activity?.let { SamsungHealthRepository.requestReadPermissions(it).getOrThrow() }
                         notifications -> if (Build.VERSION.SDK_INT >= 33 &&
                             context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)

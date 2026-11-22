@@ -13,7 +13,7 @@
     <string name="journal_health_refreshing">Refreshing…</string>
     <string name="journal_health_refresh_error">Could not refresh. The workout or health data may have changed; try again.</string>
     <string name="journal_health_permission">Allow Health Connect workout-data access on the Health screen.</string>
-    <string name="journal_health_unavailable">Refreshing requires Android 14 or later and an available Health Connect service.</string>
+    <string name="journal_health_unavailable">Refreshing requires Android 9 or later and Health Connect (on Android 9–13, install the Health Connect app).</string>
     <string name="journal_health_workout_energy">Energy matched to the workout</string>
     <string name="journal_health_distance">Distance</string>
     <string name="journal_health_active_duration">Active recording time</string>

@@ -75,14 +75,18 @@ internal object StudioWorkoutSummaryPresentation {
             }
             guard()
             if (provider == HealthJournalStore.HC) {
-                check(Build.VERSION.SDK_INT >= 34 && HealthConnectRepository.isSupported(context)) { "Health Connect unavailable" }
-                if (!HealthConnectRepository.anyReadAllowed(context)) throw SecurityException("Health Connect read permission required")
+                check(HealthConnectRepository.isSupported(context)) { "Health Connect unavailable" }
+                if (HealthConnectRepository.currentlyGrantedReadKeys(context).isEmpty())
+                    throw SecurityException("Health Connect read permission required")
             }
             val reader: suspend (NativeWorkoutActiveWindows.Window) -> JSONObject = { window ->
                 guard()
                 val result = if (readWindow != null) readWindow(window)
-                    else if (provider == HealthJournalStore.HC) HealthConnectRepository.readTrainingWindowSuspend(
-                        context, window.start.toString(), window.end.toString(), guard)
+                    else if (provider == HealthJournalStore.HC && Build.VERSION.SDK_INT >= 34)
+                        HealthConnectRepository.readTrainingWindowSuspend(
+                            context, window.start.toString(), window.end.toString(), guard)
+                    else if (provider == HealthJournalStore.HC)
+                        HealthConnectLegacyBridge.readTrainingWindow(context, window.start, window.end, guard)
                     else SamsungHealthRepository.readTrainingWindowSuspend(context, window.start.toString(), window.end.toString(), guard)
                 guard()
                 result

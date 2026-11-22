@@ -33,8 +33,8 @@ android {
     manifestPlaceholders["TRAINPILOT_MAPS_API_KEY"] = mapsApiKey
     minSdk = 26
     targetSdk = 36
-    versionCode = 279600 // Play scheme: release 2796, mobile suffix 00
-    versionName = "1.4.1"
+    versionCode = 280000 // Play scheme: release 2800, mobile suffix 00
+    versionName = "1.4.2"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     buildConfigField("String", "DEVELOPER_NAME", "\"FulTechStudios\"")
@@ -149,6 +149,8 @@ dependencies {
   implementation(libs.androidx.work.runtime.ktx)
   implementation(libs.gson)
   implementation(files("libs/samsung-health-data-api-1.1.0.aar"))
+  // Stable cross-version Health Connect client (APK on Android 9-13, platform on 14+).
+  implementation("androidx.health.connect:connect-client:1.1.0")
 
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)

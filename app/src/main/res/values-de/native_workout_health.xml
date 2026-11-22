@@ -13,7 +13,7 @@
     <string name="journal_health_refreshing">Aktualisieren…</string>
     <string name="journal_health_refresh_error">Aktualisierung fehlgeschlagen. Training oder Gesundheitsdaten könnten sich geändert haben; versuche es erneut.</string>
     <string name="journal_health_permission">Erlaube auf der Gesundheitsseite den Zugriff auf Trainingsdaten in Health Connect.</string>
-    <string name="journal_health_unavailable">Die Aktualisierung erfordert Android 14 oder neuer und einen verfügbaren Health-Connect-Dienst.</string>
+    <string name="journal_health_unavailable">Für die Aktualisierung ist Android 9 oder neuer sowie Health Connect erforderlich (unter Android 9–13 muss die Health-Connect-App installiert sein).</string>
     <string name="journal_health_workout_energy">Dem Training zugeordnete Energie</string>
     <string name="journal_health_distance">Distanz</string>
     <string name="journal_health_active_duration">Aktive Messzeit</string>

@@ -537,9 +537,11 @@ internal fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName
     var expanded by rememberSaveable(row.channel, row.type, row.id) { mutableStateOf(false) }
     var offset by rememberSaveable(row.channel, row.type, row.id) { mutableStateOf(0) }
     val unit = (data.opt("unit") as? String).orEmpty().let { if (it == "steps") text.getString(R.string.health_records_steps) else it }
-    val scalar = NativeHealthRecords.number(data, "value")
-        ?: if (row.type == "SleepSessionRecord") NativeHealthRecords.number(data, "durationMinutes") else null
-    val displayUnit = if (row.type == "SleepSessionRecord" && data.has("durationMinutes")) "min" else unit
+    // A session window may include awake time; only stage evidence is labeled as time asleep.
+    val scalar = if (row.type == "SleepSessionRecord")
+        NativeSleepRecordPresentation.asleepMinutes(data, row.startMs, row.endMs)
+    else NativeHealthRecords.number(data, "value")
+    val displayUnit = unit
     val friendlySource = friendlyHealthSourceName(row.source, sourceName, healthChannelName(row.channel, text))
     val count = data.optJSONArray("stages")?.length() ?: data.optJSONArray("samples")?.length() ?: 0
 
@@ -583,7 +585,7 @@ internal fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName
                     fontWeight = FontWeight.Bold
                 )
             } else if (scalar != null) {
-                val heroText = if (row.type == "SleepSessionRecord" && data.has("durationMinutes")) {
+                val heroText = if (row.type == "SleepSessionRecord") {
                     formatSleepDurationHero(scalar, langCode)
                 } else {
                     "${healthRecordNumber(scalar, language)} $displayUnit".trim()
@@ -614,6 +616,23 @@ internal fun HealthRecordCard(row: HealthRecordRow, language: String, sourceName
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium
             )
+
+            if (row.type == "SleepSessionRecord") {
+                val intervalMinutes = (row.endMs - row.startMs).coerceAtLeast(0L) / 60_000.0
+                Text(
+                    text = tr("Időszak (ébrenléttel együtt)", "Session window (including awake time)",
+                        "Zeitraum (einschließlich Wachzeit)", "Interval (inclusiv timpul treaz)") +
+                        ": " + formatSleepDurationHero(intervalMinutes, langCode),
+                    color = colors.muted, fontSize = 12.sp
+                )
+                if (scalar == null) Text(
+                    text = tr("Tényleges alvásidőhöz nincs elérhető fázisadat.",
+                        "No sleep stages available to determine actual sleep time.",
+                        "Keine Schlafphasen zur Bestimmung der tatsächlichen Schlafzeit verfügbar.",
+                        "Nu există faze de somn pentru durata efectivă."),
+                    color = colors.muted, fontSize = 12.sp
+                )
+            }
 
             HorizontalDivider(color = colors.line)
 

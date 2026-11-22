@@ -51,6 +51,8 @@
     <uses-permission android:name="android.permission.health.WRITE_EXERCISE" />
 
     <queries>
+        <!-- Health Connect APK discovery on Android 9–13; system module on Android 14+. -->
+        <package android:name="com.google.android.apps.healthdata" />
         <!-- Samsung Health csomag elérése -->
         <package android:name="com.sec.android.app.shealth" />
         <!-- Xiaomi MIUI Galéria -->
