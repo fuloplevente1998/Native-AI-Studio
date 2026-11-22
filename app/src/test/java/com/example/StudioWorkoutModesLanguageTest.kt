@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
@@ -15,6 +16,7 @@ import androidx.compose.ui.test.assertCountEquals
 import com.example.localization.TrainPilotStrings
 import com.example.ui.screens.SettingsMainScreen
 import com.example.model.AppLanguage
+import com.example.model.TrainingProgramModel
 import com.example.ui.screens.StudioWorkoutModesDialog
 import com.example.ui.theme.TrainPilotTheme
 import com.example.ui.viewmodel.TrainPilotUiState
@@ -127,4 +129,76 @@ class StudioWorkoutModesLanguageTest {
             assertFalse(inherited)
         }
     }
+
+    @Test fun activeProgramNameIsExactLocalizedAndNeverExposesInternalId() {
+        val custom = TrainingProgramModel(
+            id = "personal-long-plan", nameHu = "Saját, személyre szabott és részletes edzésprogram",
+            nameEn = "My custom plan", nameDe = "Mein eigener Trainingsplan", nameRo = "Planul meu personal",
+            subtitleHu = "", subtitleEn = "", tagsHu = emptyList(), isCustom = true, isActive = false,
+            days = emptyList()
+        )
+        val builtin = TrainingProgramModel(
+            id = "builtin-other", nameHu = "Teljes test", nameEn = "Full body",
+            nameDe = "Ganzkörper", nameRo = "Tot corpul",
+            subtitleHu = "", subtitleEn = "", tagsHu = emptyList(), isCustom = false, isActive = true,
+            days = emptyList()
+        )
+        var state by mutableStateOf(TrainPilotUiState(
+            activeTrainingModeProgramId = custom.id, programs = emptyList()
+        ))
+        compose.setContent {
+            TrainPilotTheme {
+                StudioWorkoutModesDialog(
+                    state = state, scope = "program", embedded = true,
+                    onDismiss = {}, onCycleRest = {}, onToggleSound = {}, onToggleVibration = {},
+                    onPreview = { _, _, _ -> }, onApprove = {}, onEditPreview = {}, onUndo = {}
+                )
+            }
+        }
+        val label = compose.onNodeWithTag("studio_modes_active_program_name")
+        label.assertTextEquals("Programok betöltése…")
+        compose.runOnIdle { state = state.copy(programs = listOf(builtin)) }
+        label.assertTextEquals("Az aktív program nem található")
+        compose.runOnIdle { state = state.copy(programs = listOf(builtin, custom)) }
+        label.assertTextEquals(custom.nameHu)
+        for ((language, expected) in listOf(
+            AppLanguage.EN to custom.nameEn,
+            AppLanguage.DE to custom.nameDe,
+            AppLanguage.RO to custom.nameRo,
+            AppLanguage.HU to custom.nameHu
+        )) {
+            compose.runOnIdle { state = state.copy(language = language) }
+            label.assertTextEquals(expected)
+        }
+        compose.runOnIdle {
+            state = state.copy(language = AppLanguage.DE, activeTrainingModeProgramId = builtin.id)
+        }
+        label.assertTextEquals("Ganzkörper")
+        compose.runOnIdle { state = state.copy(activeTrainingModeProgramId = "") }
+        label.assertTextEquals("Kein aktives Programm")
+    }
+
+    @Test fun workoutModeSeparatorsKeepAllOriginalControls() {
+        compose.setContent {
+            TrainPilotTheme {
+                StudioWorkoutModesDialog(
+                    state = TrainPilotUiState(), scope = "global", embedded = true,
+                    onDismiss = {}, onCycleRest = {}, onToggleSound = {}, onToggleVibration = {},
+                    onPreview = { _, _, _ -> }, onApprove = {}, onEditPreview = {}, onUndo = {}
+                )
+            }
+        }
+        for (tag in listOf(
+            "studio_modes_separator_rest_sound",
+            "studio_modes_separator_sound_vibration",
+            "studio_modes_separator_vibration_style",
+            "studio_modes_separator_style_progression"
+        )) compose.onNodeWithTag(tag).assertExists()
+        for (tag in listOf(
+            "studio_modes_rest", "studio_modes_sound", "studio_modes_vibration",
+            "studio_modes_style_normal", "studio_modes_style_hit",
+            "studio_modes_progression_double", "studio_modes_progression_linear", "studio_modes_progression_rir"
+        )) compose.onNodeWithTag(tag).assertExists()
+    }
+
 }
