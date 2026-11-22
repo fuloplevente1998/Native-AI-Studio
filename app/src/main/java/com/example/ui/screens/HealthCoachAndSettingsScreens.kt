@@ -3864,16 +3864,29 @@ private fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
     val weekWorkouts = goalDays.sumOf { it.workoutCount }
 
     @Composable
-    fun Section(title: String, summary: String, tag: String, content: @Composable () -> Unit) {
+    fun Section(title: String, tag: String, content: @Composable () -> Unit) {
         Surface(shape = RoundedCornerShape(18.dp), color = palette.background.copy(alpha = 0.55f),
             modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp)).testTag(tag)) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary, modifier = Modifier.weight(1f))
-                    Text(summary, style = MaterialTheme.typography.labelMedium, color = palette.textSecondary, modifier = Modifier.testTag("${tag}_summary"))
-                }
+                Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                 content()
             }
+        }
+    }
+
+    @Composable
+    fun GoalProgress(summary: String, fraction: Float, tag: String) {
+        Column(Modifier.fillMaxWidth().padding(top = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(tr(lang, "Célteljesítés", "Goal progress", "Zielfortschritt", "Progresul obiectivului"),
+                    style = MaterialTheme.typography.labelMedium, color = palette.textSecondary,
+                    modifier = Modifier.weight(1f))
+                Text(summary, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
+                    color = palette.textPrimary, modifier = Modifier.testTag(tag))
+            }
+            LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth(),
+                color = palette.primary, trackColor = palette.surfaceElevated)
         }
     }
 
@@ -3882,16 +3895,18 @@ private fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
     val workouts = uiState.loggedWorkouts.filter { w -> w.localWorkoutDate()?.let { it in dates } == true }
         .sortedByDescending { it.localWorkoutDate() }
     var historySheet by rememberSaveable { mutableStateOf<String?>(null) }
-    Section(tr(lang, "Edzések", "Workouts", "Trainings", "Antrenamente"),
-        "${goal.workoutsDone} / ${goal.workoutsTarget} " + (if (goal.monthly) tr(lang, "ebben a hónapban", "this month", "diesen Monat", "luna aceasta")
-            else tr(lang, "ezen a héten", "this week", "diese Woche", "săptămâna aceasta")), "health_weekly_workouts_section") {
-        LinearProgressIndicator(progress = { goal.workoutFraction }, modifier = Modifier.fillMaxWidth(), color = palette.primary, trackColor = palette.surfaceElevated)
+    Section(tr(lang, "Edzések", "Workouts", "Trainings", "Antrenamente"), "health_weekly_workouts_section") {
         Text(tr(lang, "Utolsó 7 nap: $weekWorkouts edzés · $weeklyMinutesCurrent perc", "Last 7 days: $weekWorkouts workouts · $weeklyMinutesCurrent min",
                 "Letzte 7 Tage: $weekWorkouts Trainings · $weeklyMinutesCurrent Min.", "Ultimele 7 zile: $weekWorkouts antrenamente · $weeklyMinutesCurrent min"),
             style = MaterialTheme.typography.labelMedium, color = palette.textPrimary, modifier = Modifier.testTag("health_weekly_minutes_total"))
         com.example.ui.components.WeeklyDayBars(dates, goalDays.map { d -> d.workoutMinutes.toDouble().takeIf { d.workoutCount > 0 } },
             label = { date, v -> todayTileWeekLabel("workout", date, v, langCode) }, tag = "health_weekly_minutes_bars",
             lang = langCode, showScale = true, detailIcon = Icons.Default.FitnessCenter)
+        GoalProgress(
+            "${goal.workoutsDone} / ${goal.workoutsTarget} " +
+                if (goal.monthly) tr(lang, "ebben a hónapban", "this month", "diesen Monat", "luna aceasta")
+                else tr(lang, "ezen a héten", "this week", "diese Woche", "săptămâna aceasta"),
+            goal.workoutFraction, "health_weekly_workouts_section_summary")
         if (workouts.isEmpty()) {
             Text(tr(lang, "Az elmúlt 7 napban nincs edzés.", "No workouts in the last 7 days.", "Keine Trainings in den letzten 7 Tagen.", "Niciun antrenament în ultimele 7 zile."),
                 style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
@@ -3904,10 +3919,7 @@ private fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
     }
 
     val measuredDays = goalDays.count { it.stepsAvailable }
-    Section(tr(lang, "Lépések", "Steps", "Schritte", "Pași"),
-        if (measuredDays == 0) "—" else "${nf.format(weeklyStepsCurrent)} / ${nf.format(weeklyStepsTarget)} · $weeklyStepsPct%", "health_weekly_steps_section") {
-        LinearProgressIndicator(progress = { if (measuredDays == 0) 0f else (weeklyStepsPct / 100f).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth(),
-            color = palette.primary, trackColor = palette.surfaceElevated)
+    Section(tr(lang, "Lépések", "Steps", "Schritte", "Pași"), "health_weekly_steps_section") {
         Text(tr(lang, "Utolsó 7 nap · $measuredDays/7 nap adat · $primaryProviderName", "Last 7 days · $measuredDays/7 days of data · $primaryProviderName",
                 "Letzte 7 Tage · $measuredDays/7 Tage mit Daten · $primaryProviderName", "Ultimele 7 zile · $measuredDays/7 zile cu date · $primaryProviderName"),
             style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, modifier = Modifier.testTag("health_weekly_steps_total"))
@@ -3920,6 +3932,12 @@ private fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
                 label = { date, v -> todayTileWeekLabel("steps", date, v, langCode) + if (date == today) " · " + tr(lang, "napi cél", "daily goal", "Tagesziel", "obiectiv zilnic") + " ${nf.format(uiState.stepsGoal)}" else "" },
                 tag = "health_weekly_steps_bars", lang = langCode, showScale = true,
                 detailIcon = Icons.AutoMirrored.Filled.DirectionsWalk)
+        }
+        GoalProgress(
+            if (measuredDays == 0) "—" else "${nf.format(weeklyStepsCurrent)} / ${nf.format(weeklyStepsTarget)} · $weeklyStepsPct%",
+            if (measuredDays == 0) 0f else (weeklyStepsPct / 100f).coerceIn(0f, 1f),
+            "health_weekly_steps_section_summary")
+        if (measuredDays > 0) {
             TextButton(onClick = { historySheet = "steps" },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("health_weekly_steps_history")) {
                 Text(tr(lang, "Lépéselőzmények megtekintése ›", "View step history ›", "Schrittverlauf anzeigen ›", "Vezi istoricul pașilor ›"))

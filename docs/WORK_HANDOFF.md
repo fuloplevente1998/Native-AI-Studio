@@ -3,7 +3,7 @@
 - Ág `fix/health-layout-samsung-permissions`. A Mai állapot és a Test és fittség megtartja normál oszlopszámát rendezés közben. A háromoszlopos töréspontot külön regresszió fedi.
 - A Források Samsung Health engedélygombja ugyanazt az SDK-hívást használja, mint az Adatvédelem beállítás. A Health Connect a saját kezelőjébe nyit.
 - A Health Connect órás lépésgrafikon helyileg szinkronizált, egy órába eső rekordokat jelenít meg egy forrásból. A napi összeg számítása külön fut. Ha nincs alkalmas rekord, az engedélyezett Samsung Health órás adata jelenhet meg, saját forrásmegjelöléssel.
-- A heti célgrafikonok skálája és napjelölése elkülönül, az üres napok kijelölhetők. A Samsung engedélypanel és mindkét grafikon készülékes ellenőrzése hátravan.
+- A heti célgrafikonok oldalsó skálája segédvonalakat kapott, az üres napok kijelölhetők. A cél állása és folyamatjelzője a grafikon alatt jelenik meg. A Samsung engedélypanel és mindkét grafikon készülékes ellenőrzése hátravan.
 
 ---
 

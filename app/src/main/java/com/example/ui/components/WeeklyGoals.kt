@@ -30,6 +30,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -194,11 +196,13 @@ fun WeeklyDayBars(days: List<LocalDate>, values: List<Double?>, label: (LocalDat
         else -> 5.0
     }
     val scaleMax = if (showScale) (kotlin.math.ceil(max / tick) * tick).coerceAtLeast(tick) else max
-    val axisFormatter = remember(lang) { NumberFormat.getIntegerInstance(Locale.forLanguageTag(lang.take(2))) }
+    val axisFormatter = remember(lang) { NumberFormat.getNumberInstance(Locale.forLanguageTag(lang.take(2))).apply {
+        maximumFractionDigits = 1
+    } }
     var sel by remember(tag, days.lastOrNull()) { mutableIntStateOf(values.lastIndex) }
     val selectedIndex = sel.coerceIn(0, values.lastIndex)
     val locale = Locale.forLanguageTag(lang.take(2))
-    val chartHeight = 64.dp
+    val chartHeight = if (showScale) 78.dp else 64.dp
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
         if (showScale) {
             Column(Modifier.padding(end = 8.dp).height(chartHeight),
@@ -210,7 +214,16 @@ fun WeeklyDayBars(days: List<LocalDate>, values: List<Double?>, label: (LocalDat
             }
         }
         Column(Modifier.weight(1f)) {
-            Row(Modifier.fillMaxWidth().height(chartHeight).testTag(tag),
+            Row(Modifier.fillMaxWidth().height(chartHeight)
+                .padding(vertical = if (showScale) 8.dp else 0.dp)
+                .drawBehind {
+                    if (showScale) {
+                        val lineColor = p.textSecondary.copy(alpha = .16f)
+                        for (y in listOf(.5f, size.height / 2f, size.height - .5f)) {
+                            drawLine(lineColor, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
+                        }
+                    }
+                }.testTag(tag),
                 horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Bottom) {
                 values.forEachIndexed { i, v ->
                     val selected = i == selectedIndex
