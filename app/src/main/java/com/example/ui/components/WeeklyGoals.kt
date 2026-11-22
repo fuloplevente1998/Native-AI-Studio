@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
@@ -41,6 +43,8 @@ import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotCombinedClickable
 import java.time.LocalDate
+import java.text.NumberFormat
+import java.util.Locale
 
 /**
  * 2786: one shared "weekly goals" summary for Home (compact card) and Health (inside "Today", opens big).
@@ -170,35 +174,60 @@ private fun WeeklyGoalBar(label: String, value: String, fraction: Float, modifie
 }
 
 /**
- * 2786: 7 tappable day columns with a fixed info line (default: today). [values] null = no data that day.
+ * Seven selectable calendar days with a single detail row under the bars.
+ * The optional scale and icon apply only to the expanded Health weekly-goals cards;
+ * all other chart callers keep the original compact presentation.
+ * Null values remain missing, never converted into a measured zero.
  */
 @Composable
 fun WeeklyDayBars(days: List<LocalDate>, values: List<Double?>, label: (LocalDate, Double?) -> String, tag: String,
-    lang: String = "hu") {
+    lang: String = "hu", showScale: Boolean = false, detailIcon: ImageVector? = null) {
     val p = LocalTrainPilotPalette.current
-    if (values.none { it != null }) return
+    if (days.isEmpty() || values.isEmpty() || values.none { it != null }) return
     val max = values.filterNotNull().maxOrNull()?.coerceAtLeast(1.0) ?: 1.0
+    val tick = when {
+        max > 10000 -> 5000.0
+        max > 1000 -> 2500.0
+        max > 100 -> 50.0
+        max > 50 -> 25.0
+        max > 10 -> 10.0
+        else -> 5.0
+    }
+    val scaleMax = if (showScale) (kotlin.math.ceil(max / tick) * tick).coerceAtLeast(tick) else max
+    val axisFormatter = remember(lang) { NumberFormat.getIntegerInstance(Locale.forLanguageTag(lang.take(2))) }
     var sel by remember(tag, days.lastOrNull()) { mutableIntStateOf(values.lastIndex) }
-    Row(Modifier.fillMaxWidth().height(64.dp).testTag(tag), horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.Bottom) {
-        values.forEachIndexed { i, v ->
-            val on = i == sel
-            val color = trainPilotChartMarkColor(on, p.primary, p.textSecondary)
-            Box(
-                Modifier.weight(1f).fillMaxHeight()
-                    .trainPilotClickable(RoundedCornerShape(6.dp)) { sel = i }
-                    .trainPilotChartSelection(on, label(days[i], v))
-                    .testTag("${tag}_$i"),
-                contentAlignment = Alignment.BottomCenter
-            ) {
-                if (v == null) Box(Modifier.fillMaxWidth().height(2.dp).background(color))
-                else Box(Modifier.fillMaxWidth().fillMaxHeight((v / max).toFloat().coerceIn(0.05f, 1f))
-                    .background(color, RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)))
+    sel = sel.coerceIn(0, values.lastIndex)
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+        if (showScale) {
+            Column(Modifier.width(48.dp).height(64.dp),
+                verticalArrangement = Arrangement.SpaceBetween, horizontalAlignment = Alignment.End) {
+                Text(axisFormatter.format(scaleMax), style = MaterialTheme.typography.labelSmall, color = p.textSecondary)
+                Text(axisFormatter.format(scaleMax / 2), style = MaterialTheme.typography.labelSmall, color = p.textSecondary)
+                Text("0", style = MaterialTheme.typography.labelSmall, color = p.textSecondary)
+            }
+        }
+        Row(Modifier.weight(1f).height(64.dp).testTag(tag),
+            horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.Bottom) {
+            values.forEachIndexed { i, v ->
+                val on = i == sel
+                val color = trainPilotChartMarkColor(on, p.primary, p.textSecondary)
+                Box(
+                    Modifier.weight(1f).fillMaxHeight()
+                        .trainPilotClickable(RoundedCornerShape(6.dp)) { sel = i }
+                        .trainPilotChartSelection(on, label(days[i], v))
+                        .testTag("${tag}_$i"),
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    if (v == null) Box(Modifier.fillMaxWidth().height(2.dp).background(color))
+                    else Box(Modifier.fillMaxWidth().fillMaxHeight((v / scaleMax).toFloat().coerceIn(0.05f, 1f))
+                        .background(color, RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)))
+                }
             }
         }
     }
-    // 2788: short day names under the columns (H, K, Sze … / Mon, Tue …).
-    val locale = java.util.Locale.forLanguageTag(lang.take(2))
+    val locale = Locale.forLanguageTag(lang.take(2))
     Row(Modifier.fillMaxWidth().padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        if (showScale) Spacer(Modifier.width(48.dp))
         days.forEachIndexed { i, d ->
             Text(d.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, locale).trimEnd('.'),
                 style = MaterialTheme.typography.labelSmall, color = if (i == sel) p.primary else p.textSecondary,
@@ -206,5 +235,14 @@ fun WeeklyDayBars(days: List<LocalDate>, values: List<Double?>, label: (LocalDat
         }
     }
     Spacer(Modifier.height(2.dp))
-    TrainPilotChartInfoLine(label(days[sel], values[sel]), Modifier.testTag("${tag}_info"))
+    if (detailIcon != null) {
+        Surface(shape = RoundedCornerShape(10.dp), color = p.surfaceElevated, modifier = Modifier.fillMaxWidth()) {
+            Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(detailIcon, contentDescription = null, tint = p.primary, modifier = Modifier.size(18.dp))
+                Text(label(days[sel], values[sel]), color = p.textPrimary, style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.testTag("${tag}_info"))
+            }
+        }
+    } else TrainPilotChartInfoLine(label(days[sel], values[sel]), Modifier.testTag("${tag}_info"))
 }
