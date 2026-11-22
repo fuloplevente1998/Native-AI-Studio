@@ -112,7 +112,10 @@ class ButtonGlowContourTest {
             button.performTouchInput { up() }
             // Even the transparent top of the 48 dp accessible slot must click.
             val topMarginTapY = bounds.top + 1f - visualBounds.top
-            button.performTouchInput { click(Offset(centerX, topMarginTapY)) }
+            button.performTouchInput {
+                down(Offset(centerX, topMarginTapY))
+                up()
+            }
         }
         assertEquals(6, closes)
     }

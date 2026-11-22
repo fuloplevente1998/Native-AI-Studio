@@ -4,6 +4,8 @@ import android.Manifest
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import com.example.ui.components.StudioPlatformAccess
+import com.example.ui.viewmodel.TrainPilotUiState
+import com.example.ui.viewmodel.StudioPermissionAccess
 import com.example.ui.viewmodel.TrainPilotViewModel
 import com.repforge.app.NativePrivacyControls
 import org.json.JSONObject
@@ -35,6 +37,27 @@ class PlatformAccessRegressionTest {
         } finally {
             NativePrivacyControls.set(app, NativePrivacyControls.GPS, true)
         }
+    }
+
+    @Test fun groupedPrivacySnapshotPreservesIndependentChoicesAndOsGrantsAcrossUiCopies() {
+        val original = TrainPilotUiState().copy(permissionAccess = StudioPermissionAccess(
+            gpsEnabled = true, gpsGranted = false, centralLocationEnabled = true,
+            notificationsEnabled = true, notificationsGranted = false,
+            healthConnectEnabled = true, healthConnectGranted = true,
+            samsungHealthEnabled = false, samsungHealthGranted = true
+        ))
+        // Switching GPS off must not reset grants or the other opt-ins.
+        val toggled = original.copy(permissionAccess = original.permissionAccess.copy(gpsEnabled = false))
+        assertFalse(toggled.permissionGpsEnabled)
+        assertFalse(toggled.permissionGpsGranted)
+        assertTrue(toggled.permissionCentralLocEnabled)
+        assertTrue(toggled.permissionNotificationsEnabled)
+        assertFalse(toggled.permissionNotificationsGranted)
+        assertTrue(toggled.permissionHealthConnectEnabled)
+        assertTrue(toggled.permissionHealthConnectGranted)
+        assertFalse(toggled.permissionSamsungHealthEnabled)
+        assertTrue(toggled.permissionSamsungHealthGranted)
+        assertTrue(original.permissionGpsEnabled)
     }
 
     @Test fun noNodesAndNoGrantsCannotLeaveConnectedOrEnabledUiState() {
