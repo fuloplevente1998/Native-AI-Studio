@@ -183,6 +183,19 @@ class JournalWorkoutHealthRegressionTest {
 
     }
 
+    @Test fun anotherProviderCanBeExpandedWhileAReadingIsRunning() {
+        val detail = seed(health = response().put("windowStart", start).put("windowEnd", end))
+        val selectedProviders = mutableListOf<String>()
+        compose.setContent { TrainPilotTheme {
+            JournalHealthPanel(detail, nativeResources(context, "hu"), "hu", true, null, true,
+                provider = HealthJournalStore.HC, selectProvider = { selectedProviders += it }) { }
+        } }
+        compose.onNodeWithTag("journal_provider_samsung_health").assertIsEnabled().performClick()
+        compose.onNodeWithTag("journal_samsung_health_status").assertExists()
+        compose.onNodeWithTag("journal_samsung_health_refresh").assertIsNotEnabled()
+        compose.runOnIdle { assertTrue(selectedProviders.isEmpty()) }
+    }
+
     @Test fun sourceCardExpansionSurvivesRestorationWithoutOpeningOtherSources() {
         val detail = seed(health = response().put("windowStart", start).put("windowEnd", end))
         val restoration = StateRestorationTester(compose)

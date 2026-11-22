@@ -741,7 +741,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onOpenPhotos = { viewModel.openLogWorkoutPhotos() },
                             onOpenRouteMap = { viewModel.navigateToSubScreen(SubScreen.LOG_ROUTE_MAP) },
                             onOpenWatchSync = { viewModel.navigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
-                            onOpenHealthTab = { viewModel.selectLogDetailTab(2) },
+                            onOpenHealthTab = { viewModel.openHealthAndExpand(connect = true) },
                             deleteActions = {
                                 com.example.ui.components.StudioLoggedWorkoutEditActions(uiState.selectedLogWorkoutId,
                                     uiState.language.name.lowercase(), onSaved = { viewModel.refreshAfterCloudSync(context) })
