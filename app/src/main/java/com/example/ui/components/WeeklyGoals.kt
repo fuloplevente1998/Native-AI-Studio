@@ -125,7 +125,8 @@ fun WeeklyGoalsCompact(
                 if (expanded == null) Modifier.trainPilotClickable(shape, onClick = onOpen)
                 else Modifier.healthDetailsToggle(expanded, lang, shape, onOpen)
             )) {
-        Row(Modifier.padding(start = 12.dp, end = 6.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically,
+        Row(Modifier.padding(start = 12.dp, end = 6.dp, top = if (expanded == null) 6.dp else 3.dp,
+            bottom = if (expanded == null) 6.dp else 3.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

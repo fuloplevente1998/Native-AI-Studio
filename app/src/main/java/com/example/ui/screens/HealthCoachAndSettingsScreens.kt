@@ -593,8 +593,8 @@ fun HealthTabScreen(
                         .trainPilotBorder(1.2.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(24.dp))
                 ) {
                     Column(
-                        modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
                         PageLayoutCard {
                         Row(
@@ -606,7 +606,7 @@ fun HealthTabScreen(
                                 shape = RoundedCornerShape(14.dp),
                                 color = palette.primary.copy(alpha = 0.14f),
                                 modifier = Modifier
-                                    .size(48.dp)
+                                    .size(38.dp)
                                     .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
@@ -622,7 +622,7 @@ fun HealthTabScreen(
                                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     Text(
                                         text = strings.todayStateTitle,
-                                        style = MaterialTheme.typography.titleLarge,
+                                        style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = palette.textPrimary
                                     )
@@ -699,7 +699,7 @@ fun HealthTabScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier.fillMaxWidth().trainPilotBorder(1.dp, palette.cardBorder, shape)
                 ) {
-                    Box(Modifier.padding(14.dp)) {
+                    Box(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                         StudioBodyFitnessTiles(uiState, layout) { key, reading ->
                             selectedFitnessReading = reading
                             expandedTodayTileKey = key
@@ -721,7 +721,7 @@ fun HealthTabScreen(
                             shape = RoundedCornerShape(20.dp)
                         )
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -814,7 +814,7 @@ fun HealthTabScreen(
                         tr(uiState.language, "Óra", "Watch", "Uhr", "Ceas") + " " + if (uiState.watchAppAvailable) "✓" else "—"
                     ).joinToString(" · "),
                     onOpen = { onToggleHealthSection("connect") },
-                    customLeadingBadge = { MockupHealthConnectBadge(size = 44.dp) }
+                    customLeadingBadge = { MockupHealthConnectBadge(size = 34.dp) }
                 )
             }
         }
@@ -1652,8 +1652,8 @@ internal fun MainTodayStatusTile(
             .trainPilotClickable(RoundedCornerShape(16.dp)) { onClick() }
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = if (compact) 8.dp else 10.dp, vertical = if (compact) 5.dp else 10.dp),
-            verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 8.dp)
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = if (compact) 5.dp else 6.dp),
+            verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 4.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -1738,12 +1738,12 @@ private fun HealthSectionLauncher(
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
             .trainPilotClickable(RoundedCornerShape(20.dp), onClick = onOpen)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 48.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (customLeadingBadge != null) {
@@ -1753,7 +1753,7 @@ private fun HealthSectionLauncher(
                         shape = RoundedCornerShape(14.dp),
                         color = palette.primary.copy(alpha = 0.14f),
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(34.dp)
                             .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -1761,7 +1761,7 @@ private fun HealthSectionLauncher(
                                 imageVector = icon,
                                 contentDescription = null,
                                 tint = palette.primary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
@@ -4061,7 +4061,7 @@ private fun WeightLogBody(
                             selectedLabel = selectedLabel) { selectedPoint = it }
                     else Modifier
                     Canvas(
-                        Modifier.weight(1f).height(if (expanded) 150.dp else 56.dp)
+                        Modifier.weight(1f).height(if (expanded) 150.dp else 44.dp)
                             .then(if (expanded) tapModifier else Modifier.testTag("health_weight_chart_compact_canvas"))
                     ) {
                         val inset = 6.dp.toPx()
