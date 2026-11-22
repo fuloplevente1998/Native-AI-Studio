@@ -1,3 +1,13 @@
+# #312/13 Adatvédelem és engedélyek — 2026-11-22
+
+- **Alap:** friss main `483383d` (#309-zel). **Ág:** `fix/312-privacy-permissions`. **Átadás:** [draft PR #320](https://github.com/fuloplevente1998/Native-AI-Studio/pull/320). Nincs main-merge, verzióemelés, CI-indítás vagy kiadás.
+- Négy külön tartós appkapcsoló (GPS, opcionális értesítések, Health Connect, Samsung Health), függetlenül az Android/Samsung jogosultságtól. A letiltott GPS leáll, a HC előtér-/háttérolvasás és írás, a Samsung olvasás és az opcionális BLE háttérkapcsolat az opt-in ellenőrzésétől függ; meglévő egészségnapló érintetlen. A kötelező aktív edzés-/GPS-foreground értesítések külön rendszerkövetelmények.
+- Engedélykérés csak bekapcsoláskor, és csak hiányzó jogosultságra; HC olvasás részleges hozzáféréssel is kezelhető, Samsung részleges grant ellenőrzése javítva. Külön **Engedélyek kezelése** / rendszerhelyzet / Health Connect és Samsung műveletek. HC háttérfrissítés és opcionális edzésírás külön kapcsoló; edzésírás az app és Android írószintű engedélyét egyaránt vizsgálja.
+- `row_offset`/change_log hibára a korábbi célzott fallback marad: közvetlen napi olvasás, checkpoint változatlan. Nyers Android kivétel helyett HU/EN/DE/RO felhasználói jelzések. `PlatformAccessRegressionTest` korszerűsítve, `PrivacyControls312RegressionTest` hozzáadva; a régi HC permissions/fallback regressziók megmaradtak.
+- **Ellenőrzés:** GitHub összehasonlítás, forrás-/jogosultságútvonal audit, tesztforrások. **Még hátra:** Android/JVM CI futtatás, APK-fordítás, Samsung/HC/GPS valós készülékes és restart/fordítási teszt. A javítást ne tekintsd fizikailag vagy buildben igazoltnak. A #312/12 külön feladat.
+
+---
+
 # #312/9 Kardió – egyoldalas áttekintés (2026-11-22)
 
 - Alap: main `d57bd17585d77feab0c0dfa37d7295738083fce6`; külön ág: `fix/312-cardio-one-page`, [draft PR #317](https://github.com/fuloplevente1998/Native-AI-Studio/pull/317). Main-merge és kiadás nincs.
