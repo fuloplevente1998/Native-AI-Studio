@@ -1,5 +1,7 @@
 package com.repforge.app.ui.journal
 
+import com.example.ui.components.trainPilotAnimatedExpansion
+
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
@@ -66,7 +68,7 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
     val wearExpanded = expandedSource == "wear"
     val samsungExpanded = expandedSource == HealthJournalStore.SAMSUNG
     val hcExpanded = expandedSource == HealthJournalStore.HC
-    Column(Modifier.fillMaxWidth().background(colors.card, MaterialTheme.shapes.large)
+    Column(Modifier.fillMaxWidth().trainPilotAnimatedExpansion().background(colors.card, MaterialTheme.shapes.large)
         .border(TrainPilotFrames.page(colors.line, colors.accent), MaterialTheme.shapes.large)
         .padding(12.dp).testTag("journal_health_source_group"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth().testTag("journal_health_source_row"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
