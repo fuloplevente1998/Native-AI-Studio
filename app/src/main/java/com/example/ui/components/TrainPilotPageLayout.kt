@@ -3,6 +3,7 @@ package com.example.ui.components
 import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
@@ -81,11 +82,16 @@ internal class PageLayoutState(val page: String, val defaults: List<String>, ini
     fun cancel() { draft = null }
     fun reset() { draftChildren = emptyMap(); draft = defaults }
     fun move(from: Int, to: Int) { draft = draft?.let { movePageLayoutBlock(it, from, to) } }
-    fun childOrder(group: String, defaults: List<String>): List<String> =
-        reconcilePageLayout((if (draft != null) draftChildren else savedChildren)[group].orEmpty(), defaults)
+    fun childOrder(group: String, defaults: List<String>, legacy: Map<String, List<String>> = emptyMap()): List<String> {
+        val groups = if (draft != null) draftChildren else savedChildren
+        return reconcilePageLayout(groups[group] ?: legacy.flatMap { (id, row) -> reconcilePageLayout(groups[id].orEmpty(), row) }, defaults)
+    }
 
-    fun moveChild(group: String, defaults: List<String>, from: Int, to: Int) {
-        if (draft != null) draftChildren = draftChildren + (group to movePageLayoutBlock(childOrder(group, defaults), from, to))
+    fun moveChild(group: String, defaults: List<String>, from: Int, to: Int, legacy: Map<String, List<String>> = emptyMap()) {
+        if (draft != null) {
+            val order = movePageLayoutBlock(childOrder(group, defaults, legacy), from, to)
+            draftChildren = (draftChildren - legacy.keys) + (group to order)
+        }
     }
 
     fun save(context: Context): Boolean {
@@ -105,9 +111,11 @@ internal class PageLayoutState(val page: String, val defaults: List<String>, ini
 }
 
 @Composable
-internal fun rememberPageLayout(page: String, defaults: List<String>): PageLayoutState {
+internal fun rememberPageLayout(
+    page: String, defaults: List<String>, newBlockPlacement: Pair<String, String>? = null
+): PageLayoutState {
     val context = LocalContext.current.applicationContext
-    return remember(context, page, defaults) {
+    return remember(context, page, defaults, newBlockPlacement) {
         val prefs = context.getSharedPreferences("trainpilot-page-layout", Context.MODE_PRIVATE)
         val previous = prefs.getString(page, null).orEmpty().split(',')
         val children = runCatching { JSONObject(prefs.getString("${page}_children", "{}") ?: "{}") }
@@ -116,7 +124,12 @@ internal fun rememberPageLayout(page: String, defaults: List<String>): PageLayou
             val values = children.optJSONArray(group) ?: return@mapNotNull null
             group to List(values.length()) { values.optString(it) }
         }.toMap()
-        PageLayoutState(page, defaults, reconcilePageLayout(previous, defaults), savedChildren)
+        val order = reconcilePageLayout(previous, defaults)
+        val (block, anchor) = newBlockPlacement ?: return@remember PageLayoutState(page, defaults, order, savedChildren)
+        val initial = if (block !in previous && block in order && anchor in order) {
+            (order - block).toMutableList().apply { add(indexOf(anchor) + 1, block) }
+        } else order
+        PageLayoutState(page, defaults, initial, savedChildren)
     }
 }
 
@@ -201,6 +214,113 @@ internal fun PageLayoutCard(content: @Composable () -> Unit) {
                 waitForUpOrCancellation()?.consume()
             }
         })
+    }
+}
+
+/** Reorder measured grid cells across both axes, with the same draft and save as the page. */
+@Composable
+internal fun PageLayoutGrid(
+    layout: PageLayoutState?,
+    group: String,
+    tiles: List<PageLayoutBlock>,
+    gap: Dp,
+    legacy: Map<String, List<String>> = emptyMap(),
+    modifier: Modifier = Modifier,
+    tileContent: @Composable (String, Modifier) -> Unit
+) {
+    val defaults = tiles.map { it.id }
+    val ids = layout?.childOrder(group, defaults, legacy) ?: defaults
+    val editor = LocalPageLayoutDrag.current
+    val palette = LocalTrainPilotPalette.current
+    val direction = LocalLayoutDirection.current
+    val fontScale = LocalDensity.current.fontScale
+    val bounds = remember { mutableMapOf<String, Rect>() }
+    var dragged by remember { mutableStateOf<String?>(null) }
+    var destination by remember { mutableStateOf<String?>(null) }
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        val columns = when {
+            maxWidth < 220.dp || fontScale >= 1.8f -> 1
+            maxWidth < 300.dp || fontScale >= 1.4f -> 2
+            else -> 3
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(gap)) {
+            ids.chunked(columns).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap)) {
+                    row.forEach { id ->
+                        key(id) {
+                            val cell = Modifier.weight(1f)
+                            if (editor == null || layout == null) tileContent(id, cell)
+                            else {
+                                val index = ids.indexOf(id)
+                                val shape = RoundedCornerShape(12.dp)
+                                val color = if (destination == id && dragged != id) palette.primary
+                                    else if (dragged == id) palette.primary.copy(alpha = .5f) else null
+                                Column(
+                                    cell.onGloballyPositioned { bounds[id] = it.boundsInRoot() }
+                                        .then(if (color != null) Modifier.border(2.dp, color, shape) else Modifier),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    val title = tiles.first { it.id == id }.title
+                                    fun action(target: Int, name: String): CustomAccessibilityAction? =
+                                        target.takeIf { it in ids.indices }?.let { to ->
+                                            CustomAccessibilityAction(name) {
+                                                layout.moveChild(group, defaults, index, to, legacy)
+                                                true
+                                            }
+                                        }
+
+                                    Box(Modifier.size(48.dp).pointerInput(id, ids, columns) {
+                                        awaitEachGesture {
+                                            val down = awaitFirstDown(requireUnconsumed = false)
+                                            val start = bounds[id]?.center ?: return@awaitEachGesture
+                                            down.consume()
+                                            dragged = id
+                                            destination = id
+                                            var traveled = Offset.Zero
+                                            try {
+                                                val completed = drag(down.id) { change ->
+                                                    traveled += change.positionChange()
+                                                    change.consume()
+                                                    val pointer = start + traveled
+                                                    destination = ids.minByOrNull { candidate ->
+                                                        bounds[candidate]?.center?.let { (it - pointer).getDistanceSquared() }
+                                                            ?: Float.POSITIVE_INFINITY
+                                                    }
+                                                }
+                                                val to = destination?.let(ids::indexOf) ?: -1
+                                                if (completed && to in ids.indices && to != index) {
+                                                    layout.moveChild(group, defaults, index, to, legacy)
+                                                }
+                                            } finally {
+                                                dragged = null
+                                                destination = null
+                                            }
+                                        }
+                                    }.semantics {
+                                        contentDescription = title
+                                        val nextColumn = if (direction == LayoutDirection.Ltr) index + 1 else index - 1
+                                        val previousColumn = if (direction == LayoutDirection.Ltr) index - 1 else index + 1
+                                        val lang = editor.language
+                                        customActions = listOfNotNull(
+                                            action(index - columns, lang.pageLayoutText("Mozgatás fel", "Move up", "Nach oben", "Mută în sus")),
+                                            action(index + columns, lang.pageLayoutText("Mozgatás le", "Move down", "Nach unten", "Mută în jos")),
+                                            previousColumn.takeIf { it in ids.indices && it / columns == index / columns }
+                                                ?.let { action(it, lang.pageLayoutText("Mozgatás balra", "Move left", "Nach links", "Mută la stânga")) },
+                                            nextColumn.takeIf { it in ids.indices && it / columns == index / columns }
+                                                ?.let { action(it, lang.pageLayoutText("Mozgatás jobbra", "Move right", "Nach rechts", "Mută la dreapta")) }
+                                        )
+                                    }.testTag("page_layout_grid_${group}_$id"), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.DragIndicator, null, tint = palette.primary, modifier = Modifier.size(18.dp))
+                                    }
+                                    PageLayoutCard { tileContent(id, Modifier.fillMaxWidth()) }
+                                }
+                            }
+                        }
+                    }
+                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+        }
     }
 }
 
