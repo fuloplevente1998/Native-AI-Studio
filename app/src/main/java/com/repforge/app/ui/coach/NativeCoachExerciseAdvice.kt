@@ -130,7 +130,7 @@ internal object NativeCoachExerciseAdvice {
     fun forCoach(advice: Advice, lastEffort: String?, readiness: NativeCoachReadiness.Result): Advice {
         if (advice.reason == "distance") return advice.copy(autoApply = false)
         if (advice.action == "pain" || lastEffort == "pain") return advice.copy(action = "pain", reason = "pain", autoApply = false)
-        if (readiness.mode == "light") return advice.copy(action = "easy", reason = "recovery", autoApply = false)
+        if (readiness.pain || readiness.mode == "light") return advice.copy(action = "easy", reason = "recovery", autoApply = false)
         if (readiness.mode == "reduced") {
             if (lastEffort in setOf("hard", "challenging") || advice.action == "increase")
                 return advice.copy(action = "hold", reason = "reduced", autoApply = false)

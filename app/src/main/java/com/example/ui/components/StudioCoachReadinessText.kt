@@ -22,10 +22,10 @@ internal fun studioCoachReadinessText(
             "Nu crește sarcina din cauza semnalării durerii. Verifică restricțiile pe exerciții."
         )
         readiness?.score == null -> tr(
-            "Nincs elegendő friss adat a készenlét megítéléséhez. Frissítsd a kiválasztott egészségforrást.",
-            "Not enough recent data to evaluate readiness. Refresh your selected health source.",
-            "Nicht genügend aktuelle Daten zur Bewertung der Bereitschaft. Aktualisiere deine Gesundheitsquelle.",
-            "Nu există suficiente date recente pentru evaluarea pregătirii. Actualizează sursa de sănătate selectată."
+            "Nincs elegendő friss adat a készenlét megítéléséhez. Frissítsd az egészségadatokat.",
+            "Not enough recent data to evaluate readiness. Refresh your health data.",
+            "Nicht genügend aktuelle Daten zur Bewertung der Bereitschaft. Aktualisiere deine Gesundheitsdaten.",
+            "Nu există suficiente date recente pentru evaluarea pregătirii. Actualizează datele de sănătate."
         )
         readiness.mode == "light" -> tr(
             "Könnyített terhelés javasolt. A gyakorlatoknál láthatók az előzmények alapján számolt részletek.",

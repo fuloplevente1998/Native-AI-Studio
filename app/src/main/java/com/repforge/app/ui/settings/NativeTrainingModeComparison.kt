@@ -1,17 +1,14 @@
 package com.repforge.app.ui.settings
 
 import android.content.Context
-import com.repforge.app.HealthJournalStore
 import com.repforge.app.NativeDataReplacement
 import com.repforge.app.data.db.TrainPilotDatabase
 import com.repforge.app.data.store.NativeTrainingModeChange
 import com.repforge.app.data.store.TrainPilotSettingsStore
 import com.repforge.app.ui.coach.CoachTarget
 import com.repforge.app.ui.coach.NativeCoachAdviceRepository
-import com.repforge.app.ui.coach.NativeCoachReadiness
-import com.repforge.app.ui.coach.NativeCoachSignals
+import com.repforge.app.ui.coach.NativeSelectedCoachReadings
 import org.json.JSONObject
-import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 
@@ -73,15 +70,7 @@ internal object NativeTrainingModeComparison {
         check(daysInProgram.isNotEmpty()) { "Training mode comparison has no program days" }
         val now = Instant.now()
         val zone = ZoneId.systemDefault()
-        val date = now.atZone(zone).toLocalDate()
-        val observedDays = HealthJournalStore.get(context).page(date.minusDays(14).toString(),
-            date.toString(), "journal", "", 0L, 0L, 1).optJSONArray("days")
-        val signals = NativeCoachSignals.fromDays((0 until (observedDays?.length() ?: 0))
-            .mapNotNull { observedDays?.optJSONObject(it) }, date, zone)
-        val history = db.workoutHistoryDao().getCoachRecentHistory(
-            now.minus(Duration.ofDays(14)).toEpochMilli(), now.toEpochMilli()).map { JSONObject(it) }
-        val readiness = NativeCoachReadiness.calculate(
-            signals.recovery, signals.daily, history, now, zone)
+        val readiness = NativeSelectedCoachReadings.load(context, db, now, zone).readiness
         val repository = NativeCoachAdviceRepository(db)
         val prospectiveJson = NativeTrainingModeChange.next(preview)
         val raw = JSONObject(program.program.rawJson)

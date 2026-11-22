@@ -1862,10 +1862,14 @@ private fun CompactRecoveryReadiness(state: TrainPilotUiState) {
             val detail = when {
                 score == null -> tr(lang, "Nincs mai pontszám", "No score today", "Heute kein Wert", "Niciun scor azi")
                 score >= 75 -> tr(lang, "Optimális készenlét", "Optimal readiness", "Optimale Bereitschaft", "Pregătire optimă")
-                score >= 50 -> tr(lang, "Mérsékelt készenlét", "Moderate readiness", "Mäßige Bereitschaft", "Pregătire moderată")
-                else -> tr(lang, "Pihenés javasolt", "Rest advised", "Pause empfohlen", "Odihnă recomandată")
+                score >= 55 -> tr(lang, "Mérsékelt készenlét", "Moderate readiness", "Mäßige Bereitschaft", "Pregătire moderată")
+                else -> tr(lang, "Könnyített terhelés", "Lighter load", "Leichtere Belastung", "Sarcină mai ușoară")
             }
             Text(detail, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+            if (score != null && reading?.coachHasRecoverySignal == false) {
+                Text(tr(lang, "Terhelésalapú becslés", "Load-based estimate", "Belastungsbasierte Schätzung", "Estimare bazată pe sarcină"),
+                    style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+            }
         }
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1896,10 +1900,11 @@ internal fun CoachDetailScreen(
     val readiness = nativeState.readiness
     val hasScore = readiness?.score != null
     val displayScore = readiness?.score?.toInt()?.coerceIn(0, 100) ?: 0
-    val samsungScore = readiness?.samsungScore?.toInt()?.coerceIn(0, 100) ?: 0
+    val samsungScore = readiness?.samsungScore?.roundToInt()?.coerceIn(0, 100) ?: 0
     val ownReadinessScore = readiness?.trainpilotScore ?: 0
     var coachInputsObserved by remember(model) { mutableStateOf(false) }
-    LaunchedEffect(uiState.loggedWorkouts, uiState.programs, uiState.dailyHealthLastSyncIso, uiState.primaryHealthSourceSamsung, uiState.language) {
+    LaunchedEffect(uiState.loggedWorkouts, uiState.programs, uiState.dailyHealthLastSyncIso,
+        uiState.primaryHealthSourceSamsung, uiState.todayRecoveryReading, uiState.language) {
         val firstAttachment = !coachInputsObserved
         coachInputsObserved = true
         // The model already starts its first read. Do not restart it on initial composition.
@@ -1949,13 +1954,13 @@ internal fun CoachDetailScreen(
                         )
                         val statusBadgeText = when {
                             displayScore >= 75 -> tr(uiState.language, "OPTIMÁLIS KÉSZENLÉT", "OPTIMAL READINESS", "OPTIMALE BEREITSCHAFT", "PREGĂTIRE OPTIMĂ")
-                            displayScore >= 50 -> tr(uiState.language, "MÉRSÉKELT KÉSZENLÉT", "MODERATE READINESS", "MÄSSIGE BEREITSCHAFT", "PREGĂTIRE MODERATĂ")
-                            hasScore -> tr(uiState.language, "PIHENÉS JAVASOLT", "REST ADVISED", "PAUSE EMPFOHLEN", "ODIHNĂ RECOMANDATĂ")
+                            displayScore >= 55 -> tr(uiState.language, "MÉRSÉKELT KÉSZENLÉT", "MODERATE READINESS", "MÄSSIGE BEREITSCHAFT", "PREGĂTIRE MODERATĂ")
+                            hasScore -> tr(uiState.language, "KÖNNYÍTETT TERHELÉS", "LIGHTER LOAD", "LEICHTERE BELASTUNG", "SARCINĂ MAI UȘOARĂ")
                             else -> tr(uiState.language, "NINCS MÉRT ADAT", "NO MEASURED DATA", "KEINE MESSDATEN", "FĂRĂ DATE MĂSURATE")
                         }
                         val statusBadgeColor = when {
                             displayScore >= 75 -> palette.success
-                            displayScore >= 50 -> palette.primary
+                            displayScore >= 55 -> palette.primary
                             hasScore -> palette.warning
                             else -> palette.textSecondary
                         }
@@ -1984,7 +1989,7 @@ internal fun CoachDetailScreen(
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
-                                text = tr(uiState.language, "3. Végső Coach készenlét", "3. Final Coach Readiness", "3. Finale Coach-Bereitschaft", "3. Pregătire finală Coach"),
+                                text = tr(uiState.language, "Végső Coach készenlét", "Final Coach readiness", "Finale Coach-Bereitschaft", "Pregătirea finală Coach"),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = palette.primary
@@ -2011,7 +2016,7 @@ internal fun CoachDetailScreen(
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
-                                Text(tr(uiState.language, "1. Samsung Health", "1. Samsung Energy", "1. Samsung Energie", "1. Energie Samsung"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text("Samsung Energy", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Text(
                                     text = if (readiness?.samsungScore != null) "$samsungScore / 100" else "—",
                                     style = MaterialTheme.typography.titleMedium,
@@ -2033,14 +2038,15 @@ internal fun CoachDetailScreen(
                                 .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
-                                Text(tr(uiState.language, "2. TrainPilot", "2. TrainPilot Own", "2. TrainPilot Eigen", "2. Scor TrainPilot"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text("TrainPilot", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Text(
                                     text = if (readiness?.trainpilotScore != null) "$ownReadinessScore / 100" else "—",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.textPrimary
                                 )
-                                Text(tr(uiState.language, "HRV & alvás", "HRV & sleep", "HRV & Schlaf", "HRV și somn"), style = MaterialTheme.typography.labelSmall, color = palette.primary)
+                                Text(tr(uiState.language, "Saját becslés", "Own estimate", "Eigene Schätzung", "Estimare proprie"),
+                                    style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
                             }
                         }
                         Surface(
@@ -2051,14 +2057,17 @@ internal fun CoachDetailScreen(
                                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
-                                Text(tr(uiState.language, "3. Samsung / saját", "3. Samsung / own", "3. Samsung / eigen", "3. Samsung / propriu"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(tr(uiState.language, "Végső Coach", "Final Coach", "Finaler Coach", "Coach final"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Text(
                                     text = if (hasScore) "$displayScore / 100" else "—",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.primary
                                 )
-                                Text(tr(uiState.language, "Végső Coach", "Final Coach", "Finaler Coach", "Coach final"), style = MaterialTheme.typography.labelSmall, color = palette.primary)
+                                if (hasScore && readiness?.samsungScore != null) {
+                                    Text("80% TrainPilot · 20% Samsung",
+                                        style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                                }
                             }
                         }
                     }
@@ -2083,14 +2092,8 @@ internal fun CoachDetailScreen(
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(tr(uiState.language, "Kulcsjelek", "Key Signals", "Schlüsselsignale", "Semnale cheie"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                        Text(when (nativeState.provider) {
-                            com.repforge.app.HealthJournalStore.SAMSUNG -> "Samsung Health"
-                            com.repforge.app.HealthJournalStore.HC -> "Health Connect"
-                            else -> tr(uiState.language, "Adatok betöltése…", "Loading data…", "Daten werden geladen…", "Se încarcă datele…")
-                        }, style = MaterialTheme.typography.labelMedium, color = palette.primary)
-                    }
+                    Text(tr(uiState.language, "Kulcsjelek", "Key Signals", "Schlüsselsignale", "Semnale cheie"),
+                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                     CoachSignalRow(
                         strings.sleepTitle,
                         readiness?.sleepMinutes?.let {

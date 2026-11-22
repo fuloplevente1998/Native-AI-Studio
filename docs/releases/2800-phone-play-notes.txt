@@ -1,0 +1,24 @@
+<hu-HU>
+• A Coach a mért alvásból, a személyes HRV-alapértékből és a naplózott terhelésből becsüli a készenlétet. Az aznapi Samsung Energy Score is számít, ha elérhető.
+• Health Connect támogatás Android 9–13-on, megosztott óraadatokkal is. Pontosabb órás lépésgrafikon és alvásidő, átláthatóbb engedélyek.
+• Külön Test és fittség kártyák a testzsír, a véroxigén és a VO₂max megjelenítéséhez.
+• Finomított súlyprogresszió és RIR-javaslatok.
+</hu-HU>
+<en-US>
+• Coach estimates readiness from measured sleep, your HRV baseline and logged training load, with Samsung Energy Score factored in when available.
+• Health Connect support on Android 9–13, including shared wearable data. More accurate hourly steps and sleep duration, plus clearer permissions.
+• Separate Body & Fitness cards for body fat, blood oxygen and VO₂ max.
+• Improved weight progression and RIR guidance.
+</en-US>
+<de-DE>
+• Coach schätzt die Bereitschaft anhand von Schlaf, persönlichem HRV-Ausgangswert und Trainingsbelastung. Der Samsung Energy Score fließt ein, wenn er verfügbar ist.
+• Health Connect für Android 9–13, auch mit freigegebenen Wearable-Daten. Genauere stündliche Schritte und Schlafdauer sowie klarere Berechtigungen.
+• Eigene Karten für Körperfett, Sauerstoffsättigung und VO₂max.
+• Verbesserte Gewichtsprogression und RIR-Empfehlungen.
+</de-DE>
+<ro>
+• Coach estimează pregătirea din somn, nivelul tău HRV de referință și efortul înregistrat. Include Samsung Energy Score când este disponibil.
+• Health Connect pe Android 9–13, inclusiv cu date partajate de ceasuri. Pași pe oră și durată a somnului mai exacte, permisiuni mai clare.
+• Carduri separate pentru grăsime corporală, saturația oxigenului și VO₂max.
+• Progresie a greutăților și recomandări RIR îmbunătățite.
+</ro>
