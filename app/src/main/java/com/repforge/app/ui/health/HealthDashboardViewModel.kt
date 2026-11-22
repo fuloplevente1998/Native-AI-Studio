@@ -455,6 +455,18 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
         appAuto: Boolean = false,
         ignoreAutoInterval: Boolean = false
     ) {
+        val requestedSource = requestedProvider ?: _uiState.value.provider
+        if (!allProviders && requestedSource in setOf(HealthJournalStore.HC, HealthJournalStore.SAMSUNG)) {
+            val feature = if (requestedSource == HealthJournalStore.HC)
+                com.repforge.app.NativePrivacyControls.HEALTH_CONNECT
+                else com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH
+            if (!com.repforge.app.NativePrivacyControls.enabled(context, feature)) {
+                if (trigger == NativeHealthAutoRefreshGate.Trigger.MANUAL)
+                    _uiState.update { it.copy(syncFailed = true, syncOutcome = "BLOCKED",
+                        syncMessage = com.repforge.app.NativePrivacyControls.disabledMessage(it.language)) }
+                return
+            }
+        }
         if (trigger == NativeHealthAutoRefreshGate.Trigger.AUTO && !appAuto && appVisible) return
         if (appAuto) {
             if (!appVisible || appActivity?.get() !== activity || samsungPermissionPending || manualSamsungPermissionVisible) return
