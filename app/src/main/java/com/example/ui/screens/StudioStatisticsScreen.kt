@@ -79,15 +79,9 @@ internal fun StudioStatisticsScreen(state: TrainPilotUiState, onSelectTab: (Int)
     LaunchedEffect(model) {
         while (true) { delay(60_000); model.onCardioCalendarTick() }
     }
-    StudioStatisticsContent(state, native, { index ->
-        if (index == 1) {
-            model.selectCardioActivity(NativeCardioModel.ALL_ACTIVITIES)
-            onStepsMode(true)
-        }
-        onSelectTab(index)
-    }, onStepsMode,
+    StudioStatisticsContent(state, native, onSelectTab, onStepsMode,
         onExercise = { id -> model.selectExercise(id); model.selectCardioActivity(id) },
-        onRetry = model::retryCardio,
+        onActivity = model::selectCardioActivity, onRetry = model::retryCardio,
         onRefreshRecords = onRefreshRecords)
 }
 
@@ -101,7 +95,7 @@ private fun statsTr(lang: com.example.model.AppLanguage, hu: String, en: String,
 @Composable
 internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressUiState,
     onSelectTab: (Int) -> Unit, onStepsMode: (Boolean) -> Unit, onExercise: (String) -> Unit,
-    onRetry: () -> Unit, onRefreshRecords: () -> Unit) {
+    onActivity: (String) -> Unit, onRetry: () -> Unit, onRefreshRecords: () -> Unit) {
     val palette = LocalTrainPilotPalette.current
     val strings = TrainPilotStrings.forLanguage(state.language)
     val lang = state.language
@@ -136,7 +130,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                     com.example.ui.components.TrainPilotFilterChip(selected = visibleTab == index, onClick = {
                         when (index) {
                             0 -> onSelectTab(0)
-                            1 -> { onSelectTab(1); onStepsMode(false) }
+                            1 -> { onActivity(NativeCardioModel.ALL_ACTIVITIES); onSelectTab(1); onStepsMode(false) }
                             else -> { onSelectTab(1); onStepsMode(true) }
                         }
                     }, label = { com.example.ui.components.TrainPilotFitText(label, modifier = Modifier.testTag("statistics_subtab_label_$index")) },
