@@ -5071,7 +5071,7 @@ class TrainPilotViewModel : ViewModel() {
                             samsungEnergyScore = todayRecovery?.samsungEnergy?.roundToInt() ?: 0,
                             spo2Percent = todayData?.optDouble("oxygenSaturationPercent", Double.NaN)?.takeIf { it.isFinite() && it > 0 }?.toFloat() ?: 0f,
                             vo2Max = todayData?.optDouble("vo2Max", Double.NaN)?.takeIf { it.isFinite() && it > 0 }?.toFloat() ?: 0f,
-                            bodyFatPercent = if (bodyFatDbl.isFinite() && bodyFatDbl > 0) bodyFatDbl.toFloat() else st.bodyFatPercent,
+                            bodyFatPercent = if (bodyFatDbl.isFinite() && bodyFatDbl > 0) bodyFatDbl.toFloat() else 0f, // Never retain another provider's previous value.
                             hrvRmssdMs = if (hrvDbl.isFinite() && hrvDbl > 0) hrvDbl.toFloat() else 0f,
                             bloodPressureLabel = bpLabel,
                             bloodGlucoseLabel = gluLabel,
