@@ -111,7 +111,6 @@ internal fun StudioBodyFitnessTiles(state: TrainPilotUiState, onSelect: (String,
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             tiles.forEach { (key, title) ->
-                val reading = readings[key]
                 val readPermission = when (key) {
                     "bodyFat" -> "READ_BODY_FAT"
                     "spo2" -> "READ_OXYGEN_SATURATION"
@@ -119,6 +118,7 @@ internal fun StudioBodyFitnessTiles(state: TrainPilotUiState, onSelect: (String,
                 }
                 val permissionMissing = provider == HealthJournalStore.HC &&
                     !com.repforge.app.HealthConnectRepository.isAllowed(context, readPermission)
+                val reading = if (permissionMissing) null else readings[key]
                 val formatted = reading?.let {
                     String.format(Locale.getDefault(), "%.1f", it.value) +
                         if (key == "vo2") "" else "%"
