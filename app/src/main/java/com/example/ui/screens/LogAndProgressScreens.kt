@@ -1349,7 +1349,7 @@ fun ProgressTabScreen(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                             ) {
                                 Icon(
-                                    imageVector = if (idx == 0) Icons.Default.TrendingUp else Icons.Default.BarChart,
+                                    imageVector = if (idx == 0) Icons.AutoMirrored.Filled.TrendingUp else Icons.Default.BarChart,
                                     contentDescription = null,
                                     tint = if (selected) palette.primary else palette.textSecondary,
                                     modifier = Modifier.size(18.dp).testTag("progress_section_icon_$idx")
