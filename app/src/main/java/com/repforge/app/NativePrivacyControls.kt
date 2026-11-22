@@ -1,6 +1,7 @@
 package com.repforge.app
 
 import android.content.Context
+import android.app.job.JobScheduler
 
 /**
  * App-level opt-in is independent of Android/provider grants. System permission changes
@@ -30,10 +31,21 @@ object NativePrivacyControls {
         check(app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putBoolean(feature, enabled).commit()) { "Privacy preference could not be saved" }
         when (feature) {
-            GPS -> if (!enabled) DistanceTrackingService.stop(app)
-            NOTIFICATIONS -> if (enabled) HealthBackgroundService.resume(app)
+            GPS -> {
+                if (!enabled) DistanceTrackingService.stop(app)
+            }
+            NOTIFICATIONS -> {
+                if (enabled) HealthBackgroundService.resume(app)
                 else HealthBackgroundService.stop(app)
-            HEALTH_CONNECT -> HealthBackgroundJob.schedule(app) // Cancels queued work when off.
+            }
+            HEALTH_CONNECT -> {
+                // Do not synchronously open the health journal/database on the Compose UI thread.
+                // Queued jobs are canceled immediately; an already executing worker checks
+                // the same durable flag before each read and before publication.
+                if (!enabled) (app.getSystemService(Context.JOB_SCHEDULER_SERVICE) as? JobScheduler)
+                    ?.cancel(HealthBackgroundJob.ID)
+            }
+            SAMSUNG_HEALTH -> Unit // Direct reads gate against the flag at admission + commit.
         }
     }
 
