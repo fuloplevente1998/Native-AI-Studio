@@ -3776,13 +3776,19 @@ private fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
         Text(tr(lang, "Utolsó 7 nap · $measuredDays/7 nap adat · $primaryProviderName", "Last 7 days · $measuredDays/7 days of data · $primaryProviderName",
                 "Letzte 7 Tage · $measuredDays/7 Tage mit Daten · $primaryProviderName", "Ultimele 7 zile · $measuredDays/7 zile cu date · $primaryProviderName"),
             style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, modifier = Modifier.testTag("health_weekly_steps_total"))
-        com.example.ui.components.WeeklyDayBars(dates, goalDays.map { d -> d.steps.toDouble().takeIf { d.stepsAvailable } },
-            label = { date, v -> todayTileWeekLabel("steps", date, v, langCode) + if (date == today) " · " + tr(lang, "napi cél", "daily goal", "Tagesziel", "obiectiv zilnic") + " ${nf.format(uiState.stepsGoal)}" else "" },
-            tag = "health_weekly_steps_bars", lang = langCode, showScale = true,
-            detailIcon = Icons.AutoMirrored.Filled.DirectionsWalk)
-        if (measuredDays > 0) TextButton(onClick = { historySheet = "steps" },
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("health_weekly_steps_history")) {
-            Text(tr(lang, "Lépéselőzmények megtekintése ›", "View step history ›", "Schrittverlauf anzeigen ›", "Vezi istoricul pașilor ›"))
+        if (measuredDays == 0) {
+            Text(todayTileWeekLabel("steps", today, null, langCode),
+                style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
+                modifier = Modifier.testTag("health_weekly_steps_empty"))
+        } else {
+            com.example.ui.components.WeeklyDayBars(dates, goalDays.map { d -> d.steps.toDouble().takeIf { d.stepsAvailable } },
+                label = { date, v -> todayTileWeekLabel("steps", date, v, langCode) + if (date == today) " · " + tr(lang, "napi cél", "daily goal", "Tagesziel", "obiectiv zilnic") + " ${nf.format(uiState.stepsGoal)}" else "" },
+                tag = "health_weekly_steps_bars", lang = langCode, showScale = true,
+                detailIcon = Icons.AutoMirrored.Filled.DirectionsWalk)
+            TextButton(onClick = { historySheet = "steps" },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("health_weekly_steps_history")) {
+                Text(tr(lang, "Lépéselőzmények megtekintése ›", "View step history ›", "Schrittverlauf anzeigen ›", "Vezi istoricul pașilor ›"))
+            }
         }
     }
 

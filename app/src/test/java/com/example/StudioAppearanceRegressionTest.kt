@@ -137,7 +137,7 @@ class StudioAppearanceRegressionTest {
         assertEquals(workouts.left, steps.left)
         assertEquals(workouts.right, steps.right)
         compose.onNodeWithTag("health_weekly_steps_section_summary", useUnmergedTree = true).assertTextEquals("—")
-        compose.onNodeWithTag("health_weekly_steps_bars_info", useUnmergedTree = true)
+        compose.onNodeWithTag("health_weekly_steps_empty", useUnmergedTree = true)
             .assertTextContains("nincs adat", substring = true)
         compose.onNodeWithTag("health_weekly_steps_history").assertDoesNotExist()
     }
