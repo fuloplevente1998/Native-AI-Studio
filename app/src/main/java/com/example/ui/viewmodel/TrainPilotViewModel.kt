@@ -4788,7 +4788,7 @@ class TrainPilotViewModel : ViewModel() {
             cleanPkg.contains("google.android.apps.fitness", ignoreCase = true) -> "Google Fit"
             cleanPkg.contains("wear", ignoreCase = true) -> "Wear OS"
             cleanPkg.contains("garmin", ignoreCase = true) -> "Garmin"
-            else -> cleanPkg.substringAfterLast('.')
+            else -> return base // Do not leak opaque Health Connect origin package IDs to the UI.
         }
         return if (shortOrigin.equals(base, ignoreCase = true)) base else "$base ($shortOrigin)"
     }
