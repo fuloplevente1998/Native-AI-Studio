@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Build
 import android.provider.Settings
+import androidx.health.connect.client.PermissionController
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
@@ -33,15 +34,22 @@ import org.json.JSONObject
 
 internal object StudioPlatformAccess {
     fun healthPermissions(context: Context): List<String> {
-        if (Build.VERSION.SDK_INT < 34 || !HealthConnectRepository.isSupported(context)) return emptyList()
+        if (!HealthConnectRepository.isSupported(context)) return emptyList()
         val declared = context.packageManager.getPackageInfo(context.packageName, PackageManager.GET_PERMISSIONS).requestedPermissions.orEmpty().toSet()
-        return (HealthConnectRepository.ALL_RUNTIME_PERMISSIONS.toList() + HealthConnectRepository.WRITE_EXERCISE_PERMISSION).filter { it in declared }.filter { permission ->
-            runCatching { context.packageManager.getPermissionInfo(permission, 0); true }.getOrDefault(false)
-        }
+        return (HealthConnectRepository.ALL_RUNTIME_PERMISSIONS.toList() + HealthConnectRepository.WRITE_EXERCISE_PERMISSION)
+            .filter { it in declared }
+            .filter { permission ->
+                // Pre-Android 14 permissions belong to the Health Connect APK, not PackageManager.
+                Build.VERSION.SDK_INT < 34 ||
+                    runCatching { context.packageManager.getPermissionInfo(permission, 0); true }.getOrDefault(false)
+            }
     }
     fun snapshot(context: Context): JSONObject {
         val health = healthPermissions(context).filter { it != HealthConnectRepository.WRITE_EXERCISE_PERMISSION }
-        fun granted(permission: String) = context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+        fun granted(permission: String) =
+            if (permission.startsWith("android.permission.health."))
+                HealthConnectRepository.isAllowed(context, permission.substringAfterLast('.'))
+            else context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
         val location = context.getSystemService(LocationManager::class.java)
         val locationEnabled = if (Build.VERSION.SDK_INT >= 28) location?.isLocationEnabled == true
             else location?.isProviderEnabled(LocationManager.GPS_PROVIDER) == true || location?.isProviderEnabled(LocationManager.NETWORK_PROVIDER) == true
@@ -97,6 +105,12 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
             if (error is CancellationException && error !is TimeoutCancellationException) throw error
             false
         } else false
+        if (Build.VERSION.SDK_INT in 28..33 && HealthConnectRepository.isSupported(context)) {
+            withContext(Dispatchers.IO) {
+                runCatching { HealthConnectRepository.currentlyGrantedReadKeys(context) }
+                    .onFailure { if (it is CancellationException) throw it }
+            }
+        }
         model.updatePlatformAccess(StudioPlatformAccess.snapshot(context), nodes.map { it.displayName }, companion)
     }
     suspend fun refreshSamsung() {
@@ -134,7 +148,7 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                 val declaredReads = StudioPlatformAccess.healthPermissions(context)
                     .filter { it != HealthConnectRepository.WRITE_EXERCISE_PERMISSION }
                 val granted = declaredReads.count {
-                    context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
+                    HealthConnectRepository.isAllowed(context, it.substringAfterLast('.'))
                 }
                 if (NativePrivacyControls.enabled(context, NativePrivacyControls.HEALTH_CONNECT) && granted == 0)
                     model.showBannerMessage(privacyMessage(model.uiState.value.language.name,
@@ -144,6 +158,14 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                 else model.showBannerMessage("Health Connect: $granted/${declaredReads.size}")
             }
         }
+    }
+    val healthPermissionsLegacy = rememberLauncherForActivityResult(
+        PermissionController.createRequestPermissionResultContract()
+    ) { _ ->
+        val pendingSync = healthConsent
+        healthConsent = null
+        pendingSync?.complete(Unit)
+        scope.launch { refresh(); model.reloadHealthJournal() }
     }
     val settings = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         scope.launch { refresh(); refreshSamsung() }
@@ -166,8 +188,19 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
             model.showBannerMessage("A Health Connect ezen az eszközön nem érhető el.")
             return
         }
+        if (Build.VERSION.SDK_INT < 34) {
+            scope.launch {
+                val granted = runCatching { HealthConnectRepository.currentlyGrantedReadKeys(context) }
+                    .getOrElse { model.showBannerMessage("A Health Connect engedélyek nem olvashatók."); return@launch }
+                val missing = declaredReads.filter { it.substringAfterLast('.') !in granted }
+                if (missing.isNotEmpty()) healthPermissionsLegacy.launch(missing.toSet())
+                else if (manage) settings.launch(StudioHealthPermissionRouting.settingsIntent())
+                else refresh()
+            }
+            return
+        }
         val missingReads = StudioHealthPermissionRouting.missingReads(declaredReads) { permission ->
-            context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+            HealthConnectRepository.isAllowed(context, permission.substringAfterLast('.'))
         }
         if (missingReads.isNotEmpty()) {
             healthPermissions.launch(missingReads.toTypedArray())
@@ -228,7 +261,8 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                 runStudioHealthPermissionAction(
                     hasReadPermission = {
                         if (provider == HealthJournalStore.HC)
-                            HealthConnectRepository.isSupported(context) && HealthConnectRepository.anyReadAllowed(context)
+                            HealthConnectRepository.isSupported(context) &&
+                                HealthConnectRepository.currentlyGrantedReadKeys(context).isNotEmpty()
                         else {
                             check(SamsungHealthRepository.isInstalled(context) && SamsungHealthRepository.isSdkAvailable()) { "Samsung Health nem érhető el." }
                             val granted = SamsungHealthRepository.readGrantedKeys(context, guard)
@@ -243,11 +277,12 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                             check(permissions.isNotEmpty()) { "A Health Connect ezen az eszközön nem érhető el." }
                             val pending = CompletableDeferred<Unit>(currentCoroutineContext()[Job])
                             healthConsent = pending
-                            val missing = StudioHealthPermissionRouting.missingReads(permissions) {
-                                context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
-                            }
-                            if (missing.isNotEmpty()) healthPermissions.launch(missing.toTypedArray())
-                            else pending.complete(Unit)
+                            val granted = HealthConnectRepository.currentlyGrantedReadKeys(context)
+                            val missing = permissions.filter { it.substringAfterLast('.') !in granted }
+                            if (missing.isNotEmpty()) {
+                                if (Build.VERSION.SDK_INT >= 34) healthPermissions.launch(missing.toTypedArray())
+                                else healthPermissionsLegacy.launch(missing.toSet())
+                            } else pending.complete(Unit)
                             pending.await()
                         } else SamsungHealthRepository.requestReadPermissions(host).getOrThrow()
                         withTimeout(10_000) {
