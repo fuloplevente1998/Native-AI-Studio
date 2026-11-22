@@ -1009,8 +1009,7 @@ internal fun StudioTodayStatusDetailSheet(
                 val openHealthJournal: () -> Unit = {
                     val recordType = when (activeKey) {
                         "sleep" -> "SleepSessionRecord"
-                        "steps" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("steps")
-                        "calories" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("activeCalories")
+                                        "calories" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("activeCalories")
                         "bodyFat" -> "BodyFatRecord"
                         "spo2" -> "OxygenSaturationRecord"
                         "vo2" -> "Vo2MaxRecord"
@@ -4217,7 +4216,7 @@ internal fun calorieDayLabel(date: java.time.LocalDate, total: Int?, active: Int
 /**
  * 2784/2788: extras of a Today tile sheet. The sheet is about TODAY: steps and workouts link to the 7-day
  * history in Weekly goals (no second copy of that chart here); calories show total vs active per day;
- * pulse keeps its 7-day averages. Today's own records appear only when there are any.
+ * pulse keeps its 7-day averages. Sleep and calories can show the day's raw records.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
