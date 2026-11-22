@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.layout.widthIn
 import com.repforge.app.ui.theme.trainPilotSoftGlow
+import com.example.ui.components.trainPilotChartSelection
 
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
@@ -142,7 +143,7 @@ fun LogTabScreen(
     strings: LocalizedStrings,
     onSearchChange: (String) -> Unit,
     onOpenWorkoutDetail: (String) -> Unit,
-    onOpenRouteMap: () -> Unit,
+    onOpenRouteMap: (String) -> Unit,
     onOpenSettings: () -> Unit,
     onOpenPalettePicker: () -> Unit,
     onDeletedWorkout: (String) -> Unit = {}
@@ -160,10 +161,13 @@ fun LogTabScreen(
 
     val palette = LocalTrainPilotPalette.current
     val today = remember { java.time.LocalDate.now() }
-    var currentYearMonth by remember { mutableStateOf(java.time.YearMonth.from(today)) }
-    var filterAllMonths by remember { mutableStateOf(true) }
-    var intervalStartDay by remember { mutableStateOf<Int?>(null) }
-    var intervalEndDay by remember { mutableStateOf<Int?>(null) }
+    var currentYearMonth by androidx.compose.runtime.saveable.rememberSaveable(
+        stateSaver = androidx.compose.runtime.saveable.Saver<java.time.YearMonth, String>(
+            save = { it.toString() }, restore = { java.time.YearMonth.parse(it) })
+    ) { mutableStateOf(java.time.YearMonth.from(today)) }
+    var filterAllMonths by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(true) }
+    var intervalStartDay by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<Int?>(null) }
+    var intervalEndDay by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<Int?>(null) }
     var showInlineCalendar by remember { mutableStateOf(false) }
     var showDatePickerDialog by remember { mutableStateOf(false) }
 
@@ -560,7 +564,7 @@ fun LogTabScreen(
                 entry = logEntry,
                 onClick = {
                     if (logEntry.isOutdoorRun) {
-                        onOpenRouteMap()
+                        onOpenRouteMap(logEntry.id)
                     } else {
                         onOpenWorkoutDetail(logEntry.id)
                     }
@@ -1282,17 +1286,14 @@ fun ProgressTabScreen(
     onOpenWorkoutDetail: (String) -> Unit,
     onOpenSettings: () -> Unit,
     onOpenPalettePicker: () -> Unit,
-    onSearchChange: (String) -> Unit = {},
-    onOpenRouteMap: () -> Unit = {},
     onRefreshRecords: () -> Unit = {},
-    onDeletedWorkout: (String) -> Unit = {},
     onOpenPhotos: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
-    // 3 al-oldal a Fejlődés oldalon belül: 1. 📈 Fejlődés | 2. 📄 Napló | 3. 📊 Statisztikák
     val statisticsLabel = com.repforge.app.ui.text.nativeResources(androidx.compose.ui.platform.LocalContext.current,
         uiState.language.name.lowercase()).getString(com.repforge.app.R.string.journal_statistics)
-    val sections = listOf("📈 ${strings.navProgress}", "📄 ${strings.navLog}", "📊 $statisticsLabel")
+    val sections = listOf(0 to strings.navProgress, 2 to statisticsLabel)
+    val activeSection = if (uiState.progressMainSection == 2) 2 else 0
 
     Column(
         modifier = Modifier
@@ -1300,7 +1301,6 @@ fun ProgressTabScreen(
             .background(palette.background)
             .testTag("progress_tab_screen")
     ) {
-        // Compact Top Sub-Tab Bar: 📈 Fejlődés | 📄 Napló | 🏋️ Erő & 1RM
         Surface(
             shape = RoundedCornerShape(14.dp),
             color = palette.surfaceCard,
@@ -1315,8 +1315,8 @@ fun ProgressTabScreen(
                     .padding(3.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                sections.forEachIndexed { idx, label ->
-                    val selected = uiState.progressMainSection == idx
+                sections.forEach { (idx, label) ->
+                    val selected = activeSection == idx
                     Surface(
                         shape = RoundedCornerShape(10.dp),
                         color = if (selected) palette.primary.copy(alpha = 0.22f) else Color.Transparent,
@@ -1329,6 +1329,7 @@ fun ProgressTabScreen(
                                 shape = RoundedCornerShape(10.dp)
                             )
                             .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectMainSection(idx) }
+                            .then(Modifier.trainPilotChartSelection(selected, label))
                             .testTag("progress_section_tab_$idx")
                     ) {
                         Box(
@@ -1348,7 +1349,7 @@ fun ProgressTabScreen(
             }
         }
 
-        when (uiState.progressMainSection) {
+        when (activeSection) {
             // 1. AL-OLDAL (0): 📈 FEJLŐDÉS (Összes volumen, 4 lenyíló statisztika ablak, Izomcsoport-terhelés, Rekordok & Kardió)
             0 -> {
                 LazyColumn(
@@ -1403,20 +1404,6 @@ fun ProgressTabScreen(
                 }
             }
 
-            // 2. AL-OLDAL (1): 📄 NAPLÓ (Teljes edzésnapló keresővel, alapból csukott intervallum-naptárral, edzésrészletekkel)
-            1 -> {
-                LogTabScreen(
-                    uiState = uiState,
-                    strings = strings,
-                    onSearchChange = onSearchChange,
-                    onOpenWorkoutDetail = onOpenWorkoutDetail,
-                    onOpenRouteMap = onOpenRouteMap,
-                    onOpenSettings = onOpenSettings,
-                    onOpenPalettePicker = onOpenPalettePicker,
-                    onDeletedWorkout = onDeletedWorkout
-                )
-            }
-
             // Statistics replaces the old standalone Strength/1RM tab; estimates remain in record details.
             else -> StudioStatisticsScreen(uiState, onSelectStatsSubTab,
                 onToggleCardioFilterStepsMode, onRefreshRecords)
@@ -1445,8 +1432,7 @@ internal fun MainProgressVolumeAndMuscleSection(
     var expandedAdviceDetails by remember { mutableStateOf(false) }
 
     val today = remember { java.time.LocalDate.now() }
-    val huFmt = remember(uiState.language) { java.time.format.DateTimeFormatter.ofPattern("yyyy. MMM d.", com.example.localization.StudioLocale.forLanguage(uiState.language)) }
-    val shortFmt = remember(uiState.language) { java.time.format.DateTimeFormatter.ofPattern("MMM d.", com.example.localization.StudioLocale.forLanguage(uiState.language)) }
+    val compactDateFmt = remember { java.time.format.DateTimeFormatter.ofPattern("MM.dd.") }
 
     val period = StudioProgressWindow(progressPeriodDays(uiState.selectedProgressRangeIndex), today)
     val periodWorkouts = remember(uiState.loggedWorkouts, period) { period.workouts(uiState.loggedWorkouts) }
@@ -1455,7 +1441,7 @@ internal fun MainProgressVolumeAndMuscleSection(
     val loggedTotalKg = periodWorkouts.sumOf { it.totalVolumeKg }
     val volumeChange = period.volumeChangePercent(uiState.loggedWorkouts)
     val totalVolumeText = "%,d kg".format(java.util.Locale.US, loggedTotalKg).replace(',', ' ')
-    val dateSubtitle = "${period.start.format(huFmt)} – ${period.end.format(huFmt)}"
+    val dateSubtitle = "${period.start.format(compactDateFmt)} – ${period.end.format(compactDateFmt)}"
     val prRecords = remember(uiState.loggedWorkouts) { loggedPrRecords(uiState.loggedWorkouts) }
     // 2783: the sheet lists exactly the records the tile counts (selected period only).
     val periodPrRecords = prRecords.filter {
@@ -1469,7 +1455,7 @@ internal fun MainProgressVolumeAndMuscleSection(
         "${periodWorkouts.sumOf { it.durationMinutes } / periodWorkouts.size} min"
 
     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        // 1. ÖSSZES VOLUMEN CARD: transforms into full-width Screenshot 6 "Volumen trend" chart when expanded!
+        // 1. EDZÉSVOLUMEN: compact trend + one-row periods; full trend expands in place.
         Surface(
             shape = RoundedCornerShape(18.dp),
             color = palette.surfaceCard,
@@ -1531,18 +1517,28 @@ internal fun MainProgressVolumeAndMuscleSection(
                                 imageVector = if (expandedVolumeDetails) Icons.Default.ExpandMore else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                 contentDescription = trL(uiState.language, "Volumen grafikon lenyitása", "Expand volume chart", "Volumendiagramm öffnen", "Extinde graficul volumului"),
                                 tint = palette.primary,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp).testTag("progress_volume_arrow")
                             )
                         }
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = strings.comparedToPrevPeriod,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = palette.textSecondary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        if (expandedVolumeDetails) {
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = strings.comparedToPrevPeriod,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = palette.textSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        } else {
+                            // The chart sits beside the total. A selected bar opens the full trend.
+                            Box(Modifier.width(128.dp).height(52.dp).testTag("progress_volume_chart_open")) {
+                                StudioVolumeChart(volumeBars, period, uiState.selectedVolumeBarIndex, false) { index ->
+                                    onSelectVolumeBar(index)
+                                    expandedVolumeDetails = true
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -1642,84 +1638,33 @@ internal fun MainProgressVolumeAndMuscleSection(
                         color = if (selectedBar != null) palette.primary else palette.textSecondary
                     )
                 } else {
-                    // COMPACT SIDE-BY-SIDE VIEW: Left = 2x2 Period Buttons, Right = Mini Y-Axis + Bar Chart
+                    // Period selection must not expand the chart; retain a 48dp touch area.
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        modifier = Modifier.fillMaxWidth().testTag("progress_compact_ranges"),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.weight(0.45f),
-                            verticalArrangement = Arrangement.spacedBy(5.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        rangeLabels.forEachIndexed { rIdx, label ->
+                            val isSel = uiState.selectedProgressRangeIndex == rIdx
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (isSel) palette.primary else palette.surfaceElevated,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .trainPilotBorder(1.dp,
+                                        if (isSel) palette.primary else palette.cardBorder,
+                                        RoundedCornerShape(10.dp))
+                                    .testTag("progress_range_$rIdx")
+                                    .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectRange(rIdx) }
                             ) {
-                                listOf(0, 1).forEach { rIdx ->
-                                    val isSel = uiState.selectedProgressRangeIndex == rIdx
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = if (isSel) palette.primary else palette.surfaceElevated,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(48.dp)
-                                            .trainPilotBorder(
-                                                width = 1.dp,
-                                                color = if (isSel) palette.primary else palette.cardBorder,
-                                                shape = RoundedCornerShape(10.dp)
-                                            )
-                                            .testTag("progress_range_$rIdx")
-                                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectRange(rIdx) }
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Text(
-                                                text = rangeLabels[rIdx],
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isSel) palette.onPrimary else palette.textPrimary
-                                            )
-                                        }
-                                    }
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSel) palette.onPrimary else palette.textPrimary
+                                    )
                                 }
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(5.dp)
-                            ) {
-                                listOf(2, 3).forEach { rIdx ->
-                                    val isSel = uiState.selectedProgressRangeIndex == rIdx
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = if (isSel) palette.primary else palette.surfaceElevated,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(48.dp)
-                                            .trainPilotBorder(
-                                                width = 1.dp,
-                                                color = if (isSel) palette.primary else palette.cardBorder,
-                                                shape = RoundedCornerShape(10.dp)
-                                            )
-                                            .testTag("progress_range_$rIdx")
-                                            .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectRange(rIdx) }
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Text(
-                                                text = rangeLabels[rIdx],
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isSel) palette.onPrimary else palette.textPrimary
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Box(Modifier.weight(0.55f).height(76.dp)) {
-                            StudioVolumeChart(volumeBars, period, uiState.selectedVolumeBarIndex, false) { index ->
-                                onSelectVolumeBar(index)
-                                expandedVolumeDetails = true
                             }
                         }
                     }
@@ -1785,15 +1730,27 @@ internal fun MainProgressVolumeAndMuscleSection(
             onDismiss = { onSelectExpandedStatsCard(uiState.expandedStatsCardIndex) },
             testTag = "stats_details_sheet"
         ) {
+            val compactPrPanel = uiState.expandedStatsCardIndex == 0
+            val prPanelMaxHeight = minOf(420.dp,
+                (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.66f).dp)
             Surface(
                 shape = RoundedCornerShape(18.dp),
                 color = palette.surfaceCard,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter, bottom = 16.dp)
+                    .padding(start = TrainPilotCardSpacing.ScreenGutter, end = TrainPilotCardSpacing.ScreenGutter,
+                        bottom = if (compactPrPanel) 8.dp else 16.dp)
                     .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(18.dp))
             ) {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(12.dp).testTag("stats_details_sheet_content"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(
+                    modifier = Modifier
+                        .then(if (compactPrPanel) Modifier.heightIn(max = prPanelMaxHeight) else Modifier)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = if (compactPrPanel) 10.dp else 12.dp,
+                            vertical = if (compactPrPanel) 6.dp else 12.dp)
+                        .testTag("stats_details_sheet_content"),
+                    verticalArrangement = Arrangement.spacedBy(if (compactPrPanel) 4.dp else 6.dp)
+                ) {
                     when (uiState.expandedStatsCardIndex) {
                         0 -> {
                             Row(
@@ -1805,7 +1762,10 @@ internal fun MainProgressVolumeAndMuscleSection(
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                    modifier = Modifier.trainPilotClickable(RoundedCornerShape(8.dp)) { onSelectExpandedStatsCard(0) }
+                                    modifier = Modifier
+                                        .widthIn(min = 48.dp).heightIn(min = 48.dp)
+                                        .testTag("stats_pr_close")
+                                        .trainPilotClickable(RoundedCornerShape(8.dp)) { onSelectExpandedStatsCard(0) }
                                 ) {
                                     Text(trL(uiState.language, "Bezárás", "Close", "Schließen", "Închide"), style = MaterialTheme.typography.labelSmall, color = palette.primary)
                                     Icon(imageVector = Icons.Default.ExpandLess, contentDescription = null, tint = palette.primary, modifier = Modifier.size(16.dp))
@@ -1825,7 +1785,8 @@ internal fun MainProgressVolumeAndMuscleSection(
                                             .fillMaxWidth()
                                             .clip(RoundedCornerShape(10.dp))
                                             .background(palette.surfaceElevated)
-                                            .padding(8.dp),
+                                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                                            .testTag("stats_pr_record_row"),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {

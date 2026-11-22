@@ -353,7 +353,8 @@ data class ProgressMuscleWorkoutRow(
     val workoutId: String,
     val startedEpochMs: Long,
     val exerciseName: String,
-    val setsCount: Int
+    val setsCount: Int,
+    val exerciseId: String = ""
 )
 
 data class ProgressMuscleSummary(val muscleKey: String, val setsCount: Int)

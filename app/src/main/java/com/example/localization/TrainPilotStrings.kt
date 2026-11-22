@@ -665,10 +665,10 @@ data class LocalizedStrings(
 
     val totalVolumeTitle: String
         get() = when (language) {
-            AppLanguage.HU -> "Összes volumen"
-            AppLanguage.EN -> "Total Volume"
-            AppLanguage.DE -> "Gesamtvolumen"
-            AppLanguage.RO -> "Volum total"
+            AppLanguage.HU -> "Edzésvolumen"
+            AppLanguage.EN -> "Workout volume"
+            AppLanguage.DE -> "Trainingsvolumen"
+            AppLanguage.RO -> "Volum antrenament"
         }
 
     val comparedToPrevPeriod: String

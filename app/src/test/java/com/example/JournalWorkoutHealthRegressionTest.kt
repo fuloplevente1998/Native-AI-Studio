@@ -320,12 +320,11 @@ class JournalWorkoutHealthRegressionTest {
             awaitNative { db.workoutHistoryDao().getWorkoutWithDetailsById("fresh")!!.workout.health240Json })
     }
 
-    @Test fun journalDetailsAndRouteKeepProgressSelectedAndBackRestoresTheOrigin() {
+    @Test fun journalDetailsAndRouteKeepJournalSelectedAndBackRestoresTheOrigin() {
         val model = com.example.ui.viewmodel.TrainPilotViewModel()
         models.put("studio-navigation", model)
         model.openLogWorkoutDetail("fresh")
-        assertEquals(com.example.model.MainTab.PROGRESS, model.uiState.value.currentTab)
-        assertEquals(1, model.uiState.value.progressMainSection)
+        assertEquals(com.example.model.MainTab.LOG, model.uiState.value.currentTab)
         compose.setContent {
             val state by model.uiState.collectAsState()
             TrainPilotTheme {
@@ -336,11 +335,11 @@ class JournalWorkoutHealthRegressionTest {
                     onNavigateToSubScreen = { _, _ -> }, onSelectLanguage = {}, onOpenPalettePicker = {}, onOpenSettings = {})
             }
         }
-        compose.onNodeWithTag("top_nav_progress").assertIsSelected()
+        compose.onNodeWithTag("top_bar_journal_button").assertIsSelected()
         compose.runOnIdle { model.navigateToSubScreen(com.example.model.SubScreen.LOG_ROUTE_MAP) }
-        compose.onNodeWithTag("top_nav_progress").assertIsSelected()
+        compose.onNodeWithTag("top_bar_journal_button").assertIsSelected()
         compose.runOnIdle { model.navigateBack() }
-        compose.onNodeWithTag("top_nav_progress").assertIsSelected()
+        compose.onNodeWithTag("top_bar_journal_button").assertIsSelected()
         compose.runOnIdle { model.navigateBack() }
         compose.onNodeWithTag("top_nav_home").assertIsSelected()
     }

@@ -321,7 +321,7 @@ interface WorkoutHistoryDao {
     suspend fun getProgressMuscleSummary(fromEpoch: Long, toEpoch: Long): List<ProgressMuscleSummary>
 
     @Query("""
-        SELECT COALESCE(l.primaryMuscle, 'full') AS muscleKey, w.id AS workoutId, w.startedEpochMs,
+        SELECT COALESCE(l.primaryMuscle, 'full') AS muscleKey, w.id AS workoutId, w.startedEpochMs, s.exerciseId,
             COALESCE(NULLIF(CASE :language WHEN 'en' THEN l.nameEn WHEN 'de' THEN l.nameDe
                 WHEN 'ro' THEN l.nameRo ELSE l.nameHu END, ''), NULLIF(l.nameHu, ''), s.exerciseId) AS exerciseName, COUNT(*) AS setsCount
         FROM workout_history_sets s
