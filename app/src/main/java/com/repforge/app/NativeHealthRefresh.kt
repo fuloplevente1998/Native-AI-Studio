@@ -113,6 +113,8 @@ internal object NativeHealthRefresh {
                     check(provider == HealthJournalStore.HC || provider == HealthJournalStore.SAMSUNG) {
                         "Unknown health provider"
                     }
+                    NativePrivacyControls.requireEnabled(context, if (provider == HealthJournalStore.HC)
+                        NativePrivacyControls.HEALTH_CONNECT else NativePrivacyControls.SAMSUNG_HEALTH)
                     Prepared(provider, selectedProvider, store.generation(),
                         NativeDataReplacement.continuationForCurrentData(context), ZoneId.systemDefault(),
                         if (provider == HealthJournalStore.HC) grantedBeforePrepare else emptySet(), LocalDate.now())
@@ -121,6 +123,8 @@ internal object NativeHealthRefresh {
 
             val guard = {
                 screenGuard()
+                NativePrivacyControls.requireEnabled(context, if (prepared.provider == HealthJournalStore.HC)
+                    NativePrivacyControls.HEALTH_CONNECT else NativePrivacyControls.SAMSUNG_HEALTH)
                 check(NativeHealthForegroundAdmission.safeOffMain(context)) {
                     NativeHealthForegroundAdmission.offMainBlockReason(context)?.message ?: "Az egészségügyi szinkron állapota megváltozott."
                 }
