@@ -17,6 +17,7 @@ import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 import com.repforge.app.ui.theme.TrainPilotFrames
 
 import com.repforge.app.ui.theme.trainPilotBorder
+import com.repforge.app.ui.theme.trainPilotSoftGlow
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
@@ -172,6 +173,7 @@ private fun WorkoutModeTile(
         modifier = modifier
             .fillMaxHeight()
             .heightIn(min = 150.dp)
+            .trainPilotSoftGlow(palette.primary, shape, 4.dp)
             .trainPilotBorder(1.25.dp, palette.sectionBorder, shape)
             .trainPilotClickable(shape) { onClick() }
             .testTag(testTag)
@@ -3248,7 +3250,7 @@ fun ExerciseLibraryScreen(
                             Column(Modifier.padding(vertical = 6.dp)) {
                                 Text(name, style = nameStyle, color = palette.textPrimary,
                                     modifier = Modifier.fillMaxWidth().testTag("exercise_library_name_${ex.id}"))
-                                Text("$metadata • ${ex.defaultSets}×${ex.defaultReps}",
+                                Text(metadata,
                                     style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
                                     color = palette.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.fillMaxWidth().testTag("exercise_library_meta_${ex.id}"))

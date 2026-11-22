@@ -1232,7 +1232,8 @@ fun HealthTabScreen(
         com.example.ui.components.TrainPilotRouteSheet(
             routeKey = healthSectionSheet,
             onDismiss = closeSheet,
-            testTag = "health_${healthSectionSheet}_sheet"
+            testTag = "health_${healthSectionSheet}_sheet",
+            fillHeight = journal
         ) {
             healthSectionState.SaveableStateProvider(healthSectionSheet) {
                 Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
@@ -2043,10 +2044,9 @@ fun SettingsMainScreen(
     val currentPaletteObj = TrainPilotPalettes.getById(uiState.selectedPaletteId)
 
     var expandedMainThemesSection by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
-    var expandedMatteThemes by remember { mutableStateOf(false) }
-    var expandedContrastThemes by remember { mutableStateOf(false) }
-    var expandedGlowThemes by remember { mutableStateOf(false) }
-    var expandedLightThemes by remember { mutableStateOf(false) }
+    var expandedThemeFamily by rememberSaveable {
+        mutableStateOf(currentPaletteObj.subGroup.name)
+    }
     var showPrivacyPolicyDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val secUnit = tr(uiState.language, "mp", "sec", "Sek.", "sec")
 
@@ -2150,153 +2150,20 @@ fun SettingsMainScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(strings.themes32Title, style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                                Text("${currentPaletteObj.localizedName(uiState.language)} • $toggleThemesHint",
-                                    style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                                Text(toggleThemesHint, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                             }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Surface(shape = RoundedCornerShape(8.dp), color = palette.primary.copy(alpha = 0.18f)) {
-                                Text(text = "#${uiState.selectedPaletteId}", style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold, color = palette.primary,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
-                            }
-                            Spacer(modifier = Modifier.width(4.dp))
                             Icon(imageVector = if (expandedMainThemesSection) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                                 contentDescription = null, tint = palette.textSecondary)
                         }
                     }
 
-                    // 4 expandable theme categories inside the shared Settings/Themes frame.
-                    if (expandedMainThemesSection) {
-                val allPalettes = TrainPilotPalettes.allPalettes
-                val categories = listOf(
-                    Triple(tr(uiState.language, "Matt témák (Sötét / Prémium matt)", "Matte Themes (Dark / Premium Matte)", "Matte Themen (Dunkel / Premium Matt)", "Teme mate (Întunecat / Mat premium)"), allPalettes.filter { it.id in 1..8 }, expandedMatteThemes) to { expandedMatteThemes = !expandedMatteThemes },
-                    Triple(tr(uiState.language, "Kontrasztos témák (Élénk kontraszt)", "High-Contrast Themes (Vivid Contrast)", "Kontrast-Themen (Lebendiger Kontrast)", "Teme cu contrast ridicat"), allPalettes.filter { it.id in 9..16 }, expandedContrastThemes) to { expandedContrastThemes = !expandedContrastThemes },
-                    Triple(tr(uiState.language, "Fényes / Glow témák (Neon & Glow)", "Glow Themes (Neon & Glow)", "Glow-Themen (Neon & Glow)", "Teme Glow (Neon & Glow)"), allPalettes.filter { it.id in 17..24 }, expandedGlowThemes) to { expandedGlowThemes = !expandedGlowThemes },
-                    Triple(tr(uiState.language, "Világos témák (Nappali / Light)", "Light Themes (Daylight / Light)", "Helle Themen (Tag / Hell)", "Teme luminoase (Zi / Light)"), allPalettes.filter { it.id in 25..32 }, expandedLightThemes) to { expandedLightThemes = !expandedLightThemes }
-                )
-
-                categories.forEachIndexed { categoryIndex, entry ->
-                    val (catInfo, onToggleCat) = entry
-                    val (catTitle, catPalettes, isExpanded) = catInfo
-                    Surface(
-                        shape = RoundedCornerShape(18.dp),
-                        color = palette.surfaceElevated,
-                        modifier = Modifier.fillMaxWidth()
-                            .trainPilotBorder(TrainPilotFrames.panelWidth, palette.cardBorder, RoundedCornerShape(18.dp))
-                            .testTag("settings_theme_category_$categoryIndex")
-                    ) {
-                        Column {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(min = 48.dp)
-                                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onToggleCat() }
-                                    .testTag("settings_theme_category_toggle_$categoryIndex")
-                                    .padding(12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    modifier = Modifier.weight(1f),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Palette,
-                                        contentDescription = null,
-                                        tint = palette.primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Text(
-                                        text = catTitle,
-                                        modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = palette.textPrimary
-                                    )
-                                }
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Text(
-                                        text = "${catPalettes.size} ${tr(uiState.language, "téma", "themes", "Themen", "teme")}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = palette.primary
-                                    )
-                                    Icon(
-                                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                        contentDescription = null,
-                                        tint = palette.primary
-                                    )
-                                }
-                            }
-
-                            if (isExpanded) {
-                                // Keep choices outside the header's click/feedback area.
-                                Column(modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    catPalettes.chunked(2).forEach { pair ->
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            pair.forEach { itemPal ->
-                                                val isSel = uiState.selectedPaletteId == itemPal.id
-                                                Surface(
-                                                    shape = RoundedCornerShape(14.dp),
-                                                    color = itemPal.surfaceCard,
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .border(
-                                                            width = if (isSel) 2.dp else 1.dp,
-                                                            color = if (isSel) itemPal.primary else itemPal.cardBorder,
-                                                            shape = RoundedCornerShape(14.dp)
-                                                        )
-                                                        .testTag("settings_palette_choice_${itemPal.id}")
-                                                        .trainPilotClickable(RoundedCornerShape(14.dp)) {
-                                                            onSelectPalette(itemPal.id)
-                                                            onShowBanner("${tr(uiState.language, "Téma aktiválva", "Theme activated", "Thema aktiviert", "Temă activată")}: ${itemPal.localizedName(uiState.language)}")
-                                                        }
-                                                ) {
-                                                    Row(
-                                                        modifier = Modifier.padding(10.dp),
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                                    ) {
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .size(22.dp)
-                                                                .clip(CircleShape)
-                                                                .background(itemPal.primary)
-                                                                .border(1.dp, itemPal.secondary, CircleShape)
-                                                        )
-                                                        Column(modifier = Modifier.weight(1f)) {
-                                                            Text(
-                                                                text = itemPal.localizedName(uiState.language),
-                                                                style = MaterialTheme.typography.labelMedium,
-                                                                fontWeight = FontWeight.Bold,
-                                                                color = itemPal.textPrimary,
-                                                                maxLines = 1,
-                                                                overflow = TextOverflow.Ellipsis
-                                                            )
-                                                            Text(
-                                                                text = "#${"%02d".format(itemPal.id)}",
-                                                                style = MaterialTheme.typography.labelSmall,
-                                                                color = itemPal.primary
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            if (pair.size == 1) {
-                                                Spacer(modifier = Modifier.weight(1f))
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                    }
+                    if (expandedMainThemesSection) com.example.ui.components.StudioPaletteCategories(
+                        language = uiState.language,
+                        selectedId = uiState.selectedPaletteId,
+                        expanded = com.example.ui.theme.PaletteCategory.entries.firstOrNull { it.name == expandedThemeFamily },
+                        onExpand = { expandedThemeFamily = it?.name.orEmpty() },
+                        onSelect = onSelectPalette
+                    )
                 }
             }
         }
@@ -4045,6 +3912,14 @@ private fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today:
     val lang = uiState.language
     val days = (6 downTo 0).map { today.minusDays(it.toLong()).toString() }
     val weekly = (uiState.weeklyHealthDays + uiState.dailyActivityDays).associateBy { it.dateIso }
+    if (key == "steps") com.example.ui.components.StudioHourlyStepsChart(
+        day = today,
+        provider = if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG
+            else com.repforge.app.HealthJournalStore.HC,
+        origin = weekly[today.toString()]?.stepOriginPackage.orEmpty(),
+        revision = uiState.healthRefreshRevision,
+        language = lang
+    )
     if (key == "steps" || key == "workout") {
         Surface(shape = RoundedCornerShape(10.dp), color = palette.surfaceCard,
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)

@@ -34,8 +34,11 @@ fun TrainPilotButton(
     interactionSource: MutableInteractionSource? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
+    val palette = com.example.ui.theme.LocalTrainPilotPalette.current
+    val surface = if (enabled && colors.containerColor == palette.primary)
+        modifier.trainPilotSoftGlow(palette.primary, shape) else modifier
     TrainPilotPressFeedback(colors, enabled, interactionSource) { feedbackColors, source ->
-        Button(onClick, modifier, enabled, shape, feedbackColors, elevation, border, contentPadding, source, content)
+        Button(onClick, surface, enabled, shape, feedbackColors, elevation, border, contentPadding, source, content)
     }
 }
 

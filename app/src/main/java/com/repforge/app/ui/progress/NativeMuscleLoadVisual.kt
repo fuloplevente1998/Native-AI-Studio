@@ -61,14 +61,14 @@ private val anatomyResources = mapOf(
 
 @Composable
 internal fun NativeMuscleLoadVisual(loads: List<MuscleLoadUiModel>, language: String,
-    modifier: Modifier = Modifier) {
+    modifier: Modifier = Modifier, highlight: String? = null, loadColor: ((Float) -> Color)? = null) {
     var zoom by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
     val strings = remember(context, language) { nativeResources(context, language) }
     val label = strings.getString(R.string.native_visual_anatomy_open)
     AnatomyPaint(loads, language, modifier.heightIn(min = 48.dp).testTag("progress_anatomy")
         .semantics { contentDescription = label }
-        .clickable(role = Role.Button, onClickLabel = label) { zoom = true })
+        .clickable(role = Role.Button, onClickLabel = label) { zoom = true }, highlight, loadColor)
     if (zoom) Dialog(onDismissRequest = { zoom = false },
         properties = DialogProperties(usePlatformDefaultWidth = false)) {
         TrainPilotSectionSurface(Modifier.fillMaxWidth().padding(16.dp).testTag("progress_anatomy_dialog")) {
@@ -78,7 +78,7 @@ internal fun NativeMuscleLoadVisual(loads: List<MuscleLoadUiModel>, language: St
                     Icon(Icons.Default.Close, strings.getString(R.string.journal_close))
                 }
             }
-            AnatomyPaint(loads, language, Modifier.fillMaxWidth())
+            AnatomyPaint(loads, language, Modifier.fillMaxWidth(), highlight, loadColor)
             Text(strings.getString(R.string.native_visual_load_note),
                 color = LocalTrainPilotColors.current.muted, style = MaterialTheme.typography.bodySmall)
         }
@@ -86,7 +86,8 @@ internal fun NativeMuscleLoadVisual(loads: List<MuscleLoadUiModel>, language: St
 }
 
 @Composable
-private fun AnatomyPaint(loads: List<MuscleLoadUiModel>, language: String, modifier: Modifier) {
+private fun AnatomyPaint(loads: List<MuscleLoadUiModel>, language: String, modifier: Modifier,
+    highlight: String?, loadColor: ((Float) -> Color)?) {
     val context = LocalContext.current
     val colors = LocalTrainPilotColors.current
     val strings = remember(context, language) { nativeResources(context, language) }
@@ -115,7 +116,8 @@ private fun AnatomyPaint(loads: List<MuscleLoadUiModel>, language: String, modif
             for (load in loads) if (load.setsCount > 0 && load.loadPercentage.isFinite()) {
                 images?.get(load.muscleKey)?.let { bitmap ->
                     Image(bitmap, null, Modifier.fillMaxSize().testTag("progress_anatomy_layer_${load.muscleKey}"), contentScale = ContentScale.Fit,
-                        colorFilter = maskTint(muscleLoadColor(load.loadPercentage, colors)))
+                        alpha = if (highlight != null && highlight != "all" && highlight != load.muscleKey) 0.55f else 1f,
+                        colorFilter = maskTint(loadColor?.invoke(load.loadPercentage) ?: muscleLoadColor(load.loadPercentage, colors)))
                 }
             }
         }

@@ -15,6 +15,8 @@ import com.repforge.app.ui.theme.TrainPilotOutlinedButton as OutlinedButton
 import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
@@ -360,8 +362,16 @@ internal fun StudioWorkoutCoachChip(exerciseId: String,
     val tint = when { warning -> palette.warning; proposal -> palette.primary; else -> palette.textSecondary }
     var open by androidx.compose.runtime.saveable.rememberSaveable(exerciseId) { mutableStateOf(false) }
     // 2775: small framed tool button like the red Video button (~32 dp visible, 48 dp touch target).
+    val language = com.example.localization.LocalTrainPilotStrings.current.language
+    val adviceDescription = when (language) {
+        com.example.model.AppLanguage.HU -> "Coach-javaslat érhető el"
+        com.example.model.AppLanguage.EN -> "Coach advice available"
+        com.example.model.AppLanguage.DE -> "Coach-Empfehlung verfügbar"
+        com.example.model.AppLanguage.RO -> "Recomandare Coach disponibilă"
+    }
     val shape = RoundedCornerShape(8.dp)
     androidx.compose.foundation.layout.Box(modifier.heightIn(min = 48.dp).clip(shape)
+        .then(if (warning || proposal) Modifier.semantics { stateDescription = adviceDescription } else Modifier)
         .trainPilotClickable(shape) { open = true }.testTag("studio_active_coach_chip"),
         contentAlignment = androidx.compose.ui.Alignment.Center) {
         Surface(shape = shape, color = if (warning || proposal) tint.copy(alpha = 0.14f) else palette.surfaceElevated,
@@ -371,8 +381,8 @@ internal fun StudioWorkoutCoachChip(exerciseId: String,
                 horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 Icon(TrainPilotCoachIcon, null, tint = if (warning || proposal) tint else palette.primary, modifier = Modifier.size(15.dp))
                 Text("Coach", color = if (warning) tint else palette.textPrimary, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelMedium)
-                if (warning || proposal) androidx.compose.foundation.layout.Box(Modifier.size(6.dp)
-                    .background(tint, androidx.compose.foundation.shape.CircleShape).testTag("studio_active_coach_chip_dot"))
+                if (warning || proposal) Text("!", color = tint, fontWeight = FontWeight.Black,
+                    style = MaterialTheme.typography.labelMedium, modifier = Modifier.testTag("studio_active_coach_chip_dot"))
             }
         }
     }

@@ -126,6 +126,26 @@ class StudioProgressUiRegressionTest {
         compose.onNodeWithText("• Guggolás", useUnmergedTree = true).assertDoesNotExist()
     }
 
+    @Test fun muscleBreakdownOpensOnlyTheExplicitSavedWorkoutWithMatchingSets() {
+        val first = com.repforge.app.data.db.ProgressMuscleWorkoutRow("biceps", "workout-a", 1795000000000, "Biceps curl", 2)
+        val second = first.copy(workoutId = "workout-b", exerciseName = "Hammer curl", setsCount = 3)
+        val loads = listOf(
+            MuscleLoadItem("arms", "Kar", "5 sorozat", 100, 1f, "Nagyobb", emptyList(), "", 5, listOf(first, second)),
+            MuscleLoadItem("legs", "Láb", "0 sorozat", 0, 0f, "", emptyList(), "")
+        )
+        val opened = mutableListOf<String>()
+        compose.setContent { TrainPilotTheme { AnatomicalMuscleHeatmapCard(realMuscleLoads = loads, onOpenWorkout = { opened += it }) } }
+        compose.onNodeWithTag("muscle_chip_legs").performClick()
+        compose.onNodeWithTag("muscle_open_workouts").assertDoesNotExist()
+        compose.onNodeWithTag("muscle_chip_arms").performClick()
+        compose.onNodeWithTag("muscle_open_workouts").performClick()
+        compose.onNodeWithTag("muscle_workouts_sheet").assertExists()
+        compose.onNodeWithTag("muscle_workout_workout-a").assertIsDisplayed()
+        compose.onNodeWithTag("muscle_workout_workout-b").performClick()
+        compose.runOnIdle { assertEquals(listOf("workout-b"), opened) }
+        compose.onNodeWithTag("muscle_chip_arms").assertIsSelected()
+    }
+
     @Test fun sixMuscleLabelsRemainOneLineAndAdviceHasCompactRoom() {
         val labels = listOf(
             "chest" to "Mellizom", "back" to "Hátizom", "shoulders" to "Vállizom",

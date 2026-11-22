@@ -1321,7 +1321,8 @@ fun ProgressTabScreen(
                         shape = RoundedCornerShape(10.dp),
                         color = if (selected) palette.primary.copy(alpha = 0.22f) else Color.Transparent,
                         modifier = Modifier
-                            .weight(com.example.ui.components.trainPilotLabelWeight(label, sections))
+                            .weight(1f)
+                            .heightIn(min = 48.dp)
                             .trainPilotBorder(
                                 width = if (selected) 1.dp else 0.dp,
                                 color = if (selected) palette.primary else Color.Transparent,
@@ -1975,7 +1976,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                 }
                 onSelectRange(rIdx)
             },
-            onOpenExerciseDetail = onOpenWorkoutDetail
+            onOpenWorkout = onOpenWorkoutDetail
         )
 
         // 4. COMPACT EXPANDABLE "Fejlődési javaslat" CARD AT BOTTOM (`Screenshot_2026-10-27-15-00-06-481_com.repforge.app.jpg`)
