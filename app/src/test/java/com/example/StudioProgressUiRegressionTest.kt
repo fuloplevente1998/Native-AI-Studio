@@ -85,7 +85,7 @@ class StudioProgressUiRegressionTest {
         } }
         val card = compose.onNodeWithTag("progress_total_volume_card").getUnclippedBoundsInRoot()
         assertTrue("Compact volume card must shrink", card.bottom - card.top < 155.dp)
-        val bounds = (0..3).map { compose.onNodeWithTag("progress_range_$"+"it")
+        val bounds = (0..3).map { compose.onNodeWithTag("progress_range_$it")
             .assertHeightIsAtLeast(48.dp).getUnclippedBoundsInRoot() }
         bounds.drop(1).forEach { assertEquals(bounds.first().top, it.top) }
         compose.onNodeWithTag("progress_compact_column_6", useUnmergedTree = true)
