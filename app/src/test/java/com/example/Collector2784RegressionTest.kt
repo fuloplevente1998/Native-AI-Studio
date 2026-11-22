@@ -62,7 +62,7 @@ class Collector2784RegressionTest {
         assertWhole("workout_tab_exercise_picker_title", "Ismétléses")
     }
 
-    @Test fun aSelectedStepDayFiltersTheListBelow() {
+    @Test fun selectedStepDayIsShownOnceAndAllHistorySlidesUpFromFixedButton() {
         val today = LocalDate.now()
         fun day(back: Long, steps: Int) = WeeklyHealthDaySummary(today.minusDays(back).toString(), "", steps, 0, "", 0, 0, "HC",
             stepsAvailable = true, stepsSourceLabelHu = "Samsung Health")
@@ -70,12 +70,25 @@ class Collector2784RegressionTest {
             StudioStatisticsContent(TrainPilotUiState(language = AppLanguage.HU, statsSubTab = 1, cardioFilterStepsMode = true,
                 dailyActivityDays = listOf(day(0, 3352), day(1, 11620), day(4, 13944))), ProgressUiState(), {}, {}, {}, {}, {}, {})
         } }
-        compose.onNodeWithTag("statistics_steps_row_$today").assertExists()
-        compose.onNodeWithTag("statistics_steps_column_9").performClick() // 4 days ago
-        compose.onNodeWithTag("statistics_steps_row_${today.minusDays(4)}").assertExists()
+        // The inline selected-day row is the only numeric detail, below the chart.
+        compose.onNodeWithTag("statistics_steps_selected_value", useUnmergedTree = true)
+            .assertTextContains("352", substring = true)
         compose.onNodeWithTag("statistics_steps_row_$today").assertDoesNotExist()
-        compose.onNodeWithTag("statistics_steps_row_${today.minusDays(1)}").assertDoesNotExist()
-        compose.onNodeWithTag("statistics_steps_list_toggle").performClick()
+        compose.onNodeWithTag("statistics_steps_column_9").performClick() // four days ago
+        compose.onNodeWithTag("statistics_steps_selected_value", useUnmergedTree = true)
+            .assertTextContains("944", substring = true)
+        val toggle = compose.onNodeWithTag("statistics_steps_list_toggle")
+        toggle.assertExists().performClick()
+        compose.onNodeWithTag("statistics_steps_daily_sheet").assertExists()
+        compose.onNodeWithTag("statistics_steps_sheet_header").assertExists()
+        compose.onNodeWithTag("statistics_steps_row_${today.minusDays(4)}").assertExists()
+        compose.onNodeWithTag("statistics_steps_row_$today").assertExists()
         compose.onNodeWithTag("statistics_steps_row_${today.minusDays(1)}").assertExists()
+        compose.onNodeWithTag("statistics_steps_sheet_close").performClick()
+        compose.onNodeWithTag("statistics_steps_daily_sheet").assertDoesNotExist()
+        toggle.assertExists()
+        compose.onNodeWithTag("statistics_steps_row_$today").assertDoesNotExist()
+        compose.onNodeWithTag("statistics_steps_selected_value", useUnmergedTree = true)
+            .assertTextContains("944", substring = true)
     }
 }
