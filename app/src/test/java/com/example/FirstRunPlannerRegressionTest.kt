@@ -79,6 +79,8 @@ class FirstRunPlannerRegressionTest {
     }
 
     private fun beginAndEdit() {
+        awaitTag("first_run_permissions")
+        compose.onNodeWithTag("first_run_permissions_skip").performClick()
         awaitTag("onboarding_welcome")
         compose.onNodeWithTag("onboarding_begin").performClick()
         awaitTag("onboarding_profile")

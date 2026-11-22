@@ -40,6 +40,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -3475,159 +3476,150 @@ fun PermissionsScreen(
                 onOpenSettings = onOpenSettings)
         }
         item {
-            PermissionToggleCard(
-                tr(uiState.language, "GPS és helyadatok", "GPS & Location",
-                    "GPS & Standortdaten", "GPS și locație"),
-                tr(uiState.language, "Kültéri útvonalrögzítés", "Outdoor route recording",
-                    "Outdoor-Routenaufzeichnung", "Înregistrare traseu exterior"),
-                uiState.permissionGpsEnabled,
-                if (uiState.permissionGpsEnabled && (!uiState.permissionGpsGranted ||
-                        !uiState.permissionCentralLocEnabled)) required else null,
-                "privacy_gps_switch"
-            ) { onTogglePermission("gps", it) }
-        }
-        item {
-            PermissionToggleCard(
-                tr(uiState.language, "Opcionális értesítések", "Optional notifications",
-                    "Optionale Benachrichtigungen", "Notificări opționale"),
-                tr(uiState.language,
-                    "A kötelező, aktív edzéshez tartozó rendszerértesítések megmaradhatnak.",
-                    "Mandatory foreground workout notifications may still appear.",
-                    "Erforderliche Vordergrund-Trainingsmeldungen können weiterhin erscheinen.",
-                    "Notificările obligatorii pentru antrenamente active pot apărea în continuare."),
-                uiState.permissionNotificationsEnabled,
-                if (uiState.permissionNotificationsEnabled && !uiState.permissionNotificationsGranted) required else null,
-                "privacy_notifications_switch"
-            ) { onTogglePermission("notif", it) }
-        }
-        item {
-            PermissionToggleCard(
-                "Health Connect",
-                tr(uiState.language, "Pulzus, alvás, lépések és testsúly olvasása",
-                    "Read heart rate, sleep, steps and weight",
-                    "Puls, Schlaf, Schritte und Gewicht lesen",
-                    "Citire puls, somn, pași și greutate"),
-                uiState.permissionHealthConnectEnabled,
-                if (uiState.permissionHealthConnectEnabled && !uiState.permissionHealthConnectGranted) required
-                    else if (uiState.permissionHealthConnectEnabled &&
-                        uiState.healthGrantedCount < uiState.healthPermissionCount)
-                        tr(uiState.language, "Részleges hozzáférés", "Partial access",
-                            "Teilweiser Zugriff", "Acces parțial") +
-                        " ${uiState.healthGrantedCount}/${uiState.healthPermissionCount}"
-                    else if (uiState.permissionHealthConnectEnabled)
-                        "${uiState.healthGrantedCount}/${uiState.healthPermissionCount}" else null,
-                "privacy_health_connect_switch"
-            ) { onTogglePermission("hc", it) }
-        }
-        if (uiState.permissionHealthConnectEnabled) {
-            item {
-                PermissionToggleCard(
-                    tr(uiState.language, "Health Connect háttérfrissítés",
-                        "Health Connect background refresh",
-                        "Health Connect Hintergrundaktualisierung",
-                        "Actualizare Health Connect în fundal"),
-                    tr(uiState.language, "Külön engedély és Android-ütemezés szükséges.",
-                        "Requires separate access and Android scheduling.",
-                        "Benötigt eine separate Berechtigung und Android-Planung.",
-                        "Necesită permisiune separată și programare Android."),
-                    hcBackgroundEnabled,
-                    if (hcBackgroundEnabled && !hcBackgroundPermissionGranted) required else null,
-                    "privacy_hc_background_switch"
-                ) { onToggleHcBackground(it) }
-            }
-            item {
-                PermissionToggleCard(
-                    tr(uiState.language, "Edzésírás Health Connectbe",
-                        "Write workouts to Health Connect",
-                        "Trainings in Health Connect schreiben",
-                        "Scrie antrenamente în Health Connect"),
-                    tr(uiState.language, "Opcionális; a forrás olvasásától független.",
-                        "Optional; separate from reading health data.",
-                        "Optional; getrennt vom Lesen der Gesundheitsdaten.",
-                        "Opțional; separat de citirea datelor de sănătate."),
-                    hcWorkoutWriteEnabled,
-                    if (hcWorkoutWriteEnabled && !hcWorkoutWritePermissionGranted) required else null,
-                    "privacy_hc_workout_write_switch"
-                ) { onToggleHcWorkoutWrite(it) }
-            }
-        }
-        item {
-            PermissionToggleCard(
-                tr(uiState.language, "Samsung Health közvetlen szinkron",
-                    "Samsung Health direct sync", "Samsung Health Direkt-Sync",
-                    "Sincronizare directă Samsung Health"),
-                tr(uiState.language, "Csak a közvetlen Samsung-forrás; a már tárolt adatok megmaradnak.",
-                    "Only direct Samsung reads; saved records remain.",
-                    "Nur direkte Samsung-Daten; gespeicherte Einträge bleiben.",
-                    "Doar date Samsung directe; înregistrările salvate rămân."),
-                uiState.permissionSamsungHealthEnabled,
-                if (uiState.permissionSamsungHealthEnabled && !uiState.permissionSamsungHealthGranted) required else null,
-                "privacy_samsung_health_switch"
-            ) { onTogglePermission("samsung", it) }
-        }
-        item {
-            Surface(shape = RoundedCornerShape(18.dp), color = palette.surfaceCard,
-                modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp,
-                    palette.sectionBorder, RoundedCornerShape(18.dp))) {
-                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(tr(uiState.language, "Központi helymeghatározás",
-                        "System Location Services", "System-Standortdienste",
-                        "Servicii de localizare sistem"),
-                        color = palette.textPrimary, fontWeight = FontWeight.Bold)
-                    Text(tr(uiState.language,
-                        "Az Android helyszolgáltatásának állapota: ",
-                        "Android location service: ", "Android-Standortdienst: ",
-                        "Serviciul de locație Android: ") +
-                        if (uiState.permissionCentralLocEnabled)
-                            tr(uiState.language, "bekapcsolva", "on", "ein", "pornit")
-                        else tr(uiState.language, "kikapcsolva", "off", "aus", "oprit"),
-                        color = palette.textSecondary)
-                    TrainPilotOutlinedButton(onClick = { onManagePermission("central") },
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                            .testTag("privacy_system_location_settings")) {
-                        Text(tr(uiState.language, "Rendszer helybeállításai",
-                            "System location settings", "System-Standorteinstellungen",
-                            "Setări de locație ale sistemului"))
-                    }
+            PermissionSettingsGroup("Health Connect") {
+                PermissionToggleRow(
+                    tr(uiState.language, "Adatok olvasása", "Read data", "Daten lesen", "Citire date"),
+                    tr(uiState.language, "Pulzus, alvás, lépések és testsúly olvasása",
+                        "Read heart rate, sleep, steps and weight",
+                        "Puls, Schlaf, Schritte und Gewicht lesen",
+                        "Citire puls, somn, pași și greutate"),
+                    uiState.permissionHealthConnectEnabled,
+                    if (uiState.permissionHealthConnectEnabled && !uiState.permissionHealthConnectGranted) required
+                        else if (uiState.permissionHealthConnectEnabled &&
+                            uiState.healthGrantedCount < uiState.healthPermissionCount)
+                            tr(uiState.language, "Részleges hozzáférés", "Partial access",
+                                "Teilweiser Zugriff", "Acces parțial") +
+                            " ${uiState.healthGrantedCount}/${uiState.healthPermissionCount}"
+                        else if (uiState.permissionHealthConnectEnabled)
+                            "${uiState.healthGrantedCount}/${uiState.healthPermissionCount}" else null,
+                    "privacy_health_connect_switch"
+                ) { onTogglePermission("hc", it) }
+                if (uiState.permissionHealthConnectEnabled) {
+                    PermissionSettingsDivider()
+                    PermissionToggleRow(
+                        tr(uiState.language, "Háttérfrissítés", "Background refresh", "Hintergrundaktualisierung", "Actualizare în fundal"),
+                        tr(uiState.language, "Külön engedély és Android-ütemezés szükséges.",
+                            "Requires separate access and Android scheduling.",
+                            "Benötigt eine separate Berechtigung und Android-Planung.",
+                            "Necesită permisiune separată și programare Android."),
+                        hcBackgroundEnabled,
+                        if (hcBackgroundEnabled && !hcBackgroundPermissionGranted) required else null,
+                        "privacy_hc_background_switch"
+                    ) { onToggleHcBackground(it) }
+                    PermissionSettingsDivider()
+                    PermissionToggleRow(
+                        tr(uiState.language, "Edzésírás", "Workout writing", "Trainings schreiben", "Scriere antrenamente"),
+                        tr(uiState.language, "Opcionális; a forrás olvasásától független.",
+                            "Optional; separate from reading health data.",
+                            "Optional; getrennt vom Lesen der Gesundheitsdaten.",
+                            "Opțional; separat de citirea datelor de sănătate."),
+                        hcWorkoutWriteEnabled,
+                        if (hcWorkoutWriteEnabled && !hcWorkoutWritePermissionGranted) required else null,
+                        "privacy_hc_workout_write_switch"
+                    ) { onToggleHcWorkoutWrite(it) }
                 }
+                PermissionSettingsDivider()
+                PermissionSettingsRow(tr(uiState.language, "Health Connect engedélyei",
+                    "Health Connect permissions", "Health-Connect-Berechtigungen", "Permisiuni Health Connect"),
+                    "privacy_manage_health_connect") { onManagePermission("hc_manage") }
             }
         }
         item {
-            Surface(shape = RoundedCornerShape(18.dp), color = palette.surfaceCard,
-                modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp,
-                    palette.sectionBorder, RoundedCornerShape(18.dp))) {
-                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(tr(uiState.language, "Rendszerengedélyek", "System permissions",
-                        "Systemberechtigungen", "Permisiuni de sistem"),
-                        color = palette.textPrimary, fontWeight = FontWeight.Bold)
-                    TrainPilotOutlinedButton(onClick = { onManagePermission("permissions_manage") },
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                            .testTag("privacy_manage_permissions")) {
-                        Text(tr(uiState.language, "Engedélyek kezelése", "Manage permissions",
-                            "Berechtigungen verwalten", "Gestionează permisiunile"))
-                    }
-                    TrainPilotOutlinedButton(onClick = { onManagePermission("hc_manage") },
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                            .testTag("privacy_manage_health_connect")) {
-                        Text(tr(uiState.language, "Health Connect engedélyei",
-                            "Health Connect permissions", "Health-Connect-Berechtigungen",
-                            "Permisiuni Health Connect"))
-                    }
-                    TrainPilotOutlinedButton(onClick = { onManagePermission("samsung_manage") },
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                            .testTag("privacy_manage_samsung")) {
-                        Text(tr(uiState.language, "Samsung Health engedélyei",
-                            "Samsung Health permissions", "Samsung-Health-Berechtigungen",
-                            "Permisiuni Samsung Health"))
-                    }
-                }
+            PermissionSettingsGroup("Samsung Health") {
+                PermissionToggleRow(
+                    tr(uiState.language, "Közvetlen szinkron", "Direct sync", "Direkt-Sync", "Sincronizare directă"),
+                    tr(uiState.language, "Csak a közvetlen Samsung-forrás; a már tárolt adatok megmaradnak.",
+                        "Only direct Samsung reads; saved records remain.",
+                        "Nur direkte Samsung-Daten; gespeicherte Einträge bleiben.",
+                        "Doar date Samsung directe; înregistrările salvate rămân."),
+                    uiState.permissionSamsungHealthEnabled,
+                    if (uiState.permissionSamsungHealthEnabled && !uiState.permissionSamsungHealthGranted) required else null,
+                    "privacy_samsung_health_switch"
+                ) { onTogglePermission("samsung", it) }
+                PermissionSettingsDivider()
+                PermissionSettingsRow(tr(uiState.language, "Samsung Health engedélyei",
+                    "Samsung Health permissions", "Samsung-Health-Berechtigungen", "Permisiuni Samsung Health"),
+                    "privacy_manage_samsung") { onManagePermission("samsung_manage") }
+            }
+        }
+        item {
+            PermissionSettingsGroup(tr(uiState.language, "GPS és értesítések",
+                "GPS & notifications", "GPS und Benachrichtigungen", "GPS și notificări")) {
+                PermissionToggleRow(
+                    tr(uiState.language, "GPS és helyadatok", "GPS & Location",
+                        "GPS & Standortdaten", "GPS și locație"),
+                    tr(uiState.language, "Kültéri útvonalrögzítés", "Outdoor route recording",
+                        "Outdoor-Routenaufzeichnung", "Înregistrare traseu exterior"),
+                    uiState.permissionGpsEnabled,
+                    if (uiState.permissionGpsEnabled && (!uiState.permissionGpsGranted ||
+                            !uiState.permissionCentralLocEnabled)) required else null,
+                    "privacy_gps_switch"
+                ) { onTogglePermission("gps", it) }
+                PermissionSettingsDivider()
+                PermissionToggleRow(
+                    tr(uiState.language, "Opcionális értesítések", "Optional notifications",
+                        "Optionale Benachrichtigungen", "Notificări opționale"),
+                    tr(uiState.language,
+                        "A kötelező, aktív edzéshez tartozó rendszerértesítések megmaradhatnak.",
+                        "Mandatory foreground workout notifications may still appear.",
+                        "Erforderliche Vordergrund-Trainingsmeldungen können weiterhin erscheinen.",
+                        "Notificările obligatorii pentru antrenamente active pot apărea în continuare."),
+                    uiState.permissionNotificationsEnabled,
+                    if (uiState.permissionNotificationsEnabled && !uiState.permissionNotificationsGranted) required else null,
+                    "privacy_notifications_switch"
+                ) { onTogglePermission("notif", it) }
+                PermissionSettingsDivider()
+                PermissionSettingsRow(tr(uiState.language, "TrainPilot rendszerengedélyei",
+                    "TrainPilot system permissions", "TrainPilot-Systemberechtigungen", "Permisiuni de sistem TrainPilot"),
+                    "privacy_manage_permissions") { onManagePermission("permissions_manage") }
+                PermissionSettingsDivider()
+                PermissionSettingsRow(tr(uiState.language, "Rendszer helybeállításai",
+                    "System location settings", "System-Standorteinstellungen", "Setări de locație ale sistemului"),
+                    "privacy_system_location_settings",
+                    if (uiState.permissionCentralLocEnabled) tr(uiState.language, "Bekapcsolva", "On", "Ein", "Pornit")
+                    else tr(uiState.language, "Kikapcsolva", "Off", "Aus", "Oprit")) { onManagePermission("central") }
             }
         }
     }
 }
 
 @Composable
-private fun PermissionToggleCard(
+private fun PermissionSettingsGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
+    val palette = LocalTrainPilotPalette.current
+    val shape = RoundedCornerShape(18.dp)
+    Surface(shape = shape, color = palette.surfaceCard,
+        modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, shape)) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold, color = palette.textPrimary,
+                modifier = Modifier.padding(bottom = 2.dp))
+            content()
+        }
+    }
+}
+
+@Composable
+private fun PermissionSettingsDivider() {
+    HorizontalDivider(color = LocalTrainPilotPalette.current.cardBorder.copy(alpha = 0.45f))
+}
+
+@Composable
+private fun PermissionSettingsRow(title: String, tag: String, status: String? = null, onClick: () -> Unit) {
+    val palette = LocalTrainPilotPalette.current
+    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
+        .trainPilotClickable(RoundedCornerShape(10.dp), onClick = onClick)
+        .testTag(tag).padding(horizontal = 2.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        Text(title, color = palette.primary, style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f))
+        if (status != null) Text(status, color = palette.textSecondary,
+            style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 4.dp))
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = palette.primary)
+    }
+}
+
+@Composable
+private fun PermissionToggleRow(
     title: String,
     subtitle: String,
     checked: Boolean,
@@ -3636,22 +3628,17 @@ private fun PermissionToggleCard(
     onToggle: (Boolean) -> Unit
 ) {
     val palette = LocalTrainPilotPalette.current
-    Surface(shape = RoundedCornerShape(18.dp), color = palette.surfaceCard,
-        modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp,
-            palette.sectionBorder, RoundedCornerShape(18.dp))) {
-        Row(modifier = Modifier.fillMaxWidth().padding(14.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall,
-                    color = palette.textSecondary)
-                if (status != null) Text(status, style = MaterialTheme.typography.bodySmall,
-                    color = palette.textSecondary, modifier = Modifier.testTag("${testTag}_status"))
-            }
-            Switch(checked = checked, onCheckedChange = onToggle, modifier = Modifier.testTag(testTag))
+    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold, color = palette.textPrimary)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+            if (status != null) Text(status, style = MaterialTheme.typography.bodySmall,
+                color = palette.textSecondary, modifier = Modifier.testTag("${testTag}_status"))
         }
+        Switch(checked = checked, onCheckedChange = onToggle, modifier = Modifier.testTag(testTag))
     }
 }
 

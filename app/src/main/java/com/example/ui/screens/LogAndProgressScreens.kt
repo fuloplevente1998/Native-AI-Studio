@@ -1571,42 +1571,42 @@ internal fun MainProgressVolumeAndMuscleSection(
                     trL(uiState.language, "3 hó", "3 mo", "3 Mon.", "3 luni")
                 )
 
-                if (expandedVolumeDetails) {
-                    val isWeeklyBucket = period.days >= 30
-                    // SCREENSHOT 6: EXPANDED FULL-WIDTH "Volumen trend" VIEW
-                    // 1. Horizontal 4-button Period Selector Row (1 nap | 7 nap | 30 nap | 3 hó)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        rangeLabels.forEachIndexed { rIdx, rLabel ->
-                            val isSel = uiState.selectedProgressRangeIndex == rIdx
+                Row(
+                    modifier = Modifier.fillMaxWidth().testTag("progress_compact_ranges"),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    rangeLabels.forEachIndexed { index, label ->
+                        val selected = uiState.selectedProgressRangeIndex == index
+                        val shape = RoundedCornerShape(10.dp)
+                        Box(
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                                .testTag("progress_range_$index")
+                                .trainPilotClickable(shape) { onSelectRange(index) }
+                                .trainPilotChartSelection(selected, label),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSel) palette.primary else palette.surfaceElevated,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp)
-                                    .trainPilotBorder(
-                                        width = 1.dp,
-                                        color = if (isSel) palette.primary else palette.cardBorder,
-                                        shape = RoundedCornerShape(12.dp)
-                                    )
-                                    .testTag("progress_range_$rIdx")
-                                    .trainPilotClickable(RoundedCornerShape(12.dp)) { onSelectRange(rIdx) }
+                                shape = shape,
+                                color = if (selected) palette.primary else palette.surfaceElevated,
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 32.dp)
+                                    .trainPilotBorder(1.dp, if (selected) palette.primary else palette.cardBorder, shape)
+                                    .testTag("progress_range_visual_$index")
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = rLabel,
-                                        style = MaterialTheme.typography.labelLarge,
+                                Box(Modifier.padding(horizontal = 3.dp, vertical = 3.dp), contentAlignment = Alignment.Center) {
+                                    com.example.ui.components.TrainPilotFitText(
+                                        text = label,
+                                        style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isSel) palette.onPrimary else palette.textPrimary
+                                        color = if (selected) palette.onPrimary else palette.textPrimary
                                     )
                                 }
                             }
                         }
                     }
+                }
 
+                if (expandedVolumeDetails) {
+                    val isWeeklyBucket = period.days >= 30
                     Spacer(modifier = Modifier.height(14.dp))
 
                     // 2. "Volumen trend" Title + "Heti bontás" Pill
@@ -1657,37 +1657,6 @@ internal fun MainProgressVolumeAndMuscleSection(
                         style = MaterialTheme.typography.bodySmall,
                         color = if (selectedBar != null) palette.primary else palette.textSecondary
                     )
-                } else {
-                    // Period selection must not expand the chart; retain a 48dp touch area.
-                    Row(
-                        modifier = Modifier.fillMaxWidth().testTag("progress_compact_ranges"),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        rangeLabels.forEachIndexed { rIdx, label ->
-                            val isSel = uiState.selectedProgressRangeIndex == rIdx
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = if (isSel) palette.primary else palette.surfaceElevated,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp)
-                                    .trainPilotBorder(1.dp,
-                                        if (isSel) palette.primary else palette.cardBorder,
-                                        RoundedCornerShape(10.dp))
-                                    .testTag("progress_range_$rIdx")
-                                    .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectRange(rIdx) }
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = label,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isSel) palette.onPrimary else palette.textPrimary
-                                    )
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }

@@ -50,7 +50,11 @@ class NativeFirstLaunchGateRegressionTest {
         compose.setContent { TrainPilotTheme {
             NativeFirstLaunchGate(com.example.ui.viewmodel.TrainPilotViewModel()) { Text("Home",Modifier.testTag("gated_home")) }
         } }
+        awaitTag("first_run_permissions")
+        compose.onNodeWithTag("first_run_permissions_continue").assertIsNotEnabled()
+        compose.onNodeWithTag("first_run_permissions_skip").performClick()
         awaitTag("onboarding_welcome")
+        assertEquals(false, com.repforge.app.ui.onboarding.firstRunPermissionsPending(context))
         compose.onNodeWithTag("gated_home").assertDoesNotExist()
         compose.onNodeWithTag("onboarding_skip").performClick()
         awaitTag("gated_home")
@@ -70,5 +74,22 @@ class NativeFirstLaunchGateRegressionTest {
         } }
         awaitTag("gated_home")
         compose.onNodeWithTag("onboarding_welcome").assertDoesNotExist()
+        compose.onNodeWithTag("first_run_permissions").assertDoesNotExist()
+    }
+
+    @Test fun setupPassesOnlyTheExplicitlySelectedFeatures() {
+        var requested: Set<String>? = null
+        compose.setContent { TrainPilotTheme {
+            com.repforge.app.ui.onboarding.FirstRunPermissionsScreen(
+                "hu", listOf(
+                    com.repforge.app.ui.onboarding.FirstRunPermissionOption("health_connect", "Health Connect"),
+                    com.repforge.app.ui.onboarding.FirstRunPermissionOption("notifications", "Értesítések")
+                ), busy = false, error = false, onContinue = { requested = it }, onSkip = {}
+            )
+        } }
+        compose.onNodeWithTag("first_run_permissions_continue").assertIsNotEnabled()
+        compose.onNodeWithTag("first_run_permission_health_connect").performClick()
+        compose.onNodeWithTag("first_run_permissions_continue").performClick()
+        compose.runOnIdle { assertEquals(setOf("health_connect"), requested) }
     }
 }

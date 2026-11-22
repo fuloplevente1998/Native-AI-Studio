@@ -123,7 +123,7 @@ object HealthConnectRepository {
         return r
     }
 
-    fun settingsIntent(): Intent = Intent("android.health.connect.action.HEALTH_CONNECT_SETTINGS")
+    fun settingsIntent(): Intent = Intent("android.health.connect.action.HEALTH_HOME_SETTINGS")
 
     private class ObsoleteReadPublication(cause: Throwable) : IllegalStateException("Health read publication invalidated", cause)
 
