@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.example.ui.components.trainPilotAnimatedExpansion
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -87,7 +89,7 @@ internal fun StudioExerciseFeedbackReview(effort: String?, note: String, languag
     title: String, enabled: Boolean, onEffort: (String?) -> Unit, onNote: (String) -> Unit, tag: String) {
     var editing by rememberSaveable(tag) { mutableStateOf(false) }
     val palette = LocalTrainPilotPalette.current
-    Surface(Modifier.fillMaxWidth().testTag(tag), color = palette.surfaceCard,
+    Surface(Modifier.fillMaxWidth().trainPilotAnimatedExpansion().testTag(tag), color = palette.surfaceCard,
         shape = RoundedCornerShape(14.dp), border = com.repforge.app.ui.theme.TrainPilotFrames.control(
             if (effort == "pain") com.repforge.app.ui.theme.TrainPilotActionAppearance.negativeOutline.copy(alpha = 0.45f) else palette.cardBorder)) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

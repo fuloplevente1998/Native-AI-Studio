@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import com.example.ui.components.TrainPilotModalBottomSheet
+import com.example.ui.components.trainPilotAnimatedExpansion
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotCombinedClickable
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
@@ -1089,6 +1090,7 @@ fun ProgramsListScreen(
                         .fillMaxWidth()
                         // Lift first so the frame moves with the card while dragging (2772).
                         .trainPilotReorderItem(programReorder, program.id, index)
+                        .trainPilotAnimatedExpansion()
                         .trainPilotBorder(
                             if (program.isActive || isExpanded) 1.5.dp else 1.dp,
                             if (program.isActive || isExpanded) palette.primary else palette.cardBorder,
@@ -1642,6 +1644,7 @@ internal fun ProgramEditorContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .trainPilotReorderItem(exerciseReorder, ex.id, index)
+                    .trainPilotAnimatedExpansion()
                     .trainPilotBorder(
                         width = if (isExpanded) 1.5.dp else 1.dp,
                         color = if (isExpanded) palette.primary else palette.cardBorder,

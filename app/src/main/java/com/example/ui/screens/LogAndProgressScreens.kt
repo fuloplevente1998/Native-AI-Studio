@@ -12,6 +12,7 @@ import com.example.model.volumeAxisMaximum
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
+import com.example.ui.components.trainPilotAnimatedExpansion
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotBorder
 
@@ -112,6 +113,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.sp
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BarChart
 import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
 import com.example.localization.LocalizedStrings
 import com.example.model.LoggedWorkoutEntry
@@ -917,6 +919,7 @@ fun LogWorkoutDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.25.dp, palette.sectionBorder, shape)
+                        .trainPilotAnimatedExpansion()
                         .trainPilotClickable(shape) { onToggleExpandedExercise(index) }
                         .semantics { stateDescription = expansionState }
                         .testTag("log_exercise_card_$index")
@@ -1317,32 +1320,48 @@ fun ProgressTabScreen(
             ) {
                 sections.forEach { (idx, label) ->
                     val selected = activeSection == idx
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (selected) palette.primary.copy(alpha = 0.22f) else Color.Transparent,
+                    // Shorter painted tab (42 dp), without making the tap target shorter than 48 dp.
+                    Box(
                         modifier = Modifier
                             .weight(1f)
-                            .heightIn(min = 48.dp)
-                            .trainPilotBorder(
-                                width = if (selected) 1.dp else 0.dp,
-                                color = if (selected) palette.primary else Color.Transparent,
-                                shape = RoundedCornerShape(10.dp)
-                            )
+                            .height(48.dp)
                             .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectMainSection(idx) }
                             .then(Modifier.trainPilotChartSelection(selected, label))
-                            .testTag("progress_section_tab_$idx")
+                            .testTag("progress_section_tab_$idx"),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp)
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (selected) palette.primary.copy(alpha = 0.22f) else Color.Transparent,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(42.dp)
+                                .trainPilotBorder(
+                                    width = if (selected) 1.dp else 0.dp,
+                                    color = if (selected) palette.primary else Color.Transparent,
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                                .testTag("progress_section_visual_$idx")
                         ) {
-                            com.example.ui.components.TrainPilotFitText(
-                                text = label,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (selected) palette.primary else palette.textSecondary,
-                                modifier = Modifier.testTag("progress_section_label_$idx")
-                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (idx == 0) Icons.AutoMirrored.Filled.TrendingUp else Icons.Default.BarChart,
+                                    contentDescription = null,
+                                    tint = if (selected) palette.primary else palette.textSecondary,
+                                    modifier = Modifier.size(18.dp).testTag("progress_section_icon_$idx")
+                                )
+                                com.example.ui.components.TrainPilotFitText(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (selected) palette.primary else palette.textSecondary,
+                                    modifier = Modifier.weight(1f).testTag("progress_section_label_$idx")
+                                )
+                            }
                         }
                     }
                 }
@@ -1461,6 +1480,7 @@ internal fun MainProgressVolumeAndMuscleSection(
             color = palette.surfaceCard,
             modifier = Modifier
                 .fillMaxWidth()
+                .trainPilotAnimatedExpansion()
                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(18.dp))
                 .testTag("progress_total_volume_card")
                 .trainPilotSoftGlow(palette.primary, RoundedCornerShape(18.dp), 3.dp)
@@ -1951,6 +1971,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                     color = if (expandedAdviceDetails) palette.primary else palette.cardBorder,
                     shape = RoundedCornerShape(16.dp)
                 )
+                .trainPilotAnimatedExpansion()
                 .trainPilotClickable(RoundedCornerShape(16.dp)) { expandedAdviceDetails = !expandedAdviceDetails }
                 .testTag("progress_advice_card")
         ) {

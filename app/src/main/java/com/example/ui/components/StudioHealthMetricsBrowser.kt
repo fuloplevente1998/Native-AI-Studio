@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.example.ui.components.trainPilotAnimatedExpansion
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -145,7 +147,7 @@ internal fun StudioHealthMetricsBrowser(
                 if (focus != null && focus.first == date.toString()) { expanded = true; type = focus.second; recordsOpen = true }
             }
             Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceElevated,
-                border = TrainPilotFrames.stroke(1.dp, palette.cardBorder), modifier = Modifier.fillMaxWidth()) {
+                border = TrainPilotFrames.stroke(1.dp, palette.cardBorder), modifier = Modifier.fillMaxWidth().trainPilotAnimatedExpansion()) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("journal_day_$date")) {
                         Column(Modifier.weight(1f)) {

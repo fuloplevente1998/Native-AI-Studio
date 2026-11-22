@@ -115,8 +115,7 @@ class StudioAppearanceRegressionTest {
         compose.onNodeWithTag("settings_google_login_btn").assertDoesNotExist()
     }
 
-    @Test fun weeklyGoalSectionsShowEveryDayWithoutNestedToggles() {
-        // 2788: Workouts and Steps are full-width sections in one column; nothing extra to open.
+    @Test fun weeklyGoalSectionsShowMissingStepDataWithoutOpeningHistory() {
         compose.setContent {
             TrainPilotTheme {
                 com.example.ui.screens.HealthTabScreen(
@@ -137,9 +136,10 @@ class StudioAppearanceRegressionTest {
         val steps = compose.onNodeWithTag("health_weekly_steps_section").getUnclippedBoundsInRoot()
         assertEquals(workouts.left, steps.left)
         assertEquals(workouts.right, steps.right)
-        // No measured step: "—", never 0, and every day says "nincs adat".
         compose.onNodeWithTag("health_weekly_steps_section_summary", useUnmergedTree = true).assertTextEquals("—")
-        compose.onNodeWithTag("health_weekly_steps_${java.time.LocalDate.now()}", useUnmergedTree = true).assertTextEquals("nincs adat")
+        compose.onNodeWithTag("health_weekly_steps_empty", useUnmergedTree = true)
+            .assertTextContains("nincs adat", substring = true)
+        compose.onNodeWithTag("health_weekly_steps_history").assertDoesNotExist()
     }
 
     @Test fun privacyPolicyAccuratelyDescribesHealthSourcesAndOpensFromStudioSettingsInAllFourLanguages() {

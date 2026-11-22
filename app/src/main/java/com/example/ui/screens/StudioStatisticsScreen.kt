@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.example.ui.components.trainPilotAnimatedExpansion
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
@@ -14,6 +15,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
 import androidx.compose.runtime.*
@@ -153,7 +156,7 @@ internal fun StudioStatisticsContent(state: TrainPilotUiState, native: ProgressU
                         val trend = remember(record, state.loggedWorkouts) { exerciseTrend(record, state.loggedWorkouts) }
                         Surface(shape = MaterialTheme.shapes.large, color = palette.surfaceCard,
                             modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
-                                .testTag("statistics_record_${record.exerciseId}")) {
+                                .trainPilotAnimatedExpansion().testTag("statistics_record_${record.exerciseId}")) {
                             Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).trainPilotClickable(RoundedCornerShape(14.dp)) {
                                     selectedRecord = if (expanded) null else record.exerciseId
@@ -328,9 +331,6 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
         modifier = Modifier.fillMaxWidth().trainPilotBorder(1.25.dp, palette.sectionBorder, MaterialTheme.shapes.large)
             .testTag("statistics_daily_activity")) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            val todayDay = days.firstOrNull { it.dateIso == today.toString() }
-            val outside = if (todayDay?.stepsAvailable == true && todayDay.workoutCount == 0)
-                number.format(todayDay.steps) else "—"
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 StatisticsMetricTile(statsTr(lang, "Ma", "Today", "Heute", "Azi"), total(today, today.plusDays(1)), Modifier.weight(1f),
                     valueTag = "statistics_steps_today")
@@ -339,14 +339,11 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
                 StatisticsMetricTile(statsTr(lang, "Előző hét", "Previous week", "Vorwoche", "Săpt. trecută"), total(previous, weekStart),
                     Modifier.weight(1f), valueTag = "statistics_steps_previous_week")
             }
-            Text(statsTr(lang, "Edzésen kívül ma: $outside", "Outside workouts today: $outside", "Außerhalb Trainings heute: $outside", "În afara antrenamentelor azi: $outside"),
-                color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
             Text(statsTr(lang, "Utolsó 14 nap", "Last 14 days", "Letzte 14 Tage", "Ultimele 14 zile"),
                 color = palette.textSecondary, style = MaterialTheme.typography.labelMedium)
             val bars = remember(days, today) { dailyStepBars(days, today) }
             val max = bars.filterNotNull().maxOrNull()?.coerceAtLeast(1) ?: 1
-            // 2780: every column is tappable; the selected day's line has a fixed place above the chart
-            // (today by default), so nothing appears or disappears and the card never jumps.
+            // The bar chart alone carries the selection; one detail strip now sits below it.
             var selectedBar by rememberSaveable(today.toString()) { mutableStateOf(bars.lastIndex) }
             fun stepValueLabel(value: Int?): String = value?.let {
                 val formatted = number.format(it)
@@ -356,9 +353,55 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
             val selectedDay = days.firstOrNull { it.dateIso == selectedDate.toString() }
             val locale = Locale.forLanguageTag(lang.name.lowercase())
             val weekdayFmt = remember(locale) { java.time.format.DateTimeFormatter.ofPattern("EEEE", locale) }
+            val letters = remember(locale) { java.time.format.DateTimeFormatter.ofPattern("EEEEE", locale) }
+            // A readable fixed scale without counting missing days as measured zeros.
+            val scaleTick = when {
+                max > 10000 -> 5000
+                max > 2000 -> 2500
+                max > 100 -> 100
+                else -> 25
+            }
+            val scaleMax = ((max + scaleTick - 1) / scaleTick * scaleTick).coerceAtLeast(scaleTick)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+                Column(Modifier.width(46.dp).height(92.dp), verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.End) {
+                    Text(number.format(scaleMax), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                    Text(number.format(scaleMax / 2), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                    Text("0", style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                }
+                Row(Modifier.weight(1f).height(92.dp).testTag("statistics_steps_chart"),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                bars.forEachIndexed { index, value ->
+                    val selected = index == selectedBar
+                    val date = today.minusDays((bars.lastIndex - index).toLong())
+                    val label = "${chartDateLabel(date, lang.code)} · ${stepValueLabel(value)}"
+                    val mark = trainPilotChartMarkColor(selected, palette.primary, palette.textSecondary)
+                    Column(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(6.dp))
+                        .trainPilotClickable(RoundedCornerShape(6.dp)) { selectedBar = index }
+                        .trainPilotChartSelection(selected, label)
+                        .testTag("statistics_steps_column_$index"), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.BottomCenter) {
+                            if (value == null) Box(Modifier.fillMaxWidth().height(2.dp)
+                                .background(mark, RoundedCornerShape(1.dp))
+                                .testTag("statistics_steps_bar_missing_$index"))
+                            else Box(Modifier.fillMaxWidth().fillMaxHeight((value.toFloat() / scaleMax).coerceIn(0.04f, 1f))
+                                .background(mark, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                .testTag("statistics_steps_bar_$index"))
+                        }
+                        Text(date.format(letters),
+                            color = if (selected) palette.primary else palette.textSecondary,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                            style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                    }
+                }
+                }
+            }
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(palette.surfaceElevated)
                 .padding(horizontal = 10.dp, vertical = 6.dp).testTag("statistics_steps_selected")) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.DirectionsWalk, contentDescription = null,
+                        tint = palette.primary, modifier = Modifier.size(18.dp))
                     Text("${selectedDate.monthValue}.${"%02d".format(selectedDate.dayOfMonth)}. (${selectedDate.format(weekdayFmt)})",
                         color = palette.textPrimary, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -374,55 +417,55 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
                     "$sourceSelected · außerhalb: $outsideSelected", "$sourceSelected · în afara antrenamentelor: $outsideSelected"),
                     color = palette.textSecondary, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            val letters = remember(locale) { java.time.format.DateTimeFormatter.ofPattern("EEEEE", locale) }
-            Row(Modifier.fillMaxWidth().height(92.dp).testTag("statistics_steps_chart"),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                bars.forEachIndexed { index, value ->
-                    val selected = index == selectedBar
-                    val date = today.minusDays((bars.lastIndex - index).toLong())
-                    val label = "${chartDateLabel(date, lang.code)} · ${stepValueLabel(value)}"
-                    val mark = trainPilotChartMarkColor(selected, palette.primary, palette.textSecondary)
-                    Column(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(6.dp))
-                        .trainPilotClickable(RoundedCornerShape(6.dp)) { selectedBar = index }
-                        .trainPilotChartSelection(selected, label)
-                        .testTag("statistics_steps_column_$index"), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.BottomCenter) {
-                            if (value == null) Box(Modifier.fillMaxWidth().height(2.dp)
-                                .background(mark, RoundedCornerShape(1.dp))
-                                .testTag("statistics_steps_bar_missing_$index"))
-                            else Box(Modifier.fillMaxWidth().fillMaxHeight((value.toFloat() / max).coerceIn(0.04f, 1f))
-                                .background(mark, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                .testTag("statistics_steps_bar_$index"))
-                        }
-                        Text(date.format(letters),
-                            color = if (selected) palette.primary else palette.textSecondary,
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                            style = MaterialTheme.typography.labelSmall, maxLines = 1)
-                    }
-                }
-            }
             val ordered = days.reversed()
-            // 2784: the chart selection filters the list (only that day); "Napi lista" shows every day.
-            (if (listOpen) ordered else ordered.filter { it.dateIso == selectedDate.toString() }).forEach { day ->
-                HorizontalDivider(color = palette.cardBorder)
-                Row(Modifier.fillMaxWidth().background(if (day.dateIso == selectedDate.toString()) palette.primary.copy(alpha = 0.12f)
-                    else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(8.dp))
-                    .testTag("statistics_steps_row_${day.dateIso}"), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(day.dateIso, color = palette.textPrimary, style = MaterialTheme.typography.bodySmall)
-                        val localizedSource = if (day.stepsSourceLabelHu.contains("Nincs", ignoreCase = true)) {
-                            statsTr(lang, "Nincs szinkronizálva", "Not synced", "Nicht synchronisiert", "Nesincronizat")
-                        } else day.stepsSourceLabelHu
-                        Text(localizedSource, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                    }
-                    Text(if (!day.stepsAvailable) "— / —" else
-                        "${number.format(day.steps)} / ${if (day.workoutCount == 0) number.format(day.steps) else "—"}", color = palette.textPrimary)
-                }
+            // Always-visible history rows duplicated the highlighted graph day. The chart
+            // now owns the one selected-day detail; full history slides up separately.
+            if (ordered.size > 1) TextButton(onClick = { listOpen = true },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("statistics_steps_list_toggle")) {
+                Text(statsTr(lang, "▾ Napi lista (${ordered.size})", "▾ Daily list (${ordered.size})",
+                    "▾ Tagesliste (${ordered.size})", "▾ Listă zilnică (${ordered.size})"))
             }
-            if (ordered.size > 1) TextButton(onClick = { listOpen = !listOpen },
-                modifier = Modifier.heightIn(min = 48.dp).testTag("statistics_steps_list_toggle")) {
-                Text(if (listOpen) statsTr(lang, "▴ Napi lista bezárása", "▴ Hide daily list", "▴ Tagesliste schließen", "▴ Închide lista zilnică")
-                    else statsTr(lang, "▾ Napi lista (${ordered.size})", "▾ Daily list (${ordered.size})", "▾ Tagesliste (${ordered.size})", "▾ Listă zilnică (${ordered.size})"))
+            if (listOpen) com.example.ui.components.TrainPilotScreenSheet(
+                onDismiss = { listOpen = false }, testTag = "statistics_steps_daily_sheet"
+            ) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    // Fixed header/close action above the independently scrolling daily list.
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(statsTr(lang, "Napi lista (${ordered.size})", "Daily list (${ordered.size})",
+                                "Tagesliste (${ordered.size})", "Listă zilnică (${ordered.size})"),
+                            color = palette.textPrimary, style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.weight(1f).testTag("statistics_steps_sheet_header"))
+                        IconButton(onClick = { listOpen = false }, modifier = Modifier.testTag("statistics_steps_sheet_close")) {
+                            Icon(Icons.Default.Close, contentDescription = statsTr(lang, "Bezárás", "Close", "Schließen", "Închide"),
+                                tint = palette.primary)
+                        }
+                    }
+                    Column(Modifier.fillMaxWidth()
+                        .heightIn(max = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.62f).dp)
+                        .verticalScroll(rememberScrollState()).testTag("statistics_steps_sheet_list"),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        ordered.forEach { day ->
+                            HorizontalDivider(color = palette.cardBorder)
+                            Row(Modifier.fillMaxWidth()
+                                .background(if (day.dateIso == selectedDate.toString()) palette.primary.copy(alpha = 0.12f)
+                                    else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(8.dp))
+                                .testTag("statistics_steps_row_${day.dateIso}"),
+                                verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(day.dateIso, color = palette.textPrimary, style = MaterialTheme.typography.bodySmall)
+                                    Text(if (day.stepsSourceLabelHu.contains("Nincs", ignoreCase = true))
+                                        statsTr(lang, "Nincs szinkronizálva", "Not synced", "Nicht synchronisiert", "Nesincronizat")
+                                        else day.stepsSourceLabelHu, style = MaterialTheme.typography.labelSmall,
+                                        color = palette.textSecondary)
+                                }
+                                Text(if (!day.stepsAvailable) "— / —" else
+                                    "${number.format(day.steps)} / ${if (day.workoutCount == 0) number.format(day.steps) else "—"}",
+                                    color = palette.textPrimary, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                }
             }
             Text(statsTr(lang, "Szinkronizált napok: ${days.count { it.stepsAvailable }}/${days.size}", "Synced days: ${days.count { it.stepsAvailable }}/${days.size}", "Synchronisierte Tage: ${days.count { it.stepsAvailable }}/${days.size}", "Zile sincronizate: ${days.count { it.stepsAvailable }}/${days.size}"),
                 color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)

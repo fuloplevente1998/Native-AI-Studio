@@ -1,6 +1,7 @@
 package com.repforge.app.ui.workout
 
 import com.example.ui.components.TrainPilotModalBottomSheet
+import com.example.ui.components.trainPilotAnimatedExpansion
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.example.ui.components.WorkoutControlAppearance
 import androidx.compose.foundation.layout.heightIn
@@ -897,7 +898,7 @@ internal fun IntervalOptions(
     val editable = state.timerOwner == "phone" && !state.isFinishing && !state.intervalSaving
     val saved = work == state.intervalWork.toString() && rest == state.intervalRest.toString() && rounds == state.intervalRounds.toString() &&
         sound == state.intervalSound && vibration == state.intervalVibration && advance == state.intervalAutoAdvance
-    Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+    Column(Modifier.fillMaxWidth().trainPilotAnimatedExpansion().padding(bottom = 8.dp)) {
         TextButton(onClick = onToggleExpanded, modifier = Modifier.fillMaxWidth().testTag("interval_options")) {
             Text(text.getString(com.repforge.app.R.string.interval_title) +
                 (if (active) " · ${measuredTime(state.timerRemainingSec.toLong())}" else "") + (if (expanded) " ▴" else " ▾"), color = colors.accentText)
