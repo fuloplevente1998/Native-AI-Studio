@@ -93,6 +93,7 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
     val scope = rememberCoroutineScope()
     val owner = LocalLifecycleOwner.current
     val activity = context as? Activity
+    var previousLegacyGrants by remember { mutableStateOf<Set<String>?>(null) }
     suspend fun refresh() {
         val nodes = runCatching { withTimeout(3_000) { Wearable.getNodeClient(context).connectedNodes.await() } }
             .getOrElse { error ->
@@ -105,10 +106,17 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
             if (error is CancellationException && error !is TimeoutCancellationException) throw error
             false
         } else false
-        if (Build.VERSION.SDK_INT in 28..33 && HealthConnectRepository.isSupported(context)) {
-            withContext(Dispatchers.IO) {
-                runCatching { HealthConnectRepository.currentlyGrantedReadKeys(context) }
-                    .onFailure { if (it is CancellationException) throw it }
+        if (Build.VERSION.SDK_INT in 28..33) {
+            val liveGrants = withContext(Dispatchers.IO) {
+                try { HealthConnectRepository.currentlyGrantedReadKeys(context) }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { emptySet() }
+            }
+            if (previousLegacyGrants != liveGrants) {
+                previousLegacyGrants = liveGrants
+                // A revoked grant hides previously saved measurements immediately; a new
+                // grant exposes the journal without requiring a fresh app launch.
+                model.reloadHealthJournal()
             }
         }
         model.updatePlatformAccess(StudioPlatformAccess.snapshot(context), nodes.map { it.displayName }, companion)
