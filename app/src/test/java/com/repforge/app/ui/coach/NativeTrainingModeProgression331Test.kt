@@ -21,8 +21,9 @@ class NativeTrainingModeProgression331Test {
     private val readiness = NativeCoachReadiness.Result(null, null, null, null, null,
         null, null, null, null, 0, false)
 
-    private fun mode(rule: String) = NativeTrainingModes.Effective(programId = "home-basic",
-        progressionMode = rule, explicitChoice = true, source = "program")
+    private fun mode(rule: String, style: String = "normal") =
+        NativeTrainingModes.Effective(programId = "home-basic",
+            trainingStyle = style, progressionMode = rule, explicitChoice = true, source = "program")
 
     private fun done(reps: Double, weight: Double = 5.5, effort: String = "good",
         rir: Int? = null, completed: Boolean = true): NativeCoachExerciseAdvice.Occurrence {
@@ -94,6 +95,21 @@ class NativeTrainingModeProgression331Test {
         assertNotNull(result)
         assertEquals("increase", result!!.action)
         assertEquals(6.0, result.proposedWeight, 0.001)
+    }
+
+    @Test fun hitCountsLegitimateFewerWorkingSetsInCompletedHistory() {
+        val threeSetTarget = target.copy(sets = 3)
+        val stored = done(9.0).copy(allDone = false, hitTop = false)
+        // Canonical history regards two sets as incomplete for a three-set program.
+        val normal = NativeTrainingModeProgression.compute(mode("linear"),
+            exercise, threeSetTarget, listOf(stored), readiness, .5)
+        assertEquals("hold", normal?.action)
+        // HIT prescribes two sets here, and both saved sets were genuinely completed.
+        val hit = NativeTrainingModeProgression.compute(mode("linear", "hit"),
+            exercise, threeSetTarget, listOf(stored), readiness, .5)
+        assertEquals("increase", hit?.action)
+        assertEquals(2, hit?.workingSets)
+        assertEquals(6.0, hit!!.proposedWeight, .001)
     }
 
     @Test fun missingHistoryUsesStartingLoadNotAnInventedProgression() {
