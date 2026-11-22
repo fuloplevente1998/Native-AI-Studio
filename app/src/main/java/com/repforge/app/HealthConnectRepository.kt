@@ -163,6 +163,7 @@ object HealthConnectRepository {
 
         fun requireForeground() {
             guard.run()
+            NativePrivacyControls.requireEnabled(appContext, NativePrivacyControls.HEALTH_CONNECT)
         }
 
         fun allowed(suffix: String): Boolean = isAllowed(appContext, suffix)
@@ -258,6 +259,10 @@ object HealthConnectRepository {
         clientRecordId: String = "",
         clientVersion: Long = 1L
     ) = withContext(Dispatchers.IO) {
+        NativePrivacyControls.requireEnabled(context, NativePrivacyControls.HEALTH_CONNECT)
+        check(com.repforge.app.data.store.TrainPilotSettingsStore(context).current()
+            .autoWriteWorkoutToHealthConnect) { "Health Connect workout writing is disabled" }
+        check(isAllowed(context, "WRITE_EXERCISE")) { "Health Connect workout writing requires permission" }
         val epoch = HealthJournalStore.get(context).generation()
         val access = Access(context, epoch, Runnable {})
         val params = JSONObject()
@@ -1119,6 +1124,7 @@ object HealthConnectRepository {
         @JvmStatic
         @Throws(Exception::class)
         fun write(p: Access, c: JSONObject) {
+            p.requireForeground()
             val t = range(c, 24 * 60L)
             var clientRecordId = c.optString("clientRecordId", "")
             if (clientRecordId.isEmpty()) clientRecordId = "trainpilot:${t[0]}"
@@ -1139,6 +1145,7 @@ object HealthConnectRepository {
             p.getContext().getSystemService(HealthConnectManager::class.java)
                 .insertRecords(Collections.singletonList<android.health.connect.datatypes.Record>(r), DIRECT, receiver(f))
             f.get(30, TimeUnit.SECONDS)
+            p.requireForeground()
         }
     }
 }

@@ -51,13 +51,15 @@ internal object NativeHealthBackgroundPolicy {
     fun snapshot(context: Context, store: HealthJournalStore): Snapshot {
         val restoreReady = !NativeDataReplacement.blocked(context) && store.pendingRestore().isEmpty()
         val supported = HealthBackgroundJob.supported(context)
-        val read = HealthConnectRepository.anyReadAllowed(context)
+        val read = com.repforge.app.NativePrivacyControls.enabled(context,
+            com.repforge.app.NativePrivacyControls.HEALTH_CONNECT) && HealthConnectRepository.anyReadAllowed(context)
         val granted = HealthBackgroundJob.permitted(context)
         val watch = BleWatchPreference(context)
         val readyWatch = watch.address().isNotBlank() && watch.service() == HealthBackgroundService.SERVICE.toString()
         val connect = HealthBackgroundService.permission(context)
-        val notifications = Build.VERSION.SDK_INT < 33 ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        val notifications = com.repforge.app.NativePrivacyControls.enabled(context,
+            com.repforge.app.NativePrivacyControls.NOTIFICATIONS) && (Build.VERSION.SDK_INT < 33 ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED)
         val bluetoothOn = try {
             (context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter?.isEnabled == true
         } catch (_: SecurityException) { false }

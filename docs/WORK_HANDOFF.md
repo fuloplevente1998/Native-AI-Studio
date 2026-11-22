@@ -1,10 +1,20 @@
-# #312/12 Fénykeret a festett gombkontúron — draft PR #319 (2026-11-22)
+# #312/13 Adatvédelem és engedélyek — 2026-11-22
 
-- Alap: main `483383d72fb421ba6bccc4c8b357f1d382c5621e` (a #309 javítás már benne van). Ág: `fix/312-12-glow-painted-contour`, [draft PR #319](https://github.com/fuloplevente1998/Native-AI-Studio/pull/319). Nincs main-merge vagy kiadás.
+- **Alap:** friss main `483383d` (#309-zel). **Ág:** `fix/312-privacy-permissions`. **Átadás:** [PR #320](https://github.com/fuloplevente1998/Native-AI-Studio/pull/320). A #319 main-merge elkészült; #320 integrációja jóváhagyva. A közös CI és az aláírt build a második merge után indul, eredményük még nem ismert. Nincs verzióemelés vagy kiadás.
+- Négy külön tartós appkapcsoló (GPS, opcionális értesítések, Health Connect, Samsung Health), függetlenül az Android/Samsung jogosultságtól. A letiltott GPS leáll, a HC előtér-/háttérolvasás és írás, a Samsung olvasás és az opcionális BLE háttérkapcsolat az opt-in ellenőrzésétől függ; meglévő egészségnapló érintetlen. A kötelező aktív edzés-/GPS-foreground értesítések külön rendszerkövetelmények.
+- Engedélykérés csak bekapcsoláskor, és csak hiányzó jogosultságra; HC olvasás részleges hozzáféréssel is kezelhető, Samsung részleges grant ellenőrzése javítva. Külön **Engedélyek kezelése** / rendszerhelyzet / Health Connect és Samsung műveletek. HC háttérfrissítés és opcionális edzésírás külön kapcsoló; edzésírás az app és Android írószintű engedélyét egyaránt vizsgálja.
+- `row_offset`/change_log hibára a korábbi célzott fallback marad: közvetlen napi olvasás, checkpoint változatlan. Nyers Android kivétel helyett HU/EN/DE/RO felhasználói jelzések. `PlatformAccessRegressionTest` korszerűsítve, `PrivacyControls312RegressionTest` hozzáadva; a régi HC permissions/fallback regressziók megmaradtak.
+- **Ellenőrzés:** GitHub összehasonlítás, forrás-/jogosultságútvonal audit, tesztforrások. **Még hátra:** Android/JVM CI futtatás, APK-fordítás, Samsung/HC/GPS valós készülékes és restart/fordítási teszt. A javítást ne tekintsd fizikailag vagy buildben igazoltnak. A #312/12 külön feladat.
+
+---
+
+# #312/12 Fénykeret a festett gombkontúron — mainre merge-elt PR #319 (2026-11-22)
+
+- Alap: main `483383d72fb421ba6bccc4c8b357f1d382c5621e` (a #309 javítás már benne van). Ág: `fix/312-12-glow-painted-contour`, [PR #319](https://github.com/fuloplevente1998/Native-AI-Studio/pull/319). Main merge: `56b0201052567eb4ca1d830baed1e92eddead5e9`; kiadás nincs.
 - Igazolt kódgeometria: a `TrainPilotButton` fényrajza eddig a 48 dp-es Material minimum érintési befoglalóra került, nem a 40 dp-es látható kitöltött felületre. Fényes paletta/elsődleges kitöltés esetén a fenntartott érintési hely és a rajzolt fény most külön méretű; a fény a tényleges `Shape`/festett kontúr alapján rajzolódik.
 - A `trainPilotSoftGlow` rétegei, opacitása, színei, a kattintás/lenyomás-visszajelzés és a 48 dp-es érinthetőség nem módosultak. A külön `Surface`-es, azonos alakú Home/Health/Coach/Progress/Naptár/Sheet/Editor fénykereteknél nem igazolódott azonos minimális érintési eltérés; csak a közös kitöltött gombot érintettük.
 - Új Robolectric képpont/lenyomás/érintési perem teszt: arany Fényes #23, cián Fényes #18, matt #1; a Beállítások adatvédelmi dialógus Bezárás műveletének tesztje bővült. Kód- és változáslista-audit megvolt; Gradle/JVM teszt, fizikai készülékes két Fényes + nem Fényes ellenőrzés még hátravan.
-- A commitok `[skip ci]` jelölésűek. A 2792-es közös CI-t, APK/AAB buildet, verzióemelést és main-integrációt nem indítottuk. A #312/13 engedélykapcsolók külön feladat, ebben az ágban nincs változás.
+- A commitok `[skip ci]` jelölésűek. A közös CI-t és APK/AAB buildet a #320 integrációja indítja, verzióemelés nincs. A #312/13 engedélykapcsolók külön feladat, ebben az ágban nincs változás.
 
 ---
 

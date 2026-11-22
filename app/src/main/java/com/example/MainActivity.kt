@@ -8,6 +8,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -144,6 +146,20 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
     val nativeHealth: com.repforge.app.ui.health.HealthDashboardViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
     val health by nativeHealth.uiState.collectAsStateWithLifecycle()
     val nativeSettings: com.repforge.app.ui.settings.SettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val nativeSettingsState by nativeSettings.uiState.collectAsStateWithLifecycle()
+    val hcBackgroundAccess = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) nativeHealth.toggleHcBackground(true)
+        else viewModel.showBannerMessage(
+            com.repforge.app.NativePrivacyControls.backgroundPermissionMessage(uiState.language.name)
+        )
+    }
+    val hcWorkoutWriteAccess = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (!granted) viewModel.showBannerMessage(
+            com.repforge.app.NativePrivacyControls.writePermissionMessage(uiState.language.name))
+    }
+    LaunchedEffect(uiState.permissionHealthConnectEnabled, uiState.permissionSamsungHealthEnabled) {
+        nativeHealth.refreshBackgroundStatus()
+    }
     val googleConsent by nativeSettings.googleConsent.collectAsStateWithLifecycle()
     com.repforge.app.ui.settings.NativeGoogleConsentLauncher(googleConsent, nativeSettings::takeGoogleConsent,
         nativeSettings::completeGoogleConsent, nativeSettings::failGoogleConsent)
@@ -825,7 +841,34 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             strings = strings,
                             onBack = { viewModel.navigateBack() },
                             onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
-                            onTogglePermission = requestPlatformPermission
+                            onTogglePermission = { key, enabled ->
+                                requestPlatformPermission("${key}_${if (enabled) "on" else "off"}")
+                            },
+                            onManagePermission = requestPlatformPermission,
+                            hcBackgroundEnabled = health.hcBackground,
+                            hcBackgroundPermissionGranted = com.repforge.app.HealthBackgroundJob.permitted(context),
+                            hcWorkoutWriteEnabled = nativeSettingsState.settings.autoWriteWorkoutToHealthConnect,
+                            hcWorkoutWritePermissionGranted = android.os.Build.VERSION.SDK_INT >= 34 &&
+                                context.checkSelfPermission(com.repforge.app.HealthConnectRepository.WRITE_EXERCISE_PERMISSION) ==
+                                android.content.pm.PackageManager.PERMISSION_GRANTED,
+                            onToggleHcBackground = { enabled ->
+                                if (enabled && health.hcBackgroundBlock ==
+                                        com.repforge.app.ui.health.BackgroundBlock.BACKGROUND_PERMISSION)
+                                    hcBackgroundAccess.launch(com.repforge.app.HealthConnectRepository.BACKGROUND_READ_PERMISSION)
+                                else nativeHealth.toggleHcBackground(enabled)
+                            },
+                            onToggleHcWorkoutWrite = { enabled ->
+                                if (!enabled) nativeSettings.setAutoWriteHc(false)
+                                else if (android.os.Build.VERSION.SDK_INT >= 34 &&
+                                    com.repforge.app.HealthConnectRepository.isSupported(context)) {
+                                    nativeSettings.setAutoWriteHc(true)
+                                    if (context.checkSelfPermission(com.repforge.app.HealthConnectRepository.WRITE_EXERCISE_PERMISSION) !=
+                                            android.content.pm.PackageManager.PERMISSION_GRANTED)
+                                        hcWorkoutWriteAccess.launch(com.repforge.app.HealthConnectRepository.WRITE_EXERCISE_PERMISSION)
+                                } else viewModel.showBannerMessage(
+                                    com.repforge.app.HealthConnectSyncRecovery.failureMessage(
+                                        UnsupportedOperationException("Health Connect unsupported"), uiState.language.name))
+                            }
                         )
                     }
 

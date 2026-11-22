@@ -385,7 +385,9 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
         if (newProvider == _uiState.value.provider) return
         val previousRead = providerJob
         invalidateRefresh()
-        if (newProvider == HealthJournalStore.SAMSUNG) samsungPermissionPending = true
+        if (newProvider == HealthJournalStore.SAMSUNG &&
+            com.repforge.app.NativePrivacyControls.enabled(context, com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH))
+            samsungPermissionPending = true
         viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) {
@@ -399,7 +401,8 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                 loadHealthDashboard()
                 // Explicit provider selection owns the permission prompt even when an old
                 // automatic operation was cancelled while waiting for the SDK.
-                if (newProvider == HealthJournalStore.SAMSUNG) {
+                if (newProvider == HealthJournalStore.SAMSUNG &&
+                    com.repforge.app.NativePrivacyControls.enabled(context, com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH)) {
                     previousRead?.join()
                     samsungPermissionPending = false
                     refresh(activity, requestSamsungPermission = true)
@@ -452,6 +455,18 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
         appAuto: Boolean = false,
         ignoreAutoInterval: Boolean = false
     ) {
+        val requestedSource = requestedProvider ?: _uiState.value.provider
+        if (!allProviders && requestedSource in setOf(HealthJournalStore.HC, HealthJournalStore.SAMSUNG)) {
+            val feature = if (requestedSource == HealthJournalStore.HC)
+                com.repforge.app.NativePrivacyControls.HEALTH_CONNECT
+                else com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH
+            if (!com.repforge.app.NativePrivacyControls.enabled(context, feature)) {
+                if (trigger == NativeHealthAutoRefreshGate.Trigger.MANUAL)
+                    _uiState.update { it.copy(syncFailed = true, syncOutcome = "BLOCKED",
+                        syncMessage = com.repforge.app.NativePrivacyControls.disabledMessage(it.language)) }
+                return
+            }
+        }
         if (trigger == NativeHealthAutoRefreshGate.Trigger.AUTO && !appAuto && appVisible) return
         if (appAuto) {
             if (!appVisible || appActivity?.get() !== activity || samsungPermissionPending || manualSamsungPermissionVisible) return
@@ -489,9 +504,13 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                 var batchContinuation: NativeDataReplacement.Continuation? = null
                 var batchSelectedProvider = ""
                 val prepared = withContext(Dispatchers.IO) {
-                    val hcPermitted = Build.VERSION.SDK_INT >= 34 && HealthConnectRepository.isSupported(context) &&
+                    val hcPermitted = com.repforge.app.NativePrivacyControls.enabled(context,
+                        com.repforge.app.NativePrivacyControls.HEALTH_CONNECT) &&
+                        Build.VERSION.SDK_INT >= 34 && HealthConnectRepository.isSupported(context) &&
                         HealthConnectRepository.anyReadAllowed(context)
-                    val samsungPermitted = SamsungHealthRepository.isInstalled(context) && SamsungHealthRepository.isSdkAvailable()
+                    val samsungPermitted = com.repforge.app.NativePrivacyControls.enabled(context,
+                        com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH) &&
+                        SamsungHealthRepository.isInstalled(context) && SamsungHealthRepository.isSdkAvailable()
                     providerAvailability = mapOf(HealthJournalStore.HC to hcPermitted, HealthJournalStore.SAMSUNG to samsungPermitted)
                     NativeDataReplacement.mutate(context) {
                         val prefs = healthStore.preferences()
@@ -537,6 +556,9 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                     check(sceneCurrent()) {
                         "Health screen changed while refreshing"
                     }
+                    if (!allProviders) com.repforge.app.NativePrivacyControls.requireEnabled(context,
+                        if (snapshot.provider == HealthJournalStore.HC) com.repforge.app.NativePrivacyControls.HEALTH_CONNECT
+                        else com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH)
                     checkNotNull(batchContinuation).requireCurrent(context)
                     check(healthStore.generation() == snapshot.datasetGeneration &&
                         healthStore.preferences().optString("provider", HealthJournalStore.HC) == batchSelectedProvider) {
@@ -583,8 +605,7 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                 val failure = result.exceptionOrNull()
                 val providerLabel = com.repforge.app.NativeWorkoutHealthSource.label(snapshot.provider)
                 val detail = failure?.let {
-                    if (snapshot.provider == HealthJournalStore.SAMSUNG) "${SamsungHealthRepository.errorCode(it)} • ${it.message.orEmpty().take(180)}"
-                    else com.repforge.app.HealthConnectSyncRecovery.failureMessage(it, _uiState.value.language)
+                    com.repforge.app.HealthConnectSyncRecovery.failureMessage(it, _uiState.value.language)
                 }
                 _uiState.update { it.copy(syncFailed = failed, syncPartial = partial,
                     syncOutcome = if (failed) "FAILED" else if (partial) "PARTIAL" else "SUCCESS",
@@ -603,7 +624,7 @@ class HealthDashboardViewModel(application: Application) : AndroidViewModel(appl
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) {
-                _uiState.update { it.copy(syncFailed = true, syncOutcome = "FAILED", syncMessage = "${com.repforge.app.NativeWorkoutHealthSource.label(it.provider)}: ${if (it.provider == HealthJournalStore.SAMSUNG) SamsungHealthRepository.errorCode(failure) else "READ_FAILED"} • ${com.repforge.app.HealthConnectSyncRecovery.failureMessage(failure, it.language)}") }
+                _uiState.update { it.copy(syncFailed = true, syncOutcome = "FAILED", syncMessage = "${com.repforge.app.NativeWorkoutHealthSource.label(it.provider)}: ${com.repforge.app.HealthConnectSyncRecovery.failureMessage(failure, it.language)}") }
                 if (trigger == NativeHealthAutoRefreshGate.Trigger.MANUAL && screenVisible) {
                     val text = com.repforge.app.ui.text.nativeResources(context, _uiState.value.language)
                     _uiState.update { it.copy(statusMessage = text.getString(com.repforge.app.R.string.coach_refresh_failed)) }

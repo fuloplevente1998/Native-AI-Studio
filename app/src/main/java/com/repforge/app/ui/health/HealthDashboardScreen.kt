@@ -163,6 +163,12 @@ fun HealthDashboardScreen(
         }
     }
     fun startSync(full: Boolean) {
+        if (!com.repforge.app.NativePrivacyControls.enabled(context,
+            if (state.provider == "health_connect") com.repforge.app.NativePrivacyControls.HEALTH_CONNECT
+            else com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH)) {
+            viewModel.syncHealth(activity, full) // No permission prompt when the source is off.
+            return
+        }
         val permissions = HealthConnectRepository.ALL_RUNTIME_PERMISSIONS
         if (state.provider == "health_connect" && Build.VERSION.SDK_INT >= 34 &&
             permissions.none { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }) {
@@ -219,7 +225,9 @@ fun HealthDashboardScreen(
                 onSelectProvider = { viewModel.setProvider(it, activity) },
                 onAutoOnOpen = viewModel::setAutoOnOpen,
                 onToggleHcBackground = { enable ->
-                    if (enable && state.hcBackgroundBlock == BackgroundBlock.BACKGROUND_PERMISSION)
+                    if (enable && !com.repforge.app.NativePrivacyControls.enabled(context,
+                            com.repforge.app.NativePrivacyControls.HEALTH_CONNECT)) viewModel.refreshBackgroundStatus()
+                    else if (enable && state.hcBackgroundBlock == BackgroundBlock.BACKGROUND_PERMISSION)
                         backgroundPermissionLauncher.launch(HealthConnectRepository.BACKGROUND_READ_PERMISSION)
                     else viewModel.toggleHcBackground(enable)
                 },
@@ -236,7 +244,10 @@ fun HealthDashboardScreen(
                 onRetrySync = { startSync(state.syncRetryFull) },
                 onRefresh = {
                     val permissions = HealthConnectRepository.READ_PERMS.map { "android.permission.health.$it" }.toTypedArray()
-                    if (state.provider == "health_connect" && Build.VERSION.SDK_INT >= 34 &&
+                    if (state.provider == "health_connect" &&
+                        com.repforge.app.NativePrivacyControls.enabled(context,
+                            com.repforge.app.NativePrivacyControls.HEALTH_CONNECT) &&
+                        Build.VERSION.SDK_INT >= 34 &&
                         permissions.none { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }) {
                         permissionLauncher.launch(permissions)
                     } else viewModel.refresh(activity)

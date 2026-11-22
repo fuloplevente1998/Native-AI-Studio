@@ -5565,9 +5565,13 @@ class TrainPilotViewModel : ViewModel() {
                     name = watchNames.singleOrNull()
                 )
             it.copy(permissionGpsEnabled = access.optBoolean("gps"),
+                permissionGpsGranted = access.optBoolean("gpsGranted"),
                 permissionCentralLocEnabled = access.optBoolean("location"),
                 permissionNotificationsEnabled = access.optBoolean("notifications"),
-                permissionHealthConnectEnabled = access.optInt("healthGranted") > 0,
+                permissionNotificationsGranted = access.optBoolean("notificationsGranted"),
+                permissionHealthConnectEnabled = access.optBoolean("healthConnect"),
+                permissionHealthConnectGranted = access.optBoolean("healthReadGranted"),
+                permissionSamsungHealthEnabled = access.optBoolean("samsungHealth"),
                 healthGrantedCount = access.optInt("healthGranted"),
                 healthPermissionCount = access.optInt("healthTotal"),
                 watchControlPending = pending,
@@ -5585,7 +5589,21 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    fun updateSamsungAccess(granted: Boolean) { _uiState.update { it.copy(permissionSamsungHealthEnabled = granted) } }
+    fun updatePrivacyChoice(feature: String, enabled: Boolean) {
+        // Only called after the persistent preference commit succeeds. Unlike OS grants,
+        // this is the state the switch represents and should update without a Wear query.
+        _uiState.update { state ->
+            when (feature) {
+                com.repforge.app.NativePrivacyControls.GPS -> state.copy(permissionGpsEnabled = enabled)
+                com.repforge.app.NativePrivacyControls.NOTIFICATIONS -> state.copy(permissionNotificationsEnabled = enabled)
+                com.repforge.app.NativePrivacyControls.HEALTH_CONNECT -> state.copy(permissionHealthConnectEnabled = enabled)
+                com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH -> state.copy(permissionSamsungHealthEnabled = enabled)
+                else -> state
+            }
+        }
+    }
+
+    fun updateSamsungAccess(granted: Boolean) { _uiState.update { it.copy(permissionSamsungHealthGranted = granted) } }
 
     fun showBannerMessage(message: String) {
         _uiState.update { it.copy(statusBannerMessage = message) }

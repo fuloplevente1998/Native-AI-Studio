@@ -192,6 +192,11 @@ class DistanceTrackingService : Service(), LocationListener {
     private val tick = object : Runnable {
         override fun run() {
             if (!active) return
+            if (!NativePrivacyControls.enabled(this@DistanceTrackingService, NativePrivacyControls.GPS)) {
+                stopMeasurement()
+                stopSelf()
+                return
+            }
             save()
             notifyStatus()
             handler.postDelayed(this, 5000L)
@@ -233,6 +238,10 @@ class DistanceTrackingService : Service(), LocationListener {
             return START_NOT_STICKY
         }
         if (active) return START_NOT_STICKY
+        if (!NativePrivacyControls.enabled(this, NativePrivacyControls.GPS)) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
         val reqKey = intent.getStringExtra("key")
         val reqLang = intent.getStringExtra("language")
         if (reqKey == null || reqLang == null) {
@@ -305,7 +314,7 @@ class DistanceTrackingService : Service(), LocationListener {
     }
 
     override fun onLocationChanged(location: Location) {
-        if (!active || paused) return
+        if (!active || paused || !NativePrivacyControls.enabled(this, NativePrivacyControls.GPS)) return
         val stamp = location.elapsedRealtimeNanos / 1_000_000L
         val now = SystemClock.elapsedRealtime()
         if (!location.hasAccuracy() || now - stamp > 15_000L || stamp > now + 1000L) return

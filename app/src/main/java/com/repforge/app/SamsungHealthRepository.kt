@@ -115,7 +115,7 @@ object SamsungHealthRepository {
             check(isInstalled(activity) && isSdkAvailable()) { "Samsung Health nem érhető el." }
             if (!force && readGrantedKeys(activity) {
                 check(!activity.isFinishing && !activity.isDestroyed) { "Samsung Health Activity closed" }
-            }.isNotEmpty()) return@runCatching
+            }.size == PERMISSION_KEYS.size) return@runCatching
             suspendCancellableCoroutine<Unit> { continuation ->
                 try {
                     HealthDataService.getStore(activity).requestPermissionsAsync(SamsungSdkReader.permissions(), activity)
@@ -146,12 +146,14 @@ object SamsungHealthRepository {
         guard: () -> Unit): JSONObject = withContext(Dispatchers.IO) {
         guard()
         if (!isInstalled(context) || !isSdkAvailable()) throw UnsupportedOperationException("Samsung Health alkalmazás vagy SDK nem érhető el.")
+        NativePrivacyControls.requireEnabled(context, NativePrivacyControls.SAMSUNG_HEALTH)
         val range = validateRange(startIso, endIso, 24 * 60L)
         val reader = SamsungSdkReader.open(context) { guard() }
         if (reader.grantedKeys().none { it in setOf("READ_STEPS", "READ_HEART_RATE", "READ_EXERCISE") })
             throw SecurityException("Samsung Health: pulzus- vagy edzésolvasási engedély szükséges.")
         val result = reader.workout(range[0], range[1]).put("provider", HealthJournalStore.SAMSUNG)
         guard()
+        NativePrivacyControls.requireEnabled(context, NativePrivacyControls.SAMSUNG_HEALTH)
         check(SamsungSdkReader.open(context) { guard() }.granted == reader.granted) { "Samsung Health engedélyei megváltoztak." }
         val failures = result.optJSONArray("failedFields") ?: org.json.JSONArray().also { result.put("failedFields", it) }
         val errors = result.optJSONObject("errors") ?: JSONObject().also { result.put("errors", it) }
@@ -186,6 +188,7 @@ object SamsungHealthRepository {
         try {
             requireForegroundGuard()
             check(isInstalled(context) && isSdkAvailable()) { "Samsung Health nem érhető el." }
+            NativePrivacyControls.requireEnabled(context, NativePrivacyControls.SAMSUNG_HEALTH)
             val range = validateRange(startIso, endIso, 26 * 60L)
             val day = dayKey.ifEmpty { range[0].atZone(ZoneId.systemDefault()).toLocalDate().toString() }
             require(HealthJournalStore.validDay(day) && range[0].atZone(ZoneId.systemDefault()).toLocalDate().toString() == day)
@@ -228,6 +231,7 @@ object SamsungHealthRepository {
             check(currentGrants == reader.granted) { "Samsung read permissions changed" }
             readCommit {
                 requireForegroundGuard()
+                NativePrivacyControls.requireEnabled(context, NativePrivacyControls.SAMSUNG_HEALTH)
                 journal.samsungDay(day, result, reader.journal, generation)
             }
             Result.success(result)
