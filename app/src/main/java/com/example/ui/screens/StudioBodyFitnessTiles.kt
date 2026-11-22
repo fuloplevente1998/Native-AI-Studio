@@ -59,21 +59,32 @@ internal fun StudioBodyFitnessTiles(state: TrainPilotUiState, onSelect: (String,
         initialValue = emptyMap(), provider, state.healthRefreshRevision
     ) {
         value = withContext(Dispatchers.IO) {
-            val records = NativeHealthRecords(HealthJournalStore.get(context))
-            val today = LocalDate.now()
-            listOf(
-                Triple("bodyFat", "BodyFatRecord", 100.0),
-                Triple("spo2", "OxygenSaturationRecord", 100.0),
-                Triple("vo2", "Vo2MaxRecord", Double.POSITIVE_INFINITY)
-            ).mapNotNull { (key, type, max) ->
-                val page = runCatching {
-                    records.load(HealthRecordQuery(
-                        day = today.minusYears(2), channel = provider, type = type, endDay = today
-                    ))
-                }.getOrNull()
-                val reading = page?.let { latestBodyFitnessMeasurement(it.rows, max) }
-                reading?.let { key to it }
-            }.toMap()
+            val privacy = com.repforge.app.NativePrivacyControls
+            val enabled = privacy.enabled(context,
+                if (provider == HealthJournalStore.HC) privacy.HEALTH_CONNECT else privacy.SAMSUNG_HEALTH)
+            if (!enabled) emptyMap()
+            else {
+                val records = NativeHealthRecords(HealthJournalStore.get(context))
+                val today = LocalDate.now()
+                listOf(
+                    listOf("bodyFat", "BodyFatRecord", "READ_BODY_FAT"),
+                    listOf("spo2", "OxygenSaturationRecord", "READ_OXYGEN_SATURATION"),
+                    listOf("vo2", "Vo2MaxRecord", "READ_VO2_MAX")
+                ).mapNotNull { (key, type, grant) ->
+                    // A persisted measurement is not an authorization to display it after
+                    // its Health Connect permission has been revoked.
+                    if (provider == HealthJournalStore.HC &&
+                        !com.repforge.app.HealthConnectRepository.isAllowed(context, grant)) return@mapNotNull null
+                    val page = runCatching {
+                        records.load(HealthRecordQuery(
+                            day = today.minusYears(2), channel = provider, type = type, endDay = today
+                        ))
+                    }.getOrNull()
+                    val maximum = if (key == "vo2") Double.POSITIVE_INFINITY else 100.0
+                    val reading = page?.let { latestBodyFitnessMeasurement(it.rows, maximum) }
+                    reading?.let { key to it }
+                }.toMap()
+            }
         }
     }
 
