@@ -1083,7 +1083,12 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                             if (health.samsungInstalled && health.samsungAvailable) "Samsung Health • szolgáltató elérhető" else "Samsung Health • alkalmazás vagy SDK nem érhető el"
                                         else if (health.hcSupported && health.hcGranted) "Health Connect • olvasási hozzáférés engedélyezett" else "Health Connect • hiányzó támogatás vagy engedély") + health.providerReadDetails.takeIf { it.isNotBlank() }?.let { " • $it" }.orEmpty()),
                                     strings = strings,
-                                    onToggleHealthSection = { viewModel.toggleHealthSection(it) },
+                                    onToggleHealthSection = { section ->
+                                        val returnToLog = section == "connect" && uiState.expandedHealthConnect &&
+                                            uiState.backStack.lastOrNull()?.subScreen == SubScreen.LOG_WORKOUT_DETAIL
+                                        viewModel.toggleHealthSection(section)
+                                        if (returnToLog) viewModel.navigateBack()
+                                    },
                                     onSelectWeightRange = { viewModel.selectWeightRange(it) },
                                     onToggleAddWeightDialog = { viewModel.toggleAddWeightDialog(it) },
                                     onSaveNewWeight = { kg, dateStr -> viewModel.saveNewBodyWeight(kg, dateStr) },
