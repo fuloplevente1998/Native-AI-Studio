@@ -3438,7 +3438,13 @@ fun PermissionsScreen(
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
     onTogglePermission: (String, Boolean) -> Unit,
-    onManagePermission: (String) -> Unit
+    onManagePermission: (String) -> Unit,
+    hcBackgroundEnabled: Boolean = false,
+    hcBackgroundPermissionGranted: Boolean = false,
+    hcWorkoutWriteEnabled: Boolean = false,
+    hcWorkoutWritePermissionGranted: Boolean = false,
+    onToggleHcBackground: (Boolean) -> Unit = {},
+    onToggleHcWorkoutWrite: (Boolean) -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
     val required = tr(uiState.language,
@@ -3493,10 +3499,47 @@ fun PermissionsScreen(
                     "Citire puls, somn, pași și greutate"),
                 uiState.permissionHealthConnectEnabled,
                 if (uiState.permissionHealthConnectEnabled && !uiState.permissionHealthConnectGranted) required
+                    else if (uiState.permissionHealthConnectEnabled &&
+                        uiState.healthGrantedCount < uiState.healthPermissionCount)
+                        tr(uiState.language, "Részleges hozzáférés", "Partial access",
+                            "Teilweiser Zugriff", "Acces parțial") +
+                        " ${uiState.healthGrantedCount}/${uiState.healthPermissionCount}"
                     else if (uiState.permissionHealthConnectEnabled)
                         "${uiState.healthGrantedCount}/${uiState.healthPermissionCount}" else null,
                 "privacy_health_connect_switch"
             ) { onTogglePermission("hc", it) }
+        }
+        if (uiState.permissionHealthConnectEnabled) {
+            item {
+                PermissionToggleCard(
+                    tr(uiState.language, "Health Connect háttérfrissítés",
+                        "Health Connect background refresh",
+                        "Health Connect Hintergrundaktualisierung",
+                        "Actualizare Health Connect în fundal"),
+                    tr(uiState.language, "Külön engedély és Android-ütemezés szükséges.",
+                        "Requires separate access and Android scheduling.",
+                        "Benötigt eine separate Berechtigung und Android-Planung.",
+                        "Necesită permisiune separată și programare Android."),
+                    hcBackgroundEnabled,
+                    if (hcBackgroundEnabled && !hcBackgroundPermissionGranted) required else null,
+                    "privacy_hc_background_switch"
+                ) { onToggleHcBackground(it) }
+            }
+            item {
+                PermissionToggleCard(
+                    tr(uiState.language, "Edzésírás Health Connectbe",
+                        "Write workouts to Health Connect",
+                        "Trainings in Health Connect schreiben",
+                        "Scrie antrenamente în Health Connect"),
+                    tr(uiState.language, "Opcionális; a forrás olvasásától független.",
+                        "Optional; separate from reading health data.",
+                        "Optional; getrennt vom Lesen der Gesundheitsdaten.",
+                        "Opțional; separat de citirea datelor de sănătate."),
+                    hcWorkoutWriteEnabled,
+                    if (hcWorkoutWriteEnabled && !hcWorkoutWritePermissionGranted) required else null,
+                    "privacy_hc_workout_write_switch"
+                ) { onToggleHcWorkoutWrite(it) }
+            }
         }
         item {
             PermissionToggleCard(
