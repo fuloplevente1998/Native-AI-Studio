@@ -1,0 +1,12 @@
+<hu-HU>
+• Az órás kiadás a telefonos 1.4.1-es frissítéshez tartozik. Az órás funkciók a korábbiak szerint használhatók.
+</hu-HU>
+<en-US>
+• This Wear OS release accompanies the phone update to 1.4.1. Existing watch features work as before.
+</en-US>
+<de-DE>
+• Diese Wear-OS-Version begleitet das Smartphone-Update auf 1.4.1. Die vorhandenen Uhrfunktionen bleiben wie gewohnt nutzbar.
+</de-DE>
+<ro>
+• Această versiune Wear OS însoțește actualizarea pentru telefon la 1.4.1. Funcțiile ceasului pot fi folosite ca înainte.
+</ro>

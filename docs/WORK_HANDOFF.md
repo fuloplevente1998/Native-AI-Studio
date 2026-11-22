@@ -1,9 +1,10 @@
-# Kezdőlap · Mai állapot részletek
+# TrainPilot 2796 · 1.4.1
 
-- Ág: `fix/home-today-health-details`, alap `afde511`, [draft PR #327](https://github.com/fuloplevente1998/Native-AI-Studio/pull/327).
-- A Kezdőlap és az Egészség mind a hat Mai állapot csempéje ugyanazt az alulról nyíló részletlapot használja. A bezárás után a kiinduló oldal marad. A részletlapról nyitható napló a kiválasztott napi adattípusra ugrik.
-- A Samsung órás lépésszámát a közvetlen SDK órás aggregálása adja. A napi és az órás lépésszám hiány esetén másik engedélyezett forrást használhat, saját forrásmegjelöléssel. Az igazolt mai Samsung Energy Score Health Connect mellett is megjelenhet. A Regeneráció lap a Coach mérőjének kompakt változatát és a Coach gombot mutatja.
-- A Kezdőlap hat csempéjét, bezárását és a napló fókuszát a `Post2757PresentationRegressionTest` ellenőrzi. A teljes JVM és R8 eredménye a draft PR ellenőrzéseiben látszik.
+- A [#327](https://github.com/fuloplevente1998/Native-AI-Studio/pull/327) mainre került. A kiadás forrása `de6f47c07d3edc756cb7c244f43624e3355a47da`.
+- A Kezdőlap és az Egészség közös Mai állapot részleteket nyit. A Regeneráció kompakt Coach-nézetet kapott. A lépések közvetlen Samsung órás aggregátumot, hiány esetén a másik engedélyezett forrás adatát használhatják. Az igazolt mai Samsung Energy Score Health Connect mellett is elérhető.
+- Telefon 279600, Wear OS 279602. A [main CI](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45046266773) és az [aláírt kiadás](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45046772232) sikeres. Mindkét nyers JUnit jelentésben 817 telefonos és 204 Wear-teszt szerepel, 0 hibával és kihagyással. A Wear DEX egyezik a 2795-tel.
+- Mind a négy APK/AAB verziója, SHA-256 lenyomata és aláírása ellenőrizve. A csomagok, a változáslista és a négy nyelvű Play-szövegek a [TrainPilot Native Drive-mappában](https://drive.google.com/drive/folders/1ywHgrManynjV9uNvZfVncOmCr3SbHIb9) vannak. A feltöltött nevek, méretek és a mappa visszaellenőrizve. [Ellenőrzési adatok](https://drive.google.com/file/d/1AfdNV7ljLWiJGlZkVHzf7CcgcVWiJPTu/view?usp=drivesdk)
+- A [278900/278902 óta készült változáslista](releases/2796-changes.md), a [telefonos](releases/2796-phone-play-notes.txt) és az [órás](releases/2796-wear-play-notes.txt) Play-szöveg a repóban is megtalálható. A Samsung órás bontás készülékes próbája és a Play Console-feltöltés hátravan.
 
 ---
 

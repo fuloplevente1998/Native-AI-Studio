@@ -1,0 +1,24 @@
+<hu-HU>
+• Önálló Napló a felső sávban, kompaktabb Fejlődés és részletesebb izomterhelés.
+• Átrendezhető csempék és frissített Gyors edzés. Az edzésstílus és a progresszió már a profilszerkesztőben is választható.
+• Közös Mai állapot részletek a Kezdőlapon és az Egészségben, órás Samsung-lépések és kompakt Regeneráció nézet.
+• Átláthatóbb engedélykezelés, javított biztonsági mentés és naptárszinkron.
+</hu-HU>
+<en-US>
+• Open the workout log from the top bar. Progress is more compact and shows more muscle groups.
+• Reorder tiles, see updated Quick Workout cards, and set training style and progression in your profile.
+• Home and Health share daily details, with hourly Samsung steps and a compact Recovery view.
+• Clearer permissions and fixes for backup and calendar sync.
+</en-US>
+<de-DE>
+• Trainingsprotokoll in der oberen Leiste, kompaktere Fortschrittsansicht und mehr Muskelgruppen.
+• Kacheln neu anordnen, überarbeitete Schnelltrainingskarten und Trainingsstil sowie Progression im Profil wählen.
+• Gemeinsame Tagesdetails für Startseite und Gesundheit mit Samsung-Schritten pro Stunde und kompakter Erholungsansicht.
+• Übersichtliche Berechtigungen und Korrekturen für Sicherung und Kalendersynchronisierung.
+</de-DE>
+<ro>
+• Jurnal de antrenament în bara de sus, progres mai compact și mai multe grupe musculare.
+• Reordonarea cardurilor, antrenament rapid actualizat și alegerea stilului și progresiei în profil.
+• Detalii zilnice comune pe pagina Acasă și în Sănătate, cu pași Samsung pe oră și o vedere compactă a recuperării.
+• Permisiuni mai clare și remedieri pentru backup și sincronizarea calendarului.
+</ro>
