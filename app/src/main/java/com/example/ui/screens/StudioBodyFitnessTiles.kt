@@ -110,6 +110,13 @@ internal fun StudioBodyFitnessTiles(state: TrainPilotUiState, onSelect: (String,
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             tiles.forEach { (key, title) ->
                 val reading = readings[key]
+                val readPermission = when (key) {
+                    "bodyFat" -> "READ_BODY_FAT"
+                    "spo2" -> "READ_OXYGEN_SATURATION"
+                    else -> "READ_VO2_MAX"
+                }
+                val permissionMissing = provider == HealthJournalStore.HC &&
+                    !com.repforge.app.HealthConnectRepository.isAllowed(context, readPermission)
                 val formatted = reading?.let {
                     String.format(Locale.getDefault(), "%.1f", it.value) +
                         if (key == "vo2") "" else "%"
@@ -131,6 +138,9 @@ internal fun StudioBodyFitnessTiles(state: TrainPilotUiState, onSelect: (String,
                             fontWeight = FontWeight.Bold, color = palette.textPrimary, maxLines = 1)
                         Text(
                             if (timestamp != null) "$providerLabel · $timestamp"
+                            else if (permissionMissing) tr(
+                                "Engedély szükséges", "Permission required",
+                                "Berechtigung erforderlich", "Permisiune necesară")
                             else tr("Nincs naplózott adat", "No recorded data",
                                 "Keine gespeicherten Daten", "Fără date salvate"),
                             color = palette.textSecondary, fontSize = 10.sp,
