@@ -3732,7 +3732,11 @@ private fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
         }
     }
 
-    // Workouts: the goal counts the calendar week/month, the columns show the last 7 days of the journal.
+    // The week remains interactive. Only the selected day's chart value is visible by default;
+    // complete measured/journal history is available in the existing bottom sheet.
+    val workouts = uiState.loggedWorkouts.filter { w -> w.localWorkoutDate()?.let { it in dates } == true }
+        .sortedByDescending { it.localWorkoutDate() }
+    var historySheet by rememberSaveable { mutableStateOf<String?>(null) }
     Section(tr(lang, "Edzések", "Workouts", "Trainings", "Antrenamente"),
         "${goal.workoutsDone} / ${goal.workoutsTarget} " + (if (goal.monthly) tr(lang, "ebben a hónapban", "this month", "diesen Monat", "luna aceasta")
             else tr(lang, "ezen a héten", "this week", "diese Woche", "săptămâna aceasta")), "health_weekly_workouts_section") {
@@ -3740,24 +3744,20 @@ private fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
         Text(tr(lang, "Utolsó 7 nap: $weekWorkouts edzés · $weeklyMinutesCurrent perc", "Last 7 days: $weekWorkouts workouts · $weeklyMinutesCurrent min",
                 "Letzte 7 Tage: $weekWorkouts Trainings · $weeklyMinutesCurrent Min.", "Ultimele 7 zile: $weekWorkouts antrenamente · $weeklyMinutesCurrent min"),
             style = MaterialTheme.typography.labelMedium, color = palette.textPrimary, modifier = Modifier.testTag("health_weekly_minutes_total"))
-        com.example.ui.components.WeeklyDayBars(dates, goalDays.map { d -> d.workoutMinutes.takeIf { it > 0 }?.toDouble() },
-            label = { date, v -> todayTileWeekLabel("workout", date, v, langCode) }, tag = "health_weekly_minutes_bars", lang = langCode)
-        val list = uiState.loggedWorkouts.filter { w -> w.localWorkoutDate()?.let { it in dates } == true }
-            .sortedBy { it.localWorkoutDate() }
-        if (list.isEmpty()) Text(tr(lang, "Az elmúlt 7 napban nincs edzés.", "No workouts in the last 7 days.", "Keine Trainings in den letzten 7 Tagen.", "Niciun antrenament în ultimele 7 zile."),
-            style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
-        list.forEach { w ->
-            HorizontalDivider(color = palette.cardBorder)
-            Row(Modifier.fillMaxWidth().padding(vertical = 3.dp).testTag("health_weekly_workout_row_${w.id}"), verticalAlignment = Alignment.CenterVertically) {
-                Text(w.localWorkoutDate()?.let { com.example.ui.components.chartDateLabel(it, langCode) }.orEmpty(),
-                    style = MaterialTheme.typography.labelMedium, color = palette.textSecondary, modifier = Modifier.weight(1f))
-                Text("${w.localizedTitle(lang, uiState.programs, uiState.exercises)} · ${w.durationMinutes.coerceAtLeast(0)} $minUnit",
-                    style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = palette.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        com.example.ui.components.WeeklyDayBars(dates, goalDays.map { d -> d.workoutMinutes.toDouble().takeIf { d.workoutCount > 0 } },
+            label = { date, v -> todayTileWeekLabel("workout", date, v, langCode) }, tag = "health_weekly_minutes_bars",
+            lang = langCode, showScale = true, detailIcon = Icons.Default.FitnessCenter)
+        if (workouts.isEmpty()) {
+            Text(tr(lang, "Az elmúlt 7 napban nincs edzés.", "No workouts in the last 7 days.", "Keine Trainings in den letzten 7 Tagen.", "Niciun antrenament în ultimele 7 zile."),
+                style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+        } else {
+            TextButton(onClick = { historySheet = "workouts" },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("health_weekly_workouts_history")) {
+                Text(tr(lang, "Edzéstartalom és előzmények ›", "Workout details and history ›", "Trainingsdetails und Verlauf ›", "Detalii și istoric antrenamente ›"))
             }
         }
     }
 
-    // Steps: rolling 7 days, only measured days count ("—" when none).
     val measuredDays = goalDays.count { it.stepsAvailable }
     Section(tr(lang, "Lépések", "Steps", "Schritte", "Pași"),
         if (measuredDays == 0) "—" else "${nf.format(weeklyStepsCurrent)} / ${nf.format(weeklyStepsTarget)} · $weeklyStepsPct%", "health_weekly_steps_section") {
@@ -3768,15 +3768,56 @@ private fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
             style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, modifier = Modifier.testTag("health_weekly_steps_total"))
         com.example.ui.components.WeeklyDayBars(dates, goalDays.map { d -> d.steps.toDouble().takeIf { d.stepsAvailable } },
             label = { date, v -> todayTileWeekLabel("steps", date, v, langCode) + if (date == today) " · " + tr(lang, "napi cél", "daily goal", "Tagesziel", "obiectiv zilnic") + " ${nf.format(uiState.stepsGoal)}" else "" },
-            tag = "health_weekly_steps_bars", lang = langCode)
-        goalDays.forEachIndexed { i, day ->
-            HorizontalDivider(color = palette.cardBorder)
-            Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(com.example.ui.components.chartDateLabel(dates[i], langCode), style = MaterialTheme.typography.labelMedium,
-                    color = palette.textSecondary, modifier = Modifier.weight(1f))
-                Text(if (day.stepsAvailable) "${nf.format(day.steps)} ${tr(lang, "lépés", "steps", "Schritte", "pași")}" else tr(lang, "nincs adat", "no data", "keine Daten", "fără date"),
-                    style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = palette.textPrimary,
-                    modifier = Modifier.testTag("health_weekly_steps_${day.dateIso}"))
+            tag = "health_weekly_steps_bars", lang = langCode, showScale = true,
+            detailIcon = Icons.AutoMirrored.Filled.DirectionsWalk)
+        if (measuredDays > 0) TextButton(onClick = { historySheet = "steps" },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("health_weekly_steps_history")) {
+            Text(tr(lang, "Lépéselőzmények megtekintése ›", "View step history ›", "Schrittverlauf anzeigen ›", "Vezi istoricul pașilor ›"))
+        }
+    }
+
+    // The caller's scrolling page never grows when a history list opens.
+    // The shared modal already supports bottom-up entrance, swipe dismissal and system back.
+    if (historySheet != null) com.example.ui.components.TrainPilotScreenSheet(
+        onDismiss = { historySheet = null }, testTag = "health_weekly_history_sheet"
+    ) {
+        Column(Modifier.fillMaxWidth()
+            .heightIn(max = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.68f).dp)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(if (historySheet == "workouts") tr(lang, "Edzéselőzmények", "Workout history", "Trainingsverlauf", "Istoric antrenamente")
+                    else tr(lang, "Napi lépések", "Daily steps", "Tagesschritte", "Pași zilnici"),
+                    style = MaterialTheme.typography.titleMedium, color = palette.textPrimary, modifier = Modifier.weight(1f))
+                IconButton(onClick = { historySheet = null }, modifier = Modifier.testTag("health_weekly_history_close")) {
+                    Icon(Icons.Default.Close, contentDescription = tr(lang, "Bezárás", "Close", "Schließen", "Închide"), tint = palette.textPrimary)
+                }
+            }
+            if (historySheet == "workouts") {
+                workouts.forEach { w ->
+                    HorizontalDivider(color = palette.cardBorder)
+                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                        .testTag("health_weekly_workout_row_${w.id}"), verticalAlignment = Alignment.CenterVertically) {
+                        Text(w.localWorkoutDate()?.let { com.example.ui.components.chartDateLabel(it, langCode) }.orEmpty(),
+                            style = MaterialTheme.typography.labelMedium, color = palette.textSecondary, modifier = Modifier.weight(1f))
+                        Text("${w.localizedTitle(lang, uiState.programs, uiState.exercises)} · ${w.durationMinutes.coerceAtLeast(0)} $minUnit",
+                            style = MaterialTheme.typography.bodySmall, color = palette.textPrimary, maxLines = 2,
+                            overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            } else {
+                goalDays.asReversed().forEach { day ->
+                    HorizontalDivider(color = palette.cardBorder)
+                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("health_weekly_steps_${day.dateIso}"),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Text(com.example.ui.components.chartDateLabel(java.time.LocalDate.parse(day.dateIso), langCode),
+                            style = MaterialTheme.typography.labelMedium, color = palette.textSecondary, modifier = Modifier.weight(1f))
+                        Text(if (day.stepsAvailable) "${nf.format(day.steps)} ${tr(lang, "lépés", "steps", "Schritte", "pași")}"
+                            else tr(lang, "nincs adat", "no data", "keine Daten", "fără date"),
+                            style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                    }
+                }
             }
         }
     }
