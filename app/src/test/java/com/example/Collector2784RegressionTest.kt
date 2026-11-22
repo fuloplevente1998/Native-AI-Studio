@@ -4,6 +4,8 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.dp
+import com.example.localization.TrainPilotStrings
 import com.example.model.AppLanguage
 import com.example.ui.screens.StudioStatisticsContent
 import com.example.ui.theme.TrainPilotTheme
@@ -60,6 +62,30 @@ class Collector2784RegressionTest {
         assertWhole("workout_tab_exercise_picker_title", "Wiederholungen")
         compose.runOnIdle { lang = AppLanguage.HU }
         assertWhole("workout_tab_exercise_picker_title", "Ismétléses")
+    }
+
+    @Test fun progressOverviewStatisticsSwitchKeepsIconsAndCompactTouchTargets() {
+        var active by mutableStateOf(0)
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.screens.ProgressTabScreen(
+                uiState = TrainPilotUiState(progressMainSection = active),
+                strings = TrainPilotStrings.forLanguage(AppLanguage.HU),
+                onSelectMainSection = { active = it },
+                onSelectExercise = {}, onSelectRange = {}, onSelectVolumeBar = {},
+                onSelectExpandedStatsCard = {}, onSelectStatsSubTab = {},
+                onToggleCardioFilterStepsMode = {}, onOpenWorkoutDetail = {},
+                onOpenSettings = {}, onOpenPalettePicker = {}
+            )
+        } }
+        compose.onNodeWithTag("progress_section_tab_0").assertHeightIsEqualTo(52.dp)
+        compose.onNodeWithTag("progress_section_tab_2").assertHeightIsEqualTo(52.dp)
+        compose.onNodeWithTag("progress_section_icon_0", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("progress_section_icon_2", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("progress_section_label_0", useUnmergedTree = true).assertTextEquals("Fejlődés")
+        compose.onNodeWithTag("progress_section_tab_2").performClick()
+        compose.runOnIdle { assertEquals(2, active) }
+        compose.onNodeWithTag("progress_section_icon_0", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("progress_section_icon_2", useUnmergedTree = true).assertExists()
     }
 
     @Test fun selectedStepDayIsShownOnceAndAllHistorySlidesUpFromFixedButton() {
