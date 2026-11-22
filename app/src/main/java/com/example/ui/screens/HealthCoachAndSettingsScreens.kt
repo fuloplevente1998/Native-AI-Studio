@@ -569,17 +569,18 @@ fun HealthTabScreen(
         "Quellen, Uhr & Sync", "Surse, ceas și sincronizare")
     val blocks = listOf(
         PageLayoutBlock("today", tr(uiState.language, "Mai állapot", "Today’s status", "Heutiger Status", "Starea de azi")),
+        PageLayoutBlock("body_fitness", tr(uiState.language, "Test és fittség", "Body & fitness", "Körper & Fitness", "Corp și fitness")),
         PageLayoutBlock("weight", tr(uiState.language, "Testsúlynapló", "Weight log", "Gewichtsverlauf", "Jurnal de greutate")),
         PageLayoutBlock("journal", strings.healthJournalTitle),
         PageLayoutBlock("sources", sourcesTitle)
     )
-    val layout = rememberPageLayout("health", blocks.map { it.id })
+    val layout = rememberPageLayout("health", blocks.map { it.id }, newBlockPlacement = "body_fitness" to "today")
     LaunchedEffect(healthSectionSheet) {
         if (healthSectionSheet != null) expandedTodayTileKey = null
     }
 
     val healthBlock: @Composable (String) -> Unit = { id ->
-    PageLayoutTile(layout, id, hasHorizontalTiles = id == "today") {
+    PageLayoutTile(layout, id, hasHorizontalTiles = id == "today" || id == "body_fitness") {
         when (id) {
             "today" -> {
                 Surface(
@@ -658,12 +659,6 @@ fun HealthTabScreen(
                             expandedTodayTileKey = if (expandedTodayTileKey == key) null else key
                             if (key == "pulse") onToggleHealthSection("pulse")
                         }
-                        PageLayoutCard {
-                            StudioBodyFitnessTiles(uiState) { key, reading ->
-                                selectedFitnessReading = reading
-                                expandedTodayTileKey = key
-                            }
-                        }
 
                         PageLayoutCard {
                         val goalShape = RoundedCornerShape(12.dp)
@@ -691,31 +686,21 @@ fun HealthTabScreen(
                         }
                         }
 
-                        val tileKey = expandedTodayTileKey
-                        if (tileKey != null && healthSectionSheet == null) {
-                            StudioTodayStatusDetailSheet(
-                                uiState, strings, tileKey, today,
-                                onDismiss = { expandedTodayTileKey = null },
-                                fitnessReading = selectedFitnessReading,
-                                onOpenJournal = { focus ->
-                                    journalFocus = focus
-                                    journalFocusKey++
-                                    if (!uiState.expandedHealthJournal) onToggleHealthSection("journal")
-                                },
-                                onTogglePulseTrend = { onToggleHealthSection("pulse") },
-                                onOpenWeekly = {
-                                    if (!uiState.expandedHealthWeeklyGoals) onToggleHealthSection("weekly")
-                                    coroutineScope.launch {
-                                        val card = weeklyAnchor[0]
-                                        val block = weeklyAnchor[1]
-                                        val offset = if (card != null && block != null && card.isAttached && block.isAttached)
-                                            card.localPositionOf(block, Offset.Zero).y.toInt().coerceAtLeast(0) else 0
-                                        healthListState.animateScrollToItem(layout.saved.indexOf("today"), offset)
-                                    }
-                                },
-                                onOpenLoggedWorkout = onOpenLoggedWorkout,
-                                onNavigateToSubScreen = onNavigateToSubScreen
-                            )
+
+                    }
+                }
+            }
+            "body_fitness" -> {
+                val shape = RoundedCornerShape(20.dp)
+                Surface(
+                    shape = shape,
+                    color = palette.surfaceCard,
+                    modifier = Modifier.fillMaxWidth().trainPilotBorder(1.dp, palette.cardBorder, shape)
+                ) {
+                    Box(Modifier.padding(14.dp)) {
+                        StudioBodyFitnessTiles(uiState, layout) { key, reading ->
+                            selectedFitnessReading = reading
+                            expandedTodayTileKey = key
                         }
                     }
                 }
@@ -863,6 +848,33 @@ fun HealthTabScreen(
         }
     }
 
+    }
+
+    val tileKey = expandedTodayTileKey
+    if (tileKey != null && healthSectionSheet == null) {
+        StudioTodayStatusDetailSheet(
+            uiState, strings, tileKey, today,
+            onDismiss = { expandedTodayTileKey = null },
+            fitnessReading = selectedFitnessReading,
+            onOpenJournal = { focus ->
+                journalFocus = focus
+                journalFocusKey++
+                if (!uiState.expandedHealthJournal) onToggleHealthSection("journal")
+            },
+            onTogglePulseTrend = { onToggleHealthSection("pulse") },
+            onOpenWeekly = {
+                if (!uiState.expandedHealthWeeklyGoals) onToggleHealthSection("weekly")
+                coroutineScope.launch {
+                    val card = weeklyAnchor[0]
+                    val block = weeklyAnchor[1]
+                    val offset = if (card != null && block != null && card.isAttached && block.isAttached)
+                        card.localPositionOf(block, Offset.Zero).y.toInt().coerceAtLeast(0) else 0
+                    healthListState.animateScrollToItem(layout.saved.indexOf("today"), offset)
+                }
+            },
+            onOpenLoggedWorkout = onOpenLoggedWorkout,
+            onNavigateToSubScreen = onNavigateToSubScreen
+        )
     }
 
     if (healthSectionSheet != null) {

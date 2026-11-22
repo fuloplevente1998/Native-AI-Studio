@@ -42,6 +42,13 @@ class StudioHealthPermissionRoutingRegressionTest {
         assertFalse(intent.hasExtra(Intent.EXTRA_PACKAGE_NAME))
     }
 
+    @Test fun samsungPermissionManagementUsesTheSupportedAppDetailsRoute() {
+        val intent = StudioHealthPermissionRouting.appDetailsIntent("com.sec.android.app.shealth")
+        assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, intent.action)
+        assertEquals("package:com.sec.android.app.shealth", intent.data.toString())
+        assertFalse(intent.action == HealthConnectManager.ACTION_MANAGE_HEALTH_PERMISSIONS)
+    }
+
     @Test fun generalPermissionManagementOpensOwnAppSettings() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val fallback = StudioHealthPermissionRouting.fallbackIntent(context)
