@@ -1,8 +1,10 @@
 # Coach · gyártófüggetlen készenlét
 
-- Ág `fix/coach-independent-readiness`, alap `28b0a31`. A végső Coach-pont alapja a mért alvás, az azonos eredetű egyéni HRV-alapérték és a naplózott terhelés. Igazolt aznapi Samsung Energy Score esetén a végső érték 80% TrainPilot és 20% Samsung. A fájdalomjelzés a végső értéket legfeljebb 54-re korlátozza.
+- [PR #340](https://github.com/fuloplevente1998/Native-AI-Studio/pull/340), ág `fix/coach-independent-readiness`, alap `28b0a31`. A végső Coach-pont alapja a mért alvás, az azonos eredetű egyéni HRV-alapérték és a naplózott terhelés. Igazolt aznapi Samsung Energy Score esetén a végső érték 80% TrainPilot és 20% Samsung. A fájdalomjelzés a végső értéket legfeljebb 54-re korlátozza.
 - A számítás a kiválasztott engedélyezett forrásból indul, és a másik engedélyezett forrásból pótolja a hiányzó alvás- vagy HRV-jelet. A Health Connect által átadott méréseket minden adatforrásból fogadja. Az egymást tükröző alvásintervallumok egyszer számítanak. Készülékes ellenőrzés Samsung és más, Health Connectbe exportáló órákkal hátravan.
-- A Kezdőlap és az Egészség Regeneráció csempéje, valamint a Coach és az edzésjavaslatok közös végeredményt használnak. Önmagában a Samsung-pont külön látszik. Az ág teljes JVM- és R8-ellenőrzése az Actionsben futtatható.
+- A Kezdőlap és az Egészség Regeneráció csempéje, valamint a Coach és az edzésjavaslatok közös végeredményt használnak. Önmagában a Samsung-pont külön látszik. Az ág `172d977` forrásán az R8 és 841 telefonos, 204 Wear-teszt sikeres, 0 hibával és kihagyással. [Actions](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45074793789)
+
+- A [telefonos Play-jegyzet](releases/2800-phone-play-notes.txt) a 279600 óta megjelent változásokat foglalja össze négy nyelven. A 278902 óta a Wear OS alkalmazás és a közös modul forrása egyezik.
 
 ---
 
