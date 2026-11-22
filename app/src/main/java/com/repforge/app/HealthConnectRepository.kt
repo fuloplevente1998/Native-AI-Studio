@@ -260,6 +260,9 @@ object HealthConnectRepository {
         clientVersion: Long = 1L
     ) = withContext(Dispatchers.IO) {
         NativePrivacyControls.requireEnabled(context, NativePrivacyControls.HEALTH_CONNECT)
+        check(com.repforge.app.data.store.TrainPilotSettingsStore(context).current()
+            .autoWriteWorkoutToHealthConnect) { "Health Connect workout writing is disabled" }
+        check(isAllowed(context, "WRITE_EXERCISE")) { "Health Connect workout writing requires permission" }
         val epoch = HealthJournalStore.get(context).generation()
         val access = Access(context, epoch, Runnable {})
         val params = JSONObject()
