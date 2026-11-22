@@ -27,6 +27,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
@@ -54,10 +56,19 @@ class TrainPilotReorderState {
     internal var draggingIndex by mutableStateOf(-1)
     internal var draggingLastIndex by mutableStateOf(-1)
     internal var draggingStepPx by mutableFloatStateOf(0f)
+    internal var pointerY by mutableFloatStateOf(0f)
+    internal var measuredOrder: List<Any> = emptyList()
+    internal var gapPx: Float = 0f
 
     /** Target index for a drop of [index] after dragging [offsetY] px with rows [stepPx] apart. */
-    fun dropTarget(index: Int, lastIndex: Int, stepPx: Float): Int =
-        if (stepPx <= 0f) index else (index + (offsetY / stepPx).roundToInt()).coerceIn(0, lastIndex)
+    fun dropTarget(index: Int, lastIndex: Int, stepPx: Float): Int {
+        if (index < 0 || stepPx <= 0f) return index
+        if (measuredOrder.size == lastIndex + 1) {
+            return measuredReorderTarget(measuredOrder.map { heights[it]?.toFloat() ?: (stepPx - gapPx) },
+                gapPx, index, offsetY)
+        }
+        return (index + (offsetY / stepPx).roundToInt()).coerceIn(0, lastIndex)
+    }
 
     /** Live shift in px of the row at [index] while another row is dragged (0 when idle). */
     fun displacementFor(index: Int): Float {
@@ -70,6 +81,21 @@ class TrainPilotReorderState {
             else -> 0f
         }
     }
+}
+
+internal fun measuredReorderTarget(heights: List<Float>, gap: Float, index: Int, offset: Float): Int {
+    val direction = if (offset < 0) -1 else 1
+    val distance = kotlin.math.abs(offset)
+    var current = index
+    var traversed = 0f
+    while (current + direction in heights.indices) {
+        val next = current + direction
+        val step = (heights[current] + heights[next]) / 2f + gap
+        if (distance < traversed + step / 2f) break
+        traversed += step
+        current = next
+    }
+    return current
 }
 
 @Composable
@@ -114,7 +140,8 @@ fun TrainPilotReorderHandle(
     testTag: String,
     onMove: (from: Int, to: Int) -> Unit,
     modifier: Modifier = Modifier,
-    icon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Default.DragHandle
+    icon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Default.DragHandle,
+    immediateDrag: Boolean = false
 ) {
     val palette = LocalTrainPilotPalette.current
     val haptics = LocalHapticFeedback.current
@@ -122,32 +149,40 @@ fun TrainPilotReorderHandle(
     val currentIndex by rememberUpdatedState(index)
     val currentLast by rememberUpdatedState(lastIndex)
     val currentMove by rememberUpdatedState(onMove)
+    var rootY by remember { mutableFloatStateOf(0f) }
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .size(width = 32.dp, height = 48.dp)
-            .pointerInput(key) {
+            .then(if (immediateDrag) Modifier.onGloballyPositioned { rootY = it.positionInRoot().y } else Modifier)
+            .pointerInput(key, immediateDrag) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     down.consume()
-                    val longPress = awaitLongPressOrCancellation(down.id) ?: return@awaitEachGesture
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    val start = if (immediateDrag) down else
+                        awaitLongPressOrCancellation(down.id) ?: return@awaitEachGesture
+                    if (!immediateDrag) haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     state.offsetY = 0f
                     state.draggingIndex = currentIndex
                     state.draggingLastIndex = currentLast
                     state.draggingStepPx = (state.heights[key] ?: 0) + gapPx
+                    state.pointerY = rootY + start.position.y
                     state.draggingKey = key
-                    longPress.consume()
-                    val completed = drag(longPress.id) { change ->
-                        state.offsetY += change.positionChange().y
-                        change.consume()
+                    start.consume()
+                    try {
+                        val completed = drag(start.id) { change ->
+                            val delta = change.positionChange().y
+                            state.offsetY += delta
+                            state.pointerY += delta
+                            change.consume()
+                        }
+                        val target = state.dropTarget(currentIndex, currentLast, state.draggingStepPx)
+                        if (completed && target != currentIndex) currentMove(currentIndex, target)
+                    } finally {
+                        state.draggingKey = null
+                        state.draggingIndex = -1
+                        state.offsetY = 0f
                     }
-                    val step = (state.heights[key] ?: 0) + gapPx
-                    val target = state.dropTarget(currentIndex, currentLast, step)
-                    state.draggingKey = null
-                    state.draggingIndex = -1
-                    state.offsetY = 0f
-                    if (completed && target != currentIndex) currentMove(currentIndex, target)
                 }
             }
             .semantics {

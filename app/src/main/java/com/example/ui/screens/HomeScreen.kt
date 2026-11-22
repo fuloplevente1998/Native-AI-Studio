@@ -3,7 +3,7 @@ import androidx.compose.runtime.key
 import com.example.ui.components.rememberPageLayout
 import com.example.ui.components.PageLayoutTile
 import com.example.ui.components.PageLayoutFooter
-import com.example.ui.components.PageLayoutEditor
+import com.example.ui.components.PageLayoutFrame
 import com.example.ui.components.PageLayoutBlock
 
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -132,11 +132,7 @@ fun HomeScreen(
         PageLayoutBlock("weekly", tr("Heti célok", "Weekly goals", "Wochenziele", "Obiective săptămânale"))
     )
     val layout = rememberPageLayout("home", blocks.map { it.id })
-    if (layout.draft != null) {
-        PageLayoutEditor(layout, state.language, blocks)
-        return
-    }
-
+    PageLayoutFrame(layout, state.language, blocks, scrollState, 5.dp) {
     com.example.ui.components.TrainPilotScrollableBox(
         scrollState = scrollState,
         modifier = Modifier.fillMaxSize()
@@ -149,7 +145,7 @@ fun HomeScreen(
                 .padding(top = 4.dp, bottom = 6.dp),
             verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-        layout.saved.forEach { id ->
+        layout.order.forEach { id ->
             key(id) {
                 PageLayoutTile(layout, id) {
                     when (id) {
@@ -497,6 +493,7 @@ fun HomeScreen(
         PageLayoutFooter(layout, state.language)
     }
 }
+    }
 }
 
 @Composable

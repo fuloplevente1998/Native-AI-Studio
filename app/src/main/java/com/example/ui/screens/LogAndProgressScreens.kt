@@ -1,7 +1,7 @@
 package com.example.ui.screens
 
 import com.example.ui.components.PageLayoutBlock
-import com.example.ui.components.PageLayoutEditor
+import com.example.ui.components.PageLayoutFrame
 import com.example.ui.components.PageLayoutFooter
 import com.example.ui.components.PageLayoutTile
 import com.example.ui.components.rememberPageLayout
@@ -1315,18 +1315,14 @@ fun ProgressTabScreen(
     )
     val layout = rememberPageLayout("progress", layoutBlocks.map { it.id })
     val overviewListState = rememberLazyListState()
-    if (activeSection == 0 && layout.draft != null) {
-        PageLayoutEditor(layout, uiState.language, layoutBlocks)
-        return
-    }
-
+    PageLayoutFrame(layout, uiState.language, layoutBlocks, overviewListState, 3.dp) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(palette.background)
             .testTag("progress_tab_screen")
     ) {
-        Surface(
+        if (layout.draft == null) Surface(
             shape = RoundedCornerShape(14.dp),
             color = palette.surfaceCard,
             modifier = Modifier
@@ -1449,9 +1445,10 @@ fun ProgressTabScreen(
             }
 
             // Statistics replaces the old standalone Strength/1RM tab; estimates remain in record details.
-            else -> StudioStatisticsScreen(uiState, onSelectStatsSubTab,
+            else -> if (layout.draft == null) StudioStatisticsScreen(uiState, onSelectStatsSubTab,
                 onToggleCardioFilterStepsMode, onRefreshRecords)
         }
+    }
     }
 }
 
@@ -1501,7 +1498,7 @@ internal fun MainProgressVolumeAndMuscleSection(
         "${periodWorkouts.sumOf { it.durationMinutes } / periodWorkouts.size} min"
 
     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        val order = layout?.saved ?: listOf("volume", "metrics", "muscles", "advice")
+        val order = layout?.order ?: listOf("volume", "metrics", "muscles", "advice")
         order.forEach { id ->
             key(id) {
                 PageLayoutTile(layout, id) {

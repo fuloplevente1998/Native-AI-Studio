@@ -9,8 +9,10 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.localization.TrainPilotStrings
 import com.example.model.AppLanguage
 import com.example.ui.components.PageLayoutState
+import com.example.ui.components.measuredReorderTarget
 import com.example.ui.components.reconcilePageLayout
 import com.example.ui.screens.HomeScreen
+import com.example.ui.screens.WorkoutTabScreen
 import com.example.ui.theme.TrainPilotTheme
 import com.example.ui.viewmodel.TrainPilotUiState
 import org.junit.Assert.assertEquals
@@ -37,6 +39,35 @@ class TrainPilotPageLayoutRegressionTest {
         assertEquals(listOf("one", "two"), state.draft)
         state.cancel()
         assertEquals(listOf("two", "one"), state.saved)
+    }
+
+    @Test fun dragUsesTheMeasuredSpacingOfUnequalCards() {
+        val heights = listOf(60f, 240f, 100f)
+        assertEquals(0, measuredReorderTarget(heights, 10f, 0, 75f))
+        assertEquals(1, measuredReorderTarget(heights, 10f, 0, 100f))
+        assertEquals(2, measuredReorderTarget(heights, 10f, 0, 255f))
+        assertEquals(1, measuredReorderTarget(heights, 10f, 2, -95f))
+    }
+
+    @Test fun workoutEditShowsTheRealModeTilesAndLeavesTheirActionsInactive() {
+        var opened = 0
+        compose.setContent {
+            TrainPilotTheme {
+                WorkoutTabScreen(TrainPilotUiState(), onOpenSettings = {}, onOpenQuickWorkout = {},
+                    onOpenExerciseLibrary = { opened++ }, onOpenOutdoorWorkout = {}, onOpenProgramsList = {},
+                    onOpenProgramEditor = { _, _ -> }, onStartWorkoutDay = {}, onOpenCalendar = {},
+                    onOpenCoach = {}, onOpenProgressionModal = {})
+            }
+        }
+        compose.onNodeWithTag("page_customize_workout").performScrollTo().performClick()
+        compose.onNodeWithTag("page_layout_editor_workout").assertExists()
+        compose.onNodeWithTag("page_layout_handle_modes").assertExists()
+        compose.onNodeWithTag("workout_tab_timed_card", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("workout_tab_outdoor_card", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("workout_tab_exercise_picker", useUnmergedTree = true)
+            .performScrollTo().performTouchInput { click() }
+        compose.runOnIdle { assertEquals(0, opened) }
+        compose.onNodeWithTag("page_layout_save").assertIsDisplayed()
     }
 
     @Test fun homeSupportsLongPressAndFooterAndSavesNewOrderWithoutOpeningTheTile() {

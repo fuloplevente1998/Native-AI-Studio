@@ -3,7 +3,7 @@ import androidx.compose.runtime.key
 import com.example.ui.components.rememberPageLayout
 import com.example.ui.components.PageLayoutTile
 import com.example.ui.components.PageLayoutFooter
-import com.example.ui.components.PageLayoutEditor
+import com.example.ui.components.PageLayoutFrame
 import com.example.ui.components.PageLayoutBlock
 
 import com.example.ui.components.TrainPilotModalBottomSheet
@@ -270,13 +270,9 @@ fun WorkoutTabScreen(
         PageLayoutBlock("library", trW(state.language, "Gyakorlatkönyvtár", "Exercise library", "Übungsbibliothek", "Bibliotecă de exerciții")),
         PageLayoutBlock("program", strings.currentProgramTitle),
         PageLayoutBlock("settings", trW(state.language, "Edzés beállításai", "Workout settings", "Trainingseinstellungen", "Setări antrenament"))
-    )
+    ).filter { it.id != "settings" || activeProgram != null }
     val layout = rememberPageLayout("workout", blocks.map { it.id })
-    if (layout.draft != null) {
-        PageLayoutEditor(layout, state.language, blocks)
-        return
-    }
-
+    PageLayoutFrame(layout, state.language, blocks, scrollState, TrainPilotCardSpacing.CardGap) {
     // 2779: no "more below" arrow; the tab fits one screen. Scrolling stays only as a fallback for
     // very small screens / large font scale, so nothing becomes unreachable.
     Box(modifier = Modifier.fillMaxSize().testTag("workout_tab_root")) {
@@ -288,7 +284,7 @@ fun WorkoutTabScreen(
                 .padding(top = 8.dp, bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
-        layout.saved.forEach { id ->
+        layout.order.forEach { id ->
             key(id) {
                 PageLayoutTile(layout, id) {
                     when (id) {
@@ -542,6 +538,7 @@ fun WorkoutTabScreen(
         PageLayoutFooter(layout, state.language)
     }
 }
+    }
 }
 
 @Composable
