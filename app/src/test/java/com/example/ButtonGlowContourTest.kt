@@ -45,6 +45,7 @@ import kotlin.math.roundToInt
 @Config(sdk = [34], qualifiers = "w480dp-h960dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @LooperMode(LooperMode.Mode.PAUSED)
+@OptIn(androidx.compose.ui.test.ExperimentalTestApi::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
 class ButtonGlowContourTest {
     @get:Rule val compose = createComposeRule()
 
