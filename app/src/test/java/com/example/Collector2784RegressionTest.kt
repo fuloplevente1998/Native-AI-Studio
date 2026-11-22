@@ -11,6 +11,8 @@ import com.example.ui.screens.StudioStatisticsContent
 import com.example.ui.theme.TrainPilotTheme
 import com.example.ui.viewmodel.TrainPilotUiState
 import com.example.ui.viewmodel.WeeklyHealthDaySummary
+import com.example.ui.viewmodel.formatProviderLabelHu
+import com.repforge.app.HealthJournalStore
 import com.repforge.app.ui.progress.ProgressUiState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -92,8 +94,10 @@ class Collector2784RegressionTest {
 
     @Test fun selectedStepDayIsShownOnceAndAllHistorySlidesUpFromFixedButton() {
         val today = LocalDate.now()
+        val origin = "jc11f4b421ddb36a29ecd87f514775d"
+        val label = formatProviderLabelHu(HealthJournalStore.HC, origin)
         fun day(back: Long, steps: Int) = WeeklyHealthDaySummary(today.minusDays(back).toString(), "", steps, 0, "", 0, 0, "HC",
-            stepsAvailable = true, stepsSourceLabelHu = "Samsung Health")
+            stepOriginPackage = origin, stepsAvailable = true, stepsSourceLabelHu = label)
         compose.setContent { TrainPilotTheme {
             StudioStatisticsContent(TrainPilotUiState(language = AppLanguage.HU, statsSubTab = 1, cardioFilterStepsMode = true,
                 dailyActivityDays = listOf(day(0, 3352), day(1, 11620), day(4, 13944))), ProgressUiState(), {}, {}, {}, {}, {}, {})
@@ -101,6 +105,8 @@ class Collector2784RegressionTest {
         // The inline selected-day row is the only numeric detail, below the chart.
         compose.onNodeWithTag("statistics_steps_selected_value", useUnmergedTree = true)
             .assertTextContains("352", substring = true)
+        compose.onNodeWithText("Health Connect", substring = true, useUnmergedTree = true).assertExists()
+        compose.onNodeWithText(origin, substring = true, useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag("statistics_steps_row_$today").assertDoesNotExist()
         compose.onNodeWithTag("statistics_steps_column_9").performClick() // four days ago
         compose.onNodeWithTag("statistics_steps_selected_value", useUnmergedTree = true)
@@ -114,7 +120,9 @@ class Collector2784RegressionTest {
         val listBounds = sheetList.getUnclippedBoundsInRoot()
         assertTrue("The close control must stay above the scrolling history", headerBounds.bottom <= listBounds.top)
         compose.onNodeWithTag("statistics_steps_row_${today.minusDays(4)}").assertExists()
-        compose.onNodeWithTag("statistics_steps_row_$today").assertExists()
+        compose.onNode(hasText("Health Connect") and hasAnyAncestor(hasTestTag("statistics_steps_row_$today")),
+            useUnmergedTree = true).assertExists()
+        compose.onNodeWithText(origin, substring = true, useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag("statistics_steps_row_${today.minusDays(1)}").assertExists()
         compose.onNodeWithTag("statistics_steps_sheet_close").performClick()
         compose.onNodeWithTag("statistics_steps_daily_sheet").assertDoesNotExist()
