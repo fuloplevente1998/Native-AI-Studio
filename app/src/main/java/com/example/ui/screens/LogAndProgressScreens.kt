@@ -12,6 +12,7 @@ import com.example.model.volumeAxisMaximum
 
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 
+import com.example.ui.components.trainPilotAnimatedExpansion
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotBorder
 
@@ -918,6 +919,7 @@ fun LogWorkoutDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .trainPilotBorder(1.25.dp, palette.sectionBorder, shape)
+                        .trainPilotAnimatedExpansion()
                         .trainPilotClickable(shape) { onToggleExpandedExercise(index) }
                         .semantics { stateDescription = expansionState }
                         .testTag("log_exercise_card_$index")
