@@ -2,7 +2,7 @@ package com.example
 
 import android.content.Context
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.core.app.ApplicationProvider
@@ -61,7 +61,7 @@ class TrainPilotPageLayoutRegressionTest {
 
         compose.onNodeWithTag("page_customize_home").performScrollTo().performClick()
         val moveUp = compose.onNodeWithTag("page_layout_handle_program").fetchSemanticsNode()
-            .config[SemanticsProperties.CustomActions].first { it.label == "Mozgatás fel" }
+            .config[SemanticsActions.CustomActions].first { it.label == "Mozgatás fel" }
         compose.runOnIdle { assertTrue(moveUp.action()) }
         compose.onNodeWithTag("page_layout_save").performClick()
         compose.runOnIdle {
