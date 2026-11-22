@@ -1,3 +1,12 @@
+# TrainPilot 2793 · 1.4.1
+
+- A kiadás forrása `a60241974de4abf5425f59efc88631df04c2396a`. Benne van a #322 heti és napi grafikonos munkája és a #323 kompakt időszakválasztója, rendezett engedélylistája és kihagyható első indítási beállítása.
+- A [main CI](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45027384625) és az [aláírt futás](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45027987073) sikerült. A nyers XML-ben 812 telefonos és 204 Wear teszt, 0 hiba és 0 kihagyás.
+- A telefon 279300, a Wear 279302. Mindkét APK és mindkét AAB SHA-256-ja és aláírása ellenőrizve. A fájlok és az ellenőrzési JSON a [TrainPilot Native Drive mappában](https://drive.google.com/drive/folders/1ywHgrManynjV9uNvZfVncOmCr3SbHIb9) vannak.
+- A Health Connect és az első indítás engedélykérései valódi Samsung készüléken ellenőrizendők.
+
+---
+
 # #322 — Health weekly goals / Steps chart & app-wide gentle expansions (2026-11-22)
 
 - **Ág:** `design/health-weekly-chart-steps-sheet`, alap `93df6685059cf4ff40f6fb383a6a59016c61f7bb` (2792 signed release + docs), [draft PR #322](https://github.com/fuloplevente1998/Native-AI-Studio/pull/322). Kérő által küldött két valódi TrainPilot képernyő és jóváhagyott mockupok alapján.
