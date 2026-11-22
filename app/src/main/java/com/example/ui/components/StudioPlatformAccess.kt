@@ -22,6 +22,8 @@ import com.repforge.app.HealthConnectRepository
 import com.repforge.app.HealthJournalStore
 import com.repforge.app.NativeHealthRefresh
 import com.repforge.app.NativeDataReplacement
+import com.repforge.app.NativePrivacyControls
+import com.repforge.app.HealthBackgroundJob
 import com.repforge.app.ui.health.NativeHealthForegroundAdmission
 import com.repforge.app.SamsungHealthRepository
 import com.google.android.gms.wearable.Wearable
@@ -43,9 +45,14 @@ internal object StudioPlatformAccess {
         val location = context.getSystemService(LocationManager::class.java)
         val locationEnabled = if (Build.VERSION.SDK_INT >= 28) location?.isLocationEnabled == true
             else location?.isProviderEnabled(LocationManager.GPS_PROVIDER) == true || location?.isProviderEnabled(LocationManager.NETWORK_PROVIDER) == true
-        return JSONObject().put("gps", granted(Manifest.permission.ACCESS_FINE_LOCATION))
+        return JSONObject().put("gps", NativePrivacyControls.enabled(context, NativePrivacyControls.GPS))
+            .put("gpsGranted", granted(Manifest.permission.ACCESS_FINE_LOCATION))
             .put("location", locationEnabled)
-            .put("notifications", (Build.VERSION.SDK_INT < 33 || granted(Manifest.permission.POST_NOTIFICATIONS)) && NotificationManagerCompat.from(context).areNotificationsEnabled())
+            .put("notifications", NativePrivacyControls.enabled(context, NativePrivacyControls.NOTIFICATIONS))
+            .put("notificationsGranted", (Build.VERSION.SDK_INT < 33 || granted(Manifest.permission.POST_NOTIFICATIONS)) && NotificationManagerCompat.from(context).areNotificationsEnabled())
+            .put("healthConnect", NativePrivacyControls.enabled(context, NativePrivacyControls.HEALTH_CONNECT))
+            .put("healthReadGranted", HealthConnectRepository.anyReadAllowed(context))
+            .put("samsungHealth", NativePrivacyControls.enabled(context, NativePrivacyControls.SAMSUNG_HEALTH))
             .put("healthGranted", health.count(::granted)).put("healthTotal", health.size)
     }
 }
@@ -64,7 +71,15 @@ internal object StudioHealthPermissionRouting {
             android.net.Uri.parse("package:${context.packageName}"))
 }
 
-/** Request OS/provider permission, then read back system state. Never optimistically toggle a grant. */
+private fun privacyMessage(language: String, hu: String, en: String, de: String, ro: String): String =
+    when (language.lowercase(java.util.Locale.ROOT)) {
+        "en" -> en
+        "de" -> de
+        "ro" -> ro
+        else -> hu
+    }
+
+/** App consent and system permission are distinct; a switch must not open settings when turned off. */
 @Composable
 internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilotViewModel): (String) -> Unit {
     val scope = rememberCoroutineScope()
@@ -121,7 +136,12 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                 val granted = declaredReads.count {
                     context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
                 }
-                model.showBannerMessage("Health Connect: $granted/${declaredReads.size} olvasási engedély.")
+                if (NativePrivacyControls.enabled(context, NativePrivacyControls.HEALTH_CONNECT) && granted == 0)
+                    model.showBannerMessage(privacyMessage(model.uiState.value.language.name,
+                        "A Health Connect használatához olvasási engedély kell.",
+                        "Health Connect needs read access.", "Health Connect benötigt Lesezugriff.",
+                        "Health Connect necesită acces de citire."))
+                else model.showBannerMessage("Health Connect: $granted/${declaredReads.size}")
             }
         }
     }
@@ -130,6 +150,12 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
     }
     // Called directly in the click handler, not after a suspend/health sync operation.
     fun requestHealthConnectPermissions() {
+        if (!NativePrivacyControls.enabled(context, NativePrivacyControls.HEALTH_CONNECT)) {
+            model.showBannerMessage(privacyMessage(model.uiState.value.language.name,
+                "A Health Connect ki van kapcsolva.", "Health Connect is turned off.",
+                "Health Connect ist ausgeschaltet.", "Health Connect este dezactivat."))
+            return
+        }
         if (healthActionJob?.isActive == true) {
             model.showBannerMessage("Egészségügyi művelet már folyamatban van.")
             return
@@ -146,13 +172,16 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
         if (missingReads.isNotEmpty()) {
             healthPermissions.launch(missingReads.toTypedArray())
         } else {
-            try {
-                settings.launch(StudioHealthPermissionRouting.settingsIntent())
-            } catch (_: SecurityException) {
-                settings.launch(StudioHealthPermissionRouting.fallbackIntent(context))
-            } catch (_: ActivityNotFoundException) {
-                settings.launch(StudioHealthPermissionRouting.fallbackIntent(context))
-            }
+            scope.launch { refresh() } // Already granted: do not launch the OS settings.
+        }
+    }
+    fun openHealthConnectSettings() {
+        try {
+            settings.launch(StudioHealthPermissionRouting.settingsIntent())
+        } catch (_: SecurityException) {
+            settings.launch(StudioHealthPermissionRouting.fallbackIntent(context))
+        } catch (_: ActivityNotFoundException) {
+            settings.launch(StudioHealthPermissionRouting.fallbackIntent(context))
         }
     }
     LaunchedEffect(owner) {
@@ -168,12 +197,21 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
         }
     }
     fun startHealthAction(provider: String, permissionOnly: Boolean = false) {
+        val feature = if (provider == HealthJournalStore.HC) NativePrivacyControls.HEALTH_CONNECT
+            else NativePrivacyControls.SAMSUNG_HEALTH
+        if (!NativePrivacyControls.enabled(context, feature)) {
+            model.showBannerMessage(privacyMessage(model.uiState.value.language.name,
+                "Ez az adatforrás ki van kapcsolva.", "This health source is off.",
+                "Diese Gesundheitsquelle ist ausgeschaltet.", "Această sursă de sănătate este oprită."))
+            return
+        }
         if (healthActionJob?.isActive == true) {
             model.showBannerMessage("Egészségügyi művelet már folyamatban van."); return
         }
         healthActionJob = scope.launch {
             val admittedRoute = model.uiState.value.currentTab to model.uiState.value.currentSubScreen
             val guard = {
+                NativePrivacyControls.requireEnabled(context, feature)
                 check(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) { "Látható képernyő szükséges a szinkronhoz." }
                 check((model.uiState.value.currentTab to model.uiState.value.currentSubScreen) == admittedRoute) { "A képernyő megváltozott." }
             }
@@ -196,7 +234,11 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                             check(permissions.isNotEmpty()) { "A Health Connect ezen az eszközön nem érhető el." }
                             val pending = CompletableDeferred<Unit>(currentCoroutineContext()[Job])
                             healthConsent = pending
-                            healthPermissions.launch(permissions.toTypedArray())
+                            val missing = StudioHealthPermissionRouting.missingReads(permissions) {
+                                context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
+                            }
+                            if (missing.isNotEmpty()) healthPermissions.launch(missing.toTypedArray())
+                            else pending.complete(Unit)
                             pending.await()
                         } else SamsungHealthRepository.requestReadPermissions(host).getOrThrow()
                         withTimeout(10_000) {
@@ -238,24 +280,63 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
     return { key ->
         try {
             when (key) {
-                "gps" -> if (context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+                "gps_on", "gps_off", "notif_on", "notif_off",
+                "hc_on", "hc_off", "samsung_on", "samsung_off" -> {
+                    val enabled = key.endsWith("_on")
+                    val feature = when {
+                        key.startsWith("gps_") -> NativePrivacyControls.GPS
+                        key.startsWith("notif_") -> NativePrivacyControls.NOTIFICATIONS
+                        key.startsWith("hc_") -> NativePrivacyControls.HEALTH_CONNECT
+                        else -> NativePrivacyControls.SAMSUNG_HEALTH
+                    }
+                    NativePrivacyControls.set(context, feature, enabled)
+                    if (!enabled && feature in setOf(NativePrivacyControls.HEALTH_CONNECT,
+                            NativePrivacyControls.SAMSUNG_HEALTH)) {
+                        healthActionJob?.cancel()
+                        healthConsent?.cancel()
+                        healthConsent = null
+                    }
+                    scope.launch { refresh(); refreshSamsung() }
+                    if (enabled) when (feature) {
+                        NativePrivacyControls.GPS ->
+                            if (context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+                                runtime.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+                        NativePrivacyControls.NOTIFICATIONS ->
+                            if (Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+                                runtime.launch(arrayOf(Manifest.permission.POST_NOTIFICATIONS))
+                        NativePrivacyControls.HEALTH_CONNECT -> requestHealthConnectPermissions()
+                        NativePrivacyControls.SAMSUNG_HEALTH ->
+                            startHealthAction(HealthJournalStore.SAMSUNG, permissionOnly = true)
+                    }
+                }
+                // Other entry points request access, but never infer or change the app switch.
+                "gps" -> if (NativePrivacyControls.enabled(context, NativePrivacyControls.GPS) &&
+                    context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
                     runtime.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
-                    else settings.launch(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:${context.packageName}")))
-                "central" -> settings.launch(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                "notif" -> if (Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+                "notif" -> if (NativePrivacyControls.enabled(context, NativePrivacyControls.NOTIFICATIONS) &&
+                    Build.VERSION.SDK_INT >= 33 &&
+                    context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
                     runtime.launch(arrayOf(Manifest.permission.POST_NOTIFICATIONS))
-                    else settings.launch(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName))
+                "central" -> settings.launch(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                "permissions_manage", "gps_manage" ->
+                    settings.launch(StudioHealthPermissionRouting.fallbackIntent(context))
+                "notif_manage" -> settings.launch(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName))
                 "hc" -> startHealthAction(HealthJournalStore.HC)
                 "samsung" -> startHealthAction(HealthJournalStore.SAMSUNG)
                 "hc_permission" -> requestHealthConnectPermissions()
                 "samsung_permission" -> startHealthAction(HealthJournalStore.SAMSUNG, permissionOnly = true)
-                "hc_manage" -> requestHealthConnectPermissions()
+                "hc_manage" -> openHealthConnectSettings()
                 "samsung_manage" -> scope.launch {
                     activity?.let { SamsungHealthRepository.requestReadPermissions(it, force = true) }
-                        ?.exceptionOrNull()?.let { model.showBannerMessage(it.message ?: "Samsung Health engedélykérés sikertelen.") }
+                        ?.exceptionOrNull()?.let {
+                            model.showBannerMessage(HealthConnectSyncRecovery.failureMessage(it, model.uiState.value.language.name))
+                        }
                     refreshSamsung()
                 }
             }
-        } catch (error: Exception) { model.showBannerMessage(error.message ?: "A rendszer engedélykérője nem érhető el.") }
+        } catch (error: Exception) {
+            model.showBannerMessage(HealthConnectSyncRecovery.failureMessage(error, model.uiState.value.language.name))
+        }
     }
 }
