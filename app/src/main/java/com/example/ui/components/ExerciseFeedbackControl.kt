@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.example.ui.components.trainPilotAnimatedExpansion
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,7 +34,7 @@ internal fun ExerciseFeedbackControl(effort: String?, note: String, language: St
     var expanded by rememberSaveable(tag) { mutableStateOf(initiallyExpanded) }
     val selected = StudioWorkoutFeedback.efforts.indexOf(if (effort == "good") "right" else effort)
     val colors = LocalTrainPilotColors.current
-    Surface(Modifier.fillMaxWidth().testTag(tag), color = colors.card,
+    Surface(Modifier.fillMaxWidth().trainPilotAnimatedExpansion().testTag(tag), color = colors.card,
         shape = RoundedCornerShape(12.dp), border = TrainPilotFrames.control(colors.line)) {
         Column(Modifier.padding(horizontal = 8.dp, vertical = 2.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
