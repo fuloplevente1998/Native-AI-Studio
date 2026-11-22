@@ -46,9 +46,13 @@ fun TrainPilotButton(
     val surface = if (paintedGlow) {
         modifier.layout { measurable, constraints ->
             val painted = measurable.measure(constraints)
-            val minimumPx = if (minimumTouchSize.isSpecified) minimumTouchSize.roundToPx().coerceAtLeast(0) else 0
-            val width = constraints.constrainWidth(maxOf(painted.width, minimumPx))
-            val height = constraints.constrainHeight(maxOf(painted.height, minimumPx))
+            val minimumPx = if (!minimumTouchSize.value.isNaN()) {
+                minimumTouchSize.roundToPx().coerceAtLeast(0)
+            } else 0
+            val width = maxOf(painted.width, minimumPx)
+                .coerceIn(constraints.minWidth, constraints.maxWidth)
+            val height = maxOf(painted.height, minimumPx)
+                .coerceIn(constraints.minHeight, constraints.maxHeight)
             layout(width, height) {
                 painted.placeRelative((width - painted.width) / 2, (height - painted.height) / 2)
             }
