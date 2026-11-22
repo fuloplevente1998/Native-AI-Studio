@@ -58,6 +58,22 @@ object NativePrivacyControls {
     }
 
     @JvmStatic
+    fun backgroundPermissionMessage(language: String): String = when (language.lowercase(java.util.Locale.ROOT)) {
+        "en" -> "Health Connect background access was not granted."
+        "de" -> "Health Connect hat keine Hintergrundberechtigung erhalten."
+        "ro" -> "Accesul în fundal Health Connect nu a fost acordat."
+        else -> "A Health Connect nem kapott háttérengedélyt."
+    }
+
+    @JvmStatic
+    fun writePermissionMessage(language: String): String = when (language.lowercase(java.util.Locale.ROOT)) {
+        "en" -> "Health Connect needs workout-writing permission."
+        "de" -> "Health Connect benötigt eine Berechtigung zum Schreiben von Trainings."
+        "ro" -> "Health Connect necesită permisiune pentru scrierea antrenamentelor."
+        else -> "A Health Connect edzésírásához külön engedély szükséges."
+    }
+
+    @JvmStatic
     fun requireEnabled(context: Context, feature: String) {
         check(enabled(context, feature)) { "Provider disabled by user" }
     }
