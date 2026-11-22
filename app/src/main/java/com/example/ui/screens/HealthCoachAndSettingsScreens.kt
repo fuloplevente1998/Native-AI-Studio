@@ -558,6 +558,7 @@ fun HealthTabScreen(
         }
     }
     var expandedTodayTileKey by remember { mutableStateOf<String?>(null) }
+    var selectedFitnessReading by remember { mutableStateOf<BodyFitnessReading?>(null) }
     val healthSectionState = rememberSaveableStateHolder()
     val healthSectionSheet = when {
         uiState.expandedHealthJournal -> "journal"
@@ -653,8 +654,15 @@ fun HealthTabScreen(
 
                         // 2784: every tile opens its own detail sheet; the page below does not move.
                         StudioTodayStatusGrid(uiState, layout = layout) { key ->
+                            selectedFitnessReading = null
                             expandedTodayTileKey = if (expandedTodayTileKey == key) null else key
                             if (key == "pulse") onToggleHealthSection("pulse")
+                        }
+                        PageLayoutCard {
+                            StudioBodyFitnessTiles(uiState) { key, reading ->
+                                selectedFitnessReading = reading
+                                expandedTodayTileKey = key
+                            }
                         }
 
                         PageLayoutCard {
@@ -688,6 +696,7 @@ fun HealthTabScreen(
                             StudioTodayStatusDetailSheet(
                                 uiState, strings, tileKey, today,
                                 onDismiss = { expandedTodayTileKey = null },
+                                fitnessReading = selectedFitnessReading,
                                 onOpenJournal = { focus ->
                                     journalFocus = focus
                                     journalFocusKey++
@@ -953,7 +962,8 @@ internal fun StudioTodayStatusDetailSheet(
     onTogglePulseTrend: () -> Unit,
     onOpenWeekly: () -> Unit,
     onOpenLoggedWorkout: (String) -> Unit,
-    onNavigateToSubScreen: (SubScreen) -> Unit
+    onNavigateToSubScreen: (SubScreen) -> Unit,
+    fitnessReading: BodyFitnessReading? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     com.example.ui.components.TrainPilotScreenSheet(
@@ -987,9 +997,15 @@ internal fun StudioTodayStatusDetailSheet(
                         "sleep" -> "SleepSessionRecord"
                         "steps" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("steps")
                         "calories" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("activeCalories")
+                        "bodyFat" -> "BodyFatRecord"
+                        "spo2" -> "OxygenSaturationRecord"
+                        "vo2" -> "Vo2MaxRecord"
                         else -> null
                     }
-                    onOpenJournal(recordType?.let { today.toString() to it })
+                    val recordDay = fitnessReading?.atMs?.let {
+                        java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+                    } ?: today
+                    onOpenJournal(recordType?.let { recordDay.toString() to it })
                 }
                 val (titleStr, onActionClick) = when (activeKey) {
                     "calories" -> listOf(
@@ -1063,6 +1079,29 @@ internal fun StudioTodayStatusDetailSheet(
                             val firstId = todaysWorkouts.firstOrNull()?.id
                             if (firstId != null) onOpenLoggedWorkout(firstId) else onNavigateToSubScreen(SubScreen.PROGRAMS_LIST)
                         }
+                    }
+                    "bodyFat", "spo2", "vo2" -> {
+                        val title = when (activeKey) {
+                            "bodyFat" -> tr(uiState.language, "Testzsír", "Body fat", "Körperfett", "Grăsime")
+                            "spo2" -> "SpO₂"
+                            else -> "VO₂max"
+                        }
+                        val reading = fitnessReading
+                        val providerLabel = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"
+                        val quantity = reading?.let {
+                            String.format(java.util.Locale.getDefault(), "%.1f", it.value) +
+                                (if (activeKey == "vo2") " ml/kg/min" else " %")
+                        } ?: "—"
+                        val measurementLabel = reading?.let {
+                            val at = java.time.Instant.ofEpochMilli(it.atMs).atZone(java.time.ZoneId.systemDefault())
+                            "$providerLabel · " + at.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                        } ?: tr(uiState.language, "Nincs elérhető, naplózott mérés a kiválasztott szolgáltatótól.",
+                            "No recorded measurement available from the selected provider.",
+                            "Keine gespeicherte Messung vom gewählten Dienst verfügbar.",
+                            "Nicio măsurătoare înregistrată de la furnizorul ales.")
+                        listOf("$title • $quantity", measurementLabel,
+                            tr(uiState.language, "Egészségnapló megnyitása", "Open health journal",
+                                "Gesundheitstagebuch öffnen", "Deschide jurnalul de sănătate")) to openHealthJournal
                     }
                     "recovery" -> listOf(
                         tr(uiState.language, "Regeneráció", "Recovery", "Erholung", "Recuperare"),
@@ -4033,14 +4072,7 @@ private fun WeightLogBody(
     }
     if (!expanded) return
     Spacer(Modifier.height(10.dp))
-    Text(strings.bodyAndFitnessTitle, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = palette.textSecondary)
-    Spacer(Modifier.height(6.dp))
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        PulseInnerBox(tr(lang, "Testzsír", "Body fat", "Körperfett", "Grăsime"), if (uiState.bodyFatPercent > 0f) "${uiState.bodyFatPercent} %" else "—", Modifier.weight(1f))
-        PulseInnerBox("SpO₂", if (uiState.spo2Percent > 0f) "${uiState.spo2Percent} %" else "—", Modifier.weight(1f))
-        PulseInnerBox("VO₂max", if (uiState.vo2Max > 0f) "${uiState.vo2Max}" else "—", Modifier.weight(1f))
-    }
-    Spacer(Modifier.height(10.dp))
+    // Body & Fitness is presented directly beneath the six Today tiles, not hidden in Weight.
     if (newestFirst.isEmpty()) {
         Text(strings.notEnoughRecentData, style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary)
     } else {
