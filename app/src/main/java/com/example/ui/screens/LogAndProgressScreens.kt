@@ -1320,39 +1320,48 @@ fun ProgressTabScreen(
             ) {
                 sections.forEach { (idx, label) ->
                     val selected = activeSection == idx
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (selected) palette.primary.copy(alpha = 0.22f) else Color.Transparent,
+                    // Shorter painted tab (42 dp), without making the tap target shorter than 48 dp.
+                    Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(52.dp)
-                            .trainPilotBorder(
-                                width = if (selected) 1.dp else 0.dp,
-                                color = if (selected) palette.primary else Color.Transparent,
-                                shape = RoundedCornerShape(10.dp)
-                            )
+                            .height(48.dp)
                             .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectMainSection(idx) }
                             .then(Modifier.trainPilotChartSelection(selected, label))
-                            .testTag("progress_section_tab_$idx")
+                            .testTag("progress_section_tab_$idx"),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (selected) palette.primary.copy(alpha = 0.22f) else Color.Transparent,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(42.dp)
+                                .trainPilotBorder(
+                                    width = if (selected) 1.dp else 0.dp,
+                                    color = if (selected) palette.primary else Color.Transparent,
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                                .testTag("progress_section_visual_$idx")
                         ) {
-                            Icon(
-                                imageVector = if (idx == 0) Icons.Default.TrendingUp else Icons.Default.BarChart,
-                                contentDescription = null,
-                                tint = if (selected) palette.primary else palette.textSecondary,
-                                modifier = Modifier.size(18.dp).testTag("progress_section_icon_$idx")
-                            )
-                            com.example.ui.components.TrainPilotFitText(
-                                text = label,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (selected) palette.primary else palette.textSecondary,
-                                modifier = Modifier.weight(1f).testTag("progress_section_label_$idx")
-                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (idx == 0) Icons.Default.TrendingUp else Icons.Default.BarChart,
+                                    contentDescription = null,
+                                    tint = if (selected) palette.primary else palette.textSecondary,
+                                    modifier = Modifier.size(18.dp).testTag("progress_section_icon_$idx")
+                                )
+                                com.example.ui.components.TrainPilotFitText(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (selected) palette.primary else palette.textSecondary,
+                                    modifier = Modifier.weight(1f).testTag("progress_section_label_$idx")
+                                )
+                            }
                         }
                     }
                 }
