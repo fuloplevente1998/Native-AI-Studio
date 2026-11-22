@@ -20,7 +20,11 @@ SDK_CHECKSUMS = {
         "jar": "24687b9ea919eb20f5e27e47274f2aa711e98eb332d4769d34044a3b4952a71393831d0a3f61ba726dc8fe220673a76138c11a0716f304999e5b029146fe88eb",
     },
 }
-REPOSITORIES = ("https://repo.maven.apache.org/maven2", "https://repo1.maven.org/maven2")
+REPOSITORIES = (
+    "https://maven-central.storage-download.googleapis.com/maven2",
+    "https://repo.maven.apache.org/maven2",
+    "https://repo1.maven.org/maven2",
+)
 
 
 def checksum(path):
