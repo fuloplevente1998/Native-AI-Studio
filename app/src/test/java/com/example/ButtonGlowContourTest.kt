@@ -21,7 +21,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.test.assertHeightIsEqualTo
+import androidx.compose.ui.test.assertTouchHeightIsEqualTo
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
@@ -80,8 +80,9 @@ class ButtonGlowContourTest {
         for (id in listOf(23, 18, 1)) {
             compose.runOnIdle { paletteId = id }
             val button = compose.onNodeWithTag("glow_close")
-            button.assertHeightIsEqualTo(48.dp)
-            val bounds = button.fetchSemanticsNode().boundsInRoot
+            button.assertTouchHeightIsEqualTo(48.dp)
+            val visualBounds = button.fetchSemanticsNode().boundsInRoot
+            val bounds = button.fetchSemanticsNode().touchBoundsInRoot
             val x = bounds.center.x.roundToInt()
             val top = bounds.top.roundToInt()
             val insideX = (bounds.left + 12f).roundToInt()
@@ -109,7 +110,8 @@ class ButtonGlowContourTest {
                 before[x, top + 3].toArgb(), held[x, top + 3].toArgb())
             button.performTouchInput { up() }
             // Even the transparent top of the 48 dp accessible slot must click.
-            button.performTouchInput { click(Offset(centerX, 1f)) }
+            val topMarginTapY = bounds.top + 1f - visualBounds.top
+            button.performTouchInput { click(Offset(centerX, topMarginTapY)) }
         }
         assertEquals(6, closes)
     }
