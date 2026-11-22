@@ -77,8 +77,10 @@ class Collector2784RegressionTest {
                 onOpenSettings = {}, onOpenPalettePicker = {}
             )
         } }
-        compose.onNodeWithTag("progress_section_tab_0").assertHeightIsEqualTo(52.dp)
-        compose.onNodeWithTag("progress_section_tab_2").assertHeightIsEqualTo(52.dp)
+        compose.onNodeWithTag("progress_section_tab_0").assertHeightIsEqualTo(48.dp)
+        compose.onNodeWithTag("progress_section_tab_2").assertHeightIsEqualTo(48.dp)
+        compose.onNodeWithTag("progress_section_visual_0").assertHeightIsEqualTo(42.dp)
+        compose.onNodeWithTag("progress_section_visual_2").assertHeightIsEqualTo(42.dp)
         compose.onNodeWithTag("progress_section_icon_0", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("progress_section_icon_2", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("progress_section_label_0", useUnmergedTree = true).assertTextEquals("Fejlődés")
