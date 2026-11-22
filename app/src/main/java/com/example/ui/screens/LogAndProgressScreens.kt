@@ -1471,6 +1471,7 @@ internal fun MainProgressVolumeAndMuscleSection(
             color = palette.surfaceCard,
             modifier = Modifier
                 .fillMaxWidth()
+                .trainPilotAnimatedExpansion()
                 .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(18.dp))
                 .testTag("progress_total_volume_card")
                 .trainPilotSoftGlow(palette.primary, RoundedCornerShape(18.dp), 3.dp)
@@ -1961,6 +1962,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                     color = if (expandedAdviceDetails) palette.primary else palette.cardBorder,
                     shape = RoundedCornerShape(16.dp)
                 )
+                .trainPilotAnimatedExpansion()
                 .trainPilotClickable(RoundedCornerShape(16.dp)) { expandedAdviceDetails = !expandedAdviceDetails }
                 .testTag("progress_advice_card")
         ) {
