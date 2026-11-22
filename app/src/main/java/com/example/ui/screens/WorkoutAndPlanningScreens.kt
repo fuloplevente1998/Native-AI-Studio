@@ -1,9 +1,13 @@
 package com.example.ui.screens
+import com.example.ui.components.WorkoutModeArt
+import com.example.ui.components.QuickWorkoutMode
+import com.example.ui.components.PageLayoutHorizontalRow
+import com.example.ui.components.PageLayoutCard
 import androidx.compose.runtime.key
 import com.example.ui.components.rememberPageLayout
 import com.example.ui.components.PageLayoutTile
 import com.example.ui.components.PageLayoutFooter
-import com.example.ui.components.PageLayoutEditor
+import com.example.ui.components.PageLayoutFrame
 import com.example.ui.components.PageLayoutBlock
 
 import com.example.ui.components.TrainPilotModalBottomSheet
@@ -27,7 +31,6 @@ import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.ui.theme.trainPilotSoftGlow
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -123,9 +126,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
@@ -137,6 +138,7 @@ import androidx.compose.ui.unit.sp
 import com.example.model.CalendarEventStatus
 import com.example.model.ExerciseCategory
 import com.example.model.ExerciseItem
+import com.example.model.AppLanguage
 import com.example.model.SubScreen
 import com.example.ui.components.AnatomicalMuscleHeatmapCard
 import com.example.ui.components.ExercisePostureMiniIllustration
@@ -208,36 +210,19 @@ private fun WorkoutModeTile(
     }
 }
 
-@Composable
-private fun WorkoutModeIcon(icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    val palette = LocalTrainPilotPalette.current
-    Surface(shape = RoundedCornerShape(18.dp), color = palette.primary.copy(alpha = 0.16f), modifier = Modifier.size(64.dp)) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(icon, null, tint = palette.primary, modifier = Modifier.size(36.dp))
-        }
-    }
-}
+private fun quickWorkoutExercisePool(exercises: List<ExerciseItem>, timedOnly: Boolean): List<ExerciseItem> =
+    if (timedOnly) exercises.filter { it.isTimed || it.measurementType == "time" } else exercises
 
-/** The familiar dark route preview of the outdoor card, larger. */
-@Composable
-private fun OutdoorRouteGraphic() {
-    val palette = LocalTrainPilotPalette.current
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(64.dp)
-            .clip(RoundedCornerShape(14.dp))
-            .background(Color(0xFF14261C))
-            .border(1.dp, palette.success.copy(alpha = 0.45f), RoundedCornerShape(14.dp))
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val w = size.width
-            val h = size.height
-            drawLine(Color(0xFF1E3A5F), Offset(0f, h * 0.2f), Offset(w * 0.35f, h), strokeWidth = 12.dp.toPx())
-            drawLine(Color(0xFFF59E0B), Offset(w * 0.22f, h * 0.78f), Offset(w * 0.52f, h * 0.24f), strokeWidth = 3.5.dp.toPx(), cap = StrokeCap.Round)
-            drawLine(Color(0xFFF59E0B), Offset(w * 0.52f, h * 0.24f), Offset(w * 0.82f, h * 0.65f), strokeWidth = 3.5.dp.toPx(), cap = StrokeCap.Round)
-            drawCircle(Color(0xFF22C55E), radius = 5.dp.toPx(), center = Offset(w * 0.22f, h * 0.78f))
-            drawCircle(Color(0xFFF59E0B), radius = 5.dp.toPx(), center = Offset(w * 0.82f, h * 0.65f))
+private fun quickWorkoutExerciseCount(language: AppLanguage, count: Int): String {
+    val number = java.text.NumberFormat.getIntegerInstance(com.example.localization.StudioLocale.forLanguage(language)).format(count)
+    return when (language) {
+        AppLanguage.HU -> "$number gyakorlat"
+        AppLanguage.EN -> if (count == 1) "$number exercise" else "$number exercises"
+        AppLanguage.DE -> if (count == 1) "$number Übung" else "$number Übungen"
+        AppLanguage.RO -> when {
+            count == 1 -> "$number exercițiu"
+            count % 100 in 20..99 || count > 0 && count % 100 == 0 -> "$number de exerciții"
+            else -> "$number exerciții"
         }
     }
 }
@@ -270,13 +255,9 @@ fun WorkoutTabScreen(
         PageLayoutBlock("library", trW(state.language, "Gyakorlatkönyvtár", "Exercise library", "Übungsbibliothek", "Bibliotecă de exerciții")),
         PageLayoutBlock("program", strings.currentProgramTitle),
         PageLayoutBlock("settings", trW(state.language, "Edzés beállításai", "Workout settings", "Trainingseinstellungen", "Setări antrenament"))
-    )
+    ).filter { it.id != "settings" || activeProgram != null }
     val layout = rememberPageLayout("workout", blocks.map { it.id })
-    if (layout.draft != null) {
-        PageLayoutEditor(layout, state.language, blocks)
-        return
-    }
-
+    PageLayoutFrame(layout, state.language, blocks, scrollState, TrainPilotCardSpacing.CardGap) {
     // 2779: no "more below" arrow; the tab fits one screen. Scrolling stays only as a fallback for
     // very small screens / large font scale, so nothing becomes unreachable.
     Box(modifier = Modifier.fillMaxSize().testTag("workout_tab_root")) {
@@ -288,9 +269,9 @@ fun WorkoutTabScreen(
                 .padding(top = 8.dp, bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
-        layout.saved.forEach { id ->
+        layout.order.forEach { id ->
             key(id) {
-                PageLayoutTile(layout, id) {
+                PageLayoutTile(layout, id, hasHorizontalTiles = id == "modes" || id == "program") {
                     when (id) {
                         "quick" -> {
                             // 1. Gyors edzés Card (Mockup 1/4 #2)
@@ -336,36 +317,41 @@ fun WorkoutTabScreen(
                         "modes" -> {
                             // 2. Three tall tiles (2772): Strength / Timed / Outdoor, title on top, big icon below.
                             //    Each opens the Quick workout sheet on its own tab (no separate page).
-                            val timedCount = state.exercises.count { it.isTimed || it.measurementType == "time" }
-                            Row(
-                                modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                WorkoutModeTile(
+                            val timedCount = quickWorkoutExercisePool(state.exercises, timedOnly = true).size
+                            val modes = listOf(
+                                PageLayoutBlock("reps", trW(state.language, "Ismétléses", "Reps", "Wiederholungen", "Repetări")),
+                                PageLayoutBlock("timed", trW(state.language, "Időzített", "Timed", "Zeit", "Cronometrat")),
+                                PageLayoutBlock("outdoor", trW(state.language, "Kültéri", "Outdoor", "Outdoor", "Exterior"))
+                            )
+                            PageLayoutHorizontalRow(layout, "workout_modes", modes, 8.dp,
+                                modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) { tile, modifier ->
+                                when (tile) {
+                                    "reps" -> WorkoutModeTile(
                                     title = trW(state.language, "Ismétléses", "Reps", "Wiederholungen", "Repetări"),
                                     subtitle = trW(state.language, "súly × ismétlés", "weight × reps", "Gewicht × Wdh.", "greutate × rep."),
-                                    badge = trW(state.language, "${state.exercises.size} gyak.", "${state.exercises.size} ex.", "${state.exercises.size} Üb.", "${state.exercises.size} ex."),
+                                    badge = quickWorkoutExerciseCount(state.language, quickWorkoutExercisePool(state.exercises, timedOnly = false).size),
                                     testTag = "workout_tab_exercise_picker",
                                     onClick = onOpenExerciseLibrary,
-                                    modifier = Modifier.weight(1f)
-                                ) { WorkoutModeIcon(Icons.Default.FitnessCenter) }
-                                WorkoutModeTile(
+                                    modifier = modifier
+                                ) { WorkoutModeArt(QuickWorkoutMode.REPS) }
+                                    "timed" -> WorkoutModeTile(
                                     title = trW(state.language, "Időzített", "Timed", "Zeit", "Cronometrat"),
                                     subtitle = trW(state.language, "idő / tartás", "time / hold", "Zeit / Halten", "timp / menținere"),
-                                    badge = trW(state.language, "$timedCount gyak.", "$timedCount ex.", "$timedCount Üb.", "$timedCount ex."),
+                                    badge = quickWorkoutExerciseCount(state.language, timedCount),
                                     testTag = "workout_tab_timed_card",
                                     onClick = onOpenTimed,
-                                    modifier = Modifier.weight(1f)
-                                ) { WorkoutModeIcon(Icons.Default.Timer) }
-                                WorkoutModeTile(
+                                    modifier = modifier
+                                ) { WorkoutModeArt(QuickWorkoutMode.TIMED) }
+                                    "outdoor" -> WorkoutModeTile(
                                     title = trW(state.language, "Kültéri", "Outdoor", "Outdoor", "Exterior"),
                                     subtitle = trW(state.language, "futás, séta", "run, walk", "Laufen, Gehen", "alergare, mers"),
                                     badge = trW(state.language, "GPS élő", "GPS live", "GPS live", "GPS live"),
                                     badgeColor = palette.success,
                                     testTag = "workout_tab_outdoor_card",
                                     onClick = onOpenOutdoorWorkout,
-                                    modifier = Modifier.weight(1f)
-                                ) { OutdoorRouteGraphic() }
+                                    modifier = modifier
+                                ) { WorkoutModeArt(QuickWorkoutMode.OUTDOOR) }
+                                }
                             }
                         }
                         "library" -> {
@@ -397,7 +383,9 @@ fun WorkoutTabScreen(
                             }
                         }
                         "program" -> {
+                            Column(verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)) {
                             // 3. Aktuális program Header + Összes megtekintése >
+                            PageLayoutCard {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -430,6 +418,7 @@ fun WorkoutTabScreen(
                                 }
                             }
 
+                            }
                             if (activeProgram != null) {
                                 // 2779: every day of the program, equal height, each with its next planned date.
                                 WorkoutTabDayCards(
@@ -438,10 +427,12 @@ fun WorkoutTabScreen(
                                     target = state.homeWorkoutTarget,
                                     language = state.language,
                                     onOpenProgramEditor = onOpenProgramEditor,
-                                    onStartWorkoutDay = onStartWorkoutDay
+                                    onStartWorkoutDay = onStartWorkoutDay,
+                                    layout = layout
                                 )
 
                             } else {
+                                PageLayoutCard {
                                 Surface(
                                     shape = RoundedCornerShape(18.dp),
                                     color = palette.surface,
@@ -484,6 +475,8 @@ fun WorkoutTabScreen(
                                         }
                                     }
                                 }
+                                }
+                            }
                             }
                         }
                         "settings" -> {
@@ -542,6 +535,7 @@ fun WorkoutTabScreen(
         PageLayoutFooter(layout, state.language)
     }
 }
+    }
 }
 
 @Composable
@@ -3090,7 +3084,7 @@ fun ExerciseLibraryScreen(
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
     val startLabel = if (state.exerciseSwapMode) trW(state.language, "Csere", "Swap", "Tauschen", "Schimbă") else strings.startAction
-    val pool = if (timedOnly) state.exercises.filter { it.isTimed || it.measurementType == "time" } else state.exercises
+    val pool = quickWorkoutExercisePool(state.exercises, timedOnly)
     val filtered = pool.filter { ex ->
         val matchesCategory = state.selectedExerciseCategory == ExerciseCategory.ALL || ex.category == state.selectedExerciseCategory
         val matchesSearch = state.exerciseSearchQuery.isBlank() ||

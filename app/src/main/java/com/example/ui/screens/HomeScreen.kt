@@ -1,9 +1,11 @@
 package com.example.ui.screens
+import com.example.ui.components.PageLayoutHorizontalRow
+import com.example.ui.components.PageLayoutCard
 import androidx.compose.runtime.key
 import com.example.ui.components.rememberPageLayout
 import com.example.ui.components.PageLayoutTile
 import com.example.ui.components.PageLayoutFooter
-import com.example.ui.components.PageLayoutEditor
+import com.example.ui.components.PageLayoutFrame
 import com.example.ui.components.PageLayoutBlock
 
 import com.repforge.app.ui.theme.trainPilotClickable
@@ -132,11 +134,7 @@ fun HomeScreen(
         PageLayoutBlock("weekly", tr("Heti célok", "Weekly goals", "Wochenziele", "Obiective săptămânale"))
     )
     val layout = rememberPageLayout("home", blocks.map { it.id })
-    if (layout.draft != null) {
-        PageLayoutEditor(layout, state.language, blocks)
-        return
-    }
-
+    PageLayoutFrame(layout, state.language, blocks, scrollState, 5.dp) {
     com.example.ui.components.TrainPilotScrollableBox(
         scrollState = scrollState,
         modifier = Modifier.fillMaxSize()
@@ -149,9 +147,9 @@ fun HomeScreen(
                 .padding(top = 4.dp, bottom = 6.dp),
             verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-        layout.saved.forEach { id ->
+        layout.order.forEach { id ->
             key(id) {
-                PageLayoutTile(layout, id) {
+                PageLayoutTile(layout, id, hasHorizontalTiles = id == "quick_watch" || id == "daily_health") {
                     when (id) {
                         "profile" -> {
                             // A kompakt Profil és új terv belépő mindig elérhető a Kezdőlapon.
@@ -191,21 +189,11 @@ fun HomeScreen(
                                                 )
                                             }
                                         }
-                                        Column {
-                                            Text(
-                                                text = strings.profileAndNewPlanBtn,
-                                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                                color = palette.textPrimary
-                                            )
-                                            Text(
-                                                // 2778: only the useful part; the explanation and the duplicate button text are gone.
-                                                text = "${com.example.localization.StudioProfileOptionLabels.label(state.trainingStyleHu, state.language)} • ${com.example.localization.StudioProfileOptionLabels.label(state.progressionRuleHu, state.language)}",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = palette.textSecondary,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        }
+                                        Text(
+                                            text = strings.profileAndNewPlanBtn,
+                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = palette.textPrimary
+                                        )
                                     }
                                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = strings.profileAndNewPlanBtn,
                                         tint = palette.primary, modifier = Modifier.size(24.dp).testTag("home_profile_new_plan_button"))
@@ -447,10 +435,17 @@ fun HomeScreen(
                                         if (state.watchAppAvailable) state.watchName else strings.watchConnectedSub, status, onOpenWatchAndSync,
                                         enabled = !state.watchInfoLoading, connected = state.watchAppAvailable)
                                 }
-                                if (sideBySide) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardRowGap)) {
-                                    quick(Modifier.weight(1f)); watch(Modifier.weight(1f))
+                                val shortcuts = listOf(PageLayoutBlock("quick", strings.quickWorkoutTitle),
+                                    PageLayoutBlock("watch", tr("Óra", "Watch", "Uhr", "Ceas")))
+                                if (sideBySide) PageLayoutHorizontalRow(layout, "shortcuts", shortcuts,
+                                    TrainPilotCardSpacing.CardRowGap) { shortcut, modifier ->
+                                    if (shortcut == "quick") quick(modifier) else watch(modifier)
                                 } else Column(verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)) {
-                                    quick(Modifier.fillMaxWidth()); watch(Modifier.fillMaxWidth())
+                                    layout.childOrder("shortcuts", shortcuts.map { it.id }).forEach { shortcut ->
+                                        PageLayoutCard {
+                                            if (shortcut == "quick") quick(Modifier.fillMaxWidth()) else watch(Modifier.fillMaxWidth())
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -466,7 +461,7 @@ fun HomeScreen(
                                     .testTag("home_today_status_group")
                             ) {
                                 Box(Modifier.padding(8.dp)) {
-                                    StudioTodayStatusGrid(state, compact = true) { key ->
+                                    StudioTodayStatusGrid(state, compact = true, layout = layout) { key ->
                                         when (key) {
                                             "sleep" -> onOpenHealthSleep()
                                             "pulse" -> onOpenHealthHeart()
@@ -497,6 +492,7 @@ fun HomeScreen(
         PageLayoutFooter(layout, state.language)
     }
 }
+    }
 }
 
 @Composable

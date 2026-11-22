@@ -280,11 +280,30 @@ class TrainPilotSettingsStore(private val context: Context,
         }
     }
 
+    /** Called under the planner's metadata write lease, before saving the program to Room. */
+    internal suspend fun prepareStarterProgramModes(
+        programId: String,
+        trainingStyle: String?,
+        progressionMode: String?
+    ): JSONObject {
+        requireTrainingModesEditable()
+        val raw = current().trainingModes197Json
+        val effective = NativeTrainingModes.resolveSavedJson(raw, programId)
+        val preview = NativeTrainingModeChange.prepare(
+            raw, programId, "program", programId,
+            trainingStyle ?: effective.trainingStyle, progressionMode ?: effective.progressionMode
+        )
+        return NativeTrainingModeChange.next(preview).also {
+            check(NativeTrainingModes.validForWrite(it)) { "Invalid approved training modes configuration" }
+        }
+    }
+
     internal suspend fun saveStarterProfileAndActivate(
         profile: JSONObject,
         programId: String,
         completeOnboarding: Boolean,
-        ticket: NativeDataReplacement.Continuation
+        ticket: NativeDataReplacement.Continuation,
+        modeUpdate: JSONObject? = null
     ) {
         val checked = NativeTrainingProfile.verified(profile).toString()
         NativeDataReplacement.mutate(context) {
@@ -298,6 +317,7 @@ class TrainPilotSettingsStore(private val context: Context,
                 }
                 prefs[KEY_TRAINING_PROFILE] = checked
                 prefs[KEY_ACTIVE_PROGRAM_ID] = programId
+                if (modeUpdate != null) prefs[KEY_TRAINING_MODES_197] = modeUpdate.toString()
             }
         }
     }
@@ -495,6 +515,24 @@ class TrainPilotSettingsStore(private val context: Context,
         }
     }
 
+    private suspend fun requireTrainingModesEditable() {
+        // Also protect paused sessions, ownership transfer and native execution
+        // that may not be visible to the currently displayed UI.
+        val noActiveWorkout = withContext(kotlinx.coroutines.Dispatchers.Main.immediate) {
+            // PhoneWorkoutExecution.store is explicitly main-looper only.
+            // Run this short, synchronous admission while holding metadata lease,
+            // then leave the DataStore edit on its normal suspending IO path.
+            val activeUi = com.repforge.app.ActiveWorkoutStore.current(context)
+                ?.optBoolean("active") == true
+            val execution = com.repforge.app.PhoneWorkoutExecution.store(context)
+            check(!execution.restoreBlocked() && !execution.commandsSuspended()) {
+                "Native workout execution is temporarily unavailable"
+            }
+            !activeUi && execution.snapshot()?.optBoolean("active") != true
+        }
+        check(noActiveWorkout) { "Finish the active workout before changing training modes" }
+    }
+
     /**
      * Persists only an already approved v1 mode-settings change.
      * Raw JSON compare-and-set rejects previews based on obsolete settings; it never
@@ -523,21 +561,7 @@ class TrainPilotSettingsStore(private val context: Context,
         }
         val replacement = approved?.toString()
         return NativeDataReplacement.mutate(context) {
-            // Also protect paused sessions, ownership transfer and native execution
-            // that may not be visible to the currently displayed UI.
-            val noActiveWorkout = withContext(kotlinx.coroutines.Dispatchers.Main.immediate) {
-                // PhoneWorkoutExecution.store is explicitly main-looper only.
-                // Run this short, synchronous admission while holding metadata lease,
-                // then leave the DataStore edit on its normal suspending IO path.
-                val activeUi = com.repforge.app.ActiveWorkoutStore.current(context)
-                    ?.optBoolean("active") == true
-                val execution = com.repforge.app.PhoneWorkoutExecution.store(context)
-                check(!execution.restoreBlocked() && !execution.commandsSuspended()) {
-                    "Native workout execution is temporarily unavailable"
-                }
-                !activeUi && execution.snapshot()?.optBoolean("active") != true
-            }
-            check(noActiveWorkout) { "Finish the active workout before changing training modes" }
+            requireTrainingModesEditable()
             var updated = false
             context.trainPilotDataStore.edit { prefs ->
                 if (prefs[KEY_TRAINING_MODES_197] == expectedRaw &&

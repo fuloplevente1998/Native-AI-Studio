@@ -1,8 +1,9 @@
 package com.example.ui.screens
 
 import com.example.ui.components.PageLayoutBlock
-import com.example.ui.components.PageLayoutEditor
+import com.example.ui.components.PageLayoutFrame
 import com.example.ui.components.PageLayoutFooter
+import com.example.ui.components.PageLayoutHorizontalRow
 import com.example.ui.components.PageLayoutTile
 import com.example.ui.components.rememberPageLayout
 import com.example.ui.components.PageLayoutState
@@ -1315,18 +1316,14 @@ fun ProgressTabScreen(
     )
     val layout = rememberPageLayout("progress", layoutBlocks.map { it.id })
     val overviewListState = rememberLazyListState()
-    if (activeSection == 0 && layout.draft != null) {
-        PageLayoutEditor(layout, uiState.language, layoutBlocks)
-        return
-    }
-
+    PageLayoutFrame(layout, uiState.language, layoutBlocks, overviewListState, 3.dp) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(palette.background)
             .testTag("progress_tab_screen")
     ) {
-        Surface(
+        if (layout.draft == null) Surface(
             shape = RoundedCornerShape(14.dp),
             color = palette.surfaceCard,
             modifier = Modifier
@@ -1449,9 +1446,10 @@ fun ProgressTabScreen(
             }
 
             // Statistics replaces the old standalone Strength/1RM tab; estimates remain in record details.
-            else -> StudioStatisticsScreen(uiState, onSelectStatsSubTab,
+            else -> if (layout.draft == null) StudioStatisticsScreen(uiState, onSelectStatsSubTab,
                 onToggleCardioFilterStepsMode, onRefreshRecords)
         }
+    }
     }
 }
 
@@ -1501,10 +1499,10 @@ internal fun MainProgressVolumeAndMuscleSection(
         "${periodWorkouts.sumOf { it.durationMinutes } / periodWorkouts.size} min"
 
     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        val order = layout?.saved ?: listOf("volume", "metrics", "muscles", "advice")
+        val order = layout?.order ?: listOf("volume", "metrics", "muscles", "advice")
         order.forEach { id ->
             key(id) {
-                PageLayoutTile(layout, id) {
+                PageLayoutTile(layout, id, hasHorizontalTiles = id == "metrics") {
                     when (id) {
                         "photos" -> photoBlock()
                         "volume" -> {
@@ -1696,12 +1694,12 @@ internal fun MainProgressVolumeAndMuscleSection(
                             }
                         }
                         "metrics" -> {
-                            // 2. 2x2 COMPACT EXPANDABLE METRIC CARDS (Live data from uiState)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                ExpandableStatSummaryTile(
+                            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                PageLayoutHorizontalRow(layout, "progress_metrics_0", listOf(
+                                    PageLayoutBlock("records", strings.prRecordsTitle),
+                                    PageLayoutBlock("workouts", strings.workoutCountTitle)
+                                ), 6.dp) { metric, modifier ->
+                                    if (metric == "records") ExpandableStatSummaryTile(
                                     icon = Icons.Default.EmojiEvents,
                                     title = strings.prRecordsTitle,
                                     value = prCountValue,
@@ -1709,9 +1707,8 @@ internal fun MainProgressVolumeAndMuscleSection(
                                     subtitle = null,
                                     selected = uiState.expandedStatsCardIndex == 0,
                                     onClick = { onSelectExpandedStatsCard(0) },
-                                    modifier = Modifier.weight(1f)
-                                )
-                                ExpandableStatSummaryTile(
+                                    modifier = modifier
+                                ) else ExpandableStatSummaryTile(
                                     icon = Icons.Default.CalendarMonth,
                                     title = strings.workoutCountTitle,
                                     value = workoutCountValue,
@@ -1719,14 +1716,14 @@ internal fun MainProgressVolumeAndMuscleSection(
                                     subtitle = null,
                                     selected = uiState.expandedStatsCardIndex == 1,
                                     onClick = { onSelectExpandedStatsCard(1) },
-                                    modifier = Modifier.weight(1f)
+                                    modifier = modifier
                                 )
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                ExpandableStatSummaryTile(
+                                }
+                                PageLayoutHorizontalRow(layout, "progress_metrics_1", listOf(
+                                    PageLayoutBlock("avg_volume", strings.avgVolumeTitle),
+                                    PageLayoutBlock("avg_duration", strings.avgDurationTitle)
+                                ), 6.dp) { metric, modifier ->
+                                    if (metric == "avg_volume") ExpandableStatSummaryTile(
                                     icon = Icons.AutoMirrored.Filled.TrendingUp,
                                     title = strings.avgVolumeTitle,
                                     value = avgVolumeValue,
@@ -1734,9 +1731,8 @@ internal fun MainProgressVolumeAndMuscleSection(
                                     subtitle = null,
                                     selected = uiState.expandedStatsCardIndex == 2,
                                     onClick = { onSelectExpandedStatsCard(2) },
-                                    modifier = Modifier.weight(1f)
-                                )
-                                ExpandableStatSummaryTile(
+                                    modifier = modifier
+                                ) else ExpandableStatSummaryTile(
                                     icon = Icons.Default.Schedule,
                                     title = strings.avgDurationTitle,
                                     value = avgDurationValue,
@@ -1744,8 +1740,9 @@ internal fun MainProgressVolumeAndMuscleSection(
                                     subtitle = null,
                                     selected = uiState.expandedStatsCardIndex == 3,
                                     onClick = { onSelectExpandedStatsCard(3) },
-                                    modifier = Modifier.weight(1f)
+                                    modifier = modifier
                                 )
+                                }
                             }
 
                             // Expandable Dropdown Card when any of the 4 tiles is tapped (collapsed by default so everything fits on screen!)

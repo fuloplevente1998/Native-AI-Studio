@@ -5,6 +5,10 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.example.model.AppLanguage
 import com.example.model.ExerciseItem
 import com.example.ui.theme.TrainPilotTheme
 import org.junit.Assert.*
@@ -23,19 +27,20 @@ class Collector2776RegressionTest {
     @get:Rule val compose = createComposeRule()
 
     @Test fun workoutTilesShowTheirWholeSubtitleAndBadgeOnANarrowPhone() {
-        val exercises = (1..140).map { ExerciseItem("e$it", "Gyakorlat $it", isTimed = it <= 30) }
+        var exercises by mutableStateOf((1..140).map { ExerciseItem("e$it", "Gyakorlat $it", isTimed = it <= 30) })
+        var language by mutableStateOf(AppLanguage.HU)
         compose.setContent { TrainPilotTheme {
             com.example.ui.screens.WorkoutTabScreen(
-                state = com.example.ui.viewmodel.TrainPilotUiState(exercises = exercises), onOpenSettings = {},
+                state = com.example.ui.viewmodel.TrainPilotUiState(exercises = exercises, language = language), onOpenSettings = {},
                 onOpenQuickWorkout = {}, onOpenExerciseLibrary = {}, onOpenOutdoorWorkout = {}, onOpenProgramsList = {},
                 onOpenProgramEditor = { _, _ -> }, onStartWorkoutDay = {}, onOpenCalendar = {}, onOpenCoach = {},
                 onOpenProgressionModal = {}, onOpenTimed = {}, onOpenExerciseCatalog = {})
         } }
         val expected = mapOf(
             "workout_tab_exercise_picker_subtitle" to "súly × ismétlés",
-            "workout_tab_exercise_picker_badge" to "140 gyak.",
+            "workout_tab_exercise_picker_badge" to "140 gyakorlat",
             "workout_tab_timed_card_subtitle" to "idő / tartás",
-            "workout_tab_timed_card_badge" to "30 gyak.",
+            "workout_tab_timed_card_badge" to "30 gyakorlat",
             "workout_tab_outdoor_card_badge" to "GPS élő")
         expected.forEach { (tag, text) ->
             val node = compose.onNodeWithTag(tag, useUnmergedTree = true)
@@ -51,6 +56,31 @@ class Collector2776RegressionTest {
                 layout.getLineRight(line) - layout.getLineLeft(line) <= layout.size.width + 1f)
             assertEquals("$tag is ellipsized", text.length, layout.getLineEnd(layout.lineCount - 1, visibleEnd = true))
         }
+        compose.runOnIdle { exercises = exercises + ExerciseItem("new", "Új időzített", measurementType = "time") }
+        val mainBadge = compose.onNodeWithTag("workout_tab_exercise_picker_badge", useUnmergedTree = true)
+        val timedBadge = compose.onNodeWithTag("workout_tab_timed_card_badge", useUnmergedTree = true)
+        for ((lang, texts) in mapOf(
+            AppLanguage.HU to ("141 gyakorlat" to "31 gyakorlat"),
+            AppLanguage.EN to ("141 exercises" to "31 exercises"),
+            AppLanguage.DE to ("141 Übungen" to "31 Übungen"),
+            AppLanguage.RO to ("141 de exerciții" to "31 de exerciții")
+        )) {
+            compose.runOnIdle { language = lang }
+            mainBadge.assertTextEquals(texts.first)
+            timedBadge.assertTextEquals(texts.second)
+        }
+    }
+
+    @Test fun quickWorkoutPickerUsesTheSameThreeModeGraphics() {
+        var tab by mutableStateOf(0)
+        compose.setContent { TrainPilotTheme {
+            com.example.ui.components.QuickWorkoutHubSheet(AppLanguage.HU, tab, { tab = it }, {}, {}, {}, {})
+        } }
+        listOf("reps", "timed", "outdoor").forEach {
+            compose.onNodeWithTag("workout_mode_art_$it", useUnmergedTree = true).assertIsDisplayed()
+        }
+        compose.onNodeWithTag("quick_tab_2").performClick()
+        compose.onNodeWithTag("quick_outdoor_start").assertExists()
     }
 
     private fun rec(id: String, type: String, start: Long, source: String = "watch", data: String = "{\"value\":1}") =

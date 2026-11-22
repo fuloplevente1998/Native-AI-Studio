@@ -13,6 +13,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.ui.theme.TrainPilotTheme
 import com.example.ui.viewmodel.TrainPilotViewModel
 import com.repforge.app.data.db.TrainPilotDatabase
+import com.repforge.app.data.store.NativeTrainingModes
 import com.repforge.app.data.store.TrainPilotSettingsStore
 import com.repforge.app.ui.onboarding.NativeFirstLaunchGate
 import com.repforge.app.ui.onboarding.NativeOnboardingPolicy
@@ -106,6 +107,10 @@ class FirstRunPlannerRegressionTest {
         compose.onNodeWithText("Heti 4 nap").performScrollTo().performClick()
         compose.onNodeWithTag("profile_duration_box").performScrollTo().performClick()
         compose.onNodeWithText("75 perc").performScrollTo().performClick()
+        compose.onNodeWithTag("profile_training_style_box").performScrollTo().performClick()
+        compose.onNodeWithText("HIT-inspirált").performClick()
+        compose.onNodeWithTag("profile_progression_mode_box").performScrollTo().performClick()
+        compose.onNodeWithText("Lineáris").performClick()
         compose.onNodeWithTag("planner_save_button").assertIsDisplayed().performClick()
         awaitTag("gated_home")
 
@@ -116,6 +121,11 @@ class FirstRunPlannerRegressionTest {
         assertEquals(4, profile.getInt("daysPerWeek"))
         assertEquals(75, profile.getInt("minutes"))
         assertTrue(saved.activeProgramId.startsWith("custom_plan_"))
+        val modes = NativeTrainingModes.resolveSavedJson(saved.trainingModes197Json, saved.activeProgramId)
+        assertEquals("program", modes.source)
+        assertEquals("hit", modes.trainingStyle)
+        assertEquals("linear", modes.progressionMode)
+        assertFalse(NativeTrainingModes.globalChoice(saved.trainingModes197Json).explicitChoice)
         val program = runBlocking { db.programDao().getProgramWithDaysById(saved.activeProgramId) }!!
         assertEquals(2, program.days.size)
         assertTrue(program.days.all { org.json.JSONArray(it.exercisesJson).length() > 0 })
@@ -132,11 +142,17 @@ class FirstRunPlannerRegressionTest {
         val before = runBlocking { db.programDao().getProgramsWithDays() }
         val quick = before.first { it.program.id == "home-quick-30" }
         awaitTag("planner_recommended_button")
+        compose.onNodeWithTag("profile_progression_mode_box").performScrollTo().performClick()
+        compose.onNodeWithText("RIR / Coach").performClick()
         compose.onNodeWithTag("planner_recommended_button").performClick()
         awaitTag("gated_home")
         val saved = runBlocking { store.current() }
         assertEquals("complete", saved.onboarding128)
         assertEquals(quick.program.id, saved.activeProgramId)
+        val modes = NativeTrainingModes.resolveSavedJson(saved.trainingModes197Json, quick.program.id)
+        assertEquals("program", modes.source)
+        assertEquals("normal", modes.trainingStyle)
+        assertEquals("rir", modes.progressionMode)
         val after = runBlocking { db.programDao().getProgramsWithDays() }
         assertEquals(before.associate { it.program.id to it.days }, after.associate { it.program.id to it.days })
     }
@@ -146,10 +162,13 @@ class FirstRunPlannerRegressionTest {
         beginAndEdit()
         compose.onNodeWithTag("profile_height_box").performClick()
         compose.onNodeWithText("181 cm").performScrollTo().performClick()
+        compose.onNodeWithTag("profile_training_style_box").performScrollTo().performClick()
+        compose.onNodeWithText("HIT-inspirált").performClick()
         compose.onNodeWithTag("planner_skip_btn").performClick()
         await { compose.onAllNodesWithTag("profile_height_box").fetchSemanticsNodes().isEmpty() }
         assertEquals("in_progress", runBlocking { store.current().onboarding128 })
         assertEquals("{}", runBlocking { store.current().profileJson })
+        assertNull(runBlocking { store.current().trainingModes197Json })
         compose.onNodeWithTag("gated_home").assertDoesNotExist()
         compose.onNodeWithTag("onboarding_edit_profile").performClick()
         awaitTag("profile_height_box")

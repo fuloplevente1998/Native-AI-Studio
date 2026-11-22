@@ -6,10 +6,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.gestures.ScrollableState
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.DragIndicator
@@ -25,16 +26,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.example.model.AppLanguage
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.repforge.app.ui.theme.TrainPilotTextButton
-import com.repforge.app.ui.theme.trainPilotBorder
+import org.json.JSONArray
+import org.json.JSONObject
+import kotlin.math.roundToInt
 
 internal data class PageLayoutBlock(val id: String, val title: String)
 
@@ -44,23 +62,42 @@ internal fun reconcilePageLayout(saved: List<String>, defaults: List<String>): L
 internal fun movePageLayoutBlock(ids: List<String>, from: Int, to: Int): List<String> =
     ids.toMutableList().apply { add(to, removeAt(from)) }
 
-internal class PageLayoutState(val page: String, val defaults: List<String>, initial: List<String>) {
+internal class PageLayoutState(val page: String, val defaults: List<String>, initial: List<String>,
+    initialChildren: Map<String, List<String>> = emptyMap()) {
     var saved by mutableStateOf(initial)
         private set
     var draft by mutableStateOf<List<String>?>(null)
         private set
+    private var savedChildren by mutableStateOf(initialChildren)
+    private var draftChildren by mutableStateOf(initialChildren)
 
-    fun open() { if (draft == null) draft = saved }
+    val order: List<String> get() = draft ?: saved
+
+    fun open() {
+        if (draft != null) return
+        draftChildren = savedChildren
+        draft = saved
+    }
     fun cancel() { draft = null }
-    fun reset() { draft = defaults }
+    fun reset() { draftChildren = emptyMap(); draft = defaults }
     fun move(from: Int, to: Int) { draft = draft?.let { movePageLayoutBlock(it, from, to) } }
+    fun childOrder(group: String, defaults: List<String>): List<String> =
+        reconcilePageLayout((if (draft != null) draftChildren else savedChildren)[group].orEmpty(), defaults)
+
+    fun moveChild(group: String, defaults: List<String>, from: Int, to: Int) {
+        if (draft != null) draftChildren = draftChildren + (group to movePageLayoutBlock(childOrder(group, defaults), from, to))
+    }
 
     fun save(context: Context): Boolean {
         val next = draft ?: return false
+        val childrenJson = JSONObject().apply {
+            draftChildren.forEach { (group, ids) -> put(group, JSONArray(ids)) }
+        }
         val written = context.getSharedPreferences("trainpilot-page-layout", Context.MODE_PRIVATE)
-            .edit().putString(page, next.joinToString(",")).commit()
+            .edit().putString(page, next.joinToString(",")).putString("${page}_children", childrenJson.toString()).commit()
         if (written) {
             saved = next
+            savedChildren = draftChildren
             draft = null
         }
         return written
@@ -71,9 +108,15 @@ internal class PageLayoutState(val page: String, val defaults: List<String>, ini
 internal fun rememberPageLayout(page: String, defaults: List<String>): PageLayoutState {
     val context = LocalContext.current.applicationContext
     return remember(context, page, defaults) {
-        val previous = context.getSharedPreferences("trainpilot-page-layout", Context.MODE_PRIVATE)
-            .getString(page, null).orEmpty().split(',')
-        PageLayoutState(page, defaults, reconcilePageLayout(previous, defaults))
+        val prefs = context.getSharedPreferences("trainpilot-page-layout", Context.MODE_PRIVATE)
+        val previous = prefs.getString(page, null).orEmpty().split(',')
+        val children = runCatching { JSONObject(prefs.getString("${page}_children", "{}") ?: "{}") }
+            .getOrDefault(JSONObject())
+        val savedChildren = children.keys().asSequence().mapNotNull { group ->
+            val values = children.optJSONArray(group) ?: return@mapNotNull null
+            group to List(values.length()) { values.optString(it) }
+        }.toMap()
+        PageLayoutState(page, defaults, reconcilePageLayout(previous, defaults), savedChildren)
     }
 }
 
@@ -84,27 +127,184 @@ private fun AppLanguage.pageLayoutText(hu: String, en: String, de: String, ro: S
     AppLanguage.RO -> ro
 }
 
+private class PageLayoutDrag(
+    val state: TrainPilotReorderState,
+    val titles: Map<String, String>,
+    val language: AppLanguage,
+    val gap: androidx.compose.ui.unit.Dp
+)
+
+private val LocalPageLayoutDrag = staticCompositionLocalOf<PageLayoutDrag?> { null }
+
 @Composable
-internal fun PageLayoutTile(layout: PageLayoutState?, id: String, content: @Composable () -> Unit) {
+internal fun PageLayoutTile(layout: PageLayoutState?, id: String, hasHorizontalTiles: Boolean = false,
+    content: @Composable () -> Unit) {
     if (layout == null) {
         content()
         return
     }
-    Box(Modifier.fillMaxWidth().testTag("page_${layout.page}_block_$id")
-        .pointerInput(layout) {
+    val editor = LocalPageLayoutDrag.current
+    if (editor == null) {
+        Box(Modifier.fillMaxWidth().testTag("page_${layout.page}_block_$id")
+            .pointerInput(layout) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    if (down.position.y > 48.dp.toPx()) return@awaitEachGesture
+                    awaitLongPressOrCancellation(down.id)?.let {
+                        it.consume()
+                        layout.open()
+                    }
+                }
+            }) { content() }
+        return
+    }
+
+    val palette = LocalTrainPilotPalette.current
+    val drag = editor.state
+    val ids = layout.order
+    val index = ids.indexOf(id)
+    val target = drag.dropTarget(drag.draggingIndex, ids.lastIndex, drag.draggingStepPx)
+    val markDrop = drag.draggingKey != null && index == target && target != drag.draggingIndex
+    Row(Modifier.fillMaxWidth().trainPilotReorderItem(drag, id, index)
+        .drawWithContent {
+            drawContent()
+            if (markDrop) {
+                val direction = if (target < drag.draggingIndex) -1 else 1
+                val y = if (direction < 0) 1.dp.toPx() else size.height - 1.dp.toPx()
+                drawLine(palette.primary, Offset(0f, y), Offset(size.width, y),
+                    strokeWidth = 2.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 3.dp.toPx())))
+            }
+        }.testTag("page_layout_editor_block_$id"),
+        verticalAlignment = Alignment.Top) {
+        Box(Modifier.weight(1f)) {
+            if (hasHorizontalTiles) content() else PageLayoutCard(content)
+        }
+        TrainPilotReorderHandle(drag, id, index, ids.lastIndex, editor.gap, editor.titles.getValue(id),
+            editor.language.pageLayoutText("Mozgatás fel", "Move up", "Nach oben", "Mută în sus"),
+            editor.language.pageLayoutText("Mozgatás le", "Move down", "Nach unten", "Mută în jos"),
+            "page_layout_handle_$id", layout::move, icon = Icons.Default.DragIndicator, immediateDrag = true)
+    }
+}
+
+@Composable
+internal fun PageLayoutCard(content: @Composable () -> Unit) {
+    if (LocalPageLayoutDrag.current == null) {
+        content()
+        return
+    }
+    Box(Modifier.fillMaxWidth()) {
+        Box(Modifier.fillMaxWidth().clearAndSetSemantics { }) { content() }
+        Box(Modifier.matchParentSize().pointerInput(Unit) {
             awaitEachGesture {
-                val down = awaitFirstDown(requireUnconsumed = false)
-                if (down.position.y > 48.dp.toPx()) return@awaitEachGesture
-                awaitLongPressOrCancellation(down.id)?.let {
-                    it.consume()
-                    layout.open()
+                awaitFirstDown(requireUnconsumed = false)
+                waitForUpOrCancellation()?.consume()
+            }
+        })
+    }
+}
+
+/** One existing grid row; moving here changes its card positions without moving the outer block. */
+@Composable
+internal fun PageLayoutHorizontalRow(
+    layout: PageLayoutState?,
+    group: String,
+    tiles: List<PageLayoutBlock>,
+    gap: Dp,
+    modifier: Modifier = Modifier.fillMaxWidth(),
+    cardWidth: Dp? = null,
+    tileContent: @Composable (String, Modifier) -> Unit
+) {
+    val defaults = tiles.map { it.id }
+    val ids = layout?.childOrder(group, defaults) ?: defaults
+    val editor = LocalPageLayoutDrag.current
+    val palette = LocalTrainPilotPalette.current
+    val direction = if (LocalLayoutDirection.current == LayoutDirection.Ltr) 1f else -1f
+    val gapPx = with(LocalDensity.current) { gap.toPx() }
+    var slotWidth by remember { mutableIntStateOf(0) }
+    var from by remember { mutableIntStateOf(-1) }
+    var offset by remember { mutableFloatStateOf(0f) }
+    val step = slotWidth + gapPx
+    val target = if (from < 0 || step <= 0f) from else
+        (from + (offset * direction / step).roundToInt()).coerceIn(ids.indices)
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(gap)) {
+        ids.forEachIndexed { index, id ->
+            key(id) {
+                val size = if (cardWidth == null) Modifier.weight(1f) else Modifier.width(cardWidth)
+                if (layout == null || editor == null) {
+                    tileContent(id, size)
+                } else if (ids.size < 2) {
+                    Box(size) { PageLayoutCard { tileContent(id, Modifier.fillMaxWidth()) } }
+                } else {
+                    val displacement = when {
+                        index == from -> offset
+                        target > from && index in (from + 1)..target -> -step * direction
+                        target < from && index in target until from -> step * direction
+                        else -> 0f
+                    }
+                    val markDrop = from >= 0 && index == target && target != from
+                    Column(size.onSizeChanged { slotWidth = it.width }
+                        .zIndex(if (index == from) 1f else 0f)
+                        .graphicsLayer { translationX = displacement }
+                        .drawWithContent {
+                            drawContent()
+                            if (markDrop) {
+                                val nearStart = (target < from) == (direction > 0)
+                                val x = if (nearStart) 1.dp.toPx() else this.size.width - 1.dp.toPx()
+                                drawLine(palette.primary, Offset(x, 0f), Offset(x, this.size.height),
+                                    strokeWidth = 2.dp.toPx(),
+                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 3.dp.toPx())))
+                            }
+                        }, horizontalAlignment = Alignment.CenterHorizontally) {
+                        val title = tiles.first { it.id == id }.title
+                        Box(Modifier.size(width = 48.dp, height = 32.dp)
+                            .pointerInput(id, ids, step, direction) {
+                                awaitEachGesture {
+                                    val down = awaitFirstDown(requireUnconsumed = false)
+                                    down.consume()
+                                    from = index
+                                    offset = 0f
+                                    try {
+                                        val completed = drag(down.id) { change ->
+                                            offset += change.positionChange().x
+                                            change.consume()
+                                        }
+                                        val to = if (step <= 0f) index else
+                                            (index + (offset * direction / step).roundToInt()).coerceIn(ids.indices)
+                                        if (completed && to != index) layout.moveChild(group, defaults, index, to)
+                                    } finally {
+                                        from = -1
+                                        offset = 0f
+                                    }
+                                }
+                            }.semantics {
+                                contentDescription = title
+                                customActions = listOfNotNull(
+                                    if (index > 0) CustomAccessibilityAction(editor.language.pageLayoutText(
+                                        "Mozgatás balra", "Move left", "Nach links", "Mută la stânga")) {
+                                        layout.moveChild(group, defaults, index, index - 1); true
+                                    } else null,
+                                    if (index < ids.lastIndex) CustomAccessibilityAction(editor.language.pageLayoutText(
+                                        "Mozgatás jobbra", "Move right", "Nach rechts", "Mută la dreapta")) {
+                                        layout.moveChild(group, defaults, index, index + 1); true
+                                    } else null
+                                )
+                            }.testTag("page_layout_horizontal_${group}_$id"),
+                            contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.DragIndicator, null, tint = palette.primary,
+                                modifier = Modifier.size(18.dp))
+                        }
+                        PageLayoutCard { tileContent(id, Modifier.fillMaxWidth()) }
+                    }
                 }
             }
-        }) { content() }
+        }
+    }
 }
 
 @Composable
 internal fun PageLayoutFooter(layout: PageLayoutState, language: AppLanguage) {
+    if (layout.draft != null) return
     val palette = LocalTrainPilotPalette.current
     TrainPilotTextButton(onClick = layout::open,
         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("page_customize_${layout.page}")) {
@@ -116,15 +316,42 @@ internal fun PageLayoutFooter(layout: PageLayoutState, language: AppLanguage) {
 }
 
 @Composable
-internal fun PageLayoutEditor(layout: PageLayoutState, language: AppLanguage, blocks: List<PageLayoutBlock>) {
-    val ids = layout.draft ?: return
+internal fun PageLayoutFrame(
+    layout: PageLayoutState,
+    language: AppLanguage,
+    blocks: List<PageLayoutBlock>,
+    scrollable: ScrollableState,
+    gap: androidx.compose.ui.unit.Dp,
+    content: @Composable () -> Unit
+) {
+    val ids = layout.draft
+    if (ids == null) {
+        content()
+        return
+    }
     val context = LocalContext.current
     val palette = LocalTrainPilotPalette.current
+    val density = LocalDensity.current
     val drag = rememberTrainPilotReorderState()
+    val gapPx = with(density) { gap.toPx() }
+    SideEffect { drag.measuredOrder = ids; drag.gapPx = gapPx }
+    var viewport by remember { mutableStateOf(Rect.Zero) }
     var saveFailed by rememberSaveable { mutableStateOf(false) }
-    val shape = RoundedCornerShape(14.dp)
-    val gap = 6.dp
-    val blockTitles = blocks.associate { it.id to it.title }
+    val edge = with(density) { 64.dp.toPx() }
+    val maxSpeed = with(density) { 12.dp.toPx() }
+    LaunchedEffect(drag.draggingKey, scrollable) {
+        if (drag.draggingKey == null) return@LaunchedEffect
+        while (drag.draggingKey != null) {
+            withFrameNanos { }
+            val edgeSize = minOf(edge, viewport.height / 3)
+            if (edgeSize <= 0f || drag.draggingKey == null) continue
+            val top = (viewport.top + edgeSize - drag.pointerY).coerceIn(0f, edgeSize)
+            val bottom = (drag.pointerY - viewport.bottom + edgeSize).coerceIn(0f, edgeSize)
+            val scroll = (bottom - top) / edgeSize * maxSpeed
+            if (scroll != 0f) drag.offsetY += scrollable.dispatchRawDelta(scroll)
+        }
+    }
+
     BackHandler { layout.cancel() }
     Column(Modifier.fillMaxSize().background(palette.background).testTag("page_layout_editor_${layout.page}")) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp),
@@ -136,39 +363,10 @@ internal fun PageLayoutEditor(layout: PageLayoutState, language: AppLanguage, bl
                 Text(language.pageLayoutText("Alaphelyzet", "Reset", "Zurücksetzen", "Restabilește"), color = palette.primary)
             }
         }
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(gap)) {
-            ids.forEachIndexed { index, id ->
-                key(id) {
-                    val title = blockTitles.getValue(id)
-                    val lifted = drag.draggingKey == id
-                    val target = drag.dropTarget(drag.draggingIndex, ids.lastIndex, drag.draggingStepPx)
-                    val markDrop = drag.draggingKey != null && index == target && target != drag.draggingIndex
-                    Surface(shape = shape, color = palette.surfaceCard,
-                        modifier = Modifier.fillMaxWidth()
-                            .trainPilotReorderItem(drag, id, index)
-                            .trainPilotBorder(1.dp, if (lifted) palette.primary else palette.cardBorder, shape)
-                            .drawWithContent {
-                                drawContent()
-                                if (markDrop) {
-                                    val y = if (target < drag.draggingIndex) 1.dp.toPx() else size.height - 1.dp.toPx()
-                                    drawLine(palette.primary, Offset(0f, y), Offset(size.width, y),
-                                        strokeWidth = 2.dp.toPx(),
-                                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 3.dp.toPx())))
-                                }
-                            }
-                            .testTag("page_layout_editor_block_$id")) {
-                        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically) {
-                            Text(title, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                style = MaterialTheme.typography.titleSmall, color = palette.textPrimary)
-                            TrainPilotReorderHandle(drag, id, index, ids.lastIndex, gap, title,
-                                language.pageLayoutText("Mozgatás fel", "Move up", "Nach oben", "Mută în sus"),
-                                language.pageLayoutText("Mozgatás le", "Move down", "Nach unten", "Mută în jos"),
-                                "page_layout_handle_$id", layout::move, icon = Icons.Default.DragIndicator)
-                        }
-                    }
-                }
+        val titles = blocks.associate { it.id to it.title }
+        Box(Modifier.weight(1f).fillMaxWidth().onGloballyPositioned { viewport = it.boundsInRoot() }) {
+            CompositionLocalProvider(LocalPageLayoutDrag provides PageLayoutDrag(drag, titles, language, gap)) {
+                content()
             }
         }
         HorizontalDivider(color = palette.cardBorder)

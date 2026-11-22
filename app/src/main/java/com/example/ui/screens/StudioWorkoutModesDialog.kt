@@ -28,6 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.localization.StudioProfileOptionLabels.progressionName
+import com.example.localization.StudioProfileOptionLabels.trainingStyleName
 import com.example.model.AppLanguage
 import com.example.ui.components.TrainPilotAlertDialog
 import com.example.ui.theme.LocalTrainPilotPalette
@@ -45,16 +47,6 @@ private fun workoutModeText(language: AppLanguage, hu: String, en: String, de: S
         AppLanguage.DE -> de
         AppLanguage.RO -> ro
     }
-
-private fun styleName(language: AppLanguage, code: String) =
-    if (code == "hit") workoutModeText(language, "HIT-inspirált", "HIT-inspired", "HIT-inspiriert", "Inspirat de HIT")
-    else workoutModeText(language, "Normál", "Normal", "Normal", "Normal")
-
-private fun progressionName(language: AppLanguage, code: String) = when (code) {
-    "linear" -> workoutModeText(language, "Lineáris", "Linear", "Linear", "Liniară")
-    "rir" -> workoutModeText(language, "RIR / Coach", "RIR / Coach", "RIR / Coach", "RIR / Coach")
-    else -> workoutModeText(language, "Dupla progresszió", "Double progression", "Doppelte Progression", "Progresie dublă")
-}
 
 /** Look up the exact persisted program ID; never display internal IDs as names. */
 internal fun studioModeActiveProgramLabel(state: TrainPilotUiState): String {
@@ -149,11 +141,11 @@ internal fun StudioWorkoutModesDialog(
                         fontWeight = FontWeight.Bold, color = p.textPrimary)
                     Text(
                         workoutModeText(lang, "Korábbi: ", "Before: ", "Vorher: ", "Înainte: ") +
-                            styleName(lang, review.beforeStyle) + " / " + progressionName(lang, review.beforeProgression),
+                            trainingStyleName(lang, review.beforeStyle) + " / " + progressionName(lang, review.beforeProgression),
                         color = p.textSecondary)
                     Text(
                         workoutModeText(lang, "Új: ", "After: ", "Nachher: ", "După: ") +
-                            styleName(lang, review.afterStyle) + " / " + progressionName(lang, review.afterProgression),
+                            trainingStyleName(lang, review.afterStyle) + " / " + progressionName(lang, review.afterProgression),
                         color = p.textPrimary, fontWeight = FontWeight.SemiBold)
                     Text(
                         workoutModeText(lang, "Program-összehasonlítás: ",
@@ -227,8 +219,8 @@ internal fun StudioWorkoutModesDialog(
                     ModeSeparator("studio_modes_separator_vibration_style")
                     Text(workoutModeText(lang, "Edzésstílus", "Training style", "Trainingsstil",
                         "Stil de antrenament"), color = p.textPrimary, fontWeight = FontWeight.Bold)
-                    ModeOption(styleName(lang, "normal"), style == "normal", "studio_modes_style_normal") { style = "normal" }
-                    ModeOption(styleName(lang, "hit"), style == "hit", "studio_modes_style_hit") { style = "hit" }
+                    ModeOption(trainingStyleName(lang, "normal"), style == "normal", "studio_modes_style_normal") { style = "normal" }
+                    ModeOption(trainingStyleName(lang, "hit"), style == "hit", "studio_modes_style_hit") { style = "hit" }
                     Text(workoutModeText(lang,
                         "A HIT-inspirált stílus alacsonyabb munkasorozat-számot javasol; nem ír elő bukásig edzést.",
                         "HIT-inspired mode proposes fewer working sets; it does not require training to failure.",
