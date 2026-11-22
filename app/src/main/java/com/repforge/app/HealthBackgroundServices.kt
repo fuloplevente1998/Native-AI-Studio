@@ -67,7 +67,8 @@ class HealthBackgroundService : Service() {
         fun configured(context: Context): Boolean {
             val watch = BleWatchPreference(context)
             val prefs = HealthJournalStore.get(context).preferences()
-            return prefs.optBoolean("bleBackground") &&
+            return NativePrivacyControls.enabled(context, NativePrivacyControls.NOTIFICATIONS) &&
+                prefs.optBoolean("bleBackground") &&
                 prefs.optBoolean("logWatchSteps") &&
                 watch.address().isNotEmpty() &&
                 SERVICE.toString() == watch.service() &&
@@ -585,7 +586,8 @@ class HealthBackgroundJob : JobService() {
         @Throws(Exception::class)
         fun schedule(context: Context) {
             val jobs = context.getSystemService(JOB_SCHEDULER_SERVICE) as JobScheduler
-            if (!HealthJournalStore.get(context).preferences().optBoolean("hcBackground") || !permitted(context)) {
+            if (!NativePrivacyControls.enabled(context, NativePrivacyControls.HEALTH_CONNECT) ||
+                !HealthJournalStore.get(context).preferences().optBoolean("hcBackground") || !permitted(context)) {
                 jobs.cancel(ID)
                 return
             }
@@ -617,6 +619,7 @@ class HealthBackgroundJob : JobService() {
                 val epoch = store.generation()
                 val access = HealthConnectRepository.Access(this, epoch) {
                     if (stopped.get() ||
+                        !NativePrivacyControls.enabled(this, NativePrivacyControls.HEALTH_CONNECT) ||
                         !permitted(this) ||
                         !store.preferences().optBoolean("hcBackground") ||
                         store.pendingRestore().isNotEmpty()
@@ -650,7 +653,7 @@ class HealthBackgroundJob : JobService() {
                 }
                 store.syncMeta(meta)
             } catch (_: Exception) {
-                retry = !stopped.get() && permitted(this)
+                retry = !stopped.get() && NativePrivacyControls.enabled(this, NativePrivacyControls.HEALTH_CONNECT) && permitted(this)
             } finally {
                 if (!stopped.get()) jobFinished(params, retry)
             }

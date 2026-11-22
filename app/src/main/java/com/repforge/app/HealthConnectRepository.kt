@@ -163,6 +163,7 @@ object HealthConnectRepository {
 
         fun requireForeground() {
             guard.run()
+            NativePrivacyControls.requireEnabled(appContext, NativePrivacyControls.HEALTH_CONNECT)
         }
 
         fun allowed(suffix: String): Boolean = isAllowed(appContext, suffix)
@@ -258,6 +259,7 @@ object HealthConnectRepository {
         clientRecordId: String = "",
         clientVersion: Long = 1L
     ) = withContext(Dispatchers.IO) {
+        NativePrivacyControls.requireEnabled(context, NativePrivacyControls.HEALTH_CONNECT)
         val epoch = HealthJournalStore.get(context).generation()
         val access = Access(context, epoch, Runnable {})
         val params = JSONObject()
