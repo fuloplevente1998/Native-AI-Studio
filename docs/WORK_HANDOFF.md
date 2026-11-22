@@ -1,3 +1,12 @@
+# #319 utólagos Kotlin-fordítási javítás — CI #483/2 (2026-11-22)
+
+- Alap: a #319 és #320 merge után main `1f408cc65d635275d4c10062a7269dafb87cf826`; ág: `fix/319-compose-layout-compile`. Az új PR még nem main, nincs ellenőrzött új APK/AAB.
+- A közös CI [#483 második futása](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/44977151104/attempts/2) R8-jobja a `:app:compileReleaseKotlin` feladatnál elbukott: `TrainPilotButton.kt` sor 49–51 `isSpecified`, `constrainWidth`, `constrainHeight` feloldatlan hivatkozások. Ez a Kotlin-fordítás előtti blokkoló, nem bizonyított R8 shrink-hiba.
+- A javítás ugyanebben a gombban a `Dp.value.isNaN()` ellenőrzést és a `constraints.min/maxWidth/Height` szerinti `coerceIn` méretkorlátot használja; a 48 dp érintési befoglaló, a paletták és az új képpontos regresszióteszt változatlanok.
+- A forrásjavítás és a tesztforrások ellenőrizve, Android/JVM és R8 újrafuttatása/eredménye külön igazolandó. Fizikai eszközteszt továbbra is hátravan. A sikeres közös main-kapu után indulhat a meglévő signed phone/Wear APK+AAB workflow.
+
+---
+
 # #312/13 Adatvédelem és engedélyek — 2026-11-22
 
 - **Alap:** friss main `483383d` (#309-zel). **Ág:** `fix/312-privacy-permissions`. **Átadás:** [PR #320](https://github.com/fuloplevente1998/Native-AI-Studio/pull/320). A #319 main-merge elkészült; #320 integrációja jóváhagyva. A közös CI és az aláírt build a második merge után indul, eredményük még nem ismert. Nincs verzióemelés vagy kiadás.
