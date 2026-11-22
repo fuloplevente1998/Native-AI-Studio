@@ -196,7 +196,7 @@ fun WeeklyDayBars(days: List<LocalDate>, values: List<Double?>, label: (LocalDat
     val scaleMax = if (showScale) (kotlin.math.ceil(max / tick) * tick).coerceAtLeast(tick) else max
     val axisFormatter = remember(lang) { NumberFormat.getIntegerInstance(Locale.forLanguageTag(lang.take(2))) }
     var sel by remember(tag, days.lastOrNull()) { mutableIntStateOf(values.lastIndex) }
-    sel = sel.coerceIn(0, values.lastIndex)
+    val selectedIndex = sel.coerceIn(0, values.lastIndex)
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
         if (showScale) {
             Column(Modifier.width(48.dp).height(64.dp),
@@ -209,7 +209,7 @@ fun WeeklyDayBars(days: List<LocalDate>, values: List<Double?>, label: (LocalDat
         Row(Modifier.weight(1f).height(64.dp).testTag(tag),
             horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.Bottom) {
             values.forEachIndexed { i, v ->
-                val on = i == sel
+                val on = i == selectedIndex
                 val color = trainPilotChartMarkColor(on, p.primary, p.textSecondary)
                 Box(
                     Modifier.weight(1f).fillMaxHeight()
@@ -230,7 +230,7 @@ fun WeeklyDayBars(days: List<LocalDate>, values: List<Double?>, label: (LocalDat
         if (showScale) Spacer(Modifier.width(48.dp))
         days.forEachIndexed { i, d ->
             Text(d.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, locale).trimEnd('.'),
-                style = MaterialTheme.typography.labelSmall, color = if (i == sel) p.primary else p.textSecondary,
+                style = MaterialTheme.typography.labelSmall, color = if (i == selectedIndex) p.primary else p.textSecondary,
                 maxLines = 1, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.weight(1f))
         }
     }
@@ -240,9 +240,9 @@ fun WeeklyDayBars(days: List<LocalDate>, values: List<Double?>, label: (LocalDat
             Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(detailIcon, contentDescription = null, tint = p.primary, modifier = Modifier.size(18.dp))
-                Text(label(days[sel], values[sel]), color = p.textPrimary, style = MaterialTheme.typography.labelMedium,
+                Text(label(days[selectedIndex], values[selectedIndex]), color = p.textPrimary, style = MaterialTheme.typography.labelMedium,
                     modifier = Modifier.testTag("${tag}_info"))
             }
         }
-    } else TrainPilotChartInfoLine(label(days[sel], values[sel]), Modifier.testTag("${tag}_info"))
+    } else TrainPilotChartInfoLine(label(days[selectedIndex], values[selectedIndex]), Modifier.testTag("${tag}_info"))
 }
