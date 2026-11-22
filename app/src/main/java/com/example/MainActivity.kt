@@ -150,14 +150,12 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
     val hcBackgroundAccess = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) nativeHealth.toggleHcBackground(true)
         else viewModel.showBannerMessage(
-            com.repforge.app.NativePrivacyControls.disabledMessage(uiState.language.name)
-                .replace("ki van kapcsolva az adatvédelmi beállításokban", "háttérengedélyt igényel")
+            com.repforge.app.NativePrivacyControls.backgroundPermissionMessage(uiState.language.name)
         )
     }
     val hcWorkoutWriteAccess = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (!granted) viewModel.showBannerMessage(
-            com.repforge.app.HealthConnectSyncRecovery.failureMessage(
-                SecurityException("Health Connect write denied"), uiState.language.name))
+            com.repforge.app.NativePrivacyControls.writePermissionMessage(uiState.language.name))
     }
     LaunchedEffect(uiState.permissionHealthConnectEnabled, uiState.permissionSamsungHealthEnabled) {
         nativeHealth.refreshBackgroundStatus()
