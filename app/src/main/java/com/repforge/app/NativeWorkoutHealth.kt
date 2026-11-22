@@ -77,12 +77,13 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
         try {
             check(foreground.get()) { "Foreground health read required" }
             NativeWorkoutHealthSource.requireProvider(provider)
-            if (provider == HealthJournalStore.HC && (Build.VERSION.SDK_INT < 34 || !HealthConnectRepository.isSupported(context)))
-                throw UnsupportedOperationException("Health Connect requires Android 14")
-            if (provider == HealthJournalStore.HC && listOf("READ_STEPS", "READ_HEART_RATE", "READ_ACTIVE_CALORIES_BURNED", "READ_TOTAL_CALORIES_BURNED",
-                    "READ_EXERCISE", "READ_DISTANCE", "READ_SPEED").none {
-                    context.checkSelfPermission("android.permission.health.$it") == PackageManager.PERMISSION_GRANTED })
-                throw SecurityException("Health Connect read permission required")
+            if (provider == HealthJournalStore.HC && !HealthConnectRepository.isSupported(context))
+                throw UnsupportedOperationException("Health Connect unavailable; Android 9+ and HC app required")
+            if (provider == HealthJournalStore.HC &&
+                HealthConnectRepository.currentlyGrantedReadKeys(context).none {
+                    it in setOf("READ_STEPS","READ_HEART_RATE","READ_ACTIVE_CALORIES_BURNED",
+                        "READ_TOTAL_CALORIES_BURNED","READ_EXERCISE","READ_DISTANCE","READ_SPEED")
+                }) throw SecurityException("Health Connect read permission required")
             val request = withContext(Dispatchers.IO) { prepare(expected) }
             val guard = { check(foreground.get()) { "Foreground health read interrupted" }; request.ticket.requireCurrent(context); Unit }
             guard()
@@ -90,7 +91,12 @@ internal class NativeWorkoutHealth(private val context: Context, private val db:
             val workout = JSONObject().put("started", request.expected.started).put("finished", request.expected.finished)
             request.expected.activeIntervalsJson?.let { workout.put("activeIntervals", org.json.JSONArray(it)) }
             val response = NativeWorkoutHealthSource.read(workout, provider,
-                healthConnect = { window -> guard(); HealthConnectRepository.readTrainingWindowSuspend(context, window.start.toString(), window.end.toString(), guard) },
+                healthConnect = { window ->
+                    guard()
+                    if (Build.VERSION.SDK_INT >= 34)
+                        HealthConnectRepository.readTrainingWindowSuspend(context, window.start.toString(), window.end.toString(), guard)
+                    else HealthConnectLegacyBridge.readTrainingWindow(context, window.start, window.end, guard)
+                },
                 samsung = { window -> guard(); SamsungHealthRepository.readTrainingWindowSuspend(context, window.start.toString(), window.end.toString(), guard) })
             guard()
             withContext(Dispatchers.IO) { attach(request, response, provider) }
