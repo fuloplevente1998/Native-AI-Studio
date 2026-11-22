@@ -121,27 +121,20 @@ internal fun StudioRestTimerDock(
                                 color = palette.primary,
                                 fontWeight = FontWeight.Bold
                             )
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = palette.surfaceElevated,
-                                modifier = Modifier
-                                    .trainPilotClickable(RoundedCornerShape(8.dp)) { onLarge(false) }
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        text = tr(lang, "Lapos mód", "Compact mode", "Kompaktmodus", "Mod compact"),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = palette.textSecondary
-                                    )
-                                    Icon(
-                                        imageVector = Icons.Default.ExpandMore,
-                                        contentDescription = tr(lang, "Kis lapos mód", "Compact rest timer", "Kompakter Pausenmodus", "Mod pauză compact"),
-                                        tint = palette.textSecondary,
-                                        modifier = Modifier.size(14.dp)
-                                    )
+                            Box(Modifier.heightIn(min = 48.dp).trainPilotClickable(RoundedCornerShape(8.dp)) {
+                                onLarge(false)
+                            }, contentAlignment = Alignment.Center) {
+                                Surface(shape = RoundedCornerShape(8.dp), color = palette.surfaceElevated) {
+                                    Row(verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)) {
+                                        Text(
+                                            text = tr(lang, "Lapos mód", "Compact mode", "Kompaktmodus", "Mod compact"),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = palette.textSecondary
+                                        )
+                                        Icon(Icons.Default.ExpandMore, null, tint = palette.textSecondary,
+                                            modifier = Modifier.size(14.dp))
+                                    }
                                 }
                             }
                         }

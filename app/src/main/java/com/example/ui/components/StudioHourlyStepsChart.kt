@@ -33,18 +33,19 @@ import java.util.Locale
 internal fun StudioHourlyStepsChart(day: LocalDate, provider: String, origin: String, revision: Long, language: AppLanguage) {
     val context = LocalContext.current.applicationContext
     val palette = LocalTrainPilotPalette.current
-    val rows by produceState<List<HourlySteps>?>(null, day, provider, origin, revision) {
-        value = null
-        try {
-            val ticket = NativeDataReplacement.continuationForCurrentData(context)
-            val result = withContext(Dispatchers.IO) {
-                readHourlySteps(NativeHealthRecords(HealthJournalStore.get(context)), day, provider, origin,
-                    ZoneId.systemDefault(), Instant.now())
-            }
-            ticket.requireCurrent(context)
-            value = result
-        } catch (cancelled: CancellationException) { throw cancelled }
-        catch (_: Exception) { value = emptyList() }
+    val rows = key(day, provider, origin, revision) {
+        produceState<List<HourlySteps>?>(null) {
+            try {
+                val ticket = NativeDataReplacement.continuationForCurrentData(context)
+                val result = withContext(Dispatchers.IO) {
+                    readHourlySteps(NativeHealthRecords(HealthJournalStore.get(context)), day, provider, origin,
+                        ZoneId.systemDefault(), Instant.now())
+                }
+                ticket.requireCurrent(context)
+                value = result
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { value = emptyList() }
+        }.value
     }
     fun word(hu: String, en: String, de: String, ro: String) = when (language) {
         AppLanguage.HU -> hu

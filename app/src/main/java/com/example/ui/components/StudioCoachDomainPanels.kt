@@ -381,7 +381,7 @@ internal fun StudioWorkoutCoachChip(exerciseId: String,
                 horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 Icon(TrainPilotCoachIcon, null, tint = if (warning || proposal) tint else palette.primary, modifier = Modifier.size(15.dp))
                 Text("Coach", color = if (warning) tint else palette.textPrimary, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelMedium)
-                if (warning || proposal) Text("!", color = tint, fontWeight = FontWeight.Black,
+                if (warning || proposal) Text("!", color = tint, fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.labelMedium, modifier = Modifier.testTag("studio_active_coach_chip_dot"))
             }
         }

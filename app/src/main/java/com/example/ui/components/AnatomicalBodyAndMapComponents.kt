@@ -340,7 +340,7 @@ fun AnatomicalMuscleHeatmapCard(
                 Box(
                     modifier = Modifier
                         .weight(0.46f)
-                        .height(138.dp)
+                        .height(114.dp)
                         .clip(RoundedCornerShape(10.dp)),
                     contentAlignment = Alignment.Center
                 ) {
