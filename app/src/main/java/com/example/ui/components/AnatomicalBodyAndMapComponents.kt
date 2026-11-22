@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.example.ui.components.trainPilotAnimatedExpansion
+
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.repforge.app.ui.theme.trainPilotPressIndication
@@ -282,6 +284,7 @@ fun AnatomicalMuscleHeatmapCard(
             .fillMaxWidth()
                 .trainPilotSoftGlow(palette.primary, RoundedCornerShape(20.dp), 3.dp)
             .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .trainPilotAnimatedExpansion()
             .testTag("anatomical_muscle_heatmap_card")
     ) {
         Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
