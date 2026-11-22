@@ -5589,6 +5589,20 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
+    fun updatePrivacyChoice(feature: String, enabled: Boolean) {
+        // Only called after the persistent preference commit succeeds. Unlike OS grants,
+        // this is the state the switch represents and should update without a Wear query.
+        _uiState.update { state ->
+            when (feature) {
+                com.repforge.app.NativePrivacyControls.GPS -> state.copy(permissionGpsEnabled = enabled)
+                com.repforge.app.NativePrivacyControls.NOTIFICATIONS -> state.copy(permissionNotificationsEnabled = enabled)
+                com.repforge.app.NativePrivacyControls.HEALTH_CONNECT -> state.copy(permissionHealthConnectEnabled = enabled)
+                com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH -> state.copy(permissionSamsungHealthEnabled = enabled)
+                else -> state
+            }
+        }
+    }
+
     fun updateSamsungAccess(granted: Boolean) { _uiState.update { it.copy(permissionSamsungHealthGranted = granted) } }
 
     fun showBannerMessage(message: String) {
