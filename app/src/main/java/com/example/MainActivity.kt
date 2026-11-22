@@ -985,30 +985,20 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             }
 
                             MainTab.LOG -> {
-                                ProgressTabScreen(
-                                    onDeletedWorkout = viewModel::onLoggedWorkoutDeleted,
-                                    uiState = uiState.copy(progressMainSection = 1),
+                                LogTabScreen(
+                                    uiState = uiState,
                                     strings = strings,
-                                    onSelectMainSection = { viewModel.selectProgressMainSection(it) },
-                                    onSelectExercise = { viewModel.selectProgressExercise(it) },
-                                    onSelectRange = { viewModel.selectProgressRange(it) },
-                                    onSelectVolumeBar = { viewModel.selectVolumeBar(it) },
-                                    onSelectExpandedStatsCard = { viewModel.selectExpandedStatsCard(it) },
-                                    onSelectStatsSubTab = { viewModel.selectStatsSubTab(it) },
-                                    onToggleCardioFilterStepsMode = { viewModel.toggleCardioFilterStepsMode(it) },
-                                    onRefreshRecords = viewModel::reloadPersonalRecords,
-                                    onOpenWorkoutDetail = { id -> viewModel.openLogWorkoutDetail(id) },
+                                    onSearchChange = viewModel::updateLogSearch,
+                                    onOpenWorkoutDetail = viewModel::openLogWorkoutDetail,
+                                    onOpenRouteMap = viewModel::openLoggedWorkoutRouteMap,
                                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
-                                    onSearchChange = { viewModel.updateLogSearch(it) },
-                                    onOpenRouteMap = { viewModel.navigateToSubScreen(SubScreen.LOG_ROUTE_MAP) },
-                                    onOpenPhotos = { viewModel.navigateToSubScreen(SubScreen.PRIVATE_PHOTOS) }
+                                    onDeletedWorkout = viewModel::onLoggedWorkoutDeleted
                                 )
                             }
 
                             MainTab.PROGRESS -> {
                                 ProgressTabScreen(
-                                    onDeletedWorkout = viewModel::onLoggedWorkoutDeleted,
                                     uiState = uiState,
                                     strings = strings,
                                     onSelectMainSection = { viewModel.selectProgressMainSection(it) },
@@ -1021,8 +1011,6 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onOpenWorkoutDetail = { id -> viewModel.openLogWorkoutDetail(id) },
                                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                                     onOpenPalettePicker = { viewModel.togglePalettePickerSheet(true) },
-                                    onSearchChange = { viewModel.updateLogSearch(it) },
-                                    onOpenRouteMap = { viewModel.navigateToSubScreen(SubScreen.LOG_ROUTE_MAP) },
                                     onOpenPhotos = { viewModel.navigateToSubScreen(SubScreen.PRIVATE_PHOTOS) }
                                 )
                             }

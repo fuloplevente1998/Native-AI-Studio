@@ -138,6 +138,7 @@ class StudioProgressUiRegressionTest {
         compose.onNodeWithTag("muscle_chip_legs").performClick()
         compose.onNodeWithTag("muscle_open_workouts").assertDoesNotExist()
         compose.onNodeWithTag("muscle_chip_arms").performClick()
+        compose.onNodeWithTag("muscle_selected_summary").assertHeightIsEqualTo(48.dp)
         compose.onNodeWithTag("muscle_open_workouts").performClick()
         compose.onNodeWithTag("muscle_workouts_sheet").assertExists()
         compose.onNodeWithTag("muscle_workout_workout-a").assertIsDisplayed()

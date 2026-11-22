@@ -27,6 +27,27 @@ internal object NativeProgressQuery {
         else -> key.lowercase()
     }
 
+    // The first explicit target is used only to refine a broad catalog key. Each saved
+    // set still belongs to just one row; supporting muscles are not added again.
+    fun detailedMuscleGroup(key: String, catalogTarget: String): String {
+        val normalized = key.trim().lowercase(java.util.Locale.ROOT)
+        val primaryTarget = catalogTarget.substringBefore('/').trim().lowercase(java.util.Locale.ROOT)
+        return when (normalized) {
+            "biceps", "triceps", "forearms", "glutes", "quads", "hamstrings", "calves" -> normalized
+            "legs", "arms" -> when (primaryTarget) {
+                "bicepsz", "biceps" -> if (normalized == "arms") "biceps" else normalized
+                "tricepsz", "triceps" -> if (normalized == "arms") "triceps" else normalized
+                "alkar", "forearms" -> if (normalized == "arms") "forearms" else normalized
+                "far", "farizom", "glutes" -> if (normalized == "legs") "glutes" else normalized
+                "combhajlító", "hamstrings" -> if (normalized == "legs") "hamstrings" else normalized
+                "vádli", "calves" -> if (normalized == "legs") "calves" else normalized
+                "négyfejű combizom", "quads", "quadriceps" -> if (normalized == "legs") "quads" else normalized
+                else -> normalized
+            }
+            else -> muscleGroup(normalized)
+        }
+    }
+
     fun muscle(rows: List<ProgressMuscleSummary>, language: String): List<MuscleLoadUiModel> {
         val counts = groups.associateWith { 0 }.toMutableMap()
         for (row in rows) {

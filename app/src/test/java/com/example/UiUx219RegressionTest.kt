@@ -504,7 +504,8 @@ class UiUx219RegressionTest {
         // 2. Default Progress viewport check (354dp x 620dp content area)
         compose.runOnIdle { showProgress = true }
         val progressViewport = compose.onNodeWithTag("phone_viewport").getUnclippedBoundsInRoot()
-        val tabs = (0..2).map { compose.onNodeWithTag("progress_section_tab_$it").getUnclippedBoundsInRoot() }
+        compose.onNodeWithTag("progress_section_tab_1").assertDoesNotExist()
+        val tabs = listOf(0, 2).map { compose.onNodeWithTag("progress_section_tab_$it").getUnclippedBoundsInRoot() }
         assertTrue(tabs.all { it.bottom - it.top >= 48.dp })
         val tabWidth = tabs.first().right - tabs.first().left
         assertTrue(tabs.all { kotlin.math.abs((it.right - it.left - tabWidth).value) <= 1f })

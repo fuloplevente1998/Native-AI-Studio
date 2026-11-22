@@ -127,6 +127,8 @@ data class MuscleLoadItem(
             AppLanguage.DE -> "Rumpf"
             AppLanguage.RO -> "Trunchi"
         }
+        "quads", "hamstrings", "glutes", "calves", "biceps", "triceps", "forearms" ->
+            if (lang == AppLanguage.HU) nameHu else com.example.model.translateSingleMuscleLabel(id, lang)
         else -> com.example.model.translateSingleMuscleLabel(nameHu, lang)
     }
 
@@ -344,21 +346,19 @@ fun AnatomicalMuscleHeatmapCard(
                         .clip(RoundedCornerShape(10.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    val nativeLoads = remember(muscleLoads, lang) {
-                        muscleLoads.map {
-                            com.repforge.app.ui.progress.MuscleLoadUiModel(
-                                muscleKey = it.id,
-                                label = it.localizedName(lang),
-                                setsCount = it.setsCount,
-                                loadPercentage = it.ratio
-                            )
-                        }
+                    val nativeLoads = remember(muscleLoads, lang, selectedMuscleId) {
+                        muscleLoads.groupBy { com.repforge.app.ui.progress.NativeProgressQuery.muscleGroup(it.id) }
+                            .map { (region, items) ->
+                                val shown = items.firstOrNull { it.id == selectedMuscleId } ?: items.maxBy { it.ratio }
+                                com.repforge.app.ui.progress.MuscleLoadUiModel(region, shown.localizedName(lang),
+                                    shown.setsCount, shown.ratio)
+                            }
                     }
                     com.repforge.app.ui.progress.NativeMuscleLoadVisual(
                         loads = nativeLoads,
                         language = lang.code.lowercase(),
                         modifier = Modifier.fillMaxSize(),
-                        highlight = selectedMuscleId,
+                        highlight = com.repforge.app.ui.progress.NativeProgressQuery.muscleGroup(selectedMuscleId),
                         loadColor = ::studioMuscleLoadColor
                     )
                 }
@@ -470,7 +470,6 @@ fun AnatomicalMuscleHeatmapCard(
 
             // Expandable Muscle Exercise Breakdown when user taps any muscle bar or body part
             if (selectedMuscleObj != null) {
-                Spacer(modifier = Modifier.height(10.dp))
                 val openExLabel = when (lang) {
                     AppLanguage.HU -> "Gyakorlatok"
                     AppLanguage.EN -> "Exercises"
@@ -488,23 +487,25 @@ fun AnatomicalMuscleHeatmapCard(
                     color = palette.surfaceElevated,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .testTag("muscle_selected_summary")
                         .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
                         .trainPilotClickable(RoundedCornerShape(14.dp)) { selectedMuscleId = "all" }
                 ) {
                     Column(
-                        modifier = Modifier.padding(10.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = "${selectedMuscleObj.localizedName(lang)} • ${selectedMuscleObj.localizedSetsText(lang)} (${selectedMuscleObj.percentage}%)",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = palette.primary
+                                color = palette.primary,
+                                modifier = Modifier.weight(1f)
                             )
                             if (onOpenWorkout != null && selectedMuscleObj.workoutRows.any { it.workoutId.isNotBlank() }) {
                                 Text(
@@ -524,7 +525,7 @@ fun AnatomicalMuscleHeatmapCard(
                                 )
                             }
                         }
-                        HorizontalDivider(color = palette.cardBorder)
+                        if (selectedMuscleObj.topExercisesHu.isNotEmpty()) HorizontalDivider(color = palette.cardBorder)
                         selectedMuscleObj.topExercisesHu.forEach { (exName, exLoad) ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),

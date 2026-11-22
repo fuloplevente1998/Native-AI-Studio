@@ -4285,8 +4285,7 @@ class TrainPilotViewModel : ViewModel() {
                                 workoutGoalCompleted = updatedLogs.workoutsInPeriodToDate(st.workoutGoalPeriod, LocalDate.now()).size,
                                 weeklyGoalCompleted = updatedLogs.workoutsInCalendarWeekToDate(LocalDate.now()).size,
                                 quickWorkoutQueue = emptyList(),
-                                currentTab = MainTab.PROGRESS,
-                                progressMainSection = 1,
+                                currentTab = MainTab.LOG,
                                 currentSubScreen = SubScreen.NONE,
                                 statusBannerMessage = "Edzés sikeresen lezárva és mentve ($totalCompletedSets kész sorozat • $realWorkTimeLabel)!"
                             )
@@ -4327,13 +4326,20 @@ class TrainPilotViewModel : ViewModel() {
                 selectedLogWorkoutId = workoutId,
                 logWorkoutMuscleLoads = emptyList(),
                 expandedLogExerciseIndex = -1,
-                currentTab = MainTab.PROGRESS,
-                progressMainSection = 1,
+                currentTab = MainTab.LOG,
                 currentSubScreen = SubScreen.LOG_WORKOUT_DETAIL,
                 backStack = back
             )
         }
         loadWorkoutMuscleSummary(workoutId)
+    }
+
+    fun openLoggedWorkoutRouteMap(workoutId: String) {
+        if (workoutId.isBlank()) return
+        _uiState.update { state ->
+            state.copy(currentTab = MainTab.LOG, currentSubScreen = SubScreen.LOG_ROUTE_MAP,
+                selectedLogWorkoutId = workoutId, backStack = (state.backStack + state.navigationRoute()).takeLast(16))
+        }
     }
 
     fun openCalendarEventWorkoutDetail(eventId: String) {
@@ -4437,6 +4443,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun selectProgressMainSection(section: Int) {
+        if (section != 0 && section != 2) return
         _uiState.update { it.copy(progressMainSection = section) }
         if (section == 2) reloadPersonalRecords()
     }
@@ -5162,9 +5169,23 @@ class TrainPilotViewModel : ViewModel() {
         scope.launch(Dispatchers.IO) {
             try {
                 val entries = db.workoutHistoryDao().getProgressMuscleWorkoutRows(window.fromEpoch(), window.toEpoch(), _uiState.value.language.name.lowercase())
-                val counts = entries.map { com.repforge.app.data.db.ProgressMuscleSummary(it.muscleKey, it.setsCount) }
-                val byMuscle = entries.groupBy { NativeProgressQuery.muscleGroup(it.muscleKey) }
-                val items = muscleItems(counts).map { it.copy(workoutRows = byMuscle[it.id].orEmpty()) }
+                val targets = _uiState.value.exercises.associate { it.id to it.primaryMusclesHu }
+                val byMuscle = entries.groupBy {
+                    NativeProgressQuery.detailedMuscleGroup(it.muscleKey, targets[it.exerciseId].orEmpty())
+                }
+                val ordered = listOf("chest", "back", "shoulders", "arms", "biceps", "triceps", "forearms",
+                    "core", "legs", "quads", "hamstrings", "glutes", "calves")
+                val names = listOf("Mell", "Hát", "Váll", "Kar", "Bicepsz", "Tricepsz", "Alkar",
+                    "Törzs", "Láb", "Combfeszítő", "Combhajlító", "Far", "Vádli")
+                val counts = byMuscle.mapValues { (_, rows) -> rows.sumOf { it.setsCount } }
+                val largest = ordered.maxOf { counts[it] ?: 0 }.coerceAtLeast(1)
+                val items = ordered.zip(names).mapNotNull { (key, name) ->
+                    val count = counts[key] ?: 0
+                    if (count == 0 && key !in setOf("chest", "back", "shoulders", "core", "legs")) return@mapNotNull null
+                    val ratio = count.toFloat() / largest
+                    com.example.ui.components.MuscleLoadItem(key, name, "", (ratio * 100).toInt(),
+                        ratio, "", emptyList(), "", count, byMuscle[key].orEmpty())
+                }
                 withContext(Dispatchers.Main) {
                     _uiState.update { state ->
                         if (progressPeriodDays(state.selectedProgressRangeIndex) == days)

@@ -193,29 +193,31 @@ fun TrainPilotGlobalTopHeaderAndNav(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp)
+                BoxWithConstraints(
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                         .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectTab(MainTab.HOME) }
-                        .padding(vertical = 2.dp, horizontal = 4.dp)
-                        .testTag("top_bar_brand_home")
+                        .padding(horizontal = 4.dp)
+                        .testTag("top_bar_brand_home"),
+                    contentAlignment = Alignment.CenterStart
                 ) {
-                    TrainPilotMountainLogo(
-                        modifier = Modifier.size(32.dp)
+                    val compact = maxWidth < 126.dp
+                    val brandStyle = MaterialTheme.typography.titleMedium.copy(
+                        fontSize = if (compact) 14.sp else 18.sp, letterSpacing = (-0.2).sp
                     )
-                    Text(
-                        text = "TrainPilot",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            letterSpacing = (-0.2).sp
-                        ),
-                        color = palette.primary,
-                        maxLines = 1
-                    )
+                    if (compact) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            TrainPilotMountainLogo(modifier = Modifier.size(18.dp))
+                            TrainPilotFitText("TrainPilot", style = brandStyle, color = palette.primary,
+                                fontWeight = FontWeight.Bold, minSize = 9.sp)
+                        }
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TrainPilotMountainLogo(modifier = Modifier.size(32.dp))
+                            TrainPilotFitText("TrainPilot", style = brandStyle, color = palette.primary,
+                                fontWeight = FontWeight.Bold, minSize = 11.sp)
+                        }
+                    }
                 }
 
                 // Right icons: Naptár (Calendar), Coach, Settings Gear
@@ -272,6 +274,24 @@ fun TrainPilotGlobalTopHeaderAndNav(
                                 tint = if (isCoachActive) palette.onPrimary else palette.textPrimary,
                                 modifier = Modifier.size(20.dp)
                             )
+                        }
+                    }
+
+                    val journalActive = currentTab == MainTab.LOG && currentSubScreen != SubScreen.SETTINGS_MAIN
+                    val journalShape = RoundedCornerShape(10.dp)
+                    Surface(
+                        shape = journalShape,
+                        color = if (journalActive) palette.primary else palette.surfaceElevated,
+                        modifier = Modifier.size(48.dp)
+                            .trainPilotBorder(1.dp, if (journalActive) palette.primary else palette.cardBorder, journalShape)
+                            .clip(journalShape)
+                            .selectable(selected = journalActive, role = Role.Tab, onClick = { onSelectTab(MainTab.LOG) })
+                            .testTag("top_bar_journal_button")
+                    ) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Description, strings.navLog,
+                                tint = if (journalActive) palette.onPrimary else palette.textPrimary,
+                                modifier = Modifier.size(20.dp))
                         }
                     }
 
@@ -339,8 +359,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                 TopNavPillItem(
                     label = strings.navProgress,
                     icon = Icons.AutoMirrored.Filled.TrendingUp,
-                    selected = (currentTab == MainTab.PROGRESS || currentTab == MainTab.LOG) &&
-                        currentSubScreen in setOf(SubScreen.NONE, SubScreen.LOG_WORKOUT_DETAIL, SubScreen.LOG_ROUTE_MAP),
+                    selected = currentTab == MainTab.PROGRESS && currentSubScreen == SubScreen.NONE,
                     onClick = { onSelectTab(MainTab.PROGRESS) },
                     modifier = itemModifier,
                     testTag = "top_nav_progress"

@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.layout.widthIn
 import com.repforge.app.ui.theme.trainPilotSoftGlow
+import com.example.ui.components.trainPilotChartSelection
 
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
 
@@ -142,7 +143,7 @@ fun LogTabScreen(
     strings: LocalizedStrings,
     onSearchChange: (String) -> Unit,
     onOpenWorkoutDetail: (String) -> Unit,
-    onOpenRouteMap: () -> Unit,
+    onOpenRouteMap: (String) -> Unit,
     onOpenSettings: () -> Unit,
     onOpenPalettePicker: () -> Unit,
     onDeletedWorkout: (String) -> Unit = {}
@@ -160,10 +161,13 @@ fun LogTabScreen(
 
     val palette = LocalTrainPilotPalette.current
     val today = remember { java.time.LocalDate.now() }
-    var currentYearMonth by remember { mutableStateOf(java.time.YearMonth.from(today)) }
-    var filterAllMonths by remember { mutableStateOf(true) }
-    var intervalStartDay by remember { mutableStateOf<Int?>(null) }
-    var intervalEndDay by remember { mutableStateOf<Int?>(null) }
+    var currentYearMonth by androidx.compose.runtime.saveable.rememberSaveable(
+        stateSaver = androidx.compose.runtime.saveable.Saver<java.time.YearMonth, String>(
+            save = { it.toString() }, restore = { java.time.YearMonth.parse(it) })
+    ) { mutableStateOf(java.time.YearMonth.from(today)) }
+    var filterAllMonths by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(true) }
+    var intervalStartDay by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<Int?>(null) }
+    var intervalEndDay by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<Int?>(null) }
     var showInlineCalendar by remember { mutableStateOf(false) }
     var showDatePickerDialog by remember { mutableStateOf(false) }
 
@@ -560,7 +564,7 @@ fun LogTabScreen(
                 entry = logEntry,
                 onClick = {
                     if (logEntry.isOutdoorRun) {
-                        onOpenRouteMap()
+                        onOpenRouteMap(logEntry.id)
                     } else {
                         onOpenWorkoutDetail(logEntry.id)
                     }
@@ -1282,17 +1286,14 @@ fun ProgressTabScreen(
     onOpenWorkoutDetail: (String) -> Unit,
     onOpenSettings: () -> Unit,
     onOpenPalettePicker: () -> Unit,
-    onSearchChange: (String) -> Unit = {},
-    onOpenRouteMap: () -> Unit = {},
     onRefreshRecords: () -> Unit = {},
-    onDeletedWorkout: (String) -> Unit = {},
     onOpenPhotos: () -> Unit = {}
 ) {
     val palette = LocalTrainPilotPalette.current
-    // 3 al-oldal a Fejlődés oldalon belül: 1. 📈 Fejlődés | 2. 📄 Napló | 3. 📊 Statisztikák
     val statisticsLabel = com.repforge.app.ui.text.nativeResources(androidx.compose.ui.platform.LocalContext.current,
         uiState.language.name.lowercase()).getString(com.repforge.app.R.string.journal_statistics)
-    val sections = listOf("📈 ${strings.navProgress}", "📄 ${strings.navLog}", "📊 $statisticsLabel")
+    val sections = listOf(0 to strings.navProgress, 2 to statisticsLabel)
+    val activeSection = if (uiState.progressMainSection == 2) 2 else 0
 
     Column(
         modifier = Modifier
@@ -1300,7 +1301,6 @@ fun ProgressTabScreen(
             .background(palette.background)
             .testTag("progress_tab_screen")
     ) {
-        // Compact Top Sub-Tab Bar: 📈 Fejlődés | 📄 Napló | 🏋️ Erő & 1RM
         Surface(
             shape = RoundedCornerShape(14.dp),
             color = palette.surfaceCard,
@@ -1315,8 +1315,8 @@ fun ProgressTabScreen(
                     .padding(3.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                sections.forEachIndexed { idx, label ->
-                    val selected = uiState.progressMainSection == idx
+                sections.forEach { (idx, label) ->
+                    val selected = activeSection == idx
                     Surface(
                         shape = RoundedCornerShape(10.dp),
                         color = if (selected) palette.primary.copy(alpha = 0.22f) else Color.Transparent,
@@ -1329,6 +1329,7 @@ fun ProgressTabScreen(
                                 shape = RoundedCornerShape(10.dp)
                             )
                             .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectMainSection(idx) }
+                            .then(Modifier.trainPilotChartSelection(selected, label))
                             .testTag("progress_section_tab_$idx")
                     ) {
                         Box(
@@ -1348,7 +1349,7 @@ fun ProgressTabScreen(
             }
         }
 
-        when (uiState.progressMainSection) {
+        when (activeSection) {
             // 1. AL-OLDAL (0): 📈 FEJLŐDÉS (Összes volumen, 4 lenyíló statisztika ablak, Izomcsoport-terhelés, Rekordok & Kardió)
             0 -> {
                 LazyColumn(
@@ -1401,20 +1402,6 @@ fun ProgressTabScreen(
                         )
                     }
                 }
-            }
-
-            // 2. AL-OLDAL (1): 📄 NAPLÓ (Teljes edzésnapló keresővel, alapból csukott intervallum-naptárral, edzésrészletekkel)
-            1 -> {
-                LogTabScreen(
-                    uiState = uiState,
-                    strings = strings,
-                    onSearchChange = onSearchChange,
-                    onOpenWorkoutDetail = onOpenWorkoutDetail,
-                    onOpenRouteMap = onOpenRouteMap,
-                    onOpenSettings = onOpenSettings,
-                    onOpenPalettePicker = onOpenPalettePicker,
-                    onDeletedWorkout = onDeletedWorkout
-                )
             }
 
             // Statistics replaces the old standalone Strength/1RM tab; estimates remain in record details.
