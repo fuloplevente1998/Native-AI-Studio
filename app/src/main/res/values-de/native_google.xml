@@ -3,7 +3,12 @@
     <string name="native_google_authorizing">Google-Zugriff wird geprüft…</string>
     <string name="native_google_waiting">Warten auf die Google-Zustimmung…</string>
     <string name="native_google_launch_failed">Die Google-Zustimmung konnte nicht geöffnet werden. Erneut versuchen.</string>
-    <string name="native_google_cancelled">Google-Zustimmung abgebrochen. Es wurde keine Synchronisierung gestartet.</string>
+    <string name="native_google_consent_incomplete">Die Google-Autorisierung wurde nicht abgeschlossen. Die Synchronisierung wurde nicht gestartet.</string>
+    <string name="native_google_consent_missing_result">Die Google-Zustimmung wurde ohne Ergebnis beendet. Versuche es erneut.</string>
+    <string name="native_google_auth_network">Die Google-Autorisierung ist wegen eines Netzwerkfehlers fehlgeschlagen. Prüfe die Verbindung und versuche es erneut.</string>
+    <string name="native_google_auth_configuration">Google hat die Anmeldekonfiguration der App nicht akzeptiert. Wende dich an den App-Support.</string>
+    <string name="native_google_auth_failed">Google konnte die Autorisierung nicht überprüfen. Versuche es erneut.</string>
+    <string name="native_google_missing_scopes">Google hat nicht alle erforderlichen Berechtigungen erteilt. Die Synchronisierung wurde nicht gestartet.</string>
     <string name="native_google_no_token">Google hat keinen Zugriff gewährt. Zugriff erneut anfordern.</string>
     <string name="native_google_connected">Google-Konto verbunden.</string>
     <string name="native_google_drive_done">Drive-Synchronisierung abgeschlossen.</string>

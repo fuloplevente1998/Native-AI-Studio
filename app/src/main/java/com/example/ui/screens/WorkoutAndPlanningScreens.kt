@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.components.TrainPilotModalBottomSheet
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.trainPilotCombinedClickable
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
@@ -16,6 +17,7 @@ import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 import com.repforge.app.ui.theme.TrainPilotFrames
 
 import com.repforge.app.ui.theme.trainPilotBorder
+import com.repforge.app.ui.theme.trainPilotSoftGlow
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
@@ -80,7 +82,6 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconToggleButton
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -172,6 +173,7 @@ private fun WorkoutModeTile(
         modifier = modifier
             .fillMaxHeight()
             .heightIn(min = 150.dp)
+            .trainPilotSoftGlow(palette.primary, shape, 4.dp)
             .trainPilotBorder(1.25.dp, palette.sectionBorder, shape)
             .trainPilotClickable(shape) { onClick() }
             .testTag(testTag)
@@ -688,7 +690,7 @@ fun ProgramsListScreen(
             skipPartiallyExpanded = true,
             confirmValueChange = { it != SheetValue.Hidden || !state.libraryMutationBusy }
         )
-        ModalBottomSheet(
+        TrainPilotModalBottomSheet(
             onDismissRequest = { if (!state.libraryMutationBusy) actionSheetProgramId = null },
             sheetState = sheetState,
             containerColor = palette.surface,
@@ -3248,7 +3250,7 @@ fun ExerciseLibraryScreen(
                             Column(Modifier.padding(vertical = 6.dp)) {
                                 Text(name, style = nameStyle, color = palette.textPrimary,
                                     modifier = Modifier.fillMaxWidth().testTag("exercise_library_name_${ex.id}"))
-                                Text("$metadata • ${ex.defaultSets}×${ex.defaultReps}",
+                                Text(metadata,
                                     style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
                                     color = palette.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.fillMaxWidth().testTag("exercise_library_meta_${ex.id}"))

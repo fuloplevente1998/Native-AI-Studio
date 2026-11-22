@@ -22,8 +22,11 @@ import com.example.localization.TrainPilotStrings
 import com.example.localization.LocalTrainPilotStrings
 import com.example.model.AppLanguage
 import com.example.ui.screens.BackupRestoreScreen
+import com.example.ui.components.TrainPilotScreenSheet
 import com.example.ui.theme.TrainPilotTheme
+import com.example.ui.viewmodel.LocalBackupStatus
 import com.example.ui.viewmodel.TrainPilotUiState
+import com.repforge.app.ui.settings.GoogleActionFeedback
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -39,6 +42,47 @@ import org.robolectric.annotation.LooperMode
 @LooperMode(LooperMode.Mode.PAUSED)
 class BackupCompactViewportRegressionTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+
+    @Test fun resultsAreVisibleInTheOpenSheetAndDriveShowsWhyItIsUnavailable() {
+        var state by mutableStateOf(TrainPilotUiState(language = AppLanguage.EN, selectedBackupFormat = "ZIP"))
+        compose.setContent {
+            val strings = TrainPilotStrings.forLanguage(AppLanguage.EN)
+            CompositionLocalProvider(LocalTrainPilotStrings provides strings) { TrainPilotTheme {
+                TrainPilotScreenSheet(onDismiss = {}, testTag = "backup_test_sheet", fillHeight = true) {
+                    BackupRestoreScreen(state, strings, onBack = {}, onOpenSettings = {},
+                        onSelectFormat = { state = state.copy(selectedBackupFormat = it) },
+                        onToggleIncludeHealth = {}, onShowBanner = {})
+                }
+            } }
+        }
+        compose.runOnIdle {
+            state = state.copy(localBackupStatus = LocalBackupStatus("ZIP backup saved"))
+        }
+        compose.onNodeWithTag("backup_operation_status").assertIsDisplayed()
+        compose.onNodeWithText("ZIP backup saved").assertIsDisplayed()
+        compose.runOnIdle {
+            state = state.copy(localBackupStatus = LocalBackupStatus("File could not be restored", failed = true))
+        }
+        compose.onNodeWithText("File could not be restored").assertIsDisplayed()
+        compose.onNodeWithText("ZIP backup saved").assertDoesNotExist()
+
+        val settings = ViewModelProvider(compose.activity)[SettingsViewModel::class.java]
+        val settingsFlow = SettingsViewModel::class.java.getDeclaredField("_uiState").apply { isAccessible = true }
+        @Suppress("UNCHECKED_CAST")
+        val settingsState = settingsFlow.get(settings) as MutableStateFlow<SettingsUiState>
+        compose.runOnIdle {
+            state = state.copy(selectedBackupFormat = "DRIVE", localBackupStatus = null, isWorkoutSessionActive = true)
+            settingsState.value = settingsState.value.copy(googleSyncState = GoogleSyncUiState(connectedEmail = "fixture@example.test"))
+        }
+        compose.onNodeWithText("Finish the active workout before syncing Drive.").assertIsDisplayed()
+        compose.onNodeWithTag("backup_export_btn").assertIsNotEnabled()
+        compose.runOnIdle {
+            state = state.copy(isWorkoutSessionActive = false)
+            settingsState.value = settingsState.value.copy(googleActionFeedback = GoogleActionFeedback("drive", "Drive sync completed.", false))
+        }
+        compose.onNodeWithTag("backup_export_btn").assertIsEnabled()
+        compose.onNodeWithText("Drive sync completed.").assertIsDisplayed()
+    }
 
     @Test fun controlsFitAndHealthConsentRemainsAccessibleInAllLanguages() {
         var language by mutableStateOf(AppLanguage.HU)
@@ -91,12 +135,14 @@ class BackupCompactViewportRegressionTest {
             compose.onNodeWithTag("backup_health_switch").performClick()
             compose.runOnIdle { assertTrue(health) }
             compose.onNodeWithTag("backup_health_info").performClick()
-            compose.onNodeWithText("JSON/ZIP", substring = true).assertIsDisplayed()
+            val inHealthInfo = hasAnyAncestor(hasTestTag("backup_health_info_sheet"))
+            compose.onNode(inHealthInfo and hasText("JSON/ZIP", substring = true)).assertIsDisplayed()
             if (lang == AppLanguage.EN) {
-                compose.onNodeWithText("workout-attached health summaries only", substring = true).assertExists()
-                compose.onNodeWithText("does not delete local data or existing backups", substring = true).assertExists()
+                compose.onNode(inHealthInfo and hasText("workout-attached health summaries only", substring = true)).assertExists()
+                compose.onNode(inHealthInfo and hasText("does not delete local data or existing backups", substring = true)).assertExists()
             }
-            compose.onNodeWithText("OK").performClick()
+            compose.onNode(inHealthInfo and hasText("OK")).performClick()
+            compose.onNodeWithTag("backup_health_info_sheet").assertDoesNotExist()
             compose.onNodeWithTag("backup_health_switch").performClick()
             compose.runOnIdle { assertFalse(health) }
             compose.onNodeWithTag("backup_format_DRIVE").performClick()

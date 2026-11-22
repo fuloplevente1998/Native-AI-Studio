@@ -348,6 +348,15 @@ data class JournalWorkoutSummary(val id: String, val startedEpochMs: Long, val p
 data class JournalSearchRow(@Embedded val summary: JournalWorkoutSummary, val searchText: String)
 
 /** Lightweight Progress aggregate; no historical raw JSON/photos or set relations. */
+data class ProgressMuscleWorkoutRow(
+    val muscleKey: String,
+    val workoutId: String,
+    val startedEpochMs: Long,
+    val exerciseName: String,
+    val setsCount: Int,
+    val exerciseId: String = ""
+)
+
 data class ProgressMuscleSummary(val muscleKey: String, val setsCount: Int)
 
 /** Completed-set PR input only; no history JSON, photos, routes or Room relations. */

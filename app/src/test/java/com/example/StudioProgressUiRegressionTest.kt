@@ -44,7 +44,8 @@ class StudioProgressUiRegressionTest {
                 Column(Modifier.width(360.dp).verticalScroll(rememberScrollState())) {
                     MainProgressVolumeAndMuscleSection(state,
                         onSelectRange = { state = state.copy(selectedProgressRangeIndex = it) },
-                        onSelectVolumeBar = {}, onSelectExpandedStatsCard = {}, onOpenWorkoutDetail = {})
+                        onSelectVolumeBar = { state = state.copy(selectedVolumeBarIndex = it) },
+                        onSelectExpandedStatsCard = {}, onOpenWorkoutDetail = {})
                 }
             }
         }
@@ -61,9 +62,108 @@ class StudioProgressUiRegressionTest {
         compose.onNodeWithTag("progress_range_0").performClick()
         compose.onNodeWithTag("progress_volume_bucket_unit").assertTextEquals("Napi bontás")
         compose.onNodeWithTag("progress_volume_total", useUnmergedTree = true).assertTextEquals("100 kg")
+        compose.onNodeWithTag("progress_range_1").performClick()
+        val earlier = compose.onNodeWithTag("progress_expanded_column_3", useUnmergedTree = true)
+        val today = compose.onNodeWithTag("progress_expanded_column_6", useUnmergedTree = true)
+        earlier.performScrollTo().performTouchInput { click() }.assertIsSelected()
+        compose.onNodeWithText("200 kg összvolumen", substring = true).assertIsDisplayed()
+        today.performTouchInput { click() }.assertIsSelected()
+        earlier.assertIsNotSelected()
+        compose.onNodeWithText("100 kg összvolumen", substring = true).assertIsDisplayed()
         compose.onNodeWithTag("progress_range_2").performClick()
         compose.onNodeWithTag("progress_volume_bucket_unit").assertTextEquals("Heti bontás")
     }
+    @Test fun compactVolumeCardUsesOnePeriodRowAndKeepsSelectedBarWhenExpanded() {
+        var state by mutableStateOf(TrainPilotUiState(selectedProgressRangeIndex = 1,
+            loggedWorkouts = listOf(row(0, 100), row(3, 200))))
+        compose.setContent { TrainPilotTheme {
+            Column(Modifier.width(360.dp).verticalScroll(rememberScrollState())) {
+                MainProgressVolumeAndMuscleSection(state,
+                    onSelectRange = { state = state.copy(selectedProgressRangeIndex = it) },
+                    onSelectVolumeBar = { state = state.copy(selectedVolumeBarIndex = it) },
+                    onSelectExpandedStatsCard = {}, onOpenWorkoutDetail = {})
+            }
+        } }
+        val card = compose.onNodeWithTag("progress_total_volume_card").getUnclippedBoundsInRoot()
+        assertTrue("Compact volume card must shrink", card.bottom - card.top < 155.dp)
+        val bounds = (0..3).map { compose.onNodeWithTag("progress_range_$it")
+            .assertHeightIsAtLeast(48.dp).getUnclippedBoundsInRoot() }
+        bounds.drop(1).forEach { assertEquals(bounds.first().top, it.top) }
+        compose.onNodeWithTag("progress_compact_column_6", useUnmergedTree = true)
+            .performTouchInput { click() }
+        compose.onNodeWithTag("progress_expanded_column_6", useUnmergedTree = true).assertIsSelected()
+    }
+
+    @Test fun volumeTitleArrowAndCompactChartAllOpenTheDetailedGraph() {
+        var state by mutableStateOf(TrainPilotUiState(selectedProgressRangeIndex = 1,
+            loggedWorkouts = listOf(row(0, 100))))
+        compose.setContent { TrainPilotTheme {
+            Column(Modifier.width(360.dp).verticalScroll(rememberScrollState())) {
+                MainProgressVolumeAndMuscleSection(state, {},
+                    onSelectVolumeBar = { state = state.copy(selectedVolumeBarIndex = it) },
+                    onSelectExpandedStatsCard = {}, onOpenWorkoutDetail = {})
+            }
+        } }
+        compose.onNodeWithTag("progress_volume_total", useUnmergedTree = true)
+            .performTouchInput { click() }
+        compose.onNodeWithTag("progress_volume_bucket_unit").assertExists()
+        compose.onNodeWithTag("progress_volume_expand").performClick()
+        compose.onNodeWithTag("progress_volume_arrow", useUnmergedTree = true)
+            .performTouchInput { click() }
+        compose.onNodeWithTag("progress_volume_bucket_unit").assertExists()
+        compose.onNodeWithTag("progress_volume_expand").performClick()
+        compose.onNodeWithTag("progress_compact_column_6", useUnmergedTree = true)
+            .performTouchInput { click() }
+        compose.onNodeWithTag("progress_expanded_column_6", useUnmergedTree = true).assertIsSelected()
+    }
+
+    @Test fun ninetyDayCompactBarSelectionIsVisibleInExpandedChart() {
+        var state by mutableStateOf(TrainPilotUiState(selectedProgressRangeIndex = 3,
+            loggedWorkouts = listOf(row(60, 600), row(0, 100))))
+        compose.setContent { TrainPilotTheme {
+            Column(Modifier.width(360.dp).verticalScroll(rememberScrollState())) {
+                MainProgressVolumeAndMuscleSection(state, {},
+                    onSelectVolumeBar = { state = state.copy(selectedVolumeBarIndex = it) },
+                    onSelectExpandedStatsCard = {}, onOpenWorkoutDetail = {})
+            }
+        } }
+        compose.onNodeWithTag("progress_compact_column_0", useUnmergedTree = true)
+            .performScrollTo().performTouchInput { click() }
+        compose.onNodeWithTag("progress_expanded_column_0", useUnmergedTree = true)
+            .assertIsSelected().assertIsDisplayed()
+    }
+
+    @Test fun compactPrSheetKeepsPeriodFiltersAndLongListsScrollable() {
+        val many = (1..30).joinToString(",", "[", "]") { n ->
+            """{"exerciseName":"Gyakorlat $n","kind":"reps","previous":"1","value":"2"}"""
+        }
+        val latest = row(0, 100).copy(prRecordsJson = many)
+        val old = row(60, 200).copy(prRecordsJson =
+            """[{"exerciseName":"Régi rekord","kind":"reps","previous":"1","value":"2"}]""")
+        var state by mutableStateOf(TrainPilotUiState(selectedProgressRangeIndex = 1,
+            expandedStatsCardIndex = 0, loggedWorkouts = listOf(latest, old)))
+        compose.setContent { TrainPilotTheme {
+            Column(Modifier.width(360.dp).verticalScroll(rememberScrollState())) {
+                MainProgressVolumeAndMuscleSection(state,
+                    onSelectRange = { state = state.copy(selectedProgressRangeIndex = it) },
+                    onSelectVolumeBar = {},
+                    onSelectExpandedStatsCard = { index ->
+                        state = state.copy(expandedStatsCardIndex = if (state.expandedStatsCardIndex == index) -1 else index)
+                    }, onOpenWorkoutDetail = {})
+            }
+        } }
+        compose.onNodeWithText("Régi rekord", useUnmergedTree = true).assertDoesNotExist()
+        val scroll = compose.onNodeWithTag("stats_details_sheet_content").fetchSemanticsNode()
+            .config[androidx.compose.ui.semantics.SemanticsProperties.VerticalScrollAxisRange]
+        compose.runOnIdle { assertTrue("Long PR list must scroll inside the sheet", scroll.maxValue() > 0f) }
+        compose.onNodeWithTag("stats_pr_close").assertHeightIsAtLeast(48.dp).performClick()
+        compose.runOnIdle { assertEquals(1, state.selectedProgressRangeIndex) }
+        compose.onNodeWithTag("stats_details_sheet").assertDoesNotExist()
+        compose.onNodeWithTag("progress_range_3").performClick()
+        compose.onNodeWithText("PR rekordok", substring = true).performClick()
+        compose.onNodeWithText("Régi rekord", useUnmergedTree = true).assertExists()
+    }
+
     @Test fun threeMonthChartOpensAtLatestAndManualScrollIsPreservedOnSelection() {
         var selected by mutableStateOf(-1)
         val period = StudioProgressWindow(90, LocalDate.of(2026, 11, 2))
@@ -97,6 +197,47 @@ class StudioProgressUiRegressionTest {
         compose.onNodeWithTag("progress_anatomy_layer_chest", useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag("progress_anatomy_layer_legs", useUnmergedTree = true).assertExists()
     }
+    @Test fun tappingMuscleBarsReplacesTheSelectionAndItsExerciseBreakdown() {
+        val loads = listOf(
+            MuscleLoadItem("chest", "Mell", "3 sorozat", 70, 0.7f, "Nagyobb", listOf("Fekvőtámasz" to "3 sorozat"), "", setsCount = 3),
+            MuscleLoadItem("legs", "Láb", "1 sorozat", 30, 0.3f, "Kisebb", listOf("Guggolás" to "1 sorozat"), "", setsCount = 1)
+        )
+        compose.setContent {
+            TrainPilotTheme { AnatomicalMuscleHeatmapCard(realMuscleLoads = loads, periodDays = null) }
+        }
+        val chest = compose.onNodeWithTag("muscle_chip_chest")
+        val legs = compose.onNodeWithTag("muscle_chip_legs")
+        chest.performTouchInput { click() }.assertIsSelected()
+        compose.onNodeWithText("• Fekvőtámasz", useUnmergedTree = true).assertIsDisplayed()
+        legs.performTouchInput { click() }.assertIsSelected()
+        chest.assertIsNotSelected()
+        compose.onNodeWithText("• Fekvőtámasz", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithText("• Guggolás", useUnmergedTree = true).assertIsDisplayed()
+        legs.performTouchInput { click() }.assertIsNotSelected()
+        compose.onNodeWithText("• Guggolás", useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test fun muscleBreakdownOpensOnlyTheExplicitSavedWorkoutWithMatchingSets() {
+        val first = com.repforge.app.data.db.ProgressMuscleWorkoutRow("biceps", "workout-a", 1795000000000, "Biceps curl", 2)
+        val second = first.copy(workoutId = "workout-b", exerciseName = "Hammer curl", setsCount = 3)
+        val loads = listOf(
+            MuscleLoadItem("arms", "Kar", "5 sorozat", 100, 1f, "Nagyobb", emptyList(), "", 5, listOf(first, second)),
+            MuscleLoadItem("legs", "Láb", "0 sorozat", 0, 0f, "", emptyList(), "")
+        )
+        val opened = mutableListOf<String>()
+        compose.setContent { TrainPilotTheme { AnatomicalMuscleHeatmapCard(realMuscleLoads = loads, onOpenWorkout = { opened += it }) } }
+        compose.onNodeWithTag("muscle_chip_legs").performClick()
+        compose.onNodeWithTag("muscle_open_workouts").assertDoesNotExist()
+        compose.onNodeWithTag("muscle_chip_arms").performClick()
+        compose.onNodeWithTag("muscle_selected_summary").assertHeightIsEqualTo(48.dp)
+        compose.onNodeWithTag("muscle_open_workouts").performClick()
+        compose.onNodeWithTag("muscle_workouts_sheet").assertExists()
+        compose.onNodeWithTag("muscle_workout_workout-a").assertIsDisplayed()
+        compose.onNodeWithTag("muscle_workout_workout-b").performClick()
+        compose.runOnIdle { assertEquals(listOf("workout-b"), opened) }
+        compose.onNodeWithTag("muscle_chip_arms").assertIsSelected()
+    }
+
     @Test fun sixMuscleLabelsRemainOneLineAndAdviceHasCompactRoom() {
         val labels = listOf(
             "chest" to "Mellizom", "back" to "Hátizom", "shoulders" to "Vállizom",
@@ -214,16 +355,20 @@ class StudioProgressUiRegressionTest {
                 com.example.ui.screens.ProgressTabScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU),
                     onSelectMainSection = { state = state.copy(progressMainSection = it) }, onSelectExercise = {},
                     onSelectRange = {}, onSelectVolumeBar = {}, onSelectExpandedStatsCard = {},
-                    onSelectStatsSubTab = { state = state.copy(statsSubTab = it) }, onToggleCardioFilterStepsMode = {},
+                    onSelectStatsSubTab = { state = state.copy(statsSubTab = it) },
+                    onToggleCardioFilterStepsMode = { state = state.copy(cardioFilterStepsMode = it) },
                     onOpenWorkoutDetail = {}, onOpenSettings = {}, onOpenPalettePicker = {})
             }
         }
         compose.onNodeWithTag("statistics_subtab_0").assertDoesNotExist()
-        compose.onNodeWithText("📊 Statisztikák").performClick()
+        compose.onNodeWithTag("progress_section_tab_2").performClick()
         compose.onNodeWithTag("statistics_records_title").assertDoesNotExist()
         compose.onNodeWithTag("statistics_subtab_0").assertExists()
         compose.onNodeWithTag("statistics_record_row").assertExists()
         compose.onNodeWithTag("statistics_subtab_1").performClick()
+        compose.onNodeWithTag("progress_cardio").assertExists()
+        compose.onNodeWithTag("statistics_daily_activity").assertDoesNotExist()
+        compose.onNodeWithTag("statistics_subtab_2").performClick()
         compose.onNodeWithTag("statistics_daily_activity").assertExists()
         compose.onAllNodes(hasText(TrainPilotStrings.forLanguage(AppLanguage.HU).strength1RmTab, substring = true)).assertCountEquals(0)
     }

@@ -3,7 +3,12 @@
     <string name="native_google_authorizing">Google-engedély ellenőrzése…</string>
     <string name="native_google_waiting">Google-jóváhagyásra várunk…</string>
     <string name="native_google_launch_failed">A Google engedélykérése nem nyitható meg. Próbáld újra.</string>
-    <string name="native_google_cancelled">A Google engedélykérése megszakítva. Nem indult szinkron.</string>
+    <string name="native_google_consent_incomplete">A Google-engedélyezés nem fejeződött be. Nem indult szinkron.</string>
+    <string name="native_google_consent_missing_result">A Google engedélykérése eredmény nélkül tért vissza. Próbáld újra.</string>
+    <string name="native_google_auth_network">A Google-engedélyezés hálózati hiba miatt sikertelen. Ellenőrizd a kapcsolatot, majd próbáld újra.</string>
+    <string name="native_google_auth_configuration">A Google nem fogadta el az alkalmazás bejelentkezési beállításait. Fordulj az alkalmazás ügyfélszolgálatához.</string>
+    <string name="native_google_auth_failed">A Google nem tudta ellenőrizni az engedélyt. Próbáld újra.</string>
+    <string name="native_google_missing_scopes">A Google nem adta meg az összes szükséges engedélyt. Nem indult szinkron.</string>
     <string name="native_google_no_token">A Google nem adott hozzáférést. Próbáld újra az engedélykérést.</string>
     <string name="native_google_connected">Google-fiók csatlakoztatva.</string>
     <string name="native_google_drive_done">A Drive szinkronizálása sikerült.</string>

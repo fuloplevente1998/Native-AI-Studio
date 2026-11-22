@@ -153,6 +153,39 @@ class ProgramCalendarRemovalRegressionTest {
         assertEquals(preview,native { NativeCalendarClear.preview(db) })
     }
 
+    @Test fun editingOneSchedulePreservesOtherRowsAndRejectsAStaleProjectionAfterRestore() {
+        val edited = row("planned")
+        val untouched = row("other")
+        native {
+            db.calendarScheduleDao().upsertEntries(listOf(edited, untouched))
+            val events = JSONArray(listOf(edited, untouched).map(NativeCalendarCleanup202611::toCalendarStateEvent))
+            db.keyValueDocumentDao().putDocument(KeyValueDocumentEntity(NativeCalendarBackup.STATE_KEY,
+                JSONObject().put("events", events).toString(), 50))
+        }
+        val vm = model()
+        vm.modifyCalendarEvent(edited.id, "Updated", "A", "19:30", 60)
+        await { native { (db.calendarScheduleDao().getEntry(edited.id)?.updatedAt ?: 0) > edited.updatedAt } }
+        assertEquals(untouched, native { db.calendarScheduleDao().getEntry(untouched.id) })
+
+        native { NativeDataReplacement.exclusively(context) {} }
+        vm.deleteCalendarEvent(untouched.id)
+        assertTrue(vm.uiState.value.calendarEvents.any { it.id == untouched.id })
+        assertEquals(untouched, native { db.calendarScheduleDao().getEntry(untouched.id) })
+    }
+
+    @Test fun studioPlannerPreferencesSurviveViewModelRebinding() {
+        val vm = model()
+        vm.updatePlanningParameters("Minden nap", "Alap B", "2026. 12. 08.", "16:45", 75, 5)
+        await { native { db.keyValueDocumentDao().getDocument(NativeCalendarBackup.STUDIO_SETTINGS_KEY) != null } }
+        val restored = model().uiState.value
+        assertEquals("Minden nap", restored.planningCadenceHu)
+        assertEquals("Alap B", restored.planningFirstDayHu)
+        assertEquals("2026. 12. 08.", restored.planningStartDate)
+        assertEquals("16:45", restored.planningTime)
+        assertEquals(75, restored.planningDurationMin)
+        assertEquals(5, restored.planningWeeksCount)
+    }
+
     private fun row(id:String,status:String="planned"):CalendarScheduleEntity {
         val hour=when(id){"planned"->18;"missed"->17;"completed"->16;"linked"->15;else->14}
         val start="2026-12-04T${hour}:00:00Z"

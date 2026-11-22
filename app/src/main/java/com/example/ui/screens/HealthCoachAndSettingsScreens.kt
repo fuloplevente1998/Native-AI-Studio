@@ -19,6 +19,7 @@ import com.example.model.localWorkoutDate
 
 import kotlin.math.roundToInt
 import androidx.compose.animation.AnimatedVisibility
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.PickVisualMediaRequest
@@ -56,6 +57,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.Watch
 import androidx.compose.material.icons.Icons
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.material3.FilterChip
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.filled.MoreVert
@@ -69,6 +71,7 @@ import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.ExpandLess
@@ -121,6 +124,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.style.TextAlign
+import com.example.ui.components.healthDetailsToggle
+import com.example.ui.components.trainPilotChartMarkColor
+import com.example.ui.components.trainPilotChartSelection
 import com.example.ui.components.trainPilotChartTap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -128,6 +134,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -151,7 +160,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.example.ui.theme.TrainPilotPalettes
 import com.example.ui.viewmodel.TrainPilotUiState
-import com.repforge.app.ui.settings.NativeGoogleConsentLauncher
 import com.repforge.app.ui.settings.NativeGoogleMaintenanceConfirmation
 import com.repforge.app.ui.settings.NativeGoogleMaintenanceControls
 import com.repforge.app.ui.settings.NativeGoogleMaintenanceFeedback
@@ -270,9 +278,8 @@ fun HealthTabScreen(
         // 2785: only the selected period's measurements (no silent fallback to the full list).
         weightMeasurementsInRange(recentMeasurements, uiState.selectedWeightRangeIndex, today)
     }
-    val latestChronologicalEntry = remember(recentMeasurements) {
-        recentMeasurements.maxByOrNull { it.parsedDate }
-    }
+    val compactMeasurements = remember(recentMeasurements) { recentWeightTrend(recentMeasurements) }
+    val latestChronologicalEntry = compactMeasurements.lastOrNull()
     var editingMeasurement by remember { mutableStateOf<WeightMeasurementEntry?>(null) }
     var photoMeasurement by remember { mutableStateOf<WeightMeasurementEntry?>(null) }
     var pendingWeightPhoto by remember { mutableStateOf<com.repforge.app.NativeWeightPhotos.Request?>(null) }
@@ -286,8 +293,7 @@ fun HealthTabScreen(
         pendingWeightPhoto = null
         coroutineScope.launch {
             try {
-                val photo = importPhoto().getOrThrow() ?: return@launch
-                com.repforge.app.NativeWeightPhotos.attach(context, weightDb, request, photo)
+                if (!com.repforge.app.NativeWeightPhotos.importAndAttach(context, weightDb, request, importPhoto)) return@launch
                 recentMeasurements = recentMeasurements.map {
                     if (it.id == request.weightId) it.copy(photoCount = it.photoCount + 1) else it
                 }
@@ -531,6 +537,18 @@ fun HealthTabScreen(
     // 2783: a Today tile with data opens the journal at today's records of that type.
     var journalFocus by remember { mutableStateOf<Pair<String, String>?>(null) }
     var journalFocusKey by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    var expandedTodayTileKey by remember { mutableStateOf<String?>(null) }
+    val healthSectionState = rememberSaveableStateHolder()
+    val healthSectionSheet = when {
+        uiState.expandedHealthJournal -> "journal"
+        uiState.expandedHealthConnect -> "connect"
+        else -> null
+    }
+    val sourcesTitle = tr(uiState.language, "Források, óra és szinkron", "Sources, watch & sync",
+        "Quellen, Uhr & Sync", "Surse, ceas și sincronizare")
+    LaunchedEffect(healthSectionSheet) {
+        if (healthSectionSheet != null) expandedTodayTileKey = null
+    }
 
     com.example.ui.components.TrainPilotScrollableListBox(
         lazyListState = healthListState,
@@ -615,26 +633,38 @@ fun HealthTabScreen(
                         }
                     }
 
-                    var expandedTodayTileKey by remember { mutableStateOf<String?>(null) }
-
                     // 2784: every tile opens its own detail sheet; the page below does not move.
                     StudioTodayStatusGrid(uiState) { key ->
                         expandedTodayTileKey = if (expandedTodayTileKey == key) null else key
                         if (key == "pulse") onToggleHealthSection("pulse")
                     }
 
-                    // 2786: weekly goals live in "Today": compact bars, tap opens the big view below them.
-                    com.example.ui.components.WeeklyGoalsCompact(uiState, framed = false,
-                        onOpen = { onToggleHealthSection("weekly") }, onGoals = onOpenGoalsDialog,
-                        expanded = uiState.expandedHealthWeeklyGoals,
-                        modifier = Modifier.onGloballyPositioned { weeklyAnchor[1] = it }.testTag("health_weekly_goals_compact"))
-                    AnimatedVisibility(visible = uiState.expandedHealthWeeklyGoals) {
-                        HealthWeeklyGoalsPanel(uiState, strings, onToggleHealthSection, onOpenGoalsDialog)
+                    val goalShape = RoundedCornerShape(12.dp)
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .onGloballyPositioned { weeklyAnchor[1] = it }
+                            .trainPilotBorder(1.dp, palette.sectionBorder, goalShape)
+                            .clip(goalShape)
+                    ) {
+                        com.example.ui.components.WeeklyGoalsCompact(
+                            uiState,
+                            framed = false,
+                            onOpen = { onToggleHealthSection("weekly") },
+                            onGoals = onOpenGoalsDialog,
+                            expanded = uiState.expandedHealthWeeklyGoals,
+                            modifier = Modifier.testTag("health_weekly_goals_compact")
+                        )
+                        AnimatedVisibility(visible = uiState.expandedHealthWeeklyGoals) {
+                            Column(Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
+                                HealthWeeklyGoalsPanel(uiState)
+                            }
+                        }
                     }
 
                     // Expandable Detail Dropdown Card when any of the 6 "Mai állapot" tiles is tapped
                     // 2771: tile details open from the bottom instead of pushing the page down.
-                    if (expandedTodayTileKey != null) com.example.ui.components.TrainPilotScreenSheet(
+                    if (expandedTodayTileKey != null && healthSectionSheet == null) com.example.ui.components.TrainPilotScreenSheet(
                         onDismiss = { expandedTodayTileKey = null },
                         testTag = "health_today_tile_sheet"
                     ) {
@@ -661,13 +691,16 @@ fun HealthTabScreen(
                                 modifier = Modifier.verticalScroll(rememberScrollState()).padding(12.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                val openHealthJournalAndScroll: () -> Unit = {
-                                    if (!uiState.expandedHealthJournal) {
-                                        onToggleHealthSection("journal")
+                                val openHealthJournal: () -> Unit = {
+                                    val recordType = when (activeKey) {
+                                        "sleep" -> "SleepSessionRecord"
+                                        "steps" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("steps")
+                                        "calories" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("activeCalories")
+                                        else -> null
                                     }
-                                    coroutineScope.launch {
-                                        healthListState.animateScrollToItem(2)
-                                    }
+                                    journalFocus = recordType?.let { today.toString() to it }
+                                    journalFocusKey++
+                                    if (!uiState.expandedHealthJournal) onToggleHealthSection("journal")
                                 }
                                 val openPulseTrendAndScroll: () -> Unit = {
                                     if (!uiState.expandedHealthPulseTrend) {
@@ -681,10 +714,10 @@ fun HealthTabScreen(
                                     "calories" -> listOf(
                                         tr(uiState.language, "Aktív kalória részletek • $activeEnergy", "Active Calories Details • $activeEnergy", "Aktive Kalorien Details • $activeEnergy", "Detalii calorii active • $activeEnergy"),
                                         if (currentDaily && "activeCalories" in uiState.dailyHealthAvailableFields) {
-                                            tr(uiState.language, "Aktív energia (edzés & mozgás): $activeEnergy • Teljes napi energia (nyugalmival): $totalEnergy • Forrás: ${uiState.dailyHealthSourceLabel}",
-                                                "Active energy (workout & activity): $activeEnergy • Total daily energy (with resting): $totalEnergy • Source: ${uiState.dailyHealthSourceLabel}",
-                                                "Aktive Energie: $activeEnergy • Tagesgesamtenergie: $totalEnergy • Quelle: ${uiState.dailyHealthSourceLabel}",
-                                                "Energie activă: $activeEnergy • Energie zilnică totală: $totalEnergy • Sursă: ${uiState.dailyHealthSourceLabel}")
+                                            tr(uiState.language, "Aktív energia (edzés & mozgás): $activeEnergy • Teljes napi energia (nyugalmival): $totalEnergy",
+                                                "Active energy (workout & activity): $activeEnergy • Total daily energy (with resting): $totalEnergy",
+                                                "Aktive Energie: $activeEnergy • Tagesgesamtenergie: $totalEnergy",
+                                                "Energie activă: $activeEnergy • Energie zilnică totală: $totalEnergy")
                                         } else {
                                             tr(uiState.language, "A kiválasztott szolgáltatótól (${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"}) ma még nem érkezett aktív kalória adat. A nyugalmi energia külön kerül elszámolásra.",
                                                 "No active calories fetched yet today from ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"}. Resting energy is accounted separately.",
@@ -692,7 +725,7 @@ fun HealthTabScreen(
                                                 "Fără calorii active de la ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} azi. Energia de repaus este calculată separat.")
                                         },
                                         tr(uiState.language, "Teljes egészségnapló", "Full health journal", "Gesamtes Gesundheitstagebuch", "Jurnalul de sănătate complet")
-                                    ) to openHealthJournalAndScroll
+                                    ) to openHealthJournal
                                     "pulse" -> {
                                         val pulseReading = uiState.todayPulseReading
                                         val pulseMain = pulseReading?.mainLabelHu ?: if (uiState.currentHrBpm > 0) "${uiState.currentHrBpm} bpm" else "—"
@@ -712,10 +745,10 @@ fun HealthTabScreen(
                                     "steps" -> listOf(
                                         tr(uiState.language, "Lépések részletek • ${if ("steps" in uiState.dailyHealthAvailableFields) "${uiState.dailySteps}" else "—"} / ${uiState.stepsGoal}", "Steps Details • ${if ("steps" in uiState.dailyHealthAvailableFields) "${uiState.dailySteps}" else "—"} / ${uiState.stepsGoal}", "Schritte Details • ${if ("steps" in uiState.dailyHealthAvailableFields) "${uiState.dailySteps}" else "—"} / ${uiState.stepsGoal}", "Detalii pași • ${if ("steps" in uiState.dailyHealthAvailableFields) "${uiState.dailySteps}" else "—"} / ${uiState.stepsGoal}"),
                                         if ("steps" in uiState.dailyHealthAvailableFields) {
-                                            tr(uiState.language, "Forrás: ${uiState.dailyHealthSourceLabel} • Teljesítés: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Becsült táv: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km",
-                                                "Source: ${uiState.dailyHealthSourceLabel} • Completion: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Est. distance: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km",
-                                                "Quelle: ${uiState.dailyHealthSourceLabel} • Erfüllung: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Gesch. Distanz: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km",
-                                                "Sursă: ${uiState.dailyHealthSourceLabel} • Progres: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Dist. est.: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km")
+                                            tr(uiState.language, "Teljesítés: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Becsült táv: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km",
+                                                "Completion: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Est. distance: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km",
+                                                "Erfüllung: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Gesch. Distanz: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km",
+                                                "Progres: ${((uiState.dailySteps.toFloat() / uiState.stepsGoal.coerceAtLeast(1)) * 100).toInt()}% • Dist. est.: ${"%.1f".format(uiState.dailySteps * 0.00075f)} km")
                                         } else {
                                             tr(uiState.language, "Ma még nem érkezett lépésadat a kiválasztott szolgáltatótól (${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"}). Napi cél: ${uiState.stepsGoal} lépés.",
                                                 "No steps data fetched yet today from ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"}. Daily target: ${uiState.stepsGoal} steps.",
@@ -723,7 +756,7 @@ fun HealthTabScreen(
                                                 "Fără date despre pași de la ${if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect"} azi. Obiectiv zilnic: ${uiState.stepsGoal} pași.")
                                         },
                                         tr(uiState.language, "Teljes egészségnapló", "Full health journal", "Gesamtes Gesundheitstagebuch", "Jurnalul de sănătate complet")
-                                    ) to openHealthJournalAndScroll
+                                    ) to openHealthJournal
                                     "workout" -> {
                                         val todaysWorkouts = uiState.loggedWorkouts.workoutsOn(today)
                                         val latestTodayTitle = todaysWorkouts.firstOrNull()?.localizedTitle(uiState.language, uiState.programs, uiState.exercises)
@@ -782,38 +815,27 @@ fun HealthTabScreen(
                                             tr(uiState.language, "Alvás részletek • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})", "Sleep Details • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})", "Schlaf Details • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})", "Detalii somn • ${uiState.sleepDurationLabel} (${uiState.sleepHoursDecimal})"),
                                             stageInfo,
                                             tr(uiState.language, "Teljes egészségnapló", "Full health journal", "Gesamtes Gesundheitstagebuch", "Jurnalul de sănătate complet")
-                                        ) to openHealthJournalAndScroll
+                                        ) to openHealthJournal
                                     }
                                 }
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.Top
                                 ) {
                                     Text(
                                         text = titleStr[0],
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
-                                        color = palette.primary
+                                        color = palette.primary,
+                                        modifier = Modifier.weight(1f).padding(top = 12.dp)
                                     )
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                        modifier = Modifier.trainPilotClickable(RoundedCornerShape(12.dp)) { expandedTodayTileKey = null }
+                                    IconButton(
+                                        onClick = { expandedTodayTileKey = null },
+                                        modifier = Modifier.size(48.dp).testTag("health_today_tile_close")
                                     ) {
-                                        Text(
-                                            text = strings.closeAction,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = palette.textSecondary
-                                        )
-                                        Icon(
-                                            imageVector = Icons.Default.ExpandLess,
-                                            contentDescription = null,
-                                            tint = palette.textSecondary,
-                                            modifier = Modifier.size(16.dp)
-                                        )
+                                        Icon(Icons.Default.Close, contentDescription = strings.closeAction, tint = palette.danger)
                                     }
                                 }
                                 if (activeKey != "pulse") Text(
@@ -837,7 +859,10 @@ fun HealthTabScreen(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .trainPilotClickable(RoundedCornerShape(14.dp)) { onToggleHealthSection("pulse") }
+                                                    .heightIn(min = 48.dp)
+                                                    .healthDetailsToggle(uiState.expandedHealthPulseTrend, uiState.language, RoundedCornerShape(14.dp)) {
+                                                        onToggleHealthSection("pulse")
+                                                    }
                                                     .testTag("health_pulse_trend_header"),
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -873,30 +898,11 @@ fun HealthTabScreen(
                                                         overflow = TextOverflow.Ellipsis
                                                     )
                                                 }
-                                                Surface(
-                                                    shape = RoundedCornerShape(16.dp),
-                                                    color = palette.surfaceCard,
-                                                    modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                                                ) {
-                                                    Row(
-                                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                                    ) {
-                                                        Text(
-                                                            text = strings.detailsAction,
-                                                            style = MaterialTheme.typography.labelSmall,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = palette.primary
-                                                        )
-                                                        Icon(
-                                                            imageVector = if (uiState.expandedHealthPulseTrend) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                                            contentDescription = null,
-                                                            tint = palette.primary,
-                                                            modifier = Modifier.size(16.dp)
-                                                        )
-                                                    }
-                                                }
+                                                Icon(
+                                                    imageVector = if (uiState.expandedHealthPulseTrend) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                                    contentDescription = null,
+                                                    tint = palette.primary
+                                                )
                                             }
 
                                             Spacer(modifier = Modifier.height(10.dp))
@@ -931,9 +937,13 @@ fun HealthTabScreen(
                                                     val fractions = remember(readings) { pulseTimeFractions(readings) }
                                                     val pulseLine = Color(0xFFEF4444)
                                                     val pulseDotCenter = palette.surfaceCard
+                                                    val selectedLabel = readings.getOrNull(selectedPulse)?.let {
+                                                        "${pulseClockLabel(it.timeIso)} · ${it.bpm} bpm"
+                                                    }
                                                     Canvas(Modifier.fillMaxSize().padding(horizontal = 9.dp, vertical = 7.dp)
                                                         .testTag("health_pulse_real_trend")
-                                                        .trainPilotChartTap(fractions, { x, w -> com.example.ui.components.chartNearestByFraction(x, w, fractions) }) { selectedPulse = it }) {
+                                                        .trainPilotChartTap(fractions, { x, w -> com.example.ui.components.chartNearestByFraction(x, w, fractions) },
+                                                            selectedLabel = selectedLabel) { selectedPulse = it }) {
                                                         val first = java.time.Instant.parse(readings.first().timeIso).toEpochMilli()
                                                         val last = java.time.Instant.parse(readings.last().timeIso).toEpochMilli()
                                                         val delta = (last - first).coerceAtLeast(1L).toFloat()
@@ -956,8 +966,8 @@ fun HealthTabScreen(
                                                         readings.getOrNull(selectedPulse)?.let { sample ->
                                                             val x = (fractions.getOrElse(selectedPulse) { 1f }) * size.width
                                                             val y = size.height - (sample.bpm - lowest) / spread * size.height
-                                                            drawLine(pulseLine.copy(alpha = 0.45f), Offset(x, 0f), Offset(x, size.height), strokeWidth = 1.5.dp.toPx())
-                                                            drawCircle(pulseLine, radius = 5.dp.toPx(), center = Offset(x, y))
+                                                            drawLine(palette.primary.copy(alpha = 0.55f), Offset(x, 0f), Offset(x, size.height), strokeWidth = 1.5.dp.toPx())
+                                                            drawCircle(palette.primary, radius = 5.dp.toPx(), center = Offset(x, y))
                                                             drawCircle(pulseDotCenter, radius = 2.dp.toPx(), center = Offset(x, y))
                                                         }
                                                     }
@@ -1021,11 +1031,6 @@ fun HealthTabScreen(
                                                                 modifier = Modifier.weight(1f)
                                                             )
                                                         }
-                                                        Text(
-                                                            text = if (uiState.primaryHealthSourceSamsung) "Samsung Health" else "Health Connect",
-                                                            style = MaterialTheme.typography.bodySmall,
-                                                            color = palette.textSecondary
-                                                        )
                                                     }
                                                 }
 
@@ -1122,7 +1127,10 @@ fun HealthTabScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .trainPilotClickable(RoundedCornerShape(14.dp)) { onToggleHealthSection("weight") }
+                            .heightIn(min = 48.dp)
+                            .healthDetailsToggle(uiState.expandedHealthWeightLog, uiState.language, RoundedCornerShape(14.dp)) {
+                                onToggleHealthSection("weight")
+                            }
                             .testTag("health_weight_log_header"),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -1152,8 +1160,6 @@ fun HealthTabScreen(
                             )
                             val latestWeightLabel = if (latestChronologicalEntry != null) {
                                 "${tr(uiState.language, "Legújabb", "Latest", "Neueste", "Ultima")} (${latestChronologicalEntry.dateLabel}): ${latestChronologicalEntry.weightLabel}"
-                            } else if (uiState.currentBodyWeightKg > 0f) {
-                                "${tr(uiState.language, "Legújabb", "Latest", "Neueste", "Ultima")}: ${"%.1f".format(uiState.currentBodyWeightKg).replace('.', ',')} kg"
                             } else {
                                 tr(uiState.language, "Legújabb: nincs rögzített mérés", "Latest: no recorded measurement", "Neueste: keine Messung erfasst", "Ultima: nicio măsurătoare înregistrată")
                             }
@@ -1161,35 +1167,14 @@ fun HealthTabScreen(
                                 text = latestWeightLabel,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.SemiBold,
-                                color = palette.primary,
-                                maxLines = 2,
-                                overflow = TextOverflow.Clip
+                                color = palette.primary
                             )
                         }
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = palette.surfaceCard,
-                            modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = strings.detailsAction,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.primary
-                                )
-                                Icon(
-                                    imageVector = if (uiState.expandedHealthWeightLog) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                    contentDescription = null,
-                                    tint = palette.primary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
+                        Icon(
+                            imageVector = if (uiState.expandedHealthWeightLog) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null,
+                            tint = palette.primary
+                        )
                     }
 
                     // 2784: compact curved chart when closed; large chart with periods, fitness tiles,
@@ -1197,7 +1182,7 @@ fun HealthTabScreen(
                     WeightLogBody(
                         uiState = uiState,
                         strings = strings,
-                        chronological = chronologicalMeasurements,
+                        chronological = if (uiState.expandedHealthWeightLog) chronologicalMeasurements else compactMeasurements,
                         newestFirst = recentMeasurements,
                         dateFormatter = shortChartDateFormatter,
                         onToggle = { onToggleHealthSection("weight") },
@@ -1214,236 +1199,317 @@ fun HealthTabScreen(
             }
         }
 
-        // One journal: the selected provider/day projection supplies summaries and inline details.
         item {
-            ExpandableHealthSectionCard(
+            HealthSectionLauncher(
                 icon = Icons.Default.DateRange,
                 title = strings.healthJournalTitle,
                 subtitle = null,
-                expanded = uiState.expandedHealthJournal,
-                onToggle = { onToggleHealthSection("journal") }
-            ) {
-                com.example.ui.components.StudioHealthMetricsBrowser(
-                    initialProvider = if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG
-                        else com.repforge.app.HealthJournalStore.HC,
-                    language = uiState.language.name.lowercase(),
-                    refreshKey = "${uiState.healthRefreshRevision}:${uiState.healthSyncBusy}",
-                    onRefreshProvider = onReadHealthSource,
-                    refreshBusy = uiState.healthSyncBusy,
-                    refreshError = uiState.healthSyncMessage.takeIf { uiState.healthSyncFailed },
-                    focus = journalFocus, focusKey = journalFocusKey)
-            }
+                onOpen = { onToggleHealthSection("journal") }
+            )
         }
-
-        // 4. Expandable Section: Health Connect (Screenshot 1 + custom Health Connect badge)
         item {
-            ExpandableHealthSectionCard(
+            HealthSectionLauncher(
                 icon = Icons.Default.Link,
-                title = tr(uiState.language, "Források, óra és szinkron", "Sources, watch & sync", "Quellen, Uhr & Sync", "Surse, ceas și sincronizare"),
+                title = sourcesTitle,
                 subtitle = listOf(
                     "Samsung Health " + if (uiState.samsungGrantedCount > 0) "✓" else "—",
                     "Health Connect " + if (uiState.healthGrantedCount > 0) "✓" else "—",
                     tr(uiState.language, "Óra", "Watch", "Uhr", "Ceas") + " " + if (uiState.watchAppAvailable) "✓" else "—"
                 ).joinToString(" · "),
-                expanded = uiState.expandedHealthConnect,
-                onToggle = { onToggleHealthSection("connect") },
-                customLeadingBadge = {
-                    MockupHealthConnectBadge(size = 44.dp)
-                }
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = palette.surfaceElevated,
-                        modifier = Modifier
-                            .weight(1f)
-                            .trainPilotBorder(
-                                width = if (uiState.primaryHealthSourceSamsung) 1.5.dp else 1.dp,
-                                color = if (uiState.primaryHealthSourceSamsung) palette.primary else palette.cardBorder,
-                                shape = RoundedCornerShape(14.dp)
-                            )
-                            .trainPilotClickable(RoundedCornerShape(14.dp)) { onSelectHealthSource(true) }
-                            .testTag("health_provider_samsung")
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            Text("Samsung Health", fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text(
-                                if (uiState.samsungGrantedCount < 0) tr(uiState.language, "Engedély még nem igazolt", "Permission not verified yet", "Berechtigung noch nicht bestätigt", "Permisiune încă neverificată")
-                                else "${uiState.samsungGrantedCount}/${uiState.samsungPermissionCount} ${tr(uiState.language, "adatkör", "scopes", "Bereiche", "domenii")}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (uiState.samsungGrantedCount > 0) palette.success else palette.textSecondary
-                            )
-                        }
-                    }
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = palette.surfaceElevated,
-                        modifier = Modifier
-                            .weight(1f)
-                            .trainPilotBorder(
-                                width = if (!uiState.primaryHealthSourceSamsung) 1.5.dp else 1.dp,
-                                color = if (!uiState.primaryHealthSourceSamsung) palette.primary else palette.cardBorder,
-                                shape = RoundedCornerShape(14.dp)
-                            )
-                            .trainPilotClickable(RoundedCornerShape(14.dp)) { onSelectHealthSource(false) }
-                            .testTag("health_provider_connect")
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            Text("Health Connect", fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                            Text(
-                                "● ${uiState.healthGrantedCount}/${uiState.healthPermissionCount} ${tr(uiState.language, "engedély", "permissions", "Berechtigungen", "permisiuni")}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (uiState.healthGrantedCount > 0) palette.success else palette.textSecondary
-                            )
-                        }
-                    }
-                }
-                // 2786: one card for sources, watch and sync (was three).
-                Spacer(Modifier.height(10.dp))
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = palette.surfaceCard,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
-                        .trainPilotClickable(RoundedCornerShape(20.dp)) { onNavigateToSubScreen(SubScreen.WATCH_AND_SYNC) }
-                        .testTag("health_open_watch_sync_card")
-                ) {
-                    Row(
-                        modifier = Modifier.padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        MockupWatchGraphicBadge(size = 46.dp)
-                        Column(modifier = Modifier.weight(1f)) {
-                            val wearTitle = tr(uiState.language, "TrainPilot Wear OS – edzésmérések", "TrainPilot Wear OS – workout measurements",
-                                "TrainPilot Wear OS – Trainingsmessungen", "TrainPilot Wear OS – măsurători antrenament")
-                            val watchTitle = if (uiState.watchAppAvailable) "$wearTitle (${uiState.watchName})" else wearTitle
-                            Text(
-                                text = watchTitle,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.textPrimary
-                            )
-                            Text(
-                                text = when {
-                                    uiState.watchAppAvailable -> tr(uiState.language, "● Óra csatlakoztatva", "● Watch connected", "● Uhr verbunden", "● Ceas conectat")
-                                    uiState.watchConnected -> tr(uiState.language, "Wear OS rendszerkapcsolat • TrainPilot óraapp nincs telepítve", "Wear OS system connection • TrainPilot watch app not installed", "Wear OS-Systemverbindung • TrainPilot-Uhren-App nicht installiert", "Conexiune sistem Wear OS • Aplicația de ceas TrainPilot nu este instalată")
-                                    else -> tr(uiState.language, "Nincs csatlakoztatott óra", "No watch connected", "Keine Uhr verbunden", "Niciun ceas conectat")
-                                },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (uiState.watchAppAvailable) palette.success else palette.textSecondary
-                            )
-                        }
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = palette.primary
-                        )
-                    }
-                }
-                Spacer(Modifier.height(10.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = palette.primary.copy(alpha = 0.42f),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(52.dp)
-                                .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(16.dp))
-                                .trainPilotClickable(RoundedCornerShape(16.dp), enabled = !uiState.healthSyncBusy) { onTriggerHealthSync() }
-                                .testTag("health_sync_button")
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = if (uiState.healthSyncBusy) tr(uiState.language, "Szinkronizálás…", "Syncing…", "Synchronisiere…", "Se sincronizează…") else strings.syncAction,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.textPrimary
-                                )
-                            }
-                        }
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = palette.surfaceCard,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(52.dp)
-                                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                                .trainPilotClickable(RoundedCornerShape(16.dp)) { onRequestHealthPermissions() }
-                                .testTag("health_open_permissions_button")
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = strings.permissionsAction,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.textPrimary
-                                )
-                            }
-                        }
-                    }
+                onOpen = { onToggleHealthSection("connect") },
+                customLeadingBadge = { MockupHealthConnectBadge(size = 44.dp) }
+            )
+        }
+        }
+    }
 
-                    listOf(com.repforge.app.HealthJournalStore.SAMSUNG, com.repforge.app.HealthJournalStore.HC).forEach { provider ->
-                        val lastSuccess = uiState.healthLastSyncByProvider[provider]
-                        val time = runCatching {
-                            java.time.format.DateTimeFormatter.ofPattern("yyyy.MM.dd. HH:mm")
-                                .withZone(java.time.ZoneId.systemDefault()).format(java.time.Instant.parse(lastSuccess))
-                        }.getOrDefault(tr(uiState.language, "Még nincs sikeres szinkron", "No successful sync yet", "Noch kein erfolgreicher Sync", "Nicio sincronizare reușită încă"))
-                        Text("${com.repforge.app.NativeWorkoutHealthSource.label(provider)} • ${tr(uiState.language, "Utolsó sikeres szinkron", "Last successful sync", "Letzter erfolgreicher Sync", "Ultima sincronizare reușită")}: $time",
-                            style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
-                            modifier = Modifier.testTag("health_last_sync_$provider"))
-                    }
-                    if (uiState.healthSyncMessage.isNotBlank()) Text(uiState.healthSyncMessage,
-                        color = if (uiState.healthSyncFailed) palette.danger else if (uiState.healthSyncPartial) palette.warning else palette.textPrimary,
-                        modifier = Modifier.testTag("health_sync_result"))
-                    TrainPilotOutlinedButton(onClick = { syncDetailsExpanded = !syncDetailsExpanded },
-                        modifier = Modifier.fillMaxWidth().testTag("health_sync_details_toggle")) {
-                        Text(tr(uiState.language, "Szinkron részletei", "Sync details", "Sync-Details", "Detalii sincronizare"),
-                            modifier = Modifier.weight(1f))
-                        Icon(if (syncDetailsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null)
-                    }
-                    if (syncDetailsExpanded) {
+    if (healthSectionSheet != null) {
+        val journal = healthSectionSheet == "journal"
+        val closeSheet: () -> Unit = {
+            if (journal) journalFocus = null
+            onToggleHealthSection(healthSectionSheet)
+        }
+        com.example.ui.components.TrainPilotRouteSheet(
+            routeKey = healthSectionSheet,
+            onDismiss = closeSheet,
+            testTag = "health_${healthSectionSheet}_sheet",
+            fillHeight = journal
+        ) {
+            healthSectionState.SaveableStateProvider(healthSectionSheet) {
+                Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Text(
-                            if (uiState.healthAutoOnOpen) tr(uiState.language,
-                                "Automatikus frissítés appnyitáskor és előtérben 5 percenként.",
-                                "Automatic refresh on app opening and every 5 minutes in the foreground.",
-                                "Automatische Aktualisierung beim App-Start und im Vordergrund alle 5 Minuten.",
-                                "Actualizare automată la deschiderea aplicației și la fiecare 5 minute în prim-plan.")
-                            else tr(uiState.language, "Automatikus frissítés kikapcsolva.", "Automatic refresh is off.", "Automatische Aktualisierung deaktiviert.", "Actualizarea automată este oprită."),
-                            style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
-                            modifier = Modifier.testTag("health_auto_refresh_status"))
-                        Text(
-                            when {
-                                uiState.healthBackgroundOptedIn && uiState.healthBackgroundScheduled -> tr(uiState.language,
-                                    "Health Connect háttérfrissítés: kb. 15 percenként; az Android késleltetheti.",
-                                    "Health Connect background refresh: about every 15 minutes; Android may delay it.",
-                                    "Health Connect im Hintergrund: etwa alle 15 Minuten; Android kann dies verzögern.",
-                                    "Health Connect în fundal: aproximativ la fiecare 15 minute; Android poate întârzia actualizarea.")
-                                uiState.healthBackgroundOptedIn -> tr(uiState.language, "Health Connect háttérfrissítés nincs ütemezve; ellenőrizd az engedélyeket.", "Health Connect background refresh is not scheduled; check permissions.", "Health Connect-Hintergrundaktualisierung nicht geplant; Berechtigungen prüfen.", "Actualizarea Health Connect în fundal nu este programată; verifică permisiunile.")
-                                else -> tr(uiState.language, "Health Connect háttérfrissítés kikapcsolva.", "Health Connect background refresh is off.", "Health Connect-Hintergrundaktualisierung deaktiviert.", "Actualizarea Health Connect în fundal este oprită.")
-                            }, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
-                            modifier = Modifier.testTag("health_background_refresh_status"))
-                        Text("${tr(uiState.language, "Utolsó adatolvasás", "Last data read", "Letzter Datenabruf", "Ultima citire date")}: ${uiState.lastHealthReadLabel}", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
-                        Text(
-                            text = uiState.healthProviderStatus,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = palette.textSecondary
+                            text = if (journal) strings.healthJournalTitle else sourcesTitle,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = palette.textPrimary,
+                            modifier = Modifier.weight(1f)
                         )
+                        IconButton(closeSheet, Modifier.size(48.dp).testTag("health_${healthSectionSheet}_close")) {
+                            Icon(Icons.Default.Close, strings.closeAction, tint = palette.danger)
+                        }
+                    }
+                    if (uiState.healthSyncMessage.isNotBlank()) {
+                        val color = when {
+                            uiState.healthSyncFailed -> palette.danger
+                            uiState.healthSyncPartial -> palette.warning
+                            else -> palette.textPrimary
+                        }
+                        Text(
+                            text = uiState.healthSyncMessage,
+                            color = color,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                                .semantics { liveRegion = LiveRegionMode.Polite }
+                                .testTag(if (journal && uiState.healthSyncFailed) "journal_refresh_error" else "health_sync_result")
+                        )
+                    }
+                    val sectionScroll = rememberScrollState()
+                    LaunchedEffect(journalFocus, journalFocusKey) {
+                        if (journal && journalFocus != null) sectionScroll.scrollTo(0)
+                    }
+                    Column(
+                        Modifier.fillMaxWidth().weight(1f, fill = false)
+                            .verticalScroll(sectionScroll)
+                            .testTag("health_${healthSectionSheet}_sheet_scroll"),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (journal) {
+                            com.example.ui.components.StudioHealthMetricsBrowser(
+                                initialProvider = if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG
+                                    else com.repforge.app.HealthJournalStore.HC,
+                                language = uiState.language.code.lowercase(),
+                                refreshKey = "${uiState.healthRefreshRevision}:${uiState.healthSyncBusy}",
+                                onRefreshProvider = onReadHealthSource,
+                                refreshBusy = uiState.healthSyncBusy,
+                                focus = journalFocus,
+                                focusKey = journalFocusKey
+                            )
+                        } else {
+                            HealthSourcesContent(
+                                uiState = uiState,
+                                strings = strings,
+                                onSelectHealthSource = onSelectHealthSource,
+                                onTriggerHealthSync = onTriggerHealthSync,
+                                onRequestHealthPermissions = onRequestHealthPermissions,
+                                onNavigateToSubScreen = onNavigateToSubScreen,
+                                closeSheet = closeSheet,
+                                syncDetailsExpanded = syncDetailsExpanded,
+                                onToggleSyncDetails = { syncDetailsExpanded = !syncDetailsExpanded }
+                            )
+                        }
                     }
                 }
             }
         }
-
     }
 }
+
+@Composable
+private fun HealthSourcesContent(
+    uiState: TrainPilotUiState,
+    strings: LocalizedStrings,
+    onSelectHealthSource: (Boolean) -> Unit,
+    onTriggerHealthSync: () -> Unit,
+    onRequestHealthPermissions: () -> Unit,
+    onNavigateToSubScreen: (SubScreen) -> Unit,
+    closeSheet: () -> Unit,
+    syncDetailsExpanded: Boolean,
+    onToggleSyncDetails: () -> Unit
+) {
+    val palette = LocalTrainPilotPalette.current
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(14.dp),
+            color = palette.surfaceElevated,
+            modifier = Modifier
+                .weight(1f)
+                .trainPilotBorder(
+                    width = if (uiState.primaryHealthSourceSamsung) 1.5.dp else 1.dp,
+                    color = if (uiState.primaryHealthSourceSamsung) palette.primary else palette.cardBorder,
+                    shape = RoundedCornerShape(14.dp)
+                )
+                .trainPilotClickable(RoundedCornerShape(14.dp)) { onSelectHealthSource(true) }
+                .testTag("health_provider_samsung")
+        ) {
+            Column(modifier = Modifier.padding(10.dp)) {
+                Text("Samsung Health", fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                Text(
+                    if (uiState.samsungGrantedCount < 0) tr(uiState.language, "Engedély még nem igazolt", "Permission not verified yet", "Berechtigung noch nicht bestätigt", "Permisiune încă neverificată")
+                    else "${uiState.samsungGrantedCount}/${uiState.samsungPermissionCount} ${tr(uiState.language, "adatkör", "scopes", "Bereiche", "domenii")}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (uiState.samsungGrantedCount > 0) palette.success else palette.textSecondary
+                )
+            }
+        }
+        Surface(
+            shape = RoundedCornerShape(14.dp),
+            color = palette.surfaceElevated,
+            modifier = Modifier
+                .weight(1f)
+                .trainPilotBorder(
+                    width = if (!uiState.primaryHealthSourceSamsung) 1.5.dp else 1.dp,
+                    color = if (!uiState.primaryHealthSourceSamsung) palette.primary else palette.cardBorder,
+                    shape = RoundedCornerShape(14.dp)
+                )
+                .trainPilotClickable(RoundedCornerShape(14.dp)) { onSelectHealthSource(false) }
+                .testTag("health_provider_connect")
+        ) {
+            Column(modifier = Modifier.padding(10.dp)) {
+                Text("Health Connect", fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                Text(
+                    "● ${uiState.healthGrantedCount}/${uiState.healthPermissionCount} ${tr(uiState.language, "engedély", "permissions", "Berechtigungen", "permisiuni")}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (uiState.healthGrantedCount > 0) palette.success else palette.textSecondary
+                )
+            }
+        }
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = palette.primary.copy(alpha = 0.42f),
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 52.dp)
+                    .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.65f), RoundedCornerShape(16.dp))
+                    .trainPilotClickable(RoundedCornerShape(16.dp), enabled = !uiState.healthSyncBusy) { onTriggerHealthSync() }
+                    .testTag("health_sync_button")
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = if (uiState.healthSyncBusy) tr(uiState.language, "Szinkronizálás…", "Syncing…", "Synchronisiere…", "Se sincronizează…") else strings.syncAction,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = palette.textPrimary
+                    )
+                }
+            }
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = palette.surfaceCard,
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 52.dp)
+                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                    .trainPilotClickable(RoundedCornerShape(16.dp)) { onRequestHealthPermissions() }
+                    .testTag("health_open_permissions_button")
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = strings.permissionsAction,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = palette.textPrimary
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = palette.surfaceCard,
+            modifier = Modifier
+                .fillMaxWidth()
+                .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                .trainPilotClickable(RoundedCornerShape(20.dp)) {
+                    closeSheet()
+                    onNavigateToSubScreen(SubScreen.WATCH_AND_SYNC)
+                }
+                .testTag("health_open_watch_sync_card")
+        ) {
+            Row(
+                modifier = Modifier.padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                MockupWatchGraphicBadge(size = 46.dp)
+                Column(modifier = Modifier.weight(1f)) {
+                    val wearTitle = tr(uiState.language, "TrainPilot Wear OS – edzésmérések", "TrainPilot Wear OS – workout measurements",
+                        "TrainPilot Wear OS – Trainingsmessungen", "TrainPilot Wear OS – măsurători antrenament")
+                    val watchTitle = if (uiState.watchAppAvailable) "$wearTitle (${uiState.watchName})" else wearTitle
+                    Text(
+                        text = watchTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = palette.textPrimary
+                    )
+                    Text(
+                        text = when {
+                            uiState.watchAppAvailable -> tr(uiState.language, "● Óra csatlakoztatva", "● Watch connected", "● Uhr verbunden", "● Ceas conectat")
+                            uiState.watchConnected -> tr(uiState.language, "Wear OS rendszerkapcsolat • TrainPilot óraapp nincs telepítve", "Wear OS system connection • TrainPilot watch app not installed", "Wear OS-Systemverbindung • TrainPilot-Uhren-App nicht installiert", "Conexiune sistem Wear OS • Aplicația de ceas TrainPilot nu este instalată")
+                            else -> tr(uiState.language, "Nincs csatlakoztatott óra", "No watch connected", "Keine Uhr verbunden", "Niciun ceas conectat")
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (uiState.watchAppAvailable) palette.success else palette.textSecondary
+                    )
+                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = palette.primary
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+
+        listOf(com.repforge.app.HealthJournalStore.SAMSUNG, com.repforge.app.HealthJournalStore.HC).forEach { provider ->
+            val lastSuccess = uiState.healthLastSyncByProvider[provider]
+            val time = runCatching {
+                java.time.format.DateTimeFormatter.ofPattern("yyyy.MM.dd. HH:mm")
+                    .withZone(java.time.ZoneId.systemDefault()).format(java.time.Instant.parse(lastSuccess))
+            }.getOrDefault(tr(uiState.language, "Még nincs sikeres szinkron", "No successful sync yet", "Noch kein erfolgreicher Sync", "Nicio sincronizare reușită încă"))
+            Text("${com.repforge.app.NativeWorkoutHealthSource.label(provider)} • ${tr(uiState.language, "Utolsó sikeres szinkron", "Last successful sync", "Letzter erfolgreicher Sync", "Ultima sincronizare reușită")}: $time",
+                style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
+                modifier = Modifier.testTag("health_last_sync_$provider"))
+        }
+        TrainPilotOutlinedButton(onClick = onToggleSyncDetails,
+            modifier = Modifier.fillMaxWidth().testTag("health_sync_details_toggle")) {
+            Text(tr(uiState.language, "Szinkron részletei", "Sync details", "Sync-Details", "Detalii sincronizare"),
+                modifier = Modifier.weight(1f))
+            Icon(if (syncDetailsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null)
+        }
+        if (syncDetailsExpanded) {
+            Text(
+                if (uiState.healthAutoOnOpen) tr(uiState.language,
+                    "Automatikus frissítés appnyitáskor és előtérben 5 percenként.",
+                    "Automatic refresh on app opening and every 5 minutes in the foreground.",
+                    "Automatische Aktualisierung beim App-Start und im Vordergrund alle 5 Minuten.",
+                    "Actualizare automată la deschiderea aplicației și la fiecare 5 minute în prim-plan.")
+                else tr(uiState.language, "Automatikus frissítés kikapcsolva.", "Automatic refresh is off.", "Automatische Aktualisierung deaktiviert.", "Actualizarea automată este oprită."),
+                style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
+                modifier = Modifier.testTag("health_auto_refresh_status"))
+            Text(
+                when {
+                    uiState.healthBackgroundOptedIn && uiState.healthBackgroundScheduled -> tr(uiState.language,
+                        "Health Connect háttérfrissítés: kb. 15 percenként; az Android késleltetheti.",
+                        "Health Connect background refresh: about every 15 minutes; Android may delay it.",
+                        "Health Connect im Hintergrund: etwa alle 15 Minuten; Android kann dies verzögern.",
+                        "Health Connect în fundal: aproximativ la fiecare 15 minute; Android poate întârzia actualizarea.")
+                    uiState.healthBackgroundOptedIn -> tr(uiState.language, "Health Connect háttérfrissítés nincs ütemezve; ellenőrizd az engedélyeket.", "Health Connect background refresh is not scheduled; check permissions.", "Health Connect-Hintergrundaktualisierung nicht geplant; Berechtigungen prüfen.", "Actualizarea Health Connect în fundal nu este programată; verifică permisiunile.")
+                    else -> tr(uiState.language, "Health Connect háttérfrissítés kikapcsolva.", "Health Connect background refresh is off.", "Health Connect-Hintergrundaktualisierung deaktiviert.", "Actualizarea Health Connect în fundal este oprită.")
+                }, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary,
+                modifier = Modifier.testTag("health_background_refresh_status"))
+            Text("${tr(uiState.language, "Utolsó adatolvasás", "Last data read", "Letzter Datenabruf", "Ultima citire date")}: ${uiState.lastHealthReadLabel}", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+            Text(
+                text = uiState.healthProviderStatus,
+                style = MaterialTheme.typography.bodySmall,
+                color = palette.textSecondary
+            )
+        }
+    }
 }
 
 @Composable
@@ -1534,14 +1600,12 @@ private fun PulseInnerBox(
 }
 
 @Composable
-private fun ExpandableHealthSectionCard(
+private fun HealthSectionLauncher(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String?,
-    expanded: Boolean,
-    onToggle: () -> Unit,
-    customLeadingBadge: (@Composable () -> Unit)? = null,
-    content: @Composable () -> Unit
+    onOpen: () -> Unit,
+    customLeadingBadge: (@Composable () -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     Surface(
@@ -1550,13 +1614,14 @@ private fun ExpandableHealthSectionCard(
         modifier = Modifier
             .fillMaxWidth()
             .trainPilotSoftGlow(palette.primary, RoundedCornerShape(20.dp), 3.dp)
-            .trainPilotBorder(1.dp, if (expanded) palette.primary.copy(alpha = 0.6f) else palette.cardBorder, RoundedCornerShape(20.dp))
+            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(20.dp))
+            .trainPilotClickable(RoundedCornerShape(20.dp), onClick = onOpen)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .trainPilotClickable(RoundedCornerShape(20.dp)) { onToggle() },
+                    .heightIn(min = 48.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1596,16 +1661,10 @@ private fun ExpandableHealthSectionCard(
                     }
                 }
                 Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    imageVector = Icons.Default.ExpandLess,
                     contentDescription = null,
                     tint = palette.primary
                 )
-            }
-            if (expanded) {
-                Spacer(modifier = Modifier.height(12.dp))
-                HorizontalDivider(color = palette.cardBorder)
-                Spacer(modifier = Modifier.height(12.dp))
-                content()
             }
         }
     }
@@ -1985,10 +2044,9 @@ fun SettingsMainScreen(
     val currentPaletteObj = TrainPilotPalettes.getById(uiState.selectedPaletteId)
 
     var expandedMainThemesSection by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
-    var expandedMatteThemes by remember { mutableStateOf(false) }
-    var expandedContrastThemes by remember { mutableStateOf(false) }
-    var expandedGlowThemes by remember { mutableStateOf(false) }
-    var expandedLightThemes by remember { mutableStateOf(false) }
+    var expandedThemeFamily by rememberSaveable {
+        mutableStateOf(currentPaletteObj.subGroup.name)
+    }
     var showPrivacyPolicyDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val secUnit = tr(uiState.language, "mp", "sec", "Sek.", "sec")
 
@@ -2092,153 +2150,20 @@ fun SettingsMainScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(strings.themes32Title, style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                                Text("${currentPaletteObj.localizedName(uiState.language)} • $toggleThemesHint",
-                                    style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                                Text(toggleThemesHint, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                             }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Surface(shape = RoundedCornerShape(8.dp), color = palette.primary.copy(alpha = 0.18f)) {
-                                Text(text = "#${uiState.selectedPaletteId}", style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold, color = palette.primary,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
-                            }
-                            Spacer(modifier = Modifier.width(4.dp))
                             Icon(imageVector = if (expandedMainThemesSection) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                                 contentDescription = null, tint = palette.textSecondary)
                         }
                     }
 
-                    // 4 expandable theme categories inside the shared Settings/Themes frame.
-                    if (expandedMainThemesSection) {
-                val allPalettes = TrainPilotPalettes.allPalettes
-                val categories = listOf(
-                    Triple(tr(uiState.language, "Matt témák (Sötét / Prémium matt)", "Matte Themes (Dark / Premium Matte)", "Matte Themen (Dunkel / Premium Matt)", "Teme mate (Întunecat / Mat premium)"), allPalettes.filter { it.id in 1..8 }, expandedMatteThemes) to { expandedMatteThemes = !expandedMatteThemes },
-                    Triple(tr(uiState.language, "Kontrasztos témák (Élénk kontraszt)", "High-Contrast Themes (Vivid Contrast)", "Kontrast-Themen (Lebendiger Kontrast)", "Teme cu contrast ridicat"), allPalettes.filter { it.id in 9..16 }, expandedContrastThemes) to { expandedContrastThemes = !expandedContrastThemes },
-                    Triple(tr(uiState.language, "Fényes / Glow témák (Neon & Glow)", "Glow Themes (Neon & Glow)", "Glow-Themen (Neon & Glow)", "Teme Glow (Neon & Glow)"), allPalettes.filter { it.id in 17..24 }, expandedGlowThemes) to { expandedGlowThemes = !expandedGlowThemes },
-                    Triple(tr(uiState.language, "Világos témák (Nappali / Light)", "Light Themes (Daylight / Light)", "Helle Themen (Tag / Hell)", "Teme luminoase (Zi / Light)"), allPalettes.filter { it.id in 25..32 }, expandedLightThemes) to { expandedLightThemes = !expandedLightThemes }
-                )
-
-                categories.forEachIndexed { categoryIndex, entry ->
-                    val (catInfo, onToggleCat) = entry
-                    val (catTitle, catPalettes, isExpanded) = catInfo
-                    Surface(
-                        shape = RoundedCornerShape(18.dp),
-                        color = palette.surfaceElevated,
-                        modifier = Modifier.fillMaxWidth()
-                            .trainPilotBorder(TrainPilotFrames.panelWidth, palette.cardBorder, RoundedCornerShape(18.dp))
-                            .testTag("settings_theme_category_$categoryIndex")
-                    ) {
-                        Column {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(min = 48.dp)
-                                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onToggleCat() }
-                                    .testTag("settings_theme_category_toggle_$categoryIndex")
-                                    .padding(12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    modifier = Modifier.weight(1f),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Palette,
-                                        contentDescription = null,
-                                        tint = palette.primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Text(
-                                        text = catTitle,
-                                        modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = palette.textPrimary
-                                    )
-                                }
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Text(
-                                        text = "${catPalettes.size} ${tr(uiState.language, "téma", "themes", "Themen", "teme")}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = palette.primary
-                                    )
-                                    Icon(
-                                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                        contentDescription = null,
-                                        tint = palette.primary
-                                    )
-                                }
-                            }
-
-                            if (isExpanded) {
-                                // Keep choices outside the header's click/feedback area.
-                                Column(modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    catPalettes.chunked(2).forEach { pair ->
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            pair.forEach { itemPal ->
-                                                val isSel = uiState.selectedPaletteId == itemPal.id
-                                                Surface(
-                                                    shape = RoundedCornerShape(14.dp),
-                                                    color = itemPal.surfaceCard,
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .border(
-                                                            width = if (isSel) 2.dp else 1.dp,
-                                                            color = if (isSel) itemPal.primary else itemPal.cardBorder,
-                                                            shape = RoundedCornerShape(14.dp)
-                                                        )
-                                                        .testTag("settings_palette_choice_${itemPal.id}")
-                                                        .trainPilotClickable(RoundedCornerShape(14.dp)) {
-                                                            onSelectPalette(itemPal.id)
-                                                            onShowBanner("${tr(uiState.language, "Téma aktiválva", "Theme activated", "Thema aktiviert", "Temă activată")}: ${itemPal.localizedName(uiState.language)}")
-                                                        }
-                                                ) {
-                                                    Row(
-                                                        modifier = Modifier.padding(10.dp),
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                                    ) {
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .size(22.dp)
-                                                                .clip(CircleShape)
-                                                                .background(itemPal.primary)
-                                                                .border(1.dp, itemPal.secondary, CircleShape)
-                                                        )
-                                                        Column(modifier = Modifier.weight(1f)) {
-                                                            Text(
-                                                                text = itemPal.localizedName(uiState.language),
-                                                                style = MaterialTheme.typography.labelMedium,
-                                                                fontWeight = FontWeight.Bold,
-                                                                color = itemPal.textPrimary,
-                                                                maxLines = 1,
-                                                                overflow = TextOverflow.Ellipsis
-                                                            )
-                                                            Text(
-                                                                text = "#${"%02d".format(itemPal.id)}",
-                                                                style = MaterialTheme.typography.labelSmall,
-                                                                color = itemPal.primary
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            if (pair.size == 1) {
-                                                Spacer(modifier = Modifier.weight(1f))
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                    }
+                    if (expandedMainThemesSection) com.example.ui.components.StudioPaletteCategories(
+                        language = uiState.language,
+                        selectedId = uiState.selectedPaletteId,
+                        expanded = com.example.ui.theme.PaletteCategory.entries.firstOrNull { it.name == expandedThemeFamily },
+                        onExpand = { expandedThemeFamily = it?.name.orEmpty() },
+                        onSelect = onSelectPalette
+                    )
                 }
             }
         }
@@ -2848,8 +2773,7 @@ fun StudioGoogleCloudSyncCard(
     val lang = strings.language
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val gs = settingsState.googleSyncState
-    val context = LocalContext.current
-    val activity = context as? Activity
+    val activity = LocalActivity.current
     var cloudExpanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var showMaintenanceOptions by remember { mutableStateOf(false) }
 
@@ -2862,17 +2786,9 @@ fun StudioGoogleCloudSyncCard(
         confirm = { activity?.let(settingsViewModel::confirmGoogleMaintenance) }
     )
 
-    val googleConsent by settingsViewModel.googleConsent.collectAsStateWithLifecycle()
-    NativeGoogleConsentLauncher(
-        prompt = googleConsent,
-        take = settingsViewModel::takeGoogleConsent,
-        complete = settingsViewModel::completeGoogleConsent,
-        fail = settingsViewModel::failGoogleConsent
-    )
-
-    LaunchedEffect(settingsState.statusMessage) {
+    LaunchedEffect(settingsState.statusMessage, compact) {
         val msg = settingsState.statusMessage
-        if (!msg.isNullOrBlank()) {
+        if (!compact && !msg.isNullOrBlank()) {
             onShowBanner(msg)
         }
     }
@@ -3154,7 +3070,13 @@ fun StudioGoogleCloudSyncCard(
                 count = settingsState.maintenanceCompleted
             )
 
-            if (gs.isBusy && gs.stageMessage.isNotBlank()) {
+            if (!compact) Text(
+                driveHealthBackupSummary(lang),
+                style = MaterialTheme.typography.bodySmall,
+                color = palette.textSecondary
+            )
+
+            if (!compact && gs.isBusy && gs.stageMessage.isNotBlank()) {
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = palette.primary.copy(alpha = 0.14f),
@@ -3206,7 +3128,7 @@ fun StudioGoogleCloudSyncCard(
                 }
             }
 
-            if (!gs.errorMessage.isNullOrBlank()) {
+            if (!compact && !gs.errorMessage.isNullOrBlank()) {
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = Color(0xFFEF4444).copy(alpha = 0.14f),
@@ -3223,6 +3145,12 @@ fun StudioGoogleCloudSyncCard(
         }
     }
 }
+
+private fun driveHealthBackupSummary(language: AppLanguage) = tr(language,
+    "Egészségadatok engedélyezésekor a Drive az edzések egészségösszesítőit menti. A napi lépések a helyi JSON/ZIP mentésbe kerülhetnek.",
+    "When enabled, Drive includes workout health summaries. Daily steps can be included in local JSON/ZIP backups.",
+    "Bei Zustimmung sichert Drive Trainings-Gesundheitsdaten. Tagesschritte können lokal als JSON/ZIP gesichert werden.",
+    "La activare, Drive include rezumatele de sănătate ale antrenamentelor. Pașii zilnici pot fi salvați local în JSON/ZIP.")
 
 /**
  * 4/4 #3 MENTÉS ÉS VISSZAÁLLÍTÁS (Mockup 4/4 #3)
@@ -3244,8 +3172,30 @@ fun BackupRestoreScreen(
     val settingsViewModel: SettingsViewModel = viewModel()
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val gs = settingsState.googleSyncState
-    val context = LocalContext.current
-    val activity = context as? Activity
+    val activity = LocalActivity.current
+    val lang = uiState.language
+    val drive = uiState.selectedBackupFormat == "DRIVE"
+    val inSheet = com.example.ui.components.LocalTrainPilotInSheet.current
+    val localStatus = uiState.localBackupStatus
+    var pickerMessage by remember { mutableStateOf<String?>(null) }
+    val driveFeedback = settingsState.googleActionFeedback?.takeIf { it.action == "drive" || it.action == "connect" }
+    val driveBlock = when {
+        gs.isBusy -> gs.stageMessage.ifBlank { tr(lang, "Google-szinkron folyamatban…", "Google sync in progress…", "Google-Sync läuft…", "Sincronizarea Google este în curs…") }
+        settingsState.replacementBusy || localStatus?.busy == true ->
+            tr(lang, "Mentés vagy visszaállítás folyamatban.", "Backup or restore in progress.", "Sicherung oder Wiederherstellung läuft.", "Backup-ul sau restaurarea este în curs.")
+        settingsState.maintenanceBusy -> tr(lang, "Karbantartás folyamatban.", "Maintenance in progress.", "Wartung läuft.", "Mentenanță în curs.")
+        activity == null -> tr(lang, "Nyisd meg újra ezt a képernyőt.", "Reopen this screen.", "Öffne diese Seite erneut.", "Redeschide acest ecran.")
+        uiState.isWorkoutSessionActive && gs.connectedEmail.isNotBlank() ->
+            tr(lang, "A Drive-szinkron előtt fejezd be az aktív edzést.", "Finish the active workout before syncing Drive.",
+                "Beende das laufende Training vor dem Drive-Sync.", "Încheie antrenamentul activ înainte de sincronizarea Drive.")
+        else -> null
+    }
+    val status = when {
+        drive && driveBlock != null -> com.example.ui.viewmodel.LocalBackupStatus(driveBlock, busy = gs.isBusy || settingsState.maintenanceBusy)
+        pickerMessage != null -> com.example.ui.viewmodel.LocalBackupStatus(pickerMessage.orEmpty())
+        drive && driveFeedback != null -> com.example.ui.viewmodel.LocalBackupStatus(driveFeedback.message, failed = driveFeedback.failed)
+        else -> localStatus
+    }
     val mimeType = if (uiState.selectedBackupFormat == "ZIP") "application/zip" else "application/json"
     var showHealthInfo by remember { mutableStateOf(false) }
     val defaultFileName = if (uiState.selectedBackupFormat == "ZIP") "trainpilot-backup.zip" else "trainpilot-backup.json"
@@ -3254,11 +3204,14 @@ fun BackupRestoreScreen(
         contract = ActivityResultContracts.CreateDocument(mimeType)
     ) { uri ->
         if (uri != null) {
+            settingsViewModel.clearGoogleActionFeedback()
             if (onExportBackup != null) {
                 onExportBackup(uri)
             } else {
                 onShowBanner(tr(uiState.language, "Mentés készítése...", "Creating backup...", "Sicherung wird erstellt...", "Se creează backup-ul..."))
             }
+        } else {
+            pickerMessage = tr(lang, "A mentés megszakítva.", "Backup canceled.", "Sicherung abgebrochen.", "Backup anulat.")
         }
     }
 
@@ -3266,16 +3219,20 @@ fun BackupRestoreScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
+            settingsViewModel.clearGoogleActionFeedback()
             if (onImportBackup != null) {
                 onImportBackup(uri)
             } else {
                 onShowBanner(tr(uiState.language, "Visszaállítás fájlból...", "Restoring from file...", "Wiederherstellung aus Datei...", "Se restaurează din fișier..."))
             }
+        } else {
+            pickerMessage = tr(lang, "A fájlimport megszakítva.", "File import canceled.", "Dateiimport abgebrochen.", "Import de fișier anulat.")
         }
     }
 
     if (showHealthInfo) {
         com.example.ui.components.TrainPilotFormSheet(scrollText = false,
+            testTag = "backup_health_info_sheet",
             onDismissRequest = { showHealthInfo = false },
             title = { Text(tr(uiState.language, "Egészségadatok", "Health data", "Gesundheitsdaten", "Date de sănătate")) },
             text = { Text(modifier = Modifier.verticalScroll(rememberScrollState()), text = tr(uiState.language,
@@ -3287,152 +3244,186 @@ fun BackupRestoreScreen(
         )
     }
 
-    LazyColumn(
-        modifier = Modifier
-            .then(com.example.ui.components.sheetAwareFillMaxSize())
-            // In the sheet the JSON / ZIP / DRIVE tabs share one stable height (the tallest, Drive),
-            // so switching tabs never makes the sheet jump.
-            .then(if (com.example.ui.components.LocalTrainPilotInSheet.current)
-                Modifier.heightIn(min = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp * 0.78f)
-                else Modifier)
-            .background(palette.background)
-            .testTag("backup_restore_screen"),
-        contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
-    ) {
-        item {
-            SubScreenTopBar(
-                title = strings.backupRestoreTitle,
-                onBack = onBack,
-                onOpenSettings = onOpenSettings
-            )
-        }
-        item {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("JSON", "ZIP", "DRIVE").forEach { fmt ->
-                    val sel = uiState.selectedBackupFormat == fmt
-                    val interaction = remember(fmt) { MutableInteractionSource() }
-                    val pressed by interaction.collectIsPressedAsState()
-                    val shape = RoundedCornerShape(10.dp)
-                    val background = if (sel) palette.primary else palette.surfaceCard
-                    Box(
-                        modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                            .testTag("backup_format_$fmt")
-                            .selectable(selected = sel, role = androidx.compose.ui.semantics.Role.Tab,
-                                interactionSource = interaction, indication = null, onClick = { onSelectFormat(fmt) }),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Surface(
-                            shape = shape,
-                            color = lerp(background, palette.primary, if (pressed) 0.12f else 0f),
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 36.dp).clip(shape)
-                                .indication(interaction, ripple())
-                                .trainPilotBorder(1.dp, if (sel) palette.primary else palette.cardBorder, shape)
-                                .testTag("backup_format_${fmt}_visual")
+    Column(Modifier.then(com.example.ui.components.sheetAwareFillMaxSize()).background(palette.background)) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth().weight(1f, fill = !inSheet)
+                // In the sheet the JSON / ZIP / DRIVE tabs share one stable height (the tallest, Drive),
+                // so switching tabs never makes the sheet jump.
+                .then(if (inSheet)
+                    Modifier.heightIn(min = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp * 0.78f)
+                    else Modifier)
+                .background(palette.background)
+                .testTag("backup_restore_screen"),
+            contentPadding = PaddingValues(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
+        ) {
+            item {
+                SubScreenTopBar(
+                    title = strings.backupRestoreTitle,
+                    onBack = onBack,
+                    onOpenSettings = onOpenSettings
+                )
+            }
+            item {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("JSON", "ZIP", "DRIVE").forEach { fmt ->
+                        val sel = uiState.selectedBackupFormat == fmt
+                        val interaction = remember(fmt) { MutableInteractionSource() }
+                        val pressed by interaction.collectIsPressedAsState()
+                        val shape = RoundedCornerShape(10.dp)
+                        val background = if (sel) palette.primary else palette.surfaceCard
+                        Box(
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                                .testTag("backup_format_$fmt")
+                                .selectable(selected = sel, role = androidx.compose.ui.semantics.Role.Tab,
+                                    interactionSource = interaction, indication = null, onClick = { onSelectFormat(fmt) }),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(fmt, fontWeight = FontWeight.Bold, color = if (sel) palette.onPrimary else palette.textPrimary)
+                            Surface(
+                                shape = shape,
+                                color = lerp(background, palette.primary, if (pressed) 0.12f else 0f),
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 36.dp).clip(shape)
+                                    .indication(interaction, ripple())
+                                    .trainPilotBorder(1.dp, if (sel) palette.primary else palette.cardBorder, shape)
+                                    .testTag("backup_format_${fmt}_visual")
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(fmt, fontWeight = FontWeight.Bold, color = if (sel) palette.onPrimary else palette.textPrimary)
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        if (uiState.selectedBackupFormat == "DRIVE") item {
-            StudioGoogleCloudSyncCard(
-                onShowBanner = onShowBanner,
-                onCloudSyncCompleted = onCloudSyncCompleted,
-                settingsViewModel = settingsViewModel,
-                compact = true
-            )
-        }
-        item {
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-            ) {
-                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(tr(uiState.language, "Mentés tartalma", "Backup contents", "Sicherungsinhalt", "Conținut backup"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                    Text(tr(uiState.language, "✓ Edzések és rekordok", "✓ Workouts and records", "✓ Trainings und Rekorde", "✓ Antrenamente și recorduri"), color = palette.success, style = MaterialTheme.typography.bodyMedium)
-                    Text(tr(uiState.language, "✓ Programok és gyakorlatok", "✓ Programs and exercises", "✓ Programme und Übungen", "✓ Programe și exerciții"), color = palette.success, style = MaterialTheme.typography.bodyMedium)
-                    Text(tr(uiState.language, "✓ Beállítások és színek", "✓ Settings and colors", "✓ Einstellungen und Farben", "✓ Setări și culori"), color = palette.success, style = MaterialTheme.typography.bodyMedium)
-                    Row(modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(tr(uiState.language, "Egészségadatok", "Health data", "Gesundheitsdaten", "Date de sănătate"), color = palette.textPrimary, modifier = Modifier.weight(1f))
-                        IconButton(onClick = { showHealthInfo = true }, modifier = Modifier.testTag("backup_health_info")) {
-                            Icon(Icons.Default.Info, contentDescription = tr(uiState.language, "Egészségadatok információ", "Health data information", "Informationen zu Gesundheitsdaten", "Informații despre datele de sănătate"), tint = palette.textSecondary)
+            if (drive) item {
+                StudioGoogleCloudSyncCard(
+                    onShowBanner = onShowBanner,
+                    onCloudSyncCompleted = onCloudSyncCompleted,
+                    settingsViewModel = settingsViewModel,
+                    compact = true
+                )
+            }
+            item {
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = palette.surfaceCard,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(tr(uiState.language, "Mentés tartalma", "Backup contents", "Sicherungsinhalt", "Conținut backup"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                        Text(tr(uiState.language, "✓ Edzések és rekordok", "✓ Workouts and records", "✓ Trainings und Rekorde", "✓ Antrenamente și recorduri"), color = palette.success, style = MaterialTheme.typography.bodyMedium)
+                        Text(tr(uiState.language, "✓ Programok és gyakorlatok", "✓ Programs and exercises", "✓ Programme und Übungen", "✓ Programe și exerciții"), color = palette.success, style = MaterialTheme.typography.bodyMedium)
+                        Text(tr(lang, "✓ Célok, naptárterv és beállítások", "✓ Goals, calendar plan and settings", "✓ Ziele, Kalenderplan und Einstellungen", "✓ Obiective, calendar și setări"), color = palette.success, style = MaterialTheme.typography.bodyMedium)
+                        Row(modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(if (drive) tr(lang, "Edzések egészségadatai", "Workout health data", "Training-Gesundheitsdaten", "Date de sănătate la antrenament")
+                                else tr(lang, "Egészségadatok", "Health data", "Gesundheitsdaten", "Date de sănătate"), color = palette.textPrimary, modifier = Modifier.weight(1f))
+                            IconButton(onClick = { showHealthInfo = true }, modifier = Modifier.testTag("backup_health_info")) {
+                                Icon(Icons.Default.Info, contentDescription = tr(uiState.language, "Egészségadatok információ", "Health data information", "Informationen zu Gesundheitsdaten", "Informații despre datele de sănătate"), tint = palette.textSecondary)
+                            }
+                            Switch(checked = uiState.includeHealthInBackup, enabled = !uiState.backupHealthConsentSaving, onCheckedChange = onToggleIncludeHealth, modifier = Modifier.heightIn(min = 48.dp).testTag("backup_health_switch"))
                         }
-                        Switch(checked = uiState.includeHealthInBackup, enabled = !uiState.backupHealthConsentSaving, onCheckedChange = onToggleIncludeHealth, modifier = Modifier.heightIn(min = 48.dp).testTag("backup_health_switch"))
+                        if (drive) Text(tr(lang, "Napi lépések: helyi JSON/ZIP.", "Daily steps: local JSON/ZIP.",
+                            "Tagesschritte: lokal als JSON/ZIP.", "Pași zilnici: JSON/ZIP local."), color = palette.textSecondary,
+                            style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("backup_drive_health_scope"))
                     }
                 }
             }
-        }
-        item {
-            com.repforge.app.ui.theme.TrainPilotSaveButton(
-                onClick = {
-                    if (uiState.selectedBackupFormat == "DRIVE") {
-                        if (gs.connectedEmail.isEmpty()) {
-                            activity?.let { settingsViewModel.connectGoogle(it) }
+            item {
+                com.repforge.app.ui.theme.TrainPilotSaveButton(
+                    onClick = {
+                        pickerMessage = null
+                        if (drive) {
+                            if (gs.connectedEmail.isEmpty()) {
+                                activity?.let { settingsViewModel.connectGoogle(it) }
+                            } else {
+                                activity?.let { settingsViewModel.syncDriveCloud(it) }
+                            }
                         } else {
-                            activity?.let { settingsViewModel.syncDriveCloud(it) }
+                            exportLauncher.launch(defaultFileName)
                         }
-                    } else {
-                        exportLauncher.launch(defaultFileName)
-                    }
-                },
-                enabled = if (uiState.selectedBackupFormat == "DRIVE") {
-                    !gs.isBusy && !settingsState.replacementBusy && !settingsState.maintenanceBusy && activity != null
-                } else true,
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 50.dp)
-                    .testTag("backup_export_btn")
-            ) {
-                Icon(imageVector = Icons.Default.Backup, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = if (uiState.selectedBackupFormat == "DRIVE" && gs.connectedEmail.isEmpty()) {
-                        tr(uiState.language, "Bejelentkezés Google-fiókkal (Drive)", "Sign in with Google (Drive)", "Mit Google anmelden (Drive)", "Conectare cu Google (Drive)")
-                    } else {
-                        "${tr(uiState.language, "Mentés", "Backup", "Sichern", "Salvează")} (${uiState.selectedBackupFormat})"
                     },
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f).padding(vertical = 4.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            TrainPilotOutlinedButton(
-                onClick = {
-                    importLauncher.launch(arrayOf("application/json", "application/zip", "application/octet-stream", "*/*"))
-                },
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp)
-                    .testTag("import_repforge_legacy_btn")
-            ) {
-                Icon(imageVector = Icons.Default.Restore, contentDescription = null, tint = palette.textPrimary)
-                Spacer(modifier = Modifier.width(8.dp))
+                    enabled = if (drive) driveBlock == null else localStatus?.busy != true && !gs.isBusy,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 50.dp)
+                        .testTag("backup_export_btn")
+                ) {
+                    Icon(imageVector = Icons.Default.Backup, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = when {
+                            drive && gs.connectedEmail.isEmpty() -> tr(lang, "Bejelentkezés Google-fiókkal", "Sign in with Google", "Mit Google anmelden", "Conectare cu Google")
+                            drive -> tr(lang, "Drive-mentés és szinkron", "Drive backup and sync", "Drive-Sicherung und Sync", "Backup și sincronizare Drive")
+                            else -> "${tr(lang, "Mentés", "Backup", "Sichern", "Salvează")} (${uiState.selectedBackupFormat})"
+                        },
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f).padding(vertical = 4.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+                if (drive && gs.connectedEmail.isNotBlank()) {
+                    Text(tr(lang, "A szinkron a felhőből is visszaállít és összefésül.",
+                        "Sync also restores and merges data from Drive.",
+                        "Der Sync stellt Daten aus Drive wieder her und führt sie zusammen.",
+                        "Sincronizarea restaurează și îmbină datele din Drive."),
+                        color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                TrainPilotOutlinedButton(
+                    onClick = {
+                        pickerMessage = null
+                        importLauncher.launch(arrayOf("application/json", "application/zip", "application/octet-stream", "*/*"))
+                    },
+                    shape = RoundedCornerShape(14.dp),
+                    enabled = localStatus?.busy != true && !gs.isBusy && !settingsState.replacementBusy &&
+                        !settingsState.maintenanceBusy && !uiState.isWorkoutSessionActive,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                        .testTag("import_repforge_legacy_btn")
+                ) {
+                    Icon(imageVector = Icons.Default.Restore, contentDescription = null, tint = palette.textPrimary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        tr(lang, "Helyi JSON/ZIP importálása", "Import local JSON/ZIP", "Lokale JSON-/ZIP-Datei importieren", "Importă JSON/ZIP local"),
+                        color = palette.textPrimary,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f).padding(vertical = 4.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
                 Text(
-                    tr(uiState.language, "Visszaállítás / Importálás", "Restore / Import", "Wiederherstellen / Importieren", "Restaurare / Importă"),
-                    color = palette.textPrimary,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f).padding(vertical = 4.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    if (uiState.isWorkoutSessionActive) tr(lang, "Az importálás előtt fejezd be az aktív edzést.",
+                        "Finish the active workout before importing.", "Beende das laufende Training vor dem Import.",
+                        "Încheie antrenamentul activ înainte de import.")
+                    else tr(lang, "Korábbi mentések is visszaállíthatók.", "Earlier backups can also be restored.",
+                        "Auch ältere Sicherungen lassen sich wiederherstellen.", "Poți restaura și backup-uri mai vechi."),
+                    color = palette.textSecondary,
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
-            Text(
-                tr(uiState.language, "JSON és ZIP mentések, korábbi verziókból is.",
-                    "JSON and ZIP backups, including earlier versions.",
-                    "JSON- und ZIP-Sicherungen, auch aus früheren Versionen.",
-                    "Backup-uri JSON și ZIP, inclusiv din versiuni anterioare."),
-                color = palette.textSecondary,
-                style = MaterialTheme.typography.bodySmall
-            )
+        }
+        if (status != null) {
+            val color = when {
+                status.failed -> palette.danger
+                status.busy -> palette.primary
+                pickerMessage == null && (!drive || driveBlock == null) &&
+                    (status === localStatus || driveFeedback != null) -> palette.success
+                else -> palette.textSecondary
+            }
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = palette.surfaceElevated,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = TrainPilotCardSpacing.ScreenGutter, vertical = 6.dp)
+                    .testTag("backup_operation_status").semantics { liveRegion = LiveRegionMode.Polite }
+            ) {
+                Text(status.message, color = color, style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.heightIn(max = 120.dp).verticalScroll(rememberScrollState()).padding(10.dp))
+            }
         }
     }
 }
@@ -3583,14 +3574,12 @@ internal fun weightMeasurementsInRange(entries: List<WeightMeasurementEntry>, ra
     return entries.filter { cutoff == null || !it.parsedDate.isBefore(cutoff) }.sortedBy { it.parsedDate }
 }
 
+internal fun recentWeightTrend(entries: List<WeightMeasurementEntry>): List<WeightMeasurementEntry> =
+    entries.sortedByDescending { it.parsedDate }.take(7).asReversed()
+
 /** 2786: the big weekly goals view (opened from the compact block in "Today" or from Home). Real data only. */
 @Composable
-private fun HealthWeeklyGoalsPanel(
-    uiState: TrainPilotUiState,
-    strings: com.example.localization.LocalizedStrings,
-    onToggleHealthSection: (String) -> Unit,
-    onOpenGoalsDialog: () -> Unit
-) {
+private fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
     val palette = LocalTrainPilotPalette.current
   Column(verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)) {
     val today = java.time.LocalDate.now()
@@ -3719,13 +3708,13 @@ private fun WeightLogBody(
         Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
             val latest = newestFirst.firstOrNull()
             if (latest == null) {
-                Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
+                Box(Modifier.fillMaxWidth().heightIn(min = 48.dp), contentAlignment = Alignment.Center) {
                     Text(tr(lang, "Még nincs rögzített testsúlymérés.", "No weight entries recorded yet.", "Noch keine Gewichtsmessung.", "Nicio greutate înregistrată."),
                         style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                 }
-            } else if (chronological.size < 2) {
-                // 2785: a short period shows only its own data; with fewer than two points, say so.
-                val last = "${latest.dateLabel} · ${latest.weightLabel}"
+            } else if (expanded && chronological.size < 2) {
+                val measurement = chronological.singleOrNull() ?: latest
+                val last = "${measurement.dateLabel} · ${measurement.weightLabel}"
                 Box(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("health_weight_range_empty"), contentAlignment = Alignment.Center) {
                     Text(if (chronological.isEmpty()) tr(lang, "Nincs mérés ebben az időszakban · utolsó: $last", "No entries in this period · latest: $last",
                             "Keine Messung in diesem Zeitraum · letzte: $last", "Nicio măsurătoare în această perioadă · ultima: $last")
@@ -3744,12 +3733,17 @@ private fun WeightLogBody(
                             Text(kg(it), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
                         }
                     }
-                    val lineColor = palette.primary
+                    val lineColor = trainPilotChartMarkColor(!expanded, palette.primary, palette.textSecondary)
                     val grid = palette.cardBorder
+                    val selectedLabel = chronological.getOrNull(selectedPoint)?.let { "${it.dateLabel} · ${it.weightLabel}" }
                     val tapModifier = if (expanded) Modifier.testTag("health_weight_chart_canvas")
-                        .trainPilotChartTap(pts.size, { x, w -> com.example.ui.components.chartNearestIndex(x, w, pts.size) }) { selectedPoint = it }
+                        .trainPilotChartTap(pts.size, { x, w -> com.example.ui.components.chartNearestIndex(x, w, pts.size) },
+                            selectedLabel = selectedLabel) { selectedPoint = it }
                     else Modifier
-                    Canvas(Modifier.weight(1f).height(if (expanded) 150.dp else 56.dp).then(tapModifier)) {
+                    Canvas(
+                        Modifier.weight(1f).height(if (expanded) 150.dp else 56.dp)
+                            .then(if (expanded) tapModifier else Modifier.testTag("health_weight_chart_compact_canvas"))
+                    ) {
                         val inset = 6.dp.toPx()
                         val h = size.height - inset * 2
                         val offsets = pts.mapIndexed { idx, w ->
@@ -3769,8 +3763,8 @@ private fun WeightLogBody(
                         if (expanded) {
                             offsets.forEach { drawCircle(lineColor, radius = 3.5.dp.toPx(), center = it) }
                             offsets.getOrNull(selectedPoint)?.let { o ->
-                                drawLine(lineColor.copy(alpha = 0.45f), Offset(o.x, 0f), Offset(o.x, size.height), strokeWidth = 1.5.dp.toPx())
-                                drawCircle(lineColor, radius = 6.5.dp.toPx(), center = o)
+                                drawLine(palette.primary.copy(alpha = 0.55f), Offset(o.x, 0f), Offset(o.x, size.height), strokeWidth = 1.5.dp.toPx())
+                                drawCircle(palette.primary, radius = 6.5.dp.toPx(), center = o)
                                 drawCircle(selectedDotCenter, radius = 3.dp.toPx(), center = o)
                             }
                         } else drawCircle(lineColor, radius = 3.5.dp.toPx(), center = offsets.last())
@@ -3911,12 +3905,21 @@ internal fun calorieDayLabel(date: java.time.LocalDate, total: Int?, active: Int
  * history in Weekly goals (no second copy of that chart here); calories show total vs active per day;
  * pulse keeps its 7-day averages. Today's own records appear only when there are any.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today: java.time.LocalDate, onOpenWeekly: () -> Unit) {
     val palette = LocalTrainPilotPalette.current
     val lang = uiState.language
     val days = (6 downTo 0).map { today.minusDays(it.toLong()).toString() }
     val weekly = (uiState.weeklyHealthDays + uiState.dailyActivityDays).associateBy { it.dateIso }
+    if (key == "steps") com.example.ui.components.StudioHourlyStepsChart(
+        day = today,
+        provider = if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG
+            else com.repforge.app.HealthJournalStore.HC,
+        origin = weekly[today.toString()]?.stepOriginPackage.orEmpty(),
+        revision = uiState.healthRefreshRevision,
+        language = lang
+    )
     if (key == "steps" || key == "workout") {
         Surface(shape = RoundedCornerShape(10.dp), color = palette.surfaceCard,
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
@@ -3937,40 +3940,75 @@ private fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today:
                 style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
             val max = days.indices.maxOf { (totals[it] ?: actives[it] ?: 0) }.coerceAtLeast(1).toFloat()
             var sel by remember(key, today) { androidx.compose.runtime.mutableIntStateOf(days.lastIndex) }
-            val resting = palette.textSecondary.copy(alpha = 0.35f)
-            Row(Modifier.fillMaxWidth().height(72.dp).testTag("health_today_tile_week_calories"), horizontalArrangement = Arrangement.spacedBy(5.dp),
-                verticalAlignment = Alignment.Bottom) {
+            val neutral = trainPilotChartMarkColor(false, palette.primary, palette.textSecondary)
+            val resting = neutral.copy(alpha = 0.36f)
+            val unsplit = neutral.copy(alpha = 0.55f)
+            val langCode = lang.code.lowercase()
+            val shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+            Row(
+                Modifier.fillMaxWidth().height(72.dp).testTag("health_today_tile_week_calories"),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
                 days.indices.forEach { i ->
-                    val on = i == sel
+                    val selected = i == sel
                     val total = totals[i]
                     val active = actives[i]
-                    Box(Modifier.weight(1f).fillMaxHeight().trainPilotClickable(RoundedCornerShape(6.dp)) { sel = i }
-                        .testTag("health_today_tile_week_calories_$i"), contentAlignment = Alignment.BottomCenter) {
-                        val top = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
-                        val activeColor = if (on) palette.primary else palette.primary.copy(alpha = 0.55f)
-                        when {
-                            total != null -> Column(Modifier.fillMaxWidth().fillMaxHeight((total / max).coerceIn(0.05f, 1f))) {
-                                // Resting part above, active part at the bottom (both inside the measured total).
-                                val activeShare = ((active ?: 0).toFloat() / total).coerceIn(0f, 1f)
-                                if (activeShare < 1f) Box(Modifier.fillMaxWidth().weight(1f - activeShare)
-                                    .background(if (on) resting.copy(alpha = 0.6f) else resting, top))
-                                if (activeShare > 0f) Box(Modifier.fillMaxWidth().weight(activeShare).background(activeColor,
-                                    if (activeShare >= 1f) top else RoundedCornerShape(0.dp)))
+                    val color = trainPilotChartMarkColor(selected, palette.primary, palette.textSecondary)
+                    val label = calorieDayLabel(java.time.LocalDate.parse(days[i]), total, active, langCode)
+                    Box(
+                        Modifier.weight(1f).fillMaxHeight()
+                            .trainPilotClickable(RoundedCornerShape(6.dp)) { sel = i }
+                            .trainPilotChartSelection(selected, label)
+                            .testTag("health_today_tile_week_calories_$i"),
+                        contentAlignment = Alignment.BottomCenter
+                    ) {
+                        if (total != null && active != null && total > 0 && active in 0..total) {
+                            Column(Modifier.fillMaxWidth().fillMaxHeight((total / max).coerceIn(0.05f, 1f)).clip(shape)) {
+                                val activeShare = active.toFloat() / total
+                                if (activeShare < 1f) Box(
+                                    Modifier.fillMaxWidth().weight(1f - activeShare)
+                                        .background(if (selected) color.copy(alpha = 0.42f) else resting)
+                                )
+                                if (activeShare > 0f) Box(Modifier.fillMaxWidth().weight(activeShare).background(color))
                             }
-                            active != null -> Box(Modifier.fillMaxWidth().fillMaxHeight((active / max).coerceIn(0.05f, 1f)).background(activeColor, top))
-                            else -> Box(Modifier.fillMaxWidth().height(2.dp).background(if (on) palette.primary else palette.cardBorder))
+                        } else if (total != null) {
+                            Box(Modifier.fillMaxWidth().fillMaxHeight((total / max).coerceIn(0.05f, 1f))
+                                .background(if (selected) color.copy(alpha = 0.65f) else unsplit, shape))
+                        } else if (active != null) {
+                            Box(Modifier.fillMaxWidth().fillMaxHeight((active / max).coerceIn(0.05f, 1f)).background(color, shape))
+                        } else {
+                            Box(Modifier.fillMaxWidth().height(2.dp).background(color))
                         }
                     }
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(9.dp).background(palette.primary, RoundedCornerShape(2.dp)))
-                Text(tr(lang, "aktív (mozgás)", "active (movement)", "aktiv (Bewegung)", "activ (mișcare)"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
-                Box(Modifier.size(9.dp).background(resting, RoundedCornerShape(2.dp)))
-                Text(tr(lang, "nyugalmi", "resting", "Ruhe", "repaus"), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                CalorieChartLegend(neutral, tr(lang, "aktív (mozgás)", "active (movement)", "aktiv (Bewegung)", "activ (mișcare)"))
+                CalorieChartLegend(resting, tr(lang, "nyugalmi", "resting", "Ruhe", "repaus"))
+                if (days.indices.any { i ->
+                        val total = totals[i]
+                        total != null && (total <= 0 || actives[i]?.let { it in 0..total } != true)
+                    }) {
+                    CalorieChartLegend(unsplit, tr(lang, "teljes (bontás nélkül)", "total (no breakdown)",
+                        "gesamt (ohne Aufteilung)", "total (fără defalcare)"))
+                }
             }
-            com.example.ui.components.TrainPilotChartInfoLine(calorieDayLabel(java.time.LocalDate.parse(days[sel]), totals[sel], actives[sel], lang.name.lowercase()),
-                Modifier.testTag("health_today_tile_week_info_calories"))
+            val summaryShape = RoundedCornerShape(10.dp)
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                shape = summaryShape,
+                color = palette.primary.copy(alpha = 0.12f),
+                border = TrainPilotFrames.control(palette.primary, selected = true)
+            ) {
+                Text(
+                    text = calorieDayLabel(java.time.LocalDate.parse(days[sel]), totals[sel], actives[sel], langCode),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp).testTag("health_today_tile_week_info_calories"),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = palette.textPrimary
+                )
+            }
         }
     } else if (key == "pulse") {
         val values = days.map { d -> weekly[d]?.pulse?.averageBpm }
@@ -3997,4 +4035,13 @@ private fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today:
     com.repforge.app.ui.health.HealthRecordDayDetails(today, provider, "", type, lang.name.lowercase(), g,
         "${uiState.healthRefreshRevision}", visible = true,
         title = tr(lang, "Mai rekordok", "Today's records", "Heutige Einträge", "Înregistrările de azi"), hideWhenEmpty = true)
+}
+
+
+@Composable
+private fun CalorieChartLegend(color: Color, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Box(Modifier.size(9.dp).background(color, RoundedCornerShape(2.dp)))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = LocalTrainPilotPalette.current.textSecondary)
+    }
 }

@@ -13,11 +13,31 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class NavigationOriginRegressionTest {
+    @Test fun healthPanelsAreExclusiveAndGoalsOpenOnlyOnAnExplicitEntry() {
+        val model = TrainPilotViewModel()
+        model.openHealthAndExpand(weeklyGoals = true)
+        assertTrue(model.uiState.value.expandedHealthWeeklyGoals)
+        model.toggleHealthSection("journal")
+        assertTrue(model.uiState.value.expandedHealthJournal)
+        model.openHealthAndExpand(connect = true)
+        assertTrue(model.uiState.value.expandedHealthConnect)
+        assertFalse(model.uiState.value.expandedHealthJournal)
+        model.toggleHealthSection("journal")
+        assertTrue(model.uiState.value.expandedHealthJournal)
+        assertFalse(model.uiState.value.expandedHealthConnect)
+        model.selectTab(MainTab.HOME)
+        model.selectTab(MainTab.HEALTH)
+        assertFalse(model.uiState.value.expandedHealthWeeklyGoals)
+        assertFalse(model.uiState.value.expandedHealthJournal)
+        assertFalse(model.uiState.value.expandedHealthConnect)
+    }
+
     @Test fun logDetailsRestoreTheOriginSectionAndNestedWorkoutPhotoAndMapFocus() {
         for (section in 0..2) {
             val model = TrainPilotViewModel()
-            model.selectTab(MainTab.PROGRESS)
-            model.selectProgressMainSection(section)
+            val originTab = if (section == 1) MainTab.LOG else MainTab.PROGRESS
+            model.selectTab(originTab)
+            if (section != 1) model.selectProgressMainSection(section)
             model.selectStatsSubTab(1)
             model.selectExpandedStatsCard(2)
             model.updateLogSearch("preserved search")
@@ -47,15 +67,28 @@ class NavigationOriginRegressionTest {
             assertEquals(2, model.uiState.value.logDetailTabIndex)
             model.navigateBack()
             val returned = model.uiState.value
-            assertEquals(MainTab.PROGRESS, returned.currentTab)
+            assertEquals(originTab, returned.currentTab)
             assertEquals(SubScreen.NONE, returned.currentSubScreen)
-            assertEquals(section, returned.progressMainSection)
+            assertEquals(origin.progressMainSection, returned.progressMainSection)
             assertEquals(origin.statsSubTab, returned.statsSubTab)
             assertEquals(origin.expandedStatsCardIndex, returned.expandedStatsCardIndex)
             assertEquals(origin.logSearchQuery, returned.logSearchQuery)
             assertEquals(origin.backStack, returned.backStack)
             assertEquals(origin.activeSetsByExerciseId, returned.activeSetsByExerciseId)
         }
+    }
+
+    @Test fun journalMapUsesTheSelectedWorkoutAndReturnsToTheLog() {
+        val model = TrainPilotViewModel()
+        model.selectTab(MainTab.LOG)
+        model.updateLogSearch("walking")
+        model.openLoggedWorkoutRouteMap("gps-workout")
+        assertEquals("gps-workout", model.uiState.value.selectedLogWorkoutId)
+        assertEquals(SubScreen.LOG_ROUTE_MAP, model.uiState.value.currentSubScreen)
+        assertTrue(model.navigateBack())
+        assertEquals(MainTab.LOG, model.uiState.value.currentTab)
+        assertEquals(SubScreen.NONE, model.uiState.value.currentSubScreen)
+        assertEquals("walking", model.uiState.value.logSearchQuery)
     }
 
     @Test fun exerciseDetailsAndSettingsPopOneRealOriginWithoutAddingHistory() {

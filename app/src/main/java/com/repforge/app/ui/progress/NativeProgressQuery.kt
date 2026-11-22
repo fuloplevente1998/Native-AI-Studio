@@ -19,16 +19,39 @@ internal object NativeProgressQuery {
     private const val PAGE = 256
     private val groups = listOf("chest", "back", "shoulders", "arms", "core", "legs")
 
+    fun muscleGroup(key: String): String = when (key.lowercase()) {
+        "biceps", "triceps", "forearms" -> "arms"
+        "cardio", "quads", "hamstrings", "glutes", "calves" -> "legs"
+        "abs", "abdominals" -> "core"
+        "lats" -> "back"
+        else -> key.lowercase()
+    }
+
+    // The first explicit target is used only to refine a broad catalog key. Each saved
+    // set still belongs to just one row; supporting muscles are not added again.
+    fun detailedMuscleGroup(key: String, catalogTarget: String): String {
+        val normalized = key.trim().lowercase(java.util.Locale.ROOT)
+        val primaryTarget = catalogTarget.substringBefore('/').trim().lowercase(java.util.Locale.ROOT)
+        return when (normalized) {
+            "biceps", "triceps", "forearms", "glutes", "quads", "hamstrings", "calves" -> normalized
+            "legs", "arms" -> when (primaryTarget) {
+                "bicepsz", "biceps" -> if (normalized == "arms") "biceps" else normalized
+                "tricepsz", "triceps" -> if (normalized == "arms") "triceps" else normalized
+                "alkar", "forearms" -> if (normalized == "arms") "forearms" else normalized
+                "far", "farizom", "glutes" -> if (normalized == "legs") "glutes" else normalized
+                "combhajlító", "hamstrings" -> if (normalized == "legs") "hamstrings" else normalized
+                "vádli", "calves" -> if (normalized == "legs") "calves" else normalized
+                "négyfejű combizom", "quads", "quadriceps" -> if (normalized == "legs") "quads" else normalized
+                else -> normalized
+            }
+            else -> muscleGroup(normalized)
+        }
+    }
+
     fun muscle(rows: List<ProgressMuscleSummary>, language: String): List<MuscleLoadUiModel> {
         val counts = groups.associateWith { 0 }.toMutableMap()
         for (row in rows) {
-            val key = when (row.muscleKey.lowercase()) {
-                "biceps", "triceps", "forearms" -> "arms"
-                "cardio", "quads", "hamstrings", "glutes", "calves" -> "legs"
-                "abs", "abdominals" -> "core"
-                "lats" -> "back"
-                else -> row.muscleKey.lowercase()
-            }
+            val key = muscleGroup(row.muscleKey)
             if (key in counts && row.setsCount > 0)
                 counts[key] = (counts.getValue(key).toLong() + row.setsCount).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         }
@@ -36,7 +59,7 @@ internal object NativeProgressQuery {
             "en" -> listOf("Chest", "Back", "Shoulders", "Arms", "Core", "Legs")
             "de" -> listOf("Brust", "Rücken", "Schultern", "Arme", "Rumpf", "Beine")
             "ro" -> listOf("Piept", "Spate", "Umeri", "Brațe", "Trunchi", "Picioare")
-            else -> listOf("Mellizom", "Hátizom", "Vállizom", "Karizmok", "Törzs / Has", "Lábizmok")
+            else -> listOf("Mell", "Hát", "Váll", "Kar", "Törzs", "Láb")
         }
         val highest = max(1, counts.values.maxOrNull() ?: 0)
         return groups.mapIndexed { index, key ->

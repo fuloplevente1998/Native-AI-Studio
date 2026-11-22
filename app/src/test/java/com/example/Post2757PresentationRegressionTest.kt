@@ -40,30 +40,44 @@ class Post2757PresentationRegressionTest {
         // 2772: one sheet with Strength / Timed / Outdoor tabs; no separate picker or GPS page.
         val strength = ExerciseItem("one", "Első gyakorlat")
         val timed = ExerciseItem("two", "Plank", isTimed = true)
+        val moreTimed = (1..16).map { ExerciseItem("timed_$it", "Időzített $it", isTimed = true) }
         var tab by mutableIntStateOf(0)
         var started: ExerciseItem? = null
         var outdoor: String? = null
         var dismissed = 0
-        val state = TrainPilotUiState(exercises = listOf(strength, timed))
+        val state = TrainPilotUiState(exercises = listOf(strength, timed) + moreTimed)
         compose.setContent { TrainPilotTheme {
             QuickWorkoutHubSheet(AppLanguage.HU, tab, { tab = it }, { dismissed++ }, { outdoor = it },
                 strengthContent = { ExerciseLibraryScreen(state, {}, {}, {}, {}, {}, onStartExerciseNow = { started = it }, embedded = true) },
                 timedContent = { ExerciseLibraryScreen(state, {}, {}, {}, {}, {}, onStartExerciseNow = { started = it }, embedded = true, timedOnly = true) })
         } }
+        fun assertBodyReachesSheetBottom() {
+            val sheet = compose.onNodeWithTag("quick_workout_sheet_full").getUnclippedBoundsInRoot()
+            val body = compose.onNodeWithTag("quick_workout_body").getUnclippedBoundsInRoot()
+            assertEquals("Scrollable body must use the entire space below the tabs", sheet.bottom, body.bottom)
+        }
+
         compose.onNodeWithTag("quick_workout_sheet").assertExists()
+        assertBodyReachesSheetBottom()
         compose.onNodeWithText("Első gyakorlat").assertExists()
         compose.onNodeWithText("Plank").assertExists()
         compose.onNodeWithTag("quick_tab_1").performClick()
         compose.runOnIdle { assertEquals(1, tab) }
+        assertBodyReachesSheetBottom()
         // Timed tab lists only time-based exercises.
         compose.onNodeWithText("Első gyakorlat").assertDoesNotExist()
         compose.onNodeWithText("Plank").assertExists()
+        val last = moreTimed.last()
+        compose.onNodeWithTag("exercise_library_start_now_${last.id}")
+            .performScrollTo().assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals(last, started) }
         compose.onNodeWithTag("quick_tab_2").performClick()
+        assertBodyReachesSheetBottom()
         compose.onNodeWithTag("quick_outdoor_kerékpározás").performClick()
         compose.onNodeWithTag("quick_outdoor_start").performScrollTo().performClick()
         compose.runOnIdle { assertEquals("Kerékpározás", outdoor) }
         compose.onNodeWithTag("quick_workout_close").performClick()
-        compose.runOnIdle { assertEquals(1, dismissed); assertNull(started) }
+        compose.runOnIdle { assertEquals(1, dismissed); assertEquals(last, started) }
     }
 
     @Test fun todayTilesShareFramePreserveMissingValuesAndDestinations() {
@@ -122,8 +136,8 @@ class Post2757PresentationRegressionTest {
             }
         }
         val labels = mapOf(
-            AppLanguage.HU to listOf("Mentés (JSON)", "Visszaállítás / Importálás"),
-            AppLanguage.DE to listOf("Sichern (JSON)", "Wiederherstellen / Importieren")
+            AppLanguage.HU to listOf("Mentés (JSON)", "Helyi JSON/ZIP importálása"),
+            AppLanguage.DE to listOf("Sichern (JSON)", "Lokale JSON-/ZIP-Datei importieren")
         )
         labels.forEach { (lang, texts) ->
             compose.runOnIdle { language = lang }

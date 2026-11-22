@@ -310,11 +310,10 @@ fun ActiveStrengthWorkoutScreen(
     val currentExerciseName = currentExercise?.localizedName(lang) ?: tr(lang, "Goblet guggolás", "Goblet Squat", "Goblet Squat", "Genuflexiune Goblet")
     val currentExerciseId = currentExercise?.id ?: "goblet_squat"
     val secWord = tr(lang, "mp", "s", "Sek.", "sec")
-    val currentExerciseSubtitle = if (currentExercise != null) {
-        "${currentExercise.localizedPrimaryMuscles(lang)} • ${currentExercise.localizedEquipment(lang)} • ${currentExercise.defaultSets}×${currentExercise.defaultReps}" // 2775: rest is shown by the bottom bar
-    } else {
-        tr(lang, "Láb • Kézisúlyzó • 3×8–20", "Legs • Dumbbell • 3×8–20", "Beine • Kurzhantel • 3×8–20", "Picioare • Ganteră • 3×8–20")
-    }
+    val currentExerciseSubtitle = currentExercise?.let {
+        listOf(it.localizedPrimaryMuscles(lang), it.localizedEquipment(lang))
+            .filter(String::isNotBlank).joinToString(" • ")
+    }.orEmpty()
     val coachOwner = com.example.ui.components.rememberStudioWorkoutCoachOwner()
     // 2775: previous saved values per set; empty without history (nothing shown, nothing invented).
     val lastSets = remember(uiState.loggedWorkouts, currentExercise, uiState.activeWorkoutId) {

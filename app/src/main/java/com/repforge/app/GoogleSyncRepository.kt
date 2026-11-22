@@ -1,17 +1,18 @@
 package com.repforge.app
 
+import androidx.activity.result.ActivityResult
 import androidx.room.withTransaction
 import com.repforge.app.ui.settings.NativeGoogleMaintenance
 import android.accounts.Account
 import android.app.Activity
 import android.app.PendingIntent
-import android.content.Intent
 import android.content.Context
 import android.content.SharedPreferences
 import com.google.android.gms.auth.api.identity.AuthorizationRequest
 import com.google.android.gms.auth.api.identity.ClearTokenRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.RevokeAccessRequest
+import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.Scope
 import com.repforge.app.data.db.KeyValueDocumentEntity
 import com.repforge.app.data.db.TrainPilotDatabase
@@ -133,13 +134,7 @@ class GoogleSyncRepository internal constructor(
             Scope("https://www.googleapis.com/auth/userinfo.email"),
             Scope("https://www.googleapis.com/auth/userinfo.profile")
         )
-        if (op.startsWith("drive")) {
-            scopes.add(Scope("https://www.googleapis.com/auth/drive.appdata"))
-        }
-        if (op.startsWith("calendar")) {
-            scopes.add(Scope("https://www.googleapis.com/auth/calendar.app.created"))
-            scopes.add(Scope("https://www.googleapis.com/auth/calendar.calendarlist.readonly"))
-        }
+        scopes.addAll(requiredGoogleCloudScopes(op).map(::Scope))
         return scopes
     }
 
@@ -179,7 +174,7 @@ class GoogleSyncRepository internal constructor(
     internal suspend fun authorizeAndRun(
         activity: Activity,
         action: GoogleSyncAction,
-        resolve: suspend (PendingIntent) -> Intent?,
+        resolve: suspend (PendingIntent) -> ActivityResult,
         recoverEarlier: Boolean = false,
         maintenance: NativeGoogleMaintenance.Request? = null
     ): Result<GoogleSyncCompletion> = withContext(Dispatchers.IO) {
@@ -191,22 +186,36 @@ class GoogleSyncRepository internal constructor(
             val email = prefs().getString("email", "").orEmpty()
             if (action != GoogleSyncAction.CONNECT)
                 NativeGoogleAccountPolicy.requireConnected(prefs().getString("sub", "").orEmpty(), email)
-            val authorization = withContext(Dispatchers.Main) {
-                val builder = AuthorizationRequest.builder().setRequestedScopes(scopesForOperation(maintenance?.kind?.key ?: action.key) +
-                    if (maintenance?.kind == NativeGoogleMaintenance.Kind.REVOKE)
-                        scopesForOperation("drive") + scopesForOperation("calendar") else emptyList())
-                if (email.isNotBlank()) builder.setAccount(Account(email, "com.google"))
-                Identity.getAuthorizationClient(activity).authorize(builder.build()).await()
+            val operation = maintenance?.kind?.key ?: action.key
+            val result = try {
+                val authorization = withContext(Dispatchers.Main) {
+                    val builder = AuthorizationRequest.builder().setRequestedScopes(scopesForOperation(operation) +
+                        if (maintenance?.kind == NativeGoogleMaintenance.Kind.REVOKE)
+                            scopesForOperation("drive") + scopesForOperation("calendar") else emptyList())
+                    if (email.isNotBlank()) builder.setAccount(Account(email, "com.google"))
+                    Identity.getAuthorizationClient(activity).authorize(builder.build()).await()
+                }
+                if (authorization.hasResolution()) {
+                    val pending = authorization.pendingIntent ?: throw IOException(strings.getString(R.string.native_google_launch_failed))
+                    _uiState.update { it.copy(stageMessage = strings.getString(R.string.native_google_waiting)) }
+                    val response = resolve(pending)
+                    currentCoroutineContext().ensureActive()
+                    parseGoogleConsentResult(response, strings) { data ->
+                        Identity.getAuthorizationClient(appContext).getAuthorizationResultFromIntent(data)
+                    }
+                } else authorization
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: ApiException) {
+                throw IOException(strings.getString(googleAuthorizationErrorMessage(error.statusCode)))
+            } catch (_: RuntimeException) {
+                throw IOException(strings.getString(R.string.native_google_auth_failed))
             }
-            val result = if (authorization.hasResolution()) {
-                val pending = authorization.pendingIntent ?: throw IOException(strings.getString(R.string.native_google_launch_failed))
-                _uiState.update { it.copy(stageMessage = strings.getString(R.string.native_google_waiting)) }
-                val data = resolve(pending) ?: throw IOException(strings.getString(R.string.native_google_cancelled))
-                currentCoroutineContext().ensureActive()
-                Identity.getAuthorizationClient(appContext).getAuthorizationResultFromIntent(data)
-            } else authorization
             val token = result.accessToken?.takeIf { it.isNotBlank() }
                 ?: throw IOException(strings.getString(R.string.native_google_no_token))
+            if (!hasRequiredGoogleCloudScopes(operation, result.grantedScopes)) {
+                throw IOException(strings.getString(R.string.native_google_missing_scopes))
+            }
             currentCoroutineContext().ensureActive()
             dataTicket.requireCurrent(appContext)
             if (maintenance != null) {
@@ -500,63 +509,14 @@ class GoogleSyncRepository internal constructor(
         }
     }
 
-    private suspend fun ensureCalendarScheduleMaterializedFromStateDoc() {
-        if (database.calendarScheduleDao().getAllEntries().isNotEmpty()) return
-        val doc = database.keyValueDocumentDao().getDocument("native:calendarState") ?: return
-        val events = runCatching { JSONObject(doc.json).optJSONArray("events") }.getOrNull() ?: return
-        if (events.length() == 0) return
-        val defaultMonth = java.time.YearMonth.from(Instant.ofEpochMilli(doc.updatedAt).atZone(java.time.ZoneId.systemDefault()))
-        val rows = mutableListOf<com.repforge.app.data.db.CalendarScheduleEntity>()
-        for (i in 0 until events.length()) {
-            val o = events.optJSONObject(i) ?: continue
-            val id = o.optString("id").takeIf { it.isNotBlank() } ?: continue
-            val dayOfMonth = o.optInt("dayOfMonth", 1).coerceIn(1, defaultMonth.lengthOfMonth())
-            val dateStr = o.optString("dateIso").takeIf { it.isNotBlank() }
-                ?: defaultMonth.atDay(dayOfMonth).toString()
-            val timeLabel = o.optString("timeLabel", "10:00")
-            val durationMin = o.optInt("durationMinutes", 60).coerceAtLeast(15)
-            val parsedDate = runCatching { java.time.LocalDate.parse(dateStr) }.getOrNull() ?: continue
-            val parts = timeLabel.split(":")
-            val hour = parts.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 10
-            val minute = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
-            val startInstant = parsedDate.atTime(hour, minute).atZone(java.time.ZoneId.systemDefault()).toInstant()
-            val endInstant = startInstant.plusSeconds(durationMin * 60L)
-            val rawStatus = o.optString("status", "PLANNED").uppercase(Locale.ROOT)
-            val statusStr = when (rawStatus) {
-                "COMPLETED" -> "completed"
-                "MISSED", "SKIPPED" -> "skipped"
-                else -> "planned"
-            }
-            val titleHu = o.optString("titleHu", "Edzés")
-            val splitBadge = o.optString("splitBadge", "A")
-            rows.add(
-                com.repforge.app.data.db.CalendarScheduleEntity(
-                    id = id,
-                    googleEventId = "",
-                    date = parsedDate.toString(),
-                    startIso = startInstant.toString(),
-                    endIso = endInstant.toString(),
-                    programId = "program_default",
-                    programName = titleHu,
-                    dayId = splitBadge,
-                    dayName = titleHu,
-                    status = statusStr,
-                    updatedAt = doc.updatedAt,
-                    rawJson = o.toString()
-                )
-            )
-        }
-        if (rows.isNotEmpty()) {
-            database.calendarScheduleDao().upsertEntries(rows)
-        }
-    }
-
     private suspend fun syncCalendarCloudInternal(accessToken: String,
         dataTicket: NativeDataReplacement.Continuation = NativeDataReplacement.continuationForCurrentData(appContext)): Int {
         verifyAndFetchProfile(accessToken)
         currentCoroutineContext().ensureActive()
-        dataTicket.requireCurrent(appContext)
-        ensureCalendarScheduleMaterializedFromStateDoc()
+        NativeDataReplacement.mutate(appContext) {
+            dataTicket.requireCurrent(appContext)
+            NativeCalendarBackup.materializeLegacyRows(database)
+        }
         val calendarId = ensureManagedCalendar(accessToken, dataTicket)
         val entries = database.calendarScheduleDao().getAllEntries()
         val base = "https://www.googleapis.com/calendar/v3/calendars/${enc(calendarId)}/events"
@@ -791,10 +751,19 @@ class GoogleSyncRepository internal constructor(
                 preferLocalOnConflict
             )
         )
-        for (key in arrayOf("settings", "exercises", "plan", "programs", "activeProgramId", "plannerSettings", "exerciseFavorites")) {
+        val plannerAndGoalsKeys = setOf("plan", "plannerSettings", NativeCalendarBackup.STUDIO_SETTINGS_KEY,
+            LegacyWebViewMigrator.USER_GOALS_KEY)
+        for (key in listOf("settings", "exercises", "programs", "activeProgramId", "exerciseFavorites") + plannerAndGoalsKeys) {
             var selected = local.opt(key)
             for (remote in remotes) {
                 val x = remote.opt(key) ?: continue
+                if (key in plannerAndGoalsKeys) {
+                    if (remote.isNull(key)) continue
+                    if (selected == null || selected == JSONObject.NULL) {
+                        selected = x
+                        continue
+                    }
+                }
                 if (LegacySyncIdentity18.canonical(selected) == LegacySyncIdentity18.canonical(x)) continue
                 val baseVal = base?.opt(key)
                 if (baseVal != null && LegacySyncIdentity18.canonical(x) == LegacySyncIdentity18.canonical(baseVal)) continue
@@ -805,6 +774,9 @@ class GoogleSyncRepository internal constructor(
                 } else {
                     x
                 }
+            }
+            if (key == LegacyWebViewMigrator.USER_GOALS_KEY && selected is JSONObject) {
+                selected = LegacyWebViewMigrator.overlayGoals(local.optJSONObject(key), selected)
             }
             if (selected != null) out.put(key, selected)
         }
@@ -1103,7 +1075,7 @@ class GoogleSyncRepository internal constructor(
         val out = JSONArray()
         sorted.forEach { out.put(it) }
         // Never let an older Drive snapshot resurrect the fixed 2026-11 calendar incident.
-        return NativeCalendarCleanup202611.cleanScheduledJson(out)
+        return NativeCalendarCleanup202611.cleanScheduledJson(out, preserveCancellations = true)
     }
 
     // =========================================================================

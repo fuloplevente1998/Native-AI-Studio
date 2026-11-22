@@ -80,9 +80,15 @@ class StudioProgressDataRegressionTest {
         seed("today-chest", 0, "chest", 1); seed("week-legs", 3, "legs", 2)
         seed("month-back", 20, "back", 3); seed("quarter-arms", 60, "arms", 4)
         seed("outside", 120, "shoulders", 5)
+        seed("quarter-triceps", 70, "triceps", 3)
         model.bindNativeEnvironment(context, store, db, scope)
-        awaitCondition { model.uiState.value.realMuscleLoads.any { it.id == "arms" && it.setsCount == 4 } }
-        val expected = listOf(setOf("chest"), setOf("chest", "legs"), setOf("chest", "legs", "back"), setOf("chest", "legs", "back", "arms"))
+        awaitCondition { model.uiState.value.realMuscleLoads.any { it.id == "biceps" && it.setsCount == 4 } }
+        val quarter = model.uiState.value.realMuscleLoads.associateBy { it.id }
+        assertEquals(listOf("quarter-arms"), quarter.getValue("biceps").workoutRows.map { it.workoutId })
+        assertEquals(3, quarter.getValue("triceps").setsCount)
+        assertEquals(listOf("quarter-triceps"), quarter.getValue("triceps").workoutRows.map { it.workoutId })
+        assertFalse(quarter.containsKey("arms"))
+        val expected = listOf(setOf("chest"), setOf("chest", "legs"), setOf("chest", "legs", "back"), setOf("chest", "legs", "back", "biceps", "triceps"))
         for (index in 0..3) {
             model.selectProgressRange(index)
             awaitCondition { model.uiState.value.realMuscleLoads.isNotEmpty() }

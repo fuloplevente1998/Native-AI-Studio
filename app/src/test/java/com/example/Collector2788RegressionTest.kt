@@ -11,6 +11,8 @@ import com.example.localization.TrainPilotStrings
 import com.example.model.AppLanguage
 import com.example.model.BodyWeightLogItem
 import com.example.ui.screens.HealthTabScreen
+import com.example.ui.screens.WeightMeasurementEntry
+import com.example.ui.screens.recentWeightTrend
 import com.example.ui.components.StudioPrivatePhotos
 import com.example.ui.screens.calorieDayLabel
 import com.example.ui.screens.todayTileWeekLabel
@@ -71,8 +73,123 @@ class Collector2788RegressionTest {
         compose.onNodeWithTag("health_today_calories").performClick()
         val info = compose.onNodeWithTag("health_today_tile_week_info_calories", useUnmergedTree = true)
         info.assertTextContains("ebből aktív 177", substring = true)
-        compose.onNodeWithTag("health_today_tile_week_calories_5").performClick()
+        val yesterday = compose.onNodeWithTag("health_today_tile_week_calories_5")
+        val todayBar = compose.onNodeWithTag("health_today_tile_week_calories_6")
+        todayBar.assertIsSelected()
+        yesterday.assertIsNotSelected().performClick().assertIsSelected()
+        todayBar.assertIsNotSelected()
         info.assertTextContains("teljes: nincs adat", substring = true)
+    }
+
+    @Test fun allTodayTileCloseButtonsDismissAndTheTilesCanReopen() {
+        compose.setContent { TrainPilotTheme {
+            HealthTabScreen(TrainPilotUiState(), hu, {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
+        } }
+        listOf("sleep", "calories", "pulse", "steps", "workout", "recovery").forEach { key ->
+            val tile = compose.onNodeWithTag("health_today_$key")
+            tile.performClick()
+            val sheet = compose.onNodeWithTag("health_today_tile_sheet")
+            sheet.assertExists()
+            compose.onNodeWithTag("health_today_tile_close").performClick()
+            sheet.assertDoesNotExist()
+        }
+        compose.onNodeWithTag("health_today_sleep").performClick()
+        compose.onNodeWithTag("health_today_tile_sheet").assertExists()
+    }
+
+    @Test fun todayTileHandsOffToTheJournalAndItsProviderSelectionSurvivesReopening() {
+        var state by mutableStateOf(TrainPilotUiState(primaryHealthSourceSamsung = false))
+        compose.setContent { TrainPilotTheme {
+            HealthTabScreen(state, hu,
+                { section -> if (section == "journal") state = state.copy(expandedHealthJournal = !state.expandedHealthJournal) },
+                {}, {}, { _, _ -> }, {}, {}, {}, {})
+        } }
+        val tile = compose.onNodeWithTag("health_today_sleep")
+        val tileSheet = compose.onNodeWithTag("health_today_tile_sheet")
+        val journalSheet = compose.onNodeWithTag("health_journal_sheet")
+        val provider = compose.onNodeWithTag("journal_provider_samsung_health")
+        tile.performClick()
+        compose.onNodeWithTag("health_expanded_action_button").performScrollTo().performClick()
+        tileSheet.assertDoesNotExist()
+        journalSheet.assertExists()
+        provider.assertIsNotSelected().performClick().assertIsSelected()
+        val healthConnect = compose.onNodeWithTag("journal_provider_health_connect")
+        val fixedHeader = compose.onNodeWithTag("health_journal_close").getUnclippedBoundsInRoot()
+        repeat(2) {
+            healthConnect.performClick().assertIsSelected()
+            assertEquals(fixedHeader, compose.onNodeWithTag("health_journal_close").getUnclippedBoundsInRoot())
+            provider.performClick().assertIsSelected()
+            assertEquals(fixedHeader, compose.onNodeWithTag("health_journal_close").getUnclippedBoundsInRoot())
+        }
+
+        compose.onNodeWithTag("health_journal_close").performClick()
+        journalSheet.assertDoesNotExist()
+        tileSheet.assertDoesNotExist()
+        tile.performClick()
+        compose.onNodeWithTag("health_expanded_action_button").performScrollTo().performClick()
+        provider.assertIsSelected()
+    }
+
+    @Test fun measurementSummaryHidesTheTechnicalOriginButKeepsEnergyAndSteps() {
+        val origin = "Health Connect (com.example.provider.internal.long_origin)"
+        compose.setContent { TrainPilotTheme {
+            HealthTabScreen(TrainPilotUiState(
+                dailyHealthDate = today.toString(),
+                dailyHealthAvailableFields = setOf("activeCalories", "totalCalories", "steps"),
+                dailyHealthSourceLabel = origin,
+                activeCaloriesKcal = 177,
+                totalCaloriesKcal = 2180,
+                dailySteps = 6261
+            ), hu, {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
+        } }
+        compose.onNodeWithTag("health_today_calories").performClick()
+        compose.onNodeWithText("Teljes napi energia (nyugalmival): 2180 kcal", substring = true).assertExists()
+        compose.onNodeWithText(origin, substring = true).assertDoesNotExist()
+        compose.onNodeWithTag("health_today_tile_close").performClick()
+        compose.onNodeWithTag("health_today_steps").performClick()
+        compose.onNodeWithText("Becsült táv", substring = true).assertExists()
+        compose.onNodeWithText(origin, substring = true).assertDoesNotExist()
+    }
+
+    @Test fun compactWeightTrendUsesSevenNewestRealMeasurementsInTimeOrder() {
+        val entries = (1..9).map { id ->
+            val day = today.minusDays(80 - id.toLong())
+            WeightMeasurementEntry("$id", "80 kg", 80f, day.format(dot), day)
+        }
+        assertTrue(recentWeightTrend(emptyList()).isEmpty())
+        assertEquals(entries.take(1), recentWeightTrend(entries.take(1)))
+        assertEquals(entries.take(2), recentWeightTrend(entries.take(2).reversed()))
+        assertEquals(entries.takeLast(7), recentWeightTrend(entries.reversed()))
+    }
+
+    @Test fun oldWeightMeasurementsShowInTheCompactChartIndependentlyOfTheExpandedRange() {
+        val days = listOf(today.minusDays(80), today.minusDays(50))
+        var state by mutableStateOf(TrainPilotUiState(
+            selectedWeightRangeIndex = 0,
+            bodyWeightLogs = days.mapIndexed { i, d -> BodyWeightLogItem("w$i", 80f + i, d.toString(), d.format(dot)) }
+        ))
+        compose.setContent { TrainPilotTheme {
+            HealthTabScreen(state, hu,
+                { section -> if (section == "weight") state = state.copy(expandedHealthWeightLog = !state.expandedHealthWeightLog) },
+                { range -> state = state.copy(selectedWeightRangeIndex = range) }, {}, { _, _ -> }, {}, {}, {}, {})
+        } }
+        val list = compose.onNodeWithTag("health_tab_screen")
+        val compact = compose.onNodeWithTag("health_weight_chart_compact_canvas", useUnmergedTree = true)
+        list.performScrollToNode(hasTestTag("health_weight_chart_compact"))
+        compact.assertExists()
+        compose.onNodeWithTag("health_weight_log_header").performClick()
+        compose.onNode(
+            hasAnyAncestor(hasTestTag("health_weight_range_empty")) and
+                hasText("Nincs mérés ebben az időszakban", substring = true),
+            useUnmergedTree = true
+        ).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("health_weight_log_header").performScrollTo().performClick()
+        compact.assertExists()
+        compose.runOnIdle { state = state.copy(bodyWeightLogs = state.bodyWeightLogs.takeLast(1)) }
+        compact.assertExists()
+        compose.runOnIdle { state = state.copy(bodyWeightLogs = emptyList(), currentBodyWeightKg = 95f) }
+        compact.assertDoesNotExist()
+        compose.onNodeWithText("Még nincs rögzített testsúlymérés.").assertExists()
     }
 
     @Test fun stepsSheetIsAboutTodayAndLinksToTheWeeklyHistory() {

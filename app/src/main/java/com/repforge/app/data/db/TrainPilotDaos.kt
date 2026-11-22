@@ -320,6 +320,22 @@ interface WorkoutHistoryDao {
     """)
     suspend fun getProgressMuscleSummary(fromEpoch: Long, toEpoch: Long): List<ProgressMuscleSummary>
 
+    @Query("""
+        SELECT COALESCE(l.primaryMuscle, 'full') AS muscleKey, w.id AS workoutId, w.startedEpochMs, s.exerciseId,
+            COALESCE(NULLIF(CASE :language WHEN 'en' THEN l.nameEn WHEN 'de' THEN l.nameDe
+                WHEN 'ro' THEN l.nameRo ELSE l.nameHu END, ''), NULLIF(l.nameHu, ''), s.exerciseId) AS exerciseName, COUNT(*) AS setsCount
+        FROM workout_history_sets s
+        JOIN workout_history w ON w.id = s.workoutHistoryId
+        LEFT JOIN exercise_library l ON l.id = s.exerciseId
+        WHERE s.done = 1 AND w.startedEpochMs BETWEEN :fromEpoch AND :toEpoch
+          AND w.finishedEpochMs > w.startedEpochMs
+          AND NOT EXISTS (SELECT 1 FROM history_tombstones t
+            WHERE t.primaryId IN (w.id, w.syncId, w.workoutKey) OR t.workoutKey = w.workoutKey)
+        GROUP BY COALESCE(l.primaryMuscle, 'full'), w.id, s.exerciseId
+        ORDER BY w.startedEpochMs DESC, w.id, exerciseName
+    """)
+    suspend fun getProgressMuscleWorkoutRows(fromEpoch: Long, toEpoch: Long, language: String): List<ProgressMuscleWorkoutRow>
+
     /** Completed sets of one saved workout, including legacy aliases; no global period filter. */
     @Query("""
         SELECT COALESCE(l.primaryMuscle, 'full') AS muscleKey, COUNT(*) AS setsCount

@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -86,7 +87,8 @@ data class MuscleLoadItem(
     val levelLabelHu: String,
     val topExercisesHu: List<Pair<String, String>>, // ExerciseName to sets/load
     val exerciseIdToOpen: String,
-    val setsCount: Int = 0
+    val setsCount: Int = 0,
+    val workoutRows: List<com.repforge.app.data.db.ProgressMuscleWorkoutRow> = emptyList()
 ) {
     fun localizedName(lang: AppLanguage): String = when (id.lowercase()) {
         "chest" -> when (lang) {
@@ -125,6 +127,8 @@ data class MuscleLoadItem(
             AppLanguage.DE -> "Rumpf"
             AppLanguage.RO -> "Trunchi"
         }
+        "quads", "hamstrings", "glutes", "calves", "biceps", "triceps", "forearms" ->
+            if (lang == AppLanguage.HU) nameHu else com.example.model.translateSingleMuscleLabel(id, lang)
         else -> com.example.model.translateSingleMuscleLabel(nameHu, lang)
     }
 
@@ -183,7 +187,7 @@ fun AnatomicalMuscleHeatmapCard(
     realMuscleLoads: List<MuscleLoadItem> = emptyList(),
     onPeriodSelected: ((Int) -> Unit)? = null,
     periodDays: Int? = 90,
-    onOpenExerciseDetail: ((String) -> Unit)? = null
+    onOpenWorkout: ((String) -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
@@ -241,16 +245,35 @@ fun AnatomicalMuscleHeatmapCard(
         }
     }
 
-    var selectedMuscleId by remember(highlightedMuscleId) {
+    var selectedMuscleId by androidx.compose.runtime.saveable.rememberSaveable(highlightedMuscleId) {
         mutableStateOf(highlightedMuscleId ?: "all")
     }
 
     val selectedMuscleObj = muscleLoads.find { it.id == selectedMuscleId }
+    var showWorkoutRows by remember(selectedMuscleId, periodDays) { mutableStateOf(false) }
     var showExplanation by remember { mutableStateOf(false) }
 
-    val smallHeatColor = Color(0xFFE5B842)   // Yellow-Gold (Kisebb)
-    val mediumHeatColor = Color(0xFFE68A2E)  // Warm Orange (Közepes)
-    val highHeatColor = Color(0xFFE25555)    // Coral Red (Nagyobb)
+    val smallHeatColor = studioMuscleLoadColor(0f)   // Yellow-Gold (Kisebb)
+    val mediumHeatColor = studioMuscleLoadColor(0.4f)  // Warm Orange (Közepes)
+    val highHeatColor = studioMuscleLoadColor(0.7f)    // Coral Red (Nagyobb)
+    val legendSmall = when (lang) {
+        AppLanguage.HU -> "Kisebb"
+        AppLanguage.EN -> "Lower"
+        AppLanguage.DE -> "Geringer"
+        AppLanguage.RO -> "Mică"
+    }
+    val legendMedium = when (lang) {
+        AppLanguage.HU -> "Közepes"
+        AppLanguage.EN -> "Moderate"
+        AppLanguage.DE -> "Mittel"
+        AppLanguage.RO -> "Medie"
+    }
+    val legendHigh = when (lang) {
+        AppLanguage.HU -> "Nagyobb"
+        AppLanguage.EN -> "Higher"
+        AppLanguage.DE -> "Höher"
+        AppLanguage.RO -> "Mare"
+    }
 
     Surface(
         shape = RoundedCornerShape(20.dp),
@@ -316,61 +339,51 @@ fun AnatomicalMuscleHeatmapCard(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 // Left half: Dual Front & Back Anatomical Muscular Figures
-                val baseSilhouette = Color(0xFF434A56)
-                val outlineCol = Color(0xFF9EA7B8).copy(alpha = 0.55f)
-
-                fun colorForMuscle(id: String, defaultHeat: Color): Color {
-                    return if (selectedMuscleId == "all") {
-                        defaultHeat
-                    } else if (selectedMuscleId == id) {
-                        highHeatColor
-                    } else {
-                        baseSilhouette.copy(alpha = 0.55f)
-                    }
-                }
-
                 Box(
                     modifier = Modifier
-                        .weight(0.42f)
+                        .weight(0.46f)
                         .height(114.dp)
                         .clip(RoundedCornerShape(10.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    val nativeLoads = remember(muscleLoads, lang) {
-                        muscleLoads.map {
-                            com.repforge.app.ui.progress.MuscleLoadUiModel(
-                                muscleKey = it.id,
-                                label = it.localizedName(lang),
-                                setsCount = it.setsCount,
-                                loadPercentage = it.ratio
-                            )
-                        }
+                    val nativeLoads = remember(muscleLoads, lang, selectedMuscleId) {
+                        muscleLoads.groupBy { com.repforge.app.ui.progress.NativeProgressQuery.muscleGroup(it.id) }
+                            .map { (region, items) ->
+                                val shown = items.firstOrNull { it.id == selectedMuscleId } ?: items.maxBy { it.ratio }
+                                com.repforge.app.ui.progress.MuscleLoadUiModel(region, shown.localizedName(lang),
+                                    shown.setsCount, shown.ratio)
+                            }
                     }
                     com.repforge.app.ui.progress.NativeMuscleLoadVisual(
                         loads = nativeLoads,
                         language = lang.code.lowercase(),
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
+                        highlight = com.repforge.app.ui.progress.NativeProgressQuery.muscleGroup(selectedMuscleId),
+                        loadColor = ::studioMuscleLoadColor
                     )
                 }
 
                 // Right half: 6 Compact Muscle Progress Bars (Mell, Hát, Váll, Láb, Kar, Core)
                 Column(
-                    modifier = Modifier.weight(0.58f),
+                    modifier = Modifier.weight(0.54f),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     muscleLoads.forEach { m ->
                         val isSel = selectedMuscleId == m.id
-                        val barColor = when {
-                            m.percentage >= 70 -> highHeatColor
-                            m.percentage >= 40 -> mediumHeatColor
-                            else -> smallHeatColor
+                        val (levelColor, level) = when {
+                            m.percentage >= 70 -> highHeatColor to legendHigh
+                            m.percentage >= 40 -> mediumHeatColor to legendMedium
+                            else -> smallHeatColor to legendSmall
                         }
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .background(if (isSel) palette.primary.copy(alpha = 0.13f) else Color.Transparent, RoundedCornerShape(6.dp))
                                 .trainPilotClickable(RoundedCornerShape(6.dp)) {
                                     selectedMuscleId = if (selectedMuscleId == m.id) "all" else m.id
                                 }
+                                .trainPilotChartSelection(isSel, "${m.localizedName(lang)} · ${m.percentage}% · $level")
                                 .padding(vertical = 1.dp)
                                 .testTag("muscle_chip_${m.id}"),
                             verticalAlignment = Alignment.CenterVertically,
@@ -397,9 +410,10 @@ fun AnatomicalMuscleHeatmapCard(
                                         .fillMaxWidth(m.ratio)
                                         .height(8.dp)
                                         .clip(RoundedCornerShape(4.dp))
-                                        .background(barColor)
+                                        .background(levelColor)
                                 )
                             }
+                            Box(Modifier.size(5.dp).background(levelColor, CircleShape))
                             Text(
                                 text = "${m.percentage}%",
                                 style = MaterialTheme.typography.labelSmall,
@@ -414,25 +428,6 @@ fun AnatomicalMuscleHeatmapCard(
             }
 
             Spacer(modifier = Modifier.height(2.dp))
-
-            val legendSmall = when (lang) {
-                AppLanguage.HU -> "Kisebb"
-                AppLanguage.EN -> "Lower"
-                AppLanguage.DE -> "Geringer"
-                AppLanguage.RO -> "Mică"
-            }
-            val legendMedium = when (lang) {
-                AppLanguage.HU -> "Közepes"
-                AppLanguage.EN -> "Moderate"
-                AppLanguage.DE -> "Mittel"
-                AppLanguage.RO -> "Medie"
-            }
-            val legendHigh = when (lang) {
-                AppLanguage.HU -> "Nagyobb"
-                AppLanguage.EN -> "Higher"
-                AppLanguage.DE -> "Höher"
-                AppLanguage.RO -> "Mare"
-            }
 
             // Legend Row: 🟡 Kisebb   🟠 Közepes   🔴 Nagyobb
             Row(
@@ -475,12 +470,11 @@ fun AnatomicalMuscleHeatmapCard(
 
             // Expandable Muscle Exercise Breakdown when user taps any muscle bar or body part
             if (selectedMuscleObj != null) {
-                Spacer(modifier = Modifier.height(10.dp))
                 val openExLabel = when (lang) {
-                    AppLanguage.HU -> "Gyakorlat >"
-                    AppLanguage.EN -> "Exercise >"
-                    AppLanguage.DE -> "Übung >"
-                    AppLanguage.RO -> "Exercițiu >"
+                    AppLanguage.HU -> "Gyakorlatok"
+                    AppLanguage.EN -> "Exercises"
+                    AppLanguage.DE -> "Übungen"
+                    AppLanguage.RO -> "Exerciții"
                 }
                 val closeLabel = when (lang) {
                     AppLanguage.HU -> "Bezárás ✕"
@@ -493,33 +487,35 @@ fun AnatomicalMuscleHeatmapCard(
                     color = palette.surfaceElevated,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .testTag("muscle_selected_summary")
                         .trainPilotBorder(1.dp, palette.primary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
                         .trainPilotClickable(RoundedCornerShape(14.dp)) { selectedMuscleId = "all" }
                 ) {
                     Column(
-                        modifier = Modifier.padding(10.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = "${selectedMuscleObj.localizedName(lang)} • ${selectedMuscleObj.localizedSetsText(lang)} (${selectedMuscleObj.percentage}%)",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = palette.primary
+                                color = palette.primary,
+                                modifier = Modifier.weight(1f)
                             )
-                            if (onOpenExerciseDetail != null) {
+                            if (onOpenWorkout != null && selectedMuscleObj.workoutRows.any { it.workoutId.isNotBlank() }) {
                                 Text(
                                     text = openExLabel,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = palette.primary,
-                                    modifier = Modifier.trainPilotClickable(RoundedCornerShape(8.dp)) {
-                                        onOpenExerciseDetail(selectedMuscleObj.exerciseIdToOpen)
-                                    }
+                                    modifier = Modifier.heightIn(min = 48.dp).wrapContentHeight()
+                                        .testTag("muscle_open_workouts")
+                                        .trainPilotClickable(RoundedCornerShape(8.dp)) { showWorkoutRows = true }
                                 )
                             } else {
                                 Text(
@@ -529,7 +525,7 @@ fun AnatomicalMuscleHeatmapCard(
                                 )
                             }
                         }
-                        HorizontalDivider(color = palette.cardBorder)
+                        if (selectedMuscleObj.topExercisesHu.isNotEmpty()) HorizontalDivider(color = palette.cardBorder)
                         selectedMuscleObj.topExercisesHu.forEach { (exName, exLoad) ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -552,6 +548,56 @@ fun AnatomicalMuscleHeatmapCard(
             }
         }
     }
+    if (showWorkoutRows && selectedMuscleObj != null && onOpenWorkout != null) {
+        TrainPilotScreenSheet(onDismiss = { showWorkoutRows = false },
+            testTag = "muscle_workouts_sheet", fillHeight = true) {
+            Column(Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("${selectedMuscleObj.localizedName(lang)} · ${periodOptions[selectedPeriodIdx]}",
+                        Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                    TrainPilotRedCloseButton(onClick = { showWorkoutRows = false })
+                }
+                androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f)) {
+                    val rows = selectedMuscleObj.workoutRows.filter { it.workoutId.isNotBlank() }
+                    items(rows.size) { index ->
+                        val entry = rows[index]
+                        val date = java.time.Instant.ofEpochMilli(entry.startedEpochMs)
+                            .atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+                        val group = when (entry.muscleKey.lowercase()) {
+                            "biceps" -> if (lang == AppLanguage.HU) "Bicepsz" else "Biceps"
+                            "triceps" -> if (lang == AppLanguage.HU) "Tricepsz" else "Triceps"
+                            "glutes" -> when (lang) {
+                                AppLanguage.HU -> "Far"
+                                AppLanguage.EN -> "Glutes"
+                                AppLanguage.DE -> "Gesäß"
+                                AppLanguage.RO -> "Fesieri"
+                            }
+                            else -> null
+                        }
+                        Column(Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                            .testTag("muscle_workout_${entry.workoutId}")
+                            .trainPilotClickable(RoundedCornerShape(8.dp)) {
+                                showWorkoutRows = false
+                                onOpenWorkout(entry.workoutId)
+                            }.padding(8.dp)) {
+                            Text(entry.exerciseName, style = MaterialTheme.typography.bodyLarge)
+                            Text(listOfNotNull(chartDateLabel(date, lang.code),
+                                selectedMuscleObj.copy(setsCount = entry.setsCount, setsText = "").localizedSetsText(lang), group)
+                                .joinToString(" · "), color = palette.textSecondary,
+                                style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+internal fun studioMuscleLoadColor(ratio: Float): Color = when {
+    ratio >= 0.7f -> Color(0xFFE25555)
+    ratio >= 0.4f -> Color(0xFFE68A2E)
+    else -> Color(0xFFE5B842)
 }
 
 @Composable

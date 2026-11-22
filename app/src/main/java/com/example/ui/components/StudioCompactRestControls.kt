@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.layout.*
+import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -60,11 +61,16 @@ internal fun StudioCompactRestControls(
                 verticalAlignment = Alignment.CenterVertically) {
                 @Composable fun action(tag: String, description: String, highlighted: Boolean = false,
                     click: () -> Unit, content: @Composable () -> Unit) {
-                    Surface(onClick = click, enabled = enabled, shape = RoundedCornerShape(8.dp),
-                        color = if (highlighted) { if (running) p.primary else p.success } else p.surfaceElevated,
-                        modifier = Modifier.size(48.dp).testTag("compact_rest_" + tag)
-                            .semantics { contentDescription = description }) {
-                        Box(contentAlignment = Alignment.Center) { content() }
+                    val shape = RoundedCornerShape(8.dp)
+                    Box(Modifier.size(48.dp).testTag("compact_rest_" + tag)
+                        .semantics { contentDescription = description }
+                        .trainPilotClickable(shape, enabled = enabled, onClick = click),
+                        contentAlignment = Alignment.Center) {
+                        Surface(shape = shape,
+                            color = if (highlighted) { if (running) p.primary else p.success } else p.surfaceElevated,
+                            modifier = Modifier.fillMaxWidth().height(43.2.dp).testTag("compact_rest_${tag}_visual")) {
+                            Box(contentAlignment = Alignment.Center) { content() }
+                        }
                     }
                 }
                 if (adjustments) action("minus", "−15 s", click = { onAdjust(-15) }) {

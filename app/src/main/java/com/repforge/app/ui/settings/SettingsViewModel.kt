@@ -2,8 +2,8 @@ package com.repforge.app.ui.settings
 
 import android.app.Activity
 import android.app.Application
-import android.content.Intent
 import android.net.Uri
+import androidx.activity.result.ActivityResult
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.repforge.app.ActiveWorkoutStore
@@ -29,6 +29,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+data class GoogleActionFeedback(val action: String, val message: String, val failed: Boolean)
+
 data class SettingsUiState(
     val settings: TrainPilotUserSettings = TrainPilotUserSettings(),
     val googleSyncState: GoogleSyncUiState = GoogleSyncUiState(),
@@ -39,6 +41,7 @@ data class SettingsUiState(
     val needsRecovery: Boolean = false,
     val recoveryError: Boolean = false,
     val statusMessage: String? = null,
+    val googleActionFeedback: GoogleActionFeedback? = null,
     val profileSaving: Boolean = false,
     val profileWriteFailed: Boolean = false,
     val profileSavedSequence: Int = 0,
@@ -103,7 +106,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private var timerEdit: Pair<String, NativeDataReplacement.Continuation>? = null
 
     internal fun takeGoogleConsent(id: String) = googleConsentBridge.takeForLaunch(id)
-    internal fun completeGoogleConsent(id: String, data: Intent?) { googleConsentBridge.complete(id, data) }
+    internal fun completeGoogleConsent(id: String, result: ActivityResult) { googleConsentBridge.complete(id, result) }
     internal fun failGoogleConsent(id: String) {
         googleConsentBridge.fail(id, java.io.IOException(nativeResources(context, _uiState.value.settings.language)
             .getString(R.string.native_google_launch_failed)))
@@ -233,6 +236,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _uiState.value = _uiState.value.copy(recoverEarlierBackupsChecked = checked)
     }
 
+    fun clearGoogleActionFeedback() {
+        _uiState.value = _uiState.value.copy(googleActionFeedback = null)
+    }
+
     fun connectGoogle(activity: Activity) = runGoogleAction(activity, GoogleSyncAction.CONNECT)
     fun syncDriveCloud(activity: Activity) = runGoogleAction(activity, GoogleSyncAction.DRIVE)
     fun syncCalendarCloud(activity: Activity) = runGoogleAction(activity, GoogleSyncAction.CALENDAR)
@@ -240,6 +247,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private fun runGoogleAction(activity: Activity, action: GoogleSyncAction) {
         if (_uiState.value.replacementBusy || googleRequestRunning || _uiState.value.maintenanceBusy) return
         googleRequestRunning = true
+        _uiState.value = _uiState.value.copy(statusMessage = null, googleActionFeedback = null)
         val recoverEarlier = _uiState.value.recoverEarlierBackupsChecked
         viewModelScope.launch {
             try {
@@ -252,7 +260,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         GoogleSyncAction.CALENDAR -> strings.getString(R.string.native_google_calendar_done, completion.count ?: 0)
                     }
                 }, onFailure = { it.message ?: strings.getString(R.string.native_google_failed) })
-                _uiState.value = _uiState.value.copy(statusMessage = message)
+                _uiState.value = _uiState.value.copy(statusMessage = message,
+                    googleActionFeedback = GoogleActionFeedback(action.key, message, result.isFailure))
             } finally { googleRequestRunning = false }
         }
     }
@@ -260,6 +269,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun disconnectGoogle() {
         val r = googleRepo.disconnect()
         _uiState.value = _uiState.value.copy(
+            googleActionFeedback = null,
             statusMessage = if (r.isSuccess) "Google-fiók lekapcsolva." else r.exceptionOrNull()?.message
         )
     }

@@ -121,27 +121,20 @@ internal fun StudioRestTimerDock(
                                 color = palette.primary,
                                 fontWeight = FontWeight.Bold
                             )
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = palette.surfaceElevated,
-                                modifier = Modifier
-                                    .trainPilotClickable(RoundedCornerShape(8.dp)) { onLarge(false) }
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        text = tr(lang, "Lapos mód", "Compact mode", "Kompaktmodus", "Mod compact"),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = palette.textSecondary
-                                    )
-                                    Icon(
-                                        imageVector = Icons.Default.ExpandMore,
-                                        contentDescription = tr(lang, "Kis lapos mód", "Compact rest timer", "Kompakter Pausenmodus", "Mod pauză compact"),
-                                        tint = palette.textSecondary,
-                                        modifier = Modifier.size(14.dp)
-                                    )
+                            Box(Modifier.heightIn(min = 48.dp).trainPilotClickable(RoundedCornerShape(8.dp)) {
+                                onLarge(false)
+                            }, contentAlignment = Alignment.Center) {
+                                Surface(shape = RoundedCornerShape(8.dp), color = palette.surfaceElevated) {
+                                    Row(verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)) {
+                                        Text(
+                                            text = tr(lang, "Lapos mód", "Compact mode", "Kompaktmodus", "Mod compact"),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = palette.textSecondary
+                                        )
+                                        Icon(Icons.Default.ExpandMore, null, tint = palette.textSecondary,
+                                            modifier = Modifier.size(14.dp))
+                                    }
                                 }
                             }
                         }
@@ -173,7 +166,7 @@ internal fun StudioRestTimerDock(
                     ) {
                         val ringColor = palette.primary
                         val trackColor = palette.surfaceElevated
-                        Canvas(modifier = Modifier.size(54.dp)) {
+                        Canvas(modifier = Modifier.size(48.6.dp)) {
                             drawArc(
                                 color = trackColor,
                                 startAngle = 0f,
@@ -203,37 +196,25 @@ internal fun StudioRestTimerDock(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    TrainPilotOutlinedButton(
-                        onClick = { onAdjust(-15) },
-                        enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f).height(40.dp),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Text("-15 $secWord", color = palette.textPrimary, fontWeight = FontWeight.Bold)
+                    val enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending
+                    val shape = RoundedCornerShape(12.dp)
+                    @Composable fun restAction(label: String, weight: Float, primary: Boolean, onClick: () -> Unit) {
+                        Box(Modifier.weight(weight).height(48.dp)
+                            .trainPilotClickable(shape, enabled = enabled, onClick = onClick),
+                            contentAlignment = Alignment.Center) {
+                            Surface(shape = shape, color = if (primary) palette.primary else palette.surfaceElevated,
+                                modifier = Modifier.fillMaxWidth().height(36.dp)) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    TrainPilotFitText(label, style = MaterialTheme.typography.labelLarge,
+                                        color = if (primary) palette.onPrimary else palette.textPrimary,
+                                        fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
                     }
-                    TrainPilotOutlinedButton(
-                        onClick = { onAdjust(15) },
-                        enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f).height(40.dp),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Text("+15 $secWord", color = palette.textPrimary, fontWeight = FontWeight.Bold)
-                    }
-                    Button(
-                        onClick = onSkip,
-                        enabled = uiState.phoneControlsWorkout && !uiState.watchControlPending,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = palette.primary,
-                            contentColor = palette.onPrimary
-                        ),
-                        modifier = Modifier.weight(1.2f).height(40.dp),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Text(skipLabel, fontWeight = FontWeight.Bold)
-                    }
+                    restAction("-15 $secWord", 1f, false) { onAdjust(-15) }
+                    restAction("+15 $secWord", 1f, false) { onAdjust(15) }
+                    restAction(skipLabel, 1.2f, true, onSkip)
                 }
             }
         }

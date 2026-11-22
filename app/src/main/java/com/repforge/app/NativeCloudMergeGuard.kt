@@ -6,10 +6,16 @@ import com.repforge.app.data.db.TrainPilotDatabase
 import com.repforge.app.data.migration.LegacyWebViewMigrator
 import com.repforge.app.data.store.TrainPilotSettingsStore
 import com.repforge.shared.LegacySyncIdentity18
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import org.json.JSONObject
 
 /** Optimistic recheck after Drive network I/O, using the existing canonical sync representation. */
 internal object NativeCloudMergeGuard {
+    private val _localInstallRevision = MutableStateFlow(0L)
+    val localInstallRevision = _localInstallRevision.asStateFlow()
+
     fun requireUnchanged(beforeNetwork: JSONObject, current: JSONObject) {
         check(LegacySyncIdentity18.canonical(beforeNetwork) == LegacySyncIdentity18.canonical(current)) {
             "A helyi adatok szinkron közben megváltoztak. Indítsd újra a szinkronizálást; a helyi módosítások megmaradtak."
@@ -44,6 +50,7 @@ internal object NativeCloudMergeGuard {
             BackupRestoreManager(app).installCloudMerge(localInstall, photos)
             NativeDataReplacement.continuationAfterReplacement()
         }
+        _localInstallRevision.update { it + 1 }
         continuation.requireCurrent(app)
         publish(JSONObject(acceptedJson))
         NativeDataReplacement.mutate(app) {

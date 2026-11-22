@@ -61,7 +61,7 @@ internal fun CompactCalendarDialog(
 private fun CompactCalendarSheet(title: String, tag: String, onClose: () -> Unit, content: @Composable () -> Unit) {
     val palette = LocalTrainPilotPalette.current
     val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    androidx.compose.material3.ModalBottomSheet(
+    TrainPilotModalBottomSheet(
         onDismissRequest = onClose,
         sheetState = sheetState,
         modifier = Modifier.trainPilotSheetTopSafeArea().testTag(tag),

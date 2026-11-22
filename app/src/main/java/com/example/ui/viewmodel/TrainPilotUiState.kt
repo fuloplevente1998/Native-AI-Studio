@@ -91,6 +91,8 @@ data class NavRoute(
     val view: NavViewState? = null
 )
 
+data class LocalBackupStatus(val message: String, val busy: Boolean = false, val failed: Boolean = false)
+
 /** Navigation focus only: never store workout execution, records or settings here. */
 data class NavViewState(
     val progressMainSection: Int,
@@ -380,7 +382,7 @@ data class TrainPilotUiState(
     val loggedWorkouts: List<LoggedWorkoutEntry> = emptyList(),
     val selectedLogWorkoutId: String = "",
     val logDetailTabIndex: Int = 0, // 0 = Gyakorlatok, 1 = Statisztikák, 2 = Forrás
-    val expandedLogExerciseIndex: Int = 0,
+    val expandedLogExerciseIndex: Int = -1,
 
     // Progress / Fejlődés State (Mockup 3/4 #4 + full main Fejlődés & Statisztikák)
     val progressMainSection: Int = 0, // 0 = Fejlődés, 1 = Napló, 2 = Statisztikák
@@ -440,7 +442,8 @@ data class TrainPilotUiState(
     val privatePhotoWorkoutId: String? = null,
 
     // Toast / Feedback banner for immediate visual confirmation of actions
-    val statusBannerMessage: String? = null
+    val statusBannerMessage: String? = null,
+    val localBackupStatus: LocalBackupStatus? = null
 )
 
 const val INLINE_EDITOR_HOST_PROGRAMS = "programs"

@@ -125,7 +125,7 @@ class ExerciseLibraryCompactRegressionTest {
             val titleBounds = node.getUnclippedBoundsInRoot()
             assertTrue("Actions must not overlap the title", group.left >= titleBounds.right || group.top >= titleBounds.bottom)
             val meta = compose.onNodeWithTag("exercise_library_meta_long", useUnmergedTree = true)
-            meta.assertTextContains("${exercise.defaultSets}×${exercise.defaultReps}", substring = true)
+            meta.assert(!hasText("${exercise.defaultSets}×${exercise.defaultReps}", substring = true))
         }
         // Capture the actual Compose fixture via the Android Canvas, without PixelCopy.
         for (lang in listOf(AppLanguage.HU, AppLanguage.DE)) {

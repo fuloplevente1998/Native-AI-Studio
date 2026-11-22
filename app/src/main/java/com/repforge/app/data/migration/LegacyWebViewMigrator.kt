@@ -1,12 +1,12 @@
 package com.repforge.app.data.migration
 
+import com.repforge.app.NativeCalendarBackup
 import com.repforge.app.NativeDataReplacement
 import com.repforge.app.NativeExerciseFavorites
 import com.repforge.app.NativeWeightTombstones18
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import com.repforge.app.data.db.BodyWeightEntryEntity
-import com.repforge.app.data.db.CalendarScheduleEntity
 import com.repforge.app.data.db.ExerciseLibraryEntity
 import com.repforge.app.data.db.HistoryTombstoneEntity
 import com.repforge.app.data.db.KeyValueDocumentEntity
@@ -28,7 +28,7 @@ import java.io.File
 import android.util.AtomicFile
 import androidx.room.withTransaction
 import java.time.Instant
-import java.util.UUID
+import java.util.Locale
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -43,6 +43,32 @@ class LegacyWebViewMigrator(
     private val settingsStore: TrainPilotSettingsStore
 ) {
     companion object {
+        internal const val USER_GOALS_KEY = "native:userGoals"
+
+        internal fun validatePortableDocuments(data: JSONObject) {
+            NativeCalendarBackup.validate(data)
+            for (key in listOf(USER_GOALS_KEY, NativeCalendarBackup.STUDIO_SETTINGS_KEY)) {
+                require(data.isNull(key) || data.optJSONObject(key) != null) { "Invalid backup document: $key." }
+            }
+            val goals = data.optJSONObject(USER_GOALS_KEY) ?: return
+            for (key in listOf("workoutGoalTarget", "weeklyGoalTarget", "stepsGoal")) {
+                require(goals.isNull(key) || goals.optInt(key) > 0) { "Invalid backup goal: $key." }
+            }
+            require(goals.isNull("workoutGoalPeriod") ||
+                goals.optString("workoutGoalPeriod").lowercase(Locale.ROOT) in setOf("weekly", "monthly")) {
+                "Invalid backup goal period."
+            }
+        }
+
+        internal fun overlayGoals(existing: JSONObject?, incoming: JSONObject): JSONObject {
+            val result = JSONObject(existing?.toString() ?: "{}")
+            for (key in incoming.keys()) if (!incoming.isNull(key)) result.put(key, incoming.get(key))
+            if (!incoming.isNull("weeklyGoalTarget") && incoming.isNull("workoutGoalTarget")) {
+                result.put("workoutGoalTarget", incoming.get("weeklyGoalTarget"))
+            }
+            return result
+        }
+
         /** Canonical bounded single-workout export; retained objects keep unknown portable metadata. */
         internal fun workoutJson(item: com.repforge.app.data.db.WorkoutHistoryWithDetails): JSONObject {
             val raw = try {
@@ -262,6 +288,7 @@ class LegacyWebViewMigrator(
         }
 
         com.repforge.app.NativeCloudPhotoDeletion.requireUnreservedReferences(data)
+        validatePortableDocuments(data)
 
         // Validate profile *before* any Room mutation: DataStore is applied later,
         // so a malformed portable profile must not leave partially imported tables.
@@ -296,7 +323,8 @@ class LegacyWebViewMigrator(
             // The immutable file archive holds the whole source; avoid duplicating full
             // normalized history/catalog collections again in the key-value table.
             val projected = setOf("history", "exercises", "programs", "weights", "scheduled",
-                NativeExerciseFavorites.KEY, NativeWeightTombstones18.KEY, "legacyStorageRaw", "nativeHealthJournal", "loosePhotos")
+                NativeExerciseFavorites.KEY, NativeWeightTombstones18.KEY, "legacyStorageRaw", "nativeHealthJournal", "loosePhotos",
+                NativeCalendarBackup.VERSION_KEY, NativeCalendarBackup.STUDIO_SETTINGS_KEY, USER_GOALS_KEY)
             // HealthJournalStore owns this snapshot and its rollback receipt. Storing the
             // entire journal a second time as one Room TEXT row exhausts the Android heap
             // and later exceeds CursorWindow capacity. The staged source remains intact.
@@ -493,46 +521,18 @@ class LegacyWebViewMigrator(
                 database.bodyWeightDao().upsertWeights(weightEntities)
             }
 
-            // 7. Scheduled Calendar Entries
-            val scheduledArr = com.repforge.app.NativeCalendarCleanup202611.cleanScheduledJson(data.optJSONArray("scheduled"))
-            if (scheduledArr.length() > 0 || data.has("scheduled")) {
-                if (replaceAll) database.calendarScheduleDao().deleteAllEntries()
-                val schedEntities = ArrayList<CalendarScheduleEntity>()
-                for (i in 0 until scheduledArr.length()) {
-                    val s = scheduledArr.optJSONObject(i) ?: continue
-                    val startIso = s.optString("start", s.optString("plannedStart", "")).trim()
-                    val date = s.optString("date", if (startIso.length >= 10) startIso.substring(0, 10) else "").trim()
-                    if (date.isEmpty()) continue
-                    val id = s.optString("id", s.optString("scheduleId", "")).ifBlank {
-                        "legacy-schedule-" + UUID.nameUUIDFromBytes(s.toString().toByteArray(Charsets.UTF_8))
-                    }
-                    val programId = s.optString("programId", "")
-                    val dayId = s.optString("dayId", s.optString("workout", ""))
-                    val googleId = s.optString("googleEventId").takeIf { it.matches(Regex("rf[0-9a-f]{64}")) }
-                        ?: LegacySyncIdentity18.calendarEventId(id, date, programId, dayId)
-                    schedEntities.add(
-                        CalendarScheduleEntity(
-                            id = id,
-                            googleEventId = googleId,
-                            date = date,
-                            startIso = startIso,
-                            endIso = s.optString("end", ""),
-                            programId = programId,
-                            programName = s.optString("programName", ""),
-                            dayId = dayId,
-                            dayName = s.optString("dayName", dayId),
-                            status = s.optString("status", "planned"),
-                            updatedAt = s.optLong("updatedAt", System.currentTimeMillis()),
-                            rawJson = s.toString()
-                        )
-                    )
-                }
-                database.calendarScheduleDao().upsertEntries(schedEntities)
+            NativeCalendarBackup.restore(database, data, replaceAll)
+
+            data.optJSONObject(USER_GOALS_KEY)?.let { incoming ->
+                val documents = database.keyValueDocumentDao()
+                val existing = documents.getDocument(USER_GOALS_KEY)?.json?.let(::JSONObject)
+                val goals = overlayGoals(existing, incoming)
+                documents.putDocument(KeyValueDocumentEntity(USER_GOALS_KEY, goals.toString(), System.currentTimeMillis()))
             }
 
             // 8. Auxiliary JSON Documents (draft, plannerSettings, plan, wearClosedWorkouts, cloud*)
-            for (docKey in listOf("draft", "plannerSettings", "plan", "gpsTrip106", "wearClosedWorkouts", "cloudStatus", "cloudRetention105")) {
-                if (replaceAll && docKey in setOf("draft", "plannerSettings", "plan") && (!data.has(docKey) || data.isNull(docKey))) {
+            for (docKey in listOf("draft", "plannerSettings", "plan", "gpsTrip106", "wearClosedWorkouts", "cloudStatus", "cloudRetention105", NativeCalendarBackup.STUDIO_SETTINGS_KEY)) {
+                if (replaceAll && docKey == "draft" && (!data.has(docKey) || data.isNull(docKey))) {
                     database.keyValueDocumentDao().deleteDocument(docKey)
                 } else if (data.has(docKey) && !data.isNull(docKey)) {
                     database.keyValueDocumentDao().putDocument(
@@ -739,7 +739,7 @@ class LegacyWebViewMigrator(
             val settings = settingsStore.current()
             val out = JSONObject()
             // Explicit portable documents only: never export the private GPS trip/raw WebView archive.
-            for (key in listOf("draft", "plannerSettings", "plan", "wearClosedWorkouts")) {
+            for (key in listOf("draft", "plannerSettings", "plan", "wearClosedWorkouts", USER_GOALS_KEY, NativeCalendarBackup.STUDIO_SETTINGS_KEY)) {
                 database.keyValueDocumentDao().getDocument(key)?.let { doc ->
                     out.put(key, org.json.JSONTokener(doc.json).nextValue())
                 }
@@ -772,30 +772,7 @@ class LegacyWebViewMigrator(
             }
             out.put("weights", weightsArray)
 
-            // Scheduled
-            val scheduledArray = JSONArray()
-            for (s in database.calendarScheduleDao().getAllEntries()) {
-                val sJson = try {
-                    JSONObject(s.rawJson)
-                } catch (_: Exception) {
-                    JSONObject()
-                }
-                sJson.put("id", s.id)
-                    .put("scheduleId", s.id)
-                    .put("googleEventId", s.googleEventId)
-                    .put("date", s.date)
-                    .put("start", s.startIso)
-                    .put("plannedStart", s.startIso)
-                    .put("end", s.endIso)
-                    .put("programId", s.programId)
-                    .put("programName", s.programName)
-                    .put("dayId", s.dayId)
-                    .put("dayName", s.dayName)
-                    .put("status", s.status)
-                    .put("updatedAt", s.updatedAt)
-                scheduledArray.put(sJson)
-            }
-            out.put("scheduled", scheduledArray)
+            NativeCalendarBackup.exportInto(database, out)
 
             // Programs
             val programsArray = JSONArray()
@@ -890,6 +867,7 @@ class LegacyWebViewMigrator(
             }
 
             out.put("healthIncluded", settings.healthBackupConsent)
+            validatePortableDocuments(out)
             NativeBackupPrivacy.sanitize(out, includeHealth = settings.healthBackupConsent)
             }
         }

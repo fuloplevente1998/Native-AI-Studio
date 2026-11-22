@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import com.repforge.app.ui.theme.TrainPilotButton as Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -53,6 +54,30 @@ private fun progressionName(language: AppLanguage, code: String) = when (code) {
     "linear" -> workoutModeText(language, "Lineáris", "Linear", "Linear", "Liniară")
     "rir" -> workoutModeText(language, "RIR / Coach", "RIR / Coach", "RIR / Coach", "RIR / Coach")
     else -> workoutModeText(language, "Dupla progresszió", "Double progression", "Doppelte Progression", "Progresie dublă")
+}
+
+/** Look up the exact persisted program ID; never display internal IDs as names. */
+internal fun studioModeActiveProgramLabel(state: TrainPilotUiState): String {
+    val lang = state.language
+    val program = state.programs.firstOrNull { it.id == state.activeTrainingModeProgramId }
+    return when {
+        program != null -> program.localizedName(lang).ifBlank {
+            workoutModeText(lang, "Névtelen program", "Unnamed program", "Unbenanntes Programm", "Program fără nume")
+        }
+        state.programs.isEmpty() -> workoutModeText(lang, "Programok betöltése…", "Loading programs…",
+            "Programme werden geladen…", "Se încarcă programele…")
+        state.activeTrainingModeProgramId.isBlank() -> workoutModeText(lang, "Nincs aktív program",
+            "No active program", "Kein aktives Programm", "Niciun program activ")
+        else -> workoutModeText(lang, "Az aktív program nem található", "Active program not found",
+            "Aktives Programm nicht gefunden", "Programul activ nu a fost găsit")
+    }
+}
+
+@Composable
+private fun ModeSeparator(tag: String) {
+    val p = LocalTrainPilotPalette.current
+    HorizontalDivider(modifier = Modifier.fillMaxWidth().testTag(tag), thickness = 1.dp,
+        color = p.primary.copy(alpha = 0.18f))
 }
 
 @Composable
@@ -110,17 +135,14 @@ internal fun StudioWorkoutModesDialog(
                 modifier = if (embedded) Modifier.fillMaxWidth() else Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                if (isProgram) Text(
-                    workoutModeText(lang, "Aktív program: ", "Active program: ", "Aktives Programm: ", "Program activ: ") +
-                        (state.programs.firstOrNull { it.id == state.activeTrainingModeProgramId }?.let { program ->
-                            when (lang) {
-                                AppLanguage.HU -> program.nameHu
-                                AppLanguage.EN -> program.nameEn.ifBlank { program.nameHu }
-                                AppLanguage.DE -> program.nameDe.ifBlank { program.nameEn.ifBlank { program.nameHu } }
-                                AppLanguage.RO -> program.nameRo.ifBlank { program.nameEn.ifBlank { program.nameHu } }
-                            }
-                        } ?: state.activeTrainingModeProgramId),
-                    color = p.textSecondary)
+                if (isProgram) {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(workoutModeText(lang, "Aktív program", "Active program",
+                            "Aktives Programm", "Program activ"), color = p.textSecondary)
+                        Text(studioModeActiveProgramLabel(state), color = p.textPrimary,
+                            modifier = Modifier.fillMaxWidth().testTag("studio_modes_active_program_name"))
+                    }
+                }
                 if (review != null) {
                     Text(workoutModeText(lang, "Módváltás előnézete", "Mode change preview",
                         "Vorschau des Moduswechsels", "Previzualizare schimbare mod"),
@@ -184,6 +206,7 @@ internal fun StudioWorkoutModesDialog(
                                 fontWeight = FontWeight.Bold)
                         }
                     }
+                    ModeSeparator("studio_modes_separator_rest_sound")
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(workoutModeText(lang, "Hangjelzés pihenő végén", "Sound alert after rest",
@@ -192,6 +215,7 @@ internal fun StudioWorkoutModesDialog(
                         Switch(checked = state.soundAlertEnabled, onCheckedChange = onToggleSound,
                             modifier = Modifier.testTag("studio_modes_sound"))
                     }
+                    ModeSeparator("studio_modes_separator_sound_vibration")
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(workoutModeText(lang, "Rezgés pihenő végén", "Vibration after rest",
@@ -200,6 +224,7 @@ internal fun StudioWorkoutModesDialog(
                         Switch(checked = state.vibrationEnabled, onCheckedChange = onToggleVibration,
                             modifier = Modifier.testTag("studio_modes_vibration"))
                     }
+                    ModeSeparator("studio_modes_separator_vibration_style")
                     Text(workoutModeText(lang, "Edzésstílus", "Training style", "Trainingsstil",
                         "Stil de antrenament"), color = p.textPrimary, fontWeight = FontWeight.Bold)
                     ModeOption(styleName(lang, "normal"), style == "normal", "studio_modes_style_normal") { style = "normal" }
@@ -210,6 +235,7 @@ internal fun StudioWorkoutModesDialog(
                         "HIT empfiehlt weniger Arbeitssätze; Training bis zum Muskelversagen ist nicht verpflichtend.",
                         "HIT propune mai puține serii; nu necesită epuizare musculară."),
                         color = p.textSecondary)
+                    ModeSeparator("studio_modes_separator_style_progression")
                     Text(workoutModeText(lang, "Progressziós szabály", "Progression rule", "Progressionsregel",
                         "Regulă de progresie"), color = p.textPrimary, fontWeight = FontWeight.Bold)
                     for (code in listOf("double", "linear", "rir")) {

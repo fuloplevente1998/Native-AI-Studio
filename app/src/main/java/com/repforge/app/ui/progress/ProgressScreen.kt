@@ -1,5 +1,6 @@
 package com.repforge.app.ui.progress
 
+import com.example.ui.components.trainPilotChartMarkColor
 import com.repforge.app.ui.theme.trainPilotClickable
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -263,7 +264,6 @@ fun ProgressScreen(
         item(key = "progress_cardio") {
             NativeCardioProgressPanel(
                 state = state,
-                onSelectActivity = viewModel::selectCardioActivity,
                 onRetry = viewModel::retryCardio
             )
         }
@@ -344,6 +344,9 @@ private fun ProgressStrengthSnapshot(
 @Composable
 fun TrendCanvas(points: List<Double>, selected: Int = -1) {
     val colors = LocalTrainPilotColors.current
+    val interactive = selected in points.indices
+    val lineColor = if (interactive) trainPilotChartMarkColor(false, colors.accentText, colors.muted) else colors.accentText
+    val pointColor = if (interactive) lineColor else colors.accent2
     Canvas(modifier = Modifier.fillMaxSize()) {
         val minVal = points.minOrNull() ?: 0.0
         val maxVal = points.maxOrNull() ?: 1.0
@@ -372,17 +375,17 @@ fun TrendCanvas(points: List<Double>, selected: Int = -1) {
         }
         drawPath(
             path = path,
-            color = colors.accentText,
+            color = lineColor,
             style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
         )
         offsets.forEach { o ->
-            drawCircle(color = colors.accent2, radius = 3.dp.toPx(), center = o)
+            drawCircle(color = pointColor, radius = 3.dp.toPx(), center = o)
         }
         // 2785: the tapped point is highlighted with a guide line and a larger dot.
         offsets.getOrNull(selected)?.let { o ->
             drawLine(colors.accentText.copy(alpha = 0.5f), Offset(o.x, 0f), Offset(o.x, size.height), strokeWidth = 1.5.dp.toPx())
             drawCircle(color = colors.accentText, radius = 6.dp.toPx(), center = o)
-            drawCircle(color = colors.accent2, radius = 3.dp.toPx(), center = o)
+            drawCircle(color = colors.card, radius = 3.dp.toPx(), center = o)
         }
     }
 }

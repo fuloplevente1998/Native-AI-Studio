@@ -11,6 +11,7 @@ import com.repforge.app.ui.theme.TrainPilotOutlinedButton
 import com.repforge.app.ui.theme.TrainPilotFrames
 
 import com.repforge.app.ui.theme.trainPilotBorder
+import com.repforge.app.ui.theme.trainPilotSoftGlow
 
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -72,7 +73,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import com.repforge.app.ui.theme.TrainPilotOutlinedButton as OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
@@ -193,29 +193,31 @@ fun TrainPilotGlobalTopHeaderAndNav(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp)
+                BoxWithConstraints(
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                         .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectTab(MainTab.HOME) }
-                        .padding(vertical = 2.dp, horizontal = 4.dp)
-                        .testTag("top_bar_brand_home")
+                        .padding(horizontal = 4.dp)
+                        .testTag("top_bar_brand_home"),
+                    contentAlignment = Alignment.CenterStart
                 ) {
-                    TrainPilotMountainLogo(
-                        modifier = Modifier.size(32.dp)
+                    val compact = maxWidth < 126.dp
+                    val brandStyle = MaterialTheme.typography.titleMedium.copy(
+                        fontSize = if (compact) 14.sp else 18.sp, letterSpacing = (-0.2).sp
                     )
-                    Text(
-                        text = "TrainPilot",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            letterSpacing = (-0.2).sp
-                        ),
-                        color = palette.primary,
-                        maxLines = 1
-                    )
+                    if (compact) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            TrainPilotMountainLogo(modifier = Modifier.size(18.dp))
+                            TrainPilotFitText("TrainPilot", style = brandStyle, color = palette.primary,
+                                fontWeight = FontWeight.Bold, minSize = 9.sp)
+                        }
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TrainPilotMountainLogo(modifier = Modifier.size(32.dp))
+                            TrainPilotFitText("TrainPilot", style = brandStyle, color = palette.primary,
+                                fontWeight = FontWeight.Bold, minSize = 11.sp)
+                        }
+                    }
                 }
 
                 // Right icons: Naptár (Calendar), Coach, Settings Gear
@@ -272,6 +274,24 @@ fun TrainPilotGlobalTopHeaderAndNav(
                                 tint = if (isCoachActive) palette.onPrimary else palette.textPrimary,
                                 modifier = Modifier.size(20.dp)
                             )
+                        }
+                    }
+
+                    val journalActive = currentTab == MainTab.LOG && currentSubScreen != SubScreen.SETTINGS_MAIN
+                    val journalShape = RoundedCornerShape(10.dp)
+                    Surface(
+                        shape = journalShape,
+                        color = if (journalActive) palette.primary else palette.surfaceElevated,
+                        modifier = Modifier.size(48.dp)
+                            .trainPilotBorder(1.dp, if (journalActive) palette.primary else palette.cardBorder, journalShape)
+                            .clip(journalShape)
+                            .selectable(selected = journalActive, role = Role.Tab, onClick = { onSelectTab(MainTab.LOG) })
+                            .testTag("top_bar_journal_button")
+                    ) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Description, strings.navLog,
+                                tint = if (journalActive) palette.onPrimary else palette.textPrimary,
+                                modifier = Modifier.size(20.dp))
                         }
                     }
 
@@ -339,8 +359,7 @@ fun TrainPilotGlobalTopHeaderAndNav(
                 TopNavPillItem(
                     label = strings.navProgress,
                     icon = Icons.AutoMirrored.Filled.TrendingUp,
-                    selected = (currentTab == MainTab.PROGRESS || currentTab == MainTab.LOG) &&
-                        currentSubScreen in setOf(SubScreen.NONE, SubScreen.LOG_WORKOUT_DETAIL, SubScreen.LOG_ROUTE_MAP),
+                    selected = currentTab == MainTab.PROGRESS && currentSubScreen == SubScreen.NONE,
                     onClick = { onSelectTab(MainTab.PROGRESS) },
                     modifier = itemModifier,
                     testTag = "top_nav_progress"
@@ -372,17 +391,7 @@ private fun TopNavPillItem(
     testTag: String = ""
 ) {
     val palette = LocalTrainPilotPalette.current
-    val glowModifier = if (selected && palette.hasGlow) {
-        Modifier.drawBehind {
-            drawRoundRect(
-                brush = Brush.radialGradient(
-                    colors = listOf(palette.primary.copy(alpha = 0.42f), Color.Transparent),
-                    radius = size.maxDimension * 0.85f
-                ),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(14.dp.toPx(), 14.dp.toPx())
-            )
-        }
-    } else Modifier
+    val glowModifier = if (selected) Modifier.trainPilotSoftGlow(palette.primary, RoundedCornerShape(12.dp)) else Modifier
 
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -597,16 +606,12 @@ fun PalettePickerBottomSheet(
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val filteredPalettes = remember(selectedCategory) {
-        when (selectedCategory) {
-            null, PaletteCategory.ALL -> TrainPilotPalettes.allPalettes
-            PaletteCategory.MATTE, PaletteCategory.CONTRAST, PaletteCategory.GLOW, PaletteCategory.LIGHT ->
-                TrainPilotPalettes.allPalettes.filter { it.subGroup == selectedCategory }
-            else -> TrainPilotPalettes.allPalettes.filter { it.category == selectedCategory }
-        }
+    var expandedFamily by androidx.compose.runtime.saveable.rememberSaveable {
+        mutableStateOf((selectedCategory?.takeIf { it in setOf(PaletteCategory.MATTE, PaletteCategory.CONTRAST, PaletteCategory.GLOW, PaletteCategory.LIGHT) }
+            ?: TrainPilotPalettes.getById(selectedPaletteId).subGroup).name)
     }
 
-    ModalBottomSheet(
+    TrainPilotModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = palette.surface,
@@ -741,175 +746,10 @@ fun PalettePickerBottomSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Category Filter: Összes (32) | Matt (8) | Kontrasztos (8) | Fényes/Glow (8) | Világos (8)
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                val cats = listOf(
-                    null to "${strings.viewAllAction} (32)",
-                    PaletteCategory.MATTE to tr(currentLanguage, "🌑 Matt (8)", "🌑 Matte (8)", "🌑 Matt (8)", "🌑 Mat (8)"),
-                    PaletteCategory.CONTRAST to tr(currentLanguage, "⚡ Kontrasztos (8)", "⚡ Contrast (8)", "⚡ Kontrast (8)", "⚡ Contrast (8)"),
-                    PaletteCategory.GLOW to tr(currentLanguage, "✨ Fényes / Glow (8)", "✨ Glow (8)", "✨ Glow (8)", "✨ Glow (8)"),
-                    PaletteCategory.LIGHT to tr(currentLanguage, "☀️ Világos (8)", "☀️ Light (8)", "☀️ Hell (8)", "☀️ Luminos (8)")
-                )
-                cats.forEach { (cat, label) ->
-                    val active = selectedCategory == cat
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = if (active) palette.primary else palette.surfaceElevated,
-                        modifier = Modifier
-                            .heightIn(min = 42.dp)
-                            .trainPilotBorder(
-                                width = 1.dp,
-                                color = if (active) palette.primary else palette.cardBorder,
-                                shape = RoundedCornerShape(20.dp)
-                            )
-                            .trainPilotClickable(RoundedCornerShape(20.dp)) { onSelectCategory(cat) }
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.padding(vertical = 8.dp, horizontal = 12.dp)
-                        ) {
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.labelLarge,
-                                color = if (active) palette.onPrimary else palette.textPrimary,
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(340.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(filteredPalettes, key = { it.id }) { item ->
-                    PaletteRowCard(
-                        item = item,
-                        isSelected = item.id == selectedPaletteId,
-                        langCode = currentLanguage.code,
-                        onClick = { onSelectPalette(item.id) }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PaletteRowCard(
-    item: TrainPilotPalette,
-    isSelected: Boolean,
-    langCode: String,
-    onClick: () -> Unit
-) {
-    val lang = AppLanguage.entries.firstOrNull { it.code.equals(langCode, ignoreCase = true) } ?: AppLanguage.HU
-    val familyBadge = when (item.subGroup) {
-        PaletteCategory.MATTE -> tr(lang, "Matt sötét felület • Bársonyos színek", "Matte dark surface • Velvety tones", "Matte dunkle Oberfläche • Samtige Farben", "Suprafață închisă mată • Tonuri catifelate")
-        PaletteCategory.CONTRAST -> tr(lang, "Magas kontraszt • Mélyfekete & éles keret", "High contrast • Deep black & sharp border", "Hoher Kontrast • Tiefschwarz & scharfer Rahmen", "Contrast ridicat • Negru intens și chenar clar")
-        PaletteCategory.GLOW -> tr(lang, "✨ Fényes / Neon Glow effekt", "✨ Bright / Neon Glow effect", "✨ Leuchtender / Neon-Glow-Effekt", "✨ Efect luminos / Neon Glow")
-        PaletteCategory.LIGHT -> tr(lang, "☀️ Világos háttér • Színes keretek", "☀️ Light background • Colored borders", "☀️ Heller Hintergrund • Farbige Rahmen", "☀️ Fundal luminos • Chenare colorate")
-        else -> tr(lang, "Prémium téma", "Premium theme", "Premium-Thema", "Temă premium")
-    }
-    val glowMod = if (item.hasGlow) {
-        Modifier.drawBehind {
-            drawRoundRect(
-                brush = Brush.horizontalGradient(
-                    colors = listOf(item.primary.copy(alpha = 0.25f), item.secondary.copy(alpha = 0.18f))
-                ),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(14.dp.toPx(), 14.dp.toPx())
-            )
-        }
-    } else Modifier
-
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = item.surface,
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(glowMod)
-            .heightIn(min = 48.dp)
-            .border(
-                width = if (isSelected || item.hasGlow) 2.dp else 1.dp,
-                color = if (isSelected) item.primary else if (item.hasGlow) item.primary.copy(alpha = 0.7f) else item.cardBorder,
-                shape = RoundedCornerShape(14.dp)
-            )
-            .trainPilotClickable(RoundedCornerShape(14.dp)) { onClick() }
-            .testTag("palette_option_${item.id}")
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy((-6).dp)) {
-                    Box(
-                        modifier = Modifier
-                            .size(26.dp)
-                            .clip(CircleShape)
-                            .background(item.background)
-                            .border(1.5.dp, item.cardBorder, CircleShape)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(26.dp)
-                            .clip(CircleShape)
-                            .background(item.primary)
-                            .border(1.dp, item.background, CircleShape)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(26.dp)
-                            .clip(CircleShape)
-                            .background(item.tertiary)
-                            .border(1.dp, item.background, CircleShape)
-                    )
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = item.localizedName(langCode),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = item.textPrimary
-                    )
-                    Text(
-                        text = familyBadge,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (item.hasGlow) item.primary else item.textSecondary
-                    )
-                }
-            }
-
-            if (isSelected) {
-                Surface(
-                    shape = CircleShape,
-                    color = item.primary
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                        tint = item.onPrimary,
-                        modifier = Modifier
-                            .padding(5.dp)
-                            .size(16.dp)
-                    )
-                }
-            }
+            StudioPaletteCategories(currentLanguage, selectedPaletteId,
+                PaletteCategory.entries.firstOrNull { it.name == expandedFamily },
+                onExpand = { expandedFamily = it?.name.orEmpty(); onSelectCategory(it) },
+                onSelect = onSelectPalette, choiceTag = "palette_option_")
         }
     }
 }
