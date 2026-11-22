@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,6 +23,39 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.example.ui.theme.LocalTrainPilotPalette
+
+/**
+ * Shared 220 ms disclosure motion, matching the rest countdown's compact/full transition.
+ * For inline rows and cards only; ModalBottomSheet already owns its bottom-up animation.
+ * Normal system animator scale and accessibility motion settings are respected by Compose.
+ */
+fun Modifier.trainPilotAnimatedExpansion(): Modifier =
+    this.animateContentSize(
+        animationSpec = androidx.compose.animation.core.tween(durationMillis = 220)
+    )
+
+/** Expanding detail rows fade in and grow together instead of snapping into the layout. */
+@androidx.compose.runtime.Composable
+fun TrainPilotAnimatedDisclosure(
+    visible: Boolean,
+    modifier: Modifier = Modifier,
+    content: @androidx.compose.runtime.Composable () -> Unit
+) {
+    androidx.compose.animation.AnimatedVisibility(
+        visible = visible,
+        modifier = modifier,
+        enter = androidx.compose.animation.expandVertically(
+            animationSpec = androidx.compose.animation.core.tween(220)
+        ) + androidx.compose.animation.fadeIn(
+            animationSpec = androidx.compose.animation.core.tween(160, delayMillis = 60)
+        ),
+        exit = androidx.compose.animation.shrinkVertically(
+            animationSpec = androidx.compose.animation.core.tween(220)
+        ) + androidx.compose.animation.fadeOut(
+            animationSpec = androidx.compose.animation.core.tween(90)
+        )
+    ) { content() }
+}
 
 /** True inside [TrainPilotScreenSheet]: hosted screens wrap their height instead of filling it. */
 val LocalTrainPilotInSheet = androidx.compose.runtime.staticCompositionLocalOf { false }
