@@ -825,7 +825,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             strings = strings,
                             onBack = { viewModel.navigateBack() },
                             onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
-                            onTogglePermission = requestPlatformPermission
+                            onTogglePermission = { key, enabled ->
+                                requestPlatformPermission("${key}_${if (enabled) "on" else "off"}")
+                            },
+                            onManagePermission = requestPlatformPermission
                         )
                     }
 
