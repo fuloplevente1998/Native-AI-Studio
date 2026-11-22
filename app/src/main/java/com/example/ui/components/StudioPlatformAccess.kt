@@ -182,6 +182,21 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
             model.showBannerMessage("Egészségügyi művelet már folyamatban van.")
             return
         }
+        if (Build.VERSION.SDK_INT in 28..33 && !HealthConnectRepository.isSupported(context)) {
+            // The provider is a separate Play Store app on Android 9–13.
+            val id = "com.google.android.apps.healthdata"
+            val play = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=$id"))
+            val web = Intent(Intent.ACTION_VIEW,
+                android.net.Uri.parse("https://play.google.com/store/apps/details?id=$id"))
+            try { settings.launch(play) }
+            catch (_: ActivityNotFoundException) { settings.launch(web) }
+            model.showBannerMessage(privacyMessage(model.uiState.value.language.name,
+                "Telepítsd vagy frissítsd a Health Connect alkalmazást, majd engedélyezd az adatokat.",
+                "Install or update Health Connect, then grant data access.",
+                "Installiere oder aktualisiere Health Connect und erteile Datenzugriff.",
+                "Instalează sau actualizează Health Connect, apoi acordă acces la date."))
+            return
+        }
         val declaredReads = StudioPlatformAccess.healthPermissions(context)
             .filter { it != HealthConnectRepository.WRITE_EXERCISE_PERMISSION }
         if (!HealthConnectRepository.isSupported(context) || declaredReads.isEmpty()) {
