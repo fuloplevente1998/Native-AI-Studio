@@ -57,7 +57,7 @@ internal class NativeHealthRecords(private val store: HealthJournalStore) {
             HealthRecordRow(row.getString("recordId"), row.getString("channel"), row.getString("source"),
                 row.getString("type"), row.getLong("startMs"), row.getLong("endMs"),
                 row.getLong("lastModifiedMs"), row.getJSONObject("data").toString())
-        }
+        }.let(NativeSleepRecordPresentation::distinct)
         val sources = result.getJSONArray("sources")
         val origins = (0 until sources.length()).map { index ->
             val source = sources.getJSONObject(index)
