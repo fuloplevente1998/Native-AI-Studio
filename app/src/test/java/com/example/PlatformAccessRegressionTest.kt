@@ -5,6 +5,7 @@ import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import com.example.ui.components.StudioPlatformAccess
 import com.example.ui.viewmodel.TrainPilotViewModel
+import com.repforge.app.NativePrivacyControls
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
@@ -16,19 +17,30 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class PlatformAccessRegressionTest {
-    @Test fun locationSwitchReadsActualGrantAndRevocation() {
+    @Test fun gpsToggleAndActualSystemPermissionRemainIndependent() {
         val app = ApplicationProvider.getApplicationContext<Application>()
-        shadowOf(app).denyPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
-        assertFalse(StudioPlatformAccess.snapshot(app).getBoolean("gps"))
-        shadowOf(app).grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
-        assertTrue(StudioPlatformAccess.snapshot(app).getBoolean("gps"))
-        shadowOf(app).denyPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
-        assertFalse(StudioPlatformAccess.snapshot(app).getBoolean("gps"))
+        NativePrivacyControls.set(app, NativePrivacyControls.GPS, false)
+        try {
+            shadowOf(app).denyPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
+            assertFalse(StudioPlatformAccess.snapshot(app).getBoolean("gps"))
+            assertFalse(StudioPlatformAccess.snapshot(app).getBoolean("gpsGranted"))
+            shadowOf(app).grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
+            assertFalse(StudioPlatformAccess.snapshot(app).getBoolean("gps"))
+            assertTrue(StudioPlatformAccess.snapshot(app).getBoolean("gpsGranted"))
+            NativePrivacyControls.set(app, NativePrivacyControls.GPS, true)
+            assertTrue(StudioPlatformAccess.snapshot(app).getBoolean("gps"))
+            shadowOf(app).denyPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
+            assertTrue(StudioPlatformAccess.snapshot(app).getBoolean("gps"))
+            assertFalse(StudioPlatformAccess.snapshot(app).getBoolean("gpsGranted"))
+        } finally {
+            NativePrivacyControls.set(app, NativePrivacyControls.GPS, true)
+        }
     }
 
     @Test fun noNodesAndNoGrantsCannotLeaveConnectedOrEnabledUiState() {
         val model = TrainPilotViewModel()
-        val granted = JSONObject().put("gps", true).put("healthGranted", 2).put("healthTotal", 5)
+        val granted = JSONObject().put("gps", true).put("healthConnect", true)
+            .put("healthGranted", 2).put("healthTotal", 5)
         model.updatePlatformAccess(granted, listOf("Actual watch name"))
         assertTrue(model.uiState.value.watchConnected)
         model.updatePlatformAccess(JSONObject().put("healthTotal", 5), emptyList())
