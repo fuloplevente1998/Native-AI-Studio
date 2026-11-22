@@ -1,3 +1,11 @@
+# TrainPilot 2797 · Play Console újrafeltöltés (előkészítve)
+
+- Play Console a 279602-es Wear OS AAB-t már használt verziókódként elutasította; a korábbi feltöltés megszakadhatott, de a verziókód nem használható újra.
+- A Play-verziókódok csak a kiadási sorszámban emelkedtek: telefon `279700`, Wear OS `279702`; a `versionName = "1.4.1"`, alkalmazásazonosító, aláírás és alkalmazáskód változatlan.
+- Javító ág: `fix/play-version-2797`. Még nem történt main-merge, új aláírt APK/AAB build vagy Play Console-feltöltés. Következő lépés: review és main-integráció után teljes CI, trusted main aláírt telefon/Wear AAB-pár, majd az új csomagok feltöltése.
+
+---
+
 # TrainPilot 2796 · 1.4.1
 
 - A [#327](https://github.com/fuloplevente1998/Native-AI-Studio/pull/327) mainre került. A kiadás forrása `de6f47c07d3edc756cb7c244f43624e3355a47da`.
