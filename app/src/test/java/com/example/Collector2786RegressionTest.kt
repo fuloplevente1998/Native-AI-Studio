@@ -137,6 +137,32 @@ class Collector2786RegressionTest {
         compose.onNodeWithTag("health_weekly_steps_section_summary", useUnmergedTree = true).assertTextContains("119%", substring = true)
     }
 
+    @Test fun weeklyChartKeepsOnlyOneDayDetailAndSlidesHistoryFromBottom() {
+        val today = LocalDate.now()
+        val state = TrainPilotUiState(stepsGoal = 10000, workoutGoalTarget = 3,
+            workoutGoalCompleted = 2, expandedHealthWeeklyGoals = true,
+            weeklyHealthDays = listOf(day(0, 2977), day(1, 6730), day(2, 11620)))
+        compose.setContent { TrainPilotTheme {
+            HealthTabScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU),
+                {}, {}, {}, { _, _ -> }, {}, {}, {}, {})
+        } }
+        val screen = compose.onNodeWithTag("health_tab_screen")
+        screen.performScrollToNode(hasTestTag("health_weekly_steps_bars_info"))
+        compose.onNodeWithTag("health_weekly_steps_bars_info", useUnmergedTree = true)
+            .assertTextContains("2 977", substring = true)
+        // No permanently duplicated seven-day list under the chart.
+        compose.onNodeWithTag("health_weekly_steps_${today.minusDays(1)}").assertDoesNotExist()
+        screen.performScrollToNode(hasTestTag("health_weekly_steps_history"))
+        compose.onNodeWithTag("health_weekly_steps_history").performClick()
+        compose.onNodeWithTag("health_weekly_history_sheet").assertExists()
+        compose.onNodeWithTag("health_weekly_steps_${today.minusDays(1)}").assertExists()
+        compose.onNodeWithTag("health_weekly_history_close").performClick()
+        compose.onNodeWithTag("health_weekly_history_sheet").assertDoesNotExist()
+        compose.onNodeWithTag("health_weekly_steps_${today.minusDays(1)}").assertDoesNotExist()
+        compose.onNodeWithTag("health_weekly_steps_bars_info", useUnmergedTree = true)
+            .assertTextContains("2 977", substring = true)
+    }
+
     @Test fun sourcesWatchAndSyncAreOneCard() {
         var state by mutableStateOf(TrainPilotUiState(expandedHealthConnect = false))
         compose.setContent { TrainPilotTheme {
