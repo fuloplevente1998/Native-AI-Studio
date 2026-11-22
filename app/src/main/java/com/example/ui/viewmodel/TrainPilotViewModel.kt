@@ -5565,9 +5565,13 @@ class TrainPilotViewModel : ViewModel() {
                     name = watchNames.singleOrNull()
                 )
             it.copy(permissionGpsEnabled = access.optBoolean("gps"),
+                permissionGpsGranted = access.optBoolean("gpsGranted"),
                 permissionCentralLocEnabled = access.optBoolean("location"),
                 permissionNotificationsEnabled = access.optBoolean("notifications"),
-                permissionHealthConnectEnabled = access.optInt("healthGranted") > 0,
+                permissionNotificationsGranted = access.optBoolean("notificationsGranted"),
+                permissionHealthConnectEnabled = access.optBoolean("healthConnect"),
+                permissionHealthConnectGranted = access.optBoolean("healthReadGranted"),
+                permissionSamsungHealthEnabled = access.optBoolean("samsungHealth"),
                 healthGrantedCount = access.optInt("healthGranted"),
                 healthPermissionCount = access.optInt("healthTotal"),
                 watchControlPending = pending,
@@ -5585,7 +5589,7 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    fun updateSamsungAccess(granted: Boolean) { _uiState.update { it.copy(permissionSamsungHealthEnabled = granted) } }
+    fun updateSamsungAccess(granted: Boolean) { _uiState.update { it.copy(permissionSamsungHealthGranted = granted) } }
 
     fun showBannerMessage(message: String) {
         _uiState.update { it.copy(statusBannerMessage = message) }
