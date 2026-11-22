@@ -40,7 +40,7 @@ internal object StudioPlatformAccess {
         }
     }
     fun snapshot(context: Context): JSONObject {
-        val health = healthPermissions(context)
+        val health = healthPermissions(context).filter { it != HealthConnectRepository.WRITE_EXERCISE_PERMISSION }
         fun granted(permission: String) = context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
         val location = context.getSystemService(LocationManager::class.java)
         val locationEnabled = if (Build.VERSION.SDK_INT >= 28) location?.isLocationEnabled == true
@@ -224,7 +224,9 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                             HealthConnectRepository.isSupported(context) && HealthConnectRepository.anyReadAllowed(context)
                         else {
                             check(SamsungHealthRepository.isInstalled(context) && SamsungHealthRepository.isSdkAvailable()) { "Samsung Health nem érhető el." }
-                            SamsungHealthRepository.readGrantedKeys(context, guard).isNotEmpty()
+                            val granted = SamsungHealthRepository.readGrantedKeys(context, guard)
+                            if (permissionOnly) SamsungHealthRepository.PERMISSION_KEYS.all { it in granted }
+                            else granted.isNotEmpty()
                         }
                     },
                     requestPermission = {
@@ -290,6 +292,11 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                         else -> NativePrivacyControls.SAMSUNG_HEALTH
                     }
                     NativePrivacyControls.set(context, feature, enabled)
+                    if (enabled && feature == NativePrivacyControls.HEALTH_CONNECT) {
+                        scope.launch(Dispatchers.IO) {
+                            runCatching { HealthBackgroundJob.schedule(context) }
+                        }
+                    }
                     if (!enabled && feature in setOf(NativePrivacyControls.HEALTH_CONNECT,
                             NativePrivacyControls.SAMSUNG_HEALTH)) {
                         healthActionJob?.cancel()
