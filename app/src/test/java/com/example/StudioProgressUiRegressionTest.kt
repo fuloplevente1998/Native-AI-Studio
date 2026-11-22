@@ -89,6 +89,7 @@ class StudioProgressUiRegressionTest {
         val bounds = (0..3).map { compose.onNodeWithTag("progress_range_$it")
             .assertHeightIsAtLeast(48.dp).getUnclippedBoundsInRoot() }
         bounds.drop(1).forEach { assertEquals(bounds.first().top, it.top) }
+        compose.onNodeWithTag("progress_range_visual_3", useUnmergedTree = true).assertHeightIsEqualTo(32.dp)
         compose.onNodeWithTag("progress_compact_column_6", useUnmergedTree = true)
             .performTouchInput { click() }
         compose.onNodeWithTag("progress_expanded_column_6", useUnmergedTree = true).assertIsSelected()

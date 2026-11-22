@@ -4,7 +4,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import com.repforge.app.NativeDataReplacement
 import com.repforge.app.data.store.TrainPilotSettingsStore
-import com.repforge.app.data.store.TrainPilotUserSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -38,6 +37,11 @@ internal fun NativeFirstLaunchGate(viewModel: com.example.ui.viewmodel.TrainPilo
         }
     }
     val destination = NativeOnboardingPolicy.destination(settings.onboarding128)
+    var permissionsPending by remember(context) { mutableStateOf(firstRunPermissionsPending(context)) }
+    if (destination == NativeOnboardingPolicy.Destination.WELCOME && permissionsPending) {
+        NativeOnboardingPermissions(settings.language, viewModel) { permissionsPending = false }
+        return
+    }
     if (destination == NativeOnboardingPolicy.Destination.HOME) content()
     else NativeOnboardingScreen(settings = settings, destination = destination,
         saving = saving, failed = failed,
