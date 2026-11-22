@@ -49,7 +49,10 @@ class TrainPilotPageLayoutRegressionTest {
         assertEquals(1, measuredReorderTarget(heights, 10f, 2, -95f))
     }
 
-    @Test fun workoutEditShowsTheRealModeTilesAndLeavesTheirActionsInactive() {
+    @Test fun workoutEditShowsTheRealModeTilesAndSavesTheirDraggedPosition() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val prefs = context.getSharedPreferences("trainpilot-page-layout", Context.MODE_PRIVATE)
+        prefs.edit().remove("workout").commit()
         var opened = 0
         compose.setContent {
             TrainPilotTheme {
@@ -61,13 +64,25 @@ class TrainPilotPageLayoutRegressionTest {
         }
         compose.onNodeWithTag("page_customize_workout").performScrollTo().performClick()
         compose.onNodeWithTag("page_layout_editor_workout").assertExists()
-        compose.onNodeWithTag("page_layout_handle_modes").assertExists()
+        val modesHandle = compose.onNodeWithTag("page_layout_handle_modes")
+        modesHandle.assertExists()
         compose.onNodeWithTag("workout_tab_timed_card", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("workout_tab_outdoor_card", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("workout_tab_exercise_picker", useUnmergedTree = true)
             .performScrollTo().performTouchInput { click() }
         compose.runOnIdle { assertEquals(0, opened) }
-        compose.onNodeWithTag("page_layout_save").assertIsDisplayed()
+        val quickHandle = compose.onNodeWithTag("page_layout_handle_quick")
+        quickHandle.performScrollTo()
+        val distance = modesHandle.getUnclippedBoundsInRoot().top - quickHandle.getUnclippedBoundsInRoot().top
+        modesHandle.performTouchInput { swipe(center, center + Offset(0f, -distance.toPx()), 350) }
+        val save = compose.onNodeWithTag("page_layout_save")
+        save.assertIsDisplayed().performClick()
+        compose.runOnIdle {
+            assertEquals(listOf("modes", "quick"), prefs.getString("workout", "")!!.split(',').take(2))
+            assertEquals(0, opened)
+        }
+        assertTrue(compose.onNodeWithTag("page_workout_block_modes", useUnmergedTree = true).getUnclippedBoundsInRoot().top <
+            compose.onNodeWithTag("page_workout_block_quick", useUnmergedTree = true).getUnclippedBoundsInRoot().top)
     }
 
     @Test fun homeSupportsLongPressAndFooterAndSavesNewOrderWithoutOpeningTheTile() {
