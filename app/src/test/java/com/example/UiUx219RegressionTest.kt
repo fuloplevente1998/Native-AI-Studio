@@ -466,9 +466,6 @@ class UiUx219RegressionTest {
                             onOpenProgramDayDetails = {},
                             onOpenQuickWorkout = {},
                             onOpenWatchAndSync = {},
-                            onOpenHealthSleep = {},
-                            onOpenHealthHeart = {},
-                            onOpenHealthSteps = {},
                             onOpenCoachReadiness = {},
                             onOpenGoalsDialog = {},
                             onOpenPersonalPlanner = {}

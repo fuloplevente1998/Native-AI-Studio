@@ -44,14 +44,13 @@ class HomeCompactStatusRegressionTest {
                 explanationHu = "Valós forrás szerinti napi aggregáció"
             ))
         var coach = 0
-        var health = 0
         var planner = 0
         compose.setContent { TrainPilotTheme {
             Box(Modifier.size(393.dp, 680.dp).clipToBounds().testTag("home_viewport")) {
                 HomeScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU),
                     onStartOrContinueWorkout = {}, onOpenProgramDayDetails = {}, onOpenQuickWorkout = {},
-                    onOpenWatchAndSync = {}, onOpenHealthSleep = {}, onOpenHealthHeart = {}, onOpenHealthSteps = {},
-                    onOpenCoachReadiness = { coach++ }, onOpenGoalsDialog = {}, onOpenPersonalPlanner = { planner++ }, onOpenHealthToday = { health++ })
+                    onOpenWatchAndSync = {},
+                    onOpenCoachReadiness = { coach++ }, onOpenGoalsDialog = {}, onOpenPersonalPlanner = { planner++ })
             }
         } }
         compose.onNodeWithTag("home_personal_planner_mini_card").assertIsDisplayed().performClick()
@@ -64,7 +63,6 @@ class HomeCompactStatusRegressionTest {
         assertTrue("Coach should fit without scrolling at default size", card.getUnclippedBoundsInRoot().bottom <= viewport.bottom)
         compose.onNodeWithTag("home_coach_summary", useUnmergedTree = true).assertTextContains("friss adat", substring = true)
         card.performClick(); assertEquals(1, coach)
-        compose.onNodeWithTag("home_today_calories").performClick(); assertEquals(1, health)
     }
     @Test fun dailyPulseTrendOpensFromTodayTileWithoutRepeatedSummaryRows() {
         val state = TrainPilotUiState(todayPulseReading = PulseDayReading(

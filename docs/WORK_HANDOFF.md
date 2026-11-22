@@ -1,3 +1,11 @@
+# Kezdőlap · Mai állapot részletek
+
+- Ág: `fix/home-today-health-details`, alap `afde511`.
+- A Kezdőlap és az Egészség mind a hat Mai állapot csempéje ugyanazt az alulról nyíló részletlapot használja. A bezárás után a kiinduló oldal marad. A részletlapról nyitható napló a kiválasztott napi adattípusra ugrik.
+- A Kezdőlap hat csempéjét, bezárását és a napló fókuszát a `Post2757PresentationRegressionTest` ellenőrzi. A teljes JVM és R8 eredménye a draft PR ellenőrzéseiben látszik.
+
+---
+
 # TrainPilot 2795 · 1.4.1
 
 - Kiadási forrás `8534c9591faaa451a4236c7fee4d2ce72bec9700`, squash merge [#326](https://github.com/fuloplevente1998/Native-AI-Studio/pull/326).

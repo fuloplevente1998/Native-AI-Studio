@@ -46,7 +46,7 @@ class DeviceFollowupUiRegressionTest {
             calendarEvents = listOf(CalendarDayEvent("plan-b", 14, "18:00", "B nap", 1, 120,
                 CalendarEventStatus.PLANNED, "B", "2026-11-14", "home-basic", "b"))))
         compose.setContent { TrainPilotTheme {
-            HomeScreen(state, strings, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
+            HomeScreen(state, strings, {}, {}, {}, {}, {}, {}, {})
         } }
         compose.onNodeWithTag("home_planned_day", useUnmergedTree = true).assertTextEquals("A nap")
         compose.runOnIdle { state = state.copy(homeWorkoutTarget = HomeWorkoutTarget("home-basic", "b", "plan-b")) }

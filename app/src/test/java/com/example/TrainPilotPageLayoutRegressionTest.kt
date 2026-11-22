@@ -105,8 +105,8 @@ class TrainPilotPageLayoutRegressionTest {
             TrainPilotTheme {
                 HomeScreen(TrainPilotUiState(), TrainPilotStrings.forLanguage(AppLanguage.HU),
                     onStartOrContinueWorkout = {}, onOpenProgramDayDetails = {},
-                    onOpenQuickWorkout = {}, onOpenWatchAndSync = {}, onOpenHealthSleep = {},
-                    onOpenHealthHeart = {}, onOpenHealthSteps = {}, onOpenCoachReadiness = {},
+                    onOpenQuickWorkout = {}, onOpenWatchAndSync = {},
+                    onOpenCoachReadiness = {},
                     onOpenGoalsDialog = {}, onOpenPersonalPlanner = { profileOpened++ })
             }
         }
