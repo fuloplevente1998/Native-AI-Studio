@@ -365,7 +365,7 @@ internal object HealthConnectLegacyBridge {
             .put("source","health_connect").put("start",start.toString())
             .put("end",end.toString()).put("warnings",warnings)
         val timeRange = TimeRangeFilter.between(start,end)
-        suspend fun <T> value(metric: androidx.health.connect.client.aggregate.AggregateMetric<T>): T? {
+        suspend fun <T : Any> value(metric: androidx.health.connect.client.aggregate.AggregateMetric<T>): T? {
             guard()
             return client.aggregate(AggregateRequest(setOf(metric),timeRange))[metric]
         }
