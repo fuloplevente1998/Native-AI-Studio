@@ -1,10 +1,10 @@
 # Egészség · #332, #333, #334
 
-- Alap `cfb1f44` (1.4.2, #330). A három javítás külön draft ágon készült. [#332](https://github.com/fuloplevente1998/Native-AI-Studio/issues/332) · [#333](https://github.com/fuloplevente1998/Native-AI-Studio/issues/333) · [#334](https://github.com/fuloplevente1998/Native-AI-Studio/issues/334)
+- A három javítás a [#338](https://github.com/fuloplevente1998/Native-AI-Studio/pull/338) squash merge-dzsel került mainre. A tesztelt forrásfák azonosak. Main-forrás `a9788d60d6b7c5d60ba126e311039948383f45ff`, alap `cfb1f44`. [#332](https://github.com/fuloplevente1998/Native-AI-Studio/issues/332) · [#333](https://github.com/fuloplevente1998/Native-AI-Studio/issues/333) · [#334](https://github.com/fuloplevente1998/Native-AI-Studio/issues/334)
 - `fix/health-source-332` (#332). Teljes hozzáférésnél támogatott beállítási útvonal, részleges hozzáférésnél csak a hiányzó jogok kérése a forráspanelről.
 - `fix/health-layout-333` (#333). Önálló Test és fittség blokk, kétdimenziós Mai állapot rács a Kezdőlapon és az Egészségben. A mentett sorok sorrendje a rács első rendezésekor átvihető.
 - `fix/health-hourly-334` (#334). Külön, eltelt órás ablakokra lekért Health Connect-aggregátumok Android 9–13 és 14+ alatt. Eltérő napi és órás forrásnál jelzés. Valós szolgáltatói válasz és fizikai készülékes ellenőrzés hátravan.
-- Statikus diff-ellenőrzés elkészült. A regressziós tesztforrások a brancheken vannak. A felhasználó kérésére a CI és az APK/AAB kiadási build ebben a körben szünetel.
+- A [közös ellenőrzés](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45071473482) sikeres. Nyers JUnit XML: 839 telefonos és 204 Wear-teszt, 0 hiba és 0 kihagyás. Az R8 sikeres. A main automatikus aláírt APK/AAB-buildje szünetel. A Napló forráscsempéinek külön javítása a [#339](https://github.com/fuloplevente1998/Native-AI-Studio/pull/339) draftban van.
 
 ---
 
