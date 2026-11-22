@@ -398,7 +398,10 @@ private fun DailyActivityStatistics(state: TrainPilotUiState, number: NumberForm
             }
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(palette.surfaceElevated)
                 .padding(horizontal = 10.dp, vertical = 6.dp).testTag("statistics_steps_selected")) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.DirectionsWalk, contentDescription = null,
+                        tint = palette.primary, modifier = Modifier.size(18.dp))
                     Text("${selectedDate.monthValue}.${"%02d".format(selectedDate.dayOfMonth)}. (${selectedDate.format(weekdayFmt)})",
                         color = palette.textPrimary, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
