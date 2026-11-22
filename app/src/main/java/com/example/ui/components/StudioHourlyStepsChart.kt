@@ -19,6 +19,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.model.AppLanguage
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.repforge.app.HealthJournalStore
+import com.repforge.app.HealthConnectRepository
 import com.repforge.app.NativeDataReplacement
 import com.repforge.app.NativeHealthProviderData
 import com.repforge.app.NativePrivacyControls
@@ -65,16 +66,27 @@ internal fun StudioHourlyStepsChart(day: LocalDate, provider: String, origin: St
                         }
                         val candidateRows = try {
                             guard()
-                            if (candidate == HealthJournalStore.SAMSUNG && now.atZone(zone).toLocalDate() == day) {
-                                val measured = SamsungHealthRepository.readHourlySteps(
-                                    context, day, now.atZone(zone).toLocalDateTime(), guard)
-                                hourlySteps(day, zone, now, emptyList()).map { it.copy(count = measured[it.hour]) }
-                            } else {
-                                val readOrigin = if (candidate == provider) origin
-                                    else NativeHealthProviderData.day(store, candidate, day)?.let {
-                                        it.optString("stepsOrigin").ifBlank { it.optString("activityOrigin") }
-                                    }.orEmpty()
-                                readHourlySteps(NativeHealthRecords(store), day, candidate, readOrigin, zone, now)
+                            val readOrigin = if (candidate == provider) origin
+                                else NativeHealthProviderData.day(store, candidate, day)?.let {
+                                    it.optString("stepsOrigin").ifBlank { it.optString("activityOrigin") }
+                                }.orEmpty()
+                            when {
+                                candidate == HealthJournalStore.SAMSUNG && now.atZone(zone).toLocalDate() == day -> {
+                                    val measured = SamsungHealthRepository.readHourlySteps(
+                                        context, day, now.atZone(zone).toLocalDateTime(), guard)
+                                    hourlySteps(day, zone, now, emptyList()).map { it.copy(count = measured[it.hour]) }
+                                }
+                                candidate == HealthJournalStore.HC &&
+                                    android.os.Build.VERSION.SDK_INT >= 34 &&
+                                    !day.isBefore(now.atZone(zone).toLocalDate().minusDays(29)) -> {
+                                    // Do not sum raw records from competing watch apps. Match
+                                    // the daily Health Connect Activity-priority aggregate.
+                                    val measured = HealthConnectRepository.readHourlyStepsSuspend(
+                                        context, day, readOrigin, guard)
+                                    hourlySteps(day, zone, now, emptyList()).map { it.copy(count = measured[it.hour]) }
+                                }
+                                else -> readHourlySteps(NativeHealthRecords(store), day, candidate,
+                                    readOrigin, zone, now)
                             }.also { guard() }
                         } catch (cancelled: CancellationException) { throw cancelled }
                         catch (_: Exception) { emptyList() }
