@@ -1,4 +1,10 @@
 package com.example.ui.screens
+import androidx.compose.runtime.key
+import com.example.ui.components.rememberPageLayout
+import com.example.ui.components.PageLayoutTile
+import com.example.ui.components.PageLayoutFooter
+import com.example.ui.components.PageLayoutEditor
+import com.example.ui.components.PageLayoutBlock
 
 import com.example.ui.components.TrainPilotModalBottomSheet
 import com.example.ui.components.trainPilotAnimatedExpansion
@@ -258,6 +264,18 @@ fun WorkoutTabScreen(
     val activeProgram = state.programs.firstOrNull { it.isActive } ?: state.programs.firstOrNull()
 
     val scrollState = rememberScrollState()
+    val blocks = listOf(
+        PageLayoutBlock("quick", strings.quickWorkoutTitle),
+        PageLayoutBlock("modes", trW(state.language, "Ismétléses, időzített és kültéri", "Reps, timed and outdoor", "Wiederholungen, Zeit und Outdoor", "Repetări, timp și exterior")),
+        PageLayoutBlock("library", trW(state.language, "Gyakorlatkönyvtár", "Exercise library", "Übungsbibliothek", "Bibliotecă de exerciții")),
+        PageLayoutBlock("program", strings.currentProgramTitle),
+        PageLayoutBlock("settings", trW(state.language, "Edzés beállításai", "Workout settings", "Trainingseinstellungen", "Setări antrenament"))
+    )
+    val layout = rememberPageLayout("workout", blocks.map { it.id })
+    if (layout.draft != null) {
+        PageLayoutEditor(layout, state.language, blocks)
+        return
+    }
 
     // 2779: no "more below" arrow; the tab fits one screen. Scrolling stays only as a fallback for
     // very small screens / large font scale, so nothing becomes unreachable.
@@ -270,241 +288,258 @@ fun WorkoutTabScreen(
                 .padding(top = 8.dp, bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
         ) {
-        // 1. Gyors edzés Card (Mockup 1/4 #2)
-        Surface(
-            shape = RoundedCornerShape(18.dp),
-            color = palette.surface,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenQuickWorkout() }
-                .testTag("workout_tab_quick_card")
-        ) {
-            // 2779: flatter row (48 dp touch target kept) so the whole tab fits without scrolling.
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.DirectionsRun,
-                    contentDescription = null,
-                    tint = palette.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = strings.quickWorkoutTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = palette.textPrimary
-                    )
-                }
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = palette.textSecondary
-                )
-            }
-        }
-
-        // 2. Three tall tiles (2772): Strength / Timed / Outdoor, title on top, big icon below.
-        //    Each opens the Quick workout sheet on its own tab (no separate page).
-        val timedCount = state.exercises.count { it.isTimed || it.measurementType == "time" }
-        Row(
-            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            WorkoutModeTile(
-                title = trW(state.language, "Ismétléses", "Reps", "Wiederholungen", "Repetări"),
-                subtitle = trW(state.language, "súly × ismétlés", "weight × reps", "Gewicht × Wdh.", "greutate × rep."),
-                badge = trW(state.language, "${state.exercises.size} gyak.", "${state.exercises.size} ex.", "${state.exercises.size} Üb.", "${state.exercises.size} ex."),
-                testTag = "workout_tab_exercise_picker",
-                onClick = onOpenExerciseLibrary,
-                modifier = Modifier.weight(1f)
-            ) { WorkoutModeIcon(Icons.Default.FitnessCenter) }
-            WorkoutModeTile(
-                title = trW(state.language, "Időzített", "Timed", "Zeit", "Cronometrat"),
-                subtitle = trW(state.language, "idő / tartás", "time / hold", "Zeit / Halten", "timp / menținere"),
-                badge = trW(state.language, "$timedCount gyak.", "$timedCount ex.", "$timedCount Üb.", "$timedCount ex."),
-                testTag = "workout_tab_timed_card",
-                onClick = onOpenTimed,
-                modifier = Modifier.weight(1f)
-            ) { WorkoutModeIcon(Icons.Default.Timer) }
-            WorkoutModeTile(
-                title = trW(state.language, "Kültéri", "Outdoor", "Outdoor", "Exterior"),
-                subtitle = trW(state.language, "futás, séta", "run, walk", "Laufen, Gehen", "alergare, mers"),
-                badge = trW(state.language, "GPS élő", "GPS live", "GPS live", "GPS live"),
-                badgeColor = palette.success,
-                testTag = "workout_tab_outdoor_card",
-                onClick = onOpenOutdoorWorkout,
-                modifier = Modifier.weight(1f)
-            ) { OutdoorRouteGraphic() }
-        }
-
-        // 2773 (A): exercise library entry right under the three tiles.
-        Surface(
-            shape = RoundedCornerShape(18.dp),
-            color = palette.surface,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 56.dp)
-                .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenExerciseCatalog() }
-                .testTag("workout_tab_exercise_catalog")
-        ) {
-            Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.AutoMirrored.Filled.FormatListBulleted, null, tint = palette.primary, modifier = Modifier.size(24.dp))
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(trW(state.language, "Gyakorlatkönyvtár", "Exercise library", "Übungsbibliothek", "Bibliotecă de exerciții"),
-                        style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
-                    Text(trW(state.language, "${state.exercises.size} gyakorlat",
-                        "${state.exercises.size} exercises",
-                        "${state.exercises.size} Übungen",
-                        "${state.exercises.size} exerciții"),
-                        style = MaterialTheme.typography.bodySmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.textSecondary)
-            }
-        }
-
-        // 3. Aktuális program Header + Összes megtekintése >
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = strings.currentProgramTitle,
-                style = MaterialTheme.typography.titleLarge,
-                color = palette.textPrimary,
-                modifier = Modifier.weight(1f)
-            )
-            Row(
-                modifier = Modifier
-                    .heightIn(min = 48.dp)
-                    .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenProgramsList() }
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = strings.viewAllAction,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = palette.textSecondary
-                )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = palette.textSecondary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-
-        if (activeProgram != null) {
-            // 2779: every day of the program, equal height, each with its next planned date.
-            WorkoutTabDayCards(
-                program = activeProgram,
-                events = state.calendarEvents,
-                target = state.homeWorkoutTarget,
-                language = state.language,
-                onOpenProgramEditor = onOpenProgramEditor,
-                onStartWorkoutDay = onStartWorkoutDay
-            )
-
-            // Edzés beállításai (from main Edzés screen)
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = palette.surface,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
-                    .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenProgressionModal() }
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "⚙ ${trW(state.language, "Edzés beállításai", "Workout settings", "Trainingseinstellungen", "Setări antrenament")} • ${activeProgram.localizedName(state.language)}",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = palette.textPrimary
-                        )
-                        val localizedStyle = when {
-                            state.trainingStyleHu.contains("Erő-alap", ignoreCase = true) -> trW(state.language, state.trainingStyleHu, "Strength-focused (lower reps, higher weight)", "Kraftfokus (weniger Wdh., höheres Gewicht)", "Focus pe forță (repetări mai puține, greutate mai mare)")
-                            state.trainingStyleHu.contains("Állóképesség", ignoreCase = true) -> trW(state.language, state.trainingStyleHu, "Endurance / Toning (12–15+ reps)", "Ausdauer / Definition (12–15+ Wdh.)", "Anduranță / Tonifiere (12–15+ repetări)")
-                            else -> trW(state.language, state.trainingStyleHu, "Balanced (strength + muscle, 8–12 reps)", "Ausgewogen (Kraft + Muskel, 8–12 Wdh.)", "Echilibrat (forță + masă, 8–12 repetări)")
+        layout.saved.forEach { id ->
+            key(id) {
+                PageLayoutTile(layout, id) {
+                    when (id) {
+                        "quick" -> {
+                            // 1. Gyors edzés Card (Mockup 1/4 #2)
+                            Surface(
+                                shape = RoundedCornerShape(18.dp),
+                                color = palette.surface,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 48.dp)
+                                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenQuickWorkout() }
+                                    .testTag("workout_tab_quick_card")
+                            ) {
+                                // 2779: flatter row (48 dp touch target kept) so the whole tab fits without scrolling.
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.DirectionsRun,
+                                        contentDescription = null,
+                                        tint = palette.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = strings.quickWorkoutTitle,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = palette.textPrimary
+                                        )
+                                    }
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                        contentDescription = null,
+                                        tint = palette.textSecondary
+                                    )
+                                }
+                            }
                         }
-                        val localizedRule = when {
-                            state.progressionRuleHu.contains("Óvatos", ignoreCase = true) -> trW(state.language, state.progressionRuleHu, "Conservative progression (first +reps, then weight)", "Vorsichtige Progression (zuerst +Wdh., dann Gewicht)", "Progresie prudentă (întâi +repetări, apoi greutate)")
-                            state.progressionRuleHu.contains("Kézi", ignoreCase = true) -> trW(state.language, state.progressionRuleHu, "Manual control (recommendation only)", "Manuelle Steuerung (nur Empfehlung)", "Control manual (doar recomandare)")
-                            else -> trW(state.language, state.progressionRuleHu, "Standard progression (+1–2 reps or +2 kg)", "Standard-Progression (+1–2 Wdh. oder +2 kg)", "Progresie standard (+1–2 repetări sau +2 kg)")
+                        "modes" -> {
+                            // 2. Three tall tiles (2772): Strength / Timed / Outdoor, title on top, big icon below.
+                            //    Each opens the Quick workout sheet on its own tab (no separate page).
+                            val timedCount = state.exercises.count { it.isTimed || it.measurementType == "time" }
+                            Row(
+                                modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                WorkoutModeTile(
+                                    title = trW(state.language, "Ismétléses", "Reps", "Wiederholungen", "Repetări"),
+                                    subtitle = trW(state.language, "súly × ismétlés", "weight × reps", "Gewicht × Wdh.", "greutate × rep."),
+                                    badge = trW(state.language, "${state.exercises.size} gyak.", "${state.exercises.size} ex.", "${state.exercises.size} Üb.", "${state.exercises.size} ex."),
+                                    testTag = "workout_tab_exercise_picker",
+                                    onClick = onOpenExerciseLibrary,
+                                    modifier = Modifier.weight(1f)
+                                ) { WorkoutModeIcon(Icons.Default.FitnessCenter) }
+                                WorkoutModeTile(
+                                    title = trW(state.language, "Időzített", "Timed", "Zeit", "Cronometrat"),
+                                    subtitle = trW(state.language, "idő / tartás", "time / hold", "Zeit / Halten", "timp / menținere"),
+                                    badge = trW(state.language, "$timedCount gyak.", "$timedCount ex.", "$timedCount Üb.", "$timedCount ex."),
+                                    testTag = "workout_tab_timed_card",
+                                    onClick = onOpenTimed,
+                                    modifier = Modifier.weight(1f)
+                                ) { WorkoutModeIcon(Icons.Default.Timer) }
+                                WorkoutModeTile(
+                                    title = trW(state.language, "Kültéri", "Outdoor", "Outdoor", "Exterior"),
+                                    subtitle = trW(state.language, "futás, séta", "run, walk", "Laufen, Gehen", "alergare, mers"),
+                                    badge = trW(state.language, "GPS élő", "GPS live", "GPS live", "GPS live"),
+                                    badgeColor = palette.success,
+                                    testTag = "workout_tab_outdoor_card",
+                                    onClick = onOpenOutdoorWorkout,
+                                    modifier = Modifier.weight(1f)
+                                ) { OutdoorRouteGraphic() }
+                            }
                         }
-                        Text(
-                            text = "$localizedStyle • $localizedRule",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = palette.textSecondary
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = palette.primary
-                    )
-                }
-            }
-        } else {
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = palette.surface,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                    .padding(20.dp)
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = trW(state.language, "Nincs aktív program", "No active program", "Kein aktives Programm", "Niciun program activ"),
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = palette.textPrimary
-                    )
-                    Text(
-                        text = trW(
-                            state.language,
-                            "Válassz egy edzésprogramot a programlistából vagy hozz létre egy újat.",
-                            "Select a workout program from the list or create a new one.",
-                            "Wähle ein Trainingsprogramm aus der Liste oder erstelle ein neues.",
-                            "Selectează un program din listă sau creează unul nou."
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = palette.textSecondary,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Button(
-                        onClick = onOpenProgramsList,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = palette.primary,
-                            contentColor = palette.onPrimary
-                        )
-                    ) {
-                        Text(strings.programsShortcutTitle)
+                        "library" -> {
+                            // 2773 (A): exercise library entry right under the three tiles.
+                            Surface(
+                                shape = RoundedCornerShape(18.dp),
+                                color = palette.surface,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 56.dp)
+                                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onOpenExerciseCatalog() }
+                                    .testTag("workout_tab_exercise_catalog")
+                            ) {
+                                Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.AutoMirrored.Filled.FormatListBulleted, null, tint = palette.primary, modifier = Modifier.size(24.dp))
+                                    Spacer(Modifier.width(12.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(trW(state.language, "Gyakorlatkönyvtár", "Exercise library", "Übungsbibliothek", "Bibliotecă de exerciții"),
+                                            style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
+                                        Text(trW(state.language, "${state.exercises.size} gyakorlat",
+                                            "${state.exercises.size} exercises",
+                                            "${state.exercises.size} Übungen",
+                                            "${state.exercises.size} exerciții"),
+                                            style = MaterialTheme.typography.bodySmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    }
+                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.textSecondary)
+                                }
+                            }
+                        }
+                        "program" -> {
+                            // 3. Aktuális program Header + Összes megtekintése >
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = strings.currentProgramTitle,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = palette.textPrimary,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Row(
+                                    modifier = Modifier
+                                        .heightIn(min = 48.dp)
+                                        .trainPilotClickable(RoundedCornerShape(8.dp)) { onOpenProgramsList() }
+                                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = strings.viewAllAction,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = palette.textSecondary
+                                    )
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                        contentDescription = null,
+                                        tint = palette.textSecondary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+
+                            if (activeProgram != null) {
+                                // 2779: every day of the program, equal height, each with its next planned date.
+                                WorkoutTabDayCards(
+                                    program = activeProgram,
+                                    events = state.calendarEvents,
+                                    target = state.homeWorkoutTarget,
+                                    language = state.language,
+                                    onOpenProgramEditor = onOpenProgramEditor,
+                                    onStartWorkoutDay = onStartWorkoutDay
+                                )
+
+                            } else {
+                                Surface(
+                                    shape = RoundedCornerShape(18.dp),
+                                    color = palette.surface,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
+                                        .padding(20.dp)
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(
+                                            text = trW(state.language, "Nincs aktív program", "No active program", "Kein aktives Programm", "Niciun program activ"),
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = palette.textPrimary
+                                        )
+                                        Text(
+                                            text = trW(
+                                                state.language,
+                                                "Válassz egy edzésprogramot a programlistából vagy hozz létre egy újat.",
+                                                "Select a workout program from the list or create a new one.",
+                                                "Wähle ein Trainingsprogramm aus der Liste oder erstelle ein neues.",
+                                                "Selectează un program din listă sau creează unul nou."
+                                            ),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = palette.textSecondary,
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Button(
+                                            onClick = onOpenProgramsList,
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = palette.primary,
+                                                contentColor = palette.onPrimary
+                                            )
+                                        ) {
+                                            Text(strings.programsShortcutTitle)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        "settings" -> {
+                            if (activeProgram != null) {
+                                // Edzés beállításai (from main Edzés screen)
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = palette.surface,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(16.dp))
+                                        .trainPilotClickable(RoundedCornerShape(16.dp)) { onOpenProgressionModal() }
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(14.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "⚙ ${trW(state.language, "Edzés beállításai", "Workout settings", "Trainingseinstellungen", "Setări antrenament")} • ${activeProgram.localizedName(state.language)}",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                color = palette.textPrimary
+                                            )
+                                            val localizedStyle = when {
+                                                state.trainingStyleHu.contains("Erő-alap", ignoreCase = true) -> trW(state.language, state.trainingStyleHu, "Strength-focused (lower reps, higher weight)", "Kraftfokus (weniger Wdh., höheres Gewicht)", "Focus pe forță (repetări mai puține, greutate mai mare)")
+                                                state.trainingStyleHu.contains("Állóképesség", ignoreCase = true) -> trW(state.language, state.trainingStyleHu, "Endurance / Toning (12–15+ reps)", "Ausdauer / Definition (12–15+ Wdh.)", "Anduranță / Tonifiere (12–15+ repetări)")
+                                                else -> trW(state.language, state.trainingStyleHu, "Balanced (strength + muscle, 8–12 reps)", "Ausgewogen (Kraft + Muskel, 8–12 Wdh.)", "Echilibrat (forță + masă, 8–12 repetări)")
+                                            }
+                                            val localizedRule = when {
+                                                state.progressionRuleHu.contains("Óvatos", ignoreCase = true) -> trW(state.language, state.progressionRuleHu, "Conservative progression (first +reps, then weight)", "Vorsichtige Progression (zuerst +Wdh., dann Gewicht)", "Progresie prudentă (întâi +repetări, apoi greutate)")
+                                                state.progressionRuleHu.contains("Kézi", ignoreCase = true) -> trW(state.language, state.progressionRuleHu, "Manual control (recommendation only)", "Manuelle Steuerung (nur Empfehlung)", "Control manual (doar recomandare)")
+                                                else -> trW(state.language, state.progressionRuleHu, "Standard progression (+1–2 reps or +2 kg)", "Standard-Progression (+1–2 Wdh. oder +2 kg)", "Progresie standard (+1–2 repetări sau +2 kg)")
+                                            }
+                                            Text(
+                                                text = "$localizedStyle • $localizedRule",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = palette.textSecondary
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                            contentDescription = null,
+                                            tint = palette.primary
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
-
+        PageLayoutFooter(layout, state.language)
     }
 }
 }

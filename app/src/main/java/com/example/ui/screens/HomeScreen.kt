@@ -1,4 +1,10 @@
 package com.example.ui.screens
+import androidx.compose.runtime.key
+import com.example.ui.components.rememberPageLayout
+import com.example.ui.components.PageLayoutTile
+import com.example.ui.components.PageLayoutFooter
+import com.example.ui.components.PageLayoutEditor
+import com.example.ui.components.PageLayoutBlock
 
 import com.repforge.app.ui.theme.trainPilotClickable
 import com.repforge.app.ui.theme.TrainPilotCardSpacing
@@ -117,6 +123,19 @@ fun HomeScreen(
     }
 
     val scrollState = rememberScrollState()
+    val blocks = listOf(
+        PageLayoutBlock("profile", strings.profileAndNewPlanBtn),
+        PageLayoutBlock("program", tr("Aktív program", "Active program", "Aktives Programm", "Program activ")),
+        PageLayoutBlock("advice", tr("Mai javaslat", "Today’s advice", "Heutige Empfehlung", "Recomandarea zilei")),
+        PageLayoutBlock("quick_watch", tr("Gyors edzés és óra", "Quick workout and watch", "Schnelltraining und Uhr", "Antrenament rapid și ceas")),
+        PageLayoutBlock("daily_health", tr("Mai állapot", "Today’s status", "Heutiger Status", "Starea de azi")),
+        PageLayoutBlock("weekly", tr("Heti célok", "Weekly goals", "Wochenziele", "Obiective săptămânale"))
+    )
+    val layout = rememberPageLayout("home", blocks.map { it.id })
+    if (layout.draft != null) {
+        PageLayoutEditor(layout, state.language, blocks)
+        return
+    }
 
     com.example.ui.components.TrainPilotScrollableBox(
         scrollState = scrollState,
@@ -130,336 +149,352 @@ fun HomeScreen(
                 .padding(top = 4.dp, bottom = 6.dp),
             verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-        // A kompakt Profil és új terv belépő mindig elérhető a Kezdőlapon.
-        Surface(
-            shape = RoundedCornerShape(14.dp),
-            color = palette.surface,
-            modifier = Modifier
-                .fillMaxWidth()
-                .trainPilotSoftGlow(palette.primary, RoundedCornerShape(14.dp), 3.dp)
-                .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
-                .trainPilotClickable(RoundedCornerShape(14.dp)) { onOpenPersonalPlanner() }
-                .testTag("home_personal_planner_mini_card")
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = palette.tintedSurface(0.16f),
-                        modifier = Modifier.size(34.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                tint = palette.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                    Column {
-                        Text(
-                            text = strings.profileAndNewPlanBtn,
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            color = palette.textPrimary
-                        )
-                        Text(
-                            // 2778: only the useful part; the explanation and the duplicate button text are gone.
-                            text = "${com.example.localization.StudioProfileOptionLabels.label(state.trainingStyleHu, state.language)} • ${com.example.localization.StudioProfileOptionLabels.label(state.progressionRuleHu, state.language)}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = palette.textSecondary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = strings.profileAndNewPlanBtn,
-                    tint = palette.primary, modifier = Modifier.size(24.dp).testTag("home_profile_new_plan_button"))
-            }
-        }
-
-        // 3. HERO WORKOUT CARD (Mockup 1/4 #1: "Szüneteltetve • Teljes test A • 8 gyakorlat • kb. 60 perc • ▶ Folytatás")
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = palette.surface,
-            modifier = Modifier
-                .fillMaxWidth()
-                .trainPilotSoftGlow(palette.primary, RoundedCornerShape(20.dp))
-                .trainPilotBorder(
-                    width = 1.dp,
-                    brush = Brush.linearGradient(
-                        listOf(
-                            palette.primary.copy(alpha = 0.55f),
-                            palette.cardBorder
-                        )
-                    ),
-                    shape = RoundedCornerShape(20.dp)
-                )
-                .testTag("home_hero_workout_card")
-        ) {
-          Column(modifier = Modifier.fillMaxWidth()) {
-            // Header tap expands the active program's editor inside this card (or returns to a live workout).
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .trainPilotClickable(RoundedCornerShape(20.dp)) { onOpenProgramDayDetails() }
-                    .testTag("home_hero_workout_header")
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                palette.surfaceElevated.copy(alpha = 0.65f),
-                                palette.surface
-                            )
-                        )
-                    )
-                    .padding(horizontal = 10.dp, vertical = 7.dp),
-                verticalArrangement = Arrangement.spacedBy(5.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Left Dumbbell Icon in warm dark gold container
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = palette.tintedSurface(0.14f),
-                        modifier = Modifier
-                            .size(40.dp)
-                            .trainPilotBorder(
-                                width = 1.dp,
-                                color = palette.tintedSurface(0.3f),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.FitnessCenter,
-                                contentDescription = null,
-                                tint = palette.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(1.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            if (state.isWorkoutSessionActive && state.homeDemoMode == HomeDemoMode.PAUSED_WORKOUT) {
-                                Icon(
-                                    imageVector = Icons.Default.Pause,
-                                    contentDescription = null,
-                                    tint = palette.primary,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Text(
-                                    text = strings.pausedBadge,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = palette.primary
-                                )
-                            } else {
-                                Text(
-                                    text = if (state.isWorkoutSessionActive) tr("Aktív edzés", "Active Workout", "Aktives Training", "Antrenament activ") else if (activeProgram != null) {
-                                        "${strings.activeProgramBadge} • ${activeProgram.localizedName(state.language)}"
-                                    } else {
-                                        strings.activeProgramBadge
-                                    },
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = palette.primary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
+        layout.saved.forEach { id ->
+            key(id) {
+                PageLayoutTile(layout, id) {
+                    when (id) {
+                        "profile" -> {
+                            // A kompakt Profil és új terv belépő mindig elérhető a Kezdőlapon.
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = palette.surface,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .trainPilotSoftGlow(palette.primary, RoundedCornerShape(14.dp), 3.dp)
+                                    .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                                    .trainPilotClickable(RoundedCornerShape(14.dp)) { onOpenPersonalPlanner() }
+                                    .testTag("home_personal_planner_mini_card")
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = palette.tintedSurface(0.16f),
+                                            modifier = Modifier.size(34.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    imageVector = Icons.Default.AutoAwesome,
+                                                    contentDescription = null,
+                                                    tint = palette.primary,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        }
+                                        Column {
+                                            Text(
+                                                text = strings.profileAndNewPlanBtn,
+                                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                                color = palette.textPrimary
+                                            )
+                                            Text(
+                                                // 2778: only the useful part; the explanation and the duplicate button text are gone.
+                                                text = "${com.example.localization.StudioProfileOptionLabels.label(state.trainingStyleHu, state.language)} • ${com.example.localization.StudioProfileOptionLabels.label(state.progressionRuleHu, state.language)}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = palette.textSecondary,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                    }
+                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = strings.profileAndNewPlanBtn,
+                                        tint = palette.primary, modifier = Modifier.size(24.dp).testTag("home_profile_new_plan_button"))
+                                }
                             }
                         }
+                        "program" -> {
+                            // 3. HERO WORKOUT CARD (Mockup 1/4 #1: "Szüneteltetve • Teljes test A • 8 gyakorlat • kb. 60 perc • ▶ Folytatás")
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = palette.surface,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .trainPilotSoftGlow(palette.primary, RoundedCornerShape(20.dp))
+                                    .trainPilotBorder(
+                                        width = 1.dp,
+                                        brush = Brush.linearGradient(
+                                            listOf(
+                                                palette.primary.copy(alpha = 0.55f),
+                                                palette.cardBorder
+                                            )
+                                        ),
+                                        shape = RoundedCornerShape(20.dp)
+                                    )
+                                    .testTag("home_hero_workout_card")
+                            ) {
+                              Column(modifier = Modifier.fillMaxWidth()) {
+                                // Header tap expands the active program's editor inside this card (or returns to a live workout).
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .trainPilotClickable(RoundedCornerShape(20.dp)) { onOpenProgramDayDetails() }
+                                        .testTag("home_hero_workout_header")
+                                        .background(
+                                            Brush.verticalGradient(
+                                                colors = listOf(
+                                                    palette.surfaceElevated.copy(alpha = 0.65f),
+                                                    palette.surface
+                                                )
+                                            )
+                                        )
+                                        .padding(horizontal = 10.dp, vertical = 7.dp),
+                                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        // Left Dumbbell Icon in warm dark gold container
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = palette.tintedSurface(0.14f),
+                                            modifier = Modifier
+                                                .size(40.dp)
+                                                .trainPilotBorder(
+                                                    width = 1.dp,
+                                                    color = palette.tintedSurface(0.3f),
+                                                    shape = RoundedCornerShape(12.dp)
+                                                )
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    imageVector = Icons.Default.FitnessCenter,
+                                                    contentDescription = null,
+                                                    tint = palette.primary,
+                                                    modifier = Modifier.size(24.dp)
+                                                )
+                                            }
+                                        }
 
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = palette.tintedSurface(0.12f),
-                            modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
-                        ) {
-                            Text(
-                                text = if (state.isWorkoutSessionActive) {
-                                    com.example.model.LoggedWorkoutEntry(id = "active", titleHu = state.activeWorkoutTitleHu)
-                                        .localizedTitle(state.language, state.programs, state.exercises)
-                                } else currentDay?.localizedDayCode(state.language) ?: tr("A nap", "Day A", "Tag A", "Ziua A"),
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold,
-                                    fontSize = MaterialTheme.typography.titleSmall.fontSize * 1.1f),
-                                color = palette.primary,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp).testTag("home_planned_day")
-                            )
+                                        Spacer(modifier = Modifier.width(8.dp))
+
+                                        Column(
+                                            modifier = Modifier.weight(1f),
+                                            verticalArrangement = Arrangement.spacedBy(1.dp)
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                if (state.isWorkoutSessionActive && state.homeDemoMode == HomeDemoMode.PAUSED_WORKOUT) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Pause,
+                                                        contentDescription = null,
+                                                        tint = palette.primary,
+                                                        modifier = Modifier.size(14.dp)
+                                                    )
+                                                    Text(
+                                                        text = strings.pausedBadge,
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                        color = palette.primary
+                                                    )
+                                                } else {
+                                                    Text(
+                                                        text = if (state.isWorkoutSessionActive) tr("Aktív edzés", "Active Workout", "Aktives Training", "Antrenament activ") else if (activeProgram != null) {
+                                                            "${strings.activeProgramBadge} • ${activeProgram.localizedName(state.language)}"
+                                                        } else {
+                                                            strings.activeProgramBadge
+                                                        },
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                        color = palette.primary,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                }
+                                            }
+
+                                            Surface(
+                                                shape = RoundedCornerShape(8.dp),
+                                                color = palette.tintedSurface(0.12f),
+                                                modifier = Modifier.trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(8.dp))
+                                            ) {
+                                                Text(
+                                                    text = if (state.isWorkoutSessionActive) {
+                                                        com.example.model.LoggedWorkoutEntry(id = "active", titleHu = state.activeWorkoutTitleHu)
+                                                            .localizedTitle(state.language, state.programs, state.exercises)
+                                                    } else currentDay?.localizedDayCode(state.language) ?: tr("A nap", "Day A", "Tag A", "Ziua A"),
+                                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold,
+                                                        fontSize = MaterialTheme.typography.titleSmall.fontSize * 1.1f),
+                                                    color = palette.primary,
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp).testTag("home_planned_day")
+                                                )
+                                            }
+
+                                            Text(
+                                                text = if (state.isWorkoutSessionActive) {
+                                                    tr(
+                                                        "${state.activeWorkoutExercises.size} gyakorlat • Aktív edzés",
+                                                        "${state.activeWorkoutExercises.size} exercises • Active workout",
+                                                        "${state.activeWorkoutExercises.size} Übungen • Aktives Training",
+                                                        "${state.activeWorkoutExercises.size} exerciții • Antrenament activ"
+                                                    )
+                                                } else {
+                                                    tr(
+                                                        "${currentDay?.exercises?.size ?: 8} gyakorlat • kb. ${plannedEvent?.durationMinutes ?: currentDay?.durationMinutes ?: 60} perc",
+                                                        "${currentDay?.exercises?.size ?: 8} exercises • ~${plannedEvent?.durationMinutes ?: currentDay?.durationMinutes ?: 60} min",
+                                                        "${currentDay?.exercises?.size ?: 8} Übungen • ca. ${plannedEvent?.durationMinutes ?: currentDay?.durationMinutes ?: 60} Min.",
+                                                        "${currentDay?.exercises?.size ?: 8} exerciții • aprox. ${plannedEvent?.durationMinutes ?: currentDay?.durationMinutes ?: 60} min"
+                                                    )
+                                                },
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = palette.textSecondary
+                                            )
+                                            // 2773: when is it planned (today / still doable today / next date / next in cycle).
+                                            if (!state.isWorkoutSessionActive && target != null) {
+                                                val line = com.example.ui.components.homePlannedDateLine(target.startIso,
+                                                    java.time.ZonedDateTime.now(), state.language)
+                                                Text(
+                                                    text = line.text,
+                                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                                    color = when (line.timing) {
+                                                        com.example.ui.components.HomePlanTiming.TODAY_UPCOMING -> palette.success
+                                                        com.example.ui.components.HomePlanTiming.TODAY_PASSED -> palette.warning
+                                                        else -> palette.textSecondary
+                                                    },
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    modifier = Modifier.testTag("home_planned_date_line")
+                                                )
+                                            }
+                                        }
+
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                            contentDescription = strings.detailsAction,
+                                            tint = palette.textSecondary
+                                        )
+                                    }
+
+                                    // Full-width gold primary CTA Button ("▶ Folytatás" / "▶ Tervezett edzés indítása")
+                                    if (state.isWorkoutSessionActive && state.activeWorkoutId.isNotBlank()) {
+                                        com.example.ui.components.StudioPausedWorkoutActions(state.activeWorkoutId, state.phoneControlsWorkout,
+                                            state.isSavingWorkout, strings.continueBtn, onStartOrContinueWorkout, onDiscardWorkout)
+                                    } else Button(
+                                        onClick = onStartOrContinueWorkout,
+                                        shape = RoundedCornerShape(12.dp),
+                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = palette.primary,
+                                            contentColor = palette.onPrimary
+                                        ),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .heightIn(min = 42.dp)
+                                            .testTag("home_continue_workout_button")
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.PlayArrow,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = if (state.homeDemoMode == HomeDemoMode.PAUSED_WORKOUT) {
+                                                strings.continueBtn
+                                            } else {
+                                                strings.startPlannedBtn
+                                            },
+                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                                        )
+                                    }
+                                }
+                                if (inlineProgramEditor != null && !state.isWorkoutSessionActive &&
+                                    state.inlineEditorHost == com.example.ui.viewmodel.INLINE_EDITOR_HOST_HOME && state.inlineEditorProgramId != null
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 10.dp)
+                                            .testTag("home_inline_program_editor"),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        androidx.compose.material3.HorizontalDivider(color = palette.cardBorder.copy(alpha = 0.65f))
+                                        inlineProgramEditor()
+                                    }
+                                }
+                              }
+                            }
                         }
+                        "advice" -> {
+                            com.example.ui.components.HomeCoachAdviceCard(state, strings, onOpenCoachReadiness)
+                        }
+                        "quick_watch" -> {
+                            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+                                val sideBySide = maxWidth >= 300.dp && androidx.compose.ui.platform.LocalDensity.current.fontScale <= 1.3f
+                                val quick: @Composable (Modifier) -> Unit = { card ->
+                                    HomeCompactShortcut(card.testTag("home_quick_workout_card"), Icons.AutoMirrored.Filled.DirectionsRun,
+                                        strings.quickWorkoutTitle, "", onOpenQuickWorkout) // 2778: title is enough
+                                }
+                                val watch: @Composable (Modifier) -> Unit = { card ->
+                                    val status = when {
+                                        state.watchInfoLoading -> tr("Óraadatok lekérése…", "Fetching watch info…", "Uhrendaten werden geladen…", "Se preiau datele ceasului…")
+                                        state.watchAppAvailable && state.watchBatteryPercent in 0..100 -> strings.connectedWithBattery(state.watchBatteryPercent)
+                                        state.watchAppAvailable -> tr("TrainPilot óraapp elérhető", "TrainPilot watch app available", "TrainPilot-Uhren-App verfügbar", "Aplicația de ceas TrainPilot disponibilă")
+                                        state.watchConnected -> tr("Wear OS kapcsolat • óraapp nem igazolt", "Wear OS connected • watch app unverified", "Wear OS verbunden • Uhren-App unbestätigt", "Wear OS conectat • aplicație ceas neverificată")
+                                        else -> tr("Nincs órakapcsolat", "No watch connected", "Keine Uhrenverbindung", "Nicio conexiune cu ceasul")
+                                    }
+                                    HomeCompactShortcut(card.testTag("home_watch_status_card"), Icons.Default.Watch,
+                                        if (state.watchAppAvailable) state.watchName else strings.watchConnectedSub, status, onOpenWatchAndSync,
+                                        enabled = !state.watchInfoLoading, connected = state.watchAppAvailable)
+                                }
+                                if (sideBySide) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardRowGap)) {
+                                    quick(Modifier.weight(1f)); watch(Modifier.weight(1f))
+                                } else Column(verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)) {
+                                    quick(Modifier.fillMaxWidth()); watch(Modifier.fillMaxWidth())
+                                }
+                            }
+                        }
+                        "daily_health" -> {
+                            // One emphasized group frame; the six inner tiles keep their existing destinations.
+                            val todayShape = RoundedCornerShape(20.dp)
+                            Surface(
+                                shape = todayShape,
+                                color = palette.surfaceCard,
+                                modifier = Modifier.fillMaxWidth()
+                                    .trainPilotSoftGlow(palette.primary, todayShape)
+                                    .border(com.repforge.app.ui.theme.TrainPilotFrames.page(palette.sectionBorder, palette.primary), todayShape)
+                                    .testTag("home_today_status_group")
+                            ) {
+                                Box(Modifier.padding(8.dp)) {
+                                    StudioTodayStatusGrid(state, compact = true) { key ->
+                                        when (key) {
+                                            "sleep" -> onOpenHealthSleep()
+                                            "pulse" -> onOpenHealthHeart()
+                                            "steps" -> onOpenHealthSteps()
+                                            "recovery" -> onOpenCoachReadiness()
+                                            else -> onOpenHealthToday()
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        "weekly" -> {
+                            // 8. MAIN BRANCH HOME CARDS (Célok beállítása, Mai javaslat / Coach, Személyes edzéstervező, Aktív kalória)
+                            Column {
+                                Column(verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)) {
+                                    // 2786: shared weekly goals (same data as Health); tap opens Health with the big view.
+                                    com.example.ui.components.WeeklyGoalsCompact(state, framed = true,
+                                        onOpen = onOpenWeeklyGoals, onGoals = onOpenGoalsDialog,
+                                        modifier = Modifier.testTag("home_goals_row_card"))
 
-                        Text(
-                            text = if (state.isWorkoutSessionActive) {
-                                tr(
-                                    "${state.activeWorkoutExercises.size} gyakorlat • Aktív edzés",
-                                    "${state.activeWorkoutExercises.size} exercises • Active workout",
-                                    "${state.activeWorkoutExercises.size} Übungen • Aktives Training",
-                                    "${state.activeWorkoutExercises.size} exerciții • Antrenament activ"
-                                )
-                            } else {
-                                tr(
-                                    "${currentDay?.exercises?.size ?: 8} gyakorlat • kb. ${plannedEvent?.durationMinutes ?: currentDay?.durationMinutes ?: 60} perc",
-                                    "${currentDay?.exercises?.size ?: 8} exercises • ~${plannedEvent?.durationMinutes ?: currentDay?.durationMinutes ?: 60} min",
-                                    "${currentDay?.exercises?.size ?: 8} Übungen • ca. ${plannedEvent?.durationMinutes ?: currentDay?.durationMinutes ?: 60} Min.",
-                                    "${currentDay?.exercises?.size ?: 8} exerciții • aprox. ${plannedEvent?.durationMinutes ?: currentDay?.durationMinutes ?: 60} min"
-                                )
-                            },
-                            style = MaterialTheme.typography.labelSmall,
-                            color = palette.textSecondary
-                        )
-                        // 2773: when is it planned (today / still doable today / next date / next in cycle).
-                        if (!state.isWorkoutSessionActive && target != null) {
-                            val line = com.example.ui.components.homePlannedDateLine(target.startIso,
-                                java.time.ZonedDateTime.now(), state.language)
-                            Text(
-                                text = line.text,
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                color = when (line.timing) {
-                                    com.example.ui.components.HomePlanTiming.TODAY_UPCOMING -> palette.success
-                                    com.example.ui.components.HomePlanTiming.TODAY_PASSED -> palette.warning
-                                    else -> palette.textSecondary
-                                },
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.testTag("home_planned_date_line")
-                            )
+                                }
+                            }
                         }
                     }
-
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = strings.detailsAction,
-                        tint = palette.textSecondary
-                    )
-                }
-
-                // Full-width gold primary CTA Button ("▶ Folytatás" / "▶ Tervezett edzés indítása")
-                if (state.isWorkoutSessionActive && state.activeWorkoutId.isNotBlank()) {
-                    com.example.ui.components.StudioPausedWorkoutActions(state.activeWorkoutId, state.phoneControlsWorkout,
-                        state.isSavingWorkout, strings.continueBtn, onStartOrContinueWorkout, onDiscardWorkout)
-                } else Button(
-                    onClick = onStartOrContinueWorkout,
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = palette.primary,
-                        contentColor = palette.onPrimary
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 42.dp)
-                        .testTag("home_continue_workout_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (state.homeDemoMode == HomeDemoMode.PAUSED_WORKOUT) {
-                            strings.continueBtn
-                        } else {
-                            strings.startPlannedBtn
-                        },
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
-                    )
-                }
-            }
-            if (inlineProgramEditor != null && !state.isWorkoutSessionActive &&
-                state.inlineEditorHost == com.example.ui.viewmodel.INLINE_EDITOR_HOST_HOME && state.inlineEditorProgramId != null
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 10.dp)
-                        .testTag("home_inline_program_editor"),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    androidx.compose.material3.HorizontalDivider(color = palette.cardBorder.copy(alpha = 0.65f))
-                    inlineProgramEditor()
-                }
-            }
-          }
-        }
-
-        com.example.ui.components.HomeCoachAdviceCard(state, strings, onOpenCoachReadiness)
-
-        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val sideBySide = maxWidth >= 300.dp && androidx.compose.ui.platform.LocalDensity.current.fontScale <= 1.3f
-            val quick: @Composable (Modifier) -> Unit = { card ->
-                HomeCompactShortcut(card.testTag("home_quick_workout_card"), Icons.AutoMirrored.Filled.DirectionsRun,
-                    strings.quickWorkoutTitle, "", onOpenQuickWorkout) // 2778: title is enough
-            }
-            val watch: @Composable (Modifier) -> Unit = { card ->
-                val status = when {
-                    state.watchInfoLoading -> tr("Óraadatok lekérése…", "Fetching watch info…", "Uhrendaten werden geladen…", "Se preiau datele ceasului…")
-                    state.watchAppAvailable && state.watchBatteryPercent in 0..100 -> strings.connectedWithBattery(state.watchBatteryPercent)
-                    state.watchAppAvailable -> tr("TrainPilot óraapp elérhető", "TrainPilot watch app available", "TrainPilot-Uhren-App verfügbar", "Aplicația de ceas TrainPilot disponibilă")
-                    state.watchConnected -> tr("Wear OS kapcsolat • óraapp nem igazolt", "Wear OS connected • watch app unverified", "Wear OS verbunden • Uhren-App unbestätigt", "Wear OS conectat • aplicație ceas neverificată")
-                    else -> tr("Nincs órakapcsolat", "No watch connected", "Keine Uhrenverbindung", "Nicio conexiune cu ceasul")
-                }
-                HomeCompactShortcut(card.testTag("home_watch_status_card"), Icons.Default.Watch,
-                    if (state.watchAppAvailable) state.watchName else strings.watchConnectedSub, status, onOpenWatchAndSync,
-                    enabled = !state.watchInfoLoading, connected = state.watchAppAvailable)
-            }
-            if (sideBySide) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardRowGap)) {
-                quick(Modifier.weight(1f)); watch(Modifier.weight(1f))
-            } else Column(verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)) {
-                quick(Modifier.fillMaxWidth()); watch(Modifier.fillMaxWidth())
-            }
-        }
-
-        // One emphasized group frame; the six inner tiles keep their existing destinations.
-        val todayShape = RoundedCornerShape(20.dp)
-        Surface(
-            shape = todayShape,
-            color = palette.surfaceCard,
-            modifier = Modifier.fillMaxWidth()
-                .trainPilotSoftGlow(palette.primary, todayShape)
-                .border(com.repforge.app.ui.theme.TrainPilotFrames.page(palette.sectionBorder, palette.primary), todayShape)
-                .testTag("home_today_status_group")
-        ) {
-            Box(Modifier.padding(8.dp)) {
-                StudioTodayStatusGrid(state, compact = true) { key ->
-                    when (key) {
-                        "sleep" -> onOpenHealthSleep()
-                        "pulse" -> onOpenHealthHeart()
-                        "steps" -> onOpenHealthSteps()
-                        "recovery" -> onOpenCoachReadiness()
-                        else -> onOpenHealthToday()
-                    }
                 }
             }
         }
-
-        // 8. MAIN BRANCH HOME CARDS (Célok beállítása, Mai javaslat / Coach, Személyes edzéstervező, Aktív kalória)
-        Column {
-            Column(verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)) {
-                // 2786: shared weekly goals (same data as Health); tap opens Health with the big view.
-                com.example.ui.components.WeeklyGoalsCompact(state, framed = true,
-                    onOpen = onOpenWeeklyGoals, onGoals = onOpenGoalsDialog,
-                    modifier = Modifier.testTag("home_goals_row_card"))
-
-            }
-        }
+        PageLayoutFooter(layout, state.language)
     }
 }
 }
