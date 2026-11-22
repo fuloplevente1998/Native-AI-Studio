@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.trainPilotAnimatedExpansion
+
 import com.repforge.app.ui.theme.trainPilotSoftGlow
 
 import com.example.ui.components.TrainPilotAlertDialog as AlertDialog
@@ -851,6 +853,7 @@ fun HealthTabScreen(
                                         color = palette.background.copy(alpha = 0.55f),
                                         modifier = Modifier
                                             .fillMaxWidth()
+                                            .trainPilotAnimatedExpansion()
                                             .trainPilotBorder(
                                                 width = 1.dp,
                                                 color = if (uiState.expandedHealthPulseTrend) palette.primary.copy(alpha = 0.55f) else palette.cardBorder,
@@ -1119,6 +1122,7 @@ fun HealthTabScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("health_weight_card")
+                    .trainPilotAnimatedExpansion()
                     .trainPilotBorder(
                         width = 1.dp,
                         color = if (uiState.expandedHealthWeightLog) palette.primary.copy(alpha = 0.55f) else palette.cardBorder,
@@ -1483,7 +1487,8 @@ private fun HealthSourcesContent(
                 modifier = Modifier.weight(1f))
             Icon(if (syncDetailsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null)
         }
-        if (syncDetailsExpanded) {
+        com.example.ui.components.TrainPilotAnimatedDisclosure(visible = syncDetailsExpanded) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 if (uiState.healthAutoOnOpen) tr(uiState.language,
                     "Automatikus frissítés appnyitáskor és előtérben 5 percenként.",
@@ -1510,6 +1515,7 @@ private fun HealthSourcesContent(
                 style = MaterialTheme.typography.bodySmall,
                 color = palette.textSecondary
             )
+            }
         }
     }
 }
@@ -2134,6 +2140,7 @@ fun SettingsMainScreen(
                 color = palette.surfaceCard,
                 modifier = Modifier.fillMaxWidth()
                     .trainPilotBorder(TrainPilotFrames.page(palette.sectionBorder, palette.primary), RoundedCornerShape(18.dp))
+                    .trainPilotAnimatedExpansion()
                     .testTag("settings_themes_group")
             ) {
                 Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -2807,6 +2814,7 @@ fun StudioGoogleCloudSyncCard(
         modifier = Modifier
             .fillMaxWidth()
             .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
+            .trainPilotAnimatedExpansion()
             .testTag("studio_google_cloud_card")
     ) {
         Column(
