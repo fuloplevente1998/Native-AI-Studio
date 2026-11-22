@@ -7,15 +7,12 @@ import com.repforge.app.ui.theme.TrainPilotFrames
 import com.repforge.app.ui.theme.trainPilotBorder
 import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Surface
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,35 +39,17 @@ import kotlin.math.roundToLong
 
 /** The real Room-backed Cardio section of the native Progress page. */
 @Composable
-internal fun NativeCardioProgressPanel(state: ProgressUiState,
-    onSelectActivity: (String) -> Unit, onRetry: () -> Unit
-) {
+internal fun NativeCardioProgressPanel(state: ProgressUiState, onRetry: () -> Unit) {
     val colors = LocalTrainPilotColors.current
     val context = LocalContext.current
     val strings = remember(context, state.language) { nativeResources(context, state.language) }
     val model = state.cardio
-    var recordsOpen by remember(state.selectedCardioId) { mutableStateOf(false) }
+    var recordsOpen by remember { mutableStateOf(false) }
     Card(Modifier.fillMaxWidth().testTag("progress_cardio"),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = colors.card),
         border = TrainPilotFrames.stroke(1.25.dp, colors.emphasisBorder)) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            LazyRow(Modifier.fillMaxWidth().testTag("progress_cardio_choices"),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                item(key = "all") {
-                    CardioChoice(strings.getString(R.string.cardio_progress_all),
-                        state.selectedCardioId.isEmpty(), "progress_cardio_all") {
-                        onSelectActivity(NativeCardioModel.ALL_ACTIVITIES)
-                    }
-                }
-                items(model?.activities ?: state.cardioActivities, key = { it.exerciseId }) { activity ->
-                    CardioChoice(cardioActivityName(state.language, activity),
-                        activity.exerciseId == state.selectedCardioId,
-                        "progress_cardio_activity_${activity.exerciseId}") {
-                        onSelectActivity(activity.exerciseId)
-                    }
-                }
-            }
             when {
                 state.cardioLoading -> Text(strings.getString(R.string.cardio_progress_loading),
                     color = colors.muted, modifier = Modifier.testTag("progress_cardio_loading"))
@@ -105,7 +84,7 @@ internal fun NativeCardioProgressPanel(state: ProgressUiState,
                     }
                     Text(strings.getString(R.string.cardio_progress_eight_weeks), color = colors.muted, fontSize = 13.sp)
                     if (model.weeks.isNotEmpty()) {
-                        var selectedWeek by remember(state.selectedCardioId, model.weeks.size, model.weeks.last().weekStartDate) {
+                        var selectedWeek by remember(model.weeks.size, model.weeks.last().weekStartDate) {
                             mutableIntStateOf(model.weeks.lastIndex)
                         }
                         fun distanceLabel(week: CardioWeekStats) =
@@ -184,12 +163,6 @@ internal fun cardioActivityName(language: String, activity: CardioActivityOption
         text.takeIf { it.isNotBlank() && it != activity.exerciseId }.orEmpty()
     return nativeLocalizedName(language, hu, translated(activity.nameEn),
         translated(activity.nameDe), translated(activity.nameRo))
-}
-
-@Composable
-private fun CardioChoice(label: String, selected: Boolean, tag: String, onClick: () -> Unit) {
-    com.example.ui.components.TrainPilotFilterChip(selected = selected, onClick = onClick, label = { Text(label) },
-        modifier = Modifier.heightIn(min = 48.dp).testTag(tag))
 }
 
 @Composable
