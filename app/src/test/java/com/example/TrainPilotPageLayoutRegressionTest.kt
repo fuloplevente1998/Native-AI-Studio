@@ -1,6 +1,13 @@
 package com.example
 
 import android.content.Context
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.unit.dp
+import com.example.ui.components.PageLayoutBlock
+import com.example.ui.components.PageLayoutFrame
+import com.example.ui.components.PageLayoutGrid
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
@@ -39,6 +46,42 @@ class TrainPilotPageLayoutRegressionTest {
         assertEquals(listOf("one", "two"), state.draft)
         state.cancel()
         assertEquals(listOf("two", "one"), state.saved)
+    }
+
+    @Test fun dailyTilesDragBetweenRowsAndSaveTheMigratedOrder() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val prefs = context.getSharedPreferences("trainpilot-page-layout", Context.MODE_PRIVATE)
+        val page = "grid_test"
+        val ids = listOf("sleep", "calories", "pulse", "steps", "workout", "recovery")
+        val legacy = linkedMapOf("daily_0" to ids.take(3), "daily_1" to ids.drop(3))
+        val layout = PageLayoutState(page, listOf("today"), listOf("today"),
+            mapOf("daily_1" to listOf("recovery", "steps", "workout")))
+        val migrated = listOf("sleep", "calories", "pulse", "recovery", "steps", "workout")
+        assertEquals(migrated, layout.childOrder("daily", ids, legacy))
+        layout.open()
+        compose.setContent {
+            TrainPilotTheme {
+                PageLayoutFrame(layout, AppLanguage.HU, listOf(PageLayoutBlock("today", "Mai állapot")),
+                    rememberScrollState(), 8.dp) {
+                    PageLayoutGrid(layout, "daily", ids.map { PageLayoutBlock(it, it) }, 8.dp, legacy) { _, modifier ->
+                        Box(modifier.height(52.dp))
+                    }
+                }
+            }
+        }
+        val sleep = compose.onNodeWithTag("page_layout_grid_daily_sleep")
+        val steps = compose.onNodeWithTag("page_layout_grid_daily_steps")
+        val start = sleep.getUnclippedBoundsInRoot()
+        val end = steps.getUnclippedBoundsInRoot()
+        sleep.performTouchInput {
+            swipe(center, center + Offset((end.left - start.left).toPx(), (end.top - start.top).toPx()), 350)
+        }
+        val expected = listOf("calories", "pulse", "recovery", "steps", "sleep", "workout")
+        compose.runOnIdle { assertEquals(expected, layout.childOrder("daily", ids, legacy)) }
+        compose.onNodeWithTag("page_layout_save").performClick()
+        val children = org.json.JSONObject(prefs.getString("${page}_children", "{}")!!)
+        val stored = children.getJSONArray("daily")
+        assertEquals(expected, List(stored.length()) { stored.getString(it) })
     }
 
     @Test fun dragUsesTheMeasuredSpacingOfUnequalCards() {

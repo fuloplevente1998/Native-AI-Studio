@@ -1,10 +1,21 @@
 package com.example.ui.screens
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.MonitorWeight
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import com.example.ui.components.PageLayoutBlock
+import com.example.ui.components.PageLayoutGrid
+import com.example.ui.components.PageLayoutState
+import com.example.ui.components.TrainPilotFitText
+import com.repforge.app.ui.theme.trainPilotBorder
+import com.repforge.app.ui.theme.trainPilotClickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -15,7 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -52,7 +62,7 @@ internal fun latestBodyFitnessMeasurement(
 }
 
 @Composable
-internal fun StudioBodyFitnessTiles(state: TrainPilotUiState, onSelect: (String, BodyFitnessReading?) -> Unit) {
+internal fun StudioBodyFitnessTiles(state: TrainPilotUiState, layout: PageLayoutState, onSelect: (String, BodyFitnessReading?) -> Unit) {
     val context = LocalContext.current.applicationContext
     val palette = LocalTrainPilotPalette.current
     val provider = if (state.primaryHealthSourceSamsung) HealthJournalStore.SAMSUNG else HealthJournalStore.HC
@@ -98,9 +108,9 @@ internal fun StudioBodyFitnessTiles(state: TrainPilotUiState, onSelect: (String,
     }
     val zone = ZoneId.systemDefault()
     val tiles = listOf(
-        "bodyFat" to tr("Testzsír", "Body fat", "Körperfett", "Grăsime corporală"),
-        "spo2" to "SpO₂",
-        "vo2" to "VO₂max"
+        PageLayoutBlock("bodyFat", tr("Testzsír", "Body fat", "Körperfett", "Grăsime corporală")),
+        PageLayoutBlock("spo2", "SpO₂"),
+        PageLayoutBlock("vo2", "VO₂max")
     )
     Column(Modifier.fillMaxWidth().testTag("health_body_fitness_section"),
         verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -109,47 +119,56 @@ internal fun StudioBodyFitnessTiles(state: TrainPilotUiState, onSelect: (String,
             style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
             color = palette.textPrimary
         )
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            tiles.forEach { (key, title) ->
-                val readPermission = when (key) {
-                    "bodyFat" -> "READ_BODY_FAT"
-                    "spo2" -> "READ_OXYGEN_SATURATION"
-                    else -> "READ_VO2_MAX"
-                }
-                val permissionMissing = provider == HealthJournalStore.HC &&
-                    !com.repforge.app.HealthConnectRepository.isAllowed(context, readPermission)
-                val reading = if (permissionMissing) null else readings[key]
-                val formatted = reading?.let {
-                    String.format(Locale.getDefault(), "%.1f", it.value) +
-                        if (key == "vo2") "" else "%"
-                } ?: "—"
-                val timestamp = reading?.let {
-                    Instant.ofEpochMilli(it.atMs).atZone(zone).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-                }
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = palette.surfaceCard,
-                    modifier = Modifier.weight(1f).heightIn(min = 110.dp)
-                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onSelect(key, reading) }
-                        .testTag("health_body_fitness_$key")
-                ) {
-                    Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Text(title, style = MaterialTheme.typography.labelSmall,
-                            color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(formatted, style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold, color = palette.textPrimary, maxLines = 1)
-                        Text(
-                            if (timestamp != null) "$providerLabel · $timestamp"
-                            else if (permissionMissing) tr(
-                                "Engedély szükséges", "Permission required",
-                                "Berechtigung erforderlich", "Permisiune necesară")
-                            else tr("Nincs naplózott adat", "No recorded data",
-                                "Keine gespeicherten Daten", "Fără date salvate"),
-                            color = palette.textSecondary, fontSize = 10.sp,
-                            maxLines = 3, overflow = TextOverflow.Ellipsis
-                        )
-                        if (key == "vo2") Text("ml/kg/min", fontSize = 10.sp, color = palette.textSecondary)
+        PageLayoutGrid(layout, "body_fitness_values", tiles, 6.dp) { key, modifier ->
+            val title = tiles.first { it.id == key }.title
+            val readPermission = when (key) {
+                "bodyFat" -> "READ_BODY_FAT"
+                "spo2" -> "READ_OXYGEN_SATURATION"
+                else -> "READ_VO2_MAX"
+            }
+            val permissionMissing = provider == HealthJournalStore.HC &&
+                !com.repforge.app.HealthConnectRepository.isAllowed(context, readPermission)
+            val reading = if (permissionMissing) null else readings[key]
+            val formatted = reading?.let {
+                String.format(Locale.getDefault(), "%.1f", it.value) +
+                    if (key == "vo2") "" else "%"
+            } ?: "—"
+            val timestamp = reading?.let {
+                Instant.ofEpochMilli(it.atMs).atZone(zone).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+            }
+            val shape = RoundedCornerShape(12.dp)
+            Surface(
+                shape = shape,
+                color = palette.surfaceCard,
+                modifier = modifier.heightIn(min = 104.dp)
+                    .trainPilotBorder(1.dp, palette.cardBorder, shape)
+                    .trainPilotClickable(shape) { onSelect(key, reading) }
+                    .testTag("health_body_fitness_$key")
+            ) {
+                Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        val icon = when (key) {
+                            "bodyFat" -> Icons.Default.MonitorWeight
+                            "spo2" -> Icons.Default.Favorite
+                            else -> Icons.Default.FitnessCenter
+                        }
+                        Icon(icon, contentDescription = null, tint = palette.primary, modifier = Modifier.size(14.dp))
+                        TrainPilotFitText(title, style = MaterialTheme.typography.labelSmall,
+                            color = palette.textSecondary, modifier = Modifier.weight(1f))
                     }
+                    Text(formatted, style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold, color = palette.textPrimary, maxLines = 1)
+                    Text(
+                        if (timestamp != null) "$providerLabel · $timestamp"
+                        else if (permissionMissing) tr(
+                            "Engedély szükséges", "Permission required",
+                            "Berechtigung erforderlich", "Permisiune necesară")
+                        else tr("Nincs naplózott adat", "No recorded data",
+                            "Keine gespeicherten Daten", "Fără date salvate"),
+                        color = palette.textSecondary, fontSize = 10.sp,
+                        maxLines = 3, overflow = TextOverflow.Ellipsis
+                    )
+                    if (key == "vo2") Text("ml/kg/min", fontSize = 10.sp, color = palette.textSecondary)
                 }
             }
         }
