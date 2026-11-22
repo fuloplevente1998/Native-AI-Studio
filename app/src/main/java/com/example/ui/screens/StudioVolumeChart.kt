@@ -38,8 +38,16 @@ internal fun StudioVolumeChart(bars: List<Pair<String, Int>>, period: StudioProg
     val labelHeight = if (expanded) with(LocalDensity.current) { labelSize.toDp() } * 1.4f + 6.dp else 0.dp
     val plotHeight = (height - labelHeight).coerceAtLeast(20.dp)
     val axisMax = volumeAxisMaximum(bars.maxOfOrNull { it.second } ?: 0)
-    LaunchedEffect(period, scroll.maxValue) {
-        if (scrollable) scroll.scrollTo(scroll.maxValue)
+    val density = LocalDensity.current
+    LaunchedEffect(expanded, period, scroll.maxValue) {
+        if (scrollable) {
+            // Open beside the selected compact bar, not back at the latest week.
+            // Do not key this on selected: tapping a detailed bar must not move the scroll.
+            val target = if (expanded && selected in bars.indices) {
+                with(density) { ((selected + 0.5f) * 44f).dp.roundToPx() } - scroll.viewportSize / 2
+            } else scroll.maxValue
+            scroll.scrollTo(target.coerceIn(0, scroll.maxValue))
+        }
     }
     Row(Modifier.fillMaxWidth().height(height), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         if (expanded) {
