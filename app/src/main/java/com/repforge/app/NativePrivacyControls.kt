@@ -50,6 +50,14 @@ object NativePrivacyControls {
     }
 
     @JvmStatic
+    fun disabledMessage(language: String): String = when (language.lowercase(java.util.Locale.ROOT)) {
+        "en" -> "This health source is switched off in privacy settings."
+        "de" -> "Diese Gesundheitsquelle ist in den Datenschutzeinstellungen ausgeschaltet."
+        "ro" -> "Această sursă de sănătate este dezactivată în setările de confidențialitate."
+        else -> "Ez az egészségügyi adatforrás ki van kapcsolva az adatvédelmi beállításokban."
+    }
+
+    @JvmStatic
     fun requireEnabled(context: Context, feature: String) {
         check(enabled(context, feature)) { "Provider disabled by user" }
     }
