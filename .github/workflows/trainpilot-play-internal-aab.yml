@@ -57,7 +57,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository/org/robolectric
-          key: robolectric-api34-i7-v1-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          key: robolectric-sdks-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'scripts/prefetch_robolectric_sdk.py') }}
+          restore-keys: |
+            robolectric-api34-i7-v1-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
 
       - name: Fetch checksum-verified Robolectric SDK
         shell: bash
