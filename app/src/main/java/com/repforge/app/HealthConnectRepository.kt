@@ -88,13 +88,20 @@ object HealthConnectRepository {
     const val WRITE_EXERCISE_PERMISSION: String = "android.permission.health.WRITE_EXERCISE"
     const val BACKGROUND_READ_PERMISSION: String = "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND"
 
-    fun isSupported(context: Context): Boolean {
-        return Build.VERSION.SDK_INT >= 34 && context.getSystemService(HealthConnectManager::class.java) != null
-    }
+    fun isSupported(context: Context): Boolean =
+        if (Build.VERSION.SDK_INT >= 34) context.getSystemService(HealthConnectManager::class.java) != null
+        else HealthConnectLegacyBridge.available(context)
 
-    fun isAllowed(context: Context, suffix: String): Boolean {
-        return context.checkSelfPermission("android.permission.health.$suffix") == PackageManager.PERMISSION_GRANTED
-    }
+    fun isAllowed(context: Context, suffix: String): Boolean =
+        if (Build.VERSION.SDK_INT >= 34)
+            context.checkSelfPermission("android.permission.health.$suffix") == PackageManager.PERMISSION_GRANTED
+        else HealthConnectLegacyBridge.cachedAllowed(suffix)
+
+    /** Refresh live APK grants on Android 9–13; the platform reports current grants directly. */
+    suspend fun currentlyGrantedReadKeys(context: Context): Set<String> =
+        if (Build.VERSION.SDK_INT >= 34)
+            READ_PERMS.filter { isAllowed(context, it) }.toSet()
+        else HealthConnectLegacyBridge.refreshGrants(context)
 
     fun anyReadAllowed(context: Context): Boolean {
         return READ_PERMS.any { isAllowed(context, it) }
@@ -123,7 +130,9 @@ object HealthConnectRepository {
         return r
     }
 
-    fun settingsIntent(): Intent = Intent("android.health.connect.action.HEALTH_HOME_SETTINGS")
+    fun settingsIntent(): Intent =
+        if (Build.VERSION.SDK_INT >= 34) Intent("android.health.connect.action.HEALTH_HOME_SETTINGS")
+        else Intent(androidx.health.connect.client.HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS)
 
     private class ObsoleteReadPublication(cause: Throwable) : IllegalStateException("Health read publication invalidated", cause)
 
