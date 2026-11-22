@@ -5406,7 +5406,7 @@ class TrainPilotViewModel : ViewModel() {
                                 beforeReps = row.beforeReps, afterReps = row.afterReps,
                                 restSeconds = row.restSeconds,
                                 beforeWeight = row.beforeWeight, afterWeight = row.afterWeight,
-                                rir = row.rir)
+                                rir = row.rir, reason = row.reason)
                         })
                 ) }
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
