@@ -82,11 +82,13 @@ class Post2757PresentationRegressionTest {
 
     @Test fun allSixHomeTodayTilesOpenTheMatchingHealthDetailAndCloseOnHome() {
         var journalFocus: Pair<String, String>? = null
+        var openedCoach = false
         compose.setContent { TrainPilotTheme {
             HomeScreen(TrainPilotUiState(), TrainPilotStrings.forLanguage(AppLanguage.HU),
                 onStartOrContinueWorkout = {}, onOpenProgramDayDetails = {}, onOpenQuickWorkout = {},
                 onOpenWatchAndSync = {}, onOpenCoachReadiness = {}, onOpenGoalsDialog = {},
-                onOpenPersonalPlanner = {}, onOpenHealthJournal = { journalFocus = it })
+                onOpenPersonalPlanner = {}, onOpenHealthJournal = { journalFocus = it },
+                onNavigateFromToday = { openedCoach = it == com.example.model.SubScreen.COACH_DETAIL })
         } }
         val titles = mapOf(
             "sleep" to "Alvás részletek",
@@ -94,7 +96,7 @@ class Post2757PresentationRegressionTest {
             "pulse" to "Mai pulzus",
             "steps" to "Lépések részletek",
             "workout" to "Mai edzések",
-            "recovery" to "Regeneráció & Készenlét"
+            "recovery" to "Végső Coach készenlét"
         )
         titles.forEach { (tile, title) ->
             val node = compose.onNode(hasTestTag("home_today_$tile") and
@@ -113,6 +115,10 @@ class Post2757PresentationRegressionTest {
         compose.runOnIdle {
             assertEquals(java.time.LocalDate.now().toString() to "SleepSessionRecord", journalFocus)
         }
+        compose.onNodeWithTag("home_today_recovery").performScrollTo().performClick()
+        compose.onNodeWithText("Samsung Energy").assertExists()
+        compose.onNodeWithTag("health_expanded_action_button").performScrollTo().performClick()
+        compose.runOnIdle { assertTrue(openedCoach) }
     }
 
     @Test fun longCoachAdviceExpandsWithoutOpeningCoach() {

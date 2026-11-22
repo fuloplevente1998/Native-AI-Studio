@@ -1064,19 +1064,12 @@ internal fun StudioTodayStatusDetailSheet(
                             if (firstId != null) onOpenLoggedWorkout(firstId) else onNavigateToSubScreen(SubScreen.PROGRAMS_LIST)
                         }
                     }
-                    "recovery" -> {
-                        val rec = uiState.todayRecoveryReading
-                        val scoreProvHu = when (rec?.source) {
-                            com.repforge.app.healthreadings.RecoverySource.SAMSUNG_ENERGY -> "Közvetlen Samsung Health Energy Score (${rec.displayScoreHu})"
-                            com.repforge.app.healthreadings.RecoverySource.TRAINPILOT_ESTIMATE -> "TrainPilot-becslés (${rec.displayScoreHu})"
-                            else -> "Nincs igazolt regenerációs adat"
-                        }
-                        listOf(
-                            tr(uiState.language, "Regeneráció & Készenlét • $scoreProvHu", "Recovery & Readiness • $scoreProvHu", "Erholung & Bereitschaft • $scoreProvHu", "Recuperare și pregătire • $scoreProvHu"),
-                            rec?.explanationHu ?: tr(uiState.language, "Nincs ellenőrizhető friss regenerációs jel a kiválasztott szolgáltatótól.", "No verified recovery signal from the selected provider.", "Kein bestätigtes Erholungssignal vom ausgewählten Dienst.", "Niciun semnal de recuperare verificat de la furnizorul selectat."),
-                            tr(uiState.language, "TrainPilot Coach megnyitása >", "Open TrainPilot Coach >", "TrainPilot Coach öffnen >", "Deschide TrainPilot Coach >")
-                        ) to { onNavigateToSubScreen(SubScreen.COACH_DETAIL) }
-                    }
+                    "recovery" -> listOf(
+                        tr(uiState.language, "Regeneráció", "Recovery", "Erholung", "Recuperare"),
+                        "",
+                        tr(uiState.language, "TrainPilot Coach megnyitása", "Open TrainPilot Coach",
+                            "TrainPilot Coach öffnen", "Deschide TrainPilot Coach")
+                    ) to { onNavigateToSubScreen(SubScreen.COACH_DETAIL) }
                     else -> {
                         val hasSleep = currentDaily && "sleepMinutes" in uiState.dailyHealthAvailableFields && uiState.sleepDurationLabel != "—"
                         val stageInfo = if (!hasSleep) {
@@ -1119,7 +1112,8 @@ internal fun StudioTodayStatusDetailSheet(
                         Icon(Icons.Default.Close, contentDescription = strings.closeAction, tint = palette.danger)
                     }
                 }
-                if (activeKey != "pulse") Text(
+                if (activeKey == "recovery") CompactRecoveryReadiness(uiState)
+                if (activeKey != "pulse" && activeKey != "recovery") Text(
                     text = titleStr[1],
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textPrimary
@@ -1760,6 +1754,75 @@ private fun SummarySmallPill(label: String, value: String, modifier: Modifier = 
     }
 }
 
+@Composable
+private fun CoachReadinessGauge(score: Int?, compact: Boolean = false) {
+    val palette = LocalTrainPilotPalette.current
+    Box(
+        modifier = Modifier.size(if (compact) 76.dp else 110.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        val trackCol = palette.surfaceElevated
+        val ringCol = if (score != null) palette.success else palette.cardBorder
+        Canvas(modifier = Modifier.size(if (compact) 68.dp else 98.dp)) {
+            drawArc(
+                color = trackCol,
+                startAngle = 135f,
+                sweepAngle = 270f,
+                useCenter = false,
+                style = Stroke(width = (if (compact) 7.dp else 10.dp).toPx(), cap = StrokeCap.Round)
+            )
+            if (score != null) {
+                drawArc(
+                    color = ringCol,
+                    startAngle = 135f,
+                    sweepAngle = 270f * (score / 100f),
+                    useCenter = false,
+                    style = Stroke(width = (if (compact) 7.dp else 10.dp).toPx(), cap = StrokeCap.Round)
+                )
+            }
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = score?.toString() ?: "—",
+                style = if (compact) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = palette.textPrimary
+            )
+            Text(
+                text = "/ 100",
+                style = MaterialTheme.typography.labelSmall,
+                color = palette.textSecondary
+            )
+        }
+    }
+}
+
+@Composable
+private fun CompactRecoveryReadiness(state: TrainPilotUiState) {
+    val reading = state.todayRecoveryReading
+    val lang = state.language
+    val palette = LocalTrainPilotPalette.current
+    val score = reading?.coachScore?.roundToInt()
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        CoachReadinessGauge(score, compact = true)
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(tr(lang, "Végső Coach készenlét", "Final Coach readiness", "Finale Coach-Bereitschaft", "Pregătirea finală Coach"),
+                style = MaterialTheme.typography.titleSmall, color = palette.primary)
+            val detail = when {
+                score == null -> tr(lang, "Nincs mai pontszám", "No score today", "Heute kein Wert", "Niciun scor azi")
+                score >= 75 -> tr(lang, "Optimális készenlét", "Optimal readiness", "Optimale Bereitschaft", "Pregătire optimă")
+                score >= 50 -> tr(lang, "Mérsékelt készenlét", "Moderate readiness", "Mäßige Bereitschaft", "Pregătire moderată")
+                else -> tr(lang, "Pihenés javasolt", "Rest advised", "Pause empfohlen", "Odihnă recomandată")
+            }
+            Text(detail, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+        }
+    }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        SummarySmallPill("Samsung Energy", reading?.samsungEnergy?.let { "${it.roundToInt()} / 100" } ?: "—", Modifier.weight(1f))
+        SummarySmallPill("TrainPilot", reading?.trainPilotEstimate?.let { "$it / 100" } ?: "—", Modifier.weight(1f))
+    }
+}
+
 /**
  * 6. COACH (Mockup 3/4 #6 + main TrainPilot Coach)
  */
@@ -1866,44 +1929,7 @@ internal fun CoachDetailScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
-                            modifier = Modifier.size(110.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            val trackCol = palette.surfaceElevated
-                            val ringCol = if (hasScore) palette.success else palette.cardBorder
-                            Canvas(modifier = Modifier.size(98.dp)) {
-                                drawArc(
-                                    color = trackCol,
-                                    startAngle = 135f,
-                                    sweepAngle = 270f,
-                                    useCenter = false,
-                                    style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
-                                )
-                                if (hasScore) {
-                                    drawArc(
-                                        color = ringCol,
-                                        startAngle = 135f,
-                                        sweepAngle = 270f * (displayScore / 100f),
-                                        useCenter = false,
-                                        style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
-                                    )
-                                }
-                            }
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = if (hasScore) "$displayScore" else "—",
-                                    style = MaterialTheme.typography.headlineLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.textPrimary
-                                )
-                                Text(
-                                    text = "/ 100",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = palette.textSecondary
-                                )
-                            }
-                        }
+                        CoachReadinessGauge(displayScore.takeIf { hasScore })
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
@@ -4133,11 +4159,12 @@ private fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today:
     val lang = uiState.language
     val days = (6 downTo 0).map { today.minusDays(it.toLong()).toString() }
     val weekly = (uiState.weeklyHealthDays + uiState.dailyActivityDays).associateBy { it.dateIso }
+    val daily = weekly[today.toString()]
     if (key == "steps") com.example.ui.components.StudioHourlyStepsChart(
         day = today,
-        provider = if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG
+        provider = daily?.stepProvider ?: if (uiState.primaryHealthSourceSamsung) com.repforge.app.HealthJournalStore.SAMSUNG
             else com.repforge.app.HealthJournalStore.HC,
-        origin = weekly[today.toString()]?.stepOriginPackage.orEmpty(),
+        origin = daily?.stepOriginPackage.orEmpty(),
         revision = uiState.healthRefreshRevision,
         language = lang
     )

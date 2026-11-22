@@ -141,6 +141,22 @@ object SamsungHealthRepository {
             check(it.isNotEmpty()) { "Samsung Health read permission required" }
         }
 
+    /** The same deduplicated Samsung total, grouped by hour for a visible Today sheet. */
+    internal fun readHourlySteps(
+        context: Context,
+        day: java.time.LocalDate,
+        end: java.time.LocalDateTime,
+        guard: () -> Unit
+    ): Map<Int, Long> {
+        guard()
+        check(isInstalled(context) && isSdkAvailable())
+        val reader = SamsungSdkReader.open(context) { guard() }
+        val values = reader.hourlySteps(day, end)
+        guard()
+        check("READ_STEPS" in SamsungSdkReader.open(context) { guard() }.grantedKeys())
+        return values
+    }
+
     /** The existing Samsung SDK workout reader, scoped strictly to the requested window. */
     suspend fun readTrainingWindowSuspend(context: Context, startIso: String, endIso: String,
         guard: () -> Unit): JSONObject = withContext(Dispatchers.IO) {

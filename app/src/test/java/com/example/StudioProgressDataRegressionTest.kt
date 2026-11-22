@@ -105,7 +105,7 @@ class StudioProgressDataRegressionTest {
         awaitCondition { model.uiState.value.logWorkoutMuscleLoads.isNotEmpty() }
         assertEquals(setOf("chest"), model.uiState.value.logWorkoutMuscleLoads.filter { it.setsCount > 0 }.map { it.id }.toSet())
     }
-    @Test fun todayAndWeekUseOneProviderFullDayValuesWithoutWorkoutStepAdditionOrFallback() {
+    @Test fun todayAndWeekUseOneMeasuredStepSourceAndFallBackWithItsAttribution() {
         val health = HealthJournalStore.get(context)
         health.erase()
         val day = LocalDate.now().toString()
@@ -137,9 +137,12 @@ class StudioProgressDataRegressionTest {
         health.erase()
         health.samsungDay(day, JSONObject().put("steps", 7000), JSONArray(), health.generation())
         model.reloadHealthJournal()
-        awaitCondition { model.uiState.value.dailyHealthSourceLabel == "Health Connect" &&
-            model.uiState.value.dailyHealthAvailableFields.isEmpty() }
-        assertEquals(0, model.uiState.value.dailySteps)
+        awaitCondition { model.uiState.value.dailySteps == 7000 }
+        assertEquals(7000, model.uiState.value.weeklyTotalSteps)
+        assertEquals(HealthJournalStore.SAMSUNG,
+            model.uiState.value.weeklyHealthDays.last().stepProvider)
+        assertTrue("steps" in model.uiState.value.dailyHealthAvailableFields)
+        assertFalse("activeCalories" in model.uiState.value.dailyHealthAvailableFields)
     }
     @Test fun savedRecordListUsesEveryMeasuredExerciseAndTheCanonicalPrTypes() {
         native {

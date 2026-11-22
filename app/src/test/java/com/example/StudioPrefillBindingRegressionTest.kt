@@ -182,7 +182,7 @@ class StudioPrefillBindingRegressionTest {
         assertEquals(7, saved.templateVersion)
     }
 
-    @Test fun coachReadsOnlyTheSelectedProviderAndTreatsVerifiedSamsungZeroAsData() {
+    @Test fun coachUsesVerifiedDirectSamsungEnergyWithoutTrustingTheSelectedHcRow() {
         val store = HealthJournalStore.get(context)
         val now = Instant.parse("2026-11-03T10:00:00Z")
         native {
@@ -193,7 +193,18 @@ class StudioPrefillBindingRegressionTest {
             store.setPreferences(JSONObject().put("provider", HealthJournalStore.HC))
         }
         val hc = native { NativeSelectedCoachReadings.load(context, db, now, ZoneOffset.UTC) }
-        assertEquals(HealthJournalStore.HC, hc.provider); assertNull(hc.readiness.samsungScore); assertNull(hc.readiness.score)
+        assertEquals(HealthJournalStore.HC, hc.provider)
+        assertEquals(0.0, requireNotNull(hc.readiness.samsungScore), 0.001)
+        assertEquals(0.0, requireNotNull(hc.readiness.score), 0.001)
+        val privacy = com.repforge.app.NativePrivacyControls
+        privacy.set(context, privacy.SAMSUNG_HEALTH, false)
+        try {
+            val disabled = native { NativeSelectedCoachReadings.load(context, db, now, ZoneOffset.UTC) }
+            assertNull(disabled.readiness.samsungScore)
+            assertNull(disabled.readiness.score)
+        } finally {
+            privacy.set(context, privacy.SAMSUNG_HEALTH, true)
+        }
         native { store.setPreferences(JSONObject().put("provider", HealthJournalStore.SAMSUNG)) }
         val samsung = native { NativeSelectedCoachReadings.load(context, db, now, ZoneOffset.UTC) }
         assertEquals(0.0, requireNotNull(samsung.readiness.samsungScore), 0.001)

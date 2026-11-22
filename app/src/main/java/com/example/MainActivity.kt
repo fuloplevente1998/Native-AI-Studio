@@ -890,8 +890,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         when (uiState.currentTab) {
                             MainTab.HOME -> {
                                 HomeScreen(
-                                    state = uiState.copy(primaryHealthSourceSamsung =
-                                        health.provider == com.repforge.app.HealthJournalStore.SAMSUNG),
+                                    state = uiState.copy(
+                                        primaryHealthSourceSamsung = health.provider == com.repforge.app.HealthJournalStore.SAMSUNG,
+                                        healthRefreshRevision = health.refreshRevision
+                                    ),
                                     strings = strings,
                                     onDiscardWorkout = { id -> viewModel.stopActiveWorkoutSession(id, uiState.activeWorkoutGeneration) },
                                     onStartOrContinueWorkout = {
