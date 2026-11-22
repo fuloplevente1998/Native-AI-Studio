@@ -106,6 +106,13 @@ class StudioProgressDataRegressionTest {
         assertEquals(setOf("chest"), model.uiState.value.logWorkoutMuscleLoads.filter { it.setsCount > 0 }.map { it.id }.toSet())
     }
     @Test fun todayAndWeekUseOneMeasuredStepSourceAndFallBackWithItsAttribution() {
+        // The projection intentionally hides values when the user has revoked HC grants.
+        // Seed a granted Health Connect reader for this fixture; test revocation separately.
+        org.robolectric.Shadows.shadowOf(context as android.app.Application).grantPermissions(
+            "android.permission.health.READ_STEPS",
+            "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
+            "android.permission.health.READ_TOTAL_CALORIES_BURNED"
+        )
         val health = HealthJournalStore.get(context)
         health.erase()
         val day = LocalDate.now().toString()
