@@ -505,8 +505,9 @@ class UiUx219RegressionTest {
         compose.runOnIdle { showProgress = true }
         val progressViewport = compose.onNodeWithTag("phone_viewport").getUnclippedBoundsInRoot()
         val tabs = (0..2).map { compose.onNodeWithTag("progress_section_tab_$it").getUnclippedBoundsInRoot() }
-        assertTrue(tabs.all { it.height >= 48.dp })
-        assertTrue(tabs.all { kotlin.math.abs((it.width - tabs.first().width).value) <= 1f })
+        assertTrue(tabs.all { it.bottom - it.top >= 48.dp })
+        val tabWidth = tabs.first().right - tabs.first().left
+        assertTrue(tabs.all { kotlin.math.abs((it.right - it.left - tabWidth).value) <= 1f })
 
         val adviceBounds = compose.onNodeWithTag("progress_advice_card").assertIsDisplayed().getUnclippedBoundsInRoot()
         assertTrue(
