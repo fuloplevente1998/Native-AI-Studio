@@ -17,7 +17,6 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.TrainPilotPalettes
 import com.example.ui.theme.TrainPilotTheme
@@ -40,7 +39,7 @@ class ButtonGlowContourTest {
     @get:Rule val compose = createComposeRule()
 
     @Test fun filledButtonGlowFollowsVisiblePillNot48DpTouchBounds() {
-        var paletteId by mutableIntStateOf(17)
+        var paletteId by mutableIntStateOf(23)
         var closes = 0
         compose.setContent {
             val palette = TrainPilotPalettes.getById(paletteId)
@@ -57,7 +56,7 @@ class ButtonGlowContourTest {
                 }
             }
         }
-        for (id in listOf(17, 18, 1)) {
+        for (id in listOf(23, 18, 1)) {
             compose.runOnIdle { paletteId = id }
             val button = compose.onNodeWithTag("glow_close")
             // Material's visible default button is 40 dp tall. Its accessible slot stays 48 dp.
