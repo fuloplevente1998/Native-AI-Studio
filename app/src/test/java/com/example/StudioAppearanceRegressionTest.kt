@@ -179,5 +179,7 @@ class StudioAppearanceRegressionTest {
         compose.onNodeWithTag("settings_open_privacy_row").performClick()
         compose.onNodeWithTag("settings_privacy_dialog").assertExists()
         compose.onNodeWithText("Samsung Health SDK", substring = true).assertExists()
+        compose.onNodeWithText(TrainPilotStrings.forLanguage(currentLang).closeAction).performClick()
+        compose.onNodeWithTag("settings_privacy_dialog").assertDoesNotExist()
     }
 }
