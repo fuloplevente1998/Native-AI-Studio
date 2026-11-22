@@ -1517,7 +1517,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                 imageVector = if (expandedVolumeDetails) Icons.Default.ExpandMore else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                 contentDescription = trL(uiState.language, "Volumen grafikon lenyitása", "Expand volume chart", "Volumendiagramm öffnen", "Extinde graficul volumului"),
                                 tint = palette.primary,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp).testTag("progress_volume_arrow")
                             )
                         }
                         if (expandedVolumeDetails) {
