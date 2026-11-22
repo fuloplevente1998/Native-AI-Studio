@@ -1654,7 +1654,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                                     .trainPilotBorder(1.dp,
                                         if (isSel) palette.primary else palette.cardBorder,
                                         RoundedCornerShape(10.dp))
-                                    .testTag("progress_range_$"+"rIdx")
+                                    .testTag("progress_range_$rIdx")
                                     .trainPilotClickable(RoundedCornerShape(10.dp)) { onSelectRange(rIdx) }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
