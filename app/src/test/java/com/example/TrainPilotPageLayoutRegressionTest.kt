@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.PageLayoutBlock
 import com.example.ui.components.PageLayoutFrame
