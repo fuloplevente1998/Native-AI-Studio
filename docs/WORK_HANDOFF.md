@@ -1,10 +1,11 @@
-# Oldal testreszabása, Gyors edzés és profil — #326
+# TrainPilot 2795 · 1.4.1
 
-- Ág: `fix/page-customization-live-cards`, [draft PR #326](https://github.com/fuloplevente1998/Native-AI-Studio/pull/326).
-- Az oldal saját kártyái rendezhetők. A blokkok függőlegesen, az egymás melletti kártyák külön oldalirányú fogantyúval mozgathatók. Mindkét sorrend ugyanazzal a Mentés gombbal kerül a helyi beállításokba.
-- A Gyors edzés és az Edzés közösen használja a három mód grafikáját és a választható gyakorlatok alapján számolt HU/EN/DE/RO darabszámokat.
-- A Kezdőlap profilcsempéjén a cím látszik. Az első indulás és a Kezdőlap közös profilszerkesztőjében az edzésstílus és a progressziós szabály választható. A mentés az új vagy ajánlott programhoz rögzíti az explicit választást.
-- A kártyarendezést és Gyors edzést tartalmazó `4e1f4ab` teljes [JVM és R8 futása](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45040620787) sikeres. A profilválasztók a PR legfrissebb CI-futásával ellenőrizhetők. Fizikai készülékes elfogadás és kiadás hátravan.
+- Kiadási forrás `8534c9591faaa451a4236c7fee4d2ce72bec9700`, squash merge [#326](https://github.com/fuloplevente1998/Native-AI-Studio/pull/326).
+- Az oldal saját kártyái rendezhetők függőlegesen és az egymás melletti csempéknél vízszintesen is. A Gyors edzés és az Edzés közös módgrafikát használ. Az Edzés kártyáin a katalógusból számolt gyakorlatszám mind a négy nyelven kiírva jelenik meg.
+- A Kezdőlapon rövidebb a profilcsempe. Az első indulás és a Kezdőlap közös profilszerkesztőjében az edzésstílus és a progressziós szabály az új vagy ajánlott programhoz választható.
+- A [main CI](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45042140530) és az [aláírt futás](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45042786593) sikeres. Mindkét futás JUnit XML-je 817 telefonos és 204 Wear-tesztet mutat, 0 hibával és 0 kihagyással.
+- Telefon 279500, Wear 279502. A négy kiadási csomag SHA-256-a, aláírása és verziója ellenőrizve. A négy fájl és az [ellenőrzési JSON](https://drive.google.com/file/d/1CfgdVCukyBbgXzhGCT9-EKM4BK5XyX0m/view?usp=drivesdk) a [TrainPilot Native Drive mappában](https://drive.google.com/drive/folders/1ywHgrManynjV9uNvZfVncOmCr3SbHIb9) van. A feltöltött fájlok neve, mérete és mappája visszaellenőrizve.
+- A fizikai készülékes elfogadás és a Play Console-feltöltés hátravan.
 
 ---
 
