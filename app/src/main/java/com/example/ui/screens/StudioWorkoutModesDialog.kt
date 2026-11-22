@@ -25,6 +25,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import com.repforge.app.ui.coach.NativeCoachAdviceText
+import com.repforge.app.ui.text.nativeResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -102,6 +105,8 @@ internal fun StudioWorkoutModesDialog(
 ) {
     val p = LocalTrainPilotPalette.current
     val lang = state.language
+    val context = LocalContext.current
+    val localized = remember(context, lang) { nativeResources(context, lang.name.lowercase()) }
     val isProgram = scope == "program"
     val initialStyle = if (isProgram) state.programTrainingStyleCode else state.trainingStyleCode
     val initialProgression = if (isProgram) state.programProgressionModeCode else state.progressionModeCode
@@ -152,6 +157,12 @@ internal fun StudioWorkoutModesDialog(
                             "Program comparison: ", "Programmvergleich: ", "Comparație program: ") +
                             review.programName,
                         color = p.textPrimary, fontWeight = FontWeight.Bold)
+                    Text(workoutModeText(lang,
+                        "A súlyjavaslat csak indokolt edzéselőzményeknél változik. A jóváhagyás a progressziós szabályt menti, a korábban rögzített súlyokat nem írja át.",
+                        "Suggested weights change only when workout history supports them. Approval saves progression rules; existing weights are not overwritten.",
+                        "Gewichtsvorschläge ändern sich nur bei passenden Trainingsdaten. Die Bestätigung speichert die Progressionsregeln, ohne bestehende Gewichte zu überschreiben.",
+                        "Greutățile propuse se modifică doar cu date de antrenament relevante. Confirmarea salvează regulile, fără a suprascrie greutățile existente."),
+                        color = p.textSecondary, modifier = Modifier.testTag("studio_modes_weight_explanation"))
                     for ((index, row) in review.rows.withIndex()) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
@@ -177,6 +188,12 @@ internal fun StudioWorkoutModesDialog(
                                     workoutModeText(lang, "Pihenő: ", "Rest: ", "Pause: ", "Pauză: ") +
                                         "${row.restSeconds ?: "—"} $unit · RIR: ${row.rir}",
                                     color = p.textSecondary)
+                                Text(
+                                    workoutModeText(lang, "Javaslat indoka: ", "Recommendation: ",
+                                        "Begründung: ", "Motivul recomandării: ") +
+                                        NativeCoachAdviceText.reason(localized, row.reason),
+                                    color = p.textSecondary,
+                                    modifier = Modifier.testTag("studio_modes_comparison_reason_$index"))
                             }
                         }
                     }
