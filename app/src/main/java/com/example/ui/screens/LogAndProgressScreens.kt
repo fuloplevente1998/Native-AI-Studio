@@ -112,6 +112,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.sp
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BarChart
 import com.repforge.app.ui.theme.TrainPilotTextButton as TextButton
 import com.example.localization.LocalizedStrings
 import com.example.model.LoggedWorkoutEntry
@@ -1322,7 +1323,7 @@ fun ProgressTabScreen(
                         color = if (selected) palette.primary.copy(alpha = 0.22f) else Color.Transparent,
                         modifier = Modifier
                             .weight(1f)
-                            .heightIn(min = 48.dp)
+                            .height(52.dp)
                             .trainPilotBorder(
                                 width = if (selected) 1.dp else 0.dp,
                                 color = if (selected) palette.primary else Color.Transparent,
@@ -1332,16 +1333,23 @@ fun ProgressTabScreen(
                             .then(Modifier.trainPilotChartSelection(selected, label))
                             .testTag("progress_section_tab_$idx")
                     ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
                         ) {
+                            Icon(
+                                imageVector = if (idx == 0) Icons.AutoMirrored.Filled.TrendingUp else Icons.Default.BarChart,
+                                contentDescription = null,
+                                tint = if (selected) palette.primary else palette.textSecondary,
+                                modifier = Modifier.size(18.dp).testTag("progress_section_icon_$idx")
+                            )
                             com.example.ui.components.TrainPilotFitText(
                                 text = label,
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (selected) palette.primary else palette.textSecondary,
-                                modifier = Modifier.testTag("progress_section_label_$idx")
+                                modifier = Modifier.weight(1f).testTag("progress_section_label_$idx")
                             )
                         }
                     }
