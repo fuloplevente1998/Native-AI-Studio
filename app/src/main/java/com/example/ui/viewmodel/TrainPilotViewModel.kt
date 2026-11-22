@@ -4318,6 +4318,7 @@ class TrainPilotViewModel : ViewModel() {
     }
 
     fun openLogWorkoutDetail(workoutId: String) {
+        if (workoutId.isBlank()) return
         if (_uiState.value.currentSubScreen == SubScreen.LOG_WORKOUT_DETAIL &&
             _uiState.value.selectedLogWorkoutId == workoutId) return
         _uiState.update {
@@ -5160,7 +5161,10 @@ class TrainPilotViewModel : ViewModel() {
         val window = StudioProgressWindow(days)
         scope.launch(Dispatchers.IO) {
             try {
-                val items = muscleItems(db.workoutHistoryDao().getProgressMuscleSummary(window.fromEpoch(), window.toEpoch()))
+                val entries = db.workoutHistoryDao().getProgressMuscleWorkoutRows(window.fromEpoch(), window.toEpoch(), _uiState.value.language.name.lowercase())
+                val counts = entries.map { com.repforge.app.data.db.ProgressMuscleSummary(it.muscleKey, it.setsCount) }
+                val byMuscle = entries.groupBy { NativeProgressQuery.muscleGroup(it.muscleKey) }
+                val items = muscleItems(counts).map { it.copy(workoutRows = byMuscle[it.id].orEmpty()) }
                 withContext(Dispatchers.Main) {
                     _uiState.update { state ->
                         if (progressPeriodDays(state.selectedProgressRangeIndex) == days)

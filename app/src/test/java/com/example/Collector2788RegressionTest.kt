@@ -113,6 +113,15 @@ class Collector2788RegressionTest {
         tileSheet.assertDoesNotExist()
         journalSheet.assertExists()
         provider.assertIsNotSelected().performClick().assertIsSelected()
+        val healthConnect = compose.onNodeWithTag("journal_provider_health_connect")
+        val fixedHeader = compose.onNodeWithTag("health_journal_close").getUnclippedBoundsInRoot()
+        repeat(2) {
+            healthConnect.performClick().assertIsSelected()
+            assertEquals(fixedHeader, compose.onNodeWithTag("health_journal_close").getUnclippedBoundsInRoot())
+            provider.performClick().assertIsSelected()
+            assertEquals(fixedHeader, compose.onNodeWithTag("health_journal_close").getUnclippedBoundsInRoot())
+        }
+
         compose.onNodeWithTag("health_journal_close").performClick()
         journalSheet.assertDoesNotExist()
         tileSheet.assertDoesNotExist()

@@ -1321,7 +1321,8 @@ fun ProgressTabScreen(
                         shape = RoundedCornerShape(10.dp),
                         color = if (selected) palette.primary.copy(alpha = 0.22f) else Color.Transparent,
                         modifier = Modifier
-                            .weight(com.example.ui.components.trainPilotLabelWeight(label, sections))
+                            .weight(1f)
+                            .heightIn(min = 48.dp)
                             .trainPilotBorder(
                                 width = if (selected) 1.dp else 0.dp,
                                 color = if (selected) palette.primary else Color.Transparent,
@@ -1467,7 +1468,7 @@ internal fun MainProgressVolumeAndMuscleSection(
     val avgDurationValue = if (periodWorkouts.isEmpty()) "0 min" else
         "${periodWorkouts.sumOf { it.durationMinutes } / periodWorkouts.size} min"
 
-    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
         // 1. ÖSSZES VOLUMEN CARD: transforms into full-width Screenshot 6 "Volumen trend" chart when expanded!
         Surface(
             shape = RoundedCornerShape(18.dp),
@@ -1478,7 +1479,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                 .testTag("progress_total_volume_card")
                 .trainPilotSoftGlow(palette.primary, RoundedCornerShape(18.dp), 3.dp)
         ) {
-            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
                 // Header row (clickable to expand/collapse between compact & Screenshot 6 large Volumen trend)
                 Row(
                     modifier = Modifier
@@ -1975,7 +1976,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                 }
                 onSelectRange(rIdx)
             },
-            onOpenExerciseDetail = onOpenWorkoutDetail
+            onOpenWorkout = onOpenWorkoutDetail
         )
 
         // 4. COMPACT EXPANDABLE "Fejlődési javaslat" CARD AT BOTTOM (`Screenshot_2026-10-27-15-00-06-481_com.repforge.app.jpg`)
@@ -1992,7 +1993,7 @@ internal fun MainProgressVolumeAndMuscleSection(
                 .trainPilotClickable(RoundedCornerShape(16.dp)) { expandedAdviceDetails = !expandedAdviceDetails }
                 .testTag("progress_advice_card")
         ) {
-            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,

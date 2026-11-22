@@ -42,6 +42,9 @@ class SettingsThemePressFeedbackRegressionTest {
         val list = compose.onNodeWithTag("settings_main_screen")
         list.performScrollToNode(hasTestTag("settings_open_palettes_row"))
         compose.onNodeWithTag("settings_open_palettes_row").performClick()
+        val initial = compose.onNodeWithTag("settings_palette_choice_9")
+        initial.assertIsSelected()
+        compose.onNodeWithTag("settings_theme_category_toggle_1").performClick()
         repeat(4) { index ->
             val tag = "settings_theme_category_toggle_$index"
             val choice = "settings_palette_choice_${index * 8 + 1}"
@@ -56,6 +59,10 @@ class SettingsThemePressFeedbackRegressionTest {
             header.performTouchInput { click(Offset(5f, centerY)) }
             list.performScrollToNode(hasTestTag(choice))
             compose.onNodeWithTag(choice).assertIsDisplayed()
+            val next = compose.onNodeWithTag("settings_palette_choice_${index * 8 + 2}")
+            val first = compose.onNodeWithTag(choice).getUnclippedBoundsInRoot()
+            assertEquals(first.top, next.getUnclippedBoundsInRoot().top)
+            compose.onNodeWithTag("settings_palette_choice_${index * 8 + 5}").assertIsDisplayed()
             list.performScrollToNode(hasTestTag(tag))
             if (index < 3) {
                 header.performTouchInput { click(Offset(width - 5f, centerY)) }

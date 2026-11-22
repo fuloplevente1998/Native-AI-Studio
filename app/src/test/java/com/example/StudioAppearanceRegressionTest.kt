@@ -78,8 +78,8 @@ class StudioAppearanceRegressionTest {
         }
         compose.onNodeWithTag("settings_theme_category_toggle_1").performClick()
         val choice = TrainPilotPalettes.getById(9).localizedName(AppLanguage.HU)
-        list.performScrollToNode(hasText(choice))
-        compose.onNodeWithText(choice).performClick()
+        list.performScrollToNode(hasTestTag("settings_palette_choice_9"))
+        compose.onNodeWithTag("settings_palette_choice_9").assertContentDescriptionEquals(choice).performClick()
         compose.runOnIdle { assertEquals(9, selected) }
         list.performScrollToNode(hasTestTag("settings_open_palettes_row"))
         compose.onNodeWithTag("settings_open_palettes_row").performClick()

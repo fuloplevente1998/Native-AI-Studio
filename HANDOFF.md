@@ -1,12 +1,8 @@
 # Aktuális átadó
 
-2026-11-21 UTC. Forrás és tesztbizonyíték alapján frissítendő pillanatkép.
-
-- Main `aed077beccc0beab9c377381cc3cc955c64921e9`, #307 fotógaléria és #308 CI automatizálás. Kiadás 1.4.1, telefon 278900, Wear 278902.
-- Ugyanezen main teljes regressziója és aláírt buildje sikeres.
-  [Regresszió](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/44850878401) · [Aláírt build](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/44851025435)
-- A #310 javításait a #311 hozza mainre. Kiadás 1.4.1, telefon 279000, Wear 279002. Tételes áttekintés a [#310 auditban](docs/AUDIT_310.md).
-- A verziókód módosítása előtti PR-forráson 992 JVM-teszt és a release R8 sikeres. [PR CI](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/44940870322)
-- A [#309 Health Connect PR](https://github.com/fuloplevente1998/Native-AI-Studio/pull/309) külön draft, készülékes próba függőben.
-- Az ág ellenőrzése `trainpilot-android-ci.yml` teljes mód, JVM app/Wear/shared és release R8. Mainre integrálás csak a kiadás jóváhagyása után.
-- A mainen a sikeres teljes regresszió azonos SHA-ról indítja az APK/AAB buildet. A Play-feltöltés külön lépés.
+- Alap: 2790, `07c353e375215a791dff89e6366e69593613ed15`, #311. [Aláírt 2790](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/44942689741)
+- A #312 fejlesztési ág `feat/312-design-refinements`, kiadás 1.4.1, telefon 279100, Wear 279102. [Hibajegy](https://github.com/fuloplevente1998/Native-AI-Studio/issues/312)
+- Óránkénti lépések forrásazonosított helyi rekordokból, stabil Egészségnapló-panel, egyenlő Fejlődés-fülek, színes izomterhelés és mentett edzéshez kötött gyakorlatlista.
+- A telefonos pihenőgombok kompaktabbak. Az aktív Coach-javaslat ! jelzést, a Glow-paletták szelektív keretfényt kaptak. A témaválasztó 4×2 pöttyös, egyszerre egy család nyílik.
+- A külön Napló-menühelyről a #312/4 pontban még döntés szükséges. Fizikai telefonon ellenőrizendő az óraadat, a szolgáltatóváltás, a nagy betűs és Glow megjelenés.
+- A sikeres teljes main JVM/R8 ellenőrzés azonos SHA-ról indítja az aláírt APK/AAB buildet.

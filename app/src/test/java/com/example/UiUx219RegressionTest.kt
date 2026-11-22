@@ -345,7 +345,7 @@ class UiUx219RegressionTest {
         assertEquals(favoriteBounds.right, nameBounds.left)
         compose.onNodeWithTag("exercise_library_name_arnold-press", useUnmergedTree = true).assertTextEquals("Arnold-nyomás")
         compose.onNodeWithTag("exercise_library_meta_arnold-press", useUnmergedTree = true)
-            .assertTextContains("Váll • 2 kézisúlyzó • 3×10")
+            .assertTextEquals("Váll • 2 kézisúlyzó")
 
         compose.onNodeWithTag("exercise_library_more_arnold-press").performClick()
         compose.onNodeWithTag("exercise_library_add_to_queue_arnold-press").performClick()
@@ -504,6 +504,11 @@ class UiUx219RegressionTest {
         // 2. Default Progress viewport check (354dp x 620dp content area)
         compose.runOnIdle { showProgress = true }
         val progressViewport = compose.onNodeWithTag("phone_viewport").getUnclippedBoundsInRoot()
+        val tabs = (0..2).map { compose.onNodeWithTag("progress_section_tab_$it").getUnclippedBoundsInRoot() }
+        assertTrue(tabs.all { it.bottom - it.top >= 48.dp })
+        val tabWidth = tabs.first().right - tabs.first().left
+        assertTrue(tabs.all { kotlin.math.abs((it.right - it.left - tabWidth).value) <= 1f })
+
         val adviceBounds = compose.onNodeWithTag("progress_advice_card").assertIsDisplayed().getUnclippedBoundsInRoot()
         assertTrue(
             "Progress advice card must fit completely inside default phone viewport without scrolling (bottom=${adviceBounds.bottom}, viewport=${progressViewport.bottom})",

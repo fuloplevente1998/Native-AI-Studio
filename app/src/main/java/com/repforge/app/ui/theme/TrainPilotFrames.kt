@@ -3,7 +3,14 @@ package com.repforge.app.ui.theme
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.addOutline
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.ClipOp
+import com.example.ui.theme.LocalTrainPilotPalette
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -36,7 +43,22 @@ fun Modifier.trainPilotBorder(border: BorderStroke, shape: Shape = RectangleShap
 fun Modifier.trainPilotBorder(width: Dp, brush: Brush, shape: Shape = RectangleShape): Modifier =
     border(TrainPilotFrames.stroke(width, brush), shape)
 
-/** Subtle static edge fade. Uses the existing palette; never changes layout or touch targets. */
-fun Modifier.trainPilotSoftGlow(accent: Color, shape: Shape, elevation: Dp = 6.dp): Modifier =
-    this.shadow(elevation, shape = shape, clip = false,
-        ambientColor = accent.copy(alpha = 0.08f), spotColor = accent.copy(alpha = 0.16f))
+/** Static outer edge lighting for the eight Glow palettes. */
+@Composable
+fun Modifier.trainPilotSoftGlow(accent: Color, shape: Shape, elevation: Dp = 6.dp): Modifier {
+    if (!LocalTrainPilotPalette.current.hasGlow) return this
+    return drawWithCache {
+        val outline = shape.createOutline(size, layoutDirection, this)
+        val edge = Path().apply { addOutline(outline) }
+        val width = elevation.coerceIn(3.dp, 6.dp).toPx()
+        val intensity = if (elevation >= 4.dp) 1f else 0.72f
+        onDrawBehind {
+            clipPath(edge, ClipOp.Difference) {
+                for (layer in 6 downTo 1) {
+                    drawPath(edge, accent.copy(alpha = accent.alpha * intensity * if (layer == 1) 0.38f else 0.055f),
+                        style = Stroke(width = width * layer / 3f))
+                }
+            }
+        }
+    }
+}
