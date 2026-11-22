@@ -2651,7 +2651,7 @@ fun WatchAndSyncScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(18.dp))
-                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onRequestPermission("hc") }
+                    .trainPilotClickable(RoundedCornerShape(18.dp)) { onRequestPermission("hc_permission") }
             ) {
                 Row(
                     modifier = Modifier.padding(14.dp),

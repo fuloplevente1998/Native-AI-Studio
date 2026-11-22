@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import android.Manifest
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -49,6 +50,20 @@ internal object StudioPlatformAccess {
     }
 }
 
+/** The Settings entry point is NOT a data sync. Request missing read grants from the visible Activity. */
+internal object StudioHealthPermissionRouting {
+    fun missingReads(declaredReads: List<String>, granted: (String) -> Boolean): List<String> =
+        declaredReads.filterNot(granted)
+
+    // ACTION_MANAGE_HEALTH_PERMISSIONS can require GRANT_RUNTIME_PERMISSIONS on some OS builds.
+    // Its privileged controller is not a supported third-party launcher.
+    fun settingsIntent(): Intent = HealthConnectRepository.settingsIntent()
+
+    fun fallbackIntent(context: Context): Intent =
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            android.net.Uri.parse("package:${context.packageName}"))
+}
+
 /** Request OS/provider permission, then read back system state. Never optimistically toggle a grant. */
 @Composable
 internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilotViewModel): (String) -> Unit {
@@ -93,8 +108,52 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
         healthConsent = null
         scope.launch { refresh() }
     }
+    // Keep Health Connect consent independent of GPS/notification requests.
+    val healthPermissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { _ ->
+        val pendingSync = healthConsent
+        healthConsent = null
+        pendingSync?.complete(Unit)
+        scope.launch {
+            refresh()
+            if (pendingSync == null) {
+                val declaredReads = StudioPlatformAccess.healthPermissions(context)
+                    .filter { it != HealthConnectRepository.WRITE_EXERCISE_PERMISSION }
+                val granted = declaredReads.count {
+                    context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
+                }
+                model.showBannerMessage("Health Connect: $granted/${declaredReads.size} olvasási engedély.")
+            }
+        }
+    }
     val settings = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         scope.launch { refresh(); refreshSamsung() }
+    }
+    // Called directly in the click handler, not after a suspend/health sync operation.
+    fun requestHealthConnectPermissions() {
+        if (healthActionJob?.isActive == true) {
+            model.showBannerMessage("Egészségügyi művelet már folyamatban van.")
+            return
+        }
+        val declaredReads = StudioPlatformAccess.healthPermissions(context)
+            .filter { it != HealthConnectRepository.WRITE_EXERCISE_PERMISSION }
+        if (!HealthConnectRepository.isSupported(context) || declaredReads.isEmpty()) {
+            model.showBannerMessage("A Health Connect ezen az eszközön nem érhető el.")
+            return
+        }
+        val missingReads = StudioHealthPermissionRouting.missingReads(declaredReads) { permission ->
+            context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+        }
+        if (missingReads.isNotEmpty()) {
+            healthPermissions.launch(missingReads.toTypedArray())
+        } else {
+            try {
+                settings.launch(StudioHealthPermissionRouting.settingsIntent())
+            } catch (_: SecurityException) {
+                settings.launch(StudioHealthPermissionRouting.fallbackIntent(context))
+            } catch (_: ActivityNotFoundException) {
+                settings.launch(StudioHealthPermissionRouting.fallbackIntent(context))
+            }
+        }
     }
     LaunchedEffect(owner) {
         owner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
@@ -137,7 +196,7 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                             check(permissions.isNotEmpty()) { "A Health Connect ezen az eszközön nem érhető el." }
                             val pending = CompletableDeferred<Unit>(currentCoroutineContext()[Job])
                             healthConsent = pending
-                            runtime.launch(permissions.toTypedArray())
+                            healthPermissions.launch(permissions.toTypedArray())
                             pending.await()
                         } else SamsungHealthRepository.requestReadPermissions(host).getOrThrow()
                         withTimeout(10_000) {
@@ -188,10 +247,9 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                     else settings.launch(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName))
                 "hc" -> startHealthAction(HealthJournalStore.HC)
                 "samsung" -> startHealthAction(HealthJournalStore.SAMSUNG)
-                "hc_permission" -> startHealthAction(HealthJournalStore.HC, permissionOnly = true)
+                "hc_permission" -> requestHealthConnectPermissions()
                 "samsung_permission" -> startHealthAction(HealthJournalStore.SAMSUNG, permissionOnly = true)
-                "hc_manage" -> settings.launch(Intent(android.health.connect.HealthConnectManager.ACTION_MANAGE_HEALTH_PERMISSIONS)
-                    .putExtra(Intent.EXTRA_PACKAGE_NAME, context.packageName))
+                "hc_manage" -> requestHealthConnectPermissions()
                 "samsung_manage" -> scope.launch {
                     activity?.let { SamsungHealthRepository.requestReadPermissions(it, force = true) }
                         ?.exceptionOrNull()?.let { model.showBannerMessage(it.message ?: "Samsung Health engedélykérés sikertelen.") }

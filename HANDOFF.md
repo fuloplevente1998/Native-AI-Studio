@@ -5,3 +5,5 @@
 - Részletesebb izomcsoportok, kompakt kijelölés, egysoros időszakválasztó az Edzésvolumenben, kompakt PR-rekord panel (#316).
 - Egyoldalas Kardió a mentett aktivitások eredeti típusával (#317). Az Edzésbeállítások az aktív program nevét és finom sorelválasztókat kapnak (#315).
 - A teljes main JVM/R8 ellenőrzés indítja az azonos SHA-ról aláírt APK/AAB párost. Fizikai telefonos ellenőrzés hátravan.
+
+- A #309 a Health Connect jogosultsági útvonalát javítja. A #312/13 valódi be/ki kapcsolói és a készülékes ellenőrzés külön hátravannak. A kiadási build szünetel.
