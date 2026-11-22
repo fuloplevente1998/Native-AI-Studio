@@ -115,7 +115,7 @@ object SamsungHealthRepository {
             check(isInstalled(activity) && isSdkAvailable()) { "Samsung Health nem érhető el." }
             if (!force && readGrantedKeys(activity) {
                 check(!activity.isFinishing && !activity.isDestroyed) { "Samsung Health Activity closed" }
-            }.isNotEmpty()) return@runCatching
+            }.size == PERMISSION_KEYS.size) return@runCatching
             suspendCancellableCoroutine<Unit> { continuation ->
                 try {
                     HealthDataService.getStore(activity).requestPermissionsAsync(SamsungSdkReader.permissions(), activity)
