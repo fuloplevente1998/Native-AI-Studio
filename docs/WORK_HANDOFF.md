@@ -1,3 +1,13 @@
+# #312/12 Fénykeret a festett gombkontúron — draft PR #319 (2026-11-22)
+
+- Alap: main `483383d72fb421ba6bccc4c8b357f1d382c5621e` (a #309 javítás már benne van). Ág: `fix/312-12-glow-painted-contour`, [draft PR #319](https://github.com/fuloplevente1998/Native-AI-Studio/pull/319). Nincs main-merge vagy kiadás.
+- Igazolt kódgeometria: a `TrainPilotButton` fényrajza eddig a 48 dp-es Material minimum érintési befoglalóra került, nem a 40 dp-es látható kitöltött felületre. Fényes paletta/elsődleges kitöltés esetén a fenntartott érintési hely és a rajzolt fény most külön méretű; a fény a tényleges `Shape`/festett kontúr alapján rajzolódik.
+- A `trainPilotSoftGlow` rétegei, opacitása, színei, a kattintás/lenyomás-visszajelzés és a 48 dp-es érinthetőség nem módosultak. A külön `Surface`-es, azonos alakú Home/Health/Coach/Progress/Naptár/Sheet/Editor fénykereteknél nem igazolódott azonos minimális érintési eltérés; csak a közös kitöltött gombot érintettük.
+- Új Robolectric képpont/lenyomás/érintési perem teszt: arany Fényes #23, cián Fényes #18, matt #1; a Beállítások adatvédelmi dialógus Bezárás műveletének tesztje bővült. Kód- és változáslista-audit megvolt; Gradle/JVM teszt, fizikai készülékes két Fényes + nem Fényes ellenőrzés még hátravan.
+- A commitok `[skip ci]` jelölésűek. A 2792-es közös CI-t, APK/AAB buildet, verzióemelést és main-integrációt nem indítottuk. A #312/13 engedélykapcsolók külön feladat, ebben az ágban nincs változás.
+
+---
+
 # #312/9 Kardió – egyoldalas áttekintés (2026-11-22)
 
 - Alap: main `d57bd17585d77feab0c0dfa37d7295738083fce6`; külön ág: `fix/312-cardio-one-page`, [draft PR #317](https://github.com/fuloplevente1998/Native-AI-Studio/pull/317). Main-merge és kiadás nincs.
