@@ -147,7 +147,7 @@ class HealthReadingsRegressionTest {
         assertEquals(71, result.lastBpm)
     }
 
-    @Test fun validTodaySamsungEnergyUsesCanonicalReadiness() {
+    @Test fun validTodaySamsungEnergyCanBeShownWithoutACoachEstimate() {
         val energy = row(samsung).put("energyScore", 83)
             .put("energyScoreTime", "2026-11-02T18:00:00Z")
             .put("energyScoreSource", "samsung_health")
@@ -157,6 +157,7 @@ class HealthReadingsRegressionTest {
         assertEquals(83.0, result.samsungEnergy!!, 0.001)
         assertEquals(83.0, result.score!!, 0.001)
         assertNull(result.trainPilotEstimate)
+        assertNull(result.coachScore)
     }
 
     @Test fun missingOrStaleEnergyDoesNotCreateFakeReadinessScore() {
@@ -174,7 +175,7 @@ class HealthReadingsRegressionTest {
         assertEquals(RecoverySource.SAMSUNG_ENERGY, zeroReading.source)
         assertEquals(0.0, zeroReading.score!!, 0.001)
         assertEquals(0.0, zeroReading.samsungEnergy!!, 0.001)
-        assertEquals(0.0, zeroReading.coachScore!!, 0.001)
+        assertNull(zeroReading.coachScore)
     }
 
     @Test fun healthConnectCannotInheritSamsungScoreEmbeddedInWrongRow() {
@@ -185,6 +186,48 @@ class HealthReadingsRegressionTest {
         assertEquals(RecoverySource.NONE, result.source)
         assertNull(result.samsungEnergy)
         assertNull(result.score)
+    }
+
+    @Test fun eitherPrimaryChannelUsesRealSleepAndSameOriginHrvFromEnabledWearables() {
+        val energy = row(samsung).put("channel", samsung).put("sleepMinutes", 420)
+            .put("energyScore", 80).put("energyScoreTime", "2026-11-02T18:00:00Z")
+            .put("energyScoreSource", "samsung_health")
+        val wearable = row().put("hrvRmssdMs", 70).put("hrvTime", "2026-11-02T07:00:00Z")
+            .put("hrvSource", "wearable.bridge")
+        val baseline = (1L..3L).map { offset ->
+            row(date = day.minusDays(offset)).put("hrvRmssdMs", 50).put("hrvSource", "wearable.bridge")
+        }
+        val wearableDays = listOf(wearable) + baseline
+        val fromSamsung = HealthReadingsProjection.recoveryToday(
+            samsung, listOf(energy), emptyList(), now, ZoneOffset.UTC, alternateDays = wearableDays)
+        val fromHc = HealthReadingsProjection.recoveryToday(
+            hc, wearableDays, emptyList(), now, ZoneOffset.UTC, alternateDays = listOf(energy))
+        for (reading in listOf(fromSamsung, fromHc)) {
+            assertEquals(88, reading.trainPilotEstimate)
+            assertEquals(86.0, requireNotNull(reading.coachScore), 0.0)
+            assertTrue(reading.coachHasRecoverySignal)
+        }
+        val otherOrigin = JSONObject(wearable.toString()).put("hrvSource", "unrelated.bridge")
+        val unmatched = HealthReadingsProjection.recoveryToday(
+            samsung, listOf(energy), emptyList(), now, ZoneOffset.UTC, alternateDays = listOf(otherOrigin) + baseline)
+        assertEquals(78, unmatched.trainPilotEstimate)
+        assertEquals(78.0, requireNotNull(unmatched.coachScore), 0.0)
+        val wearableOnly = HealthReadingsProjection.recoveryToday(hc, wearableDays, emptyList(), now, ZoneOffset.UTC)
+        assertEquals(80.0, requireNotNull(wearableOnly.coachScore), 0.0)
+        assertNull(wearableOnly.samsungEnergy)
+    }
+
+    @Test fun sleepFromTwoWearableOriginsNeverAddsMirroredIntervals() {
+        fun session(source: String, from: String, to: String) = JSONObject().put("source", source)
+            .put("start", "2026-11-02T${from}:00Z").put("end", "2026-11-02T${to}:00Z")
+        val sleep = row().put("sleepSessions", JSONArray()
+            .put(session("wearable.bridge", "00:30", "07:00"))
+            .put(session("wearable.bridge", "05:00", "07:15"))
+            .put(session("com.sec.android.app.shealth", "00:50", "07:00")))
+        val result = HealthReadingsProjection.coachReadiness(hc, listOf(sleep), emptyList(),
+            emptyList(), now, ZoneOffset.UTC)
+        assertEquals(405.0, requireNotNull(result.sleepMinutes), 0.0)
+        assertEquals(71.0, requireNotNull(result.score), 0.0)
     }
 
     @Test fun realRecentSleepSupportsLabeledTrainPilotEstimate() {

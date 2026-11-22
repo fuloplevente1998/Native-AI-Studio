@@ -4853,6 +4853,8 @@ class TrainPilotViewModel : ViewModel() {
                 val alternativeProvider = if (provider == HealthJournalStore.SAMSUNG) HealthJournalStore.HC
                     else HealthJournalStore.SAMSUNG
                 val privacy = com.repforge.app.NativePrivacyControls
+                val primaryEnabled = privacy.enabled(ctx, if (provider == HealthJournalStore.SAMSUNG)
+                    privacy.SAMSUNG_HEALTH else privacy.HEALTH_CONNECT)
                 val alternativeEnabled = privacy.enabled(ctx, if (alternativeProvider == HealthJournalStore.SAMSUNG)
                     privacy.SAMSUNG_HEALTH else privacy.HEALTH_CONNECT)
                 val alternateToday = if (alternativeEnabled)
@@ -5029,17 +5031,25 @@ class TrainPilotViewModel : ViewModel() {
                         provider, today, projectedProviderDays.firstOrNull { it.optString("day") == today.toString() },
                         now, zone) else null
                 val roomCoachHistory = runCatching {
-                    nativeDatabase?.workoutHistoryDao()?.getAllWorkoutsWithDetails()
-                        ?.mapNotNull { entry -> runCatching { JSONObject(entry.workout.rawJson) }.getOrNull() }
+                    nativeDatabase?.workoutHistoryDao()?.getCoachRecentHistory(
+                        now.minus(java.time.Duration.ofDays(14)).toEpochMilli(), now.toEpochMilli())
+                        ?.mapNotNull { raw -> runCatching { JSONObject(raw) }.getOrNull() }
                         ?: emptyList()
                 }.getOrDefault(emptyList())
-                val todayRecovery = if (provider == HealthJournalStore.HC || provider == HealthJournalStore.SAMSUNG)
-                    HealthReadingsProjection.recoveryToday(provider, projectedProviderDays, roomCoachHistory, now, zone,
-                        samsungEnergyDay = alternateToday.takeIf { alternativeProvider == HealthJournalStore.SAMSUNG })
-                    else null
+                val todayRecovery = if (provider == HealthJournalStore.HC || provider == HealthJournalStore.SAMSUNG) {
+                    fun recoveryDays(channel: String, enabled: Boolean): List<JSONObject> =
+                        if (enabled) com.repforge.app.NativeHealthProviderData.recentRecoveryDays(store, channel, today)
+                            .mapNotNull { admitted(it, channel) } else emptyList()
+                    HealthReadingsProjection.recoveryToday(provider, recoveryDays(provider, primaryEnabled),
+                        roomCoachHistory, now, zone, alternateDays = recoveryDays(alternativeProvider, alternativeEnabled))
+                } else null
 
                 withContext(Dispatchers.Main) {
-                    if (store.generation() != generation || store.preferences().optString("provider", HealthJournalStore.HC) != provider) return@withContext
+                    if (store.generation() != generation || store.preferences().optString("provider", HealthJournalStore.HC) != provider ||
+                        primaryEnabled != privacy.enabled(ctx, if (provider == HealthJournalStore.SAMSUNG)
+                            privacy.SAMSUNG_HEALTH else privacy.HEALTH_CONNECT) ||
+                        alternativeEnabled != privacy.enabled(ctx, if (alternativeProvider == HealthJournalStore.SAMSUNG)
+                            privacy.SAMSUNG_HEALTH else privacy.HEALTH_CONNECT)) return@withContext
                     loadedHealthProvider = provider
                     _uiState.update { st ->
                         st.copy(

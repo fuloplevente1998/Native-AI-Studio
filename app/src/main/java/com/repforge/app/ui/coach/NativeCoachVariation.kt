@@ -105,14 +105,8 @@ internal class NativeCoachVariation(private val context: Context, private val db
         }
     }
 
-    private suspend fun readiness(now: Instant): NativeCoachReadiness.Result {
-        val zone = ZoneId.systemDefault(); val today = now.atZone(zone).toLocalDate()
-        val response = HealthJournalStore.get(context).page(today.minusDays(14).toString(), today.toString(), "journal", "", 0, 0, 1)
-        val array = response.getJSONArray("days")
-        val signals = NativeCoachSignals.fromDays((0 until array.length()).map { array.getJSONObject(it) }, today, zone)
-        val history = db.workoutHistoryDao().getCoachRecentHistory(now.minus(Duration.ofDays(14)).toEpochMilli(), now.toEpochMilli()).map { JSONObject(it) }
-        return NativeCoachReadiness.calculate(signals.recovery, signals.daily, history, now, zone)
-    }
+    private suspend fun readiness(now: Instant): NativeCoachReadiness.Result =
+        NativeSelectedCoachReadings.load(context, db, now, ZoneId.systemDefault()).readiness
 
     companion object {
         internal fun recipe(next: NativeCoachExerciseAdvice.Variation, library: JSONObject, profile: JSONObject): JSONObject {

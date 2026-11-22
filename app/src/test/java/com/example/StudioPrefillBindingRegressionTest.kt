@@ -195,7 +195,7 @@ class StudioPrefillBindingRegressionTest {
         val hc = native { NativeSelectedCoachReadings.load(context, db, now, ZoneOffset.UTC) }
         assertEquals(HealthJournalStore.HC, hc.provider)
         assertEquals(0.0, requireNotNull(hc.readiness.samsungScore), 0.001)
-        assertEquals(0.0, requireNotNull(hc.readiness.score), 0.001)
+        assertNull(hc.readiness.score)
         val privacy = com.repforge.app.NativePrivacyControls
         privacy.set(context, privacy.SAMSUNG_HEALTH, false)
         try {
@@ -208,7 +208,7 @@ class StudioPrefillBindingRegressionTest {
         native { store.setPreferences(JSONObject().put("provider", HealthJournalStore.SAMSUNG)) }
         val samsung = native { NativeSelectedCoachReadings.load(context, db, now, ZoneOffset.UTC) }
         assertEquals(0.0, requireNotNull(samsung.readiness.samsungScore), 0.001)
-        assertEquals(0.0, requireNotNull(samsung.readiness.score), 0.001)
+        assertNull(samsung.readiness.score)
     }
     @Test fun studioProgramCopyDayAndExerciseActionsReallyPersistWithoutChangingOriginal() {
         val model = model()

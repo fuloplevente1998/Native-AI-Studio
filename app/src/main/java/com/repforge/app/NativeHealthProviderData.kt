@@ -11,4 +11,13 @@ internal object NativeHealthProviderData {
         return (0 until (days?.length() ?: 0)).mapNotNull { days?.optJSONObject(it) }
             .firstOrNull { it.optString("day") == date.toString() && it.optString("channel") == provider }
     }
+
+    fun recentRecoveryDays(store: HealthJournalStore, provider: String, today: LocalDate): List<JSONObject> {
+        NativeWorkoutHealthSource.requireProvider(provider)
+        val rows = store.page(today.minusDays(13).toString(), today.toString(), provider,
+            "@aggregate", 0, 0, 1).optJSONArray("days") ?: return emptyList()
+        return (0 until rows.length()).mapNotNull { rows.optJSONObject(it)?.takeIf { row ->
+            row.optString("channel") == provider
+        } }
+    }
 }

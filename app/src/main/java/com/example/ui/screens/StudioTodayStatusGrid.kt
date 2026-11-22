@@ -46,7 +46,7 @@ internal fun StudioTodayStatusGrid(state: TrainPilotUiState, compact: Boolean = 
         Triple("pulse", pulseName, pulseValue),
         Triple("steps", tr("Lépések", "Steps", "Schritte", "Pași"), if ("steps" in state.dailyHealthAvailableFields) "${state.dailySteps}" else "—"),
         Triple("workout", tr("Mai edzés", "Today's Workout", "Heutiges Training", "Antrenament azi"), "${state.loggedWorkouts.workoutsOn(LocalDate.now()).size}"),
-        Triple("recovery", tr("Regeneráció", "Recovery", "Erholung", "Recuperare"), recovery?.displayScoreHu ?: "—")
+        Triple("recovery", tr("Regeneráció", "Recovery", "Erholung", "Recuperare"), recovery?.coachScore?.let { "${it.roundToInt()}/100" } ?: "—")
     )
     val icons = listOf(Icons.Default.Bedtime, Icons.Default.LocalFireDepartment, Icons.Default.Favorite,
         Icons.AutoMirrored.Filled.DirectionsWalk, Icons.Default.FitnessCenter, Icons.Default.Eco)

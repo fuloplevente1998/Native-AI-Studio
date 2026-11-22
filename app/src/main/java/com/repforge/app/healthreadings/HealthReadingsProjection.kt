@@ -51,14 +51,15 @@ data class RecoveryDayReading(
     val samsungEnergy: Double?,
     val samsungAt: String?,
     val trainPilotEstimate: Int?,
-    val explanationHu: String
+    val explanationHu: String,
+    val coachHasRecoverySignal: Boolean = false
 ) {
     val displayScoreHu: String get() = score?.let { "${it.roundToInt()}/100" } ?: "—"
 }
 
 /**
- * No persistence, no implicit cross-provider fallback and no invented HR or readiness values.
- * The caller provides only rows from the currently selected HealthJournalStore provider.
+ * Read-only daily projections. The Coach accepts a separately admitted alternate channel
+ * for missing signals. Provider measurements and their origins stay distinct.
  */
 object HealthReadingsProjection {
     private val pulseKeys = setOf("averageHeartRate", "minHeartRate", "maxHeartRate", "heartRateSamples", "heartRateSeries")
@@ -173,23 +174,14 @@ object HealthReadingsProjection {
         workouts: List<JSONObject>,
         now: Instant,
         zone: ZoneId = ZoneId.systemDefault(),
-        samsungEnergyDay: JSONObject? = null
+        alternateDays: List<JSONObject> = emptyList()
     ): RecoveryDayReading {
         requireProvider(provider)
         val today = now.atZone(zone).toLocalDate()
         val ownDays = validatedRecoveryDays(provider, days, now, zone)
         val current = ownDays.firstOrNull { it.optString("day") == today.toString() }
-        val externalEnergy = verifiedSamsungDay(samsungEnergyDay, now, zone)
-        if (current == null && externalEnergy == null)
-            return RecoveryDayReading(today, provider, ReadingState.NOT_SYNCED, RecoverySource.NONE,
-                null, null, null, null, null, "Nincs kiválasztott forrásból származó mai napi adat.")
         val status = current?.let { recoveryStatus(it, provider) }
-        val signals = NativeCoachSignals.fromDays(ownDays, today, zone)
-        val todayRecovery = signals.recovery.takeIf { it.optString("day") == today.toString() } ?: JSONObject()
-        val calculation = NativeCoachReadiness.calculate(
-            todayRecovery, signals.daily, workouts, now, zone,
-            externalEnergy = externalEnergy, externalEnergyAvailable = externalEnergy != null
-        )
+        val calculation = calculateCoachReadiness(provider, ownDays, alternateDays, workouts, now, zone)
         val source = when {
             calculation.samsungScore != null -> RecoverySource.SAMSUNG_ENERGY
             calculation.trainpilotScore != null && calculation.trainpilotObservations > 0 -> RecoverySource.TRAINPILOT_ESTIMATE
@@ -220,7 +212,32 @@ object HealthReadingsProjection {
         }
         return RecoveryDayReading(today, provider, finalState, source, selectedScore,
             calculation.score, calculation.samsungScore,
-            calculation.samsungTime, calculation.trainpilotScore, explanation)
+            calculation.samsungTime, calculation.trainpilotScore, explanation,
+            coachHasRecoverySignal = calculation.hasRecoverySignal)
+    }
+
+    internal fun coachReadiness(
+        provider: String, days: List<JSONObject>, alternateDays: List<JSONObject>,
+        workouts: List<JSONObject>, now: Instant, zone: ZoneId
+    ): NativeCoachReadiness.Result =
+        calculateCoachReadiness(provider, validatedRecoveryDays(provider, days, now, zone),
+            alternateDays, workouts, now, zone)
+
+    private fun calculateCoachReadiness(
+        provider: String, ownDays: List<JSONObject>, alternateDays: List<JSONObject>,
+        workouts: List<JSONObject>, now: Instant, zone: ZoneId
+    ): NativeCoachReadiness.Result {
+        val today = now.atZone(zone).toLocalDate()
+        val otherProvider = if (provider == HealthJournalStore.SAMSUNG) HealthJournalStore.HC
+            else HealthJournalStore.SAMSUNG
+        val selected = NativeCoachSignals.fromDays(ownDays, today, zone)
+        val alternate = NativeCoachSignals.fromDays(validatedRecoveryDays(otherProvider, alternateDays, now, zone),
+            today, zone)
+        val selectedRecovery = selected.recovery.takeIf { it.optString("day") == today.toString() } ?: JSONObject()
+        val alternateRecovery = alternate.recovery.takeIf { it.optString("day") == today.toString() }
+        val samsung = if (provider == HealthJournalStore.HC) verifiedSamsungDay(alternate.daily, now, zone) else null
+        return NativeCoachReadiness.calculate(selectedRecovery, selected.daily, workouts, now, zone,
+            externalEnergy = samsung, externalEnergyAvailable = samsung != null, alternateRecovery = alternateRecovery)
     }
 
     /** Admit only a current, verified Energy Score from the separate Samsung channel. */

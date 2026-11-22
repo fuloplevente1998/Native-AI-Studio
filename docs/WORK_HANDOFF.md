@@ -1,3 +1,11 @@
+# Coach · gyártófüggetlen készenlét
+
+- Ág `fix/coach-independent-readiness`, alap `28b0a31`. A végső Coach-pont alapja a mért alvás, az azonos eredetű egyéni HRV-alapérték és a naplózott terhelés. Igazolt aznapi Samsung Energy Score esetén a végső érték 80% TrainPilot és 20% Samsung. A fájdalomjelzés a végső értéket legfeljebb 54-re korlátozza.
+- A számítás a kiválasztott engedélyezett forrásból indul, és a másik engedélyezett forrásból pótolja a hiányzó alvás- vagy HRV-jelet. A Health Connect által átadott méréseket minden adatforrásból fogadja. Az egymást tükröző alvásintervallumok egyszer számítanak. Készülékes ellenőrzés Samsung és más, Health Connectbe exportáló órákkal hátravan.
+- A Kezdőlap és az Egészség Regeneráció csempéje, valamint a Coach és az edzésjavaslatok közös végeredményt használnak. Önmagában a Samsung-pont külön látszik. Az ág teljes JVM- és R8-ellenőrzése az Actionsben futtatható.
+
+---
+
 # Egészség · #332, #333, #334
 
 - A három javítás a [#338](https://github.com/fuloplevente1998/Native-AI-Studio/pull/338) squash merge-dzsel került mainre. A tesztelt forrásfák azonosak. Main-forrás `a9788d60d6b7c5d60ba126e311039948383f45ff`, alap `cfb1f44`. [#332](https://github.com/fuloplevente1998/Native-AI-Studio/issues/332) · [#333](https://github.com/fuloplevente1998/Native-AI-Studio/issues/333) · [#334](https://github.com/fuloplevente1998/Native-AI-Studio/issues/334)

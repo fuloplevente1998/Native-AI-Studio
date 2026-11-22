@@ -77,18 +77,30 @@ class Collector2779RegressionTest {
         assertFalse(quickSheet.contains("addExerciseToActiveProgramDay"))
     }
 
-    @Test fun finalCoachValueIsTheSamsungScoreAndOnlyPainCapsIt() {
+    @Test fun finalCoachUsesItsOwnSignalsAndWeightsVerifiedSamsungEnergy() {
         val now = java.time.Instant.parse("2026-11-03T10:00:00Z")
+        val zone = java.time.ZoneOffset.UTC
+        val day = "2026-11-03"
+        val sleep = JSONObject().put("day", day).put("sleepMinutes", 450)
         val energy = JSONObject().put("energyScore", 86).put("energyScoreSource", "samsung_health")
-            .put("energyScoreTime", "2026-11-03T09:00:00Z").put("day", "2026-11-03")
-        fun workout(effort: String) = JSONObject().put("started", "2026-11-03T07:00:00Z").put("finished", "2026-11-03T08:00:00Z")
-            .put("exercises", JSONArray().put(JSONObject().put("effort", effort)).put(JSONObject().put("effort", effort)))
-        val hard = com.repforge.app.ui.coach.NativeCoachReadiness.calculate(JSONObject(), energy,
-            listOf(workout("hard"), workout("hard"), workout("hard")), now, java.time.ZoneOffset.UTC)
-        assertEquals(86.0, requireNotNull(hard.score), 0.0)
-        assertEquals(hard.samsungScore, hard.score)
-        val noSamsung = com.repforge.app.ui.coach.NativeCoachReadiness.calculate(JSONObject(), JSONObject(),
-            listOf(workout("hard")), now, java.time.ZoneOffset.UTC)
-        assertEquals(noSamsung.trainpilotScore?.toDouble(), noSamsung.score)
+            .put("energyScoreTime", "2026-11-03T09:00:00Z").put("day", day)
+        fun workout() = JSONObject().put("started", "2026-11-03T07:00:00Z").put("finished", "2026-11-03T08:00:00Z")
+            .put("exercises", JSONArray().put(JSONObject().put("effort", "hard")).put(JSONObject().put("effort", "hard")))
+        fun read(recovery: JSONObject, dailyEnergy: JSONObject, workouts: List<JSONObject> = emptyList()) =
+            com.repforge.app.ui.coach.NativeCoachReadiness.calculate(recovery, dailyEnergy, workouts, now, zone)
+
+        val noSamsung = read(sleep, JSONObject())
+        assertEquals(82.0, requireNotNull(noSamsung.score), 0.0)
+        val both = read(sleep, energy)
+        assertEquals(82, both.trainpilotScore)
+        assertEquals(86.0, requireNotNull(both.samsungScore), 0.0)
+        assertEquals(83.0, requireNotNull(both.score), 0.0)
+        val hard = read(sleep, energy, List(3) { workout() })
+        assertEquals(76, hard.trainpilotScore)
+        assertEquals(78.0, requireNotNull(hard.score), 0.0)
+        val samsungOnly = read(JSONObject(), energy)
+        assertEquals(86.0, requireNotNull(samsungOnly.samsungScore), 0.0)
+        assertNull(samsungOnly.score)
+        assertFalse(samsungOnly.hasRecoverySignal)
     }
 }
