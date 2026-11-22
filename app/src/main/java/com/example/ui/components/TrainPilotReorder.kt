@@ -113,7 +113,8 @@ fun TrainPilotReorderHandle(
     moveDownLabel: String,
     testTag: String,
     onMove: (from: Int, to: Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    icon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Default.DragHandle
 ) {
     val palette = LocalTrainPilotPalette.current
     val haptics = LocalHapticFeedback.current
@@ -159,7 +160,7 @@ fun TrainPilotReorderHandle(
             .testTag(testTag)
     ) {
         Icon(
-            imageVector = Icons.Default.DragHandle,
+            imageVector = icon,
             contentDescription = null,
             tint = if (state.draggingKey == key) palette.primary else palette.textSecondary,
             modifier = Modifier.size(20.dp)
