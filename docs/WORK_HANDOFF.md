@@ -1,3 +1,11 @@
+# TrainPilot 2801 · 1.4.3
+
+- Kiadási forrás `fc00b7a31a1ce319e84cbdff02af9e60bdd2d41a`. A [#340](https://github.com/fuloplevente1998/Native-AI-Studio/pull/340) a Coach-készenlét javítása, a [#341](https://github.com/fuloplevente1998/Native-AI-Studio/pull/341) a verzióemelés. A telefon 280100, az aláírt ellenőrző Wear-pár 280102.
+- A [főági CI](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45076215302) és az [aláírt kiadás](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45076447960) sikeres. Mindkét nyers JUnit jelentésben 841 telefonos és 204 Wear-teszt szerepel, 0 hibával és kihagyással. A korábbi kísérletekben a rendszer­sávteszt időtúllépett. A sikeres ismétlés ugyanabból a commitból futott.
+- A csomagok SHA-256-a, verziója és tartós aláírása ellenőrizve. A Drive-on a [telefonos AAB](https://drive.google.com/file/d/1XEnh15uZrvCyRUhBHcw2f_kcXyUviIpl/view), [telefonos APK](https://drive.google.com/file/d/1gwKu3b98itIwRsdY56HlTARX8MBk2s_o/view), [négynyelvű Play-jegyzet](releases/2801-phone-play-notes.txt) és az [ellenőrzési JSON](https://drive.google.com/file/d/1-2gX4HAqPZgNdDJxPCS-RnS7OSidfD1A/view) érhető el. A 279600-as telefonos és 278902-es órás Play-kiadás közzétételi állapota érintetlen. Az eltérő órák készülékes próbája és a Wear-dizájn későbbi feladat.
+
+---
+
 # Coach · gyártófüggetlen készenlét
 
 - [PR #340](https://github.com/fuloplevente1998/Native-AI-Studio/pull/340), ág `fix/coach-independent-readiness`, alap `28b0a31`. A végső Coach-pont alapja a mért alvás, az azonos eredetű egyéni HRV-alapérték és a naplózott terhelés. Igazolt aznapi Samsung Energy Score esetén a végső érték 80% TrainPilot és 20% Samsung. A fájdalomjelzés a végső értéket legfeljebb 54-re korlátozza.
