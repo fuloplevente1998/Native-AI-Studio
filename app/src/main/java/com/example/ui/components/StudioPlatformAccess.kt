@@ -292,6 +292,7 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                         else -> NativePrivacyControls.SAMSUNG_HEALTH
                     }
                     NativePrivacyControls.set(context, feature, enabled)
+                    model.updatePrivacyChoice(feature, enabled)
                     if (enabled && feature == NativePrivacyControls.HEALTH_CONNECT) {
                         scope.launch(Dispatchers.IO) {
                             runCatching { HealthBackgroundJob.schedule(context) }
