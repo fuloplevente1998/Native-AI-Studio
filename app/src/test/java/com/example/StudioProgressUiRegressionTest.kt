@@ -74,7 +74,8 @@ class StudioProgressUiRegressionTest {
         compose.onNodeWithTag("progress_volume_bucket_unit").assertTextEquals("Heti bontás")
     }
     @Test fun compactVolumeCardUsesOnePeriodRowAndKeepsSelectedBarWhenExpanded() {
-        var state by mutableStateOf(TrainPilotUiState(loggedWorkouts = listOf(row(0, 100), row(3, 200))))
+        var state by mutableStateOf(TrainPilotUiState(selectedProgressRangeIndex = 1,
+            loggedWorkouts = listOf(row(0, 100), row(3, 200))))
         compose.setContent { TrainPilotTheme {
             Column(Modifier.width(360.dp).verticalScroll(rememberScrollState())) {
                 MainProgressVolumeAndMuscleSection(state,
@@ -93,19 +94,41 @@ class StudioProgressUiRegressionTest {
         compose.onNodeWithTag("progress_expanded_column_6", useUnmergedTree = true).assertIsSelected()
     }
 
-    @Test fun volumeTitleAndCompactChartBothOpenTheDetailedGraph() {
-        val state = TrainPilotUiState(loggedWorkouts = listOf(row(0, 100)))
+    @Test fun volumeTitleArrowAndCompactChartAllOpenTheDetailedGraph() {
+        val state = TrainPilotUiState(selectedProgressRangeIndex = 1,
+            loggedWorkouts = listOf(row(0, 100)))
         compose.setContent { TrainPilotTheme {
             Column(Modifier.width(360.dp).verticalScroll(rememberScrollState())) {
                 MainProgressVolumeAndMuscleSection(state, {}, {}, {}, {})
             }
         } }
-        compose.onNodeWithTag("progress_volume_expand").performClick()
-        compose.onNodeWithTag("progress_volume_bucket_unit").assertExists()
-        compose.onNodeWithTag("progress_volume_expand").performClick()
-        compose.onNodeWithTag("progress_volume_chart_open", useUnmergedTree = true)
+        compose.onNodeWithTag("progress_volume_total", useUnmergedTree = true)
             .performTouchInput { click() }
         compose.onNodeWithTag("progress_volume_bucket_unit").assertExists()
+        compose.onNodeWithTag("progress_volume_expand").performClick()
+        compose.onNodeWithTag("progress_volume_arrow", useUnmergedTree = true)
+            .performTouchInput { click() }
+        compose.onNodeWithTag("progress_volume_bucket_unit").assertExists()
+        compose.onNodeWithTag("progress_volume_expand").performClick()
+        compose.onNodeWithTag("progress_compact_column_6", useUnmergedTree = true)
+            .performTouchInput { click() }
+        compose.onNodeWithTag("progress_expanded_column_6", useUnmergedTree = true).assertIsSelected()
+    }
+
+    @Test fun ninetyDayCompactBarSelectionIsVisibleInExpandedChart() {
+        var state by mutableStateOf(TrainPilotUiState(selectedProgressRangeIndex = 3,
+            loggedWorkouts = listOf(row(60, 600), row(0, 100))))
+        compose.setContent { TrainPilotTheme {
+            Column(Modifier.width(360.dp).verticalScroll(rememberScrollState())) {
+                MainProgressVolumeAndMuscleSection(state, {},
+                    onSelectVolumeBar = { state = state.copy(selectedVolumeBarIndex = it) },
+                    onSelectExpandedStatsCard = {}, onOpenWorkoutDetail = {})
+            }
+        } }
+        compose.onNodeWithTag("progress_compact_column_0", useUnmergedTree = true)
+            .performScrollTo().performTouchInput { click() }
+        compose.onNodeWithTag("progress_expanded_column_0", useUnmergedTree = true)
+            .assertIsSelected().assertIsDisplayed()
     }
 
     @Test fun compactPrSheetKeepsPeriodFiltersAndLongListsScrollable() {
