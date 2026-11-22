@@ -327,6 +327,31 @@ final class SamsungSdkReader {
                 out.put("sleepSessions", sessions);
             }, "sleepSessions");
         }
+        Map<Integer, Long> hourlySteps(LocalDate day, LocalDateTime end) throws Exception {
+            requireForeground.run();
+            if (!allowed(DataTypes.STEPS)) throw new SecurityException("Samsung steps read permission required");
+            var request = DataType.StepsType.TOTAL.getRequestBuilder().setLocalTimeFilterWithGroup(
+                LocalTimeFilter.of(day.atStartOfDay(), end, true, false),
+                LocalTimeGroup.of(LocalTimeGroupUnit.HOURLY, 1)).build();
+            var response = store.aggregateDataAsync(request).get(30, TimeUnit.SECONDS);
+            requireForeground.run();
+            if (response.getPageToken() != null && !response.getPageToken().isEmpty())
+                throw new IllegalStateException("Incomplete Samsung hourly aggregate");
+            Map<Integer, Long> values = new LinkedHashMap<>();
+            Set<Integer> duplicateHours = new HashSet<>();
+            for (var row : response.getDataList()) {
+                LocalDateTime start = row.getStartLocalDateTime();
+                if (start == null || !start.toLocalDate().equals(day) || !start.isBefore(end)
+                    || !start.toLocalTime().equals(LocalTime.of(start.getHour(), 0))
+                    || ZoneId.systemDefault().getRules().getValidOffsets(start).size() != 1) continue;
+                Number count = row.getValue();
+                if (count == null || count.longValue() < 0) continue;
+                if (values.putIfAbsent(start.getHour(), count.longValue()) != null) duplicateHours.add(start.getHour());
+            }
+            duplicateHours.forEach(values::remove);
+            return values;
+        }
+
         JSONObject stepsWindow(Instant start, Instant end) throws Exception {
             JSONObject out = base(start, end);
             out.put("provider", HealthJournalStore.SAMSUNG);

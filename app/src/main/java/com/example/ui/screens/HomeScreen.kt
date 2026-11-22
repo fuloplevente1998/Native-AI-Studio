@@ -97,19 +97,20 @@ fun HomeScreen(
     onOpenProgramDayDetails: () -> Unit,
     onOpenQuickWorkout: () -> Unit,
     onOpenWatchAndSync: () -> Unit,
-    onOpenHealthSleep: () -> Unit,
-    onOpenHealthHeart: () -> Unit,
-    onOpenHealthSteps: () -> Unit,
     onOpenCoachReadiness: () -> Unit,
     onOpenGoalsDialog: () -> Unit,
     onOpenPersonalPlanner: () -> Unit,
     onDiscardWorkout: (String) -> Unit = {},
-    onOpenHealthToday: () -> Unit = onOpenHealthSteps,
+    onOpenHealthJournal: (Pair<String, String>?) -> Unit = {},
+    onTogglePulseTrend: () -> Unit = {},
+    onOpenLoggedWorkout: (String) -> Unit = {},
+    onNavigateFromToday: (com.example.model.SubScreen) -> Unit = {},
     /** 2786: Home weekly goals → Health with the weekly view open. */
     onOpenWeeklyGoals: () -> Unit = onOpenGoalsDialog,
     inlineProgramEditor: (@Composable () -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
+    var todayTile by remember { mutableStateOf<String?>(null) }
     val target = state.homeWorkoutTarget
     val plannedEvent = state.calendarEvents.firstOrNull { it.id == target?.scheduleId }
     val activeProgram = state.programs.firstOrNull { it.id == target?.programId }
@@ -450,7 +451,6 @@ fun HomeScreen(
                             }
                         }
                         "daily_health" -> {
-                            // One emphasized group frame; the six inner tiles keep their existing destinations.
                             val todayShape = RoundedCornerShape(20.dp)
                             Surface(
                                 shape = todayShape,
@@ -462,13 +462,8 @@ fun HomeScreen(
                             ) {
                                 Box(Modifier.padding(8.dp)) {
                                     StudioTodayStatusGrid(state, compact = true, layout = layout) { key ->
-                                        when (key) {
-                                            "sleep" -> onOpenHealthSleep()
-                                            "pulse" -> onOpenHealthHeart()
-                                            "steps" -> onOpenHealthSteps()
-                                            "recovery" -> onOpenCoachReadiness()
-                                            else -> onOpenHealthToday()
-                                        }
+                                        todayTile = key
+                                        if (key == "pulse") onTogglePulseTrend()
                                     }
                                 }
                             }
@@ -492,6 +487,17 @@ fun HomeScreen(
         PageLayoutFooter(layout, state.language)
     }
 }
+    }
+    todayTile?.let { tile ->
+        StudioTodayStatusDetailSheet(
+            state, strings, tile, java.time.LocalDate.now(),
+            onDismiss = { todayTile = null },
+            onOpenJournal = onOpenHealthJournal,
+            onTogglePulseTrend = onTogglePulseTrend,
+            onOpenWeekly = onOpenWeeklyGoals,
+            onOpenLoggedWorkout = onOpenLoggedWorkout,
+            onNavigateToSubScreen = onNavigateFromToday
+        )
     }
 }
 

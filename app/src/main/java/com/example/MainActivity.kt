@@ -457,6 +457,9 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                 // its call site, saved state and scroll position while the sheet is open.
                 val sheetRouteActive = uiState.currentSubScreen in com.example.ui.components.TrainPilotSheetRoutes
                 val routeHostState = uiState.sheetHostState()
+                var homeJournalFocus by androidx.compose.runtime.remember {
+                    androidx.compose.runtime.mutableStateOf<Pair<String, String>?>(null)
+                }
                 val renderRoute: @Composable (com.example.ui.viewmodel.TrainPilotUiState) -> Unit = { uiState ->
                 when (uiState.currentSubScreen) {
                     SubScreen.PROGRAMS_LIST -> {
@@ -887,7 +890,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                         when (uiState.currentTab) {
                             MainTab.HOME -> {
                                 HomeScreen(
-                                    state = uiState,
+                                    state = uiState.copy(
+                                        primaryHealthSourceSamsung = health.provider == com.repforge.app.HealthJournalStore.SAMSUNG,
+                                        healthRefreshRevision = health.refreshRevision
+                                    ),
                                     strings = strings,
                                     onDiscardWorkout = { id -> viewModel.stopActiveWorkoutSession(id, uiState.activeWorkoutGeneration) },
                                     onStartOrContinueWorkout = {
@@ -913,18 +919,15 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                         }
                                     },
                                     onOpenQuickWorkout = { viewModel.toggleQuickWorkoutSheet(true) },
-                                    onOpenHealthToday = { viewModel.selectTab(MainTab.HEALTH) },
                                     onOpenWeeklyGoals = { viewModel.openHealthAndExpand(weeklyGoals = true) },
                                     onOpenWatchAndSync = { viewModel.requestWatchDeviceInfo(); viewModel.navigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
-                                    onOpenHealthSleep = {
+                                    onOpenHealthJournal = { focus ->
+                                        homeJournalFocus = focus
                                         viewModel.openHealthAndExpand(journal = true)
                                     },
-                                    onOpenHealthHeart = {
-                                        viewModel.openHealthAndExpand(pulse = true)
-                                    },
-                                    onOpenHealthSteps = {
-                                        viewModel.openHealthAndExpand(journal = true)
-                                    },
+                                    onTogglePulseTrend = { viewModel.toggleHealthSection("pulse") },
+                                    onOpenLoggedWorkout = viewModel::openLogWorkoutDetail,
+                                    onNavigateFromToday = { viewModel.navigateToSubScreen(it) },
                                     onOpenCoachReadiness = {
                                         viewModel.navigateToSubScreen(SubScreen.COACH_DETAIL)
                                     },
@@ -1065,6 +1068,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onDispose { nativeHealth.healthScreenHidden(activity) }
                                 }
                                 HealthTabScreen(
+                                    requestedJournalFocus = homeJournalFocus,
+                                    onJournalFocusConsumed = { homeJournalFocus = null },
                                     onOpenLoggedWorkout = viewModel::openLogWorkoutDetail,
                                     uiState = uiState.copy(primaryHealthSourceSamsung = health.provider == com.repforge.app.HealthJournalStore.SAMSUNG,
                                         lastHealthSyncLabel = health.lastSyncAt, lastHealthReadLabel = health.lastReadAt,

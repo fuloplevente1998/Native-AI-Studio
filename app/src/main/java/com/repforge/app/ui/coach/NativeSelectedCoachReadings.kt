@@ -3,6 +3,7 @@ package com.repforge.app.ui.coach
 import android.content.Context
 import com.repforge.app.HealthJournalStore
 import com.repforge.app.NativeHealthProviderData
+import com.repforge.app.NativePrivacyControls
 import com.repforge.app.data.db.TrainPilotDatabase
 import com.repforge.app.healthreadings.HealthReadingsProjection
 import org.json.JSONObject
@@ -10,7 +11,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 
-/** One selected-provider admission path; never read the merged journal channel for Coach. */
+/** Selected recovery inputs plus independently verified Samsung Energy from the direct channel. */
 internal object NativeSelectedCoachReadings {
     data class Snapshot(val provider: String, val readiness: NativeCoachReadiness.Result)
 
@@ -32,8 +33,15 @@ internal object NativeSelectedCoachReadings {
         val signals = NativeCoachSignals.fromDays(own, today, zone)
         val hasToday = own.any { it.optString("day") == today.toString() }
         val recovery = signals.recovery.takeIf { it.optString("day") == today.toString() } ?: JSONObject()
-        val result = if (hasToday) NativeCoachReadiness.calculate(recovery, signals.daily, history, now, zone)
-            else NativeCoachReadiness.calculate(JSONObject(), JSONObject(), emptyList(), now, zone)
+        val samsungEnergy = if (provider != HealthJournalStore.SAMSUNG &&
+            NativePrivacyControls.enabled(context, NativePrivacyControls.SAMSUNG_HEALTH)) {
+            HealthReadingsProjection.verifiedSamsungDay(
+                NativeHealthProviderData.day(store, HealthJournalStore.SAMSUNG, today), now, zone)
+        } else null
+        val result = NativeCoachReadiness.calculate(
+            recovery, signals.daily, if (hasToday || samsungEnergy != null) history else emptyList(), now, zone,
+            externalEnergy = samsungEnergy, externalEnergyAvailable = samsungEnergy != null
+        )
         check(store.generation() == generation && store.preferences().optString("provider", HealthJournalStore.HC) == provider) {
             "Az egészségadat-forrás megváltozott. Frissítsd a Coach adatait."
         }

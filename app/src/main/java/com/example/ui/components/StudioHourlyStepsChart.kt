@@ -14,16 +14,23 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.model.AppLanguage
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.repforge.app.HealthJournalStore
 import com.repforge.app.NativeDataReplacement
+import com.repforge.app.NativeHealthProviderData
+import com.repforge.app.NativePrivacyControls
+import com.repforge.app.SamsungHealthRepository
+import com.repforge.app.ui.health.hourlySteps
 import com.repforge.app.ui.health.HourlySteps
 import com.repforge.app.ui.health.NativeHealthRecords
 import com.repforge.app.ui.health.readHourlySteps
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.ensureActive
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -33,18 +40,51 @@ import java.util.Locale
 internal fun StudioHourlyStepsChart(day: LocalDate, provider: String, origin: String, revision: Long, language: AppLanguage) {
     val context = LocalContext.current.applicationContext
     val palette = LocalTrainPilotPalette.current
-    val rows = key(day, provider, origin, revision) {
-        produceState<List<HourlySteps>?>(null) {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val lifecycleState by lifecycle.currentStateFlow.collectAsState()
+    val visible = lifecycleState.isAtLeast(Lifecycle.State.STARTED)
+    val snapshot = key(day, provider, origin, revision, visible) {
+        produceState<Pair<String, List<HourlySteps>>?>(null) {
+            if (!visible) return@produceState
             try {
                 val ticket = NativeDataReplacement.continuationForCurrentData(context)
                 val result = withContext(Dispatchers.IO) {
-                    readHourlySteps(NativeHealthRecords(HealthJournalStore.get(context)), day, provider, origin,
-                        ZoneId.systemDefault(), Instant.now())
+                    val zone = ZoneId.systemDefault()
+                    val now = Instant.now()
+                    val store = HealthJournalStore.get(context)
+                    val alternative = if (provider == HealthJournalStore.SAMSUNG) HealthJournalStore.HC
+                        else HealthJournalStore.SAMSUNG
+                    listOf(provider, alternative).firstNotNullOfOrNull { candidate ->
+                        val privacy = if (candidate == HealthJournalStore.SAMSUNG) NativePrivacyControls.SAMSUNG_HEALTH
+                            else NativePrivacyControls.HEALTH_CONNECT
+                        val guard = {
+                            coroutineContext.ensureActive()
+                            ticket.requireCurrent(context)
+                            check(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
+                            NativePrivacyControls.requireEnabled(context, privacy)
+                        }
+                        val candidateRows = try {
+                            guard()
+                            if (candidate == HealthJournalStore.SAMSUNG && now.atZone(zone).toLocalDate() == day) {
+                                val measured = SamsungHealthRepository.readHourlySteps(
+                                    context, day, now.atZone(zone).toLocalDateTime(), guard)
+                                hourlySteps(day, zone, now, emptyList()).map { it.copy(count = measured[it.hour]) }
+                            } else {
+                                val readOrigin = if (candidate == provider) origin
+                                    else NativeHealthProviderData.day(store, candidate, day)?.let {
+                                        it.optString("stepsOrigin").ifBlank { it.optString("activityOrigin") }
+                                    }.orEmpty()
+                                readHourlySteps(NativeHealthRecords(store), day, candidate, readOrigin, zone, now)
+                            }.also { guard() }
+                        } catch (cancelled: CancellationException) { throw cancelled }
+                        catch (_: Exception) { emptyList() }
+                        candidateRows.takeIf { list -> list.any { it.count != null } }?.let { candidate to it }
+                    }
                 }
                 ticket.requireCurrent(context)
-                value = result
+                value = result ?: (provider to emptyList())
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { value = emptyList() }
+            catch (_: Exception) { value = provider to emptyList() }
         }.value
     }
     fun word(hu: String, en: String, de: String, ro: String) = when (language) {
@@ -55,14 +95,17 @@ internal fun StudioHourlyStepsChart(day: LocalDate, provider: String, origin: St
     }
     Text(word("Lépések óránként", "Steps by hour", "Schritte pro Stunde", "Pași pe oră"),
         color = palette.textPrimary, style = MaterialTheme.typography.titleSmall)
-    val values = rows
+    val values = snapshot?.second
     if (values.isNullOrEmpty()) {
         Text(if (values == null) word("Betöltés…", "Loading…", "Wird geladen…", "Se încarcă…")
             else word("Nincs óránkénti adat.", "No hourly data.", "Keine Stundendaten.", "Fără date orare."),
             color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
         return
     }
-    var selection by remember(day, provider, origin) { mutableIntStateOf(-1) }
+    val actualProvider = snapshot?.first ?: provider
+    Text(if (actualProvider == HealthJournalStore.SAMSUNG) "Samsung Health" else "Health Connect",
+        color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
+    var selection by remember(day, actualProvider, origin) { mutableIntStateOf(-1) }
     val active = selection.takeIf { it in 0..23 } ?: (values.indexOfLast { it.count != null }.takeIf { it >= 0 }
         ?: values.indexOfLast { !it.future }.coerceAtLeast(0))
     val maximum = (values.maxOfOrNull { it.count ?: 0L } ?: 0L).coerceAtLeast(1)

@@ -80,26 +80,45 @@ class Post2757PresentationRegressionTest {
         compose.runOnIdle { assertEquals(1, dismissed); assertEquals(last, started) }
     }
 
-    @Test fun todayTilesShareFramePreserveMissingValuesAndDestinations() {
-        val calls = mutableListOf<String>()
+    @Test fun allSixHomeTodayTilesOpenTheMatchingHealthDetailAndCloseOnHome() {
+        var journalFocus: Pair<String, String>? = null
+        var openedCoach = false
         compose.setContent { TrainPilotTheme {
             HomeScreen(TrainPilotUiState(), TrainPilotStrings.forLanguage(AppLanguage.HU),
                 onStartOrContinueWorkout = {}, onOpenProgramDayDetails = {}, onOpenQuickWorkout = {},
-                onOpenWatchAndSync = {}, onOpenHealthSleep = { calls += "sleep" },
-                onOpenHealthHeart = { calls += "pulse" }, onOpenHealthSteps = { calls += "steps" },
-                onOpenCoachReadiness = { calls += "recovery" }, onOpenGoalsDialog = {},
-                onOpenPersonalPlanner = {}, onOpenHealthToday = { calls += "today" })
+                onOpenWatchAndSync = {}, onOpenCoachReadiness = {}, onOpenGoalsDialog = {},
+                onOpenPersonalPlanner = {}, onOpenHealthJournal = { journalFocus = it },
+                onNavigateFromToday = { openedCoach = it == com.example.model.SubScreen.COACH_DETAIL })
         } }
-        val destinations = mapOf("sleep" to "sleep", "calories" to "today", "pulse" to "pulse",
-            "steps" to "steps", "workout" to "today", "recovery" to "recovery")
-        destinations.forEach { (tile, destination) ->
+        val titles = mapOf(
+            "sleep" to "Alvás részletek",
+            "calories" to "Aktív kalória részletek",
+            "pulse" to "Mai pulzus",
+            "steps" to "Lépések részletek",
+            "workout" to "Mai edzések",
+            "recovery" to "Végső Coach készenlét"
+        )
+        titles.forEach { (tile, title) ->
             val node = compose.onNode(hasTestTag("home_today_$tile") and
                 hasAnyAncestor(hasTestTag("home_today_status_group")))
             if (tile != "workout") node.assertTextContains("—")
             node.performScrollTo().performClick()
-            compose.runOnIdle { assertEquals(destination, calls.last()) }
+            val sheet = compose.onNodeWithTag("health_today_tile_sheet")
+            sheet.assertExists()
+            compose.onNodeWithText(title, substring = true).assertExists()
+            compose.onNodeWithTag("health_today_tile_close").performClick()
+            sheet.assertDoesNotExist()
+            node.assertIsDisplayed()
         }
-        compose.runOnIdle { assertEquals(6, calls.size) }
+        compose.onNodeWithTag("home_today_sleep").performScrollTo().performClick()
+        compose.onNodeWithTag("health_expanded_action_button").performScrollTo().performClick()
+        compose.runOnIdle {
+            assertEquals(java.time.LocalDate.now().toString() to "SleepSessionRecord", journalFocus)
+        }
+        compose.onNodeWithTag("home_today_recovery").performScrollTo().performClick()
+        compose.onNodeWithText("Samsung Energy").assertExists()
+        compose.onNodeWithTag("health_expanded_action_button").performScrollTo().performClick()
+        compose.runOnIdle { assertTrue(openedCoach) }
     }
 
     @Test fun longCoachAdviceExpandsWithoutOpeningCoach() {

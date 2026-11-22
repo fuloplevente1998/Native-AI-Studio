@@ -76,7 +76,7 @@ internal object NativeCoachReadiness {
         return instant != null && !instant.isAfter(now) && Duration.between(instant, now) <= Duration.ofHours(36)
     }
 
-    private fun validEnergy(reading: JSONObject?, now: Instant, zone: ZoneId): Triple<Double, String, String>? {
+    internal fun validEnergy(reading: JSONObject?, now: Instant, zone: ZoneId): Triple<Double, String, String>? {
         reading ?: return null
         val value = number(reading, "energyScore") ?: return null
         if (value < 0 || value > 100) return null

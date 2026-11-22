@@ -149,7 +149,8 @@ data class WeeklyHealthDaySummary(
     /** 2788: measured active energy (null = not measured; [activeCaloriesKcal] keeps its old 0 fallback). */
     val activeCaloriesMeasured: Int? = null,
     /** 2788: measured total daily energy incl. resting (null = not measured). */
-    val totalCaloriesKcal: Int? = null
+    val totalCaloriesKcal: Int? = null,
+    val stepProvider: String? = null
 )
 
 /** Read-only comparison for the exact saved native program and mode proposal. */

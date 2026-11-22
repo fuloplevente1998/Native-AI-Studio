@@ -4861,6 +4861,16 @@ class TrainPilotViewModel : ViewModel() {
                 val today = now.atZone(zone).toLocalDate()
                 val projectedProviderDays = mutableListOf<JSONObject>()
                 val todayData = com.repforge.app.NativeHealthProviderData.day(store, provider, today)
+                val alternativeProvider = if (provider == HealthJournalStore.SAMSUNG) HealthJournalStore.HC
+                    else HealthJournalStore.SAMSUNG
+                val privacy = com.repforge.app.NativePrivacyControls
+                val alternativeEnabled = privacy.enabled(ctx, if (alternativeProvider == HealthJournalStore.SAMSUNG)
+                    privacy.SAMSUNG_HEALTH else privacy.HEALTH_CONNECT)
+                val alternateToday = if (alternativeEnabled)
+                    com.repforge.app.NativeHealthProviderData.day(store, alternativeProvider, today) else null
+                fun measuredSteps(row: JSONObject?): Double? =
+                    row?.optDouble("steps", Double.NaN)?.takeIf { it.isFinite() && it in 0.0..Int.MAX_VALUE.toDouble() }
+                val todaysSteps = measuredSteps(todayData) ?: measuredSteps(alternateToday)
 
                 val todaySleepMin = com.repforge.app.NativeDailyHealthDetails.sleepMinutes(
                     todayData, today, java.time.ZoneId.systemDefault(), Instant.now()) ?: Double.NaN
@@ -4880,13 +4890,14 @@ class TrainPilotViewModel : ViewModel() {
                 } else {
                     studioModesText("A szolgáltató nem adott át alvásfázisbontást (csak teljes időtartam)", "Provider supplied total sleep duration only", "Anbieter lieferte nur die Gesamtschlafdauer", "Furnizorul a transmis doar durata totală a somnului")
                 }
-                val availableFields = (setOf("steps", "activeCalories", "totalCalories", "averageHeartRate",
+                val availableFields = (setOf("activeCalories", "totalCalories", "averageHeartRate",
                     "restingHeartRate", "minHeartRate", "maxHeartRate", "heartRateSamples")
                     .filter { key -> todayData?.optDouble(key, Double.NaN)?.let { it.isFinite() && it >= 0 } == true } +
+                    (if (todaysSteps != null) listOf("steps") else emptyList()) +
                     (if (todaySleepMin.isFinite() && todaySleepMin > 0) listOf("sleepMinutes") else emptyList()) +
                     (if (todayPulseHistory.isNotEmpty()) listOf("heartRateSeries") else emptyList())).toSet()
                 val lastProviderSync = store.nativeSyncLastSuccess(provider)
-                val stepsDbl = todayData?.optDouble("steps", Double.NaN) ?: Double.NaN
+                val stepsDbl = todaysSteps ?: Double.NaN
                 val pulseDbl = todayData?.optDouble("averageHeartRate", Double.NaN) ?: Double.NaN
                 val restingDbl = todayData?.optDouble("restingHeartRate", Double.NaN) ?: Double.NaN
                 val maxHrDbl = todayData?.optDouble("maxHeartRate", Double.NaN) ?: Double.NaN
@@ -4933,9 +4944,14 @@ class TrainPilotViewModel : ViewModel() {
                             raw.optString("channel").let { it.isBlank() || it == provider }
                     }?.let { JSONObject(it.toString()).put("day", d.toString()) }
                     if (ownDay != null) projectedProviderDays.add(ownDay)
-                    val dStepsRaw = dayObj?.optDouble("steps", Double.NaN) ?: Double.NaN
-                    val stepsAvailable = dStepsRaw.isFinite() && dStepsRaw >= 0
-                    val dSteps = if (stepsAvailable) dStepsRaw.toInt() else 0
+                    val ownSteps = measuredSteps(dayObj)
+                    val alternateStepDay = if (ownSteps != null || !alternativeEnabled) null
+                        else if (d == today) alternateToday
+                        else com.repforge.app.NativeHealthProviderData.day(store, alternativeProvider, d)
+                    val stepDay = if (ownSteps != null) dayObj else alternateStepDay
+                    val measuredStepCount = ownSteps ?: measuredSteps(alternateStepDay)
+                    val stepsAvailable = measuredStepCount != null
+                    val dSteps = measuredStepCount?.toInt() ?: 0
                     val dKcal = dayObj?.optDouble("activeCalories", Double.NaN)?.takeIf { it.isFinite() && it >= 0 }?.toInt() ?: 0
                     // 2788: measured total energy of the day (resting + active); null when not measured (never 0).
                     val dTotalKcal = dayObj?.optDouble("totalCalories", Double.NaN)?.takeIf { it.isFinite() && it > 0 }?.toInt()
@@ -4953,18 +4969,21 @@ class TrainPilotViewModel : ViewModel() {
                     val workoutMinForDay = workoutsForDay.sumOf { it.durationMinutes.coerceAtLeast(0) }
                     val workoutCountForDay = workoutsForDay.size
 
-                    val hasHealthRow = dayObj != null && (dSteps > 0 || dKcal > 0 || dSleepMin.isFinite() ||
+                    val hasHealthRow = stepsAvailable || dayObj != null && (dKcal > 0 || dSleepMin.isFinite() ||
                         dayObj.optDouble("averageHeartRate", 0.0) > 0.0 || dayObj.optDouble("restingHeartRate", 0.0) > 0.0)
-                    val stepOriginPkg = dayObj?.optString("stepsOrigin", "")?.ifBlank { dayObj.optString("activityOrigin", "") }.orEmpty()
+                    val stepOriginPkg = stepDay?.optString("stepsOrigin", "")?.ifBlank { stepDay.optString("activityOrigin", "") }.orEmpty()
                     val dayChannel = dayObj?.optString("channel", provider).orEmpty()
+                    val stepProvider = if (ownSteps != null) provider else alternativeProvider
+                    val healthSourceLabel = if (stepsAvailable) formatProviderLabelHu(stepProvider, stepOriginPkg)
+                        else formatProviderLabelHu(dayChannel, dayObj?.optString("activityOrigin").orEmpty())
                     val sourceLabelHu = when {
-                        hasHealthRow && workoutCountForDay > 0 -> "${formatProviderLabelHu(dayChannel, stepOriginPkg)} + ${studioModesText("Edzésnapló", "Workout journal", "Trainingstagebuch", "Jurnal de antrenament")}"
-                        hasHealthRow -> formatProviderLabelHu(dayChannel, stepOriginPkg)
+                        hasHealthRow && workoutCountForDay > 0 -> "${healthSourceLabel} + ${studioModesText("Edzésnapló", "Workout journal", "Trainingstagebuch", "Jurnal de antrenament")}"
+                        hasHealthRow -> healthSourceLabel
                         workoutCountForDay > 0 -> studioModesText("Edzésnapló (aktív időszakok)", "Workout journal (active intervals)", "Trainingstagebuch (aktive Zeiträume)", "Jurnal de antrenament (intervale active)")
                         else -> studioModesText("Nincs rögzített adat", "No recorded data", "Keine aufgezeichneten Daten", "Nu există date înregistrate")
                     }
                     if (offset <= 6) {
-                    if (hasHealthRow) discoveredSources.add(formatProviderLabelHu(dayChannel, stepOriginPkg))
+                    if (hasHealthRow) discoveredSources.add(healthSourceLabel)
                     if (workoutCountForDay > 0) discoveredSources.add(studioModesText("Edzésnapló (aktív idő)", "Workout journal (active time)", "Trainingstagebuch (aktive Zeit)", "Jurnal de antrenament (timp activ)"))
 
                     sumSteps += dSteps
@@ -4989,7 +5008,8 @@ class TrainPilotViewModel : ViewModel() {
                             workoutMinutes = workoutMinForDay,
                             workoutCount = workoutCountForDay,
                             stepsAvailable = stepsAvailable,
-                            stepsSourceLabelHu = if (stepsAvailable) formatProviderLabelHu(dayChannel, stepOriginPkg) else "Nincs napi lépésadat",
+                            stepsSourceLabelHu = if (stepsAvailable) formatProviderLabelHu(stepProvider, stepOriginPkg) else "Nincs napi lépésadat",
+                            stepProvider = stepProvider.takeIf { stepsAvailable },
                             sourceLabelHu = sourceLabelHu,
                             stepOriginPackage = stepOriginPkg,
                             pulse = if (provider == HealthJournalStore.HC || provider == HealthJournalStore.SAMSUNG)
@@ -5021,7 +5041,8 @@ class TrainPilotViewModel : ViewModel() {
                         ?: emptyList()
                 }.getOrDefault(emptyList())
                 val todayRecovery = if (provider == HealthJournalStore.HC || provider == HealthJournalStore.SAMSUNG)
-                    HealthReadingsProjection.recoveryToday(provider, projectedProviderDays, roomCoachHistory, now, zone)
+                    HealthReadingsProjection.recoveryToday(provider, projectedProviderDays, roomCoachHistory, now, zone,
+                        samsungEnergyDay = alternateToday.takeIf { alternativeProvider == HealthJournalStore.SAMSUNG })
                     else null
 
                 withContext(Dispatchers.Main) {
@@ -5030,7 +5051,7 @@ class TrainPilotViewModel : ViewModel() {
                     _uiState.update { st ->
                         st.copy(
                             primaryHealthSourceSamsung = provider == HealthJournalStore.SAMSUNG,
-                            dailyHealthDate = if (todayData != null) today.toString() else "",
+                            dailyHealthDate = if (todayData != null || todaysSteps != null) today.toString() else "",
                             dailyHealthAvailableFields = availableFields,
                             dailyHealthSourceLabel = formatProviderLabelHu(provider, todayData?.optString("activityOrigin").orEmpty()),
                             dailyHealthLastSyncIso = lastProviderSync,
