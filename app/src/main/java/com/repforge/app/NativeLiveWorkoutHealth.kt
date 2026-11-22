@@ -54,13 +54,17 @@ internal object NativeLiveWorkoutHealth {
                 Unit
             }
             guard()
-            if (provider == HealthJournalStore.HC) check(Build.VERSION.SDK_INT >= 34 && HealthConnectRepository.isSupported(context)) {
+            if (provider == HealthJournalStore.HC) check(HealthConnectRepository.isSupported(context)) {
                 "Health Connect ezen az eszközön nem érhető el."
             }
-            if (provider == HealthJournalStore.HC && !HealthConnectRepository.anyReadAllowed(context))
+            if (provider == HealthJournalStore.HC && HealthConnectRepository.currentlyGrantedReadKeys(context).isEmpty())
                 throw SecurityException("Health Connect olvasási engedély szükséges.")
             val result = NativeWorkoutHealthSource.read(query, provider,
-                healthConnect = { w -> HealthConnectRepository.readTrainingWindowSuspend(context, w.start.toString(), w.end.toString(), guard) },
+                healthConnect = { w ->
+                    if (Build.VERSION.SDK_INT >= 34)
+                        HealthConnectRepository.readTrainingWindowSuspend(context, w.start.toString(), w.end.toString(), guard)
+                    else HealthConnectLegacyBridge.readTrainingWindow(context, w.start, w.end, guard)
+                },
                 samsung = { w -> SamsungHealthRepository.readTrainingWindowSuspend(context, w.start.toString(), w.end.toString(), guard) })
             guard()
             result.put("readAt", Instant.now().toString())
