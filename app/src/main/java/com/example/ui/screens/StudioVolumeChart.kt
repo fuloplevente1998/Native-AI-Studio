@@ -33,20 +33,30 @@ internal fun StudioVolumeChart(bars: List<Pair<String, Int>>, period: StudioProg
     val scroll = rememberScrollState()
     val scrollable = period.days == 90
     val mode = if (expanded) "expanded" else "compact"
-    val height = if (expanded) 156.dp else 76.dp
+    val height = if (expanded) 156.dp else 52.dp
     val labelSize = if (expanded) 10.sp else 9.sp
-    val labelHeight = with(LocalDensity.current) { labelSize.toDp() } * 1.4f + 6.dp
+    val labelHeight = if (expanded) with(LocalDensity.current) { labelSize.toDp() } * 1.4f + 6.dp else 0.dp
     val plotHeight = (height - labelHeight).coerceAtLeast(20.dp)
     val axisMax = volumeAxisMaximum(bars.maxOfOrNull { it.second } ?: 0)
-    LaunchedEffect(period, scroll.maxValue) {
-        if (scrollable) scroll.scrollTo(scroll.maxValue)
+    val density = LocalDensity.current
+    LaunchedEffect(expanded, period, scroll.maxValue) {
+        if (scrollable) {
+            // Open beside the selected compact bar, not back at the latest week.
+            // Do not key this on selected: tapping a detailed bar must not move the scroll.
+            val target = if (expanded && selected in bars.indices) {
+                with(density) { ((selected + 0.5f) * 44f).dp.roundToPx() } - scroll.viewportSize / 2
+            } else scroll.maxValue
+            scroll.scrollTo(target.coerceIn(0, scroll.maxValue))
+        }
     }
     Row(Modifier.fillMaxWidth().height(height), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        Column(Modifier.width(if (expanded) 42.dp else 30.dp).height(plotHeight),
-            verticalArrangement = Arrangement.SpaceBetween, horizontalAlignment = Alignment.End) {
-            (4 downTo 0).forEach { tick ->
-                Text((axisMax * tick / 4).toString(), color = palette.textSecondary,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = labelSize), maxLines = 1)
+        if (expanded) {
+            Column(Modifier.width(42.dp).height(plotHeight),
+                verticalArrangement = Arrangement.SpaceBetween, horizontalAlignment = Alignment.End) {
+                (4 downTo 0).forEach { tick ->
+                    Text((axisMax * tick / 4).toString(), color = palette.textSecondary,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = labelSize), maxLines = 1)
+                }
             }
         }
         BoxWithConstraints(Modifier.weight(1f).fillMaxHeight()) {
@@ -54,8 +64,10 @@ internal fun StudioVolumeChart(bars: List<Pair<String, Int>>, period: StudioProg
             Box(Modifier.fillMaxSize().horizontalScroll(scroll, enabled = scrollable)
                 .testTag("progress_volume_scroll_$mode")) {
                 Box(Modifier.width(contentWidth).height(height)) {
-                    Column(Modifier.fillMaxWidth().height(plotHeight), verticalArrangement = Arrangement.SpaceBetween) {
-                        repeat(5) { HorizontalDivider(color = palette.cardBorder.copy(alpha = 0.45f), thickness = 0.5.dp) }
+                    if (expanded) {
+                        Column(Modifier.fillMaxWidth().height(plotHeight), verticalArrangement = Arrangement.SpaceBetween) {
+                            repeat(5) { HorizontalDivider(color = palette.cardBorder.copy(alpha = 0.45f), thickness = 0.5.dp) }
+                        }
                     }
                     Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(3.dp),
                         verticalAlignment = Alignment.Bottom) {
@@ -72,11 +84,13 @@ internal fun StudioVolumeChart(bars: List<Pair<String, Int>>, period: StudioProg
                                     .testTag("progress_${mode}_bar_$index")
                                     .clip(RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp))
                                     .background(mark))
-                                Box(Modifier.height(labelHeight), contentAlignment = Alignment.Center) {
-                                    Text(date.substring(3, 5).trimStart('0'),
-                                        color = if (isSelected) palette.primary else palette.textSecondary,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = labelSize), maxLines = 1)
+                                if (expanded) {
+                                    Box(Modifier.height(labelHeight), contentAlignment = Alignment.Center) {
+                                        Text(date.substring(3, 5).trimStart('0'),
+                                            color = if (isSelected) palette.primary else palette.textSecondary,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = labelSize), maxLines = 1)
+                                    }
                                 }
                             }
                         }
