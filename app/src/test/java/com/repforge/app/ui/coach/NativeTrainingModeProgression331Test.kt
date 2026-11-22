@@ -86,6 +86,16 @@ class NativeTrainingModeProgression331Test {
         assertEquals(5.0, deload.proposedWeight, 0.001)
     }
 
+    @Test fun explicitRirOnlyPrescriptionSupportsWeightProgression() {
+        val rx = NativeCoachExerciseAdvice.Target("rir", rirMin = 2.0, rirMax = 3.0,
+            sets = 2, text = "2-3 RIR")
+        val result = NativeTrainingModeProgression.compute(mode("rir"), exercise, rx,
+            listOf(done(10.0, rir = 5), done(10.0, rir = 5)), readiness, .5)
+        assertNotNull(result)
+        assertEquals("increase", result!!.action)
+        assertEquals(6.0, result.proposedWeight, 0.001)
+    }
+
     @Test fun missingHistoryUsesStartingLoadNotAnInventedProgression() {
         val out = recommend("linear", emptyList())
         assertEquals("start", out.action)
