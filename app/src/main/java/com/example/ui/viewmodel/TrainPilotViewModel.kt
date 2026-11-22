@@ -4832,6 +4832,7 @@ class TrainPilotViewModel : ViewModel() {
                 weeklyHealthDays = emptyList(),
                 spo2Percent = 0f,
                 vo2Max = 0f,
+                bodyFatPercent = 0f,
                 hrvRmssdMs = 0f,
                 bloodPressureLabel = "—",
                 bloodGlucoseLabel = "—",
@@ -4850,7 +4851,7 @@ class TrainPilotViewModel : ViewModel() {
                 val provider = prefs.optString("provider", HealthJournalStore.HC)
                 val hcDailySourceRaw = prefs.optString("hcDailySource", "auto")
                 val dailySourceModeHu = when (hcDailySourceRaw) {
-                    "auto", "" -> studioModesText("Automatikus (legteljesebb egyedi forrás, duplikáció nélkül)", "Automatic (most complete single source, no duplicates)", "Automatisch (vollständigste Einzelquelle, ohne Duplikate)", "Automat (sursa unică cea mai completă, fără duplicate)")
+                    "auto", "" -> studioModesText("Automatikus (Health Connect prioritás, duplikáció nélkül)", "Automatic (Health Connect priority, no duplicates)", "Automatisch (Health Connect-Priorität, ohne Duplikate)", "Automat (prioritatea Health Connect, fără duplicate)")
                     "priority" -> studioModesText("Prioritásos forrásválasztás", "Source priority", "Quellenpriorität", "Prioritatea surselor")
                     com.repforge.app.HealthDailySource.SAMSUNG -> "Rögzített forrás: Samsung Health"
                     else -> "Rögzített csomag: $hcDailySourceRaw"
@@ -4860,14 +4861,23 @@ class TrainPilotViewModel : ViewModel() {
                 val now = Instant.now()
                 val today = now.atZone(zone).toLocalDate()
                 val projectedProviderDays = mutableListOf<JSONObject>()
-                val todayData = com.repforge.app.NativeHealthProviderData.day(store, provider, today)
+                // The HC journal preserves older observations, including across temporary read
+                // failures. Only the currently granted, successfully read fields may be shown.
+                val hcGranted = com.repforge.app.HealthConnectRepository.READ_PERMS
+                    .filter { com.repforge.app.HealthConnectRepository.isAllowed(ctx, it) }.toSet()
+                fun admitted(dayRow: JSONObject?, fromProvider: String): JSONObject? =
+                    if (fromProvider == HealthJournalStore.HC)
+                        com.repforge.app.HealthConnectVisibleDay.project(dayRow, hcGranted)
+                    else dayRow
+                val todayData = admitted(com.repforge.app.NativeHealthProviderData.day(store, provider, today), provider)
                 val alternativeProvider = if (provider == HealthJournalStore.SAMSUNG) HealthJournalStore.HC
                     else HealthJournalStore.SAMSUNG
                 val privacy = com.repforge.app.NativePrivacyControls
                 val alternativeEnabled = privacy.enabled(ctx, if (alternativeProvider == HealthJournalStore.SAMSUNG)
                     privacy.SAMSUNG_HEALTH else privacy.HEALTH_CONNECT)
                 val alternateToday = if (alternativeEnabled)
-                    com.repforge.app.NativeHealthProviderData.day(store, alternativeProvider, today) else null
+                    admitted(com.repforge.app.NativeHealthProviderData.day(store, alternativeProvider, today),
+                        alternativeProvider) else null
                 fun measuredSteps(row: JSONObject?): Double? =
                     row?.optDouble("steps", Double.NaN)?.takeIf { it.isFinite() && it in 0.0..Int.MAX_VALUE.toDouble() }
                 val todaysSteps = measuredSteps(todayData) ?: measuredSteps(alternateToday)
@@ -4937,7 +4947,9 @@ class TrainPilotViewModel : ViewModel() {
 
                 for (offset in 13 downTo 0) {
                     val d = today.minusDays(offset.toLong())
-                    val dayObj = runCatching { com.repforge.app.NativeHealthProviderData.day(store, provider, d) }.getOrNull()
+                    val dayObj = runCatching {
+                        admitted(com.repforge.app.NativeHealthProviderData.day(store, provider, d), provider)
+                    }.getOrNull()
                     // Never project another provider's cached row as the selected source.
                     val ownDay = dayObj?.takeIf { raw ->
                         raw.optString("provider").let { it.isBlank() || it == provider } &&
@@ -4947,7 +4959,8 @@ class TrainPilotViewModel : ViewModel() {
                     val ownSteps = measuredSteps(dayObj)
                     val alternateStepDay = if (ownSteps != null || !alternativeEnabled) null
                         else if (d == today) alternateToday
-                        else com.repforge.app.NativeHealthProviderData.day(store, alternativeProvider, d)
+                        else admitted(com.repforge.app.NativeHealthProviderData.day(store, alternativeProvider, d),
+                            alternativeProvider)
                     val stepDay = if (ownSteps != null) dayObj else alternateStepDay
                     val measuredStepCount = ownSteps ?: measuredSteps(alternateStepDay)
                     val stepsAvailable = measuredStepCount != null
