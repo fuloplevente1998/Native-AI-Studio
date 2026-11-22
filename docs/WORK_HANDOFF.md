@@ -1,3 +1,14 @@
+# TrainPilot 2792 · 1.4.1 – #319/#320/#321 main, signed APK+AAB párok (2026-11-22)
+
+- **Kódforrás / ellenőrzött main merge:** `6138d2aecbf5d709f81285645bbe32d42089ce66` (#319, #320, #321). A mostani átadódokumentáció frissítése csak szöveg, **nem** módosítja az aláírt alkalmazás vagy tesztek forrását.
+- **Főági kötelező kapu:** [Actions 44980621340](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/44980621340), SUCCESS; teljes telefon/Wear JVM, nyers JUnit XML és release R8 minify SUCCESS.
+- **Aláírt APK+AAB kiadás:** [Actions 44981084390](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/44981084390), SUCCESS; trusted-main hitelesítés, ismételt teljes JVM, mindkét release APK+AAB, csomag-/Maps-/páros- és pinned signer ellenőrzés, AAB JAR-aláírás és publish mind SUCCESS.
+- **Nyers JUnit XML az aláírt futásból:** telefon 157 fájl / 809 teszt, Wear 38 fájl / 204 teszt, shared NO-SOURCE. Összesen **1013 teszt, 0 failure, 0 error, 0 skipped**. A letöltött artifact ZIP SHA-256 digestje egyezik a GitHub által közölttel; minden APK/AAB SHA-256 egyezik a workflow metaadataival. Telefon/Wear közös alkalmazásazonosító `com.TrainPilot.com`, verzió `1.4.1`, `versionCode` 279200/279202, tartós signer SHA-256 mindkét APK esetén azonos.
+- **Átadás:** a meglévő [TrainPilot Native Drive-mappában](https://drive.google.com/drive/folders/1ywHgrManynjV9uNvZfVncOmCr3SbHIb9) külön telefon APK, Wear APK, telefon Play AAB, Wear Play AAB és `TrainPilot_2792_release_verification.json`. Mind az öt név, méret és Drive parent visszaolvasva; régi fájlok érintetlenek.
+- **Korlát:** Play Console-feltöltés nem történt; fizikai Samsung/Health Connect/GPS, Wear szinkron és #319 fénykeret vizuális elfogadása még hátra van. Az ezt követő régebbi átadórészletekben szereplő „nincs main-merge/CI/build” a mostani 2792-es kiadásra már nem érvényes.
+
+---
+
 # #321 — CI R8 zöld, JVM 161 közös ClassFormatError, szerkezeti javítás (2026-11-22)
 
 - #321 [PR](https://github.com/fuloplevente1998/Native-AI-Studio/pull/321), ág: `fix/319-compose-layout-compile`, main kiindulás `1f408cc65d635275d4c10062a7269dafb87cf826`.
