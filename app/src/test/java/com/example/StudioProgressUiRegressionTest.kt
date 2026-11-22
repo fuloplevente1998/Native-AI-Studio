@@ -355,7 +355,8 @@ class StudioProgressUiRegressionTest {
                 com.example.ui.screens.ProgressTabScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU),
                     onSelectMainSection = { state = state.copy(progressMainSection = it) }, onSelectExercise = {},
                     onSelectRange = {}, onSelectVolumeBar = {}, onSelectExpandedStatsCard = {},
-                    onSelectStatsSubTab = { state = state.copy(statsSubTab = it) }, onToggleCardioFilterStepsMode = {},
+                    onSelectStatsSubTab = { state = state.copy(statsSubTab = it) },
+                    onToggleCardioFilterStepsMode = { state = state.copy(cardioFilterStepsMode = it) },
                     onOpenWorkoutDetail = {}, onOpenSettings = {}, onOpenPalettePicker = {})
             }
         }
@@ -365,6 +366,9 @@ class StudioProgressUiRegressionTest {
         compose.onNodeWithTag("statistics_subtab_0").assertExists()
         compose.onNodeWithTag("statistics_record_row").assertExists()
         compose.onNodeWithTag("statistics_subtab_1").performClick()
+        compose.onNodeWithTag("progress_cardio").assertExists()
+        compose.onNodeWithTag("statistics_daily_activity").assertDoesNotExist()
+        compose.onNodeWithTag("statistics_subtab_2").performClick()
         compose.onNodeWithTag("statistics_daily_activity").assertExists()
         compose.onAllNodes(hasText(TrainPilotStrings.forLanguage(AppLanguage.HU).strength1RmTab, substring = true)).assertCountEquals(0)
     }
