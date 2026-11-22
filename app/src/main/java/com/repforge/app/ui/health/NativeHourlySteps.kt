@@ -19,18 +19,10 @@ internal fun hourlySteps(
     val end = day.plusDays(1).atStartOfDay(zone).toInstant()
     val readings = raw.filter { it.count >= 0 && it.start <= it.end && it.end <= now &&
         it.start < end && (it.end > start || it.start >= start) }.distinct()
-    val hourStarts = (0..23).map { hour ->
-        day.atTime(hour, 0).let { local -> zone.rules.getValidOffsets(local).map(local::toInstant) }
-    }
-    // Real offsets account for skipped and repeated hours. Transitions at a partial hour are
-    // additional boundaries so a record can never straddle a change in the wall-clock hour.
-    val boundaries = (hourStarts.flatten() + listOf(start, end) +
-        listOfNotNull(zone.rules.nextTransition(start.minusNanos(1))?.instant?.takeIf { it in start..end }))
-        .distinct().sorted()
-    val segments = boundaries.zipWithNext().groupBy { (a, _) -> a.atZone(zone).hour }
+    val segments = stepHourWindows(day, zone).groupBy { (a, _) -> a.atZone(zone).hour }
     return (0..23).map { hour ->
         val windows = segments[hour].orEmpty()
-        val future = windows.isNotEmpty() && windows.all { it.first > now }
+        val future = windows.isNotEmpty() && windows.all { it.first >= now }
         val relevant = readings.filter { row ->
             windows.any { (a, b) -> row.start < b && (row.end > a || row.start >= a) }
         }.sortedWith(compareBy(HourlyStepReading::start, HourlyStepReading::end))
@@ -45,6 +37,42 @@ internal fun hourlySteps(
         } else null
         HourlySteps(hour, total, future)
     }
+}
+
+private fun stepHourWindows(day: LocalDate, zone: ZoneId): List<Pair<Instant, Instant>> {
+    val start = day.atStartOfDay(zone).toInstant()
+    val end = day.plusDays(1).atStartOfDay(zone).toInstant()
+    val hourStarts = (0..23).map { hour ->
+        day.atTime(hour, 0).let { local -> zone.rules.getValidOffsets(local).map(local::toInstant) }
+    }
+    // Real offsets account for skipped and repeated hours. Transitions at a partial hour are
+    // additional boundaries so a record can never straddle a change in the wall-clock hour.
+    val boundaries = (hourStarts.flatten() + listOf(start, end) +
+        listOfNotNull(zone.rules.nextTransition(start.minusNanos(1))?.instant?.takeIf { it in start..end }))
+        .distinct().sorted()
+    return boundaries.zipWithNext()
+}
+
+internal fun elapsedStepHourWindows(day: LocalDate, zone: ZoneId, now: Instant): List<Pair<Instant, Instant>> =
+    stepHourWindows(day, zone).mapNotNull { (from, to) ->
+        val measuredEnd = minOf(now, to)
+        if (from < measuredEnd) from to measuredEnd else null
+    }
+
+/** A repeated DST hour is the sum of its disjoint windows, provided both were measured. */
+internal fun measuredStepHours(
+    windows: List<Pair<Instant, Instant>>, values: List<Long?>, zone: ZoneId
+): Map<Int, Long> {
+    require(windows.size == values.size)
+    return windows.zip(values).groupBy { (window, _) -> window.first.atZone(zone).hour }
+        .mapNotNull { (hour, entries) ->
+            var total = 0L
+            for ((_, count) in entries) {
+                if (count == null || count < 0 || count > Long.MAX_VALUE - total) return@mapNotNull null
+                total += count
+            }
+            hour to total
+        }.toMap()
 }
 
 internal fun readHourlySteps(
