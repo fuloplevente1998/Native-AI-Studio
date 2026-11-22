@@ -1,3 +1,14 @@
+# #322 — Health weekly goals / Steps chart & app-wide gentle expansions (2026-11-22)
+
+- **Ág:** `design/health-weekly-chart-steps-sheet`, alap `93df6685059cf4ff40f6fb383a6a59016c61f7bb` (2792 signed release + docs), [draft PR #322](https://github.com/fuloplevente1998/Native-AI-Studio/pull/322). Kérő által küldött két valódi TrainPilot képernyő és jóváhagyott mockupok alapján.
+- **Egészség → Heti célok:** a 7 napos edzés- és lépésgrafikonok finom skálát és az egyetlen, grafikon alatti kijelölt nap sort kapták, az Edzésekhez súlyzó, a Lépésekhez sétáló/lépésikon társul. A sok állandó edzés- és lépéssor megszűnt; a teljes valódi napló- és mért napi adatsor a meglévő, alulról felcsúszó lapon nyitható meg. Hiányzó mérés ≠ 0, adatforrás és napcél megmaradt. Előzmények valódi Room-/Health-state-ből, nem mockadatokból.
+- **Fejlődés → Statisztikák → Lépések:** az aznapi/kiválasztott érték fölötti duplikált kijelzés megszűnt; a grafikon alatt maradt a fix nap+érték+forrás infósor és a valódi 14 napos, koppintható grafikon skálával. A Napi lista most fix helyű gombbal *alulról felcsúszó*, külön görgethető lapon jelenik meg; a lapon felül mindig látható a bezárás, és bezárás után megmarad a kiválasztott grafikonos nap. Érintetlen a szinkronindítás és a forrásadatok értelmezése.
+- **Fejlődés / Statisztikák főválasztó:** mindkét ikon visszakerült; a kettős választó 52 dp magas, nagy elérési felület, palettás kijelölés és meglévő navigáció megmaradt.
+- **App-szintű diszkrét animáció:** közös `trainPilotAnimatedExpansion()` (`animateContentSize`, 220 ms) és `TrainPilotAnimatedDisclosure` (220 ms grow/shrink + 160/90 ms fade), a pihenőidőzítő mintájára. Használat: programkártyák és gyakorlatok, naplóbeli gyakorlatok és egészségforrások, egészségnapló napjai, visszajelzés-kártyák, intervallumbeállítások, heti célok, pulzus- és testsúlypanelek, volumen és fejlődési javaslat, izomterhelési részletek, témák, Google-szinkron. A natív alulról nyíló lapok megtartják saját animációjukat, nem halmozunk rá újabbat. Szöveg-, megjelenési és navigációs szerződések változatlanok.
+- **Regresszió:** `Collector2784RegressionTest` ikon, méret, kiválasztott nap, bottom sheet fix header/close; `Collector2786RegressionTest` heti grafikon egyszeri napinformáció és csak a bottom sheetben látható teljes lista. Az összes új JVM/Compose és R8 eredmény **még igazolandó**. Nem történt main-merge, release build, APK/AAB vagy valós telefonos vizuális elfogadás. Nyitott külön feladat: további grafikonok valós készülékképekkel történő átnézése.
+
+---
+
 # TrainPilot 2792 · 1.4.1 – #319/#320/#321 main, signed APK+AAB párok (2026-11-22)
 
 - **Kódforrás / ellenőrzött main merge:** `6138d2aecbf5d709f81285645bbe32d42089ce66` (#319, #320, #321). A mostani átadódokumentáció frissítése csak szöveg, **nem** módosítja az aláírt alkalmazás vagy tesztek forrását.
