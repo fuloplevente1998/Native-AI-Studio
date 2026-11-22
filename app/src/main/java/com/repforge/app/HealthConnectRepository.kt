@@ -431,41 +431,30 @@ object HealthConnectRepository {
             return f.get(30, TimeUnit.SECONDS).get(type)
         }
 
-        /** Health Connect's aggregate honors the user's Activity-app priority per bucket. */
+        /** Independent single-window totals avoid unreliable grouped results on device. */
         fun readHourlySteps(p: Access, day: LocalDate, origin: String): Map<Int, Long> {
             require(origin.isEmpty() || ORIGIN_REGEX.matches(origin)) { "Invalid Health Connect step origin" }
             p.requireForeground()
             if (!p.allowed("READ_STEPS")) return emptyMap()
             val zone = ZoneId.systemDefault()
-            val from = day.atStartOfDay(zone).toInstant()
-            val to = minOf(day.plusDays(1).atStartOfDay(zone).toInstant(), Instant.now())
-            if (!to.isAfter(from)) return emptyMap()
-            val filter = TimeInstantRangeFilter.Builder().setStartTime(from).setEndTime(to).build()
-            val builder = AggregateRecordsRequest.Builder<Long>(filter)
-                .addAggregationType(StepsRecord.STEPS_COUNT_TOTAL)
-            if (origin.isNotEmpty()) {
-                builder.addDataOriginsFilter(DataOrigin.Builder().setPackageName(origin).build())
+            val windows = com.repforge.app.ui.health.elapsedStepHourWindows(day, zone, Instant.now())
+            val manager = p.getContext().getSystemService(HealthConnectManager::class.java)
+            val type = StepsRecord.STEPS_COUNT_TOTAL
+            val values = windows.chunked(4).flatMap { batch ->
+                val requests = batch.map { (from, to) ->
+                    p.requireForeground()
+                    val filter = TimeInstantRangeFilter.Builder().setStartTime(from).setEndTime(to).build()
+                    val request = AggregateRecordsRequest.Builder<Long>(filter).addAggregationType(type)
+                    if (origin.isNotEmpty()) request.addDataOriginsFilter(DataOrigin.Builder().setPackageName(origin).build())
+                    CompletableFuture<AggregateRecordsResponse<Long>>().also { future ->
+                        manager.aggregate(request.build(), DIRECT, receiver(future))
+                    }
+                }
+                CompletableFuture.allOf(*requests.toTypedArray()).get(10, TimeUnit.SECONDS)
+                p.requireForeground()
+                requests.map { it.get().get(type) }
             }
-            val future = CompletableFuture<List<android.health.connect.AggregateRecordsGroupedByDurationResponse<Long>>>()
-            p.getContext().getSystemService(HealthConnectManager::class.java)
-                .aggregateGroupByDuration(builder.build(), Duration.ofHours(1), DIRECT, receiver(future))
-            val rows = future.get(30, TimeUnit.SECONDS)
-            p.requireForeground()
-            val seen = HashSet<Pair<Instant, Instant>>()
-            val counts = linkedMapOf<Int, Long>()
-            for (bucket in rows) {
-                val a = bucket.startTime
-                val b = bucket.endTime
-                if (!a.isBefore(b) || a.isBefore(from) || b.isAfter(to) || !seen.add(a to b)) continue
-                val count = bucket.get(StepsRecord.STEPS_COUNT_TOTAL) ?: continue
-                if (count < 0L) continue
-                val hour = a.atZone(zone).hour
-                val old = counts[hour] ?: 0L
-                // Repeated wall-clock hour during DST is two disjoint measured buckets.
-                if (Long.MAX_VALUE - old < count) throw IllegalStateException("Health step count overflow")
-                counts[hour] = old + count
-            }
-            return counts
+            return com.repforge.app.ui.health.measuredStepHours(windows, values, zone)
         }
 
         private fun putLongAgg(

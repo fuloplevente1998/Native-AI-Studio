@@ -6,13 +6,15 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.aggregate.AggregationResult
 import androidx.health.connect.client.records.*
 import androidx.health.connect.client.records.metadata.DataOrigin
-import androidx.health.connect.client.request.AggregateGroupByDurationRequest
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Duration
@@ -449,23 +451,24 @@ internal object HealthConnectLegacyBridge {
     ): Map<Int,Long> = withContext(Dispatchers.IO) {
         check(available(context))
         check("READ_STEPS" in refreshGrants(context))
-        val from = day.atStartOfDay(ZoneId.systemDefault()).toInstant()
-        val end = minOf(day.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant(),Instant.now())
-        if (!end.isAfter(from)) return@withContext emptyMap()
+        val zone = ZoneId.systemDefault()
+        val windows = com.repforge.app.ui.health.elapsedStepHourWindows(day, zone, Instant.now())
         val client = HealthConnectClient.getOrCreate(context)
-        val rows = client.aggregateGroupByDuration(AggregateGroupByDurationRequest(
-            metrics = setOf(StepsRecord.COUNT_TOTAL),
-            timeRangeFilter = TimeRangeFilter.between(from,end),
-            timeRangeSlicer = Duration.ofHours(1),
-            dataOriginFilter = if(origin.isBlank()) emptySet() else setOf(DataOrigin(origin))
-        ))
-        guard()
-        val totals = linkedMapOf<Int,Long>()
-        rows.forEach { bucket ->
-            val value = bucket.result[StepsRecord.COUNT_TOTAL] ?: return@forEach
-            val hour = bucket.startTime.atZone(ZoneId.systemDefault()).hour
-            totals[hour] = (totals[hour] ?: 0L) + value
+        val origins = if (origin.isBlank()) emptySet() else setOf(DataOrigin(origin))
+        val values = windows.chunked(4).flatMap { batch ->
+            coroutineScope {
+                batch.map { (from, to) ->
+                    async {
+                        guard()
+                        client.aggregate(AggregateRequest(
+                            metrics = setOf(StepsRecord.COUNT_TOTAL),
+                            timeRangeFilter = TimeRangeFilter.between(from, to),
+                            dataOriginFilter = origins
+                        ))[StepsRecord.COUNT_TOTAL].also { guard() }
+                    }
+                }.awaitAll()
+            }
         }
-        totals
+        com.repforge.app.ui.health.measuredStepHours(windows, values, zone)
     }
 }

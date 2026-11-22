@@ -121,7 +121,11 @@ internal fun StudioHourlyStepsChart(day: LocalDate, provider: String, origin: St
     var selection by remember(day, actualProvider, origin) { mutableIntStateOf(-1) }
     val active = selection.takeIf { it in 0..23 } ?: (values.indexOfLast { it.count != null }.takeIf { it >= 0 }
         ?: values.indexOfLast { !it.future }.coerceAtLeast(0))
-    val maximum = (values.maxOfOrNull { it.count ?: 0L } ?: 0L).coerceAtLeast(1)
+    val fractions = hourlyStepBarFractions(values)
+    if (actualProvider != provider) Text(word(
+        "A napi összeg másik forrásból származik.", "The daily total uses a different source.",
+        "Die Tagessumme stammt aus einer anderen Quelle.", "Totalul zilnic provine din altă sursă."),
+        color = palette.textSecondary, style = MaterialTheme.typography.bodySmall)
     val entry = values[active]
     val hourLabel = "%02d:00–%02d:00".format(Locale.ROOT, active, active + 1)
     val valueText = when {
@@ -143,9 +147,13 @@ internal fun StudioHourlyStepsChart(day: LocalDate, provider: String, origin: St
             )
         }) {
         val pitch = size.width / values.size
-        for (row in values) {
-            val h = if (row.count == null) (if (row.future) 1.dp else 2.dp).toPx()
-                else (size.height * row.count.toDouble() / maximum).toFloat().coerceAtLeast(4.dp.toPx())
+        for ((index, row) in values.withIndex()) {
+            val fraction = fractions[index]
+            val h = when {
+                fraction == null -> (if (row.future) 1.dp else 2.dp).toPx()
+                fraction == 0f -> 1.dp.toPx()
+                else -> size.height * fraction
+            }
             val color = when {
                 row.hour == active -> palette.primary
                 row.count != null -> trainPilotChartMarkColor(false, palette.primary, palette.textSecondary)
@@ -162,4 +170,13 @@ internal fun StudioHourlyStepsChart(day: LocalDate, provider: String, origin: St
         }
     }
     TrainPilotChartInfoLine("$hourLabel · $valueText")
+}
+
+/** Unknown and future slots never participate in scaling the measured bars. */
+internal fun hourlyStepBarFractions(values: List<HourlySteps>): List<Float?> {
+    val maximum = values.mapNotNull { row -> row.count?.takeIf { !row.future && it >= 0L } }
+        .maxOrNull()?.coerceAtLeast(1L) ?: 1L
+    return values.map { row ->
+        row.count?.takeIf { !row.future && it >= 0L }?.let { (it.toDouble() / maximum).toFloat() }
+    }
 }
