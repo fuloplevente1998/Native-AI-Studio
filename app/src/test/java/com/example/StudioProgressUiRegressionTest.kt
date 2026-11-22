@@ -95,11 +95,13 @@ class StudioProgressUiRegressionTest {
     }
 
     @Test fun volumeTitleArrowAndCompactChartAllOpenTheDetailedGraph() {
-        val state = TrainPilotUiState(selectedProgressRangeIndex = 1,
-            loggedWorkouts = listOf(row(0, 100)))
+        var state by mutableStateOf(TrainPilotUiState(selectedProgressRangeIndex = 1,
+            loggedWorkouts = listOf(row(0, 100))))
         compose.setContent { TrainPilotTheme {
             Column(Modifier.width(360.dp).verticalScroll(rememberScrollState())) {
-                MainProgressVolumeAndMuscleSection(state, {}, {}, {}, {})
+                MainProgressVolumeAndMuscleSection(state, {},
+                    onSelectVolumeBar = { state = state.copy(selectedVolumeBarIndex = it) },
+                    onSelectExpandedStatsCard = {}, onOpenWorkoutDetail = {})
             }
         } }
         compose.onNodeWithTag("progress_volume_total", useUnmergedTree = true)
@@ -358,7 +360,7 @@ class StudioProgressUiRegressionTest {
             }
         }
         compose.onNodeWithTag("statistics_subtab_0").assertDoesNotExist()
-        compose.onNodeWithText("📊 Statisztikák").performClick()
+        compose.onNodeWithTag("progress_section_tab_2").performClick()
         compose.onNodeWithTag("statistics_records_title").assertDoesNotExist()
         compose.onNodeWithTag("statistics_subtab_0").assertExists()
         compose.onNodeWithTag("statistics_record_row").assertExists()
