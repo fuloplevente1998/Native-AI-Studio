@@ -13,7 +13,7 @@
     <string name="journal_health_refreshing">Frissítés…</string>
     <string name="journal_health_refresh_error">Nem sikerült frissíteni. Az edzés vagy az egészségadat közben változhatott; próbáld újra.</string>
     <string name="journal_health_permission">Engedélyezd az edzésadatok Health Connect-olvasását az Egészség oldalon.</string>
-    <string name="journal_health_unavailable">A frissítéshez Android 14 vagy újabb rendszer és elérhető Health Connect szükséges.</string>
+    <string name="journal_health_unavailable">A frissítéshez Android 9 vagy újabb rendszer és elérhető Health Connect szükséges (Android 9–13: telepített Health Connect alkalmazás).</string>
     <string name="journal_health_workout_energy">Edzéshez párosított energia</string>
     <string name="journal_health_distance">Távolság</string>
     <string name="journal_health_active_duration">Aktív mérési idő</string>
