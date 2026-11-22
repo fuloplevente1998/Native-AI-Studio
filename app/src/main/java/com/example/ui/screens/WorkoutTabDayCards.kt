@@ -1,4 +1,7 @@
 package com.example.ui.screens
+import com.example.ui.components.PageLayoutState
+import com.example.ui.components.PageLayoutBlock
+import com.example.ui.components.PageLayoutHorizontalRow
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -121,7 +124,8 @@ internal fun WorkoutTabDayCards(
     target: HomeWorkoutTarget?,
     language: AppLanguage,
     onOpenProgramEditor: (String, Int) -> Unit,
-    onStartWorkoutDay: (Int) -> Unit
+    onStartWorkoutDay: (Int) -> Unit,
+    layout: PageLayoutState? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
@@ -131,6 +135,10 @@ internal fun WorkoutTabDayCards(
     if (days.isEmpty()) return
     val ownTarget = target?.takeIf { it.programId == program.id }
     val nextIndex = days.indexOfFirst { ownTarget != null && sameDay(program.id, it.id, ownTarget.dayId) }.let { if (it < 0) 0 else it }
+    val dayTiles = days.map { PageLayoutBlock(it.id, it.localizedDayCode(language)) }
+    val group = "program_days:${program.id}"
+    val orderedDays = layout?.childOrder(group, dayTiles.map { it.id }) ?: dayTiles.map { it.id }
+    val upcomingPosition = orderedDays.indexOf(days[nextIndex].id).coerceAtLeast(0)
     val scrolls = days.size > 3
     val gap = 8.dp
     BoxWithConstraints(Modifier.fillMaxWidth().testTag("workout_tab_day_cards")) {
@@ -138,22 +146,23 @@ internal fun WorkoutTabDayCards(
         val cardWidth = (maxWidth - gap * (columns - 1)) / columns
         val scroll = rememberScrollState()
         val stepPx = with(LocalDensity.current) { (cardWidth + gap).toPx() }
-        LaunchedEffect(nextIndex, scrolls, stepPx) {
-            if (scrolls) scroll.scrollTo((nextIndex.coerceAtMost(days.size - 3) * stepPx).roundToInt())
+        LaunchedEffect(upcomingPosition, scrolls, stepPx, layout?.draft == null) {
+            if (scrolls && layout?.draft == null) scroll.scrollTo((upcomingPosition.coerceAtMost(days.size - 3) * stepPx).roundToInt())
         }
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(
-                Modifier.fillMaxWidth().height(IntrinsicSize.Min)
+            PageLayoutHorizontalRow(layout, group, dayTiles, gap,
+                modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)
                     .then(if (scrolls) Modifier.horizontalScroll(scroll) else Modifier),
-                horizontalArrangement = Arrangement.spacedBy(gap)
-            ) {
-                days.forEachIndexed { index, day ->
+                cardWidth = cardWidth
+            ) { dayId, modifier ->
+                    val index = days.indexOfFirst { it.id == dayId }
+                    val day = days[index]
                     val primary = index == nextIndex
                     val shape = RoundedCornerShape(18.dp)
                     Surface(
                         shape = shape,
                         color = palette.surface,
-                        modifier = Modifier.width(cardWidth).fillMaxHeight()
+                        modifier = modifier.fillMaxHeight()
                             .trainPilotBorder(if (primary) 1.5.dp else 1.dp, if (primary) palette.primary else palette.cardBorder, shape)
                             .trainPilotClickable(shape) { onOpenProgramEditor(program.id, index) }
                             .testTag("workout_tab_day_card_$index")
@@ -210,7 +219,6 @@ internal fun WorkoutTabDayCards(
                             }
                         }
                     }
-                }
             }
             if (scrolls) {
                 val first by remember(stepPx) { derivedStateOf { (scroll.value / stepPx).roundToInt() } }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -60,10 +61,11 @@ fun QuickWorkoutHubSheet(
                 TrainPilotRedCloseButton(onClick = onDismiss, modifier = Modifier.testTag("quick_workout_close"))
             }
             // Segmented tabs: Strength · Timed · Outdoor.
+            val modes = listOf(QuickWorkoutMode.REPS, QuickWorkoutMode.TIMED, QuickWorkoutMode.OUTDOOR)
             val tabs = listOf(
-                qw(language, "💪 Ismétléses", "💪 Reps", "💪 Wiederholungen", "💪 Repetări"),
-                qw(language, "⏱ Időzített", "⏱ Timed", "⏱ Zeit", "⏱ Cronometrat"),
-                qw(language, "🗺 Kültéri", "🗺 Outdoor", "🗺 Outdoor", "🗺 Exterior")
+                qw(language, "Ismétléses", "Reps", "Wiederholungen", "Repetări"),
+                qw(language, "Időzített", "Timed", "Zeit", "Cronometrat"),
+                qw(language, "Kültéri", "Outdoor", "Outdoor", "Exterior")
             )
             val segShape = RoundedCornerShape(14.dp)
             Surface(shape = segShape, color = palette.surfaceCard,
@@ -77,11 +79,14 @@ fun QuickWorkoutHubSheet(
                             // 2784: longer labels get more room; the whole word always shows (font steps down if needed).
                             modifier = Modifier.weight(trainPilotLabelWeight(label, tabs)).heightIn(min = 44.dp)
                                 .trainPilotClickable(shape) { onSelectTab(i) }.testTag("quick_tab_$i")) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 4.dp)) {
+                            Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                WorkoutModeArt(modes[i], Modifier.width(42.dp), height = 34.dp, selected = selected)
                                 TrainPilotFitText(label, style = MaterialTheme.typography.labelLarge,
                                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                                     color = if (selected) palette.onPrimary else palette.textPrimary,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    textAlign = TextAlign.Center,
                                     modifier = Modifier.testTag("quick_tab_label_$i"))
                             }
                         }

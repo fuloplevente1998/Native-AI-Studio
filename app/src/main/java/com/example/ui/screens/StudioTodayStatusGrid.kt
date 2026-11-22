@@ -1,4 +1,7 @@
 package com.example.ui.screens
+import com.example.ui.components.PageLayoutState
+import com.example.ui.components.PageLayoutBlock
+import com.example.ui.components.PageLayoutHorizontalRow
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -16,7 +19,7 @@ import com.repforge.app.healthreadings.RecoverySource
 
 /** The same six measured/projected values on Home and Health; no second calculation path. */
 @Composable
-internal fun StudioTodayStatusGrid(state: TrainPilotUiState, compact: Boolean = false,
+internal fun StudioTodayStatusGrid(state: TrainPilotUiState, compact: Boolean = false, layout: PageLayoutState? = null,
     onSelect: (String) -> Unit) {
     fun tr(hu: String, en: String, de: String, ro: String) = when (state.language) {
         com.example.model.AppLanguage.HU -> hu
@@ -55,12 +58,14 @@ internal fun StudioTodayStatusGrid(state: TrainPilotUiState, compact: Boolean = 
         Icons.AutoMirrored.Filled.DirectionsWalk, Icons.Default.FitnessCenter, Icons.Default.Eco)
     Column(Modifier.fillMaxWidth().testTag(if (compact) "home_today_status_grid" else "health_today_status_grid"),
         verticalArrangement = Arrangement.spacedBy(if (compact) 5.dp else 8.dp)) {
-        for (row in 0..1) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(if (compact) 5.dp else 8.dp)) {
-            for (column in 0..2) {
-                val i = row * 3 + column
-                val (key, title, value) = values[i]
-                MainTodayStatusTile(icons[i], title, value, { onSelect(key) },
-                    modifier = Modifier.weight(1f).heightIn(min = if (compact) 52.dp else 76.dp)
+        for (row in 0..1) {
+            val indices = row * 3 until row * 3 + 3
+            val tiles = indices.map { PageLayoutBlock(values[it].first, values[it].second) }
+            PageLayoutHorizontalRow(layout, "daily_$row", tiles, if (compact) 5.dp else 8.dp) { id, modifier ->
+                val index = indices.first { values[it].first == id }
+                val (key, title, value) = values[index]
+                MainTodayStatusTile(icons[index], title, value, { onSelect(key) },
+                    modifier = modifier.heightIn(min = if (compact) 52.dp else 76.dp)
                         .testTag("${if (compact) "home" else "health"}_today_$key"), compact = compact,
                     titleTag = "${if (compact) "home" else "health"}_today_${key}_title")
             }

@@ -90,9 +90,10 @@ internal fun measuredReorderTarget(heights: List<Float>, gap: Float, index: Int,
     var traversed = 0f
     while (current + direction in heights.indices) {
         val next = current + direction
-        val step = (heights[current] + heights[next]) / 2f + gap
-        if (distance < traversed + step / 2f) break
-        traversed += step
+        // The lifted tile crosses the midpoint of each neighbouring slot.
+        // This also allows a tall card to pass a shorter card using its top handle.
+        if (distance < traversed + gap + heights[next] / 2f) break
+        traversed += gap + heights[next]
         current = next
     }
     return current

@@ -43,16 +43,16 @@ class TrainPilotPageLayoutRegressionTest {
 
     @Test fun dragUsesTheMeasuredSpacingOfUnequalCards() {
         val heights = listOf(60f, 240f, 100f)
-        assertEquals(0, measuredReorderTarget(heights, 10f, 0, 75f))
-        assertEquals(1, measuredReorderTarget(heights, 10f, 0, 100f))
-        assertEquals(2, measuredReorderTarget(heights, 10f, 0, 255f))
-        assertEquals(1, measuredReorderTarget(heights, 10f, 2, -95f))
+        assertEquals(0, measuredReorderTarget(heights, 10f, 0, 100f))
+        assertEquals(1, measuredReorderTarget(heights, 10f, 0, 140f))
+        assertEquals(2, measuredReorderTarget(heights, 10f, 0, 320f))
+        assertEquals(0, measuredReorderTarget(heights, 10f, 1, -45f))
     }
 
     @Test fun workoutEditShowsTheRealModeTilesAndSavesTheirDraggedPosition() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val prefs = context.getSharedPreferences("trainpilot-page-layout", Context.MODE_PRIVATE)
-        prefs.edit().remove("workout").commit()
+        prefs.edit().remove("workout").remove("workout_children").commit()
         var opened = 0
         compose.setContent {
             TrainPilotTheme {
@@ -75,14 +75,25 @@ class TrainPilotPageLayoutRegressionTest {
         quickHandle.performScrollTo()
         val distance = modesHandle.getUnclippedBoundsInRoot().top - quickHandle.getUnclippedBoundsInRoot().top
         modesHandle.performTouchInput { swipe(center, center + Offset(0f, -distance.toPx()), 350) }
+        val timedHandle = compose.onNodeWithTag("page_layout_horizontal_workout_modes_timed")
+        val repsHandle = compose.onNodeWithTag("page_layout_horizontal_workout_modes_reps")
+        timedHandle.performScrollTo()
+        val sideDistance = timedHandle.getUnclippedBoundsInRoot().left - repsHandle.getUnclippedBoundsInRoot().left
+        timedHandle.performTouchInput { swipe(center, center + Offset(-sideDistance.toPx(), 0f), 350) }
         val save = compose.onNodeWithTag("page_layout_save")
         save.assertIsDisplayed().performClick()
         compose.runOnIdle {
             assertEquals(listOf("modes", "quick"), prefs.getString("workout", "")!!.split(',').take(2))
+            val children = org.json.JSONObject(prefs.getString("workout_children", "{}")!!)
+                .getJSONArray("workout_modes")
+            assertEquals("timed", children.getString(0))
+            assertEquals("reps", children.getString(1))
             assertEquals(0, opened)
         }
         assertTrue(compose.onNodeWithTag("page_workout_block_modes", useUnmergedTree = true).getUnclippedBoundsInRoot().top <
             compose.onNodeWithTag("page_workout_block_quick", useUnmergedTree = true).getUnclippedBoundsInRoot().top)
+        assertTrue(compose.onNodeWithTag("workout_tab_timed_card", useUnmergedTree = true).getUnclippedBoundsInRoot().left <
+            compose.onNodeWithTag("workout_tab_exercise_picker", useUnmergedTree = true).getUnclippedBoundsInRoot().left)
     }
 
     @Test fun homeSupportsLongPressAndFooterAndSavesNewOrderWithoutOpeningTheTile() {

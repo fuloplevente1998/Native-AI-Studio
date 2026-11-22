@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import com.example.ui.components.PageLayoutCard
 
 import com.example.ui.components.PageLayoutBlock
 import com.example.ui.components.PageLayoutFrame
@@ -568,7 +569,7 @@ fun HealthTabScreen(
     }
 
     val healthBlock: @Composable (String) -> Unit = { id ->
-    PageLayoutTile(layout, id) {
+    PageLayoutTile(layout, id, hasHorizontalTiles = id == "today") {
         when (id) {
             "today" -> {
                 Surface(
@@ -583,6 +584,7 @@ fun HealthTabScreen(
                         modifier = Modifier.padding(14.dp),
                         verticalArrangement = Arrangement.spacedBy(TrainPilotCardSpacing.CardGap)
                     ) {
+                        PageLayoutCard {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
@@ -638,13 +640,15 @@ fun HealthTabScreen(
                                 )
                             }
                         }
+                        }
 
                         // 2784: every tile opens its own detail sheet; the page below does not move.
-                        StudioTodayStatusGrid(uiState) { key ->
+                        StudioTodayStatusGrid(uiState, layout = layout) { key ->
                             expandedTodayTileKey = if (expandedTodayTileKey == key) null else key
                             if (key == "pulse") onToggleHealthSection("pulse")
                         }
 
+                        PageLayoutCard {
                         val goalShape = RoundedCornerShape(12.dp)
                         Column(
                             Modifier
@@ -667,6 +671,7 @@ fun HealthTabScreen(
                                     HealthWeeklyGoalsPanel(uiState)
                                 }
                             }
+                        }
                         }
 
                         // Expandable Detail Dropdown Card when any of the 6 "Mai állapot" tiles is tapped
