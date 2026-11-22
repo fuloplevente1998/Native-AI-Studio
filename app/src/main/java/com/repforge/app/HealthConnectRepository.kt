@@ -410,31 +410,6 @@ object HealthConnectRepository {
             return f.get(30, TimeUnit.SECONDS).get(type)
         }
 
-        private fun mostCompleteStepOrigin(
-            p: Access,
-            m: HealthConnectManager,
-            time: TimeInstantRangeFilter,
-            origins: Set<String>
-        ): String {
-            if (!p.allowed("READ_STEPS") || origins.isEmpty()) return ""
-            val original = p.origin
-            val totals = HashMap<String?, Long?>()
-            try {
-                for (origin in TreeSet(origins)) {
-                    if (origin.isEmpty() || origin == p.getContext().packageName) continue
-                    p.origin = origin
-                    try {
-                        val value = aggregate(p, m, time, StepsRecord.STEPS_COUNT_TOTAL)
-                        if (value != null) totals[origin] = value
-                    } catch (_: Exception) {
-                    }
-                }
-            } finally {
-                p.origin = original
-            }
-            return HealthDailySource.mostComplete(totals)
-        }
-
         private fun putLongAgg(
             out: JSONObject,
             key: String,
@@ -777,11 +752,11 @@ object HealthConnectRepository {
             val requested = p.origin
             val preferred = HealthJournalStore.get(p.getContext()).preferences().optString("hcDailySource", "auto")
             val stepOrigins = steps.map { src(it) }.toSet()
-            var activityOrigin = HealthDailySource.choose(requested, preferred, stepOrigins)
-            if (requested.isEmpty() && "auto" == preferred) {
-                val complete = mostCompleteStepOrigin(p, m, time, stepOrigins)
-                if (complete.isNotEmpty()) activityOrigin = complete
-            }
+            // Automatic/priority mode must let Health Connect resolve overlapping step sources
+            // using the user's configured priority. Choosing the largest individual origin
+            // silently ignores that priority and can diverge from the Health Connect total.
+            // An explicitly chosen origin still applies a single-source filter.
+            val activityOrigin = HealthDailySource.choose(requested, preferred, stepOrigins)
             p.origin = activityOrigin
             putLongAgg(out, "steps", p, m, time, "READ_STEPS", StepsRecord.STEPS_COUNT_TOTAL, warnings)
             p.origin = requested
@@ -816,8 +791,7 @@ object HealthConnectRepository {
                 .put(
                     "aggregateOrigin",
                     if (requested.isEmpty()) {
-                        if ("auto" == preferred && activityOrigin.isNotEmpty()) "health_connect_most_complete_steps"
-                        else "health_connect_priority"
+                        "health_connect_priority"
                     } else {
                         "health_connect_source"
                     }
