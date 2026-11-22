@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -128,7 +130,7 @@ internal fun StudioBodyFitnessTiles(state: TrainPilotUiState, onSelect: (String,
                     shape = RoundedCornerShape(12.dp),
                     color = palette.surfaceCard,
                     modifier = Modifier.weight(1f).heightIn(min = 110.dp)
-                        .clickable { onSelect(key, reading) }
+                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onSelect(key, reading) }
                         .testTag("health_body_fitness_$key")
                 ) {
                     Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
