@@ -36,12 +36,10 @@ class StudioHealthPermissionRoutingRegressionTest {
 
     @Test fun allGrantedOpensSettingsInsteadOfRequestingAgain() {
         assertTrue(StudioHealthPermissionRouting.missingReads(declared) { true }.isEmpty())
-        val intents = StudioHealthPermissionRouting.settingsIntents()
-        assertEquals(listOf("android.health.connect.action.HEALTH_CONNECT_SETTINGS",
-            "androidx.health.ACTION_HEALTH_CONNECT_SETTINGS"), intents.map { it.action })
-        assertEquals("com.google.android.apps.healthdata", intents.last().`package`)
-        assertTrue(intents.none { it.action == HealthConnectManager.ACTION_MANAGE_HEALTH_PERMISSIONS ||
-            it.action == Settings.ACTION_APPLICATION_DETAILS_SETTINGS || it.hasExtra(Intent.EXTRA_PACKAGE_NAME) })
+        val intent = StudioHealthPermissionRouting.settingsIntent()
+        assertEquals("android.health.connect.action.HEALTH_HOME_SETTINGS", intent.action)
+        assertFalse(intent.action == HealthConnectManager.ACTION_MANAGE_HEALTH_PERMISSIONS)
+        assertFalse(intent.hasExtra(Intent.EXTRA_PACKAGE_NAME))
     }
 
     @Test fun generalPermissionManagementOpensOwnAppSettings() {

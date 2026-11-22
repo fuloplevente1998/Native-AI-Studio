@@ -66,12 +66,6 @@ internal object StudioHealthPermissionRouting {
     // Its privileged controller is not a supported third-party launcher.
     fun settingsIntent(): Intent = HealthConnectRepository.settingsIntent()
 
-    fun settingsIntents(): List<Intent> = listOf(
-        settingsIntent(),
-        Intent("androidx.health.ACTION_HEALTH_CONNECT_SETTINGS")
-            .setPackage("com.google.android.apps.healthdata")
-    )
-
     fun fallbackIntent(context: Context): Intent =
         Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
             android.net.Uri.parse("package:${context.packageName}"))
@@ -178,15 +172,13 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
         if (missingReads.isNotEmpty()) {
             healthPermissions.launch(missingReads.toTypedArray())
         } else if (manage) {
-            val opened = StudioHealthPermissionRouting.settingsIntents().any { intent ->
-                try {
-                    settings.launch(intent)
-                    true
-                } catch (_: SecurityException) {
-                    false
-                } catch (_: ActivityNotFoundException) {
-                    false
-                }
+            val opened = try {
+                settings.launch(StudioHealthPermissionRouting.settingsIntent())
+                true
+            } catch (_: SecurityException) {
+                false
+            } catch (_: ActivityNotFoundException) {
+                false
             }
             if (!opened) {
                 model.showBannerMessage(privacyMessage(model.uiState.value.language.name,
