@@ -36,14 +36,31 @@ internal object NativeTrainingModeProgression {
         target: NativeCoachExerciseAdvice.Target, recent: List<NativeCoachExerciseAdvice.Occurrence>,
         readiness: NativeCoachReadiness.Result, step: Double): Preview? {
         if (!mode.explicitChoice || mode.source !in setOf("global", "program")) return null
-        val rows = recent.take(4)
-        val latest = rows.firstOrNull()
-        val base = latest?.weight ?: 0.0
         val body = lib.optString("loadType") == "bodyweight"
         val sets = if (mode.trainingStyle == "hit") minOf(target.sets, if (lib.optString("id") in
             setOf("lateral-raise", "db-reverse-fly", "face-pull", "db-curl", "hammer-curl",
                 "cable-curl", "oh-triceps", "cable-triceps", "leg-extension", "leg-curl", "calf-raise"))
             1 else 2) else target.sets
+        // A successful HIT session has fewer prescribed working sets. The canonical
+        // history parser checks the original program sets; normalize completion for
+        // this selected mode only, without modifying the persisted exercise/history.
+        val rows = recent.take(4).map { occurrence ->
+            if (mode.trainingStyle != "hit" || occurrence.allDone) occurrence
+            else {
+                val saved = occurrence.exercise.optJSONArray("sets")
+                val actual = (0 until (saved?.length() ?: 0))
+                    .mapNotNull { saved?.optJSONObject(it) }
+                val complete = actual.size >= sets && sets > 0 &&
+                    actual.all { it.optBoolean("done") }
+                occurrence.copy(
+                    allDone = complete,
+                    hitTop = complete && target.max != null && occurrence.reps.isNotEmpty() &&
+                        occurrence.reps.min() >= target.max
+                )
+            }
+        }
+        val latest = rows.firstOrNull()
+        val base = latest?.weight ?: 0.0
         fun result(action: String, reason: String, weight: Double = base,
             reps: List<Double> = emptyList()) = Preview(action, reason, base, weight,
                 sets.coerceAtLeast(0), reps, rows.size, mode.progressionMode, mode.trainingStyle)
