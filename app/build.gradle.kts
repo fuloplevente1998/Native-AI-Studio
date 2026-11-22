@@ -149,6 +149,8 @@ dependencies {
   implementation(libs.androidx.work.runtime.ktx)
   implementation(libs.gson)
   implementation(files("libs/samsung-health-data-api-1.1.0.aar"))
+  // Stable cross-version Health Connect client (APK on Android 9-13, platform on 14+).
+  implementation("androidx.health.connect:connect-client:1.1.0")
 
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
