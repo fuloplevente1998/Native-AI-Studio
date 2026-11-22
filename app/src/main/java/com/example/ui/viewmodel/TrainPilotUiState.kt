@@ -176,6 +176,22 @@ data class StudioTrainingModeReview(
     val rows: List<StudioTrainingModeRow>
 )
 
+/** One immutable snapshot for app privacy choices and OS grants.
+ * Keeping this group out of the enormous UI-state constructor also preserves JVM
+ * method descriptor limits for Kotlin's generated copy/default methods.
+ */
+data class StudioPermissionAccess(
+    val gpsEnabled: Boolean = false,
+    val gpsGranted: Boolean = false,
+    val centralLocationEnabled: Boolean = false,
+    val notificationsEnabled: Boolean = false,
+    val notificationsGranted: Boolean = false,
+    val healthConnectEnabled: Boolean = false,
+    val healthConnectGranted: Boolean = false,
+    val samsungHealthEnabled: Boolean = false,
+    val samsungHealthGranted: Boolean = false
+)
+
 data class TrainPilotUiState(
     // Theme & Localization & Accessibility
     val selectedPaletteId: Int = 1, // Default: 01 • Grafit & Arany
@@ -433,22 +449,25 @@ data class TrainPilotUiState(
     val selectedBackupFormat: String = "JSON", // JSON, ZIP, DRIVE
     val includeHealthInBackup: Boolean = false,
     val backupHealthConsentSaving: Boolean = false,
-    val permissionGpsEnabled: Boolean = false,
-    val permissionGpsGranted: Boolean = false,
-    val permissionCentralLocEnabled: Boolean = false,
-    val permissionNotificationsEnabled: Boolean = false,
-    val permissionNotificationsGranted: Boolean = false,
-    val permissionHealthConnectEnabled: Boolean = false,
-    val permissionHealthConnectGranted: Boolean = false,
-    val permissionSamsungHealthEnabled: Boolean = false,
-    val permissionSamsungHealthGranted: Boolean = false,
+    val permissionAccess: StudioPermissionAccess = StudioPermissionAccess(),
     val privatePhotoCount: Int = 0,
     val privatePhotoWorkoutId: String? = null,
 
     // Toast / Feedback banner for immediate visual confirmation of actions
     val statusBannerMessage: String? = null,
     val localBackupStatus: LocalBackupStatus? = null
-)
+) {
+    // Preserve existing screen/read-only API; writes use permissionAccess.copy(...).
+    val permissionGpsEnabled: Boolean get() = permissionAccess.gpsEnabled
+    val permissionGpsGranted: Boolean get() = permissionAccess.gpsGranted
+    val permissionCentralLocEnabled: Boolean get() = permissionAccess.centralLocationEnabled
+    val permissionNotificationsEnabled: Boolean get() = permissionAccess.notificationsEnabled
+    val permissionNotificationsGranted: Boolean get() = permissionAccess.notificationsGranted
+    val permissionHealthConnectEnabled: Boolean get() = permissionAccess.healthConnectEnabled
+    val permissionHealthConnectGranted: Boolean get() = permissionAccess.healthConnectGranted
+    val permissionSamsungHealthEnabled: Boolean get() = permissionAccess.samsungHealthEnabled
+    val permissionSamsungHealthGranted: Boolean get() = permissionAccess.samsungHealthGranted
+}
 
 const val INLINE_EDITOR_HOST_PROGRAMS = "programs"
 const val INLINE_EDITOR_HOST_HOME = "home"
