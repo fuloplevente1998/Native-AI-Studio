@@ -1101,8 +1101,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                     onSelectHealthSource = { samsung -> nativeHealth.setProvider(
                                         if (samsung) com.repforge.app.HealthJournalStore.SAMSUNG else com.repforge.app.HealthJournalStore.HC, activity) },
                                     onRequestHealthPermissions = {
-                                        if (health.provider == com.repforge.app.HealthJournalStore.SAMSUNG) nativeHealth.requestSamsungPermissions(activity)
-                                        else requestPlatformPermission("hc_permission")
+                                        requestPlatformPermission(
+                                            if (health.provider == com.repforge.app.HealthJournalStore.SAMSUNG)
+                                                "samsung_source_manage" else "hc_manage"
+                                        )
                                     }
                                 )
                             }

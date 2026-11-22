@@ -74,9 +74,10 @@ internal object StudioHealthPermissionRouting {
     // Its privileged controller is not a supported third-party launcher.
     fun settingsIntent(): Intent = HealthConnectRepository.settingsIntent()
 
-    fun fallbackIntent(context: Context): Intent =
-        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-            android.net.Uri.parse("package:${context.packageName}"))
+    fun fallbackIntent(context: Context): Intent = appDetailsIntent(context.packageName)
+
+    fun appDetailsIntent(packageName: String): Intent =
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName"))
 }
 
 private fun privacyMessage(language: String, hu: String, en: String, de: String, ro: String): String =
@@ -178,8 +179,37 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
     val settings = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         scope.launch { refresh(); refreshSamsung() }
     }
+    fun openPermissionSettings(intent: Intent, fallback: Intent? = null): Boolean {
+        for (candidate in listOfNotNull(intent, fallback)) {
+            try {
+                settings.launch(candidate)
+                return true
+            } catch (_: SecurityException) {
+            } catch (_: ActivityNotFoundException) {
+            }
+        }
+        return false
+    }
+    fun permissionNotice(hu: String, en: String, de: String, ro: String) {
+        android.widget.Toast.makeText(context, privacyMessage(model.uiState.value.language.name, hu, en, de, ro),
+            android.widget.Toast.LENGTH_LONG).show()
+    }
+    fun openHealthConnectSettings() {
+        if (!openPermissionSettings(StudioHealthPermissionRouting.settingsIntent(),
+                StudioHealthPermissionRouting.fallbackIntent(context))) {
+            permissionNotice(
+                "Az Android-beállításokban nyisd meg a Health Connect alkalmazásengedélyeit.",
+                "Open Health Connect app permissions from Android settings.",
+                "Öffne die Health-Connect-App-Berechtigungen in den Android-Einstellungen.",
+                "Deschide permisiunile Health Connect din setările Android.")
+        }
+    }
     // Called directly in the click handler, not after a suspend/health sync operation.
     fun requestHealthConnectPermissions(manage: Boolean = false) {
+        if (manage && !NativePrivacyControls.enabled(context, NativePrivacyControls.HEALTH_CONNECT)) {
+            openHealthConnectSettings()
+            return
+        }
         if (!manage && !NativePrivacyControls.enabled(context, NativePrivacyControls.HEALTH_CONNECT)) {
             model.showBannerMessage(privacyMessage(model.uiState.value.language.name,
                 "A Health Connect ki van kapcsolva.", "Health Connect is turned off.",
@@ -216,9 +246,15 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                 val granted = runCatching { HealthConnectRepository.currentlyGrantedReadKeys(context) }
                     .getOrElse { model.showBannerMessage("A Health Connect engedélyek nem olvashatók."); return@launch }
                 val missing = declaredReads.filter { it.substringAfterLast('.') !in granted }
-                if (missing.isNotEmpty()) healthPermissionsLegacy.launch(missing.toSet())
-                else if (manage) settings.launch(StudioHealthPermissionRouting.settingsIntent())
-                else refresh()
+                if (missing.isNotEmpty()) {
+                    try { healthPermissionsLegacy.launch(missing.toSet()) }
+                    catch (_: ActivityNotFoundException) { openHealthConnectSettings() }
+                    catch (_: SecurityException) { openHealthConnectSettings() }
+                } else if (manage) {
+                    openHealthConnectSettings()
+                } else {
+                    refresh()
+                }
             }
             return
         }
@@ -226,23 +262,11 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
             HealthConnectRepository.isAllowed(context, permission.substringAfterLast('.'))
         }
         if (missingReads.isNotEmpty()) {
-            healthPermissions.launch(missingReads.toTypedArray())
+            try { healthPermissions.launch(missingReads.toTypedArray()) }
+            catch (_: ActivityNotFoundException) { openHealthConnectSettings() }
+            catch (_: SecurityException) { openHealthConnectSettings() }
         } else if (manage) {
-            val opened = try {
-                settings.launch(StudioHealthPermissionRouting.settingsIntent())
-                true
-            } catch (_: SecurityException) {
-                false
-            } catch (_: ActivityNotFoundException) {
-                false
-            }
-            if (!opened) {
-                model.showBannerMessage(privacyMessage(model.uiState.value.language.name,
-                    "Nyisd meg az Android-beállításokban a Health Connectet, majd válaszd az Alkalmazásengedélyek menüt.",
-                    "Open Health Connect in Android settings, then choose App permissions.",
-                    "Öffne Health Connect in den Android-Einstellungen und wähle App-Berechtigungen.",
-                    "Deschide Health Connect în setările Android, apoi alege Permisiunile aplicațiilor."))
-            }
+            openHealthConnectSettings()
         } else {
             scope.launch { refresh() } // Already granted: do not launch the OS settings.
         }
@@ -400,6 +424,36 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                 "hc_permission" -> requestHealthConnectPermissions()
                 "samsung_permission" -> startHealthAction(HealthJournalStore.SAMSUNG, permissionOnly = true)
                 "hc_manage" -> requestHealthConnectPermissions(manage = true)
+                "samsung_source_manage" -> scope.launch {
+                    val host = activity
+                    if (host == null || !SamsungHealthRepository.isInstalled(context)) {
+                        permissionNotice("A Samsung Health nem érhető el.", "Samsung Health is unavailable.",
+                            "Samsung Health ist nicht verfügbar.", "Samsung Health nu este disponibil.")
+                        return@launch
+                    }
+                    val intent = StudioHealthPermissionRouting.appDetailsIntent("com.sec.android.app.shealth")
+                    try {
+                        val granted = SamsungHealthRepository.readGrantedKeys(context) {
+                            check(!host.isFinishing && !host.isDestroyed)
+                        }
+                        if (SamsungHealthRepository.PERMISSION_KEYS.all { it in granted } ||
+                            !NativePrivacyControls.enabled(context, NativePrivacyControls.SAMSUNG_HEALTH)) {
+                            if (!openPermissionSettings(intent)) permissionNotice(
+                                "Nyisd meg a Samsung Health engedélyeit a Samsung Health beállításaiban.",
+                                "Open permissions in Samsung Health settings.",
+                                "Öffne die Berechtigungen in den Samsung-Health-Einstellungen.",
+                                "Deschide permisiunile din setările Samsung Health.")
+                        } else SamsungHealthRepository.requestReadPermissions(host).getOrThrow()
+                        refreshSamsung()
+                    } catch (cancelled: CancellationException) { throw cancelled }
+                    catch (_: Exception) {
+                        if (!openPermissionSettings(intent)) permissionNotice(
+                            "A Samsung Health engedélyei most nem nyithatók meg.",
+                            "Samsung Health permissions could not be opened.",
+                            "Die Samsung-Health-Berechtigungen konnten nicht geöffnet werden.",
+                            "Permisiunile Samsung Health nu au putut fi deschise.")
+                    }
+                }
                 "samsung_manage" -> scope.launch {
                     activity?.let { SamsungHealthRepository.requestReadPermissions(it, force = true) }
                         ?.exceptionOrNull()?.let {
