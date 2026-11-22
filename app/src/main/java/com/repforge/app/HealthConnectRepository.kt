@@ -95,7 +95,7 @@ object HealthConnectRepository {
     fun isAllowed(context: Context, suffix: String): Boolean =
         if (Build.VERSION.SDK_INT >= 34)
             context.checkSelfPermission("android.permission.health.$suffix") == PackageManager.PERMISSION_GRANTED
-        else HealthConnectLegacyBridge.cachedAllowed(suffix)
+        else HealthConnectLegacyBridge.available(context) && HealthConnectLegacyBridge.cachedAllowed(suffix)
 
     /** Refresh live APK grants on Android 9–13; the platform reports current grants directly. */
     suspend fun currentlyGrantedReadKeys(context: Context): Set<String> =
