@@ -67,6 +67,9 @@ internal object StudioPlatformAccess {
 
 /** The Settings entry point is NOT a data sync. Request missing read grants from the visible Activity. */
 internal object StudioHealthPermissionRouting {
+    fun sourceManageAction(provider: String): String =
+        if (provider == HealthJournalStore.SAMSUNG) "samsung_manage" else "hc_manage"
+
     fun missingReads(declaredReads: List<String>, granted: (String) -> Boolean): List<String> =
         declaredReads.filterNot(granted)
 
@@ -74,10 +77,8 @@ internal object StudioHealthPermissionRouting {
     // Its privileged controller is not a supported third-party launcher.
     fun settingsIntent(): Intent = HealthConnectRepository.settingsIntent()
 
-    fun fallbackIntent(context: Context): Intent = appDetailsIntent(context.packageName)
-
-    fun appDetailsIntent(packageName: String): Intent =
-        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName"))
+    fun fallbackIntent(context: Context): Intent =
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:${context.packageName}"))
 }
 
 private fun privacyMessage(language: String, hu: String, en: String, de: String, ro: String): String =
@@ -424,36 +425,6 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                 "hc_permission" -> requestHealthConnectPermissions()
                 "samsung_permission" -> startHealthAction(HealthJournalStore.SAMSUNG, permissionOnly = true)
                 "hc_manage" -> requestHealthConnectPermissions(manage = true)
-                "samsung_source_manage" -> scope.launch {
-                    val host = activity
-                    if (host == null || !SamsungHealthRepository.isInstalled(context)) {
-                        permissionNotice("A Samsung Health nem érhető el.", "Samsung Health is unavailable.",
-                            "Samsung Health ist nicht verfügbar.", "Samsung Health nu este disponibil.")
-                        return@launch
-                    }
-                    val intent = StudioHealthPermissionRouting.appDetailsIntent("com.sec.android.app.shealth")
-                    try {
-                        val granted = SamsungHealthRepository.readGrantedKeys(context) {
-                            check(!host.isFinishing && !host.isDestroyed)
-                        }
-                        if (SamsungHealthRepository.PERMISSION_KEYS.all { it in granted } ||
-                            !NativePrivacyControls.enabled(context, NativePrivacyControls.SAMSUNG_HEALTH)) {
-                            if (!openPermissionSettings(intent)) permissionNotice(
-                                "Nyisd meg a Samsung Health engedélyeit a Samsung Health beállításaiban.",
-                                "Open permissions in Samsung Health settings.",
-                                "Öffne die Berechtigungen in den Samsung-Health-Einstellungen.",
-                                "Deschide permisiunile din setările Samsung Health.")
-                        } else SamsungHealthRepository.requestReadPermissions(host).getOrThrow()
-                        refreshSamsung()
-                    } catch (cancelled: CancellationException) { throw cancelled }
-                    catch (_: Exception) {
-                        if (!openPermissionSettings(intent)) permissionNotice(
-                            "A Samsung Health engedélyei most nem nyithatók meg.",
-                            "Samsung Health permissions could not be opened.",
-                            "Die Samsung-Health-Berechtigungen konnten nicht geöffnet werden.",
-                            "Permisiunile Samsung Health nu au putut fi deschise.")
-                    }
-                }
                 "samsung_manage" -> scope.launch {
                     activity?.let { SamsungHealthRepository.requestReadPermissions(it, force = true) }
                         ?.exceptionOrNull()?.let {

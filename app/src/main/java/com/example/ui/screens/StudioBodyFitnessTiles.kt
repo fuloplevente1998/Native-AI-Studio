@@ -117,9 +117,10 @@ internal fun StudioBodyFitnessTiles(state: TrainPilotUiState, layout: PageLayout
         Text(
             tr("Test és fittség", "Body & Fitness", "Körper & Fitness", "Corp și fitness"),
             style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
-            color = palette.textPrimary
+            color = palette.textPrimary,
+            modifier = Modifier.padding(end = if (layout?.draft != null) 32.dp else 0.dp)
         )
-        PageLayoutGrid(layout, "body_fitness_values", tiles, 6.dp) { key, modifier ->
+        PageLayoutGrid(layout, "body_fitness_values", tiles, 6.dp, compactEditor = true) { key, modifier ->
             val title = tiles.first { it.id == key }.title
             val readPermission = when (key) {
                 "bodyFat" -> "READ_BODY_FAT"

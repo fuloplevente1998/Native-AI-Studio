@@ -1102,8 +1102,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                         if (samsung) com.repforge.app.HealthJournalStore.SAMSUNG else com.repforge.app.HealthJournalStore.HC, activity) },
                                     onRequestHealthPermissions = {
                                         requestPlatformPermission(
-                                            if (health.provider == com.repforge.app.HealthJournalStore.SAMSUNG)
-                                                "samsung_source_manage" else "hc_manage"
+                                            com.example.ui.components.StudioHealthPermissionRouting.sourceManageAction(health.provider)
                                         )
                                     }
                                 )

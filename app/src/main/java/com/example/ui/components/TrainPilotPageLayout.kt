@@ -151,7 +151,7 @@ private val LocalPageLayoutDrag = staticCompositionLocalOf<PageLayoutDrag?> { nu
 
 @Composable
 internal fun PageLayoutTile(layout: PageLayoutState?, id: String, hasHorizontalTiles: Boolean = false,
-    content: @Composable () -> Unit) {
+    overlayHandle: Boolean = false, content: @Composable () -> Unit) {
     if (layout == null) {
         content()
         return
@@ -178,7 +178,7 @@ internal fun PageLayoutTile(layout: PageLayoutState?, id: String, hasHorizontalT
     val index = ids.indexOf(id)
     val target = drag.dropTarget(drag.draggingIndex, ids.lastIndex, drag.draggingStepPx)
     val markDrop = drag.draggingKey != null && index == target && target != drag.draggingIndex
-    Row(Modifier.fillMaxWidth().trainPilotReorderItem(drag, id, index)
+    val blockModifier = Modifier.fillMaxWidth().trainPilotReorderItem(drag, id, index)
         .drawWithContent {
             drawContent()
             if (markDrop) {
@@ -188,15 +188,27 @@ internal fun PageLayoutTile(layout: PageLayoutState?, id: String, hasHorizontalT
                     strokeWidth = 2.dp.toPx(),
                     pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 3.dp.toPx())))
             }
-        }.testTag("page_layout_editor_block_$id"),
-        verticalAlignment = Alignment.Top) {
-        Box(Modifier.weight(1f)) {
-            if (hasHorizontalTiles) content() else PageLayoutCard(content)
-        }
+        }.testTag("page_layout_editor_block_$id")
+    val card: @Composable () -> Unit = {
+        if (hasHorizontalTiles) content() else PageLayoutCard(content)
+    }
+    val handle: @Composable (Modifier) -> Unit = { modifier ->
         TrainPilotReorderHandle(drag, id, index, ids.lastIndex, editor.gap, editor.titles.getValue(id),
             editor.language.pageLayoutText("Mozgatás fel", "Move up", "Nach oben", "Mută în sus"),
             editor.language.pageLayoutText("Mozgatás le", "Move down", "Nach unten", "Mută în jos"),
-            "page_layout_handle_$id", layout::move, icon = Icons.Default.DragIndicator, immediateDrag = true)
+            "page_layout_handle_$id", layout::move, modifier = modifier,
+            icon = Icons.Default.DragIndicator, immediateDrag = true)
+    }
+    if (overlayHandle) {
+        Box(blockModifier) {
+            card()
+            handle(Modifier.align(Alignment.TopEnd))
+        }
+    } else {
+        Row(blockModifier, verticalAlignment = Alignment.Top) {
+            Box(Modifier.weight(1f)) { card() }
+            handle(Modifier)
+        }
     }
 }
 
@@ -226,6 +238,7 @@ internal fun PageLayoutGrid(
     gap: Dp,
     legacy: Map<String, List<String>> = emptyMap(),
     modifier: Modifier = Modifier,
+    compactEditor: Boolean = false,
     tileContent: @Composable (String, Modifier) -> Unit
 ) {
     val defaults = tiles.map { it.id }
@@ -255,11 +268,14 @@ internal fun PageLayoutGrid(
                                 val shape = RoundedCornerShape(12.dp)
                                 val color = if (destination == id && dragged != id) palette.primary
                                     else if (dragged == id) palette.primary.copy(alpha = .5f) else null
-                                Column(
+                                Box(
                                     cell.onGloballyPositioned { bounds[id] = it.boundsInRoot() }
                                         .then(if (color != null) Modifier.border(2.dp, color, shape) else Modifier),
-                                    horizontalAlignment = Alignment.CenterHorizontally
+                                    contentAlignment = Alignment.TopCenter
                                 ) {
+                                    Box(Modifier.padding(top = if (compactEditor) 32.dp else 48.dp)) {
+                                        PageLayoutCard { tileContent(id, Modifier.fillMaxWidth()) }
+                                    }
                                     val title = tiles.first { it.id == id }.title
                                     fun action(target: Int, name: String): CustomAccessibilityAction? =
                                         target.takeIf { it in ids.indices }?.let { to ->
@@ -312,7 +328,6 @@ internal fun PageLayoutGrid(
                                     }.testTag("page_layout_grid_${group}_$id"), contentAlignment = Alignment.Center) {
                                         Icon(Icons.Default.DragIndicator, null, tint = palette.primary, modifier = Modifier.size(18.dp))
                                     }
-                                    PageLayoutCard { tileContent(id, Modifier.fillMaxWidth()) }
                                 }
                             }
                         }

@@ -2,9 +2,7 @@ package com.example
 
 import com.example.ui.components.hourlyStepBarFractions
 import com.repforge.app.ui.health.HourlyStepReading
-import com.repforge.app.ui.health.HourlySteps
-import com.repforge.app.ui.health.elapsedStepHourWindows
-import com.repforge.app.ui.health.measuredStepHours
+import com.repforge.app.ui.health.observedHealthConnectStepHours
 import com.repforge.app.ui.health.hourlySteps
 import java.time.Instant
 import java.time.LocalDate
@@ -33,35 +31,25 @@ class HourlyStepsRegressionTest {
         assertTrue(result[12].future)
     }
 
-    @Test fun individualWindowsKeepDistinctCountsAndOnlyCoverElapsedTime() {
+    @Test fun healthConnectDailyTotalsCannotBecomeUniformHourlyBars() {
         val day = LocalDate.parse("2026-11-22")
-        val now = Instant.parse("2026-11-22T04:35:00Z")
-        val windows = elapsedStepHourWindows(day, ZoneOffset.UTC, now)
-        val counts = listOf(0L, 45L, 312L, 20L, 241L)
-        assertEquals(counts.size, windows.size)
-        assertEquals(now, windows.last().second)
-        val measured = measuredStepHours(windows, counts, ZoneOffset.UTC)
-        assertEquals(counts, (0..4).map { measured[it] })
-        val values = (0..5).map { HourlySteps(it, measured[it], future = it == 5) }
-        val bars = hourlyStepBarFractions(values)
-        assertEquals(0f, requireNotNull(bars[0]), 0f)
-        assertEquals(45f / 312f, requireNotNull(bars[1]), 0.0001f)
-        assertEquals(1f, requireNotNull(bars[2]), 0f)
-        assertEquals(20f / 312f, requireNotNull(bars[3]), 0.0001f)
-        assertEquals(241f / 312f, requireNotNull(bars[4]), 0.0001f)
-        assertNull(bars[5])
-    }
-
-    @Test fun independentWindowsRequireBothOccurrencesOfRepeatedHour() {
-        val zone = ZoneId.of("Europe/Budapest")
-        val day = LocalDate.parse("2026-10-25")
-        val now = Instant.parse("2026-10-25T04:12:00Z")
-        val windows = elapsedStepHourWindows(day, zone, now)
-        val repeated = windows.indices.filter { windows[it].first.atZone(zone).hour == 2 }
-        assertEquals(2, repeated.size)
-        val counts = windows.indices.map { i -> if (i == repeated[0]) 21L else if (i == repeated[1]) 4L else null }
-        assertEquals(mapOf(2 to 25L), measuredStepHours(windows, counts, zone))
-        assertEquals(emptyMap<Int, Long>(), measuredStepHours(windows, counts.map { it.takeUnless { n -> n == 4L } }, zone))
+        val now = Instant.parse("2026-11-22T23:17:00Z")
+        val longTotal = reading("2026-11-22T00:00:00Z", "2026-11-22T23:17:00Z", 8862)
+        val coarseOnly = observedHealthConnectStepHours(day, ZoneOffset.UTC, now, mapOf("phone" to listOf(longTotal)))
+        assertTrue(coarseOnly.all { it.count == null })
+        val measured = observedHealthConnectStepHours(day, ZoneOffset.UTC, now, mapOf(
+            "phone" to listOf(longTotal, reading("2026-11-22T08:02:00Z", "2026-11-22T08:09:00Z", 110)),
+            "watch" to listOf(longTotal,
+                reading("2026-11-22T08:02:00Z", "2026-11-22T08:09:00Z", 110),
+                reading("2026-11-22T23:16:00Z", "2026-11-22T23:17:00Z", 9))
+        ))
+        assertEquals(110L, measured[8].count)
+        assertEquals(9L, measured[23].count)
+        assertNull(measured[12].count)
+        val bars = hourlyStepBarFractions(measured)
+        assertEquals(1f, requireNotNull(bars[8]), 0f)
+        assertEquals(9f / 110f, requireNotNull(bars[23]), .0001f)
+        assertNull(bars[12])
     }
 
     @Test fun repeatedDstHourCountsDisjointRecordsAndOverlappingRowsRemainUnknown() {

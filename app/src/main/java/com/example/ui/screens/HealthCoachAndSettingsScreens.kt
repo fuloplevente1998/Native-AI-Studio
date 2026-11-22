@@ -580,7 +580,8 @@ fun HealthTabScreen(
     }
 
     val healthBlock: @Composable (String) -> Unit = { id ->
-    PageLayoutTile(layout, id, hasHorizontalTiles = id == "today" || id == "body_fitness") {
+    val hasGrid = id == "today" || id == "body_fitness"
+    PageLayoutTile(layout, id, hasHorizontalTiles = hasGrid, overlayHandle = hasGrid) {
         when (id) {
             "today" -> {
                 Surface(
@@ -633,7 +634,8 @@ fun HealthTabScreen(
                                     )
                                 }
                             }
-                            IconButton(
+                            if (layout.draft != null) Spacer(Modifier.width(24.dp))
+                            else IconButton(
                                 onClick = onTriggerHealthSync,
                                 enabled = !uiState.healthSyncBusy,
                                 modifier = Modifier.testTag("health_today_header_sync")

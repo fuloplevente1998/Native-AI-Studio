@@ -20,7 +20,6 @@ import com.example.model.AppLanguage
 import com.example.ui.theme.LocalTrainPilotPalette
 import com.repforge.app.HealthJournalStore
 import com.repforge.app.HealthConnectRepository
-import com.repforge.app.HealthConnectLegacyBridge
 import com.repforge.app.NativeDataReplacement
 import com.repforge.app.NativeHealthProviderData
 import com.repforge.app.NativePrivacyControls
@@ -77,14 +76,10 @@ internal fun StudioHourlyStepsChart(day: LocalDate, provider: String, origin: St
                                         context, day, now.atZone(zone).toLocalDateTime(), guard)
                                     hourlySteps(day, zone, now, emptyList()).map { it.copy(count = measured[it.hour]) }
                                 }
-                                candidate == HealthJournalStore.HC &&
-                                    !day.isBefore(now.atZone(zone).toLocalDate().minusDays(29)) &&
-                                    HealthConnectRepository.isSupported(context) -> {
-                                    // One Health Connect priority model, regardless of Android version.
-                                    val measured = if (android.os.Build.VERSION.SDK_INT >= 34)
-                                        HealthConnectRepository.readHourlyStepsSuspend(context, day, readOrigin, guard)
-                                    else HealthConnectLegacyBridge.readHourlySteps(context, day, readOrigin, guard)
-                                    hourlySteps(day, zone, now, emptyList()).map { it.copy(count = measured[it.hour]) }
+                                candidate == HealthJournalStore.HC -> {
+                                    if ("READ_STEPS" !in HealthConnectRepository.currentlyGrantedReadKeys(context))
+                                        emptyList()
+                                    else readHourlySteps(NativeHealthRecords(store), day, candidate, readOrigin, zone, now)
                                 }
                                 else -> readHourlySteps(NativeHealthRecords(store), day, candidate,
                                     readOrigin, zone, now)
@@ -116,7 +111,8 @@ internal fun StudioHourlyStepsChart(day: LocalDate, provider: String, origin: St
         return
     }
     val actualProvider = snapshot?.first ?: provider
-    Text(if (actualProvider == HealthJournalStore.SAMSUNG) "Samsung Health" else "Health Connect",
+    Text(if (actualProvider == HealthJournalStore.SAMSUNG) "Samsung Health" else word("Health Connect · mért szakaszok", "Health Connect · measured intervals",
+            "Health Connect · gemessene Intervalle", "Health Connect · intervale măsurate"),
         color = palette.textSecondary, style = MaterialTheme.typography.labelSmall)
     var selection by remember(day, actualProvider, origin) { mutableIntStateOf(-1) }
     val active = selection.takeIf { it in 0..23 } ?: (values.indexOfLast { it.count != null }.takeIf { it >= 0 }

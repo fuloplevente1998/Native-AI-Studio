@@ -1,3 +1,12 @@
+# Egészség · 2801 utáni kijelzési javítások
+
+- Ág `fix/health-layout-samsung-permissions`. A Mai állapot és a Test és fittség megtartja normál oszlopszámát rendezés közben. A háromoszlopos töréspontot külön regresszió fedi.
+- A Források Samsung Health engedélygombja ugyanazt az SDK-hívást használja, mint az Adatvédelem beállítás. A Health Connect a saját kezelőjébe nyit.
+- A Health Connect órás lépésgrafikon helyileg szinkronizált, egy órába eső rekordokat jelenít meg egy forrásból. A napi összeg számítása külön fut. Ha nincs alkalmas rekord, az engedélyezett Samsung Health órás adata jelenhet meg, saját forrásmegjelöléssel.
+- A heti célgrafikonok skálája és napjelölése elkülönül, az üres napok kijelölhetők. A Samsung engedélypanel és mindkét grafikon készülékes ellenőrzése hátravan.
+
+---
+
 # TrainPilot 2801 · 1.4.3
 
 - Kiadási forrás `fc00b7a31a1ce319e84cbdff02af9e60bdd2d41a`. A [#340](https://github.com/fuloplevente1998/Native-AI-Studio/pull/340) a Coach-készenlét javítása, a [#341](https://github.com/fuloplevente1998/Native-AI-Studio/pull/341) a verzióemelés. A telefon 280100, az aláírt ellenőrző Wear-pár 280102.

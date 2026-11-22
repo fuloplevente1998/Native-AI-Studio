@@ -246,18 +246,6 @@ object HealthConnectRepository {
         return false
     }
 
-    /**
-     * Read the same Health Connect-prioritized steps as the daily aggregate, grouped
-     * into real elapsed hours. Raw multi-app StepsRecord rows must not be summed.
-     * Safe to call only on API 34+ with a currently visible Health view.
-     */
-    @RequiresApi(34)
-    suspend fun readHourlyStepsSuspend(
-        context: Context, day: LocalDate, origin: String = "", guard: () -> Unit = {}
-    ): Map<Int, Long> = withContext(Dispatchers.IO) {
-        Api34.readHourlySteps(Access(context, null, Runnable { guard() }), day, origin)
-    }
-
     @RequiresApi(34)
     suspend fun readTrainingWindowSuspend(
         context: Context,
@@ -429,32 +417,6 @@ object HealthConnectRepository {
             val f = CompletableFuture<AggregateRecordsResponse<T>>()
             m.aggregate(builder.build(), DIRECT, receiver(f))
             return f.get(30, TimeUnit.SECONDS).get(type)
-        }
-
-        /** Independent single-window totals avoid unreliable grouped results on device. */
-        fun readHourlySteps(p: Access, day: LocalDate, origin: String): Map<Int, Long> {
-            require(origin.isEmpty() || ORIGIN_REGEX.matches(origin)) { "Invalid Health Connect step origin" }
-            p.requireForeground()
-            if (!p.allowed("READ_STEPS")) return emptyMap()
-            val zone = ZoneId.systemDefault()
-            val windows = com.repforge.app.ui.health.elapsedStepHourWindows(day, zone, Instant.now())
-            val manager = p.getContext().getSystemService(HealthConnectManager::class.java)
-            val type = StepsRecord.STEPS_COUNT_TOTAL
-            val values = windows.chunked(4).flatMap { batch ->
-                val requests = batch.map { (from, to) ->
-                    p.requireForeground()
-                    val filter = TimeInstantRangeFilter.Builder().setStartTime(from).setEndTime(to).build()
-                    val request = AggregateRecordsRequest.Builder<Long>(filter).addAggregationType(type)
-                    if (origin.isNotEmpty()) request.addDataOriginsFilter(DataOrigin.Builder().setPackageName(origin).build())
-                    CompletableFuture<AggregateRecordsResponse<Long>>().also { future ->
-                        manager.aggregate(request.build(), DIRECT, receiver(future))
-                    }
-                }
-                CompletableFuture.allOf(*requests.toTypedArray()).get(10, TimeUnit.SECONDS)
-                p.requireForeground()
-                requests.map { it.get().get(type) }
-            }
-            return com.repforge.app.ui.health.measuredStepHours(windows, values, zone)
         }
 
         private fun putLongAgg(
