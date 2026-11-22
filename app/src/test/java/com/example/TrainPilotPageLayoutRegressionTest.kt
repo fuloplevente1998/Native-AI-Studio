@@ -110,6 +110,7 @@ class TrainPilotPageLayoutRegressionTest {
                     onOpenGoalsDialog = {}, onOpenPersonalPlanner = { profileOpened++ })
             }
         }
+        compose.onNodeWithText("Normál hipertrófia • Dupla progresszió").assertDoesNotExist()
         val pageBlock = compose.onNodeWithTag("page_home_block_profile", useUnmergedTree = true)
         pageBlock.performTouchInput { longClick(Offset(center.x, 8f)) }
         compose.onNodeWithTag("page_layout_editor_home").assertExists()

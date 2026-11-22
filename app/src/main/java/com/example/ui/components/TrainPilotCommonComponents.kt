@@ -1066,7 +1066,10 @@ fun PersonalPlannerModalDialog(
     failed: Boolean = false,
     gentlerStart: Boolean = false,
     recommendProgram: ((String, String, String, String, Int, Int, Set<String>, Set<String>) -> String?)? = null,
-    onUseRecommendedPlan: PersonalPlannerSave? = null
+    onUseRecommendedPlan: PersonalPlannerSave? = null,
+    trainingStyle: String? = null,
+    progressionMode: String? = null,
+    onTrainingModesChange: ((String?, String?) -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
@@ -1423,6 +1426,51 @@ fun PersonalPlannerModalDialog(
                             onSelect = { index, _ -> selectedLocation = locations[index] },
                             testTag = "profile_location_box"
                         )
+                    }
+                }
+
+                if (onTrainingModesChange != null) {
+                    val defaultChoice = tr(lang,
+                        "A program szerint", "Use plan setting", "Laut Plan", "Conform planului")
+                    val styles = listOf(null, "normal", "hit")
+                    val progressions = listOf(null, "double", "linear", "rir")
+                    val labels = com.example.localization.StudioProfileOptionLabels
+                    val styleLabels = styles.map { it?.let { code -> labels.trainingStyleName(lang, code) } ?: defaultChoice }
+                    val progressionLabels = progressions.map { it?.let { code -> labels.progressionName(lang, code) } ?: defaultChoice }
+
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = palette.surfaceElevated,
+                        modifier = Modifier.fillMaxWidth()
+                            .trainPilotBorder(1.dp, palette.cardBorder, RoundedCornerShape(14.dp))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                tr(lang, "Edzésbeállítások", "Workout settings", "Trainingseinstellungen", "Setări de antrenament"),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = palette.textPrimary
+                            )
+                            PlannerDropdownBox(
+                                dropdownKey = "training_style",
+                                label = tr(lang, "Edzésstílus", "Training style", "Trainingsstil", "Stil de antrenament"),
+                                selectedValue = styleLabels.getOrElse(styles.indexOf(trainingStyle)) { defaultChoice },
+                                options = styleLabels,
+                                onSelect = { index, _ -> onTrainingModesChange(styles[index], progressionMode) },
+                                testTag = "profile_training_style_box"
+                            )
+                            PlannerDropdownBox(
+                                dropdownKey = "progression_mode",
+                                label = tr(lang, "Progressziós szabály", "Progression rule", "Progressionsregel", "Regulă de progresie"),
+                                selectedValue = progressionLabels.getOrElse(progressions.indexOf(progressionMode)) { defaultChoice },
+                                options = progressionLabels,
+                                onSelect = { index, _ -> onTrainingModesChange(trainingStyle, progressions[index]) },
+                                testTag = "profile_progression_mode_box"
+                            )
+                        }
                     }
                 }
 

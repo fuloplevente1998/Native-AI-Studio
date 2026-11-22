@@ -1,3 +1,13 @@
+# Oldal testreszabása, Gyors edzés és profil — #326
+
+- Ág: `fix/page-customization-live-cards`, [draft PR #326](https://github.com/fuloplevente1998/Native-AI-Studio/pull/326).
+- Az oldal saját kártyái rendezhetők. A blokkok függőlegesen, az egymás melletti kártyák külön oldalirányú fogantyúval mozgathatók. Mindkét sorrend ugyanazzal a Mentés gombbal kerül a helyi beállításokba.
+- A Gyors edzés és az Edzés közösen használja a három mód grafikáját és a választható gyakorlatok alapján számolt HU/EN/DE/RO darabszámokat.
+- A Kezdőlap profilcsempéjén a cím látszik. Az első indulás és a Kezdőlap közös profilszerkesztőjében az edzésstílus és a progressziós szabály választható. A mentés az új vagy ajánlott programhoz rögzíti az explicit választást.
+- A kártyarendezést és Gyors edzést tartalmazó `4e1f4ab` teljes [JVM és R8 futása](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45040620787) sikeres. A profilválasztók a PR legfrissebb CI-futásával ellenőrizhetők. Fizikai készülékes elfogadás és kiadás hátravan.
+
+---
+
 # TrainPilot 2794 · 1.4.1
 
 - Kiadási forrás `fd32af64f1c8c624d648527a66f33f9924b242e4` (#325). A Kezdőlap, Edzés, Fejlődés áttekintő és Egészség fő blokkjainak sorrendje oldalanként állítható.

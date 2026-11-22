@@ -355,6 +355,8 @@ class TrainPilotViewModel : ViewModel() {
         profileProgramToWrite: String? = null,
         profileSourceTemplateId: String? = null,
         activatedProgramId: String? = null,
+        trainingStyle: String? = null,
+        progressionMode: String? = null,
         onSaveResult: ((Boolean) -> Unit)? = null
     ) {
         val db = nativeDatabase
@@ -405,6 +407,11 @@ class TrainPilotViewModel : ViewModel() {
                     onSaveResult?.invoke(false)
                     return@mutate
                 }
+                val modeUpdate = if (trainingStyle != null || progressionMode != null) {
+                    checkNotNull(nativeSettingsStore).prepareStarterProgramModes(
+                        currentPrograms.first { it.isActive }.id, trainingStyle, progressionMode
+                    )
+                } else null
                 val builtinCatalogMeta = runCatching { TrainPilotDatabase.defaultPrograms().first.associateBy { it.id } }
                     .getOrDefault(emptyMap())
                 currentPrograms.forEachIndexed { pIdx, prog ->
@@ -496,7 +503,7 @@ class TrainPilotViewModel : ViewModel() {
                     profile.keys().forEach { key -> merged.put(key, profile.get(key)) }
                     val active = currentPrograms.first { it.isActive }
                     check(db.programDao().getProgramWithDaysById(active.id)?.days?.isNotEmpty() == true)
-                    store.saveStarterProfileAndActivate(merged, active.id, completeOnboarding, ticket)
+                    store.saveStarterProfileAndActivate(merged, active.id, completeOnboarding, ticket, modeUpdate)
                     _uiState.update { it.copy(profileComplete = true, showPersonalPlannerModal = false,
                         statusBannerMessage = tr(
                             "Profil mentve, a terv aktív.",
@@ -3361,6 +3368,8 @@ class TrainPilotViewModel : ViewModel() {
         excludedExercises: Set<String>,
         completeOnboarding: Boolean = false,
         useRecommendedProgram: Boolean = false,
+        trainingStyle: String? = null,
+        progressionMode: String? = null,
         onSaveResult: ((Boolean) -> Unit)? = null
     ) {
         val state = _uiState.value
@@ -3441,6 +3450,8 @@ class TrainPilotViewModel : ViewModel() {
             proposedPrograms = updatedPrograms,
             profileProgramToWrite = newProgram.id.takeIf { recommended == null },
             profileSourceTemplateId = draft?.sourceId,
+            trainingStyle = trainingStyle,
+            progressionMode = progressionMode,
             onSaveResult = { success ->
                 if (success) _uiState.update {
                     it.copy(userHeightCm = heightCm, userWeightKg = weightKg, userFitnessGoalHu = goalHu,

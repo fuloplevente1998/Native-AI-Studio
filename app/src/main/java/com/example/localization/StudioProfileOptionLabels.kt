@@ -74,7 +74,11 @@ internal object StudioProfileOptionLabels {
         "Kezdő kímélő (Ízületbarát)" to listOf("Gentle Beginner (Joint-friendly)", "Sanft für Anfänger (Gelenkschonend)", "Începător blând (Protejarea articulațiilor)"),
         "Dupla progresszió (8-12 ism. -> +2.5 kg)" to listOf("Double progression (8-12 reps -> +2.5 kg)", "Doppelte Progression (8-12 Wdh. -> +2.5 kg)", "Progresie dublă (8-12 rep. -> +2.5 kg)"),
         "Lineáris (+1.25 kg hetente)" to listOf("Linear (+1.25 kg weekly)", "Linear (+1.25 kg wöchentlich)", "Liniară (+1.25 kg săptămânal)"),
-        "RIR-alapú (1-2 RIR megtartása)" to listOf("RIR-based (maintain 1-2 RIR)", "RIR-basiert (1-2 RIR beibehalten)", "Bazată pe RIR (menținere 1-2 RIR)")
+        "RIR-alapú (1-2 RIR megtartása)" to listOf("RIR-based (maintain 1-2 RIR)", "RIR-basiert (1-2 RIR beibehalten)", "Bazată pe RIR (menținere 1-2 RIR)"),
+        "Normál" to listOf("Normal", "Normal", "Normal"),
+        "HIT-inspirált" to listOf("HIT-inspired", "HIT-inspiriert", "Inspirat de HIT"),
+        "Lineáris" to listOf("Linear", "Linear", "Liniară"),
+        "Dupla progresszió" to listOf("Double progression", "Doppelte Progression", "Progresie dublă")
     )
     fun label(value: String, language: AppLanguage): String {
         if (language == AppLanguage.HU) return value
@@ -86,6 +90,15 @@ internal object StudioProfileOptionLabels {
     fun experience(value: String, language: AppLanguage): String = label(value, language)
     fun trainingStyle(value: String, language: AppLanguage): String = label(value, language)
     fun progressionRule(value: String, language: AppLanguage): String = label(value, language)
+    fun trainingStyleName(language: AppLanguage, code: String): String =
+        label(if (code == "hit") "HIT-inspirált" else "Normál", language)
+
+    fun progressionName(language: AppLanguage, code: String): String = label(when (code) {
+        "linear" -> "Lineáris"
+        "rir" -> "RIR / Coach"
+        else -> "Dupla progresszió"
+    }, language)
+
     fun description(value: String, language: AppLanguage): String =
         value.split(" • ").joinToString(" • ") { label(it, language) }
 }

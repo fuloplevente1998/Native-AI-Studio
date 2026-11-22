@@ -189,21 +189,11 @@ fun HomeScreen(
                                                 )
                                             }
                                         }
-                                        Column {
-                                            Text(
-                                                text = strings.profileAndNewPlanBtn,
-                                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                                color = palette.textPrimary
-                                            )
-                                            Text(
-                                                // 2778: only the useful part; the explanation and the duplicate button text are gone.
-                                                text = "${com.example.localization.StudioProfileOptionLabels.label(state.trainingStyleHu, state.language)} • ${com.example.localization.StudioProfileOptionLabels.label(state.progressionRuleHu, state.language)}",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = palette.textSecondary,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        }
+                                        Text(
+                                            text = strings.profileAndNewPlanBtn,
+                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = palette.textPrimary
+                                        )
                                     }
                                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = strings.profileAndNewPlanBtn,
                                         tint = palette.primary, modifier = Modifier.size(24.dp).testTag("home_profile_new_plan_button"))

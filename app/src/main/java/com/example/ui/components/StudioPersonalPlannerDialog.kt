@@ -24,12 +24,15 @@ internal fun StudioPersonalPlannerDialog(
     val scope = rememberCoroutineScope()
     var saving by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
+    var trainingStyle by remember { mutableStateOf<String?>(null) }
+    var progressionMode by remember { mutableStateOf<String?>(null) }
     fun save(recommended: Boolean): PersonalPlannerSave = { h, w, goal, exp, loc, eq, days, dur, muscles, exercises ->
         if (!saving) {
             saving = true
             failed = false
             viewModel.saveInitialProfileAndPlan(h, w, goal, exp, loc, eq, days, dur, muscles, exercises,
                 completeOnboarding = completeOnboarding, useRecommendedProgram = recommended,
+                trainingStyle = trainingStyle, progressionMode = progressionMode,
                 onSaveResult = { success -> scope.launch { saving = false; failed = !success } })
         }
     }
@@ -48,6 +51,12 @@ internal fun StudioPersonalPlannerDialog(
             saving = saving,
             failed = failed,
             gentlerStart = com.example.model.suggestGentlerStarterPlan(state.todayRecoveryReading),
+            trainingStyle = trainingStyle,
+            progressionMode = progressionMode,
+            onTrainingModesChange = { style, progression ->
+                trainingStyle = style
+                progressionMode = progression
+            },
             onSaveAndOpenPlan = save(false),
             onUseRecommendedPlan = save(true),
             recommendProgram = { equipment, location, experience, goal, days, duration, muscles, exercises ->
