@@ -5564,14 +5564,15 @@ class TrainPilotViewModel : ViewModel() {
                     appAvailable = companionReady,
                     name = watchNames.singleOrNull()
                 )
-            it.copy(permissionGpsEnabled = access.optBoolean("gps"),
-                permissionGpsGranted = access.optBoolean("gpsGranted"),
-                permissionCentralLocEnabled = access.optBoolean("location"),
-                permissionNotificationsEnabled = access.optBoolean("notifications"),
-                permissionNotificationsGranted = access.optBoolean("notificationsGranted"),
-                permissionHealthConnectEnabled = access.optBoolean("healthConnect"),
-                permissionHealthConnectGranted = access.optBoolean("healthReadGranted"),
-                permissionSamsungHealthEnabled = access.optBoolean("samsungHealth"),
+            it.copy(permissionAccess = it.permissionAccess.copy(
+                gpsEnabled = access.optBoolean("gps"),
+                gpsGranted = access.optBoolean("gpsGranted"),
+                centralLocationEnabled = access.optBoolean("location"),
+                notificationsEnabled = access.optBoolean("notifications"),
+                notificationsGranted = access.optBoolean("notificationsGranted"),
+                healthConnectEnabled = access.optBoolean("healthConnect"),
+                healthConnectGranted = access.optBoolean("healthReadGranted"),
+                samsungHealthEnabled = access.optBoolean("samsungHealth")),
                 healthGrantedCount = access.optInt("healthGranted"),
                 healthPermissionCount = access.optInt("healthTotal"),
                 watchControlPending = pending,
@@ -5594,16 +5595,16 @@ class TrainPilotViewModel : ViewModel() {
         // this is the state the switch represents and should update without a Wear query.
         _uiState.update { state ->
             when (feature) {
-                com.repforge.app.NativePrivacyControls.GPS -> state.copy(permissionGpsEnabled = enabled)
-                com.repforge.app.NativePrivacyControls.NOTIFICATIONS -> state.copy(permissionNotificationsEnabled = enabled)
-                com.repforge.app.NativePrivacyControls.HEALTH_CONNECT -> state.copy(permissionHealthConnectEnabled = enabled)
-                com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH -> state.copy(permissionSamsungHealthEnabled = enabled)
+                com.repforge.app.NativePrivacyControls.GPS -> state.copy(permissionAccess = state.permissionAccess.copy(gpsEnabled = enabled))
+                com.repforge.app.NativePrivacyControls.NOTIFICATIONS -> state.copy(permissionAccess = state.permissionAccess.copy(notificationsEnabled = enabled))
+                com.repforge.app.NativePrivacyControls.HEALTH_CONNECT -> state.copy(permissionAccess = state.permissionAccess.copy(healthConnectEnabled = enabled))
+                com.repforge.app.NativePrivacyControls.SAMSUNG_HEALTH -> state.copy(permissionAccess = state.permissionAccess.copy(samsungHealthEnabled = enabled))
                 else -> state
             }
         }
     }
 
-    fun updateSamsungAccess(granted: Boolean) { _uiState.update { it.copy(permissionSamsungHealthGranted = granted) } }
+    fun updateSamsungAccess(granted: Boolean) { _uiState.update { it.copy(permissionAccess = it.permissionAccess.copy(samsungHealthGranted = granted)) } }
 
     fun showBannerMessage(message: String) {
         _uiState.update { it.copy(statusBannerMessage = message) }
