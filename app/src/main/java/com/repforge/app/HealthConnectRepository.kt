@@ -237,6 +237,18 @@ object HealthConnectRepository {
         return false
     }
 
+    /**
+     * Read the same Health Connect-prioritized steps as the daily aggregate, grouped
+     * into real elapsed hours. Raw multi-app StepsRecord rows must not be summed.
+     * Safe to call only on API 34+ with a currently visible Health view.
+     */
+    @RequiresApi(34)
+    suspend fun readHourlyStepsSuspend(
+        context: Context, day: LocalDate, origin: String = "", guard: () -> Unit = {}
+    ): Map<Int, Long> = withContext(Dispatchers.IO) {
+        Api34.readHourlySteps(Access(context, null, Runnable { guard() }), day, origin)
+    }
+
     @RequiresApi(34)
     suspend fun readTrainingWindowSuspend(
         context: Context,
@@ -408,6 +420,43 @@ object HealthConnectRepository {
             val f = CompletableFuture<AggregateRecordsResponse<T>>()
             m.aggregate(builder.build(), DIRECT, receiver(f))
             return f.get(30, TimeUnit.SECONDS).get(type)
+        }
+
+        /** Health Connect's aggregate honors the user's Activity-app priority per bucket. */
+        fun readHourlySteps(p: Access, day: LocalDate, origin: String): Map<Int, Long> {
+            require(origin.isEmpty() || ORIGIN_REGEX.matches(origin)) { "Invalid Health Connect step origin" }
+            p.requireForeground()
+            if (!p.allowed("READ_STEPS")) return emptyMap()
+            val zone = ZoneId.systemDefault()
+            val from = day.atStartOfDay(zone).toInstant()
+            val to = minOf(day.plusDays(1).atStartOfDay(zone).toInstant(), Instant.now())
+            if (!to.isAfter(from)) return emptyMap()
+            val filter = TimeInstantRangeFilter.Builder().setStartTime(from).setEndTime(to).build()
+            val builder = AggregateRecordsRequest.Builder<Long>(filter)
+                .addAggregationType(StepsRecord.STEPS_COUNT_TOTAL)
+            if (origin.isNotEmpty()) {
+                builder.addDataOriginsFilter(DataOrigin.Builder().setPackageName(origin).build())
+            }
+            val future = CompletableFuture<List<android.health.connect.AggregateRecordsGroupedByDurationResponse<Long>>>()
+            p.getContext().getSystemService(HealthConnectManager::class.java)
+                .aggregateGroupByDuration(builder.build(), Duration.ofHours(1), DIRECT, receiver(future))
+            val rows = future.get(30, TimeUnit.SECONDS)
+            p.requireForeground()
+            val seen = HashSet<Pair<Instant, Instant>>()
+            val counts = linkedMapOf<Int, Long>()
+            for (bucket in rows) {
+                val a = bucket.startTime
+                val b = bucket.endTime
+                if (!a.isBefore(b) || a.isBefore(from) || b.isAfter(to) || !seen.add(a to b)) continue
+                val count = bucket.get(StepsRecord.STEPS_COUNT_TOTAL) ?: continue
+                if (count < 0L) continue
+                val hour = a.atZone(zone).hour
+                val old = counts[hour] ?: 0L
+                // Repeated wall-clock hour during DST is two disjoint measured buckets.
+                if (Long.MAX_VALUE - old < count) throw IllegalStateException("Health step count overflow")
+                counts[hour] = old + count
+            }
+            return counts
         }
 
         private fun putLongAgg(
