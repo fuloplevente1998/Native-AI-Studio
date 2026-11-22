@@ -1124,6 +1124,7 @@ object HealthConnectRepository {
         @JvmStatic
         @Throws(Exception::class)
         fun write(p: Access, c: JSONObject) {
+            p.requireForeground()
             val t = range(c, 24 * 60L)
             var clientRecordId = c.optString("clientRecordId", "")
             if (clientRecordId.isEmpty()) clientRecordId = "trainpilot:${t[0]}"
@@ -1144,6 +1145,7 @@ object HealthConnectRepository {
             p.getContext().getSystemService(HealthConnectManager::class.java)
                 .insertRecords(Collections.singletonList<android.health.connect.datatypes.Record>(r), DIRECT, receiver(f))
             f.get(30, TimeUnit.SECONDS)
+            p.requireForeground()
         }
     }
 }
