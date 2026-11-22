@@ -99,9 +99,7 @@ internal object NativeHealthRefresh {
             require(!day.isAfter(LocalDate.now())) { "Future health day" }
             // Permission manager IPC must stay outside the metadata lease, too.
             val grantedBeforePrepare = withContext(Dispatchers.IO) {
-                if (Build.VERSION.SDK_INT >= 34)
-                    HealthConnectRepository.READ_PERMS.filter { HealthConnectRepository.isAllowed(context, it) }.toSet()
-                else emptySet()
+                HealthConnectRepository.currentlyGrantedReadKeys(context)
             }
             // Short metadata admission only; NEVER hold the lease over Samsung permission UI or SDK IPC.
             val prepared = withContext(Dispatchers.IO) {
@@ -169,7 +167,6 @@ internal object NativeHealthRefresh {
             onPermissionFinished()
             guard()
             if (prepared.provider == HealthJournalStore.HC) {
-                check(Build.VERSION.SDK_INT >= 34) { "Health Connect requires Android 14" }
                 check(HealthConnectRepository.isSupported(context) && prepared.healthGrants.isNotEmpty()) {
                     "Health Connect read permission required"
                 }
@@ -182,15 +179,19 @@ internal object NativeHealthRefresh {
                     SamsungHealthRepository.readHealthDayScoped(context, startInstant.toString(), endInstant.toString(),
                         target.toString(), guard, expectedGeneration = prepared.journalGeneration,
                         readCommit = commitRead, expectedGrantScope = samsungGrants).getOrThrow()
-                } else {
+                } else if (Build.VERSION.SDK_INT >= 34) {
                     HealthConnectRepository.readHealthDaySuspend(context, startInstant.toString(), endInstant.toString(),
                         requireForegroundGuard = guard, expectedGeneration = prepared.journalGeneration, readCommit = commitRead)
+                } else {
+                    HealthConnectLegacyBridge.readDay(context, startInstant, endInstant, guard,
+                        prepared.journalGeneration, commitRead)
                 }
             }
             val result = if (fullSync == null) read(day) else {
                 val store = HealthJournalStore.get(context)
                 val provider = object : NativeHealthSync.Provider {
-                    override val changesSupported = prepared.provider == HealthJournalStore.HC
+                    // The Android 9–13 APK is read through bounded day snapshots; no framework changelog.
+                    override val changesSupported = prepared.provider == HealthJournalStore.HC && Build.VERSION.SDK_INT >= 34
                     override suspend fun createToken() = HealthConnectRepository.createChangeTokenSuspend(
                         context, prepared.journalGeneration, guard)
                     override suspend fun pollPage(token: String) = HealthConnectRepository.pollChangePageSuspend(
@@ -200,8 +201,9 @@ internal object NativeHealthRefresh {
                         HealthConnectSyncRecovery.schemaFailure(error)
                     override suspend fun requireIdentity() {
                         withContext(Dispatchers.IO) { requirePermissionIdentity(); requireCommitIdentity() }
-                        if (changesSupported) check(HealthConnectRepository.isSupported(context)) { "Health provider unavailable" }
-                        else {
+                        if (prepared.provider == HealthJournalStore.HC) check(HealthConnectRepository.isSupported(context)) {
+                            "Health provider unavailable"
+                        } else {
                             check(SamsungHealthRepository.isInstalled(context) && SamsungHealthRepository.isSdkAvailable()) {
                                 "Samsung provider unavailable"
                             }
@@ -235,7 +237,7 @@ internal object NativeHealthRefresh {
                         commitRead { store.nativeSyncDataOnly(prepared.provider, prepared.journalGeneration, at.toString()) }
                     }
                 }
-                val grants = if (provider.changesSupported) prepared.healthGrants else samsungGrants
+                val grants = if (prepared.provider == HealthJournalStore.HC) prepared.healthGrants else samsungGrants
                 val scope = "v1|${prepared.provider}|${prepared.zone.id}|${grants.sorted().joinToString(",")}"
                 val report = NativeHealthSync.run(provider, journal, scope, prepared.localDay, fullSync, guard,
                     { value -> withContext(Dispatchers.Main.immediate) { screenGuard(); progress(value) } })
