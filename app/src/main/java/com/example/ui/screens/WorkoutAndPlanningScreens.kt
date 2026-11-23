@@ -814,31 +814,27 @@ fun ProgramsListScreen(
                     )
                 }
 
-                if (targetProgram == null || (targetProgram.isCustom && !targetProgram.isActive)) {
+                if (liveProgram?.isCustom == true) {
                     TrainPilotDeleteButton(
                         onClick = {
                             actionSheetProgramId = null
                             deleteConfirmProgram = targetId to targetName
                         },
-                        enabled = !state.libraryMutationBusy,
+                        enabled = !state.libraryMutationBusy && !liveProgram.isActive,
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(min = 48.dp)
                             .testTag("program_action_delete"),
                         label = trW(state.language, "Törlés", "Delete", "Löschen", "Șterge")
                     )
-                } else {
-                    Text(
-                        text = if (!targetProgram.isCustom)
-                            trW(state.language, "A beépített sablon nem törölhető; készíts saját másolatot.", "Built-in templates cannot be deleted; create a custom copy.", "Standardvorlagen können nicht gelöscht werden; erstelle eine eigene Kopie.", "Șabloanele predefinite nu pot fi șterse; creează o copie proprie.")
-                        else
-                            trW(state.language, "Törlés előtt válassz másik aktív programot.", "Select another active program before deleting.", "Wähle vor dem Löschen ein anderes aktives Programm.", "Selectează alt program activ înainte de ștergere."),
+                    if (liveProgram.isActive) Text(
+                        text = trW(state.language, "Törlés előtt válassz másik aktív programot.",
+                            "Select another active program before deleting.",
+                            "Wähle vor dem Löschen ein anderes aktives Programm.",
+                            "Selectează alt program activ înainte de ștergere."),
                         style = MaterialTheme.typography.labelSmall,
                         color = palette.textSecondary,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .testTag("program_action_delete_unavailable_hint")
+                        modifier = Modifier.fillMaxWidth().testTag("program_action_delete_unavailable_hint")
                     )
                 }
             }
