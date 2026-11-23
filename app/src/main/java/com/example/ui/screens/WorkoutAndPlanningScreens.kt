@@ -1551,6 +1551,7 @@ fun ProgramEditorScreen(
                 onSaveExercisePrescription = onSaveExercisePrescription,
                 onOpenExerciseDetail = onOpenExerciseDetail,
                 onOpenExerciseLibrary = onOpenExerciseLibrary,
+                onOpenAddCustomExercise = onOpenAddCustomExercise,
                 onMoveExercise = onMoveExercise,
                 onCopyProgram = onCopyProgram,
                 onDeleteProgram = onDeleteProgram,
@@ -1587,7 +1588,8 @@ internal fun ProgramEditorContent(
     onRemoveExercise: (String) -> Unit,
     onRenameProgram: (String) -> Unit,
     onSaveProgram: (String, List<com.example.model.StudioProgramPrescriptionDraft>) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOpenAddCustomExercise: (() -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
@@ -1829,7 +1831,6 @@ internal fun ProgramEditorContent(
             }
         }
 
-        // + Gyakorlat hozzáadása a könyvtárból & + Új egyedi gyakorlat létrehozása
         TrainPilotOutlinedButton(
             onClick = onOpenExerciseLibrary,
             shape = RoundedCornerShape(14.dp),
@@ -1840,6 +1841,18 @@ internal fun ProgramEditorContent(
             Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = palette.textPrimary)
             Spacer(modifier = Modifier.width(8.dp))
             Text(strings.addExerciseAction, color = palette.textPrimary)
+        }
+
+        if (program.isCustom && currentDay != null && onOpenAddCustomExercise != null) {
+            TrainPilotOutlinedButton(
+                onClick = onOpenAddCustomExercise,
+                enabled = !state.libraryMutationBusy,
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    .testTag("program_editor_create_custom_exercise")
+            ) {
+                Text(trW(state.language, "Új saját gyakorlat", "New custom exercise", "Neue eigene Übung", "Exercițiu propriu nou"))
+            }
         }
 
         com.example.ui.components.StudioProgramManagementControls(

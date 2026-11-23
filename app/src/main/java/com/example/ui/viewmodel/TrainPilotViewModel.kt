@@ -2653,12 +2653,13 @@ class TrainPilotViewModel : ViewModel() {
 
     fun toggleAddCustomExerciseDialog(show: Boolean, fromProgramEditor: Boolean = false) {
         val state = _uiState.value
-        val program = if (show && fromProgramEditor && state.currentSubScreen == SubScreen.PROGRAM_EDITOR)
-            state.programs.firstOrNull { it.id == state.editingProgramId && it.isCustom } else null
-        val day = program?.days?.getOrNull(state.editingDayIndex)
-        val dataset = if (program != null && day != null) nativeContext?.let { context ->
-            runCatching { com.repforge.app.NativeDataReplacement.continuationForCurrentData(context) }.getOrNull()
+        val editorOpen = state.currentSubScreen == SubScreen.PROGRAM_EDITOR ||
+            state.inlineEditorProgramId == state.editingProgramId
+        val program = if (show && fromProgramEditor && editorOpen) {
+            state.programs.firstOrNull { it.id == state.editingProgramId && it.isCustom }
         } else null
+        val day = program?.days?.getOrNull(state.editingDayIndex)
+        val dataset = programEditorContinuation
         customExerciseProgramTarget = if (program != null && day != null && dataset != null) {
             CustomExerciseProgramTarget(program.id, day.id,
                 "${program.localizedName(state.language)} · ${day.localizedDayCode(state.language)}", dataset)

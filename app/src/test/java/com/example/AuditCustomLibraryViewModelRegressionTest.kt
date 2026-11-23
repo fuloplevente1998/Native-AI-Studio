@@ -137,6 +137,7 @@ class AuditCustomLibraryViewModelRegressionTest {
         val vm = model()
         vm.openProgramEditor("audit-program", 1)
         vm.toggleAddCustomExerciseDialog(true, fromProgramEditor = true)
+        assertTrue(vm.customExerciseProgramTargetLabel().orEmpty().endsWith(" · B nap"))
         val before = vm.uiState.value.exercises
         val causes = startMutation(vm) { add(vm, "Audit linked exercise", true) }
         assertEquals(before, vm.uiState.value.exercises)
