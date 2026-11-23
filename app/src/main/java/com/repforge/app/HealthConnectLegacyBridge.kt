@@ -196,7 +196,7 @@ internal object HealthConnectLegacyBridge {
 
     suspend fun readDay(
         context: Context, start: Instant, end: Instant, guard: () -> Unit,
-        expectedGeneration: Long, commit: ((() -> Unit) -> Unit)
+        expectedGeneration: Long, commit: ((() -> Unit) -> Unit), stepsEnd: Instant = end
     ): JSONObject = withContext(Dispatchers.IO) {
         check(available(context)) { "Health Connect APK unavailable; install or update Health Connect" }
         check(end.isAfter(start) && Duration.between(start,end).toHours() <= 36)
@@ -247,10 +247,11 @@ internal object HealthConnectLegacyBridge {
                 HealthConnectRepository.READ_PERMS.forEach { p.put(it, it in keys) }
             })
             .put("warnings", warnings)
-        suspend fun aggregate(metric: androidx.health.connect.client.aggregate.AggregateMetric<*>): Any? {
+        suspend fun aggregate(metric: androidx.health.connect.client.aggregate.AggregateMetric<*>,
+            timeRange: TimeRangeFilter = range): Any? {
             // Typed metrics are read via a single SDK aggregate response, never raw-row sums.
             val value = client.aggregate(AggregateRequest(
-                metrics = setOf(metric), timeRangeFilter = range,
+                metrics = setOf(metric), timeRangeFilter = timeRange,
                 dataOriginFilter = filterOrigins
             ))
             return value[metric]
@@ -264,7 +265,7 @@ internal object HealthConnectLegacyBridge {
                 warnings.put("$permission: " + (error.message ?: error.javaClass.simpleName))
             }
         }
-        measure("READ_STEPS","steps") { aggregate(StepsRecord.COUNT_TOTAL) }
+        measure("READ_STEPS","steps") { aggregate(StepsRecord.COUNT_TOTAL, TimeRangeFilter.between(start, stepsEnd)) }
         measure("READ_ACTIVE_CALORIES_BURNED","activeCalories") {
             (aggregate(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL) as? androidx.health.connect.client.units.Energy)?.inKilocalories
         }

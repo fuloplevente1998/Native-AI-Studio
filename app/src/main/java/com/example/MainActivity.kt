@@ -184,7 +184,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
             failed = health.syncFailed, message = health.syncMessage)
     }
     androidx.compose.runtime.LaunchedEffect(health.refreshRevision, health.provider) {
-        if (!health.healthRefreshing) viewModel.reloadHealthJournal()
+        viewModel.reloadHealthJournal()
     }
 
     var showLiveHealth by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
@@ -332,7 +332,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                     onSearchQueryChange = { viewModel.updateExerciseSearch(it) },
                     onSelectCategory = { viewModel.selectExerciseCategory(it) },
-                    onSelectExercise = { exId -> viewModel.openExerciseDetail(exId) },
+                    onSelectExercise = { exId ->
+                        viewModel.toggleQuickWorkoutSheet(false)
+                        viewModel.openExerciseDetail(exId)
+                    },
                     onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true) },
                     onStartExerciseNow = { ex -> viewModel.toggleQuickWorkoutSheet(false); viewModel.selectLibraryExercise(ex) },
                     // 2779: the quick-workout queue never edits a program day.
@@ -341,6 +344,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     onStartQueuedWorkout = { viewModel.toggleQuickWorkoutSheet(false); viewModel.startQueuedWorkout() },
                     onToggleFavoritesOnly = viewModel::toggleFavoriteExercisesOnly,
                     onToggleFavorite = viewModel::toggleExerciseFavorite,
+                    onDeleteCustomExercise = viewModel::deleteStudioCustomExercise,
                     embedded = true,
                     timedOnly = timed
                 )
@@ -359,6 +363,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
         // 5. Add Custom Exercise Modal Dialog (Új egyedi gyakorlat pl. Kör futás)
         if (uiState.showAddCustomExerciseDialog) {
             AddCustomExerciseModalDialog(
+                programDayLabel = viewModel.customExerciseProgramTargetLabel(),
                 onDismiss = { viewModel.toggleAddCustomExerciseDialog(false) },
                 onSaveCustomExercise = { nameHu, category, equipmentHu, descriptionHu, videoUrl, isTimed, addToCurrentProgramDay ->
                     viewModel.addCustomExercise(
@@ -504,7 +509,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onRemoveExercise = viewModel::removeEditorExercise,
                             onRenameProgram = viewModel::renameEditorProgram,
                             onSaveProgram = viewModel::saveEditorProgram,
-                            onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true) }
+                            onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true, fromProgramEditor = true) }
                         )
                     }
 
@@ -561,7 +566,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onRemoveExerciseFromQueue = viewModel::removeExerciseFromWorkoutQueue,
                             onStartQueuedWorkout = { viewModel.startQueuedWorkout() },
                             onToggleFavoritesOnly = viewModel::toggleFavoriteExercisesOnly,
-                            onToggleFavorite = viewModel::toggleExerciseFavorite
+                            onToggleFavorite = viewModel::toggleExerciseFavorite,
+                            onDeleteCustomExercise = viewModel::deleteStudioCustomExercise
                         )
                     }
 
@@ -575,7 +581,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 com.example.ui.components.StudioCustomExerciseActions(ex.id, uiState.language.name.lowercase(),
                                     beforeWrite = viewModel::awaitStudioProgramWrites,
                                     onChanged = { deleted ->
-                                        if (deleted) viewModel.navigateBack()
+                                        if (deleted) {
+                                            viewModel.onStudioCustomExerciseDeleted(ex.id)
+                                            viewModel.navigateBack()
+                                        }
                                         viewModel.refreshAfterCloudSync(context)
                                     })
                             } },
