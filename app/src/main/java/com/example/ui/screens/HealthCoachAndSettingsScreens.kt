@@ -1,4 +1,10 @@
 package com.example.ui.screens
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import com.example.ui.components.PageLayoutCard
 
 import com.example.ui.components.PageLayoutBlock
@@ -133,7 +139,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.style.TextAlign
 import com.example.ui.components.healthDetailsToggle
 import com.example.ui.components.trainPilotChartMarkColor
@@ -147,6 +152,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -545,8 +551,6 @@ fun HealthTabScreen(
     }
 
     val healthListState = androidx.compose.foundation.lazy.rememberLazyListState()
-    // 2788: positions of the Today card and its weekly block, so a tile sheet can jump to the weekly view.
-    val weeklyAnchor = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(2) }
     // 2783: a Today tile with data opens the journal at today's records of that type.
     var journalFocus by remember { mutableStateOf<Pair<String, String>?>(null) }
     var journalFocusKey by remember { androidx.compose.runtime.mutableIntStateOf(0) }
@@ -569,12 +573,22 @@ fun HealthTabScreen(
         "Quellen, Uhr & Sync", "Surse, ceas și sincronizare")
     val blocks = listOf(
         PageLayoutBlock("today", tr(uiState.language, "Mai állapot", "Today’s status", "Heutiger Status", "Starea de azi")),
+        PageLayoutBlock("weekly", if (uiState.workoutGoalPeriod == com.example.model.WorkoutGoalPeriod.MONTHLY)
+            tr(uiState.language, "Havi célok", "Monthly goals", "Monatsziele", "Obiective lunare")
+            else tr(uiState.language, "Heti célok", "Weekly goals", "Wochenziele", "Obiective săptămânale")),
         PageLayoutBlock("body_fitness", tr(uiState.language, "Test és fittség", "Body & fitness", "Körper & Fitness", "Corp și fitness")),
         PageLayoutBlock("weight", tr(uiState.language, "Testsúlynapló", "Weight log", "Gewichtsverlauf", "Jurnal de greutate")),
         PageLayoutBlock("journal", strings.healthJournalTitle),
         PageLayoutBlock("sources", sourcesTitle)
     )
-    val layout = rememberPageLayout("health", blocks.map { it.id }, newBlockPlacement = "body_fitness" to "today")
+    val layout = rememberPageLayout("health", blocks.map { it.id },
+        newBlockPlacements = listOf("body_fitness" to "today", "weekly" to "today"))
+    LaunchedEffect(Unit) {
+        if (uiState.expandedHealthWeeklyGoals && healthListState.firstVisibleItemIndex == 0 &&
+            healthListState.firstVisibleItemScrollOffset == 0) {
+            healthListState.scrollToItem(layout.saved.indexOf("weekly"))
+        }
+    }
     LaunchedEffect(healthSectionSheet) {
         if (healthSectionSheet != null) expandedTodayTileKey = null
     }
@@ -589,7 +603,6 @@ fun HealthTabScreen(
                     color = palette.surfaceCard,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .onGloballyPositioned { weeklyAnchor[0] = it }
                         .trainPilotBorder(1.2.dp, palette.primary.copy(alpha = 0.55f), RoundedCornerShape(24.dp))
                 ) {
                     Column(
@@ -662,33 +675,29 @@ fun HealthTabScreen(
                             if (key == "pulse") onToggleHealthSection("pulse")
                         }
 
-                        PageLayoutCard {
-                        val goalShape = RoundedCornerShape(12.dp)
-                        Column(
-                            Modifier
-                                .fillMaxWidth()
-                                .onGloballyPositioned { weeklyAnchor[1] = it }
-                                .trainPilotAnimatedExpansion()
-                                .trainPilotBorder(1.dp, palette.sectionBorder, goalShape)
-                                .clip(goalShape)
-                        ) {
-                            com.example.ui.components.WeeklyGoalsCompact(
-                                uiState,
-                                framed = false,
-                                onOpen = { onToggleHealthSection("weekly") },
-                                onGoals = onOpenGoalsDialog,
-                                expanded = uiState.expandedHealthWeeklyGoals,
-                                modifier = Modifier.testTag("health_weekly_goals_compact")
-                            )
-                            com.example.ui.components.TrainPilotAnimatedDisclosure(visible = uiState.expandedHealthWeeklyGoals) {
-                                Column(Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
-                                    HealthWeeklyGoalsPanel(uiState)
-                                }
-                            }
+                    }
+                }
+            }
+            "weekly" -> {
+                val goalShape = RoundedCornerShape(14.dp)
+                Column(
+                    Modifier.fillMaxWidth()
+                        .trainPilotBorder(1.dp, palette.sectionBorder, goalShape)
+                        .clip(goalShape)
+                        .background(palette.surfaceCard)
+                ) {
+                    com.example.ui.components.WeeklyGoalsCompact(
+                        uiState,
+                        framed = false,
+                        onOpen = { onToggleHealthSection("weekly") },
+                        onGoals = onOpenGoalsDialog,
+                        expanded = uiState.expandedHealthWeeklyGoals,
+                        modifier = Modifier.testTag("health_weekly_goals_compact")
+                    )
+                    com.example.ui.components.TrainPilotAnimatedDisclosure(visible = uiState.expandedHealthWeeklyGoals) {
+                        Column(Modifier.padding(8.dp)) {
+                            HealthWeeklyGoalsPanel(uiState)
                         }
-                        }
-
-
                     }
                 }
             }
@@ -714,7 +723,6 @@ fun HealthTabScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("health_weight_card")
-                        .trainPilotAnimatedExpansion()
                         .trainPilotBorder(
                             width = 1.dp,
                             color = if (uiState.expandedHealthWeightLog) palette.primary.copy(alpha = 0.55f) else palette.cardBorder,
@@ -777,22 +785,35 @@ fun HealthTabScreen(
 
                         // 2784: compact curved chart when closed; large chart with periods, fitness tiles,
                         // compact rows (edit/delete in a ⋮ menu) when open.
-                        WeightLogBody(
-                            uiState = uiState,
-                            strings = strings,
-                            chronological = if (uiState.expandedHealthWeightLog) chronologicalMeasurements else compactMeasurements,
-                            newestFirst = recentMeasurements,
-                            dateFormatter = shortChartDateFormatter,
-                            onToggle = { onToggleHealthSection("weight") },
-                            onSelectRange = onSelectWeightRange,
-                            onAdd = { onToggleAddWeightDialog(true) },
-                            onEdit = { editingMeasurement = it },
-                            onPhoto = { photoMeasurement = it },
-                            onDelete = { entry ->
-                                recentMeasurements = recentMeasurements.filterNot { it.id == entry.id }
-                                onDeleteWeightLog(entry.id)
+                        AnimatedContent(
+                            targetState = uiState.expandedHealthWeightLog,
+                            transitionSpec = {
+                                (fadeIn(tween(150)) togetherWith fadeOut(tween(100)))
+                                    .using(SizeTransform { _, _ -> tween(220) })
+                            },
+                            contentAlignment = Alignment.TopStart,
+                            label = "weight log"
+                        ) { expanded ->
+                            Column(Modifier.fillMaxWidth()) {
+                            WeightLogBody(
+                                uiState = uiState,
+                                expanded = expanded,
+                                strings = strings,
+                                chronological = if (expanded) chronologicalMeasurements else compactMeasurements,
+                                newestFirst = recentMeasurements,
+                                dateFormatter = shortChartDateFormatter,
+                                onToggle = { onToggleHealthSection("weight") },
+                                onSelectRange = onSelectWeightRange,
+                                onAdd = { onToggleAddWeightDialog(true) },
+                                onEdit = { editingMeasurement = it },
+                                onPhoto = { photoMeasurement = it },
+                                onDelete = { entry ->
+                                    recentMeasurements = recentMeasurements.filterNot { it.id == entry.id }
+                                    onDeleteWeightLog(entry.id)
+                                }
+                            )
                             }
-                        )
+                        }
                     }
                 }
             }
@@ -867,11 +888,7 @@ fun HealthTabScreen(
             onOpenWeekly = {
                 if (!uiState.expandedHealthWeeklyGoals) onToggleHealthSection("weekly")
                 coroutineScope.launch {
-                    val card = weeklyAnchor[0]
-                    val block = weeklyAnchor[1]
-                    val offset = if (card != null && block != null && card.isAttached && block.isAttached)
-                        card.localPositionOf(block, Offset.Zero).y.toInt().coerceAtLeast(0) else 0
-                    healthListState.animateScrollToItem(layout.saved.indexOf("today"), offset)
+                    healthListState.animateScrollToItem(layout.saved.indexOf("weekly"))
                 }
             },
             onOpenLoggedWorkout = onOpenLoggedWorkout,
@@ -1009,7 +1026,8 @@ internal fun StudioTodayStatusDetailSheet(
                 val openHealthJournal: () -> Unit = {
                     val recordType = when (activeKey) {
                         "sleep" -> "SleepSessionRecord"
-                                        "calories" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("activeCalories")
+                        "steps" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("steps")
+                        "calories" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("activeCalories")
                         "bodyFat" -> "BodyFatRecord"
                         "spo2" -> "OxygenSaturationRecord"
                         "vo2" -> "Vo2MaxRecord"
@@ -1447,7 +1465,7 @@ private fun HealthSourcesContent(
     ) {
         Surface(
             shape = RoundedCornerShape(14.dp),
-            color = palette.surfaceElevated,
+            color = if (uiState.primaryHealthSourceSamsung) palette.primary.copy(alpha = 0.14f) else palette.surfaceElevated,
             modifier = Modifier
                 .weight(1f)
                 .trainPilotBorder(
@@ -1456,6 +1474,7 @@ private fun HealthSourcesContent(
                     shape = RoundedCornerShape(14.dp)
                 )
                 .trainPilotClickable(RoundedCornerShape(14.dp)) { onSelectHealthSource(true) }
+                .semantics { selected = uiState.primaryHealthSourceSamsung }
                 .testTag("health_provider_samsung")
         ) {
             Column(modifier = Modifier.padding(10.dp)) {
@@ -1470,7 +1489,7 @@ private fun HealthSourcesContent(
         }
         Surface(
             shape = RoundedCornerShape(14.dp),
-            color = palette.surfaceElevated,
+            color = if (!uiState.primaryHealthSourceSamsung) palette.primary.copy(alpha = 0.14f) else palette.surfaceElevated,
             modifier = Modifier
                 .weight(1f)
                 .trainPilotBorder(
@@ -1479,6 +1498,7 @@ private fun HealthSourcesContent(
                     shape = RoundedCornerShape(14.dp)
                 )
                 .trainPilotClickable(RoundedCornerShape(14.dp)) { onSelectHealthSource(false) }
+                .semantics { selected = !uiState.primaryHealthSourceSamsung }
                 .testTag("health_provider_connect")
         ) {
             Column(modifier = Modifier.padding(10.dp)) {
@@ -2076,68 +2096,18 @@ internal fun CoachDetailScreen(
             }
         }
 
-        // Put the next actionable day immediately after readiness, before supplementary signals.
+        // Put the next actionable day immediately after readiness.
         item {
             com.example.ui.components.StudioCoachNextTrainingCard(
                 nativeState, onStartCoachTarget, onOpenWorkout
             )
         }
 
-        // Kulcsjelek Card
-        item {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = palette.surfaceCard,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .trainPilotBorder(1.25.dp, palette.sectionBorder, RoundedCornerShape(20.dp))
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(tr(uiState.language, "Kulcsjelek", "Key Signals", "Schlüsselsignale", "Semnale cheie"),
-                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-                    CoachSignalRow(
-                        strings.sleepTitle,
-                        readiness?.sleepMinutes?.let {
-                            val hUnit = tr(uiState.language, "ó", "h", "Std.", "h")
-                            val mUnit = tr(uiState.language, "p", "m", "Min.", "m")
-                            "${it.toInt() / 60} $hUnit ${it.toInt() % 60} $mUnit"
-                        } ?: "—",
-                        palette.success
-                    )
-                    CoachSignalRow(strings.restingHrTitle, uiState.todayPulseReading?.takeIf { it.provider == nativeState.provider }?.restingBpm?.let { "${it.toInt()} bpm" } ?: "—", palette.success)
-                    CoachSignalRow("HRV (RMSSD)", readiness?.hrvMs?.let { "${it.toInt()} ms" } ?: "—", palette.primary)
-                    CoachSignalRow(tr(uiState.language, "Rögzített edzések", "Logged Workouts", "Erfasste Trainings", "Antrenamente înregistrate"), "${uiState.loggedWorkouts.size} ${tr(uiState.language, "db", "", "Stk.", "")}".trim(), palette.primary)
-                }
-            }
-        }
-
         item {
             com.example.ui.components.StudioCoachRecommendations(nativeState,
                 onStartCoachTarget, onOpenWorkout, onOpenExerciseDetail,
-                model::previewVariation, model::closeVariation, model::saveVariation,
-                showTarget = false)
-        }
-    }
-}
-
-@Composable
-private fun CoachSignalRow(label: String, value: String, dotColor: Color) {
-    val palette = LocalTrainPilotPalette.current
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(label, color = palette.textSecondary)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(value, fontWeight = FontWeight.Bold, color = palette.textPrimary)
-            Spacer(modifier = Modifier.width(6.dp))
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(dotColor)
-            )
+                model::previewProgramApplication, model::closeVariation, model::saveVariation,
+                showTarget = false, programChangeAllowed = !uiState.isWorkoutSessionActive)
         }
     }
 }
@@ -3995,6 +3965,7 @@ private fun HealthWeeklyGoalsPanel(uiState: TrainPilotUiState) {
 @Composable
 private fun WeightLogBody(
     uiState: TrainPilotUiState,
+    expanded: Boolean,
     strings: com.example.localization.LocalizedStrings,
     chronological: List<WeightMeasurementEntry>,
     newestFirst: List<WeightMeasurementEntry>,
@@ -4008,7 +3979,6 @@ private fun WeightLogBody(
 ) {
     val palette = LocalTrainPilotPalette.current
     val lang = uiState.language
-    val expanded = uiState.expandedHealthWeightLog
     val kg: (Float) -> String = { "${"%.1f".format(it).replace('.', ',')}" }
     Spacer(Modifier.height(8.dp))
     if (expanded) {
@@ -4022,7 +3992,7 @@ private fun WeightLogBody(
         }
     }
     Surface(shape = RoundedCornerShape(14.dp), color = palette.surfaceCard.copy(alpha = 0.7f),
-        modifier = Modifier.fillMaxWidth().trainPilotAnimatedExpansion().trainPilotBorder(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+        modifier = Modifier.fillMaxWidth().trainPilotBorder(1.dp, palette.cardBorder.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
             .trainPilotClickable(RoundedCornerShape(14.dp)) { if (!expanded) onToggle() }
             .testTag(if (expanded) "health_weight_chart_large" else "health_weight_chart_compact")) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
@@ -4335,7 +4305,6 @@ private fun TodayTileSheetExtras(key: String, uiState: TrainPilotUiState, today:
     }
     val type = when (key) {
         "sleep" -> "SleepSessionRecord"
-        "steps" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("steps")
         "calories" -> com.repforge.app.ui.health.NativeDetailedHealthMetrics.recordType("activeCalories")
         else -> null
     } ?: return

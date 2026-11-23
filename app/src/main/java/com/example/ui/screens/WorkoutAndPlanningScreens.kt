@@ -121,6 +121,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -181,16 +182,16 @@ private fun WorkoutModeTile(
         color = palette.surface,
         modifier = modifier
             .fillMaxHeight()
-            .heightIn(min = 150.dp)
+            .heightIn(min = 124.dp)
             .trainPilotSoftGlow(palette.primary, shape, 4.dp)
             .trainPilotBorder(1.25.dp, palette.sectionBorder, shape)
             .trainPilotClickable(shape) { onClick() }
             .testTag(testTag)
     ) {
-        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             // 2776: the arrow sits next to the title so subtitle and badge can use the full width (no "14…").
             // 2784: fixed title row height, so a smaller fitted font never moves the graphics below.
-            Row(Modifier.fillMaxWidth().heightIn(min = 28.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().heightIn(min = 24.dp), verticalAlignment = Alignment.CenterVertically) {
                 com.example.ui.components.TrainPilotFitText(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
                     color = palette.textPrimary, modifier = Modifier.weight(1f).testTag("${testTag}_title"))
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = palette.textSecondary, modifier = Modifier.size(18.dp))
@@ -199,7 +200,7 @@ private fun WorkoutModeTile(
             // It shrinks the font to fit the tile and only wraps as a last resort.
             com.example.ui.components.TrainPilotFitText(subtitle, style = MaterialTheme.typography.labelSmall,
                 color = palette.textSecondary, minSize = 9.sp,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 30.dp).testTag("${testTag}_subtitle"))
+                modifier = Modifier.fillMaxWidth().heightIn(min = 24.dp).testTag("${testTag}_subtitle"))
             Box(Modifier.fillMaxWidth().weight(1f).testTag("${testTag}_graphic"), contentAlignment = Alignment.TopCenter) { graphic() }
             Surface(shape = RoundedCornerShape(8.dp), color = tint.copy(alpha = 0.16f)) {
                 com.example.ui.components.TrainPilotFitText(badge, style = MaterialTheme.typography.labelSmall,
@@ -333,7 +334,7 @@ fun WorkoutTabScreen(
                                     testTag = "workout_tab_exercise_picker",
                                     onClick = onOpenExerciseLibrary,
                                     modifier = modifier
-                                ) { WorkoutModeArt(QuickWorkoutMode.REPS) }
+                                ) { WorkoutModeArt(QuickWorkoutMode.REPS, height = 52.dp) }
                                     "timed" -> WorkoutModeTile(
                                     title = trW(state.language, "Időzített", "Timed", "Zeit", "Cronometrat"),
                                     subtitle = trW(state.language, "idő / tartás", "time / hold", "Zeit / Halten", "timp / menținere"),
@@ -341,7 +342,7 @@ fun WorkoutTabScreen(
                                     testTag = "workout_tab_timed_card",
                                     onClick = onOpenTimed,
                                     modifier = modifier
-                                ) { WorkoutModeArt(QuickWorkoutMode.TIMED) }
+                                ) { WorkoutModeArt(QuickWorkoutMode.TIMED, height = 52.dp) }
                                     "outdoor" -> WorkoutModeTile(
                                     title = trW(state.language, "Kültéri", "Outdoor", "Outdoor", "Exterior"),
                                     subtitle = trW(state.language, "futás, séta", "run, walk", "Laufen, Gehen", "alergare, mers"),
@@ -350,7 +351,7 @@ fun WorkoutTabScreen(
                                     testTag = "workout_tab_outdoor_card",
                                     onClick = onOpenOutdoorWorkout,
                                     modifier = modifier
-                                ) { WorkoutModeArt(QuickWorkoutMode.OUTDOOR) }
+                                ) { WorkoutModeArt(QuickWorkoutMode.OUTDOOR, height = 52.dp) }
                                 }
                             }
                         }
@@ -814,31 +815,27 @@ fun ProgramsListScreen(
                     )
                 }
 
-                if (targetProgram == null || (targetProgram.isCustom && !targetProgram.isActive)) {
+                if (liveProgram?.isCustom == true) {
                     TrainPilotDeleteButton(
                         onClick = {
                             actionSheetProgramId = null
                             deleteConfirmProgram = targetId to targetName
                         },
-                        enabled = !state.libraryMutationBusy,
+                        enabled = !state.libraryMutationBusy && !liveProgram.isActive,
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(min = 48.dp)
                             .testTag("program_action_delete"),
                         label = trW(state.language, "Törlés", "Delete", "Löschen", "Șterge")
                     )
-                } else {
-                    Text(
-                        text = if (!targetProgram.isCustom)
-                            trW(state.language, "A beépített sablon nem törölhető; készíts saját másolatot.", "Built-in templates cannot be deleted; create a custom copy.", "Standardvorlagen können nicht gelöscht werden; erstelle eine eigene Kopie.", "Șabloanele predefinite nu pot fi șterse; creează o copie proprie.")
-                        else
-                            trW(state.language, "Törlés előtt válassz másik aktív programot.", "Select another active program before deleting.", "Wähle vor dem Löschen ein anderes aktives Programm.", "Selectează alt program activ înainte de ștergere."),
+                    if (liveProgram.isActive) Text(
+                        text = trW(state.language, "Törlés előtt válassz másik aktív programot.",
+                            "Select another active program before deleting.",
+                            "Wähle vor dem Löschen ein anderes aktives Programm.",
+                            "Selectează alt program activ înainte de ștergere."),
                         style = MaterialTheme.typography.labelSmall,
                         color = palette.textSecondary,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .testTag("program_action_delete_unavailable_hint")
+                        modifier = Modifier.fillMaxWidth().testTag("program_action_delete_unavailable_hint")
                     )
                 }
             }
@@ -3079,12 +3076,23 @@ fun ExerciseLibraryScreen(
     /** Inside the Quick workout sheet (2772): no own title bar, the sheet has the header and tabs. */
     embedded: Boolean = false,
     /** Timed tab of the Quick workout sheet: only time-based exercises. */
-    timedOnly: Boolean = false
+    timedOnly: Boolean = false,
+    onDeleteCustomExercise: ((String) -> Unit)? = null
 ) {
     val palette = LocalTrainPilotPalette.current
     val strings = LocalTrainPilotStrings.current
     val startLabel = if (state.exerciseSwapMode) trW(state.language, "Csere", "Swap", "Tauschen", "Schimbă") else strings.startAction
     val pool = quickWorkoutExercisePool(state.exercises, timedOnly)
+    var ownOnly by rememberSaveable { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<ExerciseItem?>(null) }
+    pendingDelete?.let { exercise ->
+        com.repforge.app.ui.programs.CustomExerciseDeleteConfirmation(
+            language = state.language.code, name = exercise.localizedName(state.language),
+            saving = state.libraryMutationBusy, error = null,
+            onConfirm = { pendingDelete = null; onDeleteCustomExercise?.invoke(exercise.id) },
+            onCancel = { pendingDelete = null }
+        )
+    }
     val filtered = pool.filter { ex ->
         val matchesCategory = state.selectedExerciseCategory == ExerciseCategory.ALL || ex.category == state.selectedExerciseCategory
         val matchesSearch = state.exerciseSearchQuery.isBlank() ||
@@ -3096,7 +3104,8 @@ fun ExerciseLibraryScreen(
             ex.localizedEquipment(state.language).contains(state.exerciseSearchQuery, ignoreCase = true) ||
             ex.primaryMusclesHu.contains(state.exerciseSearchQuery, ignoreCase = true) ||
             ex.equipmentHu.contains(state.exerciseSearchQuery, ignoreCase = true)
-        matchesCategory && matchesSearch && (!state.favoriteExercisesOnly || ex.id in state.favoriteExerciseIds)
+        matchesCategory && matchesSearch && (!ownOnly || ex.isCustom) &&
+            (!state.favoriteExercisesOnly || ex.id in state.favoriteExerciseIds)
     }
 
     Column(
@@ -3107,7 +3116,7 @@ fun ExerciseLibraryScreen(
     ) {
         // Matches Mockup 1/4 #5 "Gyakorlatok" (106-os gyakorlat-adatbázis kategóriák szerint)
         if (!embedded) SubScreenTopBar(
-            title = "${strings.exercisePickerTitle} (${state.exercises.size})",
+            title = "${if (state.exerciseSwapMode) strings.exercisePickerTitle else strings.exerciseLibraryTitle} (${state.exercises.size})",
             onBack = onBack,
             onOpenSettings = onOpenSettings
         )
@@ -3120,18 +3129,15 @@ fun ExerciseLibraryScreen(
                 trW(state.language, "Gyakorlatok keresése…", "Search exercises…", "Übungen suchen…", "Caută exerciții…"))
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            com.example.ui.components.TrainPilotFilterChip(selected = state.favoriteExercisesOnly, onClick = onToggleFavoritesOnly,
-                label = { Text(trW(state.language, "Kedvencek (${state.favoriteExerciseIds.size})", "Favorites (${state.favoriteExerciseIds.size})", "Favoriten (${state.favoriteExerciseIds.size})", "Favorite (${state.favoriteExerciseIds.size})")) },
-                modifier = Modifier.testTag("studio_library_favorites_only"))
-                Button(onClick = onOpenAddCustomExercise,
-                    modifier = Modifier.heightIn(min = 48.dp).testTag("exercise_library_add_custom_button"),
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp)) {
-                    Icon(Icons.Default.Add, null, Modifier.size(20.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(trW(state.language, "Új gyakorlat", "New exercise", "Neue Übung", "Exercițiu nou"),
-                        fontWeight = FontWeight.Bold)
-                }
+                com.example.ui.components.TrainPilotFilterChip(selected = state.favoriteExercisesOnly, onClick = onToggleFavoritesOnly,
+                    label = { Text(trW(state.language, "Kedvencek (${state.favoriteExerciseIds.size})", "Favorites (${state.favoriteExerciseIds.size})", "Favoriten (${state.favoriteExerciseIds.size})", "Favorite (${state.favoriteExerciseIds.size})")) },
+                    modifier = Modifier.testTag("studio_library_favorites_only"))
+                com.example.ui.components.TrainPilotFilterChip(selected = false, onClick = onOpenAddCustomExercise,
+                    label = { Text(trW(state.language, "Új gyakorlat", "New exercise", "Neue Übung", "Exercițiu nou")) },
+                    modifier = Modifier.testTag("exercise_library_add_custom_button"))
+                com.example.ui.components.TrainPilotFilterChip(selected = ownOnly, onClick = { ownOnly = !ownOnly },
+                    label = { Text(trW(state.language, "Saját", "Custom", "Eigene", "Proprii")) },
+                    modifier = Modifier.testTag("exercise_library_custom_only"))
             }
 
             // Compact Horizontal Category Chips with exact counts: Összes (106) | Láb | Mell | Hát | Váll | Kar | Core
@@ -3148,28 +3154,26 @@ fun ExerciseLibraryScreen(
                     } else {
                         pool.count { it.category == cat }
                     }
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = if (selected) palette.primary else palette.surface,
-                        modifier = Modifier
-                            .heightIn(min = 48.dp)
-                            .trainPilotBorder(
-                                1.dp,
-                                if (selected) palette.primary else palette.cardBorder,
-                                RoundedCornerShape(16.dp)
-                            )
-                            .trainPilotClickable(RoundedCornerShape(16.dp)) { onSelectCategory(cat) }
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    val shape = RoundedCornerShape(14.dp)
+                    Box(Modifier.heightIn(min = 48.dp).trainPilotClickable(shape) { onSelectCategory(cat) },
+                        contentAlignment = Alignment.Center) {
+                        Surface(
+                            shape = shape,
+                            color = if (selected) palette.primary else palette.surface,
+                            modifier = Modifier.heightIn(min = 40.dp).trainPilotBorder(
+                                1.dp, if (selected) palette.primary else palette.cardBorder, shape)
                         ) {
-                            Text(
-                                text = "${cat.localized(state.language)} ($catCount)",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (selected) palette.onPrimary else palette.textPrimary
-                            )
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "${cat.localized(state.language)} ($catCount)",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (selected) palette.onPrimary else palette.textPrimary
+                                )
+                            }
                         }
                     }
                 }
@@ -3349,6 +3353,13 @@ fun ExerciseLibraryScreen(
                                             },
                                             modifier = Modifier.semantics { contentDescription = queueLabel }
                                                 .testTag("exercise_library_add_to_queue_${ex.id}")
+                                        )
+                                        if (ex.isCustom && onDeleteCustomExercise != null) DropdownMenuItem(
+                                            text = { Text(strings.deleteAction, color = palette.danger) },
+                                            leadingIcon = { Icon(Icons.Default.DeleteOutline, null, tint = palette.danger) },
+                                            enabled = !state.libraryMutationBusy,
+                                            onClick = { rowMenuOpen = false; pendingDelete = ex },
+                                            modifier = Modifier.testTag("exercise_library_delete_${ex.id}")
                                         )
                                     }
                                 }
@@ -3692,6 +3703,7 @@ private fun ExerciseMetaRow(label: String, value: String) {
 @Composable
 fun AddCustomExerciseModalDialog(
     onDismiss: () -> Unit,
+    programDayLabel: String? = null,
     onSaveCustomExercise: (
         nameHu: String,
         category: ExerciseCategory,
@@ -3722,7 +3734,7 @@ fun AddCustomExerciseModalDialog(
     var descriptionHu by remember { mutableStateOf("") }
     var videoUrl by remember { mutableStateOf("") }
     var isTimed by remember { mutableStateOf(false) }
-    var addToCurrentProgramDay by remember { mutableStateOf(true) }
+    var addToCurrentProgramDay by remember(programDayLabel) { mutableStateOf(false) }
 
     TrainPilotFullHeightFormSheet(
         onDismiss = onDismiss,
@@ -3882,14 +3894,16 @@ fun AddCustomExerciseModalDialog(
                     Text(trW(lang, "Időalapú gyakorlat (másodperc / perc mérés)", "Timed exercise (seconds / minutes measurement)", "Zeitbasierte Übung (Sekunden-/Minutenmessung)", "Exercițiu cronometrat (măsurare în secunde / minute)"), style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
                 }
 
-                Row(
+                if (programDayLabel != null) Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth()
                         .trainPilotClickable(RoundedCornerShape(10.dp)) { addToCurrentProgramDay = !addToCurrentProgramDay }
                 ) {
-                    Checkbox(checked = addToCurrentProgramDay, onCheckedChange = { addToCurrentProgramDay = it })
-                    Text(trW(lang, "Hozzáadás az aktuálisan szerkesztett programnaphoz", "Add to currently edited program day", "Zum aktuell bearbeiteten Programmtag hinzufügen", "Adaugă la ziua de program editată curent"), style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
+                    Checkbox(checked = addToCurrentProgramDay, onCheckedChange = { addToCurrentProgramDay = it },
+                        modifier = Modifier.testTag("custom_exercise_add_to_program"))
+                    Text(trW(lang, "Hozzáadás ehhez: $programDayLabel", "Add to: $programDayLabel",
+                        "Hinzufügen zu: $programDayLabel", "Adaugă la: $programDayLabel"),
+                        style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
                 }
                     }
                 }
@@ -3905,7 +3919,7 @@ fun AddCustomExerciseModalDialog(
                         descriptionHu,
                         videoUrl,
                         isTimed,
-                        addToCurrentProgramDay
+                        programDayLabel != null && addToCurrentProgramDay
                     )
                 },
                 modifier = Modifier.fillMaxWidth().testTag("custom_exercise_save_button")

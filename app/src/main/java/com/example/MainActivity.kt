@@ -184,7 +184,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
             failed = health.syncFailed, message = health.syncMessage)
     }
     androidx.compose.runtime.LaunchedEffect(health.refreshRevision, health.provider) {
-        if (!health.healthRefreshing) viewModel.reloadHealthJournal()
+        viewModel.reloadHealthJournal()
     }
 
     var showLiveHealth by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
@@ -332,7 +332,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     onOpenSettings = { viewModel.navigateToSubScreen(SubScreen.SETTINGS_MAIN) },
                     onSearchQueryChange = { viewModel.updateExerciseSearch(it) },
                     onSelectCategory = { viewModel.selectExerciseCategory(it) },
-                    onSelectExercise = { exId -> viewModel.openExerciseDetail(exId) },
+                    onSelectExercise = { exId ->
+                        viewModel.toggleQuickWorkoutSheet(false)
+                        viewModel.openExerciseDetail(exId)
+                    },
                     onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true) },
                     onStartExerciseNow = { ex -> viewModel.toggleQuickWorkoutSheet(false); viewModel.selectLibraryExercise(ex) },
                     // 2779: the quick-workout queue never edits a program day.
@@ -341,6 +344,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                     onStartQueuedWorkout = { viewModel.toggleQuickWorkoutSheet(false); viewModel.startQueuedWorkout() },
                     onToggleFavoritesOnly = viewModel::toggleFavoriteExercisesOnly,
                     onToggleFavorite = viewModel::toggleExerciseFavorite,
+                    onDeleteCustomExercise = viewModel::deleteStudioCustomExercise,
                     embedded = true,
                     timedOnly = timed
                 )
@@ -359,6 +363,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
         // 5. Add Custom Exercise Modal Dialog (Új egyedi gyakorlat pl. Kör futás)
         if (uiState.showAddCustomExerciseDialog) {
             AddCustomExerciseModalDialog(
+                programDayLabel = viewModel.customExerciseProgramTargetLabel(),
                 onDismiss = { viewModel.toggleAddCustomExerciseDialog(false) },
                 onSaveCustomExercise = { nameHu, category, equipmentHu, descriptionHu, videoUrl, isTimed, addToCurrentProgramDay ->
                     viewModel.addCustomExercise(
@@ -504,7 +509,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onRemoveExercise = viewModel::removeEditorExercise,
                             onRenameProgram = viewModel::renameEditorProgram,
                             onSaveProgram = viewModel::saveEditorProgram,
-                            onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true) }
+                            onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true, fromProgramEditor = true) }
                         )
                     }
 
@@ -561,7 +566,8 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onRemoveExerciseFromQueue = viewModel::removeExerciseFromWorkoutQueue,
                             onStartQueuedWorkout = { viewModel.startQueuedWorkout() },
                             onToggleFavoritesOnly = viewModel::toggleFavoriteExercisesOnly,
-                            onToggleFavorite = viewModel::toggleExerciseFavorite
+                            onToggleFavorite = viewModel::toggleExerciseFavorite,
+                            onDeleteCustomExercise = viewModel::deleteStudioCustomExercise
                         )
                     }
 
@@ -575,7 +581,10 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                 com.example.ui.components.StudioCustomExerciseActions(ex.id, uiState.language.name.lowercase(),
                                     beforeWrite = viewModel::awaitStudioProgramWrites,
                                     onChanged = { deleted ->
-                                        if (deleted) viewModel.navigateBack()
+                                        if (deleted) {
+                                            viewModel.onStudioCustomExerciseDeleted(ex.id)
+                                            viewModel.navigateBack()
+                                        }
                                         viewModel.refreshAfterCloudSync(context)
                                     })
                             } },
@@ -741,7 +750,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onOpenPhotos = { viewModel.openLogWorkoutPhotos() },
                             onOpenRouteMap = { viewModel.navigateToSubScreen(SubScreen.LOG_ROUTE_MAP) },
                             onOpenWatchSync = { viewModel.navigateToSubScreen(SubScreen.WATCH_AND_SYNC) },
-                            onOpenHealthTab = { viewModel.selectLogDetailTab(2) },
+                            onOpenHealthTab = { viewModel.openHealthAndExpand(connect = true) },
                             deleteActions = {
                                 com.example.ui.components.StudioLoggedWorkoutEditActions(uiState.selectedLogWorkoutId,
                                     uiState.language.name.lowercase(), onSaved = { viewModel.refreshAfterCloudSync(context) })
@@ -1083,7 +1092,12 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                                             if (health.samsungInstalled && health.samsungAvailable) "Samsung Health • szolgáltató elérhető" else "Samsung Health • alkalmazás vagy SDK nem érhető el"
                                         else if (health.hcSupported && health.hcGranted) "Health Connect • olvasási hozzáférés engedélyezett" else "Health Connect • hiányzó támogatás vagy engedély") + health.providerReadDetails.takeIf { it.isNotBlank() }?.let { " • $it" }.orEmpty()),
                                     strings = strings,
-                                    onToggleHealthSection = { viewModel.toggleHealthSection(it) },
+                                    onToggleHealthSection = { section ->
+                                        val returnToLog = section == "connect" && uiState.expandedHealthConnect &&
+                                            uiState.backStack.lastOrNull()?.subScreen == SubScreen.LOG_WORKOUT_DETAIL
+                                        viewModel.toggleHealthSection(section)
+                                        if (returnToLog) viewModel.navigateBack()
+                                    },
                                     onSelectWeightRange = { viewModel.selectWeightRange(it) },
                                     onToggleAddWeightDialog = { viewModel.toggleAddWeightDialog(it) },
                                     onSaveNewWeight = { kg, dateStr -> viewModel.saveNewBodyWeight(kg, dateStr) },

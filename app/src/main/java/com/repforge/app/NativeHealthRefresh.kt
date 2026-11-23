@@ -179,12 +179,16 @@ internal object NativeHealthRefresh {
                     SamsungHealthRepository.readHealthDayScoped(context, startInstant.toString(), endInstant.toString(),
                         target.toString(), guard, expectedGeneration = prepared.journalGeneration,
                         readCommit = commitRead, expectedGrantScope = samsungGrants).getOrThrow()
-                } else if (Build.VERSION.SDK_INT >= 34) {
-                    HealthConnectRepository.readHealthDaySuspend(context, startInstant.toString(), endInstant.toString(),
-                        requireForegroundGuard = guard, expectedGeneration = prepared.journalGeneration, readCommit = commitRead)
                 } else {
-                    HealthConnectLegacyBridge.readDay(context, startInstant, endInstant, guard,
-                        prepared.journalGeneration, commitRead)
+                    val stepsEnd = NativeHealthSync.stepAggregateEnd(target, prepared.zone)
+                    if (Build.VERSION.SDK_INT >= 34) {
+                        HealthConnectRepository.readHealthDaySuspend(context, startInstant.toString(), endInstant.toString(),
+                            requireForegroundGuard = guard, expectedGeneration = prepared.journalGeneration,
+                            readCommit = commitRead, stepsEnd = stepsEnd)
+                    } else {
+                        HealthConnectLegacyBridge.readDay(context, startInstant, endInstant, guard,
+                            prepared.journalGeneration, commitRead, stepsEnd = stepsEnd)
+                    }
                 }
             }
             val result = if (fullSync == null) read(day) else {

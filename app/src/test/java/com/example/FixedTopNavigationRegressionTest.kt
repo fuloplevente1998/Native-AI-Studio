@@ -42,14 +42,20 @@ class FixedTopNavigationRegressionTest {
             compose.runOnIdle { language = lang }
             val journal = compose.onNodeWithTag("top_bar_journal_button")
             val brand = compose.onNodeWithTag("top_bar_brand_home").fetchSemanticsNode().boundsInRoot
-            val actions = listOf("top_bar_calendar_button", "top_bar_coach_button",
-                "top_bar_journal_button", "top_bar_settings_button").map { tag ->
-                compose.onNodeWithTag(tag).assertIsDisplayed().assertWidthIsEqualTo(48.dp)
-                    .assertHeightIsEqualTo(48.dp).fetchSemanticsNode().boundsInRoot
+            val localized = TrainPilotStrings.forLanguage(lang)
+            val coach = compose.onNodeWithTag("top_bar_coach_button").assertTextContains(localized.navCoach)
+            journal.assertTextContains(localized.navLog)
+            val calendar = compose.onNodeWithTag("top_bar_calendar_button")
+            val settings = compose.onNodeWithTag("top_bar_settings_button")
+            listOf(calendar, settings).forEach { it.assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(48.dp) }
+            val actions = listOf(coach, journal, calendar, settings).map { node ->
+                node.assertIsDisplayed().fetchSemanticsNode().boundsInRoot
             }
             assertTrue(brand.right <= actions.first().left)
             assertTrue(actions.zipWithNext().all { (left, right) -> left.right <= right.left })
             compose.onNodeWithText("TrainPilot", useUnmergedTree = true).assertIsDisplayed()
+            coach.performClick().assertIsSelected()
+            compose.runOnIdle { assertEquals(MainTab.COACH, selected) }
             journal.performClick().assertIsSelected()
             compose.onNodeWithTag("top_nav_progress").assertIsNotSelected()
             compose.runOnIdle { assertEquals(MainTab.LOG, selected) }

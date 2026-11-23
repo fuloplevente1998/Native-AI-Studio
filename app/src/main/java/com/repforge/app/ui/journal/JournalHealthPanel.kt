@@ -79,16 +79,18 @@ internal fun JournalHealthPanel(detail: WorkoutHistoryWithDetails, text: android
                     shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.weight(1f).heightIn(min = 72.dp)
                         .border(TrainPilotFrames.control(if (expanded) colors.accent else colors.line, expanded), MaterialTheme.shapes.medium)
-                        .trainPilotClickable(MaterialTheme.shapes.medium, enabled = enabled && (source == "wear" || !refreshing || source == provider)) {
-                            if (!expanded && source != "wear") selectProvider(source)
+                        .trainPilotClickable(MaterialTheme.shapes.medium, enabled = enabled) {
                             expandedSource = if (expanded) null else source
                         }.semantics {
                             selected = expanded
                             stateDescription = text.getString(if (expanded) R.string.journal_source_expanded else R.string.journal_source_collapsed)
                         }.testTag("journal_provider_$source")) {
                     Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(title, style = MaterialTheme.typography.labelLarge, color = colors.text,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        com.example.ui.components.TrainPilotFitText(
+                            title, style = MaterialTheme.typography.labelLarge, color = colors.text,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                         Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = colors.accent)
                     }
                 }

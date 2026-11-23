@@ -34,10 +34,11 @@ internal fun CoachScreen(starting: Boolean, onStart: (String, String, String?) -
     val text = remember(context, state.language) { com.repforge.app.ui.text.nativeResources(context, state.language) }
     val colors = LocalTrainPilotColors.current
     state.variationPreview?.let { preview ->
+        val variation = preview.next ?: return@let
         AlertDialog(onDismissRequest = model::closeVariation,
             title = { Text(text.getString(com.repforge.app.R.string.coach_variation_preview)) },
             text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(NativeCoachAdviceText.variation(text, preview.next))
+                Text(NativeCoachAdviceText.variation(text, variation))
                 Text(text.getString(com.repforge.app.R.string.coach_variation_notice))
                 val recipe = remember(preview) { org.json.JSONObject(preview.recipe) }
                 Text("${recipe.getInt("sets")} × ${recipe.getString("reps")}")

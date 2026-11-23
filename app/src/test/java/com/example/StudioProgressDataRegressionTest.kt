@@ -117,7 +117,7 @@ class StudioProgressDataRegressionTest {
         health.erase()
         val day = LocalDate.now().toString()
         health.healthDay(day, JSONObject().put("steps", 8000).put("activeCalories", 1200)
-            .put("activityOrigin", "test.hc"), health.generation())
+            .put("activityOrigin", ""), health.generation())
         health.samsungDay(day, JSONObject().put("steps", 7000).put("activeCalories", 1000)
             .put("totalCalories", 1500), JSONArray(), health.generation())
         health.syncMeta(JSONObject().put("lastSyncAt_samsung_health", "2026-11-02T08:00:00Z"))

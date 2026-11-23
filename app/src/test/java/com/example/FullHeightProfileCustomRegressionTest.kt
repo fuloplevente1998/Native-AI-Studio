@@ -91,13 +91,26 @@ class FullHeightProfileCustomRegressionTest {
             })
         } }
         assertFullHeightAndPinnedFooter()
+        compose.onNodeWithTag("custom_exercise_add_to_program").assertDoesNotExist()
         compose.onNodeWithTag("custom_exercise_name_input").performTextInput("Saját gyakorlat")
         compose.onNodeWithTag("custom_exercise_description_input").performScrollTo().performTextInput("Lassan")
         compose.onNodeWithTag("custom_exercise_save_button").assertIsDisplayed().performClick()
         compose.runOnIdle {
             assertEquals(listOf("Saját gyakorlat", ExerciseCategory.LEGS,
-                "Saját testsúly / Kültéri (pl. Kör futás)", "Lassan", "", false, true), result)
+                "Saját testsúly / Kültéri (pl. Kör futás)", "Lassan", "", false, false), result)
         }
+    }
+
+    @Test fun explicitProgramDayStartsUncheckedAndCanBeSelected() {
+        var linked: Boolean? = null
+        compose.setContent { TrainPilotTheme {
+            AddCustomExerciseModalDialog(onDismiss = {}, programDayLabel = "Saját terv · A nap",
+                onSaveCustomExercise = { _, _, _, _, _, _, add -> linked = add })
+        } }
+        val add = compose.onNodeWithTag("custom_exercise_add_to_program").performScrollTo()
+        add.assertIsOff().performClick().assertIsOn()
+        compose.onNodeWithTag("custom_exercise_save_button").performClick()
+        compose.runOnIdle { assertEquals(true, linked) }
     }
 
     @Test fun customExercisePassesEmptyNameToExistingSaveHandler() {

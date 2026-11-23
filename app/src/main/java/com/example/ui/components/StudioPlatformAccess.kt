@@ -22,7 +22,6 @@ import com.repforge.app.HealthConnectSyncRecovery
 import com.repforge.app.HealthConnectRepository
 import com.repforge.app.HealthJournalStore
 import com.repforge.app.NativeHealthRefresh
-import com.repforge.app.NativeDataReplacement
 import com.repforge.app.NativePrivacyControls
 import com.repforge.app.HealthBackgroundJob
 import com.repforge.app.ui.health.NativeHealthForegroundAdmission
@@ -343,18 +342,14 @@ internal fun rememberStudioPermissionRequest(context: Context, model: TrainPilot
                         } else {
                         guard()
                         NativeHealthForegroundAdmission.requireMainAdmission(context)
-                        withContext(Dispatchers.IO) {
-                            NativeDataReplacement.mutate(context) {
-                                guard()
-                                HealthJournalStore.get(context).setPreferences(JSONObject().put("provider", provider))
-                            }
-                        }
-                        val report = NativeHealthRefresh.sync(context, host, requireScreenGuard = guard).getOrThrow()
+                        val report = NativeHealthRefresh.sync(context, host, providerOverride = provider,
+                            requireScreenGuard = guard).getOrThrow()
                         val partial = report.optBoolean("partial")
                         model.updateHealthSyncStatus(false, partial = partial,
                             message = "${if (provider == HealthJournalStore.HC) "Health Connect" else "Samsung Health"}: " +
-                                if (report.optBoolean("changeTrackingUnavailable")) HealthConnectSyncRecovery.limitedMessage(model.uiState.value.language.name)
-                                else if (partial) "részleges szinkron • ${report.optInt("completedDays")} nap frissítve" else "szinkron befejezve")
+                                if (partial) "részleges szinkron • ${report.optInt("completedDays")} nap frissítve"
+                                else if (report.optBoolean("changeTrackingUnavailable")) HealthConnectSyncRecovery.limitedMessage(model.uiState.value.language.name)
+                                else "szinkron befejezve")
                         }
                     })
                 refresh(); refreshSamsung()

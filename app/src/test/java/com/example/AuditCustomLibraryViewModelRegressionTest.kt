@@ -136,7 +136,7 @@ class AuditCustomLibraryViewModelRegressionTest {
     @Test fun exerciseIsCommittedToSelectedDayAndSurvivesReload() {
         val vm = model()
         vm.openProgramEditor("audit-program", 1)
-        vm.toggleAddCustomExerciseDialog(true)
+        vm.toggleAddCustomExerciseDialog(true, fromProgramEditor = true)
         val before = vm.uiState.value.exercises
         val causes = startMutation(vm) { add(vm, "Audit linked exercise", true) }
         assertEquals(before, vm.uiState.value.exercises)
@@ -157,10 +157,17 @@ class AuditCustomLibraryViewModelRegressionTest {
         val vm = model()
         vm.openProgramEditor("audit-program", 0)
         val before = native { db.programDao().getProgramWithDaysById("audit-program")!! }
-        val causes = startMutation(vm) { add(vm, "Audit standalone exercise", false) }
+        vm.toggleAddCustomExerciseDialog(true)
+        assertNull(vm.customExerciseProgramTargetLabel())
+        val causes = startMutation(vm) {
+            vm.addCustomExercise("Audit standalone exercise", ExerciseCategory.CORE, "bodyweight", "Instructions")
+        }
         awaitMutation(vm, causes)
-        assertTrue(vm.uiState.value.exercises.any { it.nameHu == "Audit standalone exercise" })
+        val exercise = vm.uiState.value.exercises.single { it.nameHu == "Audit standalone exercise" }
         assertEquals(before, native { db.programDao().getProgramWithDaysById("audit-program")!! })
+        awaitMutation(vm, startMutation(vm) { vm.deleteStudioCustomExercise(exercise.id) })
+        assertNull(native { db.exerciseLibraryDao().getExerciseById(exercise.id) })
+        assertFalse(vm.uiState.value.exercises.any { it.id == exercise.id })
     }
 
     @Test fun createProgramAppearsOnlyAfterCommitAndReload() {
@@ -199,7 +206,7 @@ class AuditCustomLibraryViewModelRegressionTest {
     @Test fun cancelledCallerCannotCommitAQueuedMutationOrPublishAnError() {
         val vm = model()
         vm.openProgramEditor("audit-program", 1)
-        vm.toggleAddCustomExerciseDialog(true)
+        vm.toggleAddCustomExerciseDialog(true, fromProgramEditor = true)
         val before = vm.uiState.value
         val programBefore = native { db.programDao().getProgramWithDaysById("audit-program")!! }
         val mutex = TrainPilotViewModel::class.java.getDeclaredField("programWriteMutex")

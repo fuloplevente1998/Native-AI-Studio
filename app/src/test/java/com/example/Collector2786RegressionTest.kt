@@ -76,7 +76,7 @@ class Collector2786RegressionTest {
         compose.runOnIdle { assertEquals(1, opened); assertEquals(1, goals) }
     }
 
-    @Test fun healthWeeklyGoalsLiveInTodayAndOpenBigWithTappableDays() {
+    @Test fun healthWeeklyGoalsHaveTheirOwnCardAndOpenWithTappableDays() {
         var state by mutableStateOf(TrainPilotUiState(stepsGoal = 8000, weeklyHealthDays = listOf(day(0, 7699), day(2, 4321))))
         compose.setContent { TrainPilotTheme {
             HealthTabScreen(state, TrainPilotStrings.forLanguage(AppLanguage.HU),
@@ -86,7 +86,9 @@ class Collector2786RegressionTest {
         } }
         compose.onNodeWithTag("health_weekly_status_card").assertDoesNotExist()
         compose.onNodeWithTag("health_weekly_steps_card").assertDoesNotExist()
-        val header = compose.onNodeWithTag("health_weekly_goals_compact")
+        val header = compose.onNode(hasTestTag("health_weekly_goals_compact") and
+            hasAnyAncestor(hasTestTag("page_health_block_weekly")))
+        compose.onNodeWithTag("health_tab_screen").performScrollToNode(hasTestTag("health_weekly_goals_compact"))
         header.assertTextContains("Heti célok")
         compose.onNodeWithTag("weekly_goals_workouts", useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag("weekly_goals_steps", useUnmergedTree = true).assertDoesNotExist()

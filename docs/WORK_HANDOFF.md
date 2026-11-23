@@ -1,3 +1,27 @@
+# Coach · programmódosítás előnézettel
+
+- Ág `fix/coach-apply-program`. A Kulcsjelek csempe kikerült. A menthető súly- és gyakorlatváltoztatások az aktív saját program következő edzésnapjára alkalmazhatók előnézet és jóváhagyás után.
+- A felső sorban a Coach és a Napló az alsó fülek hátterét és feliratos kialakítását kapta. A Naptár a Beállítások mellé került.
+- A Heti célok önállóan rendezhető kártya az Egészség oldalon. A gyorshivatkozások a kártya mentett pozíciójára ugranak.
+- A Programok hárompontos menüjében a Törlés a saját programoknál látható. Aktív saját programnál a gomb letiltott és jelzi a váltás feltételét.
+- Mentéskor friss ellenőrzés fut. A módosítás megtartja a programazonosítót és a többi edzésnapot. A beépített sablonok és az aktív edzés szerkesztése védett. A pillanatnyi kímélő javaslatok tanácsként jelennek meg.
+
+- A `c497c395` forrás teljes JVM- és R8-ellenőrzése sikeres. A nyers JUnit XML és az archívum SHA-256 lenyomata ellenőrizve. Telefon 844, Wear 204 teszt, 0 hiba és 0 kihagyás. [Actions](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45103754295)
+
+---
+
+# Gyors edzés, Gyakorlatkönyvtár és Egészség
+
+- [PR #343](https://github.com/fuloplevente1998/Native-AI-Studio/pull/343), ág `fix/quick-library-health-polish`. Kompakt Gyors edzés módválasztó, egységes Gyakorlatkönyvtár-cím, azonos magasságú műveletek és Saját szűrő.
+- Új gyakorlat mentése alapból csak a könyvtárat módosítja. A célzott programnaphoz adás külön bepipálható a saját program szerkesztőjéből.
+- Saját gyakorlat törlése a menüből és a szerkesztőből, azonos megerősítő ablakkal. A natív előzmény-, program- és aktívedzés-védelem érvényes.
+- A Testsúlynapló egyetlen méretanimációt használ. Az elsődleges egészségforrást a választás menti. Egy külön forrás szinkronja nem írja át a választást.
+- A Health Connect napi lépésösszegét a teljes helyi napra kérjük a szolgáltatótól. Az órás bontás ugyanazt a szolgáltatót követi, és a nyers lista az Egészségnaplóból érhető el. A rendszer változásnaplójának `row_offset` hibájánál a közvetlen napi olvasás folytatódik. Készüléken összevetendő a Health Connect napi összegével.
+
+- A `659f88b` forrás teljes JVM- és R8-ellenőrzése sikeres. Nyers JUnit XML: 844 telefonos és 204 Wear-teszt, 0 hiba és 0 kihagyás. [Actions](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45101962632)
+
+---
+
 # TrainPilot 2802 · 1.4.3
 
 - Kiadási forrás `51aa6c2548125be31d341669c1cd05d146a53861`, [PR #342](https://github.com/fuloplevente1998/Native-AI-Studio/pull/342). A telefon belső kódja 280200, a Wear OS kódja 280202.

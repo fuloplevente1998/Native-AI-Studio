@@ -2152,6 +2152,13 @@ class TrainPilotViewModel : ViewModel() {
                 val detail = error.message.orEmpty()
                 val lang = _uiState.value.language
                 val message = when {
+                    detail.startsWith("Exercise is used", ignoreCase = true) -> tr(
+                        "A programban vagy naplóban használt gyakorlat nem törölhető.",
+                        "An exercise used in a program or log cannot be deleted.",
+                        "Eine in einem Programm oder Protokoll verwendete Übung kann nicht gelöscht werden.",
+                        "Un exercițiu utilizat într-un program sau jurnal nu poate fi șters.",
+                        lang
+                    )
                     detail.contains("Program missing", true) -> tr(
                         "A kiválasztott program már nem található.",
                         "Selected program was not found.",
@@ -2614,7 +2621,48 @@ class TrainPilotViewModel : ViewModel() {
         }
     }
 
-    fun toggleAddCustomExerciseDialog(show: Boolean) {
+    fun deleteStudioCustomExercise(exerciseId: String) {
+        if (_uiState.value.exercises.none { it.id == exerciseId && it.isCustom }) return
+        mutateStudioLibrary(
+            tr("Gyakorlat törölve.", "Exercise deleted.", "Übung gelöscht.", "Exercițiu șters."),
+            onCommitted = { it.withoutDeletedCustomExercise(exerciseId) }
+        ) { context, db, _ ->
+            com.repforge.app.NativeCustomExerciseEditor.delete(context, db, exerciseId)
+            null
+        }
+    }
+
+    internal fun onStudioCustomExerciseDeleted(exerciseId: String) {
+        _uiState.update { it.withoutDeletedCustomExercise(exerciseId) }
+    }
+
+    private fun TrainPilotUiState.withoutDeletedCustomExercise(exerciseId: String) = copy(
+        exercises = exercises.filterNot { it.id == exerciseId },
+        favoriteExerciseIds = favoriteExerciseIds - exerciseId,
+        quickWorkoutQueue = quickWorkoutQueue.filterNot { it.id == exerciseId }
+    )
+
+    private data class CustomExerciseProgramTarget(
+        val programId: String, val dayId: String, val label: String,
+        val dataset: com.repforge.app.NativeDataReplacement.Continuation
+    )
+
+    private var customExerciseProgramTarget: CustomExerciseProgramTarget? = null
+
+    internal fun customExerciseProgramTargetLabel(): String? = customExerciseProgramTarget?.label
+
+    fun toggleAddCustomExerciseDialog(show: Boolean, fromProgramEditor: Boolean = false) {
+        val state = _uiState.value
+        val program = if (show && fromProgramEditor && state.currentSubScreen == SubScreen.PROGRAM_EDITOR)
+            state.programs.firstOrNull { it.id == state.editingProgramId && it.isCustom } else null
+        val day = program?.days?.getOrNull(state.editingDayIndex)
+        val dataset = if (program != null && day != null) nativeContext?.let { context ->
+            runCatching { com.repforge.app.NativeDataReplacement.continuationForCurrentData(context) }.getOrNull()
+        } else null
+        customExerciseProgramTarget = if (program != null && day != null && dataset != null) {
+            CustomExerciseProgramTarget(program.id, day.id,
+                "${program.localizedName(state.language)} · ${day.localizedDayCode(state.language)}", dataset)
+        } else null
         _uiState.update { it.copy(showAddCustomExerciseDialog = show) }
     }
 
@@ -2625,7 +2673,7 @@ class TrainPilotViewModel : ViewModel() {
         descriptionHu: String,
         videoUrl: String = "",
         isTimed: Boolean = false,
-        addToCurrentProgramDay: Boolean = true
+        addToCurrentProgramDay: Boolean = false
     ) {
         if (_uiState.value.libraryMutationBusy) return
         val cleanName = nameHu.trim().ifBlank { "Egyedi gyakorlat" }
@@ -2692,9 +2740,9 @@ class TrainPilotViewModel : ViewModel() {
         )
 
         val origin = _uiState.value
-        val targetProgram = origin.editingProgramId.takeIf { addToCurrentProgramDay }
-        val targetDay = if (addToCurrentProgramDay) origin.programs.firstOrNull { it.id == targetProgram }
-            ?.days?.getOrNull(origin.editingDayIndex)?.id else null
+        val target = customExerciseProgramTarget.takeIf { addToCurrentProgramDay }
+        val targetProgram = target?.programId
+        val targetDay = target?.dayId
 
         val primaryKey = when (resolvedCategory) {
             ExerciseCategory.CHEST -> "chest"
@@ -2742,12 +2790,16 @@ class TrainPilotViewModel : ViewModel() {
             if (addToCurrentProgramDay) "Exercise saved and added to program: $cleanName" else "Exercise saved: $cleanName",
             if (addToCurrentProgramDay) "Übung gespeichert und zum Programm hinzugefügt: $cleanName" else "Übung gespeichert: $cleanName",
             if (addToCurrentProgramDay) "Exercițiu salvat și adăugat în program: $cleanName" else "Exercițiu salvat: $cleanName"),
-            onCommitted = { updated -> updated.copy(showAddCustomExerciseDialog = false,
-                selectedExerciseId = if (updated.isWorkoutSessionActive) updated.selectedExerciseId else entity.id) }
+            onCommitted = { updated ->
+                customExerciseProgramTarget = null
+                updated.copy(showAddCustomExerciseDialog = false,
+                    selectedExerciseId = if (updated.isWorkoutSessionActive) updated.selectedExerciseId else entity.id)
+            }
         ) { context, db, _ ->
             check(!addToCurrentProgramDay || (!targetProgram.isNullOrBlank() && targetDay != null)) {
                 "Program day changed; reopen editor"
             }
+            target?.dataset?.requireCurrent(context)
             com.repforge.app.NativeCustomLibraryMutation.addExercise(context, db, entity,
                 targetProgram, targetDay, origin.language.name.lowercase(Locale.ROOT),
                 com.repforge.app.NativeDataReplacement.continuationForCurrentData(context))
@@ -4780,6 +4832,7 @@ class TrainPilotViewModel : ViewModel() {
 
     /** Provider whose values are on screen now; null = nothing loaded (or cleared). */
     @Volatile private var loadedHealthProvider: String? = null
+    private var healthJournalReloadJob: Job? = null
 
     fun reloadHealthJournal() {
         val ctx = nativeContext
@@ -4824,7 +4877,8 @@ class TrainPilotViewModel : ViewModel() {
             loadedHealthProvider = null
             _uiState.update(::clearedHealth)
         }
-        scope.launch(Dispatchers.IO) {
+        healthJournalReloadJob?.cancel()
+        healthJournalReloadJob = scope.launch(Dispatchers.IO) {
             try {
                 val store = HealthJournalStore.get(ctx)
                 val prefs = store.preferences()
@@ -4860,9 +4914,14 @@ class TrainPilotViewModel : ViewModel() {
                 val alternateToday = if (alternativeEnabled)
                     admitted(com.repforge.app.NativeHealthProviderData.day(store, alternativeProvider, today),
                         alternativeProvider) else null
-                fun measuredSteps(row: JSONObject?): Double? =
-                    row?.optDouble("steps", Double.NaN)?.takeIf { it.isFinite() && it in 0.0..Int.MAX_VALUE.toDouble() }
-                val todaysSteps = measuredSteps(todayData) ?: measuredSteps(alternateToday)
+                fun measuredSteps(row: JSONObject?, fromProvider: String): Double? {
+                    if (row == null) return null
+                    // A previously pinned origin cannot answer today's automatic-priority query, or vice versa.
+                    if (fromProvider == HealthJournalStore.HC &&
+                        row.optString("activityOrigin") != com.repforge.app.HealthDailySource.choose("", hcDailySourceRaw, emptySet())) return null
+                    return row.optDouble("steps", Double.NaN).takeIf { it.isFinite() && it in 0.0..Int.MAX_VALUE.toDouble() }
+                }
+                val todaysSteps = measuredSteps(todayData, provider) ?: measuredSteps(alternateToday, alternativeProvider)
 
                 val todaySleepMin = com.repforge.app.NativeDailyHealthDetails.sleepMinutes(
                     todayData, today, java.time.ZoneId.systemDefault(), Instant.now()) ?: Double.NaN
@@ -4938,13 +4997,13 @@ class TrainPilotViewModel : ViewModel() {
                             raw.optString("channel").let { it.isBlank() || it == provider }
                     }?.let { JSONObject(it.toString()).put("day", d.toString()) }
                     if (ownDay != null) projectedProviderDays.add(ownDay)
-                    val ownSteps = measuredSteps(dayObj)
+                    val ownSteps = measuredSteps(dayObj, provider)
                     val alternateStepDay = if (ownSteps != null || !alternativeEnabled) null
                         else if (d == today) alternateToday
                         else admitted(com.repforge.app.NativeHealthProviderData.day(store, alternativeProvider, d),
                             alternativeProvider)
                     val stepDay = if (ownSteps != null) dayObj else alternateStepDay
-                    val measuredStepCount = ownSteps ?: measuredSteps(alternateStepDay)
+                    val measuredStepCount = ownSteps ?: measuredSteps(alternateStepDay, alternativeProvider)
                     val stepsAvailable = measuredStepCount != null
                     val dSteps = measuredStepCount?.toInt() ?: 0
                     val dKcal = dayObj?.optDouble("activeCalories", Double.NaN)?.takeIf { it.isFinite() && it >= 0 }?.toInt() ?: 0
@@ -5096,7 +5155,8 @@ class TrainPilotViewModel : ViewModel() {
                         )
                     }
                 }
-            } catch (e: Throwable) {
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     _uiState.update {
                         loadedHealthProvider = null

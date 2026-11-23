@@ -41,6 +41,31 @@ import java.io.File
 class ExerciseLibraryCompactRegressionTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
+    @Test fun ownFilterAndMenuOfferConfirmedDeletionOnlyForCustomExercises() {
+        val builtIn = ExerciseItem(id = "builtin", nameHu = "Beépített")
+        val custom = ExerciseItem(id = "custom", nameHu = "Saját mérés", isCustom = true)
+        var deleted: String? = null
+        compose.setContent {
+            CompositionLocalProvider(LocalTrainPilotStrings provides TrainPilotStrings.forLanguage(AppLanguage.HU)) {
+                TrainPilotTheme {
+                    ExerciseLibraryScreen(TrainPilotUiState(exercises = listOf(builtIn, custom)),
+                        onBack = {}, onOpenSettings = {}, onSearchQueryChange = {}, onSelectCategory = {},
+                        onSelectExercise = {}, onDeleteCustomExercise = { deleted = it })
+                }
+            }
+        }
+        compose.onNodeWithTag("exercise_library_more_builtin").performClick()
+        compose.onNodeWithTag("exercise_library_delete_builtin").assertDoesNotExist()
+        compose.onNodeWithTag("exercise_library_add_to_queue_builtin").performClick()
+        compose.onNodeWithTag("exercise_library_custom_only").performClick()
+        compose.onNodeWithTag("exercise_library_row_builtin").assertDoesNotExist()
+        compose.onNodeWithTag("exercise_library_more_custom").performClick()
+        compose.onNodeWithTag("exercise_library_delete_custom").performClick()
+        compose.runOnIdle { assertNull(deleted) }
+        compose.onNodeWithTag("custom_exercise_confirm_delete").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals("custom", deleted) }
+    }
+
     @Test fun longLocalizedTitlesAndActionsRemainUsableAtNarrowWidthsAndLargeText() {
         val exercise = ExerciseItem(
             id = "long", nameHu = "Bicepszhajlítás – kétkezes súlyzóval állva",

@@ -277,6 +277,14 @@ data class LocalizedStrings(
         }
 
     // Workout & Planning screen functional strings
+    val exerciseLibraryTitle: String
+        get() = when (language) {
+            AppLanguage.HU -> "Gyakorlatkönyvtár"
+            AppLanguage.EN -> "Exercise Library"
+            AppLanguage.DE -> "Übungsbibliothek"
+            AppLanguage.RO -> "Bibliotecă de exerciții"
+        }
+
     val exercisePickerTitle: String
         get() = when (language) {
             AppLanguage.HU -> "Gyakorlatválasztó"

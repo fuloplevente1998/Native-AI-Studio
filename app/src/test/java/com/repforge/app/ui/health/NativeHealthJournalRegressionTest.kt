@@ -36,6 +36,17 @@ class NativeHealthJournalRegressionTest {
         }
     }
 
+    @Test fun partialPriorityReadReplacesPinnedAggregateWithoutMixingOrigins() = withStore { store ->
+        store.healthDay(day.toString(), JSONObject().put("activityOrigin", "phone")
+            .put("steps", 319).put("activeCalories", 112), store.generation())
+        store.healthDay(day.toString(), JSONObject().put("activityOrigin", "").put("steps", 2260)
+            .put("warnings", JSONArray().put("READ_SLEEP: unavailable")), store.generation())
+        val row = requireNotNull(com.repforge.app.NativeHealthProviderData.day(store, hc, day))
+        assertEquals(2260, row.getInt("steps"))
+        assertEquals("", row.getString("activityOrigin"))
+        assertFalse(row.has("activeCalories"))
+    }
+
     @Test fun providerSummaryAndDetailsReuseSavedPriorityTotalWithoutAddingMirrors() = withStore { store ->
         val mirrored = JSONArray().put(record("mirror-hc")).put(record("mirror-samsung", samsung))
             .put(record("overlap", source = "phone"))
