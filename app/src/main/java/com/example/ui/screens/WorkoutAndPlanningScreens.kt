@@ -3707,6 +3707,7 @@ private fun ExerciseMetaRow(label: String, value: String) {
 @Composable
 fun AddCustomExerciseModalDialog(
     onDismiss: () -> Unit,
+    programDayLabel: String? = null,
     onSaveCustomExercise: (
         nameHu: String,
         category: ExerciseCategory,
@@ -3737,7 +3738,7 @@ fun AddCustomExerciseModalDialog(
     var descriptionHu by remember { mutableStateOf("") }
     var videoUrl by remember { mutableStateOf("") }
     var isTimed by remember { mutableStateOf(false) }
-    var addToCurrentProgramDay by remember { mutableStateOf(true) }
+    var addToCurrentProgramDay by remember(programDayLabel) { mutableStateOf(false) }
 
     TrainPilotFullHeightFormSheet(
         onDismiss = onDismiss,
@@ -3897,14 +3898,16 @@ fun AddCustomExerciseModalDialog(
                     Text(trW(lang, "Időalapú gyakorlat (másodperc / perc mérés)", "Timed exercise (seconds / minutes measurement)", "Zeitbasierte Übung (Sekunden-/Minutenmessung)", "Exercițiu cronometrat (măsurare în secunde / minute)"), style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
                 }
 
-                Row(
+                if (programDayLabel != null) Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth()
                         .trainPilotClickable(RoundedCornerShape(10.dp)) { addToCurrentProgramDay = !addToCurrentProgramDay }
                 ) {
-                    Checkbox(checked = addToCurrentProgramDay, onCheckedChange = { addToCurrentProgramDay = it })
-                    Text(trW(lang, "Hozzáadás az aktuálisan szerkesztett programnaphoz", "Add to currently edited program day", "Zum aktuell bearbeiteten Programmtag hinzufügen", "Adaugă la ziua de program editată curent"), style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
+                    Checkbox(checked = addToCurrentProgramDay, onCheckedChange = { addToCurrentProgramDay = it },
+                        modifier = Modifier.testTag("custom_exercise_add_to_program"))
+                    Text(trW(lang, "Hozzáadás ehhez: $programDayLabel", "Add to: $programDayLabel",
+                        "Hinzufügen zu: $programDayLabel", "Adaugă la: $programDayLabel"),
+                        style = MaterialTheme.typography.bodySmall, color = palette.textPrimary)
                 }
                     }
                 }
@@ -3920,7 +3923,7 @@ fun AddCustomExerciseModalDialog(
                         descriptionHu,
                         videoUrl,
                         isTimed,
-                        addToCurrentProgramDay
+                        programDayLabel != null && addToCurrentProgramDay
                     )
                 },
                 modifier = Modifier.fillMaxWidth().testTag("custom_exercise_save_button")

@@ -363,6 +363,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
         // 5. Add Custom Exercise Modal Dialog (Új egyedi gyakorlat pl. Kör futás)
         if (uiState.showAddCustomExerciseDialog) {
             AddCustomExerciseModalDialog(
+                programDayLabel = viewModel.customExerciseProgramTargetLabel(),
                 onDismiss = { viewModel.toggleAddCustomExerciseDialog(false) },
                 onSaveCustomExercise = { nameHu, category, equipmentHu, descriptionHu, videoUrl, isTimed, addToCurrentProgramDay ->
                     viewModel.addCustomExercise(
@@ -508,7 +509,7 @@ fun TrainPilotAppRoot(viewModel: TrainPilotViewModel) {
                             onRemoveExercise = viewModel::removeEditorExercise,
                             onRenameProgram = viewModel::renameEditorProgram,
                             onSaveProgram = viewModel::saveEditorProgram,
-                            onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true) }
+                            onOpenAddCustomExercise = { viewModel.toggleAddCustomExerciseDialog(true, fromProgramEditor = true) }
                         )
                     }
 

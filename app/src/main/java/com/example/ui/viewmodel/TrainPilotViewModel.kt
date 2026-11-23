@@ -2642,7 +2642,27 @@ class TrainPilotViewModel : ViewModel() {
         quickWorkoutQueue = quickWorkoutQueue.filterNot { it.id == exerciseId }
     )
 
-    fun toggleAddCustomExerciseDialog(show: Boolean) {
+    private data class CustomExerciseProgramTarget(
+        val programId: String, val dayId: String, val label: String,
+        val dataset: com.repforge.app.NativeDataReplacement.Continuation
+    )
+
+    private var customExerciseProgramTarget: CustomExerciseProgramTarget? = null
+
+    internal fun customExerciseProgramTargetLabel(): String? = customExerciseProgramTarget?.label
+
+    fun toggleAddCustomExerciseDialog(show: Boolean, fromProgramEditor: Boolean = false) {
+        val state = _uiState.value
+        val program = if (show && fromProgramEditor && state.currentSubScreen == SubScreen.PROGRAM_EDITOR)
+            state.programs.firstOrNull { it.id == state.editingProgramId && it.isCustom } else null
+        val day = program?.days?.getOrNull(state.editingDayIndex)
+        val dataset = if (program != null && day != null) nativeContext?.let { context ->
+            runCatching { com.repforge.app.NativeDataReplacement.continuationForCurrentData(context) }.getOrNull()
+        } else null
+        customExerciseProgramTarget = if (program != null && day != null && dataset != null) {
+            CustomExerciseProgramTarget(program.id, day.id,
+                "${program.localizedName(state.language)} · ${day.localizedName(state.language, state.exercises)}", dataset)
+        } else null
         _uiState.update { it.copy(showAddCustomExerciseDialog = show) }
     }
 
@@ -2653,7 +2673,7 @@ class TrainPilotViewModel : ViewModel() {
         descriptionHu: String,
         videoUrl: String = "",
         isTimed: Boolean = false,
-        addToCurrentProgramDay: Boolean = true
+        addToCurrentProgramDay: Boolean = false
     ) {
         if (_uiState.value.libraryMutationBusy) return
         val cleanName = nameHu.trim().ifBlank { "Egyedi gyakorlat" }
@@ -2720,9 +2740,9 @@ class TrainPilotViewModel : ViewModel() {
         )
 
         val origin = _uiState.value
-        val targetProgram = origin.editingProgramId.takeIf { addToCurrentProgramDay }
-        val targetDay = if (addToCurrentProgramDay) origin.programs.firstOrNull { it.id == targetProgram }
-            ?.days?.getOrNull(origin.editingDayIndex)?.id else null
+        val target = customExerciseProgramTarget.takeIf { addToCurrentProgramDay }
+        val targetProgram = target?.programId
+        val targetDay = target?.dayId
 
         val primaryKey = when (resolvedCategory) {
             ExerciseCategory.CHEST -> "chest"
@@ -2770,12 +2790,16 @@ class TrainPilotViewModel : ViewModel() {
             if (addToCurrentProgramDay) "Exercise saved and added to program: $cleanName" else "Exercise saved: $cleanName",
             if (addToCurrentProgramDay) "Übung gespeichert und zum Programm hinzugefügt: $cleanName" else "Übung gespeichert: $cleanName",
             if (addToCurrentProgramDay) "Exercițiu salvat și adăugat în program: $cleanName" else "Exercițiu salvat: $cleanName"),
-            onCommitted = { updated -> updated.copy(showAddCustomExerciseDialog = false,
-                selectedExerciseId = if (updated.isWorkoutSessionActive) updated.selectedExerciseId else entity.id) }
+            onCommitted = { updated ->
+                customExerciseProgramTarget = null
+                updated.copy(showAddCustomExerciseDialog = false,
+                    selectedExerciseId = if (updated.isWorkoutSessionActive) updated.selectedExerciseId else entity.id)
+            }
         ) { context, db, _ ->
             check(!addToCurrentProgramDay || (!targetProgram.isNullOrBlank() && targetDay != null)) {
                 "Program day changed; reopen editor"
             }
+            target?.dataset?.requireCurrent(context)
             com.repforge.app.NativeCustomLibraryMutation.addExercise(context, db, entity,
                 targetProgram, targetDay, origin.language.name.lowercase(Locale.ROOT),
                 com.repforge.app.NativeDataReplacement.continuationForCurrentData(context))
