@@ -1,3 +1,12 @@
+# TrainPilot 2802 · 1.4.3
+
+- Kiadási forrás `51aa6c2548125be31d341669c1cd05d146a53861`, [PR #342](https://github.com/fuloplevente1998/Native-AI-Studio/pull/342). A telefon belső kódja 280200, a Wear OS kódja 280202.
+- A [főági CI](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45080592327) R8 és JVM ellenőrzése sikeres. Az [aláírt futás](https://github.com/fuloplevente1998/Native-AI-Studio/actions/runs/45081180079) első kísérletében a `PaletteSystemBarsTest` időtúllépett. Azonos forrásból megismételve 841 telefonos és 204 Wear-teszt sikeres, 0 hiba és 0 kihagyás.
+- A négy aláírt csomag verziókódja, tartós aláírása és SHA-256 lenyomata ellenőrizve. A fájlok a [TrainPilot Native Drive-mappában](https://drive.google.com/drive/folders/1ywHgrManynjV9uNvZfVncOmCr3SbHIb9) érhetők el. [Ellenőrzési adatok](https://drive.google.com/file/d/18BXvuTAJ93zIcTgYosoSZXka13HzkSMf/view)
+- A Samsung engedélypanel és a lépésgrafikon készülékes ellenőrzése hátravan. A kiadás feltöltése a Play Console-ba külön lépés.
+
+---
+
 # Egészség · 2801 utáni kijelzési javítások
 
 - [PR #342](https://github.com/fuloplevente1998/Native-AI-Studio/pull/342), ág `fix/health-layout-samsung-permissions`. A kiadási kód telefonon 280200, órán 280202, a megjelenő verzió mindkét csomagban 1.4.3. A Mai állapot és a Test és fittség megtartja normál oszlopszámát rendezés közben. A háromoszlopos töréspontot külön regresszió fedi. A Mai állapot, a Test és fittség, a Testsúlynapló, az Egészségnapló és a Források kompaktabbak.
