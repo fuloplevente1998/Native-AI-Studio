@@ -112,10 +112,10 @@ internal class PageLayoutState(val page: String, val defaults: List<String>, ini
 
 @Composable
 internal fun rememberPageLayout(
-    page: String, defaults: List<String>, newBlockPlacement: Pair<String, String>? = null
+    page: String, defaults: List<String>, newBlockPlacements: List<Pair<String, String>> = emptyList()
 ): PageLayoutState {
     val context = LocalContext.current.applicationContext
-    return remember(context, page, defaults, newBlockPlacement) {
+    return remember(context, page, defaults, newBlockPlacements) {
         val prefs = context.getSharedPreferences("trainpilot-page-layout", Context.MODE_PRIVATE)
         val previous = prefs.getString(page, null).orEmpty().split(',')
         val children = runCatching { JSONObject(prefs.getString("${page}_children", "{}") ?: "{}") }
@@ -124,11 +124,11 @@ internal fun rememberPageLayout(
             val values = children.optJSONArray(group) ?: return@mapNotNull null
             group to List(values.length()) { values.optString(it) }
         }.toMap()
-        val order = reconcilePageLayout(previous, defaults)
-        val (block, anchor) = newBlockPlacement ?: return@remember PageLayoutState(page, defaults, order, savedChildren)
-        val initial = if (block !in previous && block in order && anchor in order) {
-            (order - block).toMutableList().apply { add(indexOf(anchor) + 1, block) }
-        } else order
+        val initial = newBlockPlacements.fold(reconcilePageLayout(previous, defaults)) { order, (block, anchor) ->
+            if (block !in previous && block in order && anchor in order) {
+                (order - block).toMutableList().apply { add(indexOf(anchor) + 1, block) }
+            } else order
+        }
         PageLayoutState(page, defaults, initial, savedChildren)
     }
 }

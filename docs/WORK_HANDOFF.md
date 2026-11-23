@@ -2,6 +2,7 @@
 
 - Ág `fix/coach-apply-program`. A Kulcsjelek csempe kikerült. A menthető súly- és gyakorlatváltoztatások az aktív saját program következő edzésnapjára alkalmazhatók előnézet és jóváhagyás után.
 - A felső sorban a Coach és a Napló az alsó fülek hátterét és feliratos kialakítását kapta. A Naptár a Beállítások mellé került.
+- A Heti célok önállóan rendezhető kártya az Egészség oldalon. A gyorshivatkozások a kártya mentett pozíciójára ugranak.
 - Mentéskor friss ellenőrzés fut. A módosítás megtartja a programazonosítót és a többi edzésnapot. A beépített sablonok és az aktív edzés szerkesztése védett. A pillanatnyi kímélő javaslatok tanácsként jelennek meg.
 
 ---
